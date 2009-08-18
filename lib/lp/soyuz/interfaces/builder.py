@@ -95,7 +95,7 @@ class IBuilder(IHasOwner):
         description=_('The builder slave title. Should be just a few words.'))
 
     description = Description(
-        title=_('Description'), required=True,
+        title=_('Description'), required=False,
         description=_('The builder slave description, may be several '
                       'paragraphs of text, giving the highlights and '
                       'details.'))

@@ -32,6 +32,29 @@ edit dependencies, even if they try the URL directly.
     ...
     Unauthorized: ..., 'launchpad.Edit')
 
+Users are able to change dependencies of their PPAs before uploading
+any sources.
+
+    >>> no_priv_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+
+    >>> print extract_text(find_main_content(no_priv_browser.contents))
+    This archive is public
+    PPA for No Privileges Person
+    ...
+    Build dependencies: Edit dependencies
+    This PPA does not contain
+    any packages yet. Find more information about how to upload
+    packages in the PPA help page
+
+    >>> no_priv_browser.getLink('Edit dependencies').click()
+    >>> print no_priv_browser.url
+    http://launchpad.dev/~no-priv/+archive/ppa/+edit-dependencies
+
+    >>> print no_priv_browser.title
+    Edit dependencies for PPA for No Privileges Person
+
 Only Celso and an administrator can access the 'Edit dependencies'
 page for Celso's PPA.
 
@@ -41,15 +64,15 @@ page for Celso's PPA.
     >>> cprov_browser.getLink('Edit dependencies').click()
     >>> print cprov_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
-    >>> cprov_browser.title
-    'Edit dependencies for PPA for Celso Providelo'
+    >>> print cprov_browser.title
+    Edit dependencies for PPA for Celso Providelo
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> admin_browser.getLink('Edit dependencies').click()
     >>> print admin_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
-    >>> admin_browser.title
-    'Edit dependencies for PPA for Celso Providelo'
+    >>> print admin_browser.title
+    Edit dependencies for PPA for Celso Providelo
 
 Once accessed the page provides a way to remove recorded dependencies
 via the POST form.
@@ -190,13 +213,19 @@ dependencies is refreshed.
     >>> print_ppa_dependencies(admin_browser.contents)
     No dependencies recorded for this PPA yet.
 
-Once the dependencies are removed, the 'dependency-section' (including
-the warning message) are omitted from the PPA overview page
+Once the dependencies are removed, the 'archive-dependencies' section
+is omitted from the PPA overview page for user without permission to
+add new dependencies.
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> print_tag_with_id(user_browser.contents, 'archive-dependencies')
-    Build dependencies:
+    >>> print find_tag_by_id(
+    ...     user_browser.contents, 'archive-dependencies')
+    None
 
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> print find_tag_by_id(
+    ...     user_browser.contents, 'archive-dependencies')
+    None
 
 == Primary dependencies ==
 

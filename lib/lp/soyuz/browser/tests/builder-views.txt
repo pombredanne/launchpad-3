@@ -36,18 +36,6 @@ mock_form:
     5
 
 
-== Builder cancel ==
-
-Let's instantiate the view for +cancel:
-
-    >>> request = LaunchpadTestRequest(form={'BUILDERID': 1})
-
-    >>> builder_view = getMultiAdapter((builder, request), name="+cancel")
-
-    >>> builder_view.cancelBuildJob()
-    '<p>Cancel (1). Not implemented yet.</p>'
-
-
 == Builder mode ==
 
 Let's instantiate the view for +mode:
@@ -85,36 +73,66 @@ We've changed the builder mode to MANUAL
 
 == Builder edit ==
 
-Let's instantiate the view for +edit:
+Let's instantiate the view for +edit and check that the correct title,
+fields and actions are displayed:
 
-Build an special request containing the fields we want to change:
+    >>> builder_view = create_initialized_view(builder, name="+edit")
+    >>> builder_view.page_title
+    u'Change details for builder \u201cBob The Builder\u201d'
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.processor': builder.processor.name,
-    ...     'field.url': builder.url,
-    ...     'field.name': u'biscoito',
-    ...     'field.title': builder.title,
-    ...     'field.description': builder.description,
-    ...     'UPDATE_SUBMIT': 'Change'})
+    >>> for field_name in builder_view.field_names:
+    ...     print field_name
+    name
+    title
+    description
+    processor
+    url
+    manual
+    owner
+    virtualized
+    builderok
+    failnotes
+    vm_host
+    active
 
-Instantiate the correspondent view:
+    >>> for action in builder_view.actions:
+    ...     print action.label
+    Change
 
-    >>> builder_view = getMultiAdapter((builder, request), name="+edit")
+The BuilderEditView also has a next_url property for redirecting after
+a successful form submission.
 
-Ensure the previous name
+    >>> print builder_view.next_url
+    http://launchpad.dev/builders/bob
 
-    >>> builder.id, builder.name
-    (1, u'bob')
+The BuilderEditView can be used to update the relevant fields on the
+builder.
 
-Call the update() method of the zope.app.form.EditView class
+    >>> def print_builder_info(builder):
+    ...     print "%s: manual=%s, vm_host=%s." % (
+    ...         builder.name,
+    ...         builder.manual,
+    ...         builder.vm_host,
+    ...         )
+    >>> print_builder_info(builder)
+    bob: manual=True, vm_host=None.
 
-    >>> builder_view.update()
-    u'Updated on ${date_time}'
+    >>> builder_view = create_initialized_view(
+    ...     builder, name="+edit", method="POST", form={
+    ...         'field.name': u'biscoito',
+    ...         'field.manual': '',
+    ...         'field.vm_host': 'foobar-host.ppa',
+    ...         'field.actions.update': 'Update',
+    ...         })
 
-We've modified the buildername
+    >>> print_builder_info(builder)
+    biscoito: manual=False, vm_host=foobar-host.ppa.
 
-    >>> builder.id, builder.name
-    (1, u'biscoito')
+After editing a builder, a relevant notification is added to the view.
+
+    >>> for notification in builder_view.request.notifications:
+    ...     print notification.message
+    The builder "Bob The Builder" was updated successfully.
 
 
 == Builders building private jobs ==
