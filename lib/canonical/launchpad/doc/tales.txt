@@ -456,20 +456,22 @@ Branch subscriptions
 Branch subscriptions show the person and branch name.  For users without
 adequate permissions, a link is not generated.
 
-    >>> branch = factory.makeAnyBranch(title='My Branch')
-    >>> person = factory.makePerson(displayname='My Person')
+    >>> branch = factory.makeProductBranch(
+    ...     owner=eric, product=fooix, name='my-branch', title='My Branch')
+    >>> michael = factory.makePerson(
+    ...     name='michael', displayname='Michael the Viking')
     >>> subscription = factory.makeBranchSubscription(
-    ...     branch=branch, person=person)
+    ...     branch=branch, person=michael)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'Subscription of My Person to
-      lp://dev/~person-name17/product-name12/branch19'
+    u'Subscription of Michael the Viking to
+      lp://dev/~eric/fooix/my-branch'
 
 But if we log in as the subscriber, a link is presented.
 
     >>> login_person(subscription.person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'<a href="http://.../+subscription/person-name21">Subscription
-      of My Person to lp://dev/~person-name17/product-name12/branch19</a>'
+    u'<a href="http://.../+subscription/michael">Subscription
+      of Michael the Viking to lp://dev/~eric/fooix/my-branch</a>'
 
 Merge proposals also have a link formatter, which displays branch
 titles:
