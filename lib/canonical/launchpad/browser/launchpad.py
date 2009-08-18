@@ -225,6 +225,14 @@ class Hierarchy(LaunchpadView):
 
         The list starts with the breadcrumb closest to the hierarchy root.
         """
+        breadcrumbs = []
+        for builder in self._getBreadcrumbBuilders():
+            crumb = builder.make_breadcrumb()
+            if crumb is not None:
+                breadcrumbs.append(crumb)
+        return breadcrumbs
+
+    def _getBreadcrumbBuilders(self):
         builders = []
         for obj in self.objects:
             builder = queryAdapter(obj, IBreadcrumbBuilder)
@@ -234,7 +242,7 @@ class Hierarchy(LaunchpadView):
         host = URI(self.request.getURL()).host
         if (len(builders) == 0
             or host == allvhosts.configs['mainsite'].hostname):
-            return [builder.make_breadcrumb() for builder in builders]
+            return builders
 
         # If we got this far it means we have breadcrumbs and we're not on the
         # mainsite, so we'll sneak an extra breadcrumb for the vhost we're on.
@@ -250,7 +258,7 @@ class Hierarchy(LaunchpadView):
             if extra_builder is not None:
                 builders.insert(idx + 1, extra_builder)
                 break
-        return [builder.make_breadcrumb() for builder in builders]
+        return builders
 
     def render(self):
         """Render the hierarchy HTML.

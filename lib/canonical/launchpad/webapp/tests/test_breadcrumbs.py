@@ -5,15 +5,12 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getMultiAdapter
-
-from canonical.lazr.testing.menus import make_fake_request
-from canonical.launchpad.webapp.publisher import canonical_url, RootObject
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import login, TestCaseWithFactory
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.tests import BaseBreadcrumbTestCase
+from lp.testing import login
 
 
-class TestExtraVHostBreadcrumbsOnHierarchyView(TestCaseWithFactory):
+class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
     """How our breadcrumbs behave when using a vhost other the main one?
 
     When we go to bugs.lp.net/ubuntu, we only traversed the Ubuntu distro, so
@@ -22,10 +19,9 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(TestCaseWithFactory):
 
     The behaviour is similar to other vhosts; read on for more.
     """
-    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestExtraVHostBreadcrumbsOnHierarchyView, self).setUp()
         login('test@canonical.com')
         self.product = self.factory.makeProduct(name='crumb-tester')
         self.product_bug = self.factory.makeBug(product=self.product)
@@ -34,12 +30,6 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(TestCaseWithFactory):
         self.package_bug = self.factory.makeBugTask(
             target=self.source_package)
         self.package_bug_url = canonical_url(self.package_bug)
-        self.root = RootObject()
-
-    def _getBreadcrumbsURLs(self, url, traversed_objects):
-        request = make_fake_request(url, traversed_objects)
-        hierarchy = getMultiAdapter((self.root, request), name='+hierarchy')
-        return [crumb.url for crumb in hierarchy.items()]
 
     def test_root_on_mainsite(self):
         urls = self._getBreadcrumbsURLs('http://launchpad.dev/', [self.root])
@@ -83,7 +73,8 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(TestCaseWithFactory):
              self.package_bug])
         self.assertEquals(
             urls,
-            [distro_url, distroseries_url, package_url, package_bugs_url])
+            [distro_url, distroseries_url, package_url, package_bugs_url,
+             self.package_bug_url])
 
 
 def test_suite():

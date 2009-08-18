@@ -871,4 +871,10 @@
         <allow
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationSet"/>
     </securedutility>
+    <adapter
+        name="bugs"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        for="lp.bugs.interfaces.bugtarget.IBugTarget"
+        factory="lp.bugs.browser.bugtarget.BugTargetOnBugsVHostBreadcrumbBuilder"
+        permission="zope.Public"/>
 </configure>
