@@ -246,7 +246,9 @@ rebuildfti:
 
 clean:
 	$(MAKE) -C sourcecode/pygettextpo clean
-	$(MAKE) -C sourcecode/mailman clean
+	if test -f sourcecode/mailman/Makefile; then \
+		$(MAKE) -C sourcecode/mailman clean; \
+	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
