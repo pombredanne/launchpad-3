@@ -24,6 +24,9 @@ FORM_NOT_VISIBLE = (
 FORM_VISIBLE = (
     u'element.className.search("yui-lazr-formoverlay-hidden") == -1')
 
+BUG_INFO_HIDDEN = 'style.height|0px'
+BUG_INFO_SHOWN_JS = 'element.style.height != "0px"'
+
 
 def test_duplicate_finder():
     """Test the +filebug duplicate finder.
@@ -47,10 +50,9 @@ def test_duplicate_finder():
     client.type(text=u'problem', id=u'field.title')
     client.click(xpath=u'//input[@id="field.actions.search"]')
     client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
-
     # The details div for the duplicate bug should not be shown.
     client.asserts.assertProperty(
-        id='details-for-bug-4', validator='style.display|none')
+        id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
 
     # The expander for the duplicate should be collapsed.
     client.asserts.assertProperty(
@@ -64,8 +66,8 @@ def test_duplicate_finder():
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertProperty(
         id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
-    client.asserts.assertProperty(
-        id='details-for-bug-4', validator='style.display|block')
+    client.asserts.assertElemJS(
+        id='details-for-bug-4', js=BUG_INFO_SHOWN_JS)
 
     # Clicking the expander again will hide the details div and collapse
     # the expander.
@@ -74,15 +76,15 @@ def test_duplicate_finder():
     client.asserts.assertProperty(
         id='bug-details-expander-bug-4', validator='src|/@@/treeCollapsed')
     client.asserts.assertProperty(
-        id='details-for-bug-4', validator='style.display|none')
+        id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
 
     # Clicking it yet again will reopen it.
     client.click(id='bug-details-expander-bug-4')
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertProperty(
         id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
-    client.asserts.assertProperty(
-        id='details-for-bug-4', validator='style.display|block')
+    client.asserts.assertElemJS(
+        id='details-for-bug-4', js='element.style.height != "0px"')
 
     # Clicking "No, I need to file a new bug" will collapse the
     # duplicate details and expander and will show the filebug form.
@@ -91,7 +93,7 @@ def test_duplicate_finder():
     client.asserts.assertProperty(
         id='bug-details-expander-bug-4', validator='src|/@@/treeCollapsed')
     client.asserts.assertProperty(
-        id='details-for-bug-4', validator='style.display|none')
+        id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
     client.asserts.assertProperty(
         id='bug_reporting_form', validator='style.display|block')
 
@@ -103,8 +105,8 @@ def test_duplicate_finder():
         id='bug_reporting_form', validator='style.display|none')
     client.asserts.assertProperty(
         id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
-    client.asserts.assertProperty(
-        id='details-for-bug-4', validator='style.display|block')
+    client.asserts.assertElemJS(
+        id='details-for-bug-4', js=BUG_INFO_SHOWN_JS)
 
     # Clicking on the "Yes, this is my bug button" will show a form
     # overlay, which will offer the user the option to subscribe to the
