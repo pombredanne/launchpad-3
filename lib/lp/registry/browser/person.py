@@ -49,6 +49,7 @@ __all__ = [
     'PersonRelatedSoftwareView',
     'PersonReportedBugTaskSearchListingView',
     'PersonSearchQuestionsView',
+    'PersonSetActionNavigationMenu',
     'PersonSetContextMenu',
     'PersonSetNavigation',
     'PersonSpecFeedbackView',
@@ -1337,7 +1338,7 @@ class TeamMembershipView(LaunchpadView):
         return self.proposed_memberships or self.invited_memberships
 
 
-class PersonSetNavigationMenu(RegistryCollectionActionMenuBase):
+class PersonSetActionNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for `PeopleSearchView`."""
     usedfor = IPersonSet
     links = ['register_team', 'register_project', 'create_account',

@@ -15,7 +15,8 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.launchpad.webapp.menu import Link, NavigationMenu
+from canonical.launchpad.webapp.menu import (
+    Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
@@ -39,13 +40,11 @@ class TopLevelMenuMixin:
 
     def register_project(self):
         text = 'Register a project'
-        enabled = self.user is not None
-        return Link('/projects/+new', text, icon='add', enabled=enabled)
+        return Link('/projects/+new', text, icon='add')
 
     def register_team(self):
         text = 'Register a team'
-        enabled = self.user is not None
-        return Link('/people/+newteam', text, icon='add', enabled=enabled)
+        return Link('/people/+newteam', text, icon='add')
 
     def create_account(self):
         text = 'Create an account'
@@ -53,25 +52,20 @@ class TopLevelMenuMixin:
         enabled = self.user is None
         return Link('/people/+login', text, icon='add', enabled=enabled)
 
+    @enabled_with_permission('launchpad.View')
     def request_merge(self):
         text = 'Request a merge'
-        enabled = self.user is not None
-        return Link('/people/+requestmerge', text, icon='edit',
-                    enabled=enabled)
+        return Link('/people/+requestmerge', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Admin')
     def admin_merge_people(self):
         text = 'Merge people'
-        enabled = (self.user is not None and
-                   self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
-        return Link('/people/+adminpeoplemerge', text, icon='edit',
-                    enabled=enabled)
+        return Link('/people/+adminpeoplemerge', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Admin')
     def admin_merge_teams(self):
         text = 'Merge teams'
-        enabled = (self.user is not None and
-                   self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
-        return Link('/people/+adminteammerge', text, icon='edit',
-                    enabled=enabled)
+        return Link('/people/+adminteammerge', text, icon='edit')
 
 
 class IRegistryCollectionNavigationMenu(Interface):
