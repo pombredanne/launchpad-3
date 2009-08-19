@@ -70,14 +70,14 @@ Watermark images
 
 The image for the watermark is determined effectively by context/image:logo.
 
-    >>> print test_tales("series/watermark:image", series=dev_focus)
+    >>> print test_tales("series/watermark:logo", series=dev_focus)
     <img ... src="/@@/product-logo" />
 
-    >>> print test_tales("person/watermark:image", person=eric)
+    >>> print test_tales("person/watermark:logo", person=eric)
     <img ... src="/@@/person-logo" />
 
 If there is no root context, the launchpad logo is shown.
 
     >>> print test_tales(
-    ...     "machine/watermark:image", machine=machine)
+    ...     "machine/watermark:logo", machine=machine)
     <img ... src="/@@/launchpad-logo" />

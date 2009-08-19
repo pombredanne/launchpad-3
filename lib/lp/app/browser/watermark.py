@@ -55,7 +55,7 @@ class WatermarkTalesAdapter:
             'title': cgi.escape(title)
             }
 
-    def image(self):
+    def logo(self):
         """Return the logo image for the root context."""
         adapter = queryAdapter(self.root_context, IPathAdapter, 'image')
         return adapter.logo()
@@ -63,7 +63,7 @@ class WatermarkTalesAdapter:
     def traverse(self, name, furtherPath):
         if name == "heading":
             return self.heading()
-        elif name == "image":
-            return self.image()
+        elif name == "logo":
+            return self.logo()
         else:
             raise TraversalError, name

@@ -86,7 +86,7 @@
 
       <div class="location-portlet top-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
-        <span tal:replace="structure context/watermark:image"></span>
+        <span tal:replace="structure context/watermark:logo"></span>
         <h2 tal:replace="structure context/watermark:heading">
           Celso Providelo
         </h2>
