@@ -28,7 +28,7 @@ Authentication
 
 Any XML-RPC method that modifies data on the remote server requires the
 user to be logged in. The Bugzilla 3.4 API provides a method to do this
-that uses the standard username, password methodology.
+using a username and password.
 
 The BugzillaAPI._authenticate() method is responsible for attempting to
 log in to the remote server.

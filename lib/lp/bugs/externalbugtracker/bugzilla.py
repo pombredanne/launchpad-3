@@ -398,6 +398,8 @@ class BugzillaAPI(Bugzilla):
     @property
     def credentials(self):
         credentials_config = config['checkwatches.credentials']
+
+        # Extract the hostname from the current base url using urlparse.
         hostname = urlparse(self.baseurl)[1]
         try:
             username = credentials_config['%s.username' % hostname]
