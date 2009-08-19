@@ -328,7 +328,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # reviewable targets that the person has worked on.
         self._makeReviewer()
 
-        self._makePOFiles(1, True)
+        self._makePOFiles(1, previously_worked_on=True)
 
         self.assertEqual(1, self.view.num_projects_and_packages_to_review)
 
@@ -336,7 +336,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # num_projects_and_packages does not count new suggestions.
         self._makeReviewer()
 
-        self._makePOFiles(1, False)
+        self._makePOFiles(1, previously_worked_on=False)
 
         self.assertEqual(0, self.view.num_projects_and_packages_to_review)
 
@@ -345,8 +345,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # translation target that the person has worked on, and at least
         # one random suggestion that the person hasn't worked on.
         self._makeReviewer()
-        pofile_worked_on = self._makePOFiles(1, True)[0]
-        pofile_not_worked_on = self._makePOFiles(1, False)[0]
+        pofile_worked_on = self._makePOFiles(1, previously_worked_on=True)[0]
+        pofile_not_worked_on = self._makePOFiles(
+            1, previously_worked_on=False)[0]
 
         targets = self.view.top_projects_and_packages_to_review
 
@@ -359,7 +360,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # top_projects_and_packages will return at most 9 POFiles that
         # the person has already worked on.
         self._makeReviewer()
-        self._makePOFiles(10, True)
+        self._makePOFiles(10, previously_worked_on=True)
 
         targets = self.view.top_projects_and_packages_to_review
 
@@ -370,7 +371,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # top_projects_and_packages will suggest at most 10 POFiles that
         # the person has not worked on.
         self._makeReviewer()
-        self._makePOFiles(11, False)
+        self._makePOFiles(11, previously_worked_on=False)
 
         targets = self.view.top_projects_and_packages_to_review
 
@@ -381,8 +382,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # top_projects_and_packages will show at most 10 POFiles
         # overall.  The last one will be a suggestion.
         self._makeReviewer()
-        pofiles_worked_on = self._makePOFiles(11, True)
-        pofiles_not_worked_on = self._makePOFiles(11, False)
+        pofiles_worked_on = self._makePOFiles(11, previously_worked_on=True)
+        pofiles_not_worked_on = self._makePOFiles(
+            11, previously_worked_on=False)
 
         targets = self.view.top_projects_and_packages_to_review
 

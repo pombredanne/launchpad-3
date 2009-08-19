@@ -733,7 +733,6 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+translations-to-review"
-            facet="translations"
             class="lp.translations.browser.person.PersonTranslationView"
             permission="zope.Public"
             template="../templates/person-translations-to-review.pt"
@@ -741,7 +740,6 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+translations-to-review-table"
-            facet="translations"
             class="lp.translations.browser.person.PersonTranslationView"
             permission="zope.Public"
             template="../templates/person-translations-to-review-table.pt"
