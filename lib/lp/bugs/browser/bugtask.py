@@ -3158,7 +3158,10 @@ class BugTaskTableRowView(LaunchpadView):
                                         self.request)) or
                                 None),
             'user_can_edit_milestone': self.user_can_edit_milestone,
-            'user_can_edit_importance': self.user_can_edit_importance})
+            'user_can_edit_status': not self.context.bugwatch,
+            'user_can_edit_importance': (
+                self.user_can_edit_importance and
+                not self.context.bugwatch)})
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
