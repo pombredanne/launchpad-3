@@ -783,7 +783,7 @@
                 TeamOverviewMenu
                 TeamOverviewNavigationMenu
                 TeamSpecsMenu
-                PersonSetNavigationMenu
+                PersonSetActionNavigationMenu
                 "/>
         <browser:menus
             module="lp.registry.browser.menu"
