@@ -17,6 +17,16 @@ Let's instantiate the view for +index:
     >>> builder_view.now()
     '...'
 
+    >>> builder_view.page_title
+    u'Builder \u201cBob The Builder\u201d'
+
+The BuilderView provides a helper for the text to use on the toggle
+mode button.
+
+    >>> print builder_view.toggle_mode_text
+    Switch to manual-mode
+
+
 == Builder history ==
 
 Let's instantiate a view for +history:
@@ -36,45 +46,16 @@ mock_form:
     5
 
 
-== Builder mode ==
+== Builder edit ==
 
-Let's instantiate the view for +mode:
+Let's instantiate the view for +edit and check that the correct title,
+fields and actions are displayed:
 
 This page requires launchpad.Edit permission and the builder is owned
 by mark. we nee to log in as mark or any other member of admin team
 
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
-
-Build an special request containing the fields we want to change:
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.manual': 'on',
-    ...     'UPDATE_SUBMIT': 'Change'})
-
-Instantiate the correspondent view:
-
-    >>> builder_view = getMultiAdapter((builder, request), name="+mode")
-
-Ensure the previous mode was AUTOMATIC
-
-    >>> builder.manual
-    False
-
-Call the update() method of the zope.app.form.EditView class
-
-    >>> builder_view.update()
-    u'Updated on ${date_time}'
-
-We've changed the builder mode to MANUAL
-
-    >>> builder.manual
-    True
-
-== Builder edit ==
-
-Let's instantiate the view for +edit and check that the correct title,
-fields and actions are displayed:
 
     >>> builder_view = create_initialized_view(builder, name="+edit")
     >>> builder_view.page_title
@@ -115,18 +96,18 @@ builder.
     ...         builder.vm_host,
     ...         )
     >>> print_builder_info(builder)
-    bob: manual=True, vm_host=None.
+    bob: manual=False, vm_host=None.
 
     >>> builder_view = create_initialized_view(
     ...     builder, name="+edit", method="POST", form={
     ...         'field.name': u'biscoito',
-    ...         'field.manual': '',
+    ...         'field.manual': 'on',
     ...         'field.vm_host': 'foobar-host.ppa',
-    ...         'field.actions.update': 'Update',
+    ...         'field.actions.update': 'Change',
     ...         })
 
     >>> print_builder_info(builder)
-    biscoito: manual=False, vm_host=foobar-host.ppa.
+    biscoito: manual=True, vm_host=foobar-host.ppa.
 
 After editing a builder, a relevant notification is added to the view.
 

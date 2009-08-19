@@ -17,5 +17,6 @@ from lp.codehosting.scripts.modifiedbranches import (
 
 
 if __name__ == '__main__':
-    script = ModifiedBranchesScript('modified-branches')
+    script = ModifiedBranchesScript(
+        'modified-branches', dbuser='modified-branches')
     script.run()
