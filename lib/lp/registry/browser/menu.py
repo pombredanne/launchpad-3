@@ -99,7 +99,8 @@ class RegistryCollectionActionMenuBase(NavigationMenu, TopLevelMenuMixin):
     Because of the way menus work, you need to subclass this menu class and
     set the `usedfor` attribute on the subclass.  `usedfor` should point to
     the interface of the context object, so we can't do that for you.
+
+    You should also set the `links` attribute to get just the menu items you
+    want for the collection's overview page.
     """
     facet = 'overview'
-    links = ['register_team', 'register_project', 'create_account',
-             'request_merge', 'admin_merge_people', 'admin_merge_teams']

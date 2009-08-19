@@ -6,15 +6,30 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/pillarindex"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
-
   <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
 
-<div metal:fill-slot="main">
+  <tal:side metal:fill-slot="side">
+    <tal:menu replace="structure view/@@+global-actions" />
+    <tal:menu replace="structure context/@@+related-pages" />
+  </tal:side>
+
+  <div metal:fill-slot="main">
+    There are <tal:count tal:replace="context/count_all" />
+    projects registered in Launchpad.
+    <tal:count tal:replace="context/count_buggy" /> have bugs reported,
+    <tal:count tal:replace="context/count_translatable" />
+    have translations,
+    <tal:count tal:replace="context/count_codified" />
+    have Bazaar branches,
+    <tal:count tal:replace="context/count_featureful" />
+    have blueprints,
+    and <tal:count tal:content="context/count_answered" />
+    have questions &amp; answers.
 
     <form id="project-search" class="central" method="get"
           tal:attributes="action request/URL"
@@ -153,23 +168,6 @@
       </div>
     </div>
   </tal:no_search>
-
-  <div class="clear"></div>
-
-  <div id="application-footer">
-    There are <strong tal:content="context/count_all">19</strong>
-    projects registered in Launchpad, of which<br />
-    <strong tal:content="context/count_buggy">5</strong> have bugs reported,
-    <strong tal:content="context/count_translatable">6</strong>
-    have translations,
-    <strong tal:content="context/count_codified">7</strong>
-    have Bazaar branches,<br />
-    <strong tal:content="context/count_featureful">8</strong>
-    have blueprints,
-    and <strong tal:content="context/count_answered">9</strong>
-    have questions &amp; answers.
-  </div>
-
 </div>
 </body>
 </html>

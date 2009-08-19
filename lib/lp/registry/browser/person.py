@@ -1340,6 +1340,8 @@ class TeamMembershipView(LaunchpadView):
 class PersonSetNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for `PeopleSearchView`."""
     usedfor = IPersonSet
+    links = ['register_team', 'register_project', 'create_account',
+             'request_merge', 'admin_merge_people', 'admin_merge_teams']
 
 
 class PeopleSearchView(LaunchpadView):
