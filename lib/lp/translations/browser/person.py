@@ -268,8 +268,9 @@ class PersonTranslationView(LaunchpadView):
     def all_projects_and_packages_to_review(self):
         """Top projects and packages for this person to review."""
         self._setHistoryHorizon()
+        person = ITranslationsPerson(self.context)
         return self._aggregateTranslationTargets(
-            self.context.getReviewableTranslationFiles(
+            person.getReviewableTranslationFiles(
                 no_older_than=self.history_horizon))
 
     @property
@@ -293,8 +294,10 @@ class PersonTranslationView(LaunchpadView):
         # could also be reviewing.
         empty_slots = list_length - min(len(recent), max_old_targets)
         fetch = 5 * empty_slots
+
+        person = ITranslationsPerson(self.context)
         random_suggestions = self._aggregateTranslationTargets(
-            self.context.suggestReviewableTranslationFiles(
+            person.suggestReviewableTranslationFiles(
                 no_older_than=self.history_horizon)[:fetch])
 
         return recent[:max_old_targets] + random_suggestions[:empty_slots]

@@ -10,6 +10,7 @@ from unittest import TestLoader
 
 from zope.security.proxy import removeSecurityProxy
 
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.model.pofiletranslator import POFileTranslatorSet
 from lp.translations.model.translator import TranslatorSet
 from canonical.testing import DatabaseFunctionalLayer
@@ -88,13 +89,15 @@ class ReviewTestMixin:
         self.assertEqual(self.pofile.unreviewed_count, 1)
 
     def _getReviewables(self, *args, **kwargs):
-        """Shorthand for self.person.getReviewableTranslationFiles."""
-        return list(self.person.getReviewableTranslationFiles(
+        """Shorthand for `self.person.getReviewableTranslationFiles`."""
+        person = ITranslationsPerson(self.person)
+        return list(person.getReviewableTranslationFiles(
             *args, **kwargs))
 
     def _suggestReviewables(self, *args, **kwargs):
-        """Shorthand for self.person.suggestReviewableTranslationFiles."""
-        return list(self.person.suggestReviewableTranslationFiles(
+        """Shorthand for `self.person.suggestReviewableTranslationFiles`."""
+        person = ITranslationsPerson(self.person)
+        return list(person.suggestReviewableTranslationFiles(
             *args, **kwargs))
 
 
