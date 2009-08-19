@@ -2478,6 +2478,12 @@ class PersonLanguagesView(LaunchpadFormView):
         if redirection_url:
             self.request.response.redirect(redirection_url)
 
+    @property
+    def answers_url(self):
+        return canonical_url(
+            getUtility(ILaunchpadCelebrities).lp_translations,
+            rootsite='answers')
+
 
 class PersonView(LaunchpadView, FeedsMixin):
     """A View class used in almost all Person's pages."""

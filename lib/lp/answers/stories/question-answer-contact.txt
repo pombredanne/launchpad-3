@@ -168,7 +168,7 @@ languages. He must add Spanish to the team's preferred languages.
 
     >>> browser.getLink('Set preferred languages').click()
     >>> print browser.title
-    Your language preferences
+    Landscape Developers's language preferences
 
 Sample Person may be surprised to see English is already selected. Per
 the notification issued in the first example above, English was added to

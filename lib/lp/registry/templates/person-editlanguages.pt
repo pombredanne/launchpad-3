@@ -24,9 +24,9 @@
         is English, which is the only language for most Launchpad features.
       </p>
 
-      <div class="two-column-list" style="max-width: 45em;"
-           id="portlet-browser-languages">
-        <dl tal:define="languages view/browserLanguages">
+      <div class="two-column-list" style="max-width: 45em;">
+        <dl tal:define="languages view/browserLanguages"
+            id="portlet-browser-languages">
           <dt>
             <strong>Your browser languages:</strong>
           </dt>
@@ -40,7 +40,8 @@
         </dl>
 
         <dl tal:define="country view/requestCountry"
-            tal:condition="country" >
+            tal:condition="country"
+            id="portlet-country-languages">
           <dt>
             <strong>Languages in <tal:country replace="country/name" />
             </strong>
@@ -51,8 +52,11 @@
               tal:repeat="lang country/languages"
               tal:content="lang/englishname"/>
             <dd tal:condition="not: languages">
-              No languages are currently registered as being spoken in
-              <tal:country replace="country/name" />.
+              No languages are currently registered as being spoken in <span
+              tal:replace="country/name">country</span>.  If you have this
+              information, please see if it has already been submitted in the
+              <a tal:attributes="href view/answers_url">Answers</a>
+              application, and if it hasn't, file a new question about it.
             </dd>
           </tal:languages>
         </dl>
