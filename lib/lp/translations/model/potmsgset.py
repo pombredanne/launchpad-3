@@ -266,7 +266,8 @@ class POTMsgSet(SQLBase):
         return self._getUsedTranslationMessage(
             None, language, variant, current=True)
 
-    def getLocalTranslationMessages(self, potemplate, language):
+    def getLocalTranslationMessages(self, potemplate, language,
+                                    only_new=True):
         """See `IPOTMsgSet`."""
         query = """
             is_current IS NOT TRUE AND
@@ -277,13 +278,14 @@ class POTMsgSet(SQLBase):
         msgstr_clause = make_plurals_sql_fragment(
             "msgstr%(form)d IS NOT NULL", "OR")
         query += " AND (%s)" % msgstr_clause
-        current = self.getCurrentTranslationMessage(potemplate, language)
-        if current is not None:
-            if current.date_reviewed is None:
-                comparing_date = current.date_created
-            else:
-                comparing_date = current.date_reviewed
-            query += " AND date_created > %s" % sqlvalues(comparing_date)
+        if only_new:
+            current = self.getCurrentTranslationMessage(potemplate, language)
+            if current is not None:
+                if current.date_reviewed is None:
+                    comparing_date = current.date_created
+                else:
+                    comparing_date = current.date_reviewed
+                query += " AND date_created > %s" % sqlvalues(comparing_date)
 
         return TranslationMessage.select(query)
 
