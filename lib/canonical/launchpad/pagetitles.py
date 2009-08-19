@@ -1209,8 +1209,6 @@ def question_add(context, view):
 
 question_add_search = question_add
 
-question_bug = ContextId('Link question #%s to a bug report')
-
 question_change_status = ContextId('Change status of question #%s')
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
@@ -1233,8 +1231,6 @@ def question_listing(context, view):
     return view.pagetitle
 
 question_reject = ContextId('Reject question #%s')
-
-question_subscription = ContextId('Subscription to question #%s')
 
 questions_index = 'Launchpad Answers'
 
