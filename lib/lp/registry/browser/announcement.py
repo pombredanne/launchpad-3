@@ -72,14 +72,14 @@ class AnnouncementMenuMixin:
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
         text = 'Make announcement'
-        summary = 'Publish an item of news for this project'
+        summary = 'Create an item of news for this project'
         return Link('+announce', text, summary, icon='add')
 
 
 class AnnouncementContextMenu(ContextMenu, AnnouncementMenuMixin):
     """The menu for working with an Announcement."""
     usedfor = IAnnouncement
-    links = ('edit', 'retarget', 'publish', 'retract', 'delete')
+    links = ['edit', 'retarget', 'publish', 'retract', 'delete']
 
 
 class IAnnouncementEditMenu(Interface):
@@ -92,7 +92,7 @@ class AnnouncementEditNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
     usedfor = IAnnouncementEditMenu
     facet = 'overview'
     title = 'Change announcement'
-    links = ('edit', 'retarget', 'publish', 'retract', 'delete')
+    links = ['edit', 'retarget', 'publish', 'retract', 'delete']
 
     def __init__(self, context):
         super(AnnouncementEditNavigationMenu, self).__init__(context)
@@ -115,7 +115,7 @@ class AnnouncementCreateNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
     usedfor = IAnnouncementCreateMenu
     facet = 'overview'
     title = 'Create announcement'
-    links = ('announce', )
+    links = ['announce']
 
 
 class AnnouncementFormMixin:

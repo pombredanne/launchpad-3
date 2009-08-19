@@ -582,8 +582,8 @@ div.location-portlet h1 {
     border-bottom: 1px solid #d0d0d0;
     }
 .announcement .registered {
-    font-size: 95%;
-    margin-top: -2px
+    font-size: 93%;
+    margin-top: -2px;
     }
 
 /* From nice_pre in tales.py */
