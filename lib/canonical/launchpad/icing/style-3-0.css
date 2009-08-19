@@ -438,8 +438,8 @@ div.branding-apps-portlet h1 {
     padding-top: 0;
 }
 
-/* === Location portlet tabs === */
-/* In most pages, we present a list of six application facets: */
+/* === Application buttons === */
+/* In most pages, we present a list of six application buttons: */
 .branding-apps-portlet li {
     display:inline;
     list-style-type: none;
