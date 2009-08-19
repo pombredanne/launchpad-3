@@ -8,7 +8,7 @@ from windmill.authoring import WindmillTestClient
 WAIT_PAGELOAD = u'20000'
 WAIT_ELEMENT_COMPLETE = u'20000'
 WAIT_CHECK_CHANGE = u'1000'
-FILEBUG_URL = 'http://launchpad.dev:8085/firefox/+filebug'
+FILEBUG_URL = 'http://bugs.launchpad.dev:8085/firefox/+filebug'
 
 FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/table'
 FORM_OVERLAY_CANCEL = (
