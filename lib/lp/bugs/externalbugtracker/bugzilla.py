@@ -402,6 +402,12 @@ class BugzillaAPI(Bugzilla):
         # Extract the hostname from the current base url using urlparse.
         hostname = urlparse(self.baseurl)[1]
         try:
+            # XXX gmb 2009-08-19 bug=391131
+            #     We shouldn't be using this here. Ideally we'd be able
+            #     to get the credentials from the BugTracker object.
+            #     If you find yourself adding credentials for, for
+            #     example, www.password.username.pirateninjah4x0rz.org,
+            #     think about fixing the above bug instead.
             username = credentials_config['%s.username' % hostname]
             password = credentials_config['%s.password' % hostname]
             return {'login': username, 'password': password}
