@@ -433,7 +433,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                     _('You must provide details about your problem.'))
 
     @property
-    def pagetitle(self):
+    def page_title(self):
         """The current page title."""
         return _('Ask a question about ${context}',
                  mapping=dict(context=self.context.displayname))

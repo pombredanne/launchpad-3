@@ -2,16 +2,9 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
 >
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestquestions" />
-</metal:leftportlets>
 
 <div metal:fill-slot="main">
   <metal:form use-macro="context/@@launchpad_form/form">
@@ -22,7 +15,7 @@
         <p>These FAQs seems similar to your question. Take
           a look at them, you may find your answer in one these.
         </p>
-      
+
         <ul id="similar-faqs" class="faq">
           <li tal:repeat="faq view/similar_faqs"
               tal:attributes="title faq/content/fmt:shorten/320"
@@ -85,26 +78,6 @@
 
   </metal:form>
 </div>
-
-<metal:help fill-slot="help">
-  <ol>
-    <li>If any similar FAQs or questions are found, take the time to look
-        to see if there is one that is the same as yours.<br />
-        <strong>Tip:</strong> Leaving your mouse over the FAQ or question
-        title will pop out the beginning of the content.
-    </li>
-    <li>If there is no similar items or none of them apply to your problem,
-      then enter the complete details of your question in the
-      <strong>Description</strong> field. Give as much
-      context information as possible: steps you have taken to resolve the
-      problem, version of the programs you were using, etc. Click the
-      <strong>Add</strong> button once you're satisfied with your description.
-    </li>
-  </ol>
-  <p>You can consult the
-    <a href="https://help.launchpad.net/GettingSupportInLaunchpad">Getting
-      Support in Launchpad</a> document for more information.</p>
-  </metal:help>
 
 </body>
 </html>

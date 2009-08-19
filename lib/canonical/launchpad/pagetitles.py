@@ -1203,12 +1203,6 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-def question_add(context, view):
-    """Return the page title to add a question."""
-    return view.pagetitle
-
-question_add_search = question_add
-
 question_bug = ContextId('Link question #%s to a bug report')
 
 question_change_status = ContextId('Change status of question #%s')
