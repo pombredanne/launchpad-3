@@ -759,8 +759,9 @@ class BranchMergeProposalCommitMessageEditView(MergeProposalEditView):
 class BranchMergeProposalDeleteView(MergeProposalEditView):
     """The view to control the deletion of merge proposals."""
     schema = IBranchMergeProposal
-    label = "Delete branch merge proposal"
     field_names = []
+    heading = 'Delete proposal to merge branch'
+    label = heading
 
     def initialize(self):
         # Store the source branch for `next_url` to make sure that
