@@ -190,8 +190,6 @@ branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
 
-branchmergeproposal_vote = ViewLabel()
-
 branchmergeproposal_work_in_progress = ViewLabel()
 
 branch_register_merge_proposal = 'Propose branch for merging'

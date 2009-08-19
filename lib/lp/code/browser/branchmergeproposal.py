@@ -1159,6 +1159,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         """The pagetitle and heading."""
         return "Review merge proposal for %s" % (
             self.context.source_branch.bzr_identity)
+    heading = label
 
     @action('Save Review', name='vote')
     def vote_action(self, action, data):
