@@ -1220,8 +1220,6 @@ def question_listing(context, view):
 
 questions_index = 'Launchpad Answers'
 
-questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
-
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')

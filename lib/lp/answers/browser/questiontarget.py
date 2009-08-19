@@ -594,6 +594,10 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     label = _("Manage answer contacts")
 
+    @property
+    def page_title(self):
+        return 'Answer contact for %s' % self.context.displayname
+
     custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):

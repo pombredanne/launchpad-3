@@ -76,7 +76,7 @@
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+answer-contact"
     permission="launchpad.AnyPerson"
-    class="canonical.launchpad.browser.ManageAnswerContactView"
+    class="lp.answers.browser.questiontarget.ManageAnswerContactView"
     template="../templates/questiontarget-manage-answercontacts.pt"
     />
   <browser:renamed-page
