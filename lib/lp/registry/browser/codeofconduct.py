@@ -10,8 +10,8 @@ __all__ = [
     'CodeOfConductSetNavigation',
     'CodeOfConductContextMenu',
     'CodeOfConductSetContextMenu',
-    'SignedCodeOfConductSetContextMenu',
-    'SignedCodeOfConductContextMenu',
+    'SignedCodeOfConductSetOverviewMenu',
+    'SignedCodeOfConductOverviewMenu',
     'CodeOfConductView',
     'CodeOfConductDownloadView',
     'CodeOfConductSetView',
@@ -27,8 +27,8 @@ from zope.app.form.browser.add import AddView, EditView
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    GetitemNavigation)
+    ApplicationMenu, canonical_url, ContextMenu, Link,
+    enabled_with_permission, GetitemNavigation)
 from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.codeofconduct import (
@@ -78,9 +78,10 @@ class CodeOfConductSetContextMenu(ContextMenu):
         return Link('console', text, icon='edit')
 
 
-class SignedCodeOfConductSetContextMenu(ContextMenu):
+class SignedCodeOfConductSetOverviewMenu(ApplicationMenu):
 
     usedfor = ISignedCodeOfConductSet
+    facet = 'overview'
     links = ['register']
 
     def register(self):
@@ -88,17 +89,18 @@ class SignedCodeOfConductSetContextMenu(ContextMenu):
         return Link('+new', text, icon='add')
 
 
-class SignedCodeOfConductContextMenu(ContextMenu):
+class SignedCodeOfConductOverviewMenu(ApplicationMenu):
 
     usedfor = ISignedCodeOfConduct
+    facet = 'overview'
     links = ['activation', 'adminconsole']
 
     def activation(self):
         if self.context.active:
-            text = 'Deactivate Signature'
+            text = 'deactivate'
             return Link('+deactivate', text, icon='edit')
         else:
-            text = 'Activate Signature'
+            text = 'activate'
             return Link('+activate', text, icon='edit')
 
     def adminconsole(self):
@@ -248,6 +250,9 @@ class SignedCodeOfConductAdminView:
         return True
 
 
+# XXX: salgado, bug=414861, 2009-08-17: This view must be converted to a
+# LaunchpadFormView and define a 'cancel_url' so that the form gets a cancel
+# link.
 class SignedCodeOfConductActiveView(EditView):
     """Active a SignedCodeOfConduct Entry.
     When activating a signature:
@@ -287,6 +292,10 @@ class SignedCodeOfConductActiveView(EditView):
         # XXX: cprov 2005-02-26:
         # How to proceed with no admincomment ?
 
+
+# XXX: salgado, bug=414857, 2009-08-17: This view must be converted to a
+# LaunchpadFormView and define a 'cancel_url' so that the form gets a cancel
+# link.
 class SignedCodeOfConductDeactiveView(EditView):
     """Deactive a SignedCodeOfConduct Entry.
     When deactivating a signature:

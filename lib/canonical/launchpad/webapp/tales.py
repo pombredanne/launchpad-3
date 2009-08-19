@@ -466,7 +466,10 @@ class ObjectFormatterAPI:
         version number. It's the same as 'url', but without any view
         name.
         """
-        return self.url()
+
+        # Some classes override the rootsite. We always want a path-only
+        # URL, so we override it to nothing.
+        return self.url(rootsite=None)
 
     def traverse(self, name, furtherPath):
         if name.startswith('link:') or name.startswith('url:'):

@@ -551,21 +551,21 @@ div.location-portlet h1 {
     color: #b9413e;
     background: url(/@@/bugs-arrow-right.png) right center no-repeat;
     }
-.involvement a.question {
+.involvement a.answers {
     color: #5265b2;
     background: url(/@@/answers-arrow-right.png) right center no-repeat;
     }
-.involvement a.translate {
+.involvement a.translations {
     color: #c5458e;
     background: url(/@@/translations-arrow-right.png) right center no-repeat;
     }
 .involvement a.code {
     color: #d39f57;
-    background: url(/@@/images/code-arrow-right.png) right center no-repeat;
+    background: url(/@@/code-arrow-right.png) right center no-repeat;
     }
-.involvement a.blueprint {
+.involvement a.blueprints {
     color: #5ba4c6;
-    background: url(/@@/images/blueprints-arrow-right.png) right center no-repeat;
+    background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
     }
 
 .announcements li {
