@@ -145,8 +145,8 @@
         <browser:menus
             module="lp.registry.browser.codeofconduct"
             classes="
-                CodeOfConductContextMenu
-                CodeOfConductSetContextMenu
+                CodeOfConductOverviewMenu
+                CodeOfConductSetOverviewMenu
                 SignedCodeOfConductOverviewMenu
                 SignedCodeOfConductSetOverviewMenu"/>
         <browser:defaultView
@@ -181,14 +181,12 @@
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             name="+index"/>
-        <browser:pages
+        <browser:page
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             class="lp.registry.browser.codeofconduct.CodeOfConductSetView"
-            permission="zope.Public">
-            <browser:page
-                template="../templates/codeofconduct-list.pt"
-                name="+index"/>
-        </browser:pages>
+            permission="zope.Public"
+            template="../templates/codeofconduct-list.pt"
+            name="+index"/>
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
             name="+index"/>
@@ -1943,23 +1941,21 @@
         class="lp.registry.browser.distribution.DistributionEditView"
         name="+edit"
         facet="overview"
-        template="../templates/distribution-edit.pt"/>
-    <browser:editform
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+selectmemberteam"
         for="lp.registry.interfaces.distribution.IDistribution"
-        schema="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionChangeMembersView"
         facet="overview"
-        fields="members"
         permission="launchpad.Edit"
-        template="../templates/distribution-memberteam.pt"/>
-    <browser:editform
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+selectmirroradmins"
         for="lp.registry.interfaces.distribution.IDistribution"
-        schema="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionChangeMirrorAdminView"
         facet="overview"
-        fields="mirror_admin"
         permission="launchpad.Edit"
-        template="../templates/distribution-change-mirror-admin.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:addform
         name="+linkbounty"
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -2016,7 +2012,7 @@
         class="lp.registry.browser.distribution.DistributionAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../templates/distribution-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
             DistributionFacets

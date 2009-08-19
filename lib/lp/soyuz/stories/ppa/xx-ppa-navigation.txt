@@ -131,13 +131,10 @@ The user can navigate to an individual build details:
     Main heading:
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 
-From that page the user could return either to the build records listing
-or the PPA overview.
+From that page the user can return to the PPA overview.
 
-    >>> anon_browser.getLink('View build records').url
-    'http://launchpad.dev/~cprov/+archive/ppa/+builds'
-    >>> anon_browser.getLink('View PPA').url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    >>> anon_browser.getLink('Default PPA').url
+    'http://launchpad.dev/%7Ecprov/+archive/ppa'
 
 When the number of packages in the PPA is large the user will see them
 displayed in batches.

@@ -69,7 +69,7 @@ For DistroArchSeries, same as Distribution:
 For Builder, same as Distribution:
 
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
-    >>> anon_browser.getLink("Show build history").click()
+    >>> anon_browser.getLink("View full history").click()
     >>> print anon_browser.title
     Build history for Bob The Builder
 
@@ -293,7 +293,7 @@ job processed by this builder. The main difference for the other
 each record, since they were obviously built by the context builder.
 
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
-    >>> anon_browser.getLink("Show build history").click()
+    >>> anon_browser.getLink("View full history").click()
 
 In the first batch anonymous user can see successfully-built and
 failed-to-build builds.
