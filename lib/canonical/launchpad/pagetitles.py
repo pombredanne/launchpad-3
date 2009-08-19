@@ -1203,8 +1203,6 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-question_change_status = ContextId('Change status of question #%s')
-
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
 
 def question_createfaq(context, view):

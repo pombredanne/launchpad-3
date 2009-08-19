@@ -495,6 +495,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 class QuestionChangeStatusView(LaunchpadFormView):
     """View for changing a question status."""
     schema = IQuestionChangeStatusForm
+    label = 'Change question status'
+
+    @property
+    def page_title(self):
+        return 'Change status of question #%s' % self.context.id
 
     def validate(self, data):
         """Check that the status and message are valid."""
