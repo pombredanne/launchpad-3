@@ -23,19 +23,19 @@ class TopLevelMenuMixin:
     """Menu shared by top level collection objects."""
 
     def projects(self):
-        return Link('/projects/', 'View projects', icon='info')
+        return Link('/projects/', 'Projects')
 
     def distributions(self):
-        return Link('/distros/', 'View distributions', icon='info')
+        return Link('/distros/', 'Distributions')
 
     def people(self):
-        return Link('/people/', 'View people', icon='info')
+        return Link('/people/', 'People')
 
     def meetings(self):
-        return Link('/sprints/', 'View meetings', icon='info')
+        return Link('/sprints/', 'Meetings')
 
     def project_groups(self):
-        return Link('/projectgroups', 'View project groups', icon='info')
+        return Link('/projectgroups', 'Project groups')
 
     def register_project(self):
         text = 'Register a project'
