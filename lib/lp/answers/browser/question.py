@@ -566,6 +566,11 @@ class QuestionRejectView(LaunchpadFormView):
     """View for rejecting a question."""
     schema = IQuestionChangeStatusForm
     field_names = ['message']
+    label = 'Reject question'
+
+    @property
+    def page_title(self):
+        return 'Reject question #%s' % self.context.id
 
     def validate(self, data):
         """Check that required information was provided."""

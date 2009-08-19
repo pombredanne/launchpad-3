@@ -1203,8 +1203,6 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-question_bug = ContextId('Link question #%s to a bug report')
-
 question_change_status = ContextId('Change status of question #%s')
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
@@ -1225,8 +1223,6 @@ def question_index(context, view):
 def question_listing(context, view):
     """Return the page title list questions."""
     return view.pagetitle
-
-question_reject = ContextId('Reject question #%s')
 
 question_subscription = ContextId('Subscription to question #%s')
 
