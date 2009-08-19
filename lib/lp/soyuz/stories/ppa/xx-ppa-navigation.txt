@@ -114,7 +114,7 @@ The user could return to the 'PPA' overview by using the breadcrumb link.
 The user can navigate to an individual build details:
 
     >>> anon_browser.getControl('All states').click()
-    >>> anon_browser.getControl('Update').click()
+    >>> anon_browser.getControl('Filter').click()
     >>> anon_browser.getLink('i386 build of iceweasel').click()
     >>> anon_browser.title
     'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
