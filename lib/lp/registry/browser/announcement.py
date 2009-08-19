@@ -15,6 +15,7 @@ __all__ = [
     'AnnouncementContextMenu',
     'AnnouncementSetView',
     'HasAnnouncementsView',
+    'AnnouncementView',
     ]
 
 from zope.interface import implements, Interface
@@ -333,3 +334,8 @@ class AnnouncementSetView(HasAnnouncementsView):
         AnnouncementsFeedLink,
         RootAnnouncementsFeedLink,
         )
+
+
+class AnnouncementView(LaunchpadView):
+    """A view class for a single announcement."""
+    implements(IAnnouncementEditMenu)
