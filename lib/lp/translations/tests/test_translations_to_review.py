@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the choice of "translations to review" for a user."""
 
@@ -120,7 +121,7 @@ class ReviewableTranslationFilesTest:
     def test_getReviewableTranslationFiles_no_older_than_filter(self):
         # The no_older_than parameter filters translations that the
         # reviewer has not worked on since the given time.
-        next_day = self.base_time + timedelta(1, 0, 0)
+        next_day = self.base_time + timedelta(1)
         self.assertEqual(self._getReviewables(no_older_than=next_day), [])
 
     def test_getReviewableTranslationFiles_not_translating_in_launchpad(self):

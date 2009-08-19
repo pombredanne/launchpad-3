@@ -17,7 +17,9 @@
         <tal:person replace="structure context/fmt:link">R. Viewer</tal:person>:
       </p>
 
-      <table class="listing" id="translations-to-review-table">
+      <table class="listing"
+             id="translations-to-review-table"
+             style="max-width:800px">
         <tr tal:repeat="target_info view/all_projects_and_packages_to_review">
           <td>
             <tal:product condition="target_info/is_product"

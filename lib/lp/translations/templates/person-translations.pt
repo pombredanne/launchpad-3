@@ -17,14 +17,12 @@
 
   <tal:me condition="view/person_includes_me">
     <tal:reviewer condition="view/person_is_reviewer">
-      <div id="translations-to-review-section">
-        <div style="max-width:800px">
+      <div id="translations-to-review-section" style="max-width:800px">
           <span style="float:right">
             <a href="http://help.launchpad.net/Translations/Reviewing">
               Why is this important?
             </a>
           </span>
-        </div>
         <h2>Translations you need to review</h2>
         <metal:translations-to-review
           tal:replace="structure context/@@+translations-to-review-table" />
