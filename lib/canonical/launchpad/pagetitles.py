@@ -371,10 +371,6 @@ build_rescore = ContextTitle('Rescore %s')
 
 builder_history = ContextTitle('Build history for %s')
 
-builder_index = ContextTitle('Build machine %s')
-
-builder_mode = ContextTitle('Change mode for %s')
-
 builder_new = 'Register a new build machine'
 
 builders_index = 'Launchpad build farm'
@@ -494,8 +490,6 @@ structural_subscriptions_manage = ContextTitle(
     'Bug subscriptions for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
-
-distroarchseries_admin = ContextTitle('Administer %s')
 
 distroarchseries_index = ContextTitle('%s in Launchpad')
 

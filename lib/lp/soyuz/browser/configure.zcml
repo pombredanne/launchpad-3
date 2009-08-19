@@ -352,12 +352,6 @@
             name="+index"
             facet="overview"
             template="../templates/build-index.pt"/>
-        <browser:page
-            name="+portlet-binaries"
-            template="../templates/build-portlet-binaries.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/build-portlet-details.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.soyuz.interfaces.build.IBuild"
@@ -447,14 +441,6 @@
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
         facet="overview"/>
-    <browser:editform
-        name="+mode"
-        for="lp.soyuz.interfaces.builder.IBuilder"
-        schema="lp.soyuz.interfaces.builder.IBuilder"
-        facet="overview"
-        fields="manual"
-        permission="launchpad.Edit"
-        template="../templates/builder-mode.pt"/>
     <browser:menus
         classes="
             BuilderSetFacets
@@ -637,13 +623,11 @@
             name="+search"
             class="lp.soyuz.browser.distroarchseries.DistroArchSeriesPackageSearchView"
             template="../templates/distroarchseries-search.pt"/>
-        <browser:editform
-            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
-            permission="launchpad.Admin"
+        <browser:page
             name="+admin"
-            schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
-            facet="overview"
-            fields="architecturetag official supports_virtualized"
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesAdminView"
+            permission="launchpad.Admin"
             template="../templates/distroarchseries-admin.pt"/>
         <browser:page
             name="+addport"
