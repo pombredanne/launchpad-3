@@ -601,8 +601,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     """The view used to request a review of the merge proposal."""
 
     schema = IReviewRequest
-    label = "Request review"
-    heading = label
+    heading = label = "Request review"
 
     @property
     def initial_values(self):
@@ -720,7 +719,7 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
     """The view to resubmit a proposal to merge."""
 
     schema = IBranchMergeProposal
-    label = "Resubmit proposal to merge"
+    heading = label = "Resubmit proposal to merge"
     field_names = []
 
     @action('Resubmit', name='resubmit')
@@ -734,8 +733,7 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
 class BranchMergeProposalEditView(MergeProposalEditView):
     """The view to control the editing of merge proposals."""
     schema = IBranchMergeProposal
-    label = "Edit branch merge proposal"
-    heading = label
+    heading = label = "Edit branch merge proposal"
     field_names = ["commit_message", "whiteboard"]
 
     @action('Update', name='update')
@@ -850,8 +848,7 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
     """The view to submit a merge proposal for merging."""
 
     schema = EnqueueForm
-    label = "Queue branch for merging"
-    heading = label
+    heading = label = "Queue branch for merging"
 
     @property
     def initial_values(self):
@@ -1034,8 +1031,7 @@ class BranchMergeProposalSubscribersView(LaunchpadView):
 
 class BranchMergeProposalChangeStatusView(MergeProposalEditView):
 
-    label = "Change merge proposal status"
-    heading = label
+    heading = label = "Change merge proposal status"
     schema = IBranchMergeProposal
     field_names = []
 
