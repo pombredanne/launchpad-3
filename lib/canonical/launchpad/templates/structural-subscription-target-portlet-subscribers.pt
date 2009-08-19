@@ -38,10 +38,7 @@
         </ul>
       </div>
       <div tal:condition="not: parent_target/bug_subscriptions">
-        <i>There are no bug subscriptions.</i>
-        <a tal:attributes="href string:${parent_target/fmt:url}/+subscribe">
-          (subscribe)
-        </a>
+        <tal:subscribe replace="structure parent_target/menu:bugs/subscribe/fmt:link"/>
       </div>
     </tal:parent-subscriptions>
   </div>
