@@ -5,6 +5,7 @@ The watermark formatter is used to get the image and heading used on all the
 main Launchpad pages.  The image and heading are determined by the
 IRootContext for the context object.
 
+
 Watermark headings
 ------------------
 
@@ -41,12 +42,17 @@ Projects also directly implement IRootContext ...
     ...     "distro/watermark:heading", distro=mint)
     <h1>Mint Linux</h1>
 
-... and people.
+... and people ...
 
     >>> eric = factory.makePerson(displayname="Eric the Viking")
     >>> print test_tales("person/watermark:heading", person=eric)
     <h1>Eric the Viking</h1>
 
+... and sprints.
+
+    >>> sprint = factory.makeSprint(title="Launchpad Epic")
+    >>> print test_tales("sprint/watermark:heading", sprint=sprint)
+    <h1>Launchpad Epic</h1>
 
 If there is no root context defined for the object, then the heading is
 'Launchpad.net' (differentiating from the Launchpad project within

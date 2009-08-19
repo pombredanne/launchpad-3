@@ -42,6 +42,7 @@ from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtracker import (
@@ -570,6 +571,20 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary=summary,
             description=description,
             owner=owner)
+
+    def makeSprint(self, title=None):
+        """Make a sprint."""
+        if title is None:
+            title = self.getUniqueString('title')
+        owner = self.makePerson()
+        name = self.getUniqueString('name')
+        time_starts = datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        time_ends = datetime(2009, 1, 2, tzinfo=pytz.UTC)
+        time_zone = 'UTC'
+        summary = self.getUniqueString('summary')
+        return getUtility(ISprintSet).new(
+            owner=owner, name=name, title=title, time_zone=time_zone,
+            time_starts=time_starts, time_ends=time_ends, summary=summary)
 
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,

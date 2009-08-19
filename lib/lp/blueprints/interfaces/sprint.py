@@ -195,7 +195,8 @@ class ISprintSet(Interface):
     def __getitem__(name):
         """Get a specific Sprint."""
 
-    def new(owner, name, title, time_starts, time_ends, summary=None,
-            description=None, mugshot=None, logo=None, icon=None):
+    def new(owner, name, title, time_zone, time_starts, time_ends,
+            summary, address=None, driver=None, home_page=None,
+            mugshot=None, logo=None, icon=None):
         """Create a new sprint."""
 
