@@ -10,11 +10,12 @@ __metaclass__ = type
 __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
-    'FOAFSearchView',
     'EmailToPersonView',
+    'PeopleSearchMenu'
+    'PeopleSearchView',
     'PersonAccountAdministerView',
-    'PersonAdministerView',
     'PersonAddView',
+    'PersonAdministerView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
@@ -30,10 +31,10 @@ __all__ = [
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
+    'PersonEditLocationView',
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
-    'PersonEditLocationView',
     'PersonFacets',
     'PersonGPGView',
     'PersonIndexView',
@@ -42,8 +43,8 @@ __all__ = [
     'PersonNavigation',
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
-    'PersonRdfView',
     'PersonRdfContentsView',
+    'PersonRdfView',
     'PersonRelatedBugTaskSearchListingView',
     'PersonRelatedSoftwareView',
     'PersonReportedBugTaskSearchListingView',
@@ -51,9 +52,9 @@ __all__ = [
     'PersonSetContextMenu',
     'PersonSetNavigation',
     'PersonSpecFeedbackView',
-    'PersonSpecsMenu',
-    'PersonSpecWorkloadView',
     'PersonSpecWorkloadTableView',
+    'PersonSpecWorkloadView',
+    'PersonSpecsMenu',
     'PersonSubscribedBugTaskSearchListingView',
     'PersonView',
     'PersonVouchersView',
@@ -66,14 +67,14 @@ __all__ = [
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
     'TeamAddMyTeamsView',
+    'TeamBreadcrumbBuilder',
     'TeamEditLocationView',
     'TeamJoinView',
-    'TeamBreadcrumbBuilder',
     'TeamLeaveView',
-    'TeamNavigation',
-    'TeamOverviewMenu',
     'TeamMembershipView',
     'TeamMugshotView',
+    'TeamNavigation',
+    'TeamOverviewMenu',
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'archive_to_person',
@@ -198,6 +199,9 @@ from lp.blueprints.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
     enabled_with_active_mailing_list)
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase,
+    TopLevelMenuMixin)
 from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
@@ -627,28 +631,13 @@ class PersonSetNavigation(Navigation):
             canonical_url(me, request=self.request), status=303)
 
 
-class PersonSetContextMenu(ContextMenu):
+class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
 
     usedfor = IPersonSet
 
-    links = ['products', 'distributions', 'people', 'meetings', 'newteam',
+    links = ['projects', 'distributions', 'people', 'meetings',
+             'register_team',
              'adminpeoplemerge', 'adminteammerge', 'mergeaccounts']
-
-    def products(self):
-        return Link('/projects/', 'View projects')
-
-    def distributions(self):
-        return Link('/distros/', 'View distributions')
-
-    def people(self):
-        return Link('/people/', 'View people')
-
-    def meetings(self):
-        return Link('/sprints/', 'View meetings')
-
-    def newteam(self):
-        text = 'Register a team'
-        return Link('+newteam', text, icon='add')
 
     def mergeaccounts(self):
         text = 'Merge accounts'
@@ -1348,33 +1337,41 @@ class TeamMembershipView(LaunchpadView):
         return self.proposed_memberships or self.invited_memberships
 
 
-class FOAFSearchView:
+class PersonSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for `PeopleSearchView`."""
+    usedfor = IPersonSet
+    links = ['register_team', 'register_project', 'create_account',
+             'request_merge', 'admin_merge_people', 'admin_merge_teams']
+
+
+class PeopleSearchView(LaunchpadView):
+    """Search for people and teams on the /people page."""
+
+    implements(IRegistryCollectionNavigationMenu)
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(PeopleSearchView, self).__init__(context, request)
         self.results = []
 
-    def teamsCount(self):
-        return getUtility(IPersonSet).teamsCount()
+    @property
+    def number_of_people(self):
+        return self.context.peopleCount()
 
-    def peopleCount(self):
-        return getUtility(IPersonSet).peopleCount()
+    @property
+    def number_of_teams(self):
+        return self.context.teamsCount()
 
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
-
         if not name:
             return None
-
         searchfor = self.request.get("searchfor")
         if searchfor == "peopleonly":
-            results = getUtility(IPersonSet).findPerson(name)
+            results = self.context.findPerson(name)
         elif searchfor == "teamsonly":
-            results = getUtility(IPersonSet).findTeam(name)
+            results = self.context.findTeam(name)
         else:
-            results = getUtility(IPersonSet).find(name)
-
+            results = self.context.find(name)
         return BatchNavigator(results, self.request)
 
 

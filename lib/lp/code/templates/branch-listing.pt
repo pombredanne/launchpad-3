@@ -196,7 +196,7 @@ function sparkline(branch_id, o) {
 
 </script>
 
-  <tal:needs-batch condition="context/multiple_pages">
+  <tal:needs-batch condition="context/has_multiple_pages">
     <div id="branch-batch-links">
       <tal:navigation replace="structure context/@@+navigation-links-upper" />
     </div>
@@ -261,7 +261,7 @@ function sparkline(branch_id, o) {
           <tal:badges replace="structure branch/badges:small"/>
         </td>
         <td>
-          <span tal:condition="not:context/multiple_pages"
+          <span tal:condition="not:context/has_multiple_pages"
                 tal:content="branch/lifecycle_status/sortkey"
                 class="sortkey">23</span>
           <span tal:content="branch/lifecycle_status/title"
