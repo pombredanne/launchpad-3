@@ -182,8 +182,8 @@ class IDistributionPublic(
         vocabulary='ValidPersonOrTeam')
     mirror_admin = PublicPersonChoice(
         title=_("Mirror Administrator"),
-        description=_("The person or team that has the rights to administer "
-                      "this distribution's mirrors"),
+        description=_("The person or team that has the rights to review and "
+                      "mark this distribution's mirrors as official."),
         required=True, vocabulary='ValidPersonOrTeam')
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
