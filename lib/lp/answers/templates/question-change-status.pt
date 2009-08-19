@@ -16,7 +16,7 @@
     </h1>
 
     <p metal:fill-slot="extra_info" class="documentDescription">
-      You can change a question's status while making a comment. 
+      You can change a question's status while making a comment.
       If a mistake was made, e.g. a question was wrongly
       rejected, you can use this page to correct it.
     </p>
