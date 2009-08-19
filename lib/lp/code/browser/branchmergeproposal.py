@@ -1033,6 +1033,7 @@ class BranchMergeProposalSubscribersView(LaunchpadView):
 class BranchMergeProposalChangeStatusView(MergeProposalEditView):
 
     label = "Change merge proposal status"
+    heading = label
     schema = IBranchMergeProposal
     field_names = []
 
