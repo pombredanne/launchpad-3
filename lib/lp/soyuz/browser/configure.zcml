@@ -352,12 +352,6 @@
             name="+index"
             facet="overview"
             template="../templates/build-index.pt"/>
-        <browser:page
-            name="+portlet-binaries"
-            template="../templates/build-portlet-binaries.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/build-portlet-details.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.soyuz.interfaces.build.IBuild"
