@@ -11,7 +11,7 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <h1 metal:fill-slot="heading" content="structure view/label">
+    <h1 metal:fill-slot="heading" tal:content="structure view/label">
         Reject question
     </h1>
 
