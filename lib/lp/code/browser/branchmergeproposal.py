@@ -850,6 +850,7 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
 
     schema = EnqueueForm
     label = "Queue branch for merging"
+    heading = label
 
     @property
     def initial_values(self):
