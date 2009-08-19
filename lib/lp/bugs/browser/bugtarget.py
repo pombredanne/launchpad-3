@@ -31,15 +31,12 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
-from zope.event import notify
 from zope import formlib
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.cachedproperty import cachedproperty
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -70,7 +67,7 @@ from lp.registry.interfaces.product import IProduct, IProject
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    canonical_url, custom_widget, safe_action, urlappend)
+    canonical_url, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.launchpad.validators.name import valid_name_pattern
@@ -1139,11 +1136,13 @@ class BugTargetBugListingView:
 
         series_buglistings = []
         for series in serieses:
-            series_buglistings.append(
-                dict(
-                    title=series.name,
-                    url=canonical_url(series) + "/+bugs",
-                    count=series.open_bugtasks.count()))
+            series_bug_count = series.open_bugtasks.count()
+            if series_bug_count > 0:
+                series_buglistings.append(
+                    dict(
+                        title=series.name,
+                        url=canonical_url(series) + "/+bugs",
+                        count=series_bug_count))
 
         return series_buglistings
 

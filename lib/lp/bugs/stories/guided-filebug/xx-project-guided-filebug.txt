@@ -6,7 +6,7 @@ it's still possible to file a bug from a project's main page.
     >>> user_browser.open('http://launchpad.dev/gnome')
     >>> user_browser.getLink(url='+filebug').click()
     >>> user_browser.url
-    'http://launchpad.dev/gnome/+filebug'
+    'http://bugs.launchpad.dev/gnome/+filebug'
 
 The Project filebug page is like a Product's filebug page, except that
 it also asks for a Product. Only Products that are using Bugs are
