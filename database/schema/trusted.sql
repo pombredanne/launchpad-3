@@ -94,13 +94,21 @@ COMMENT ON FUNCTION replication_lag(integer) IS
 
 
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
-LANGUAGE sql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
 $$
-    SELECT _sl.getlocalnodeid('_sl');
+    DECLARE
+        v_node_id integer;
+    BEGIN
+        SELECT INTO v_node_id _sl.getlocalnodeid('_sl');
+        RETURN v_node_id;
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+    END;
 $$;
 
 COMMENT ON FUNCTION getlocalnodeid() IS
-'Return the replication node id for this node.';
+'Return the replication node id for this node, or NULL if not a replicated installation.';
 
 
 CREATE OR REPLACE FUNCTION activity()

@@ -250,7 +250,9 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                     session_data['last_write'] = now
 
     def getReplicationLag(self):
-        """Return the replication lag.
+        """Return the replication lag on the MAIN_STORE slave.
+
+        Lag to other replication sets is currently ignored.
 
         :returns: timedelta, or None if this isn't a replicated environment,
         """
@@ -258,9 +260,18 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         if _test_lag is not None:
             return _test_lag
 
-        # sl_status gives the best results on the origin node.
-        store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-        return store.execute("SELECT replication_lag()").get_one()[0]
+        # We need to ask our slave what node it is. We can't cache this,
+        # as we might have reconnected to a different slave.
+        slave_store = self.getStore(MAIN_STORE, SLAVE_FLAVOR)
+        slave_node_id = slave_store.execute(
+            "SELECT getlocalnodeid()").get_one()[0]
+        if slave_node_id is None:
+            return None
+
+        # sl_status gives meaningful results only on the origin node.
+        master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
+        return store.execute(
+            "SELECT replication_lag(%d)" % slave_node_id).get_one()[0]
 
 
 class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
