@@ -459,11 +459,6 @@ class BugView(LaunchpadView, BugViewMixin):
     """
 
     @property
-    def page_title(self):
-        """The page title."""
-        return self.context.title
-
-    @property
     def current_bugtask(self):
         """Return the current `IBugTask`.
 
