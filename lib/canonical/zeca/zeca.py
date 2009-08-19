@@ -50,6 +50,32 @@ from canonical.launchpad.interfaces.gpghandler import (
 
 GREETING = 'Copyright 2004-2008 Canonical Ltd.\n'
 
+def locate_key(root, suffix):
+    """Find a key file in the root with the given suffix.
+
+    This does some globbing to possibly find a fingerprint-named key
+    file when given a key ID.
+
+    :param root: The root directory in which to look.
+    :param suffix: The key ID or fingerprint, of the form
+        0x<FINGERPRINT|KEYID>.<METHOD>
+    :returns: An absolute path to the key file.
+    """
+    path = os.path.join(root, suffix)
+
+    if not os.path.exists(path):
+        # GPG might request a key ID from us, but we name the keys by
+        # fingerprint. Let's glob.
+        if suffix.startswith('0x'):
+            suffix = suffix[2:]
+        keys = glob.glob(os.path.join(root, '*'+suffix))
+        if len(keys) == 1:
+            path = keys[0]
+        else:
+            return None
+
+    return path
+
 
 class Zeca(Resource):
     def getChild(self, name, request):
@@ -96,22 +122,11 @@ class LookUp(Resource):
 
         filename = '%s.%s' % (keyid, action)
 
-        try:
-            path = os.path.join(self.root, filename)
-            fp = open(path)
-        except IOError:
-            # GPG might request a key ID from us, but we name the keys by
-            # fingerprint. Let's glob.
-            if filename.startswith('0x'):
-                filename = filename[2:]
-            keys = glob.glob(os.path.join(self.root, '*'+filename))
-            if len(keys) == 1:
-                content = cgi.escape(open(keys[0]).read())
-            else:
-                content = 'Key Not Found'
+        path = locate_key(self.root, filename)
+        if path is not None:
+            content = cgi.escape(open(path).read())
         else:
-            content = cgi.escape(fp.read())
-            fp.close()
+            content = 'Key Not Found'
 
         page += '<pre>\n%s\n</pre>\n</html>' % content
 
