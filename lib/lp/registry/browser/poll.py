@@ -6,12 +6,12 @@ __metaclass__ = type
 __all__ = [
     'BasePollView',
     'PollAddView',
-    'PollContextMenu',
     'PollEditNavigationMenu',
     'PollEditView',
     'PollNavigation',
     'PollOptionAddView',
     'PollOptionEditView',
+    'PollOverviewMenu',
     'PollView',
     'PollVoteView',
     ]
@@ -23,10 +23,10 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
+    action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, Link,
     Navigation, NavigationMenu, stepthrough)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp import LaunchpadView
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollOptionSet, IPollSubset, IVoteSet, PollAlgorithm,
     PollSecrecy)
@@ -34,10 +34,6 @@ from canonical.launchpad.helpers import shortlist
 
 
 class PollEditLinksMixin:
-
-    def showall(self):
-        text = 'Show options'
-        return Link('+options', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def addnew(self):
@@ -50,19 +46,29 @@ class PollEditLinksMixin:
         return Link('+edit', text, icon='edit')
 
 
-class PollContextMenu(ContextMenu, PollEditLinksMixin):
+class PollOverviewMenu(ApplicationMenu, PollEditLinksMixin):
     usedfor = IPoll
-    links = ['showall', 'addnew', 'edit']
+    facet = 'overview'
+    links = ['addnew']
 
 
 class IPollEditMenu(Interface):
-    """A marker interface for the 'Change details' navigation menu."""
+    """A marker interface for the edit navigation menu."""
 
 
 class PollEditNavigationMenu(NavigationMenu, PollEditLinksMixin):
     usedfor = IPollEditMenu
     facet = 'overview'
-    links = ['showall', 'addnew', 'edit']
+    links = ['addnew', 'edit']
+
+
+class IPollActionMenu(Interface):
+    """A marker interface for the action menu."""
+
+
+class PollActionNavigationMenu(PollEditNavigationMenu):
+    usedfor = IPollActionMenu
+    links = ['edit']
 
 
 class PollNavigation(Navigation):
@@ -75,16 +81,12 @@ class PollNavigation(Navigation):
             self.context, int(name))
 
 
-class BasePollView:
+class BasePollView(LaunchpadView):
     """A base view class to be used in other poll views."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.token = None
-        self.gotTokenAndVotes = False
-        self.feedback = ""
+    token = None
+    gotTokenAndVotes = False
+    feedback = ""
 
     def setUpTokenAndVotes(self):
         """Set up the token and votes to be displayed."""
@@ -186,12 +188,14 @@ class BasePollView:
 
 class PollView(BasePollView):
     """A view class to display the results of a poll."""
+    implements(IPollActionMenu)
 
-    def __init__(self, context, request):
-        BasePollView.__init__(self, context, request)
-        if (self.userCanVote() and context.isOpen() and
-            context.getActiveOptions()):
-            context_url = canonical_url(context)
+    def initialize(self):
+        super(PollView, self).initialize()
+        request = self.request
+        if (self.userCanVote() and self.context.isOpen() and
+            self.context.getActiveOptions()):
+            context_url = canonical_url(self.context)
             if self.isSimple():
                 request.response.redirect("%s/+vote-simple" % context_url)
             elif self.isCondorcet():
@@ -228,8 +232,9 @@ class PollVoteView(BasePollView):
     change it. Otherwise he can register his vote.
     """
 
-    def processForm(self):
+    def initialize(self):
         """Process the form, if it was submitted."""
+        super(PollVoteView, self).initialize()
         if not self.isSecret() and self.userVoted():
             # For non-secret polls, the user's vote is always displayed
             self.setUpTokenAndVotesForNonSecretPolls()
@@ -373,6 +378,11 @@ class PollEditView(LaunchpadEditFormView):
     field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
                    "datecloses"]
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
     @action("Save", name="save")
     def save_action(self, action, data):
         self.updateContextFromData(data)
@@ -390,7 +400,7 @@ class PollOptionEditView(LaunchpadEditFormView):
     @property
     def cancel_url(self):
         """See `LaunchpadFormView`."""
-        return canonical_url(self.context.poll, view_name='+options')
+        return canonical_url(self.context.poll)
 
     @action("Save", name="save")
     def save_action(self, action, data):
@@ -401,11 +411,15 @@ class PollOptionEditView(LaunchpadEditFormView):
 class PollOptionAddView(LaunchpadFormView):
     """Create a new option in a given poll."""
 
-    implements(IPollEditMenu)
     schema = IPollOption
     label = "Create new poll option"
     field_names = ["name", "title"]
     custom_widget("title", TextWidget, width=30)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action("Create", name="create")
     def create_action(self, action, data):

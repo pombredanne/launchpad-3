@@ -71,7 +71,8 @@ Trying to edit a poll that's already open isn't possible.
     >>> team_admin_browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple'
 
-    >>> team_admin_browser.getLink('Change details').click()
+    >>> team_admin_browser.open(
+    ...     'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+edit')
     >>> print extract_text(
     ...     find_tag_by_id(team_admin_browser.contents, 'not-editable'))
     This poll can't be edited...

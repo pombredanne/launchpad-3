@@ -30,8 +30,6 @@
       </p>
     </tal:block>
 
-    <tal:menu replace="structure view/@@+related-pages" /> 
-
   </div>
 
 </body>

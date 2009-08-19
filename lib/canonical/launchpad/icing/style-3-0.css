@@ -398,7 +398,7 @@ span.see-all {
     clear: both;
     visibility: hidden;
 }
-.portlet dt {
+dt {
     font-weight: bold;
     }
 .portlet dd {
