@@ -174,7 +174,7 @@ builds list is presented.
     >>> no_priv_browser.getLink('PPA').click()
     >>> no_priv_browser.getLink('View build records').click()
     >>> no_priv_browser.getControl(name="build_state").value = ['built']
-    >>> no_priv_browser.getControl("Update").click()
+    >>> no_priv_browser.getControl("Filter").click()
 
     >>> check_urls(no_priv_browser, builds_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')

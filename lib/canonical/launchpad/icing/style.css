@@ -1885,6 +1885,9 @@ span.ppa-icon-inactive {
     text-decoration: line-through;
 }
 
+div.builds_list form {
+    padding: 1em 1em 2em 0em;
+}
 
 /* --- Code --- */
 
