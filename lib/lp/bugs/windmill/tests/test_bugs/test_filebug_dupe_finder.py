@@ -84,7 +84,7 @@ def test_duplicate_finder():
     client.asserts.assertProperty(
         id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
     client.asserts.assertElemJS(
-        id='details-for-bug-4', js='element.style.height != "0px"')
+        id='details-for-bug-4', js=BUG_INFO_SHOWN_JS)
 
     # Clicking "No, I need to file a new bug" will collapse the
     # duplicate details and expander and will show the filebug form.
