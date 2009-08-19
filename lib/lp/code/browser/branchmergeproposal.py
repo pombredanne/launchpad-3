@@ -601,7 +601,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     """The view used to request a review of the merge proposal."""
 
     schema = IReviewRequest
-    heading = label = "Request review"
+    page_title = label = "Request review"
 
     @property
     def initial_values(self):
@@ -719,7 +719,7 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
     """The view to resubmit a proposal to merge."""
 
     schema = IBranchMergeProposal
-    heading = label = "Resubmit proposal to merge"
+    page_title = label = "Resubmit proposal to merge"
     field_names = []
 
     @action('Resubmit', name='resubmit')
@@ -733,7 +733,7 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
 class BranchMergeProposalEditView(MergeProposalEditView):
     """The view to control the editing of merge proposals."""
     schema = IBranchMergeProposal
-    heading = label = "Edit branch merge proposal"
+    page_title = label = "Edit branch merge proposal"
     field_names = ["commit_message", "whiteboard"]
 
     @action('Update', name='update')
@@ -760,8 +760,7 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
     """The view to control the deletion of merge proposals."""
     schema = IBranchMergeProposal
     field_names = []
-    heading = 'Delete proposal to merge branch'
-    label = heading
+    page_title = label = 'Delete proposal to merge branch'
 
     def initialize(self):
         # Store the source branch for `next_url` to make sure that
@@ -781,7 +780,7 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
 class BranchMergeProposalMergedView(LaunchpadEditFormView):
     """The view to mark a merge proposal as merged."""
     schema = IBranchMergeProposal
-    heading = label = "Edit branch merge proposal"
+    page_title = label = "Edit branch merge proposal"
     field_names = ["merged_revno"]
     for_input = True
 
@@ -848,7 +847,7 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
     """The view to submit a merge proposal for merging."""
 
     schema = EnqueueForm
-    heading = label = "Queue branch for merging"
+    page_title = label = "Queue branch for merging"
 
     @property
     def initial_values(self):
@@ -904,7 +903,7 @@ class BranchMergeProposalDequeueView(LaunchpadEditFormView):
 
     schema = IBranchMergeProposal
     field_names = ["whiteboard"]
-    heading = label = "Dequeue branch"
+    page_title = label = "Dequeue branch"
 
     @property
     def next_url(self):
@@ -1032,7 +1031,7 @@ class BranchMergeProposalSubscribersView(LaunchpadView):
 
 class BranchMergeProposalChangeStatusView(MergeProposalEditView):
 
-    heading = label = "Change merge proposal status"
+    page_title = label = "Change merge proposal status"
     schema = IBranchMergeProposal
     field_names = []
 
@@ -1160,7 +1159,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         """The pagetitle and heading."""
         return "Review merge proposal for %s" % (
             self.context.source_branch.bzr_identity)
-    heading = label
+    page_title = label
 
     @action('Save Review', name='vote')
     def vote_action(self, action, data):
