@@ -757,7 +757,10 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
 
     # Map namespaces onto method names.
     methods = {
-        'Bugzilla': ['version'],
+        'Bugzilla': [
+            'time',
+            'version',
+            ],
         'Test': ['login_required'],
         'User': ['login'],
         }
@@ -793,6 +796,24 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                 raise xmlrpclib.Fault(
                     300,
                     "The username or password you entered is not valid.")
+
+    def time(self):
+        """Return a dict of the local time and associated data."""
+        # We cheat slightly by calling the superclass to get the time
+        # data. We do this the old fashioned way because XML-RPC
+        # Transports don't support new-style classes.
+        time_dict = TestBugzillaXMLRPCTransport.time(self)
+        offset_hours = (self.utc_offset / 60) / 60
+        offset_string = '+%02d00' % offset_hours
+
+        return {
+            'db_time': time_dict['local_time'],
+            'tz_name': time_dict['tz_name'],
+            'tz_offset': offset_string,
+            'tz_short_name': time_dict['tz_name'],
+            'web_time': time_dict['local_time'],
+            'web_time_utc': time_dict['utc_time'],
+            }
 
 
 class TestMantis(Mantis):

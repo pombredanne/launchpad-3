@@ -75,3 +75,23 @@ raise an error.
         ...
     BugTrackerAuthenticationError: http://thiswillfail.example.com:
     Fault 300: The username or password you entered is not valid.
+
+
+Getting the server time
+-----------------------
+
+To be able to accurately sync with a bug tracker, we need to be able to
+check the time on the remote server. We use BugzillaAPI.getCurrentDBTime()
+to get the current time on the remote server.
+
+    # There's no way to create a UTC timestamp without monkey-patching
+    # the TZ environment variable. Rather than do that, we create our
+    # own datetime and work with that.
+    >>> from datetime import datetime
+    >>> remote_time = datetime(2009, 8, 19, 17, 2, 2)
+
+    >>> test_transport.utc_offset = 60**2
+    >>> test_transport.timezone = 'CET'
+    >>> test_transport.local_datetime = remote_time
+    >>> bugzilla.getCurrentDBTime()
+    datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)
