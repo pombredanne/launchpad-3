@@ -453,28 +453,18 @@ distributionmirror_index = ContextTitle('Mirror %s')
 
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
 
-distribution_add = 'Register a new distribution'
-
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
-distribution_change_mirror_admin = 'Change mirror administrator'
-
 distribution_cvereport = ContextTitle('CVE reports for %s')
-
-distribution_edit = 'Change distribution details'
-# We don't mention its name here, because that might be what you're changing.
 
 distribution_language_pack_admin = ContextTitle(
     'Change the language pack administrator for %s')
 
 distribution_members = ContextTitle('%s distribution members')
-
-distribution_memberteam = ContextTitle(
-    smartquote("Change %s's distribution team"))
 
 distribution_mirrors = ContextTitle("Mirrors of %s")
 
@@ -504,8 +494,6 @@ structural_subscriptions_manage = ContextTitle(
     'Bug subscriptions for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
-
-distroarchseries_admin = ContextTitle('Administer %s')
 
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
