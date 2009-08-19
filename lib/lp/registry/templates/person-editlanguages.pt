@@ -24,7 +24,8 @@
         is English, which is the only language for most Launchpad features.
       </p>
 
-      <div class="two-column-list" style="max-width: 45em;">
+      <div class="two-column-list" style="max-width: 45em;"
+           id="portlet-browser-languages">
         <dl tal:define="languages view/browserLanguages">
           <dt>
             <strong>Your browser languages:</strong>

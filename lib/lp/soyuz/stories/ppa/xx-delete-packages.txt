@@ -242,7 +242,8 @@ Multiple packages can be deleted in one single batch.
 The page doesn't present the form anymore, since there are no sources
 available for deletion.
 
-    >>> print extract_text(find_main_content(admin_browser.contents))
+    >>> print extract_text(
+    ...     find_tags_by_class(admin_browser.contents, 'top-portlet))
     Delete packages from PPA for Celso Providelo
     This PPA does not contain any source packages published.
 

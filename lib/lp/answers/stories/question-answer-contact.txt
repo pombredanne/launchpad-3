@@ -75,7 +75,7 @@ languages header with English and Spanish.
 
     >>> browser.getLink('Your preferred languages').click()
     >>> print browser.title
-    Sample Person's preferred languages
+    Your language preferences
 
     >>> browser.getControl('English', index=0).selected
     True
@@ -168,7 +168,7 @@ languages. He must add Spanish to the team's preferred languages.
 
     >>> browser.getLink('Set preferred languages').click()
     >>> print browser.title
-    Landscape Developers's preferred languages
+    Your language preferences
 
 Sample Person may be surprised to see English is already selected. Per
 the notification issued in the first example above, English was added to
