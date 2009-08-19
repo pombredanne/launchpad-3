@@ -734,6 +734,7 @@ class BranchMergeProposalEditView(MergeProposalEditView):
     """The view to control the editing of merge proposals."""
     schema = IBranchMergeProposal
     label = "Edit branch merge proposal"
+    heading = label
     field_names = ["commit_message", "whiteboard"]
 
     @action('Update', name='update')

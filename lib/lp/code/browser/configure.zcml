@@ -181,7 +181,7 @@
         permission="launchpad.Edit">
         <browser:page
             name="+edit"
-            template="../templates/branchmergeproposal-edit.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
     </browser:pages>
     <browser:page
         name="+edit-commit-message"

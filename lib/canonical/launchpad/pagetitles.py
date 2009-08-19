@@ -187,8 +187,6 @@ branch_landing_candidates = ContextDisplayName(smartquote(
 
 branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 
-branchmergeproposal_edit = ViewLabel()
-
 branchmergeproposal_editstatus = ViewLabel()
 
 branchmergeproposal_enqueue = 'Queue branch for merging'
