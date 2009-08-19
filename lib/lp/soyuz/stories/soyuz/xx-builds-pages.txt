@@ -70,9 +70,8 @@ For Builder, same as Distribution:
 
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
     >>> anon_browser.getLink("View full history").click()
-    >>> from canonical.launchpad.helpers import backslashreplace
-    >>> print backslashreplace(anon_browser.title)
-    Build history for \u201cBob The Builder\u201d
+    >>> print anon_browser.title
+    Build history for ...Bob The Builder...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present

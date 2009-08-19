@@ -17,8 +17,8 @@ Let's instantiate the view for +index:
     >>> builder_view.now()
     '...'
 
-    >>> builder_view.page_title
-    u'Builder \u201cBob The Builder\u201d'
+    >>> print builder_view.page_title
+    Builder ...Bob The Builder...
 
 The BuilderView provides a helper for the text to use on the toggle
 mode button.
@@ -32,8 +32,8 @@ mode button.
 Let's instantiate a view for +history:
 
     >>> builder_view = getMultiAdapter((builder, request), name="+history")
-    >>> builder_view.page_title
-    u'Build history for \u201cBob The Builder\u201d'
+    >>> print builder_view.page_title
+    Build history for ...Bob The Builder...
 
     setupBuildList, build a batched list of build records and store it
     in view.batch, also store the batch navigator in view.batchnav. it
@@ -60,8 +60,8 @@ by mark. we nee to log in as mark or any other member of admin team
     >>> login("foo.bar@canonical.com")
 
     >>> builder_view = create_initialized_view(builder, name="+edit")
-    >>> builder_view.page_title
-    u'Change details for builder \u201cBob The Builder\u201d'
+    >>> print builder_view.page_title
+    Change details for builder ...Bob The Builder...
 
     >>> for field_name in builder_view.field_names:
     ...     print field_name
