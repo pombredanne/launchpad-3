@@ -129,7 +129,7 @@
       <div class="portlet">
         <tal:project define="project context/upstream_product">
           <div tal:condition="project">
-            <h2>Upstream linkage</h2>
+            <h2>Upstream</h2>
             <div style="float:left; padding:0 1em 1em 0;"
                  tal:content="structure context/image:logo"/>
             <div tal:content="structure project/summary" />
