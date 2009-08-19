@@ -9,8 +9,10 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 
 
 class IRootContext(Interface):
     """Something that is an object off the Launchpad root."""
+
+    title = Attribute('The title of the root context object.')

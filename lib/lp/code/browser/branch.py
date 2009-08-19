@@ -112,6 +112,11 @@ class BranchURL:
         return self.branch.unique_name
 
 
+def branch_root_context(branch):
+    """Return the IRootContext for the branch."""
+    return branch.target.components[0]
+
+
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
