@@ -9,10 +9,6 @@
 
 <body>
 
-<tal:heading metal:fill-slot="heading">
-  <h1 tal:content="view/label">Subscribe to question</h1>
-</tal:heading>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
