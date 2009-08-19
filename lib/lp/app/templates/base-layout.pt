@@ -91,7 +91,7 @@
           Celso Providelo
         </h2>
         <metal:heading_nav
-          use-macro="context/@@+base-layout-macros/location-tabs"/>
+          use-macro="context/@@+base-layout-macros/application-buttons"/>
       </div>
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
