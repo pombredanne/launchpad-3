@@ -293,7 +293,7 @@
     for="lp.answers.interfaces.faqtarget.IFAQTarget"
     class=".faqtarget.FAQCreateView"
     permission="launchpad.Moderate"
-    template="../templates/questiontarget-createfaq.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:url
