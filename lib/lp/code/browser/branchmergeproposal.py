@@ -602,6 +602,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
 
     schema = IReviewRequest
     label = "Request review"
+    heading = label
 
     @property
     def initial_values(self):

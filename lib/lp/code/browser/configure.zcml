@@ -210,7 +210,7 @@
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalRequestReviewView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-request-review.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+resubmit"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
