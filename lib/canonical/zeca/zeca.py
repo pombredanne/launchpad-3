@@ -106,7 +106,7 @@ class LookUp(Resource):
                 filename = filename[2:]
             keys = glob.glob(os.path.join(self.root, '*'+filename))
             if len(keys) == 1:
-                content = open(keys[0]).read()
+                content = cgi.escape(open(keys[0]).read())
             else:
                 content = 'Key Not Found'
         else:
