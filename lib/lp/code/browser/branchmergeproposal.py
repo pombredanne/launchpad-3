@@ -781,7 +781,7 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
 class BranchMergeProposalMergedView(LaunchpadEditFormView):
     """The view to mark a merge proposal as merged."""
     schema = IBranchMergeProposal
-    label = "Edit branch merge proposal"
+    heading = label = "Edit branch merge proposal"
     field_names = ["merged_revno"]
     for_input = True
 
@@ -904,6 +904,7 @@ class BranchMergeProposalDequeueView(LaunchpadEditFormView):
 
     schema = IBranchMergeProposal
     field_names = ["whiteboard"]
+    heading = label = "Dequeue branch"
 
     @property
     def next_url(self):

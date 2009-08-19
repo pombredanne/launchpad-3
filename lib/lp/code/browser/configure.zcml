@@ -231,7 +231,7 @@
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalDequeueView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+dequeue-inline"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
@@ -252,7 +252,7 @@
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalMergedView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+link-summary"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
