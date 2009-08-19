@@ -1862,6 +1862,7 @@ form.archive-subscription-activation button:hover {
 
 /* Shaded logging area. */
 div.logtail {
+    margin: 0.5em;
     background-color: #f6f6f6;
     padding: 5px;
     border: solid gray;
