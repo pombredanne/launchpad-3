@@ -1222,8 +1222,6 @@ def question_listing(context, view):
     """Return the page title list questions."""
     return view.pagetitle
 
-question_subscription = ContextId('Subscription to question #%s')
-
 questions_index = 'Launchpad Answers'
 
 def questiontarget_createfaq(context, view):
