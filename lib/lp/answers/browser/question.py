@@ -964,6 +964,10 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     label = _('Create a new FAQ')
 
+    @property
+    def page_title(self):
+        return 'Create a FAQ for %s' % self.context.product.displayname
+
     field_names = ['title', 'keywords', 'content']
 
     custom_widget('keywords', TokensTextWidget)

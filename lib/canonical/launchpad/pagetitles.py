@@ -1224,10 +1224,6 @@ def question_listing(context, view):
 
 questions_index = 'Launchpad Answers'
 
-def questiontarget_createfaq(context, view):
-    """Return the page title to create a FAQ for a questiontarget."""
-    return "Create a FAQ for %s" % context.displayname
-
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")

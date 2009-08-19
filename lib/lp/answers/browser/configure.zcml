@@ -224,7 +224,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionCreateFAQView"
     permission="launchpad.Moderate"
-    template="../templates/question-createfaq.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:page
