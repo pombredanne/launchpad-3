@@ -1205,10 +1205,6 @@ rosetta_products = 'Projects with Translations in Launchpad'
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
 
-def question_createfaq(context, view):
-    """Return the page title to create a FAQ for a question."""
-    return "Create a FAQ for %s" % view.faq_target.displayname
-
 question_history = ContextId('History of question #%s')
 
 def question_index(context, view):
