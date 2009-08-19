@@ -32,6 +32,8 @@ mode button.
 Let's instantiate a view for +history:
 
     >>> builder_view = getMultiAdapter((builder, request), name="+history")
+    >>> builder_view.page_title
+    u'Build history for \u201cBob The Builder\u201d'
 
     setupBuildList, build a batched list of build records and store it
     in view.batch, also store the batch navigator in view.batchnav. it

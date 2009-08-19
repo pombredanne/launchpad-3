@@ -7,11 +7,9 @@
   i18n:domain="launchpad"
 >
 <body>
-  <metal:heading fill-slot="heading">
-    <h1 tal:content="view/page_title">Bob the builder</h1>
-  </metal:heading>
-
   <div metal:fill-slot="main">
+    <h1 tal:content="view/page_title">Bob the builder</h1>
+
     <div class="top-portlet">
       <div tal:replace="structure context/@@+builds-list"/>
     </div>

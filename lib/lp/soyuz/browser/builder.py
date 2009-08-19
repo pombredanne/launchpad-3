@@ -21,7 +21,6 @@ __all__ = [
 
 import datetime
 import operator
-import os
 import pytz
 
 from zope.component import getUtility
@@ -301,12 +300,6 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     @property
     def page_title(self):
         """Return a relevant page title for this view."""
-        template_base = os.path.basename(self.template.filename)
-
-        if 'builder-history' in template_base:
-            return smartquote(
-                'Build history for "%s"' % self.context.title)
-
         return smartquote(
             'Builder "%s"' % self.context.title)
 
@@ -317,6 +310,17 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
             return "Switch to auto-mode"
         else:
             return "Switch to manual-mode"
+
+
+class BuilderHistoryView(BuilderView):
+    """This class exists only to override the page_title."""
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Build history for "%s"' % self.context.title)
+
 
 class BuilderSetAddView(LaunchpadFormView):
     """View class for adding new Builders."""
