@@ -1,0 +1,83 @@
+The "watermark" TALES formatter
+===============================
+
+The watermark formatter is used to get the image and heading used on all the
+main Launchpad pages.  The image and heading are determined by the
+IRootContext for the context object.
+
+Watermark headings
+------------------
+
+The `watermark:heading` is used when you want a heading for the nearest object
+that implements IRootContext.
+
+Objects that directly provide IRootContext get an h1 heading, those that don't
+get an h2 heading (although why I'm not yet certain).
+
+    >>> from lp.testing import test_tales
+
+Products directly implement IRootContext.
+
+    >>> widget = factory.makeProduct(title='Widget')
+    >>> print test_tales('project/watermark:heading', project=widget)
+    <h1>Widget</h1>
+
+A series of the product still show the product watermark.
+
+    >>> dev_focus = widget.development_focus
+    >>> print test_tales('series/watermark:heading', series=dev_focus)
+    <h2>Widget</h2>
+
+Projects also directly implement IRootContext ...
+
+    >>> kde = factory.makeProject(title='KDE')
+    >>> print test_tales('project/watermark:heading', project=kde)
+    <h1>KDE</h1>
+
+... as do distributions ...
+
+    >>> mint = factory.makeDistribution(title='Mint Linux')
+    >>> print test_tales(
+    ...     "distro/watermark:heading", distro=mint)
+    <h1>Mint Linux</h1>
+
+... and people.
+
+    >>> eric = factory.makePerson(displayname="Eric the Viking")
+    >>> print test_tales("person/watermark:heading", person=eric)
+    <h1>Eric the Viking</h1>
+
+
+If there is no root context defined for the object, then the heading is
+'Launchpad.net' (differentiating from the Launchpad project within
+Launchpad.net).
+
+    >>> machine = factory.makeCodeImportMachine()
+    >>> print test_tales(
+    ...     "machine/watermark:heading", machine=machine)
+    <h2>Launchpad.net</h2>
+
+Any html in the context title will be escaped to avoid XSS vulnerabilities.
+
+    >>> person = factory.makePerson(
+    ...     displayname="Fubar<br/><script>alert('XSS')</script>")
+    >>> print test_tales("person/watermark:heading", person=person)
+    <h1>Fubar&lt;br/&gt;&lt;script&gt;alert('XSS')&lt;/script&gt;</h1>
+
+
+Watermark images
+------------------
+
+The image for the watermark is determined effectively by context/image:logo.
+
+    >>> print test_tales("series/watermark:image", series=dev_focus)
+    <img ... src="/@@/product-logo" />
+
+    >>> print test_tales("person/watermark:image", person=eric)
+    <img ... src="/@@/person-logo" />
+
+If there is no root context, the launchpad logo is shown.
+
+    >>> print test_tales(
+    ...     "machine/watermark:image", machine=machine)
+    <img ... src="/@@/launchpad-logo" />

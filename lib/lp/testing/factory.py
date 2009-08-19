@@ -1277,13 +1277,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None):
+                         members=None, title=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString()
         if displayname is None:
             displayname = self.getUniqueString()
-        title = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
         description = self.getUniqueString()
         summary = self.getUniqueString()
         domainname = self.getUniqueString()

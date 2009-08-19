@@ -27,8 +27,11 @@ from canonical.launchpad.fields import (
     PublicPersonChoice)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.launchpad import IHasDrivers
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.registry.interfaces.role import IHasOwner
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
+
+
 class SprintNameField(ContentNameField):
 
     errormessage = _("%s is already in use by another sprint.")
@@ -41,7 +44,7 @@ class SprintNameField(ContentNameField):
         return getUtility(ISprintSet)[name]
 
 
-class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
+class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IRootContext):
     """A sprint, or conference, or meeting."""
 
     id = Int(title=_('The Sprint ID'))
