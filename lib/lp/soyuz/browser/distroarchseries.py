@@ -69,17 +69,18 @@ provideAdapter(
     INavigationMenu, name="overview")
 
 
-class DistroArchSeriesView(BuildRecordsView):
-    """Default DistroArchSeries view class."""
-    implements(IDistroArchSeriesActionMenu)
-
-
 class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for DistroArchSeries"""
 
     def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
         return self.context.searchBinaryPackages(self.text)
+
+
+class DistroArchSeriesView(BuildRecordsView,
+                           DistroArchSeriesPackageSearchView):
+    """Default DistroArchSeries view class."""
+    implements(IDistroArchSeriesActionMenu)
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):

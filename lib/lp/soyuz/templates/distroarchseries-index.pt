@@ -33,7 +33,7 @@
     <div class="portlet">
       <h2>Search binary packages</h2>
 
-      <form name="search" action="+search" method="GET">
+      <form name="search" method="GET">
 
         <input type="text"
           name="text"
@@ -58,6 +58,9 @@
   </div>
 
 </div><!--yui-g-->
+
+<metal:package-search use-macro="context/@@+macros/search-results" />
+
 </div><!--metal-->
 
 </body>
