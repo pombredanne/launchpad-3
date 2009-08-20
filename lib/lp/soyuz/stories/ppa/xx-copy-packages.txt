@@ -933,12 +933,12 @@ in No Privileges' PPA.
     >>> name16 = person_set.getByName('name16')
     >>> test_publisher.person = name16
 
-    >>> sabdfl = person_set.getByName('sabdfl')
-    >>> sabdfl_foo_src = test_publisher.getPubSource(
-    ...     version="1.1", distroseries=hoary, archive=sabdfl.archive,
+    >>> mark = person_set.getByName('mark')
+    >>> mark_foo_src = test_publisher.getPubSource(
+    ...     version="1.1", distroseries=hoary, archive=mark.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> unused = test_publisher.getPubBinaries(
-    ...     distroseries=hoary, pub_source=sabdfl_foo_src,
+    ...     distroseries=hoary, pub_source=mark_foo_src,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> cprov = person_set.getByName('cprov')
@@ -1061,7 +1061,7 @@ James have heard that Mark's foo version is really rock'n roll and
 since he discovered that PPA allows copying old versions, he decides
 to copy the *same* version with different contents to grumpy in his PPA.
 
-    >>> jblack_browser.open('http://launchpad.dev/~sabdfl/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~mark/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
@@ -1070,7 +1070,7 @@ to copy the *same* version with different contents to grumpy in his PPA.
     foo - 1.1 (changesfile)       Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Breezy-autotest  Editors
 
-    >>> foo_pub_id = getPPAPubIDsFor('sabdfl', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('mark', 'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl(

@@ -36,7 +36,7 @@ put the person we will merge into some of those.
 
     # To assign marilize as the ubuntu team owner, we must log on as the
     # previous owner.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> ubuntu_team.teamowner = marilize

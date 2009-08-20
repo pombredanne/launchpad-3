@@ -673,7 +673,7 @@ collection. It provides the IHugeVocabulary interface.
 Iterations over the PPA vocabulary will return on PPA archives.
 
     >>> sorted([term.value.owner.name for term in vocabulary])
-    [u'cprov', u'no-priv', u'sabdfl']
+    [u'cprov', u'mark', u'no-priv']
 
 PPA vocabulary terms contain:
 

@@ -17,8 +17,8 @@ Mark is an administrator for at least one project that does not have a
 valid open source license so he is displayed the voucher redemption
 page.
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
+    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
     Profile...
@@ -41,7 +41,7 @@ A user can access her voucher page but not someone else's.  Here
 Marilize tries to access '+vouchers' on another user and is not
 allowed.
 
-    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     Traceback (most recent call last):
         ...
     Unauthorized: ...
@@ -50,7 +50,7 @@ Unless, of course, that user is an administrator.  Then he can access
 the '+vouchers' page on any user.
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
     Profile...
