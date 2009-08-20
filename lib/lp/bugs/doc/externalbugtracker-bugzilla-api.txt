@@ -101,4 +101,13 @@ convert its time to UTC before returning it.
     >>> test_transport.utc_offset = 60**2
     >>> test_transport.timezone = 'CET'
     >>> bugzilla.getCurrentDBTime()
+    CALLED Bugzilla.time()
     datetime.datetime(2009, 8, 19, 16, 2, 2, tzinfo=<UTC>)
+
+This works whether the UTC offset is positive or negative.
+
+    >>> test_transport.utc_offset = -5 * 60**2
+    >>> test_transport.timezone = 'US/Eastern'
+    >>> bugzilla.getCurrentDBTime()
+    CALLED Bugzilla.time()
+    datetime.datetime(2009, 8, 19, 22, 2, 2, tzinfo=<UTC>)

@@ -522,7 +522,9 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # what BugZilla will return.
         local_time = xmlrpclib.DateTime(local_datetime.timetuple())
 
-        utc_date_time = local_datetime - timedelta(seconds=self.utc_offset)
+        utc_offset_delta = timedelta(seconds=self.utc_offset)
+        utc_date_time = local_datetime - utc_offset_delta
+
         utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
         return {
             'local_time': local_time,
