@@ -257,12 +257,11 @@ any links to show announcements.
     >>> count_show_links(anon_browser.contents)
     0
 
-When there are no announcements for a distribution, we should not see
-any links to show announcements.
+Distribution pages always have the link in the navigation menu,
 
     >>> anon_browser.open('http://launchpad.dev/kubuntu')
     >>> count_show_links(anon_browser.contents)
-    0
+    1
 
 But we do see it when there are published announcements.
 

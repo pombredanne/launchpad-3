@@ -294,9 +294,12 @@ class DistributionNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def announcements(self):
-        text = 'Read all announcements'
-        enabled = bool(self.context.getAnnouncements())
-        return Link('+announcements', text, icon='info', enabled=enabled)
+        # XXX: BradCrittenden 2009-08-19 bug=410491: When the distribution
+        # index page is updated to UI 3.0 the text needs to read "Read all
+        # announcements".
+        target = '+announcements'
+        text = 'Announcements'
+        return Link(target, text)
 
     def mentoring(self):
         target = '+mentoring'
