@@ -371,10 +371,6 @@ build_rescore = ContextTitle('Rescore %s')
 
 builder_history = ContextTitle('Build history for %s')
 
-builder_index = ContextTitle('Build machine %s')
-
-builder_mode = ContextTitle('Change mode for %s')
-
 builder_new = 'Register a new build machine'
 
 builders_index = 'Launchpad build farm'

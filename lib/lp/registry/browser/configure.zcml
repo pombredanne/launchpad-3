@@ -145,8 +145,8 @@
         <browser:menus
             module="lp.registry.browser.codeofconduct"
             classes="
-                CodeOfConductContextMenu
-                CodeOfConductSetContextMenu
+                CodeOfConductOverviewMenu
+                CodeOfConductSetOverviewMenu
                 SignedCodeOfConductOverviewMenu
                 SignedCodeOfConductSetOverviewMenu"/>
         <browser:defaultView
@@ -181,14 +181,12 @@
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             name="+index"/>
-        <browser:pages
+        <browser:page
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             class="lp.registry.browser.codeofconduct.CodeOfConductSetView"
-            permission="zope.Public">
-            <browser:page
-                template="../templates/codeofconduct-list.pt"
-                name="+index"/>
-        </browser:pages>
+            permission="zope.Public"
+            template="../templates/codeofconduct-list.pt"
+            name="+index"/>
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
             name="+index"/>
