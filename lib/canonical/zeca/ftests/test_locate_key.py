@@ -17,22 +17,22 @@ class LocateKeyTestCase(unittest.TestCase):
             filename = os.path.join(self.root, filename)
         self.assertEqual(locate_key(self.root, suffix), filename)
 
-    def test_exact_fingerprint_match(self):
+    def test_locate_key_exact_fingerprint_match(self):
         self.assertKeyFile(
             '0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543.get',
             '0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543.get')
 
-    def test_keyid_glob_match(self):
+    def test_locate_key_keyid_glob_match(self):
         self.assertKeyFile(
             '0xDFD20543.get',
             '0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543.get')
 
-    def test_keyid_without_prefix_glob_match(self):
+    def test_locate_key_keyid_without_prefix_glob_match(self):
         self.assertKeyFile(
             'DFD20543.get',
             '0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543.get')
 
-    def test_keyid_no_match(self):
+    def test_locate_key_no_match(self):
         self.assertKeyFile('0xDEADBEEF.get', None)
 
 
