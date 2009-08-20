@@ -196,32 +196,32 @@ And '\r' should be also handled:
 
 == count_lines ==
 
-  >>> from lp.translations.browser.translationmessage import count_lines
-  >>> count_lines("foo")
-  1
-  >>> count_lines(
-  ...     "123456789abc123456789abc123456789abc1234566789abc123456789abc")
-  2
-  >>> count_lines(
-  ...     "123456789a123456789a123456789a1234566789a123456789")
-  1
-  >>> count_lines("a\nb")
-  2
-  >>> count_lines("a\nb\n")
-  3
-  >>> count_lines("a\nb\nc")
-  3
-  >>> count_lines(
-  ...     "123456789abc123456789abc123456789abc123456789abc\n"
-  ...     "1234566789a123456789a")
-  2
-  >>> count_lines(
-  ...     "123456789abc123456789abc123456789abc123456789abc123456789abc123456\n"
-  ...     "789a123456789a123456789a")
-  3
-  >>> count_lines(
-  ...     "123456789abc123456789abc123456789abc123456789abc123456789abc"
-  ...     "123456789abc\n1234566789a123456789a123456789a")
-  3
-  >>> count_lines("foo bar\n")
-  2
+    >>> from lp.translations.browser.translationmessage import count_lines
+    >>> count_lines("foo")
+    1
+    >>> count_lines(
+    ...     "123456789abc123456789abc123456789abc1234566789abc123456789abc")
+    2
+    >>> count_lines(
+    ...     "123456789a123456789a123456789a1234566789a123456789")
+    1
+    >>> count_lines("a\nb")
+    2
+    >>> count_lines("a\nb\n")
+    3
+    >>> count_lines("a\nb\nc")
+    3
+    >>> count_lines(
+    ...     "123456789abc123456789abc123456789abc123456789abc\n"
+    ...     "1234566789a123456789a")
+    2
+    >>> count_lines(
+    ...     "123456789abc123456789abc123456789abc123456789abc123456789abc123456\n"
+    ...     "789a123456789a123456789a")
+    3
+    >>> count_lines(
+    ...     "123456789abc123456789abc123456789abc123456789abc123456789abc"
+    ...     "123456789abc\n1234566789a123456789a123456789a")
+    3
+    >>> count_lines("foo bar\n")
+    2
