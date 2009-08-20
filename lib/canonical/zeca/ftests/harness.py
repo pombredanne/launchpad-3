@@ -29,7 +29,7 @@ class ZecaTestSetup(TacTestSetup):
     >>> from urllib import urlopen
 
     >>> print urlopen(root_url).read()
-    Copyright 2004-2008 Canonical Ltd.
+    Copyright 2004-2009 Canonical Ltd.
     <BLANKLINE>
 
     A key index lookup form via GET.
@@ -105,7 +105,7 @@ class ZecaTestSetup(TacTestSetup):
     >>> ZecaTestSetup().setUp()
 
     >>> print urlopen(root_url).readline()
-    Copyright 2004-2008 Canonical Ltd.
+    Copyright 2004-2009 Canonical Ltd.
     <BLANKLINE>
 
     >>> ZecaTestSetup().tearDown()

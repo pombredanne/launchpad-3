@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces.gpghandler import (
     SecretGPGKeyImportDetected)
 
 
-GREETING = 'Copyright 2004-2008 Canonical Ltd.\n'
+GREETING = 'Copyright 2004-2009 Canonical Ltd.\n'
 
 
 def locate_key(root, suffix):
