@@ -6,9 +6,9 @@ __metaclass__ = type
 from lazr.restful.interfaces import IWebServiceConfiguration
 from zope.component import getGlobalSiteManager, provideUtility
 from zope.interface import implements
-import unittest
 
 from lp.testing import TestCase
+
 
 class DummyWebServiceConfiguration:
     """A totally vanilla web service configuration."""

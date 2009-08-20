@@ -187,26 +187,8 @@ branch_landing_candidates = ContextDisplayName(smartquote(
 
 branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 
-branchmergeproposal_delete = 'Delete proposal to merge branch'
-
-branchmergeproposal_edit = ViewLabel()
-
-branchmergeproposal_editstatus = ViewLabel()
-
-branchmergeproposal_enqueue = 'Queue branch for merging'
-
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
-
-branchmergeproposal_request_review = ViewLabel()
-
-branchmergeproposal_resubmit = ViewLabel()
-
-branchmergeproposal_review = ViewLabel()
-
-branchmergeproposal_vote = ViewLabel()
-
-branchmergeproposal_work_in_progress = ViewLabel()
 
 branch_register_merge_proposal = 'Propose branch for merging'
 
@@ -402,8 +384,6 @@ code_in_branches = 'Projects with active branches'
 def codeimport(context, view):
     """Return the view's title."""
     return view.title
-
-codeimport_edit = 'Edit import details'
 
 codeimport_list = 'Code Imports'
 
@@ -817,8 +797,6 @@ def package_bugs(context, view):
     """Return the page title bug in a package."""
     return 'Bugs in %s' % context.name
 
-people_index = 'People and teams in Launchpad'
-
 people_adminrequestmerge = 'Merge Launchpad accounts'
 
 def people_list(context, view):
@@ -924,9 +902,12 @@ person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
 person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
-person_translations = ContextDisplayName('Translations made by %s')
+person_translations = ContextDisplayName('Translations related to %s')
 
 person_translations_relicensing = "Translations licensing"
+
+person_translations_to_review = ContextDisplayName(
+    'Translations for review by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
@@ -1042,8 +1023,6 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
-products_index = 'Projects registered in Launchpad'
-
 products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
@@ -1132,8 +1111,6 @@ def question_add(context, view):
 
 question_add_search = question_add
 
-question_bug = ContextId('Link question #%s to a bug report')
-
 question_change_status = ContextId('Change status of question #%s')
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
@@ -1141,8 +1118,6 @@ question_confirm_answer = ContextId('Confirm an answer to question #%s')
 def question_createfaq(context, view):
     """Return the page title to create a FAQ for a question."""
     return "Create a FAQ for %s" % view.faq_target.displayname
-
-question_edit = ContextId('Edit question #%s details')
 
 question_history = ContextId('History of question #%s')
 
@@ -1153,21 +1128,11 @@ def question_index(context, view):
         (context.target.displayname, context.id, context.title))
     return text
 
-question_linkbug = ContextId('Link question  #%s to a bug report')
-
-question_linkfaq = ContextId('Is question #%s a FAQ?')
-
 def question_listing(context, view):
     """Return the page title list questions."""
     return view.pagetitle
 
-question_makebug = ContextId('Create bug report based on question #%s')
-
 question_reject = ContextId('Reject question #%s')
-
-question_subscription = ContextId('Subscription to question #%s')
-
-question_unlinkbugs = ContextId('Remove bug links from question #%s')
 
 questions_index = 'Launchpad Answers'
 

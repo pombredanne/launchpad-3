@@ -8,7 +8,6 @@
 __all__ = [
     'HWDevice',
     'HWDeviceClass',
-    'HWDeviceClassSet',
     'HWDeviceSet',
     'HWDeviceDriverLink',
     'HWDeviceDriverLinkSet',
@@ -57,16 +56,15 @@ from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.hwdb import (
-    HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
-    HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
-    IHWDeviceClass, IHWDeviceClassSet, IHWDeviceDriverLink,
-    IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
-    IHWDeviceSet, IHWDriver, IHWDriverName, IHWDriverPackageName,
-    IHWDriverSet, IHWSubmission, IHWSubmissionBug, IHWSubmissionBugSet,
-    IHWSubmissionDevice, IHWSubmissionDeviceSet, IHWSubmissionSet,
-    IHWSystemFingerprint, IHWSystemFingerprintSet, IHWVendorID,
-    IHWVendorIDSet, IHWVendorName, IHWVendorNameSet, IllegalQuery,
-    ParameterError)
+    HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
+    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceClass,
+    IHWDeviceClassSet, IHWDeviceDriverLink, IHWDeviceDriverLinkSet,
+    IHWDeviceNameVariant, IHWDeviceNameVariantSet, IHWDeviceSet, IHWDriver,
+    IHWDriverName, IHWDriverPackageName, IHWDriverSet, IHWSubmission,
+    IHWSubmissionBug, IHWSubmissionBugSet, IHWSubmissionDevice,
+    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
+    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
+    IHWVendorNameSet, IllegalQuery, ParameterError)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -769,6 +767,42 @@ class HWDevice(SQLBase):
         result_set.order_by((HWDriver.package_name, HWDriver.name))
         return result_set
 
+    @property
+    def classes(self):
+        """See `IHWDevice.`"""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            HWDeviceClass,
+            HWDeviceClass.device == self.id)
+        result_set.order_by(HWDeviceClass.main_class, HWDeviceClass.sub_class)
+        return result_set
+
+    def getOrCreateDeviceClass(self, main_class, sub_class=None):
+        """See `IHWDevice.`"""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            HWDeviceClass,
+            HWDeviceClass.device == self.id,
+            HWDeviceClass.main_class == main_class,
+            HWDeviceClass.sub_class == sub_class)
+        existing_record = result_set.one()
+        if existing_record is not None:
+            return existing_record
+        return HWDeviceClass(
+            device=self, main_class=main_class, sub_class=sub_class)
+
+    def removeDeviceClass(self, main_class, sub_class=None):
+        """See `IHWDevice.`"""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            HWDeviceClass,
+            HWDeviceClass.device == self.id,
+            HWDeviceClass.main_class == main_class,
+            HWDeviceClass.sub_class == sub_class)
+        existing_record = result_set.one()
+        if existing_record is not None:
+            store.remove(existing_record)
+
 
 class HWDeviceSet:
     """See `IHWDeviceSet`."""
@@ -1023,36 +1057,23 @@ class HWDeviceClass(SQLBase):
     implements(IHWDeviceClass)
 
     device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
-    main_class = EnumCol(enum=HWMainClass, notNull=True)
-    sub_class = EnumCol(enum=HWSubClass)
+    main_class = IntCol(notNull=True)
+    sub_class = IntCol(notNull=False)
 
-    def _create(self, id, **kw):
-        """Create a HWDeviceClass record.
-
-        Ensure that main_class and sub_class have consistent values.
-        """
-        main_class = kw.get('main_class')
-        if main_class is None:
-            raise TypeError('HWDeviceClass() did not get expected keyword '
-                            'argument main_class')
-        sub_class = kw.get('sub_class')
-        if sub_class is not None:
-            if not sub_class.name.startswith(main_class.name + '_'):
-                raise TypeError(
-                    'HWDeviceClass() did not get matching argument values '
-                    'for main_class: %r and sub_class: %r.'
-                    % (main_class, sub_class))
-        SQLBase._create(self, id, **kw)
+    def delete(self):
+        """See `IHWDeviceClass`."""
+        store = Store.of(self)
+        store.remove(self)
 
 
 class HWDeviceClassSet:
     """See `IHWDeviceClassSet`."""
     implements(IHWDeviceClassSet)
 
-    def create(self, device, main_class, sub_class=None):
+    def get(self, id):
         """See `IHWDeviceClassSet`."""
-        return HWDeviceClass(device=device, main_class=main_class,
-                             sub_class=sub_class)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWDeviceClass, HWDeviceClass.id == id).one()
 
 
 class HWSubmissionDevice(SQLBase):
