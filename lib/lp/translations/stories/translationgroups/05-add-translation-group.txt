@@ -118,9 +118,9 @@ Person.
     'http://translations.launchpad.dev/+groups/monolingua/+reassign'
 
     >>> browser.getControl(name='field.owner').value = 'name12'
-    >>> browser.getControl('Change owner').click()
+    >>> browser.getControl('Change').click()
     >>> browser.url
-    'http://translations.launchpad.dev/+groups/monolingua/'
+    'http://translations.launchpad.dev/+groups/monolingua'
 
 The Rosetta administrator is still able to administer this group:
 

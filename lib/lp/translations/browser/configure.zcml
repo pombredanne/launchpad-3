@@ -62,12 +62,6 @@
             name="+portlet-preflangs"
             template="../templates/object-portlet-preflangs.pt"/>
         <browser:page
-            name="+portlet-countrylangs"
-            template="../templates/object-portlet-countrylangs.pt"/>
-        <browser:page
-            name="+portlet-browserlangs"
-            template="../templates/object-portlet-browserlangs.pt"/>
-        <browser:page
             name="+rosetta-status-legend"
             template="../templates/rosetta-status-legend.pt"/>
     </browser:pages>
@@ -729,6 +723,20 @@
             facet="translations"
             permission="zope.Public"
             template="../templates/hastranslationimports-index.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-review"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-review.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-review-table"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-review-table.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 

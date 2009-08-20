@@ -145,8 +145,8 @@
         <browser:menus
             module="lp.registry.browser.codeofconduct"
             classes="
-                CodeOfConductContextMenu
-                CodeOfConductSetContextMenu
+                CodeOfConductOverviewMenu
+                CodeOfConductSetOverviewMenu
                 SignedCodeOfConductOverviewMenu
                 SignedCodeOfConductSetOverviewMenu"/>
         <browser:defaultView
@@ -181,14 +181,12 @@
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             name="+index"/>
-        <browser:pages
+        <browser:page
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             class="lp.registry.browser.codeofconduct.CodeOfConductSetView"
-            permission="zope.Public">
-            <browser:page
-                template="../templates/codeofconduct-list.pt"
-                name="+index"/>
-        </browser:pages>
+            permission="zope.Public"
+            template="../templates/codeofconduct-list.pt"
+            name="+index"/>
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
             name="+index"/>
@@ -679,16 +677,11 @@
         name="+index"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
+        class="lp.registry.browser.announcement.AnnouncementView"
         facet="overview"
         permission="launchpad.View"
         template="../templates/announcement-index.pt"
         name="+index"/>
-    <browser:page
-        for="lp.registry.interfaces.announcement.IAnnouncement"
-        facet="overview"
-        permission="launchpad.View"
-        template="../templates/announcement-listing-detailed.pt"
-        name="+listing-detailed"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
         class="lp.registry.browser.announcement.AnnouncementEditView"
@@ -757,10 +750,15 @@
         class="lp.registry.browser.announcement.AnnouncementSetView"
         permission="zope.Public"
         template="../templates/announcements-all.pt"/>
+    <browser:page
+        for="*"
+        name="+announcement-macros"
+        permission="zope.Public"
+        template="../templates/announcement-macros.pt" />
     <browser:menus
         module="lp.registry.browser.announcement"
         classes="
-            AnnouncementContextMenu
+            AnnouncementCreateNavigationMenu
             AnnouncementEditNavigationMenu"/>
     <facet
         facet="overview">
@@ -772,18 +770,26 @@
         <browser:menus
             module="lp.registry.browser.person"
             classes="
+                PersonBugsMenu
+                PersonEditNavigationMenu
                 PersonFacets
                 PersonOverviewMenu
-                TeamOverviewMenu
-                PersonBugsMenu
+                PersonOverviewNavigationMenu
+                PersonRelatedSoftwareNavigationMenu
+                PersonSetActionNavigationMenu
+                PersonSetContextMenu
                 PersonSpecsMenu
                 TeamBugsMenu
+                TeamEditMenu
+                TeamOverviewMenu
+                TeamOverviewNavigationMenu
                 TeamSpecsMenu
-                PersonSetContextMenu
-                PersonOverviewNavigationMenu
-                PersonEditNavigationMenu
-                PersonRelatedSoftwareNavigationMenu
-                TeamOverviewNavigationMenu"/>
+                "/>
+        <browser:menus
+            module="lp.registry.browser.menu"
+            classes="
+                RegistryCollectionNavigationMenu
+                "/>
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
             path_expression="string:~${name}"
@@ -1122,12 +1128,6 @@
             name="+mailinglist-moderate"
             template="../templates/team-mailinglist-moderate.pt"/>
         <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="launchpad.Edit"
-            class="lp.registry.browser.person.PersonLanguagesView"
-            name="+editlanguages"
-            template="../templates/person-editlanguages.pt"/>
-        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.ITeam"
             class="canonical.launchpad.browser.TeamEditView"
@@ -1138,7 +1138,7 @@
             for="lp.registry.interfaces.person.ITeam"
             class="canonical.launchpad.browser.TeamBrandingView"
             permission="launchpad.Edit"
-            template="../templates/team-edit.pt"/>
+            template="../templates/object-branding.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.Owner"
@@ -1220,13 +1220,10 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="zope.Public"
-            class="lp.registry.browser.person.FOAFSearchView">
+            class="lp.registry.browser.person.PeopleSearchView">
             <browser:page
                 name="+index"
                 template="../templates/people-index.pt"/>
-            <browser:page
-                name="+portlet-stats"
-                template="../templates/people-portlet-stats.pt"/>
         </browser:pages>
         <browser:page
             name="+requestmerge"
@@ -1261,13 +1258,6 @@
             <browser:page
                 name="+mergerequest-sent"
                 template="../templates/people-mergerequest-sent.pt"/>
-        </browser:pages>
-        <browser:pages
-            for="lp.registry.interfaces.person.IPersonSet"
-            permission="zope.Public">
-            <browser:page
-                name="+portlet-about"
-                template="../templates/people-portlet-about.pt"/>
         </browser:pages>
     </facet>
     <browser:navigation
@@ -1942,23 +1932,21 @@
         class="lp.registry.browser.distribution.DistributionEditView"
         name="+edit"
         facet="overview"
-        template="../templates/distribution-edit.pt"/>
-    <browser:editform
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+selectmemberteam"
         for="lp.registry.interfaces.distribution.IDistribution"
-        schema="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionChangeMembersView"
         facet="overview"
-        fields="members"
         permission="launchpad.Edit"
-        template="../templates/distribution-memberteam.pt"/>
-    <browser:editform
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+selectmirroradmins"
         for="lp.registry.interfaces.distribution.IDistribution"
-        schema="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionChangeMirrorAdminView"
         facet="overview"
-        fields="mirror_admin"
         permission="launchpad.Edit"
-        template="../templates/distribution-change-mirror-admin.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:addform
         name="+linkbounty"
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -2015,7 +2003,7 @@
         class="lp.registry.browser.distribution.DistributionAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../templates/distribution-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
             DistributionFacets

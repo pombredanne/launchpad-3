@@ -34,6 +34,7 @@ from lazr.restful.declarations import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
@@ -182,8 +183,8 @@ class IDistributionPublic(
         vocabulary='ValidPersonOrTeam')
     mirror_admin = PublicPersonChoice(
         title=_("Mirror Administrator"),
-        description=_("The person or team that has the rights to administer "
-                      "this distribution's mirrors"),
+        description=_("The person or team that has the rights to review and "
+                      "mark this distribution's mirrors as official."),
         required=True, vocabulary='ValidPersonOrTeam')
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
@@ -528,7 +529,8 @@ class IDistributionPublic(
         """Can the user edit this distribution?"""
 
 
-class IDistribution(IDistributionEditRestricted, IDistributionPublic):
+class IDistribution(IDistributionEditRestricted, IDistributionPublic,
+                    IRootContext):
     """An operating system distribution."""
     export_as_webservice_entry()
 
