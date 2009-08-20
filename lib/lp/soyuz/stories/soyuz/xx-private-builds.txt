@@ -207,13 +207,6 @@ cannot see any of the private details.
     ...
     No build records.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'portlet-details'))
-    The frog builder details
-    ...
-    Status Building private build
-    ...
-
 An authorised user will see the build however:
 
     >>> cprov_browser.open("http://launchpad.dev/+builds/frog/+history")
@@ -223,13 +216,6 @@ An authorised user will see the build however:
     Package:
     ...
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
-    ...
-
-    >>> print extract_text(
-    ...     find_tag_by_id(cprov_browser.contents, 'portlet-details'))
-    The frog builder details
-    ...
-    Status Building i386 build of privacy-test ... [cprov/ppa]
     ...
 
 

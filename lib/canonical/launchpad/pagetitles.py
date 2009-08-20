@@ -369,10 +369,6 @@ build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
-builder_history = ContextTitle('Build history for %s')
-
-builder_new = 'Register a new build machine'
-
 builders_index = 'Launchpad build farm'
 
 calendar_index = ContextTitle('%s')
