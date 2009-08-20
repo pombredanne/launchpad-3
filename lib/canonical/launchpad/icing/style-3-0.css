@@ -443,10 +443,13 @@ span.see-all {
     font-weight: normal;
     }
 .application-summary {
-  font-size: 123.1%;
+    font-size: 123.1%;
 }
 .search-results {
-  margin-top: 1em;
+    margin-top: 1em;
+}
+p.search-results {
+    font-size: 116%;
 }
 
 

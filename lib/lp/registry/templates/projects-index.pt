@@ -36,12 +36,15 @@
 
       <div tal:condition="view/search_requested">
           <tal:searching tal:condition="view/search_results">
-            <span tal:replace="view/matches">3</span>
-            <span tal:condition="python: view.matches == 1">project
-                group found</span>
-            <span tal:condition="python: view.matches != 1">projects
-                groups found</span>
-            matching &#8220;<tal:string replace="view/search_string" />&#8221;
+            <p class="search-results">
+              <span tal:replace="view/matches">3</span>
+              <span tal:condition="python: view.matches == 1">project
+                  group found</span>
+              <span tal:condition="python: view.matches != 1">projects
+                  groups found</span>
+              matching
+              &#8220;<tal:string replace="view/search_string" />&#8221;
+            </p>
           </tal:searching>
 
           <table tal:condition="view/matches"

@@ -70,14 +70,16 @@
       </p>
 
       <tal:searching tal:condition="view/search_results">
-        <span tal:replace="view/matches">3</span>
-        <span tal:condition="python: view.matches == 1">project found</span>
-        <span tal:condition="python: view.matches != 1">projects found</span>
-        matching &#8220;<tal:string replace="view/search_string" />&#8221;
-        <span tal:condition="view/tooManyResultsFound">,
-          showing the most relevant
-          <span tal:replace="view/max_results_to_display" />
-        </span>
+        <p class="search-results">
+          <span tal:replace="view/matches">3</span>
+          <span tal:condition="python: view.matches == 1">project found</span>
+          <span tal:condition="python: view.matches != 1">projects found</span>
+          matching &#8220;<tal:string replace="view/search_string" />&#8221;
+          <span tal:condition="view/tooManyResultsFound">,
+            showing the most relevant
+            <span tal:replace="view/max_results_to_display" />
+          </span>
+         </p>
       </tal:searching>
 
       <table tal:condition="view/matches"
