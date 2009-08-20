@@ -10,6 +10,10 @@ import unittest
 
 from lp.testing import TestCase
 
+from canonical.launchpad.webapp.tests._breadcrumbs import (
+    BaseBreadcrumbTestCase)
+
+
 class DummyWebServiceConfiguration:
     """A totally vanilla web service configuration."""
     implements(IWebServiceConfiguration)

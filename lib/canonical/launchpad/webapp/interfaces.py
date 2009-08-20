@@ -264,7 +264,10 @@ class IBreadcrumbBuilder(IBreadcrumb):
     # We subclass IBreadcrumb to minimize interface drift.
 
     def make_breadcrumb():
-        """Return an object implementing the `IBreadcrumb` interface."""
+        """Return an object implementing the `IBreadcrumb` interface.
+
+        If for any reason no IBreadcrumb object can be created, return None.
+        """
 
 
 #

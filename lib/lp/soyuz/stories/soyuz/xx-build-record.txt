@@ -403,7 +403,7 @@ packages, since they do not exist.
     LinkNotFoundError
 
     >>> print anon_browser.getLink('PPA for Celso Providelo').url
-    http://launchpad.dev/%7Ecprov/+archive/ppa
+    http://launchpad.dev/~cprov/+archive/ppa
 
     >>> print anon_browser.getLink('Breezy Badger Autotest').url
     http://launchpad.dev/ubuntutest/breezy-autotest
