@@ -43,6 +43,7 @@ class ModifiedBranchesScript(LaunchpadScript):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
         # Cache this on object creation so it can be used in tests.
         self.now_timestamp = datetime.utcnow()
+        self.locations = set()
 
     def add_my_options(self):
         self.parser.set_defaults(
@@ -101,6 +102,16 @@ class ModifiedBranchesScript(LaunchpadScript):
             location = location[len(self.options.strip_prefix):]
         return location + self.options.append_suffix
 
+    def update_locations(self, location):
+        """Add the location, and all the possible parent directories."""
+        paths = location.split('/')
+        curr = []
+        for segment in paths:
+            curr.append(segment)
+            # Don't add an empty string.
+            if curr != ['']:
+                self.locations.add('/'.join(curr))
+
     def main(self):
         last_modified = self.get_last_modified_epoch()
         self.logger.info(
@@ -112,7 +123,10 @@ class ModifiedBranchesScript(LaunchpadScript):
         for branch in collection.getBranches():
             self.logger.info(branch.unique_name)
             for location in self.branch_locations(branch):
-                print self.process_location(location)
+                self.update_locations(self.process_location(location))
+
+        for location in sorted(self.locations):
+            print location
 
         self.logger.info("Done.")
 

@@ -238,6 +238,13 @@ special = {
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
+    'externalbugtracker-bugzilla-api.txt':
+        LayeredDocFileSuite(
+        '../doc/externalbugtracker-bugzilla-api.txt',
+        setUp=checkwatchesSetUp,
+        tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
     'externalbugtracker-bugzilla-lp-plugin.txt':
         LayeredDocFileSuite(
         '../doc/externalbugtracker-bugzilla-lp-plugin.txt',

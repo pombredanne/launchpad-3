@@ -14,7 +14,7 @@ link to enable to change his preferred languages:
 
     >>> user_browser.getLink('Change your preferred languages').click()
     >>> print user_browser.title
-    No Privileges Person's preferred languages
+    Your language preferences
     >>> user_browser.url
     '.../~no-priv/+editlanguages'
 
