@@ -33,6 +33,7 @@ from lp.translations.interfaces.translationrelicensingagreement import (
     TranslationRelicensingAgreementOptions)
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
+from lp.translations.model.pofile import POFile
 from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 
 
@@ -245,11 +246,18 @@ class PersonTranslationView(LaunchpadView):
             now = datetime.now(pytz.timezone('UTC'))
             self.history_horizon = now - timedelta(90, 0, 0)
 
-    def _aggregateTranslationTargets(self, pofiles, pofile_link_suffix):
+    def _aggregateTranslationTargets(self, pofiles, pofile_link_suffix,
+                                     count_pofile_strings):
         """Aggregate list of `POFile`s into sensible targets.
 
         Returns a list of target descriptions as returned by
         `_describeTarget` after going through `_findBestCommonLinks`.
+
+        :param pofiles: A list of `POFile`s to aggregate.
+        :param pofile_link_suffix: String to append to URLs when linking
+            to POFiles.
+        :param count_pofile_strings: Callable that returns the number of
+            strings that need work for a given POFile.
         """
         targets = {}
         for pofile in pofiles:
@@ -265,6 +273,7 @@ class PersonTranslationView(LaunchpadView):
                 count = 0
                 target_pofiles = []
 
+            count += count_pofile_strings(pofile)
             count += pofile.unreviewedCount()
             target_pofiles.append(pofile)
 
@@ -289,7 +298,7 @@ class PersonTranslationView(LaunchpadView):
         pofiles = person.getReviewableTranslationFiles(
             no_older_than=self.history_horizon)
         return self._aggregateTranslationTargets(
-            pofiles, self._pofile_review_suffix)
+            pofiles, self._pofile_review_suffix, POFile.unreviewedCount)
 
     @property
     def top_projects_and_packages_to_review(self):
@@ -317,7 +326,7 @@ class PersonTranslationView(LaunchpadView):
         pofiles = person.suggestReviewableTranslationFiles(
             no_older_than=self.history_horizon)[:fetch]
         random_suggestions = self._aggregateTranslationTargets(
-            pofiles, self._pofile_review_suffix)
+            pofiles, self._pofile_review_suffix, POFile.unreviewedCount)
 
         return recent[:max_old_targets] + random_suggestions[:empty_slots]
 
@@ -332,8 +341,7 @@ class PersonTranslationView(LaunchpadView):
         pofiles = self.context.getFilesToTranslate(
             no_older_than=self.history_horizon, worst_first=worst_first)
         return self._aggregateTranslationTargets(
-            pofiles, pofile_weight=compute_pofile_untranslated_messages,
-            pofile_suffix=self._pofile_translate_suffix)
+            pofiles, self._pofile_translate_suffix, POFile.untranslatedCount)
 
     @property
     def person_includes_me(self):

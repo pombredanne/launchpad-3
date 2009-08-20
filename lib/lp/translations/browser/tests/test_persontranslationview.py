@@ -18,6 +18,11 @@ from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 from lp.translations.model.translator import TranslatorSet
 
 
+def count_one(*args):
+    """Little helper.  Always return 1."""
+    return 1
+
+
 class TestPersonTranslationView(TestCaseWithFactory):
     """Test `PersonTranslationView`."""
 
@@ -80,10 +85,11 @@ class TestPersonTranslationView(TestCaseWithFactory):
         """Produce a list of review links for `pofiles`."""
         return self.view._composePOFileLinks(pofiles, self._getSuffix(suffix))
 
-    def _aggregateTranslationTargets(self, pofiles, suffix=None):
+    def _aggregateTranslationTargets(self, pofiles, suffix=None,
+                                     count_pofile=None):
         """Run the view's _aggregateTranslationTargets on `pofiles`."""
         return self.view._aggregateTranslationTargets(
-            pofiles, self._getSuffix(suffix))
+            pofiles, self._getSuffix(suffix), count_one)
 
     def test_translation_groups(self):
         # translation_groups lists the translation groups a person is
@@ -279,8 +285,8 @@ class TestPersonTranslationView(TestCaseWithFactory):
         expected_links = self._composePOFileLinks([pofile])
         expected_description = [{
             'target': pofile.potemplate.productseries.product,
-            'count': 0,
-            'count_wording': "0 strings",
+            'count': 1,
+            'count_wording': "1 string",
             'is_product': True,
             'link': expected_links[0],
         }]
