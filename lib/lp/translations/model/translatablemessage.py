@@ -29,28 +29,34 @@ class TranslatableMessage(object):
 
         self.potmsgset = potmsgset
         self.pofile = pofile
-        self.sequence = potmsgset.getSequence(self.potemplate)
+        self.sequence = potmsgset.getSequence(pofile.potemplate)
         self.potemplate = pofile.potemplate
         self.language = pofile.language
         self.variant = pofile.variant
 
         self._current_translation = self.potmsgset.getCurrentTranslationMessage(
-            self.language, self.potemplate, self.variant)
+            self.potemplate, self.language, self.variant)
 
     def isObsolete(self):
         """See 'ITranslatableMessage'"""
-        return self.getSequenceNumber() == 0
+        return self.sequence == 0
 
     def isCurrentDiverged(self):
         """See 'ITranslatableMessage'"""
+        if self._current_translation is None:
+            return False
         return self._current_translation.potemplate == self.potemplate
 
     def isCurrentEmpty(self):
         """See 'ITranslatableMessage'"""
+        if self._current_translation is None:
+            return False
         return self._current_translation.is_empty
 
     def isCurrentImported(self):
         """See 'ITranslatableMessage'"""
+        if self._current_translation is None:
+            return False
         return self._current_translation.is_imported
 
     def getCurrentTranslation(self):

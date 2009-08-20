@@ -293,12 +293,19 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # Setting one of the suggestions as current will leave make
         # them both 'reviewed' and thus hidden.
-        shared_suggestion = self.factory.makeSharedTranslationMessage(
+        current_translation = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=False)
         self.assertEquals(
             set(self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian)),
             set([]))
+
+        # There is a switch to the message that shows all suggestions
+        # regardless of wether they were reviewed.
+        self.assertEquals(
+            set(self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, serbian, only_new=False)),
+            set([shared_suggestion, another_suggestion]))
 
     def test_getLocalTranslationMessages_empty_message(self):
         # An empty suggestion is never returned.
