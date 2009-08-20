@@ -1348,6 +1348,9 @@ class PeopleSearchView(LaunchpadView):
 
     implements(IRegistryCollectionNavigationMenu)
 
+    label = 'People and teams'
+    page_title = 'People and teams in Launchpad'
+
     def __init__(self, context, request):
         super(PeopleSearchView, self).__init__(context, request)
         self.results = []

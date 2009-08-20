@@ -323,6 +323,7 @@ class ProductNavigationMenu(NavigationMenu):
         text = 'Branch Visibility Policy'
         return Link('+branchvisibility', text)
 
+
 class ProductEditLinksMixin:
     """A mixin class for menus that need Product edit links."""
 
@@ -1390,6 +1391,9 @@ class ProductSetView(LaunchpadView):
     """View for products index page."""
 
     implements(IRegistryCollectionNavigationMenu)
+
+    label = 'Projects'
+    page_title = 'Projects registered in Launchpad'
 
     max_results_to_display = config.launchpad.default_batch_size
     results = None

@@ -797,8 +797,6 @@ def package_bugs(context, view):
     """Return the page title bug in a package."""
     return 'Bugs in %s' % context.name
 
-people_index = 'People and teams in Launchpad'
-
 people_adminrequestmerge = 'Merge Launchpad accounts'
 
 def people_list(context, view):
@@ -1024,8 +1022,6 @@ productrelease_admin = ContextTitle('Administer %s in Launchpad')
 productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
-
-products_index = 'Projects registered in Launchpad'
 
 products_review_licenses = 'Review projects'
 
