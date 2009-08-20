@@ -490,7 +490,7 @@ for the contents of devices_collection_link.)
 Accessing the raw submission data yields a redirect to a Librarian URL.
 
     >>> print webservice.get(submission['raw_submission_link'])
-    HTTP/1.1 303 See Other
+    HTTP/1.1 303 See Other...
     Content-Length: 0
     Content-Type: text/plain
     Location: http://localhost:58000/92/sample-submission-2.xml
@@ -722,7 +722,7 @@ are stored in HWSubmission.devices.
 
 A vendor ID can be accessed by via its database ID.
 
-    >>> vendor_id = webservice.get('+hwdb/+hwvendorid/1').jsonBody()
+    >>> vendor_id = webservice.get('/+hwdb/+hwvendorid/1').jsonBody()
     >>> pprint_entry(vendor_id)
     bus: u'System'
     id: 1

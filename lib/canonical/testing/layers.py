@@ -69,7 +69,10 @@ from urllib import urlopen
 import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
+import wsgi_intercept
 
+from zope.app.publication.httpfactory import chooseClasses
+from zope.app.publication.http import HTTPPublication
 import zope.app.testing.functional
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
@@ -752,6 +755,47 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
             "DELETE FROM SessionData")
 
 
+def wsgi_application(environ, start_response):
+    """This is a wsgi application for Zope functional testing.
+
+    We use it with wsgi_intercept, which is itself mostly interesting
+    for our webservice (lazr.restful) tests.
+    """
+    # Committing work done up to now is a convenience that the Zope
+    # zope.app.testing.functional.HTTPCaller does.  We're replacing that bit,
+    # so it is easiest to follow that lead, even if it feels a little loose.
+    transaction.commit()
+    # Let's support post-mortem debugging.
+    if environ.get('HTTP_X_ZOPE_HANDLE_ERRORS') == 'False':
+        environ['wsgi.handleErrors'] = False
+    if 'HTTP_X_ZOPE_HANDLE_ERRORS' in environ:
+        del environ['HTTP_X_ZOPE_HANDLE_ERRORS']
+    handle_errors = environ.get('wsgi.handleErrors', True)
+    # Now we do the proper dance to get the desired request.  This is an
+    # almalgam of code from zope.app.testing.functional.HTTPCaller and
+    # zope.publisher.paste.Application.
+    request_cls, publication_cls = chooseClasses(
+        environ['REQUEST_METHOD'], environ)
+    publication = publication_cls(FunctionalTestSetup().db)
+    request = request_cls(environ['wsgi.input'], environ)
+    request.setPublication(publication)
+    # The rest of this function is an amalgam of
+    # zope.publisher.paste.Application.__call__ and van.testing.layers.
+    request = zope.publisher.publish.publish(
+        request, handle_errors=handle_errors)
+    response = request.response
+    # We sort these, and then put the status first, because
+    # zope.testbrowser.testing does--and because it makes it easier to write
+    # reliable tests.
+    headers = sorted(response.getHeaders())
+    status = response.getStatusString()
+    headers.insert(0, ('Status', status))
+    # Start the WSGI server response.
+    start_response(status, headers)
+    # Return the result body iterable.
+    return response.consumeBodyIter()
+
+
 class FunctionalLayer(BaseLayer):
     """Loads the Zope3 component architecture in appserver mode."""
 
@@ -773,11 +817,14 @@ class FunctionalLayer(BaseLayer):
         # they're defined by Python code, we need to call that code
         # here.
         register_launchpad_request_publication_factories()
+        wsgi_intercept.add_wsgi_intercept(
+            'localhost', 80, lambda: wsgi_application)
 
     @classmethod
     @profiled
     def tearDown(cls):
         FunctionalLayer.isSetUp = False
+        wsgi_intercept.remove_wsgi_intercept('localhost', 80)
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
