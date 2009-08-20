@@ -292,11 +292,11 @@ pre, code, samp, tt, .console {
   font-size: 116%;
     }
 ol {
-	margin-left: 1.8em;
+       margin-left: 1.8em;
     }
 ol li {
-	list-style: decimal outside;
-	}
+       list-style: decimal outside;
+       }
 li {
     padding-bottom: .3em;
     }
@@ -580,6 +580,10 @@ div.watermark-apps-portlet h1 {
     background: #dfe5f6;
     border-top: 1px solid #d0d0d0;
     border-bottom: 1px solid #d0d0d0;
+    }
+.announcement .registered {
+    font-size: 93%;
+    margin-top: -2px;
     }
 
 /* From nice_pre in tales.py */

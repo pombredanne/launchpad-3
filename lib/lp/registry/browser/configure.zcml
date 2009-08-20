@@ -678,16 +678,11 @@
         name="+index"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
+        class="lp.registry.browser.announcement.AnnouncementView"
         facet="overview"
         permission="launchpad.View"
         template="../templates/announcement-index.pt"
         name="+index"/>
-    <browser:page
-        for="lp.registry.interfaces.announcement.IAnnouncement"
-        facet="overview"
-        permission="launchpad.View"
-        template="../templates/announcement-listing-detailed.pt"
-        name="+listing-detailed"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
         class="lp.registry.browser.announcement.AnnouncementEditView"
@@ -756,10 +751,15 @@
         class="lp.registry.browser.announcement.AnnouncementSetView"
         permission="zope.Public"
         template="../templates/announcements-all.pt"/>
+    <browser:page
+        for="*"
+        name="+announcement-macros"
+        permission="zope.Public"
+        template="../templates/announcement-macros.pt" />
     <browser:menus
         module="lp.registry.browser.announcement"
         classes="
-            AnnouncementContextMenu
+            AnnouncementCreateNavigationMenu
             AnnouncementEditNavigationMenu"/>
     <facet
         facet="overview">
