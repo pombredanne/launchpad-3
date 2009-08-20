@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistroArchSeriesAddView',
+    'DistroArchSeriesAdminView',
     'DistroArchSeriesPackageSearchView',
     'DistroArchSeriesContextMenu',
     'DistroArchSeriesNavigation',
@@ -15,12 +16,14 @@ from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.webapp import GetitemNavigation
+from canonical.launchpad.webapp import (
+    GetitemNavigation, LaunchpadEditFormView)
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
     ContextMenu, enabled_with_permission, Link)
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.lazr.utils import smartquote
 
 
 class DistroArchSeriesNavigation(GetitemNavigation):
@@ -63,7 +66,21 @@ class DistroArchSeriesAddView(LaunchpadFormView):
     schema = IDistroArchSeries
     field_names = ['architecturetag', 'processorfamily', 'official',
                    'supports_virtualized']
-    label = _('Create a port')
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`"""
+        return 'Add a port of %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action(_('Continue'), name='continue')
     def create_action(self, action, data):
@@ -72,3 +89,40 @@ class DistroArchSeriesAddView(LaunchpadFormView):
             data['architecturetag'], data['processorfamily'],
             data['official'], self.user, data['supports_virtualized'])
         self.next_url = canonical_url(distroarchseries)
+
+
+class DistroArchSeriesAdminView(LaunchpadEditFormView):
+    """View class for admin of DistroArchSeries."""
+
+    schema = IDistroArchSeries
+
+    field_names = [
+        'architecturetag', 'official', 'supports_virtualized'
+        ]
+
+    @action(_('Change'), name='update')
+    def change_details(self, action, data):
+        """Update with details from the form."""
+        modified = self.updateContextFromData(data)
+
+        if modified:
+            self.request.response.addNotification(
+                "Successfully updated")
+
+        return modified
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return self.next_url
+
+    @property
+    def page_title(self):
+        return smartquote("Administer %s" % self.context.title)
+
+    @property
+    def label(self):
+        return self.page_title
