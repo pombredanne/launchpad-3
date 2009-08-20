@@ -187,26 +187,8 @@ branch_landing_candidates = ContextDisplayName(smartquote(
 
 branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 
-branchmergeproposal_delete = 'Delete proposal to merge branch'
-
-branchmergeproposal_edit = ViewLabel()
-
-branchmergeproposal_editstatus = ViewLabel()
-
-branchmergeproposal_enqueue = 'Queue branch for merging'
-
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
-
-branchmergeproposal_request_review = ViewLabel()
-
-branchmergeproposal_resubmit = ViewLabel()
-
-branchmergeproposal_review = ViewLabel()
-
-branchmergeproposal_vote = ViewLabel()
-
-branchmergeproposal_work_in_progress = ViewLabel()
 
 branch_register_merge_proposal = 'Propose branch for merging'
 
