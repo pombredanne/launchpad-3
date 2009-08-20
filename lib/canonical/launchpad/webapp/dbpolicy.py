@@ -270,7 +270,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
         # sl_status gives meaningful results only on the origin node.
         master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-        return store.execute(
+        return master_store.execute(
             "SELECT replication_lag(%d)" % slave_node_id).get_one()[0]
 
 
