@@ -1339,12 +1339,16 @@ class TeamMembershipView(LaunchpadView):
 class PersonSetActionNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for `PeopleSearchView`."""
     usedfor = IPersonSet
+    links = ['register_team', 'register_project', 'create_account',
+             'request_merge', 'admin_merge_people', 'admin_merge_teams']
 
 
 class PeopleSearchView(LaunchpadView):
     """Search for people and teams on the /people page."""
 
     implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'People and teams in Launchpad'
 
     def __init__(self, context, request):
         super(PeopleSearchView, self).__init__(context, request)
