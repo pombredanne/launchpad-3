@@ -25,7 +25,8 @@ from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
-from zope.traversing.interfaces import ITraversable, IPathAdapter
+from zope.traversing.interfaces import (
+    ITraversable, IPathAdapter, TraversalError)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -66,12 +67,6 @@ def escape(text, quote=True):
     Wraps `cgi.escape` to make the default to escape double-quotes.
     """
     return cgi.escape(text, quote)
-
-
-class TraversalError(NotFoundError):
-    """Remove this when we upgrade to a more recent Zope x3."""
-    # XXX: Steve Alexander 2004-12-14:
-    # Remove this when we upgrade to a more recent Zope x3.
 
 
 class MenuAPI:
@@ -435,7 +430,6 @@ class ObjectFormatterAPI:
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
         'public-private-css': 'public_private_css',
-        'location_heading': 'location_heading',
         }
 
     def __init__(self, context):
@@ -526,24 +520,6 @@ class ObjectFormatterAPI:
         else:
             return 'public'
 
-    def location_heading(self):
-        """Return a heading for the nearest object supporting a logo."""
-        context = self._context
-        if not IHasLogo.providedBy(context):
-            context = nearest(context, IHasLogo)
-            heading = 'h2'
-        else:
-            heading = 'h1'
-
-        if context is None:
-            title = 'Launchpad.net'
-        else:
-            title = context.title
-
-        return "<%(heading)s>%(title)s</%(heading)s>" % {
-            'heading': heading,
-            'title': cgi.escape(title)
-            }
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects

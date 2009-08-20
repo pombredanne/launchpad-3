@@ -9,7 +9,12 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
 
-<facet facet="branches">
+  <adapter
+      provides="lp.app.interfaces.rootcontext.IRootContext"
+      for="lp.code.interfaces.branch.IBranch"
+      factory="lp.code.browser.branch.branch_root_context"/>
+
+  <facet facet="branches">
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
