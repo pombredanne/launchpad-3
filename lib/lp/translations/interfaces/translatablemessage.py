@@ -51,7 +51,7 @@ class ITranslatableMessage(Interface):
         to the current translation if the current translation is shared.
         """
 
-    def getSuggestions(only_new):
+    def getSuggestions(only_new=True):
         """Return an iterator over suggested translations.
 
         :param only_new: Return only those translations that are newer than
@@ -63,5 +63,15 @@ class ITranslatableMessage(Interface):
 
         External translations are translations for the same English string
         in other products and source packages.
+        """
+
+    def dismissAllSuggestions(reviewer, lock_timestamp):
+        """Dismiss all suggestions.
+
+        :param reviewer: the person that is doing the dismissal.
+        :param lock_timestamp: the timestamp when we checked the values we
+            want to update.
+
+        If a translation conflict is detected, TranslationConflict is raised.
         """
 

@@ -3,8 +3,9 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
+import pytz
 from unittest import TestLoader
-import transaction
 
 from lp.testing import TestCaseWithFactory
 from lp.translations.model.translatablemessage import TranslatableMessage
@@ -34,14 +35,16 @@ class TestTranslatableMessage(TestCaseWithFactory):
             potemplate=self.potemplate, language_code='eo')
 
     def _createTranslation(self, translation, is_current=False,
-                           is_imported=False, is_diverged=False):
+                           is_imported=False, is_diverged=False,
+                           date_updated=None):
         is_suggestion = not (is_current or is_imported or is_diverged)
         return self.factory.makeTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             translations=[translation],
             suggestion=is_suggestion,
             is_imported=is_imported,
-            force_diverged=is_diverged)
+            force_diverged=is_diverged,
+            date_updated=date_updated)
 
     def test_sequence(self):
         # After instantiation, the sequence number from the potmsgset is
@@ -100,7 +103,7 @@ class TestTranslatableMessage(TestCaseWithFactory):
         suggestion1 = self._createTranslation('bar1')
         suggestion2 = self._createTranslation('bar2')
         message = TranslatableMessage(self.potmsgset, self.pofile)
-        suggestions = message.getSuggestions(False)
+        suggestions = message.getSuggestions()
         self.assertContentEqual([suggestion1, suggestion2], suggestions)
 
     def test_getExternalTranslations(self):
@@ -124,6 +127,28 @@ class TestTranslatableMessage(TestCaseWithFactory):
         message = TranslatableMessage(self.potmsgset, self.pofile)
         externals = message.getExternalTranslations()
         self.assertContentEqual([external_current, external_imported], externals)
+
+    def test_dismissAllSuggestions(self):
+        # Add a suggestion that is newer than the current translation and
+        # dismiss it. Also show that getSuggestions only returns translations
+        # that are newer than the current one unless only_new is set to False.
+        now = datetime.now(pytz.UTC)
+        current = self._createTranslation('bar', is_current=True, 
+                                          date_updated=now)
+        now += timedelta(milliseconds=1)
+        suggestion = self._createTranslation('bar_sugg', date_updated=now)
+        now += timedelta(milliseconds=1)
+
+        message = TranslatableMessage(self.potmsgset, self.pofile)
+        suggestions = message.getSuggestions()
+        self.assertContentEqual([suggestion], suggestions)
+
+        message.dismissAllSuggestions(self.potemplate.owner, now)
+        suggestions = message.getSuggestions()
+        self.assertContentEqual([], suggestions)
+
+        suggestions = message.getSuggestions(only_new=False)
+        self.assertContentEqual([suggestion], suggestions)
 
 
 def test_suite():

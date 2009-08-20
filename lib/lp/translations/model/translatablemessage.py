@@ -74,7 +74,7 @@ class TranslatableMessage(object):
         return self.potmsgset.getSharedTranslationMessage(self.language,
                                                           self.variant)
 
-    def getSuggestions(self, only_new):
+    def getSuggestions(self, only_new=True):
         """See 'ITranslatableMessage'"""
         return self.potmsgset.getLocalTranslationMessages(self.potemplate,
                                                           self.language,
@@ -88,4 +88,9 @@ class TranslatableMessage(object):
         externally_suggested = (
             self.potmsgset.getExternallySuggestedTranslationMessages(lang))
         return list(externally_used) + list(externally_suggested)
+
+    def dismissAllSuggestions(self, reviewer, lock_timestamp):
+        """See 'ITranslatableMessage'"""
+        self.potmsgset.dismissAllSuggestions(self.pofile,
+                                             reviewer, lock_timestamp)
 
