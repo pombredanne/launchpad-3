@@ -198,8 +198,8 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def new_product(self):
-        text = 'Register another project in %s' % self.context.displayname
-        return Link('+newproduct', text, icon='edit')
+        text = 'Register a project in %s' % self.context.displayname
+        return Link('+newproduct', text, icon='add')
 
     def top_contributors(self):
         text = 'More contributors'
@@ -227,7 +227,7 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
 
     def milestones(self):
         text = 'See all milestones'
-        return Link('+milestones', text)
+        return Link('+milestones', text, icon='info')
 
     def rdf(self):
         text = structured(
@@ -344,6 +344,15 @@ class ProjectBugsMenu(ApplicationMenu):
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
     implements(IProjectActionMenu)
+
+    @cachedproperty
+    def has_many_projects(self):
+        """Does the projectgroup have many sub projects.
+
+        The number of sub projects can break the preferred layout so the
+        template may want to plan for a long list.
+        """
+        return self.context.products.count() > 10
 
 
 class ProjectEditView(LaunchpadEditFormView):

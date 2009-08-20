@@ -64,7 +64,17 @@
     <div class="yui-g">
       <div class="yui-u first">
         <tal:details replace="structure context/@@+details" />
+        <tal:sprints content="structure context/@@+portlet-coming-sprints" />
+        <tal:faqs content="structure context/@@+portlet-listfaqs" />
+        <tal:questions content="structure context/@@+portlet-latestquestions" />
+        <tal:bugs content="structure context/@@+portlet-latestbugs"
+          condition="view/has_many_projects" />
+        <tal:specs content="structure context/@@+portlet-latestspecs"
+          condition="view/has_many_projects" />
+        <tal:contributors content="structure context/@@+portlet-top-contributors"
+          condition="view/has_many_projects" />
       </div>
+
       <div class="yui-u" id="products">
         <div class="portlet">
           <h2>Projects</h2>
@@ -94,26 +104,22 @@
               </tal:releases>
             </dd>
           </dl>
-          <ul>
-            <li>
-              <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
-            </li>
+          <ul class="horizontal">
             <li tal:condition="context/menu:overview/new_product/enabled">
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
             </li>
+            <li>
+              <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
+            </li>
           </ul>
         </div>
-      </div>
-    </div>
-    <div class="yui-g">
-      <div class="yui-u first">
-        <tal:bugs content="structure context/@@+portlet-latestbugs" />
-        <tal:specs content="structure context/@@+portlet-latestspecs" />
-        <tal:sprints content="structure context/@@+portlet-coming-sprints" />
-      </div>
-      <div class="yui-u">
-        <tal:questions content="structure context/@@+portlet-latestquestions" />
-        <tal:contributors content="structure context/@@+portlet-top-contributors" />
+
+        <tal:bugs content="structure context/@@+portlet-latestbugs"
+          condition="not: view/has_many_projects" />
+        <tal:specs content="structure context/@@+portlet-latestspecs"
+          condition="not: view/has_many_projects" />
+        <tal:contributors content="structure context/@@+portlet-top-contributors"
+          condition="not: view/has_many_projects" />
       </div>
     </div>
     </tal:main>
