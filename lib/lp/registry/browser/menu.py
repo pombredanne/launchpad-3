@@ -12,12 +12,10 @@ __all__ = [
     ]
 
 
-from zope.component import getUtility
 from zope.interface import Interface
 
 from canonical.launchpad.webapp.menu import (
     Link, NavigationMenu, enabled_with_permission)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
 class TopLevelMenuMixin:
