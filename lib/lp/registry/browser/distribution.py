@@ -294,6 +294,9 @@ class DistributionNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def announcements(self):
+        # XXX: BradCrittenden 2009-08-19 bug=410491: When the distribution
+        # index page is updated to UI 3.0 the text needs to read "Read all
+        # announcements".
         target = '+announcements'
         text = 'Announcements'
         return Link(target, text)
@@ -429,9 +432,9 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = u'\u00BB More announcements'
-        enabled = bool(self.context.getAnnouncements().count())
-        return Link('+announcements', text, enabled=enabled)
+        text = 'Read all announcements'
+        enabled = bool(self.context.getAnnouncements())
+        return Link('+announcements', text, icon='info', enabled=enabled)
 
     def builds(self):
         text = 'Builds'
@@ -1063,4 +1066,3 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
     @cachedproperty
     def mirrors(self):
         return self.context.disabled_mirrors
-

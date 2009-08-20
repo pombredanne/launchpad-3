@@ -4,8 +4,10 @@ translations and translation groups related to the person in question.
     >>> anon_browser.open(
     ...     "http://translations.launchpad.dev/people/carlos/+translations")
 
-    >>> extract_text(find_main_content(anon_browser.contents).findAll('h1')[0])
-    u'Applications and packages translated'
+    >>> header = find_tag_by_id(
+    ...     anon_browser.contents, 'translation-history-header')
+    >>> print extract_text(header)
+    Applications and packages translated
 
 The user can see in the page navigation that Carlos has so far worked
 on six files, five of which are shown on this page.

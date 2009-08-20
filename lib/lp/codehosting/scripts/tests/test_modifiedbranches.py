@@ -177,6 +177,43 @@ class TestModifiedBranchesAppendSuffix(TestCase):
         self.assertEqual('/var/testing/**', location)
 
 
+class TestModifiedBranchesUpdateLocations(TestCase):
+    """Test the path splitting an reassebly adding to locations."""
+
+    def setUp(self):
+        super(TestModifiedBranchesUpdateLocations, self).setUp()
+        self.script = ModifiedBranchesScript(
+            'modified-branches', test_args=['--last-hours=12'])
+
+    def test_locations_initially_empty(self):
+        # The locations starts out as an empty set.
+        self.assertEqual(set(), self.script.locations)
+
+    def test_single_path_element(self):
+        # Adding a single element should just add that.
+        self.script.update_locations('foo')
+        self.assertEqual(set(['foo']), self.script.locations)
+
+    def test_single_root_element(self):
+        # If the single element starts with a /, the locations do not include
+        # an empty string.
+        self.script.update_locations('/foo')
+        self.assertEqual(set(['/foo']), self.script.locations)
+
+    def test_multi_path_element(self):
+        # Adding a "real" path will also include all the parents.
+        self.script.update_locations('foo/bar/baz')
+        expected = set(['foo', 'foo/bar', 'foo/bar/baz'])
+        self.assertEqual(expected, self.script.locations)
+
+    def test_duplicates(self):
+        # Adding paths with common parentage doesn't cause duplicates.
+        self.script.update_locations('foo/bar/baz')
+        self.script.update_locations('foo/bar/who')
+        expected = set(['foo', 'foo/bar', 'foo/bar/baz', 'foo/bar/who'])
+        self.assertEqual(expected, self.script.locations)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
