@@ -460,19 +460,6 @@ these URLs in Apache.
   permission="zope.Public"
   />
 
-<!-- Help folders -->
-<lp:help-folder
-  folder="../help/bugs" type="canonical.launchpad.layers.BugsLayer"
-  />
-<lp:help-folder
-  folder="../help/blueprints" 
-  type="canonical.launchpad.layers.BlueprintsLayer"
-  />
-<lp:help-folder
-  folder="../help/translations" 
-  type="canonical.launchpad.layers.TranslationsLayer"
-  />
-
 <browser:page
   for="*"
   name="+applicationbuttons"

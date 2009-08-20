@@ -7,9 +7,13 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+
+    <lp:help-folder
+        folder="help" type="canonical.launchpad.layers.BlueprintsLayer" />
 
     <!-- Sprint -->
 
