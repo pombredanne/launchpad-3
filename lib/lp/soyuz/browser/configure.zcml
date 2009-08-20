@@ -352,12 +352,6 @@
             name="+index"
             facet="overview"
             template="../templates/build-index.pt"/>
-        <browser:page
-            name="+portlet-binaries"
-            template="../templates/build-portlet-binaries.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/build-portlet-details.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.soyuz.interfaces.build.IBuild"
@@ -428,10 +422,6 @@
             facet="overview"
             name="+index"/>
         <browser:page
-            template="../templates/builder-history.pt"
-            facet="overview"
-            name="+history"/>
-        <browser:page
             template="../templates/builds-list.pt"
             name="+builds-list"
             facet="overview"/>
@@ -441,20 +431,19 @@
             facet="overview"/>
     </browser:pages>
     <browser:page
+        name="+history"
+        for="lp.soyuz.interfaces.builder.IBuilder"
+        permission="zope.Public"
+        template="../templates/builder-history.pt"
+        facet="overview"
+        class="lp.soyuz.browser.builder.BuilderHistoryView" />
+    <browser:page
         name="+edit"
         for="lp.soyuz.interfaces.builder.IBuilder"
         class="lp.soyuz.browser.builder.BuilderEditView"
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
         facet="overview"/>
-    <browser:editform
-        name="+mode"
-        for="lp.soyuz.interfaces.builder.IBuilder"
-        schema="lp.soyuz.interfaces.builder.IBuilder"
-        facet="overview"
-        fields="manual"
-        permission="launchpad.Edit"
-        template="../templates/builder-mode.pt"/>
     <browser:menus
         classes="
             BuilderSetFacets
