@@ -17,7 +17,7 @@
       <h1>News and announcements</h1>
     </tal:heading>
     <div metal:fill-slot="main">
-      <br />
+      <div class="top-portlet" style="margin-top: 0.5em;">
       <p tal:condition="not: view/announcement_nav/batch/listlength">
         There are no announcements for this project.
       </p>
@@ -40,6 +40,7 @@
                />
           </div>
         </tal:per_announcement>
+      </div>
       </div>
       <div class="lesser"
            tal:content="structure view/announcement_nav/@@+navigation-links-lower"

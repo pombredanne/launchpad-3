@@ -12,7 +12,6 @@ __all__ = [
     'AnnouncementRetractView',
     'AnnouncementDeleteView',
     'AnnouncementEditView',
-    'AnnouncementContextMenu',
     'AnnouncementSetView',
     'HasAnnouncementsView',
     'AnnouncementView',
@@ -24,6 +23,7 @@ from zope.schema import Choice, TextLine
 from canonical.cachedproperty import cachedproperty
 
 from lp.registry.interfaces.announcement import IAnnouncement
+from lp.registry.interfaces.distribution import IDistribution
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
@@ -77,12 +77,6 @@ class AnnouncementMenuMixin:
         return Link('+announce', text, summary, icon='add')
 
 
-class AnnouncementContextMenu(ContextMenu, AnnouncementMenuMixin):
-    """The menu for working with an Announcement."""
-    usedfor = IAnnouncement
-    links = ['edit', 'retarget', 'publish', 'retract', 'delete']
-
-
 class IAnnouncementEditMenu(Interface):
     """A marker interface for modify announcement navigation menu."""
 
@@ -118,6 +112,14 @@ class AnnouncementCreateNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
     title = 'Create announcement'
     links = ['announce']
 
+    # XXX: BradCrittenden 2009-08-19 bug=410491: When the distribution index
+    # page is updated to UI 3.0 the logic to remove the 'announce' link
+    # can/must be removed.  This navigation menu simply does not play well
+    # with the pre-3.0 page structure.
+    def __init__(self, *args, **kwargs):
+        super(AnnouncementCreateNavigationMenu, self).__init__(*args, **kwargs)
+        if IDistribution.providedBy(self.context.context):
+            self.links = []
 
 class AnnouncementFormMixin:
     """A mixin to provide the common form features."""

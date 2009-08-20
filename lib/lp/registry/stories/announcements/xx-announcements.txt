@@ -16,7 +16,7 @@ news feed.
     ...     """The contents of the latest news portlet."""
     ...     return extract_text(find_portlet(content, 'Announcements'))
     >>> def count_show_links(content):
-    ...     """Determine whether the "More announcements" link is shown."""
+    ...     """Determine whether the "Read more announcements" link is shown."""
     ...     return len(find_tags_by_class(
     ...         content, 'menu-link-announcements'))
     >>> def no_announcements(content):
@@ -229,10 +229,10 @@ page that any user can navigate.
     >>> print extract_text(content.h1)
     Derby announcement headline
 
-    >>> print extract_text(content.p)
+    >>> print extract_text(content.findAll('p')[1])
     Derby announcement summary
 
-    >>> anon_browser.getLink("More announcements").click()
+    >>> anon_browser.getLink("Read all announcements").click()
     >>> print anon_browser.title
     Derby news and announcements
 
@@ -257,11 +257,12 @@ any links to show announcements.
     >>> count_show_links(anon_browser.contents)
     0
 
-Distribution pages always have the link in the navigation menu,
+When there are no announcements for a distribution, we should not see
+any links to show announcements.
 
     >>> anon_browser.open('http://launchpad.dev/kubuntu')
     >>> count_show_links(anon_browser.contents)
-    1
+    0
 
 But we do see it when there are published announcements.
 

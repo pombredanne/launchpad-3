@@ -773,7 +773,6 @@
     <browser:menus
         module="lp.registry.browser.announcement"
         classes="
-            AnnouncementContextMenu
             AnnouncementCreateNavigationMenu
             AnnouncementEditNavigationMenu"/>
     <facet

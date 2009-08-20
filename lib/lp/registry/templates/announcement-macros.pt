@@ -51,9 +51,9 @@
           Updated
           <span tal:replace="announcement/date_last_modified/fmt:displaydate" />.
       </strong>
-      <a tal:condition="announcement/url"
-         tal:attributes="href announcement/url">
-         <img src="/@@/link" alt="Link" /> Read more</a>
+      <a rel="nofollow" class="sprite external-link"
+         tal:condition="announcement/url"
+         tal:attributes="href announcement/url">Read more</a>
     </p>
 </div>
 </metal:announcement-listing>
