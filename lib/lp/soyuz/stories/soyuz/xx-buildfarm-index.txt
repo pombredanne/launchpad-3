@@ -138,6 +138,8 @@ can also modify that while creating a builder.
 Once the form is submitted the users will be redirected to the
 just-created builder page.
 
+
+    >>> from canonical.launchpad.helpers import backslashreplace
     >>> admin_browser.getControl("Register builder").click()
-    >>> print admin_browser.title
-    Build machine Tubaina
+    >>> print backslashreplace(admin_browser.title)
+    Builder \u201cTubaina\u201d

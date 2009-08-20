@@ -292,11 +292,11 @@ pre, code, samp, tt, .console {
   font-size: 116%;
     }
 ol {
-	margin-left: 1.8em;
+       margin-left: 1.8em;
     }
 ol li {
-	list-style: decimal outside;
-	}
+       list-style: decimal outside;
+       }
 li {
     padding-bottom: .3em;
     }
@@ -417,57 +417,57 @@ span.see-all {
     padding-left: 1em;
     }
 
-/* == Location portlet heading styles */
-div.location-portlet {
+/* == Watermark heading styles */
+div.watermark-apps-portlet {
     padding-bottom:1em;
     border-bottom: 1px solid #d6d6d6;
 }
-div.location-portlet img {
+div.watermark-apps-portlet img {
     float: left;
     margin: 0 1.5em 0 0;
 }
-div.location-portlet h1, div.location-portlet h2 {
+div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
     padding-top: 0.1em;
     margin-bottom: 0.8em;
     color: #000000;
     font-weight: bold;
     clear: none;
 }
-div.location-portlet h1 {
+div.watermark-apps-portlet h1 {
     margin-bottom: 0.2em;
     padding-top: 0;
 }
 
-/* === Location portlet tabs === */
-/* In most pages, we present a list of six application facets: */
-.location-portlet li {
+/* === Application buttons === */
+/* In most pages, we present a list of six application buttons: */
+.watermark-apps-portlet li {
     display:inline;
     list-style-type: none;
 }
-.location-portlet li a, .location-portlet li span {
+.watermark-apps-portlet li a, .watermark-apps-portlet li span {
     padding: 0.3em 0.5em;
     margin-right: 0.4em;
 }
 /* The text of the first tab should align with the heading directly
    above it */
-.location-portlet li:first-child a, .location-portlet li:first-child span {
+.watermark-apps-portlet li:first-child a, .watermark-apps-portlet li:first-child span {
     margin-left: -0.5em;
 }
-.location-portlet li a:link, .location-portlet li a:visited {
+.watermark-apps-portlet li a:link, .watermark-apps-portlet li a:visited {
     color: #000;
     background-color: #fff;
     text-decoration: none;
 }
-.location-portlet li.active a, .location-portlet li.active span {
+.watermark-apps-portlet li.active a, .watermark-apps-portlet li.active span {
     font-weight: bold;
     color: #fff;
     background-color: #747474;
 }
-.location-portlet li a:hover {
+.watermark-apps-portlet li a:hover {
     color: #000;
     background-color: #f3f3f3;
 }
-.location-portlet li.disabled-tab {
+.watermark-apps-portlet li.disabled-tab {
     color: #747474;
 }
 
@@ -581,6 +581,10 @@ div.location-portlet h1 {
     border-top: 1px solid #d0d0d0;
     border-bottom: 1px solid #d0d0d0;
     }
+.announcement .registered {
+    font-size: 93%;
+    margin-top: -2px;
+    }
 
 /* From nice_pre in tales.py */
 pre.wrap {
@@ -590,3 +594,8 @@ pre.wrap {
   word-wrap: break-word;
 }
 
+ul.language, li.language             {
+  list-style-image: url(/@@/language);
+  /* Disable .language sprite. */
+  background: inherit;
+}

@@ -289,6 +289,30 @@ fmt:url accepts an rootsite extension to make URLs to a specific application.
     >>> login(ANONYMOUS)
 
 
+The fmt: namespace to get a web service URL
+-------------------------------------------
+
+The `fmt:api_url` expression gives you the absolute API path to an object.
+This path is everything after the web service version number.
+
+    >>> login(ANONYMOUS,
+    ...     LaunchpadTestRequest(SERVER_URL='http://bugs.launchpad.net'))
+
+    >>> bob = factory.makePerson(name='bob')
+    >>> print test_tales("person/fmt:api_url", person=bob)
+    /~bob
+
+    >>> freewidget = factory.makeProduct(name='freewidget')
+    >>> print test_tales("product/fmt:api_url", product=freewidget)
+    /freewidget
+
+    >>> debuntu = factory.makeProduct(name='debuntu')
+    >>> print test_tales("distro/fmt:api_url", distro=debuntu)
+    /debuntu
+
+    >>> login(ANONYMOUS)
+
+
 The fmt: namespace to get links
 -------------------------------
 
@@ -456,20 +480,22 @@ Branch subscriptions
 Branch subscriptions show the person and branch name.  For users without
 adequate permissions, a link is not generated.
 
-    >>> branch = factory.makeAnyBranch(title='My Branch')
-    >>> person = factory.makePerson(displayname='My Person')
+    >>> branch = factory.makeProductBranch(
+    ...     owner=eric, product=fooix, name='my-branch', title='My Branch')
+    >>> michael = factory.makePerson(
+    ...     name='michael', displayname='Michael the Viking')
     >>> subscription = factory.makeBranchSubscription(
-    ...     branch=branch, person=person)
+    ...     branch=branch, person=michael)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'Subscription of My Person to
-      lp://dev/~person-name17/product-name12/branch19'
+    u'Subscription of Michael the Viking to
+      lp://dev/~eric/fooix/my-branch'
 
 But if we log in as the subscriber, a link is presented.
 
     >>> login_person(subscription.person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'<a href="http://.../+subscription/person-name21">Subscription
-      of My Person to lp://dev/~person-name17/product-name12/branch19</a>'
+    u'<a href="http://.../+subscription/michael">Subscription
+      of Michael the Viking to lp://dev/~eric/fooix/my-branch</a>'
 
 Merge proposals also have a link formatter, which displays branch
 titles:
@@ -1183,60 +1209,6 @@ with 'None/fmt:foo'.
 
     >>> test_tales('foo/fmt:exactduration', foo=None)
     ''
-
-
-The fmt: namespace to get a location heading
---------------------------------------------
-
-The `fmt:location_heading` is used when you want a heading for the
-nearest object that implements IHasLogo.
-
-    >>> print test_tales(
-    ...     "series/fmt:location_heading", series=ubuntu['warty'])
-    <h2>Ubuntu Linux</h2>
-
-    >>> print test_tales("ppa/fmt:location_heading", ppa=sabdfl.archive)
-    <h2>Mark Shuttleworth</h2>
-
-This can be used together with the `image:logo` formatter which also
-returns the logo of the nearest object that provides a logo.
-
-    >>> print test_tales("series/image:logo", series=ubuntu['warty'])
-    <img ... src="/@@/distribution-logo" />
-
-    >>> print test_tales("ppa/image:logo", ppa=sabdfl.archive)
-    <img ... src="/@@/person-logo" />
-
-If the current context itself defines the location (ie. it implements
-IHasLogo) then an h1 heading will be used instead.
-
-    >>> print test_tales("person/fmt:location_heading", person=sabdfl)
-    <h1>Mark Shuttleworth</h1>
-
-Similarly to the `image:logo` formatter, if the object cannot produce a
-logo, the title defaults to 'Launchpad.net' (differentiating from the
-Launchpad project within Launchpad.net).
-
-    >>> from canonical.launchpad.webapp.publisher import rootObject
-    >>> print test_tales(
-    ...     "root_object/fmt:location_heading", root_object=rootObject)
-    <h2>Launchpad.net</h2>
-
-    >>> print test_tales(
-    ...     "root_object/image:logo", root_object=rootObject)
-    <img ... src="/@@/launchpad-logo" />
-
-Any html in the context title will be escaped to avoid XSS vulnerabilities.
-
-    >>> login('mark@hbd.com')
-    >>> sabdfl.displayname = (
-    ...     "Mark Shuttleworth<br/><script>alert('XSS')</script>")
-    >>> print test_tales("person/fmt:location_heading", person=sabdfl)
-    <h1>Mark
-      Shuttleworth&lt;br/&gt;&lt;script&gt;alert('XSS')&lt;/script&gt;</h1>
-
-    # Restore the anonymous login for the remainder of the test.
-    >>> login(ANONYMOUS, MockBrowserRequest())
 
 
 The lp: namespace for presenting DBSchema items
