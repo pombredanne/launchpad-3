@@ -333,6 +333,18 @@ Drivers, which include project driver and owners can access the
     >>> check_permission('launchpad.Driver', view)
     True
 
+The +addseries view provides a label and a page_title. There is a cancel_url
+too.
+
+    >>> print view.label
+    Register a new Mozilla Firefox release series
+
+    >>> print view.page_title
+    Register a new Mozilla Firefox release series
+
+    >>> print view.cancel_url
+    http://launchpad.dev/firefox
+
 
 Programming languages
 =====================

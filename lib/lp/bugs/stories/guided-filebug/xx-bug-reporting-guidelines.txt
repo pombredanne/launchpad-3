@@ -190,19 +190,19 @@ bug reporting guidelines can be changed, but admins do.
     ...         print sys.exc_info()[0].__name__
     ...     print '  - Admin:',
     ...     admin_browser.open(overview_url)
-    ...     print admin_browser.getLink(url=edit_url_re).text
+    ...     print bool(admin_browser.getLink(url=edit_url_re))
     * Ubuntu
       - User: LinkNotFoundError
-      - Admin: Change distribution details
+      - Admin: True
     * Mozilla
       - User: LinkNotFoundError
-      - Admin: Change details
+      - Admin: True
     * Firefox
       - User: LinkNotFoundError
-      - Admin: Change details
+      - Admin: True
     * alsa-utils in Ubuntu
       - User: LinkNotFoundError
-      - Admin: Edit bug reporting guidelines
+      - Admin: True
 
 Unprivileged cannot access the page for changing bug reporting
 guidelines.

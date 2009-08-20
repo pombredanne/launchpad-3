@@ -44,6 +44,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
@@ -290,6 +291,18 @@ class BranchMergeProposalNavigation(Navigation):
 
     usedfor = IBranchMergeProposal
 
+    @stepthrough('reviews')
+    def traverse_review(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getVoteReference(id)
+        except WrongBranchMergeProposal:
+            return None
+
+
     @stepthrough('comments')
     def traverse_comment(self, id):
         try:
@@ -448,13 +461,11 @@ class DecoratedCodeReviewVoteReference:
 
     def __init__(self, context, user, users_vote):
         self.context = context
-        is_mergable = self.context.branch_merge_proposal.isMergable()
+        proposal = self.context.branch_merge_proposal
+        is_mergable = proposal.isMergable()
         self.can_change_review = (user == context.reviewer) and is_mergable
-        branch = context.branch_merge_proposal.source_branch
-        review_team = context.branch_merge_proposal.target_branch.reviewer
-        reviewer = context.reviewer
-        self.trusted = (reviewer is not None and reviewer.inTeam(
-                        review_team))
+        self.trusted = proposal.target_branch.isPersonTrustedReviewer(
+            context.reviewer)
         if user is None:
             self.user_can_review = False
         else:
@@ -467,6 +478,10 @@ class DecoratedCodeReviewVoteReference:
             self.user_can_claim = False
         else:
             self.user_can_claim = self.user_can_review
+        if user in (context.reviewer, context.registrant):
+            self.user_can_reassign = True
+        else:
+            self.user_can_reassign = False
 
     @property
     def show_date_requested(self):
@@ -494,6 +509,22 @@ class DecoratedCodeReviewVoteReference:
     def status_text(self):
         """The text shown in the table of the users vote."""
         return self.status_text_map[self.context.comment.vote]
+
+class ReassignSchema(Interface):
+
+    reviewer = PublicPersonChoice( title=_('Reviewer'), required=True,
+            description=_('A person who you want to review this.'),
+            vocabulary='ValidPersonOrTeam')
+
+
+class CodeReviewVoteReassign(LaunchpadFormView):
+
+    schema = ReassignSchema
+
+    @action('Reassign', name='reassign')
+    def reassign_action(self, action, data):
+        self.context.reviewer = data['reviewer']
+        self.next_url = canonical_url(self.context.branch_merge_proposal)
 
 
 class BranchMergeProposalVoteView(LaunchpadView):
@@ -716,6 +747,7 @@ class BranchMergeProposalCommitMessageEditView(MergeProposalEditView):
 
     schema = IBranchMergeProposal
     label = "Edit merge proposal commit message"
+    page_title = label
     field_names = ['commit_message']
 
     @action('Update', name='update')
@@ -821,7 +853,7 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
     def initial_values(self):
         # If the user is a valid reviewer, then default the revision
         # number to be the tip.
-        if self.context.isPersonValidReviewer(self.user):
+        if self.context.target_branch.isPersonTrustedReviewer(self.user):
             revision_number = self.context.source_branch.revision_count
         else:
             revision_number = self._getRevisionNumberForRevisionId(
@@ -839,14 +871,14 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
         # If the user is not a valid reviewer for the target branch,
         # then the revision number should be read only, so an
         # untrusted user cannot land changes that have not bee reviewed.
-        if not self.context.isPersonValidReviewer(self.user):
+        if not self.context.target_branch.isPersonTrustedReviewer(self.user):
             self.form_fields['revision_number'].for_display = True
 
     @action('Enqueue', name='enqueue')
     @update_and_notify
     def enqueue_action(self, action, data):
         """Update the whiteboard and enqueue the merge proposal."""
-        if self.context.isPersonValidReviewer(self.user):
+        if self.context.target_branch.isPersonTrustedReviewer(self.user):
             revision_id = self._getRevisionId(data)
         else:
             revision_id = self.context.reviewed_revision_id

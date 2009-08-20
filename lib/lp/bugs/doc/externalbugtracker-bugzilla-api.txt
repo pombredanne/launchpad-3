@@ -1,0 +1,22 @@
+Bugzilla bugtrackers with an XML-RPC API
+========================================
+
+Instances of Bugzilla version 3.4+ offer an XML-RPC API for working with
+bugs. This is very similar in some regards to that offered by the
+Launchpad plugin for versions 3.0 and 3.2, however the differences
+between them necessitate Launchpad's support for Bugzilla 3.4+ being
+implemented as a separate ExternalBugTracker.
+
+As with the BugzillaLPPlugin ExternalBugTracker, we use a special XML-RPC
+transport for the purposes of testing.
+
+    >>> from lp.bugs.externalbugtracker.bugzilla import (
+    ...     BugzillaAPI)
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     TestBugzillaAPIXMLRPCTransport)
+    >>> test_transport = TestBugzillaAPIXMLRPCTransport(
+    ...     'http://example.com/')
+    >>> bugzilla = BugzillaAPI(
+    ...     'http://example.com/', xmlrpc_transport=test_transport)
+    >>> bugzilla.xmlrpc_transport == test_transport
+    True

@@ -32,6 +32,6 @@ where a message inform him of the driver change.
 Sample Person is listed as the driver of the product.
 
     >>> main = find_main_content(browser.contents)
-    >>> extract_text(main.find(id='driver'))
-    u'Driver: Sample Person'
+    >>> print extract_text(main.find(id='driver'))
+    Driver: Sample Person
 
