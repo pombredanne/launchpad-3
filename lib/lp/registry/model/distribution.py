@@ -7,7 +7,7 @@
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
 
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 from zope.component import getUtility
 
 from sqlobject import (
@@ -82,7 +82,8 @@ from lp.bugs.interfaces.bugtask import (
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.distribution import (
-    IDistribution, IDistributionSet)
+    IBaseDistribution, IDerivativeDistribution, IDistribution,
+    IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
 from lp.registry.interfaces.distroseries import (
@@ -182,6 +183,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
     active = True # Required by IPillar interface.
+
+
+    def _init(self, *args, **kw):
+        """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
+        SQLBase._init(self, *args, **kw)
+        # Add a marker interface to set permissions for this kind
+        # of distribution.
+        if self == getUtility(ILaunchpadCelebrities).ubuntu:
+            alsoProvides(self, IBaseDistribution)
+        else:
+            alsoProvides(self, IDerivativeDistribution)
+
 
     @property
     def uploaders(self):
@@ -291,7 +304,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def full_functionality(self):
         """See `IDistribution`."""
-        if self == getUtility(ILaunchpadCelebrities).ubuntu:
+        if IBaseDistribution.providedBy(self):
             return True
         return False
 
@@ -1228,7 +1241,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 clauses.append("""
-                (Archive.private = FALSE OR
+                ((Archive.private = FALSE AND Archive.enabled = TRUE) OR
                  Archive.owner = %s OR
                  %s IN (SELECT TeamParticipation.person
                         FROM TeamParticipation
@@ -1237,7 +1250,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
                 """ % sqlvalues(user, user, user))
         else:
-            clauses.append("Archive.private = FALSE")
+            clauses.append(
+                "Archive.private = FALSE AND Archive.enabled = TRUE")
 
 
         query = ' AND '.join(clauses)
@@ -1488,7 +1502,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def newSeries(self, name, displayname, title, summary,
                   description, version, parent_series, owner):
         """See `IDistribution`."""
-        return DistroSeries(
+        series = DistroSeries(
             distribution=self,
             name=name,
             displayname=displayname,
@@ -1499,6 +1513,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             status=DistroSeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
             owner=owner)
+        if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
+            # This driver is a release manager.
+            series.driver = owner
+        return series
 
     @property
     def has_published_binaries(self):

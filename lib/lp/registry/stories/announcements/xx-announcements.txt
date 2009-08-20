@@ -90,8 +90,8 @@ script.
     >>> print latest_news(priv_browser.contents).encode(
     ...     'ascii', 'backslashreplace')
     Announcements
-    20...: Apache announcement headline
-    ...More announcements
+    Apache announcement headline...
+    Read all announcements
     Make announcement
 
 Add another one, this time specifying a date in the past, which should
@@ -115,9 +115,9 @@ And check out the results:
     >>> print latest_news(priv_browser.contents).encode(
     ...     'ascii', 'backslashreplace')
     Announcements
-    20...: Apache announcement headline
-    2007-11-24: Tomcat announcement headline
-    ...More announcements
+    Apache announcement headline ...
+    Tomcat announcement headline on 2007-11-24 ...
+    Read all announcements
     Make announcement
 
 Let's make sure that the announcement is presented as a link.
@@ -242,12 +242,11 @@ There is a listing page, +announcements, for each pillar that has
 announcements. We will verify that the page is present and that it works
 as expected.
 
-When there are no announcements for a product, we should still see one
-link to the page in the tab bar.
+When there are no announcements for a product, there is no link.
 
     >>> anon_browser.open('http://launchpad.dev/netapplet')
     >>> count_show_links(anon_browser.contents)
-    1
+    0
 
 When there are no announcements for a project, we should not see
 any links to show announcements.
@@ -266,10 +265,10 @@ But we do see it when there are published announcements.
 
     >>> anon_browser.open('http://launchpad.dev/apache')
     >>> count_show_links(anon_browser.contents)
-    2
+    1
     >>> anon_browser.open('http://launchpad.dev/tomcat')
     >>> count_show_links(anon_browser.contents)
-    2
+    1
     >>> anon_browser.open('http://launchpad.dev/redhat')
     >>> count_show_links(anon_browser.contents)
     2

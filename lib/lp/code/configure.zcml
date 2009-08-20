@@ -30,6 +30,7 @@
   </securedutility>
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"/>
+    <require permission="launchpad.Edit" set_attributes="reviewer" />
   </class>
   <subscriber
       for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference
