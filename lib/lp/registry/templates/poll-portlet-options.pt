@@ -19,7 +19,9 @@
       </thead>
       <tr tal:repeat="polloption context/getAllOptions">
         <td tal:content="polloption/name">mjg59</td>
-        <td tal:content="polloption/title">This guy rocks!</td>
+        <td tal:content="polloption/title/fmt:break-long-words">
+          This guy rocks!
+        </td>
         <td>
           <tal:is_active condition="polloption/active">Yes</tal:is_active>
           <tal:inactive condition="not: polloption/active">No</tal:inactive>
