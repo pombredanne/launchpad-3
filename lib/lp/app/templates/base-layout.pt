@@ -4,7 +4,7 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.2.6 (r${revno});
+    version string:Launchpad 2.2.7 (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
@@ -81,42 +81,38 @@
     <div class="yui-d0">
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
-        <form id="globalsearch" method="get" accept-charset="UTF-8"
-          class="sprite search-icon"
-          tal:condition="view/macro:pagehas/globalsearch"
-          tal:attributes="action string:${rooturl}+search">
-          <input type="search" id="search-text" name="field.text" />
-        </form>
         <tal:hierarchy replace="structure context/@@+hierarchy" />
       </div><!--id="locationbar"-->
 
-      <tal:maintenance replace="structure context/@@+maintenancemessage" />
-      <tal:notifications
-        define="notifications request/notifications"
-        condition="notifications">
-        <metal:notifications
-          use-macro="context/@@+base-layout-macros/notifications"/>
-      </tal:notifications>
+      <div class="location-portlet top-portlet"
+           tal:condition="view/macro:pagehas/applicationtabs">
+        <span tal:replace="structure context/image:logo"></span>
+        <h2 tal:replace="structure context/fmt:location_heading">
+          Celso Providelo
+        </h2>
+        <metal:heading_nav
+          use-macro="context/@@+base-layout-macros/location-tabs"/>
+      </div>
 
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
         <div id="maincontent" class="yui-main">
+
+          <tal:maintenance
+            replace="structure context/@@+maintenancemessage" />
+          <tal:notifications
+            define="notifications request/notifications"
+            condition="notifications">
+            <metal:notifications
+              use-macro="context/@@+base-layout-macros/notifications"/>
+          </tal:notifications>
+
           <div class="yui-b"
             tal:attributes="
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <div class="location-portlet top-portlet"
-                 tal:condition="view/macro:pagehas/applicationtabs">
-              <span tal:replace="structure context/image:logo"></span>
-              <h2 tal:replace="structure context/fmt:location_heading">
-                Celso Providelo
-              </h2>
-              <metal:heading_nav
-                use-macro="context/@@+base-layout-macros/location-tabs"/>
-            </div>
-            <div tal:condition="view/macro:pagehas/applicationtabs"
-                 class="portlet">
+            <div tal:condition="view/macro:pagehas/applicationtabs">
               <h2
                 tal:condition="context/title|nothing"
                 tal:content="context/title"
@@ -135,28 +131,8 @@
         </div><!-- yui-b side -->
       </div><!-- yui-t4 -->
 
-      <div id="footer" class="footer">
-        <div id="lp-arcana">
-          &copy;&nbsp;2004-2009&nbsp;<a
-            href="http://canonical.com/">Canonical&nbsp;Ltd.</a> |
-          <a href="/legal">Terms of use</a>
-          <span id="lp-version" tal:condition="not:is_lpnet"> |
-            <a href="https://help.launchpad.net/LaunchpadReleases"
-              tal:content="version"/>
-            <tal:devmode condition="devmode">devmode</tal:devmode>
-            <tal:demo condition="is_demo">demo site</tal:demo>
-            <tal:edge condition="is_edge">beta site</tal:edge>
-          </span>
-        </div>
-
-        <div id="colophon">
-          <a href="/+tour"
-            tal:condition="not:request/lp:person">What is Launchpad?</a>
-          <a href="/feedback"
-            tal:condition="request/lp:person">Contact us</a> |
-          <a href="https://help.launchpad.net/">Get help with Launchpad</a>
-        </div>
-      </div><!-- footer-->
+      <metal:footer
+        use-macro="context/@@+base-layout-macros/footer"/>
     </div><!-- yui-d0-->
 
     <metal:lp-client-cache

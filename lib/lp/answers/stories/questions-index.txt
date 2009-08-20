@@ -60,7 +60,7 @@ Add some recent questions so that this listing contains something.
     ...     anon_browser.contents, 'most-active-projects'))
     Most active projects
     Ubuntu
-    Mozilla Firefox
+    Mozilla Firefox ...
 
 Clicking on these project links will bring the user to the project
 Answers front page:

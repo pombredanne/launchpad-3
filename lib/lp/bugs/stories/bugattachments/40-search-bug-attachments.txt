@@ -10,7 +10,7 @@ Let's add a normal text file...
     >>> user_browser.getControl("Description").value = "Some information."
     >>> user_browser.getControl(
     ...     name="field.comment").value = "Added some information."
-    >>> user_browser.getControl("Save Changes").click()
+    >>> user_browser.getControl("Post comment").click()
 
 And a patch...
 
@@ -24,7 +24,7 @@ And a patch...
     >>> user_browser.getControl("Description").value = "A patch."
     >>> user_browser.getControl(
     ...     name="field.comment").value = "This patch fixes the bug."
-    >>> user_browser.getControl("Save Changes").click()
+    >>> user_browser.getControl("Post comment").click()
 
 And another patch...
 
@@ -37,7 +37,7 @@ And another patch...
     >>> user_browser.getControl("Description").value = "A patch."
     >>> user_browser.getControl(
     ...     name="field.comment").value = "This patch fixes the bug."
-    >>> user_browser.getControl("Save Changes").click()
+    >>> user_browser.getControl("Post comment").click()
 
 And now we'll search for patches for firefox bugs.
 

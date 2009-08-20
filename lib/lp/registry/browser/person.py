@@ -67,6 +67,7 @@ __all__ = [
     'SearchSubscribedQuestionsView',
     'TeamAddMyTeamsView',
     'TeamEditLocationView',
+    'TeamEditMenu',
     'TeamJoinView',
     'TeamBreadcrumbBuilder',
     'TeamLeaveView',
@@ -94,7 +95,7 @@ from textwrap import dedent
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.formlib.form import FormFields
-from zope.interface import implements, Interface
+from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
@@ -124,6 +125,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import helpers
+from lp.registry.browser.team import TeamEditView
 from lp.soyuz.browser.archive import traverse_named_ppa
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
@@ -1124,18 +1126,11 @@ class PersonEditNavigationMenu(NavigationMenu):
         return Link(target, text)
 
 
-class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
-
-    usedfor = ITeam
-    facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
-             'add_member', 'proposed_members',
-             'memberships', 'received_invitations',
-             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
-             'editlanguages', 'map', 'polls',
-             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
-             'reassign', 'related_projects',
-             'activate_ppa']
+class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
+    def profile(self):
+        target = ''
+        text = 'Overview'
+        return Link(target, text)
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1230,8 +1225,13 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Change contact address'
         summary = (
             'The address Launchpad uses to contact %s' %
-            self.context.displayname)
+            self.team.displayname)
         return Link(target, text, summary, icon='edit')
+
+    @property
+    def team(self):
+        """Allow subclasses that use the view as the context."""
+        return self.context
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
@@ -1276,28 +1276,26 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
+class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
+
+    usedfor = ITeam
+    facet = 'overview'
+    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
+             'add_member', 'proposed_members',
+             'memberships', 'received_invitations',
+             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
+             'editlanguages', 'map', 'polls',
+             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
+             'reassign', 'related_projects',
+             'activate_ppa']
+
+
+class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
     """A top-level menu for navigation within a Team."""
 
     usedfor = ITeam
     facet = 'overview'
     links = ['profile', 'polls', 'members', 'ppas']
-
-    def profile(self):
-        target = ''
-        text = 'Overview'
-        return Link(target, text)
-
-    def polls(self):
-        target = '+polls'
-        text = 'Polls'
-        return Link(target, text)
-
-    @enabled_with_permission('launchpad.View')
-    def members(self):
-        target = '+members'
-        text = 'Members'
-        return Link(target, text)
 
 
 class ActiveBatchNavigator(BatchNavigator):
@@ -2388,12 +2386,19 @@ class PersonVouchersView(LaunchpadFormView):
             globalErrorUtility.raising(info, self.request)
 
 
-class PersonLanguagesView(LaunchpadView):
+class PersonLanguagesView(LaunchpadFormView):
+    """Edit preferred languages for a person or team."""
+    schema = Interface
 
-    def initialize(self):
-        request = self.request
-        if request.method == "POST" and "SAVE-LANGS" in request.form:
-            self.submitLanguages()
+    @property
+    def label(self):
+        """The form label."""
+        if self.is_current_user:
+            return "Your language preferences"
+        else:
+            return "%s's language preferences" % self.context.displayname
+
+    page_title = label
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -2424,7 +2429,15 @@ class PersonLanguagesView(LaunchpadView):
         """Return True when the Context is also the User."""
         return self.user == self.context
 
-    def submitLanguages(self):
+    @property
+    def next_url(self):
+        """Redirect to this url after successfully processing the form."""
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    @action(_("Save"), name="save")
+    def submitLanguages(self, action, data):
         '''Process a POST request to the language preference form.
 
         This list of languages submitted is compared to the list of
@@ -2464,6 +2477,12 @@ class PersonLanguagesView(LaunchpadView):
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             self.request.response.redirect(redirection_url)
+
+    @property
+    def answers_url(self):
+        return canonical_url(
+            getUtility(ILaunchpadCelebrities).lp_translations,
+            rootsite='answers')
 
 
 class PersonView(LaunchpadView, FeedsMixin):
@@ -3552,7 +3571,12 @@ class BasePersonEditView(LaunchpadEditFormView):
     @action(_("Save"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class PersonEditHomePageView(BasePersonEditView):
@@ -3560,6 +3584,13 @@ class PersonEditHomePageView(BasePersonEditView):
     field_names = ['homepage_content']
     custom_widget(
         'homepage_content', TextAreaWidget, height=30, width=30)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Change home page for %s' % self.context.displayname
+
+    page_title = label
 
 
 class PersonEditView(BasePersonEditView):
@@ -3574,11 +3605,6 @@ class PersonEditView(BasePersonEditView):
     # Will contain an hidden input when the user is renaming his
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
-
-    @property
-    def cancel_url(self):
-        """The URL that the 'Cancel' link should return to."""
-        return canonical_url(self.context)
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
@@ -3649,7 +3675,6 @@ class PersonEditView(BasePersonEditView):
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -4393,7 +4418,7 @@ class TeamReassignmentView(ObjectReassignmentView):
                 status=TeamMembershipStatus.ADMIN, force_team_add=True)
 
 
-class PersonLatestQuestionsView(LaunchpadView):
+class PersonLatestQuestionsView(LaunchpadFormView):
     """View used by the porlet displaying the latest questions made by
     a person.
     """
@@ -5420,3 +5445,25 @@ class EmailToPersonView(LaunchpadFormView):
             return 'Contact yourself'
         else:
             return 'Contact this user'
+
+
+class ITeamEditMenu(Interface):
+    """A marker interface for the edit navigation menu."""
+
+
+class TeamEditMenu(NavigationMenu, TeamMenuMixin):
+    """A menu for different aspects of editing a team."""
+
+    usedfor = ITeamEditMenu
+    facet = 'overview'
+    title = 'Change team'
+    links = ('branding', 'common_edithomepage', 'editlanguages', 'reassign',
+             'editemail')
+
+    @property
+    def team(self):
+        """Override TeamOverviewMenu since the view is the context."""
+        return self.context.context
+
+
+classImplements(TeamEditView, ITeamEditMenu)
