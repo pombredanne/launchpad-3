@@ -37,6 +37,16 @@ from lp.translations.model.pofile import POFile
 from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 
 
+def count_unreviewed(pofile):
+    """Return number of strings in `pofile` that need review."""
+    return pofile.unreviewedCount()
+
+
+def count_untranslated(pofile):
+    """Return number of untranslated strings in `pofile`."""
+    return pofile.untranslatedCount()
+
+
 class PersonTranslationsMenu(NavigationMenu):
 
     usedfor = IPerson
@@ -274,7 +284,6 @@ class PersonTranslationView(LaunchpadView):
                 target_pofiles = []
 
             count += count_pofile_strings(pofile)
-            count += pofile.unreviewedCount()
             target_pofiles.append(pofile)
 
             targets[target] = (count, target_pofiles)
@@ -298,7 +307,7 @@ class PersonTranslationView(LaunchpadView):
         pofiles = person.getReviewableTranslationFiles(
             no_older_than=self.history_horizon)
         return self._aggregateTranslationTargets(
-            pofiles, self._pofile_review_suffix, POFile.unreviewedCount)
+            pofiles, self._pofile_review_suffix, count_unreviewed)
 
     @property
     def top_projects_and_packages_to_review(self):
@@ -326,7 +335,7 @@ class PersonTranslationView(LaunchpadView):
         pofiles = person.suggestReviewableTranslationFiles(
             no_older_than=self.history_horizon)[:fetch]
         random_suggestions = self._aggregateTranslationTargets(
-            pofiles, self._pofile_review_suffix, POFile.unreviewedCount)
+            pofiles, self._pofile_review_suffix, count_unreviewed)
 
         return recent[:max_old_targets] + random_suggestions[:empty_slots]
 
@@ -341,7 +350,7 @@ class PersonTranslationView(LaunchpadView):
         pofiles = self.context.getFilesToTranslate(
             no_older_than=self.history_horizon, worst_first=worst_first)
         return self._aggregateTranslationTargets(
-            pofiles, self._pofile_translate_suffix, POFile.untranslatedCount)
+            pofiles, self._pofile_translate_suffix, count_untranslated)
 
     @property
     def person_includes_me(self):
