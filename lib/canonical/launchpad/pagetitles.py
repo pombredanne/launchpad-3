@@ -212,8 +212,6 @@ def bug_attachment_edit(context, view):
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
 
-bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
-
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextBugId('Bug #%d - Edit')

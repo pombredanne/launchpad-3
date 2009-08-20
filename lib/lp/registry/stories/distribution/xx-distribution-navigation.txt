@@ -48,9 +48,9 @@ selected tab when selecting "Mirrors" in the top-level menu.
 Mirror administrators, such as Mark, see three additional tabs when
 browsing the mirrors pages.
 
-    >>> sabdfl_browser = setupBrowser(auth='Basic mark@hbd.com:test')
-    >>> sabdfl_browser.open("http://launchpad.dev/ubuntu/+cdmirrors")
-    >>> print_navigation_links(sabdfl_browser.contents)
+    >>> mark_browser = setupBrowser(auth='Basic mark@example.com:test')
+    >>> mark_browser.open("http://launchpad.dev/ubuntu/+cdmirrors")
+    >>> print_navigation_links(mark_browser.contents)
     Details: http://launchpad.dev/ubuntu
     Announcements: http://launchpad.dev/ubuntu/+announcements
     Mentoring: http://launchpad.dev/ubuntu/+mentoring
