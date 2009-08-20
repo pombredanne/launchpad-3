@@ -456,16 +456,18 @@
         template="../templates/project-series-portlet-details.pt"/>
     <browser:menus
         classes="
-            ProjectFacets
             ProjectActionMenu
-            ProjectEditNavigationMenu
-            ProjectOverviewMenu
+            ProjectAnswersMenu
             ProjectBountiesMenu
             ProjectBugsMenu
+            ProjectEditNavigationMenu
+            ProjectFacets
+            ProjectOverviewMenu
             ProjectSeriesSpecificationsMenu
-            ProjectSpecificationsMenu
             ProjectSetContextMenu
-            ProjectAnswersMenu"
+            ProjectSetNavigationMenu
+            ProjectSpecificationsMenu
+            "
         module="lp.registry.browser.project"/>
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
