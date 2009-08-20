@@ -62,6 +62,29 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         return pofiles
 
+    _test_pofile_suffix = '/+suffix'
+
+    def _getSuffix(self, suffix):
+        """Subsitute _test_pofile_suffix for suffix if None."""
+        if suffix is None:
+            return self._test_pofile_suffix
+        else:
+            return suffix
+
+    def _findBestCommonLinks(self, pofiles, suffix=None):
+        """Run the view's _findBestCommonLinks on `pofiles`."""
+        return self.view._findBestCommonLinks(
+            pofiles, self._getSuffix(suffix))
+
+    def _composePOFileLinks(self, pofiles, suffix=None):
+        """Produce a list of review links for `pofiles`."""
+        return self.view._composePOFileLinks(pofiles, self._getSuffix(suffix))
+
+    def _aggregateTranslationTargets(self, pofiles, suffix=None):
+        """Run the view's _aggregateTranslationTargets on `pofiles`."""
+        return self.view._aggregateTranslationTargets(
+            pofiles, self._getSuffix(suffix))
+
     def test_translation_groups(self):
         # translation_groups lists the translation groups a person is
         # in.
@@ -78,14 +101,14 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self._makeReviewer()
         self.assertTrue(self.view.person_is_reviewer)
 
-    def test_findBestCommonReviewLinks_single_pofile(self):
-        # If passed a single POFile, _findBestCommonReviewLinks returns
-        # a list of just that POFile.
+    def test_findBestCommonLinks_single_pofile(self):
+        # If passed a single POFile, _findBestCommonLinks returns a list
+        # of just that POFile.
         pofile = self.factory.makePOFile(language_code='lua')
-        links = self.view._findBestCommonReviewLinks([pofile])
-        self.assertEqual(self.view._composeReviewLinks([pofile]), links)
+        links = self._findBestCommonLinks([pofile])
+        self.assertEqual(self._composePOFileLinks([pofile]), links)
 
-    def test_findBestCommonReviewLinks_product_wild_mix(self):
+    def test_findBestCommonLinks_product_wild_mix(self):
         # A combination of wildly different POFiles in the same product
         # yields links to the individual POFiles.
         pofile1 = self.factory.makePOFile(language_code='sux')
@@ -95,12 +118,12 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofile2 = self.factory.makePOFile(
             potemplate=template2, language_code='la')
 
-        links = self.view._findBestCommonReviewLinks([pofile1, pofile2])
+        links = self._findBestCommonLinks([pofile1, pofile2])
 
-        expected_links = self.view._composeReviewLinks([pofile1, pofile2])
+        expected_links = self._composePOFileLinks([pofile1, pofile2])
         self.assertEqual(expected_links, links)
 
-    def test_findBestCommonReviewLinks_different_templates(self):
+    def test_findBestCommonLinks_different_templates(self):
         # A combination of POFiles in the same language but different
         # templates of the same productseries is represented as a link
         # to the ProductSeriesLanguage.
@@ -110,13 +133,13 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofile2 = self.factory.makePOFile(
             potemplate=template2, language_code='nl')
 
-        links = self.view._findBestCommonReviewLinks([pofile1, pofile2])
+        links = self._findBestCommonLinks([pofile1, pofile2])
 
         productserieslanguage = ProductSeriesLanguage(
             series, pofile1.language)
         self.assertEqual([canonical_url(productserieslanguage)], links)
 
-    def test_findBestCommonReviewLinks_different_languages(self):
+    def test_findBestCommonLinks_different_languages(self):
         # If the POFiles differ only in language, we get a link to the
         # overview for the template.
         pofile1 = self.factory.makePOFile(language_code='nl')
@@ -124,11 +147,11 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofile2 = self.factory.makePOFile(
             potemplate=template, language_code='lo')
 
-        links = self.view._findBestCommonReviewLinks([pofile1, pofile2])
+        links = self._findBestCommonLinks([pofile1, pofile2])
 
         self.assertEqual([canonical_url(template)], links)
 
-    def test_findBestCommonReviewLinks_sharing_pofiles(self):
+    def test_findBestCommonLinks_sharing_pofiles(self):
         # In a Product, two POFiles may share their translations.  For
         # now, we link to each individually.  We may want to make this
         # more clever in the future.
@@ -142,11 +165,11 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofile2 = template2.getPOFileByLang('nl')
 
         pofiles = [pofile1, pofile2]
-        links = self.view._findBestCommonReviewLinks(pofiles)
+        links = self._findBestCommonLinks(pofiles)
 
-        self.assertEqual(self.view._composeReviewLinks(pofiles), links)
+        self.assertEqual(self._composePOFileLinks(pofiles), links)
 
-    def test_findBestCommonReviewLinks_package_different_languages(self):
+    def test_findBestCommonLinks_package_different_languages(self):
         # For package POFiles in the same template but different
         # languages, we link to the template.
         package = self.factory.makeSourcePackage()
@@ -159,10 +182,10 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofile2 = self.factory.makePOFile(
             potemplate=template, language_code='ka')
 
-        links = self.view._findBestCommonReviewLinks([pofile1, pofile2])
+        links = self._findBestCommonLinks([pofile1, pofile2])
         self.assertEqual([canonical_url(template)], links)
 
-    def test_findBestCommonReviewLinks_package_different_templates(self):
+    def test_findBestCommonLinks_package_different_templates(self):
         # For package POFiles in different templates, we to the
         # package's template list.  There is no "source package series
         # language" page.
@@ -179,39 +202,39 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofile2 = self.factory.makePOFile(
             potemplate=template2, language_code='nl')
 
-        links = self.view._findBestCommonReviewLinks([pofile1, pofile2])
+        links = self._findBestCommonLinks([pofile1, pofile2])
 
         self.assertEqual([canonical_url(package)], links)
 
-    def test_describeReviewableTarget_string_count(self):
-        # _describeReviewableTarget puts out a human-readable
-        # description of how many strings need review.
+    def test_describeTarget_string_count(self):
+        # _describeTarget puts out a human-readable description of how
+        # many strings need translation or review.
         product = self.factory.makeProduct()
 
-        description = self.view._describeReviewableTarget(
+        description = self.view._describeTarget(
             product, canonical_url(product), 0)
         self.assertEqual(description['count'], 0)
         self.assertEqual(description['count_wording'], '0 strings')
 
         # Singular applies for exactly 1 string.
-        description = self.view._describeReviewableTarget(
+        description = self.view._describeTarget(
             product, canonical_url(product), 1)
         self.assertEqual(description['count'], 1)
         self.assertEqual(description['count_wording'], '1 string')
 
 
-        description = self.view._describeReviewableTarget(
+        description = self.view._describeTarget(
             product, canonical_url(product), 2)
         self.assertEqual(description['count'], 2)
         self.assertEqual(description['count_wording'], '2 strings')
 
-    def test_describeReviewableTarget_product(self):
-        # _describeReviewableTarget describes a Product with reviewable
+    def test_describeTarget_product(self):
+        # _describeTarget describes a Product with reviewable
         # translations.
         product = self.factory.makeProduct()
         link = canonical_url(product)
 
-        description = self.view._describeReviewableTarget(product, link, 99)
+        description = self.view._describeTarget(product, link, 99)
 
         expected_description = {
             'target': product,
@@ -222,15 +245,15 @@ class TestPersonTranslationView(TestCaseWithFactory):
         }
         self.assertEqual(expected_description, description)
 
-    def test_describeReviewableTarget_package(self):
-        # _describeReviewableTarget describes a package with reviewable
+    def test_describeTarget_package(self):
+        # _describeTarget describes a package with reviewable
         # translations.
         package = self.factory.makeSourcePackage()
         package.distroseries.distribution.official_rosetta = True
         target = (package.sourcepackagename, package.distroseries)
         link = canonical_url(package)
 
-        description = self.view._describeReviewableTarget(target, link, 42)
+        description = self.view._describeTarget(target, link, 42)
 
         expected_description = {
             'target': package,
@@ -246,14 +269,14 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # a series of target descriptions, aggregating where possible.
 
         # Trivial case: no POFiles means no targets.
-        self.assertEqual([], self.view._aggregateTranslationTargets([]))
+        self.assertEqual([], self._aggregateTranslationTargets([]))
 
         # Basic case: one POFile yields its product or package.
         pofile = self.factory.makePOFile(language_code='ca')
 
-        description = self.view._aggregateTranslationTargets([pofile])
+        description = self._aggregateTranslationTargets([pofile])
 
-        expected_links = self.view._composeReviewLinks([pofile])
+        expected_links = self._composePOFileLinks([pofile])
         expected_description = [{
             'target': pofile.potemplate.productseries.product,
             'count': 0,
@@ -278,12 +301,12 @@ class TestPersonTranslationView(TestCaseWithFactory):
             potemplate=package_template, language_code='th')
         removeSecurityProxy(package_pofile).unreviewed_count = 2
 
-        descriptions = self.view._aggregateTranslationTargets(
+        descriptions = self._aggregateTranslationTargets(
             [product_pofile, package_pofile])
         links = set(entry['link'] for entry in descriptions)
 
         expected_links = set(
-            self.view._composeReviewLinks([product_pofile, package_pofile]))
+            self._composePOFileLinks([product_pofile, package_pofile]))
         self.assertEqual(expected_links, links)
 
     def test_aggregateTranslationTargets_bundles_productseries(self):
@@ -295,8 +318,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofile2 = self.factory.makePOFile(
             language_code='br', potemplate=template2)
         
-        description = self.view._aggregateTranslationTargets(
-            [pofile1, pofile2])
+        description = self._aggregateTranslationTargets([pofile1, pofile2])
 
         self.assertEqual(1, len(description))
         self.assertEqual(canonical_url(series), description[0]['link'])
@@ -317,8 +339,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofile2 = self.factory.makePOFile(
             language_code='br', potemplate=template2)
         
-        description = self.view._aggregateTranslationTargets(
-            [pofile1, pofile2])
+        description = self._aggregateTranslationTargets([pofile1, pofile2])
 
         self.assertEqual(1, len(description))
         self.assertEqual(canonical_url(package), description[0]['link'])
@@ -351,8 +372,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         targets = self.view.top_projects_and_packages_to_review
 
-        expected_links = self.view._composeReviewLinks(
-            [pofile_worked_on, pofile_not_worked_on])
+        expected_links = self._composePOFileLinks(
+            [pofile_worked_on, pofile_not_worked_on],
+            suffix=self.view._pofile_review_suffix)
         self.assertEqual(
             set(expected_links), set(item['link'] for item in targets))
 

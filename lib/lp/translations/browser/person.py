@@ -98,6 +98,11 @@ class PersonTranslationView(LaunchpadView):
         """Is this person in a translation group?"""
         return len(self.translation_groups) != 0
 
+    @property
+    def person_is_translator(self):
+        """Is this person active in translations?"""
+        return self.context.hasKarma('translations')
+
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
 
@@ -111,14 +116,19 @@ class PersonTranslationView(LaunchpadView):
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
 
-    def _composeReviewLinks(self, pofiles):
-        """Compose URLs for reviewing given `POFile`s."""
-        return [
-            canonical_url(pofile) + '/+translate?show=new_suggestions'
-            for pofile in pofiles
-            ]
+    _pofile_review_suffix = '/+translate?show=new_suggestions'
 
-    def _findBestCommonReviewLinks(self, pofiles):
+    _pofile_translate_suffix = '/+translate?show=untranslated'
+
+    def _composePOFileLinks(self, pofiles, suffix):
+        """Compose URLs for given `POFile`s.
+
+        :param pofiles: Sequence of `POFile`s.
+        :param suffix: String to append to each `POFile`s URL.
+        """
+        return [canonical_url(pofile) + suffix for pofile in pofiles]
+
+    def _findBestCommonLinks(self, pofiles, pofile_suffix):
         """Find best links to a bunch of related `POFile`s.
 
         The `POFile`s must either be in the same `Product`, or in the
@@ -128,6 +138,10 @@ class PersonTranslationView(LaunchpadView):
         and returns a list of links to them: the individual translation
         if there is only one, the template if multiple translations of
         one template are involved, and so on.
+
+        :param pofiles: List of `POFile`s.
+        :param pofile_suffix: String to append to the URL when linking
+            to a `POFile`.
         """
         assert pofiles, "Empty POFiles list in reviewable target."
         first_pofile = pofiles[0]
@@ -135,7 +149,7 @@ class PersonTranslationView(LaunchpadView):
         if len(pofiles) == 1:
             # Simple case: one translation file.  Go straight to
             # translation page for its unreviewed strings.
-            return self._composeReviewLinks(pofiles)
+            return self._composePOFileLinks(pofiles, pofile_suffix)
 
         templates = set(pofile.potemplate for pofile in pofiles)
 
@@ -194,13 +208,16 @@ class PersonTranslationView(LaunchpadView):
 
         # Different release series of the same product.  Link to each of
         # the individual POFiles.
-        return self._composeReviewLinks(pofiles)
+        return self._composePOFileLinks(pofiles, pofile_suffix)
 
-    def _describeReviewableTarget(self, target, link, strings_count):
-        """Produce dict to describe a reviewable target.
+    def _describeTarget(self, target, link, strings_count):
+        """Produce a dict to describe a target and what it needs.
 
-        The target may be a `Product` or a tuple of `SourcePackageName`
-        and `DistroSeries`.
+        :param target: Either a `Product` or a tuple of
+            `SourcePackageName` and `DistroSeries`.
+        :param link: URL for the relevant translations of `target`.
+        :param strings_count: The number of strings that need work
+            (which will be either review or translation).
         """
         if isinstance(target, tuple):
             (name, distroseries) = target
@@ -228,12 +245,11 @@ class PersonTranslationView(LaunchpadView):
             now = datetime.now(pytz.timezone('UTC'))
             self.history_horizon = now - timedelta(90, 0, 0)
 
-    def _aggregateTranslationTargets(self, pofiles):
+    def _aggregateTranslationTargets(self, pofiles, pofile_link_suffix):
         """Aggregate list of `POFile`s into sensible targets.
 
         Returns a list of target descriptions as returned by
-        `_describeReviewableTarget` after going through
-        `_findBestCommonReviewLinks`.
+        `_describeTarget` after going through `_findBestCommonLinks`.
         """
         targets = {}
         for pofile in pofiles:
@@ -257,10 +273,11 @@ class PersonTranslationView(LaunchpadView):
         result = []
         for target, stats in targets.iteritems():
             (count, target_pofiles) = stats
-            links = self._findBestCommonReviewLinks(target_pofiles)
+            links = self._findBestCommonLinks(
+                target_pofiles, pofile_link_suffix)
             for link in links:
                 result.append(
-                    self._describeReviewableTarget(target, link, count))
+                    self._describeTarget(target, link, count))
 
         return result
 
@@ -269,9 +286,10 @@ class PersonTranslationView(LaunchpadView):
         """Top projects and packages for this person to review."""
         self._setHistoryHorizon()
         person = ITranslationsPerson(self.context)
+        pofiles = person.getReviewableTranslationFiles(
+            no_older_than=self.history_horizon)
         return self._aggregateTranslationTargets(
-            person.getReviewableTranslationFiles(
-                no_older_than=self.history_horizon))
+            pofiles, self._pofile_review_suffix)
 
     @property
     def top_projects_and_packages_to_review(self):
@@ -296,9 +314,10 @@ class PersonTranslationView(LaunchpadView):
         fetch = 5 * empty_slots
 
         person = ITranslationsPerson(self.context)
+        pofiles = person.suggestReviewableTranslationFiles(
+            no_older_than=self.history_horizon)[:fetch]
         random_suggestions = self._aggregateTranslationTargets(
-            person.suggestReviewableTranslationFiles(
-                no_older_than=self.history_horizon)[:fetch])
+            pofiles, self._pofile_review_suffix)
 
         return recent[:max_old_targets] + random_suggestions[:empty_slots]
 
@@ -306,6 +325,15 @@ class PersonTranslationView(LaunchpadView):
     def num_projects_and_packages_to_review(self):
         """How many translations do we suggest for reviewing?"""
         return len(self.all_projects_and_packages_to_review)
+
+    def getTranslatableFiles(self, worst_first=False):
+        """Find projects/packages this person could be translating."""
+        self._setHistoryHorizon()
+        pofiles = self.context.getFilesToTranslate(
+            no_older_than=self.history_horizon, worst_first=worst_first)
+        return self._aggregateTranslationTargets(
+            pofiles, pofile_weight=compute_pofile_untranslated_messages,
+            pofile_suffix=self._pofile_translate_suffix)
 
     @property
     def person_includes_me(self):
