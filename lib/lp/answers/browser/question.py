@@ -197,6 +197,17 @@ class QuestionSubscriptionView(LaunchpadView):
             self.context, question_unmodified, list(modified_fields)))
 
     @property
+    def page_title(self):
+        return 'Subscription to question #%s' % self.context.id
+
+    @property
+    def label(self):
+        if self.subscription:
+            return 'Unsubscribe from question'
+        else:
+            return 'Subscribe to question'
+
+    @property
     def subscription(self):
         """Establish if this user has a subscription"""
         if self.user is None:
@@ -517,6 +528,12 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
     custom_widget('target', LaunchpadTargetWidget)
+
+    @property
+    def page_title(self):
+        return 'Edit question #%s details' % self.context.id
+
+    label = page_title
 
     def setUpFields(self):
         """Select the subset of fields to display.
@@ -1119,6 +1136,10 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
     custom_widget("message", TextAreaWidget, height=5)
 
     label = _('Is this a FAQ?')
+
+    @property
+    def page_title(self):
+        return _('Is question #%s a FAQ?' % self.context.id)
 
     @property
     def initial_values(self):
