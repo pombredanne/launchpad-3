@@ -50,6 +50,7 @@ from canonical.launchpad.interfaces.gpghandler import (
 
 GREETING = 'Copyright 2004-2008 Canonical Ltd.\n'
 
+
 def locate_key(root, suffix):
     """Find a key file in the root with the given suffix.
 
