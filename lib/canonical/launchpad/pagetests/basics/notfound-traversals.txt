@@ -105,7 +105,6 @@ status is returned.
 
 >>> check("/projectgroups", auth=True)
 >>> check("/projectgroups/+all", auth=True)
->>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
@@ -368,7 +367,6 @@ Test /people traversals.
 >>> check("/people/")
 >>> check("/people/+requestmerge", auth=True)
 >>> check_redirect("/people/+mergerequest-sent", auth=True)
->>> check("/people/+portlet-about")
 
 This is for a team:
 

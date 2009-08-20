@@ -31,7 +31,7 @@ also have a Translations page.)
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package
+    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package > Bugs on alsa-utils
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils

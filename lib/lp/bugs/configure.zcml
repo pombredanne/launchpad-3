@@ -263,6 +263,12 @@
         <adapter
             factory="lp.bugs.browser.bugtask.assignee_renderer"
             name="assignee"/>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            factory="lp.bugs.browser.bugtask.BugTaskBreadcrumbBuilder"
+            permission="zope.Public"/>
+
         
         <!-- NullBugTask -->
         
@@ -865,4 +871,10 @@
         <allow
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationSet"/>
     </securedutility>
+    <adapter
+        name="bugs"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        for="lp.bugs.interfaces.bugtarget.IBugTarget"
+        factory="lp.bugs.browser.bugtarget.BugTargetOnBugsVHostBreadcrumbBuilder"
+        permission="zope.Public"/>
 </configure>
