@@ -442,6 +442,12 @@ span.see-all {
     color: #000;
     font-weight: normal;
     }
+.application-summary {
+  font-size: 123.1%;
+}
+.search-results {
+  margin-top: 1em;
+}
 
 
 /* Exceptions they may be common. */
