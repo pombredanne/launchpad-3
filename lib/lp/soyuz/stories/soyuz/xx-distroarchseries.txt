@@ -99,10 +99,32 @@ Accessing the DistroArchSeries administration interface.
     >>> admin_browser.getControl("PPA support available").selected
     True
 
+The page presents a cancellation link that returns the user back to the
+DistroArchSeries page if clicked:
+
+    >>> print admin_browser.getLink("Cancel").url
+    http://launchpad.dev/ubuntu/warty/i386
+
 Removing the PPA support for this DistroArchSeries.
 
     >>> admin_browser.getControl("PPA support available").selected = False
+
+Clicking the "Change" button makes the change and takes the user back to the
+DistroArchSeries page.
+
     >>> admin_browser.getControl("Change").click()
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu/warty/i386
+
+There's also a notification message announcing the success of the change:
+
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    Successfully updated
+
+Navigating back to the admin page shows the change was made:
+
+    >>> admin_browser.getLink("Administer").click()
 
     >>> admin_browser.getControl("Architecture Tag").value
     'i386'
@@ -152,6 +174,7 @@ way this distroarchseries is presented.
 
 The same effect is observed when we make warty/i386 unofficial.
 
+    >>> admin_browser.getLink("Administer").click()
     >>> admin_browser.getControl("Official Support").selected = False
     >>> admin_browser.getControl("Change").click()
 

@@ -6,23 +6,17 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
-
 <body>
+<div metal:fill-slot="main"
+     tal:define="context_menu context/menu:context">
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
-
-  <div metal:use-macro="context/@@launchpad_form/form" />
-
+  <h1>Reassign review request</h1>
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info" style="clear: both" />
+  </div>
 </div>
 </body>
 </html>
-

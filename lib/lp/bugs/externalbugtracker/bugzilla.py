@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'Bugzilla',
+    'BugzillaAPI',
     'BugzillaLPPlugin',
     'needs_authentication',
     ]
@@ -370,16 +371,12 @@ def needs_authentication(func):
     return decorator
 
 
-class BugzillaLPPlugin(Bugzilla):
-    """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
-
-    implements(
-        ISupportsBackLinking, ISupportsCommentImport,
-        ISupportsCommentPushing)
+class BugzillaAPI(Bugzilla):
+    """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
-        super(BugzillaLPPlugin, self).__init__(baseurl)
+        super(BugzillaAPI, self).__init__(baseurl)
         self._bugs = {}
         self._bug_aliases = {}
 
@@ -396,6 +393,15 @@ class BugzillaLPPlugin(Bugzilla):
         """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
         return xmlrpclib.ServerProxy(
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+
+
+class BugzillaLPPlugin(BugzillaAPI):
+    """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
+
+    implements(
+        ISupportsBackLinking, ISupportsCommentImport,
+        ISupportsCommentPushing)
 
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.

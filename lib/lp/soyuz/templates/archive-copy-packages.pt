@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
   >
 <body>
@@ -21,17 +18,22 @@
   </tal:devmode>
 </metal:block>
 
-<div metal:fill-slot="main">
-
+<div metal:fill-slot="heading">
   <h1 tal:content="CONTEXTS/fmt:pagetitle">
     Copy packages from Blah PPA
   </h1>
+</div>
 
+<div metal:fill-slot="main">
+  <div class="top-portlet">
     <tal:cannot_copy condition="not: view/can_copy">
       <p>To be able to copy packages you have to participate in at least one
-         PPA. <a tal:attributes="href
-         string:${view/user/fmt:url}/+activate-ppa">Activate your own PPA</a>
-         or join a team with an active PPA.</p>
+         PPA. Activate your own PPA or join a team with an active PPA.</p>
+      <p><tal:activate_ppa
+        define="link view/user/menu:overview/activate_ppa"
+        replace="structure link/fmt:icon-link" />
+      </p>
+
     </tal:cannot_copy>
 
     <tal:can_copy condition="view/can_copy">
@@ -104,6 +106,8 @@
       </div> <!-- launchpad_form -->
 
     </tal:can_copy>
+
+  </div> <!--top-portlet -->
 
 </div> <!--main -->
 

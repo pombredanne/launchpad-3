@@ -16,6 +16,14 @@ so that we can avoid network traffic in tests.
     >>> bugzilla.xmlrpc_transport == test_transport
     True
 
+BugzillaLPPlugin inherits from the BugzillaAPI ExternalBugTracker, with
+which it shares some functionality.
+
+    >>> from lp.bugs.externalbugtracker.bugzilla import (
+    ...     BugzillaAPI)
+    >>> issubclass(BugzillaLPPlugin, BugzillaAPI)
+    True
+
 
 == Authentication ==
 
