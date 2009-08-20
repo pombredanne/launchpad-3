@@ -23,6 +23,11 @@ A Launchpad admin has permission to access the +index view.
     >>> check_permission('launchpad.ProjectReview', view)
     True
 
+The view provides a page_title.
+
+    >>> print view.page_title
+    Project groups registered in Launchpad
+
 A regular user cannot access the view.
 
     >>> user = factory.makePerson()
@@ -58,28 +63,10 @@ A Launchpad admin has permission to access the +all view.
     >>> check_permission('launchpad.ProjectReview', view)
     True
 
-A regular user cannot access the view.
+The view provides a page_title.
 
-    >>> login_person(user)
-    >>> check_permission('launchpad.ProjectReview', view)
-    False
-
-A member of the registry team has permission.
-
-    >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', view)
-    True
-
-
-Accessing the +review view
---------------------------
-
-A Launchpad admin has permission to access the +review view.
-
-    >>> view = create_view(project_set, name='+review')
-    >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.ProjectReview', view)
-    True
+    >>> print view.page_title
+    Project groups registered in Launchpad
 
 A regular user cannot access the view.
 

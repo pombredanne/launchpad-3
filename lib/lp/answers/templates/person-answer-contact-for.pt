@@ -12,8 +12,8 @@
 
     <ul class="listing" id="direct-answer-contacts-for-list">
       <li tal:repeat="question_target view/direct_question_targets">
-        <a href="#"
-          tal:attributes="href string:${question_target/fmt:url}"
+        <a
+          tal:attributes="href question_target/fmt:url:answers"
           tal:content="question_target/title">Project Title</a>
         <tal:link condition="view/showRemoveYourselfLink">
           <img src="/@@/remove" />&mdash;
@@ -31,8 +31,8 @@
 
     <ul class="listing" id="team-answer-contacts-for-list">
       <li tal:repeat="question_target view/team_question_targets">
-        <a href="#"
-          tal:attributes="href string:${question_target/fmt:url}"
+        <a
+          tal:attributes="href question_target/fmt:url:answers"
           tal:content="question_target/title">Project Title</a>
         <tal:link condition="view/showRemoveYourselfLink">
           &mdash;

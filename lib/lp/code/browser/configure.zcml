@@ -189,7 +189,7 @@
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalCommitMessageEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-commitmessage-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+delete"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
@@ -634,21 +634,21 @@
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/distribution-branches.pt"/>
+        template="../templates/generic-branch-listing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.code.browser.branchlisting.DistroSeriesBranchListingView"
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/distribution-branches.pt"/>
+        template="../templates/generic-branch-listing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.code.browser.branchlisting.DistributionSourcePackageBranchesView"
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/distributionsourcepackage-branches.pt"/>
+        template="../templates/generic-branch-listing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.code.browser.branchlisting.GroupedDistributionSourcePackageBranchesView"

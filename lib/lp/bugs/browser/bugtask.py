@@ -14,6 +14,7 @@ __all__ = [
     'BugTargetView',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
+    'BugTaskBreadcrumbBuilder',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
     'BugTaskListingItem',
@@ -45,7 +46,6 @@ import pytz
 import re
 from simplejson import dumps
 import urllib
-from urlparse import urlparse, urlunparse
 from operator import attrgetter, itemgetter
 
 from zope import component
@@ -62,6 +62,7 @@ from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.traversing.interfaces import IPathAdapter
@@ -116,6 +117,7 @@ from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnexpectedFormData)
 
@@ -133,7 +135,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from canonical.launchpad.webapp.tales import PersonFormatterAPI, FormattersAPI
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -145,8 +147,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, vocabulary_to_choice_edit_items,
-    TextLineEditorWidget)
+    InlineEditPickerWidget, TextAreaEditorWidget,
+    TextLineEditorWidget, vocabulary_to_choice_edit_items)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -999,6 +1001,20 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     def user_is_admin(self):
         """Is the user a Launchpad admin?"""
         return check_permission('launchpad.Admin', self.context)
+
+    @property
+    def bug_description_html(self):
+        """The bug's description as HTML."""
+        formatter = FormattersAPI
+        hide_email = formatter(self.context.bug.description).obfuscate_email()
+        description = formatter(hide_email).text_to_html()
+        return TextAreaEditorWidget(
+            self.context.bug,
+            'description',
+            canonical_url(self.context, view_name='+edit'),
+            id="edit-description",
+            title="Bug Description",
+            value=description)
 
 
 class BugTaskPortletView:
@@ -3133,7 +3149,10 @@ class BugTaskTableRowView(LaunchpadView):
                                     request=IWebServiceClientRequest(
                                         self.request)) or
                                 None),
-            'user_can_edit_importance': self.user_can_edit_importance})
+            'user_can_edit_status': not self.context.bugwatch,
+            'user_can_edit_importance': (
+                self.user_can_edit_importance and
+                not self.context.bugwatch)})
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
@@ -3476,3 +3495,22 @@ class BugActivityItem:
                 return_dict[key] = cgi.escape(return_dict[key])
 
         return "%(old_value)s &#8594; %(new_value)s" % return_dict
+
+
+class BugTaskBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IBugTask`."""
+
+    @property
+    def text(self):
+        return self.context.bug.displayname
+
+    def make_breadcrumb(self):
+        """Return a breadcrumb for this `BugTask`.
+
+        If the user does not have permission to view the bug for
+        whatever reason, don't return a breadcrumb.
+        """
+        try:
+            return super(BugTaskBreadcrumbBuilder, self).make_breadcrumb()
+        except Unauthorized:
+            return None
