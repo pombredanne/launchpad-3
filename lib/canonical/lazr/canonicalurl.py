@@ -6,7 +6,11 @@ Useful functions for dealing with Zope adapters.
 """
 
 __metaclass__ = type
-__all__ = ['nearest_adapter', 'nearest_context_with_adapter']
+__all__ = [
+    'nearest_adapter',
+    'nearest_context_with_adapter',
+    'nearest_provides_or_adapted',
+    ]
 
 from zope.component import queryAdapter
 
@@ -44,3 +48,20 @@ def nearest_adapter(obj, interface, name=u''):
     context, adapter = nearest_context_with_adapter(obj, interface, name=name)
     # Will be None, None if not found.
     return adapter
+
+
+def nearest_provides_or_adapted(obj, interface):
+    """Find the nearest object that provides or can be adapted to `interface`.
+
+    The function looks upward through the canonical url chain.
+
+    :return None: if there is no object that provides or can be adapted in
+        the url chain.
+    """
+    for curr_obj in canonical_url_iterator(obj):
+        # If the curr_obj implements the interface, it is returned.
+        impl = interface(curr_obj, None)
+        if impl is not None:
+            return impl
+
+    return None

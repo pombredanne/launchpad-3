@@ -12,7 +12,8 @@ The page contains a link back to the bug page in the breadcrumbs and
 the main heading repeats the bug number for clarity:
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Debian > ?mozilla-firefox? package > Bug #3
+    Hierarchy: Launchpad > Debian > ?mozilla-firefox? package >
+        Bugs on mozilla-firefox > Bug #3
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
     * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
