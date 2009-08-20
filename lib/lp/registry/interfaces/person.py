@@ -1938,7 +1938,7 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner',
+    owner = PublicPersonChoice(title=_('New'), vocabulary='ValidOwner',
                                required=True)
 
 
@@ -1946,7 +1946,7 @@ class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
     owner = PublicPersonChoice(
-        title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+        title=_('New'), vocabulary='ValidTeamOwner', required=True)
 
 
 class ITeamCreation(ITeam):

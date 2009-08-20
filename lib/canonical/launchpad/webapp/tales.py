@@ -101,7 +101,7 @@ class MenuAPI:
             self.view = None
             self._selectedfacetname = None
 
-    def __getattr__(self, facet):
+    def __getattribute__(self, facet):
         """Retrieve the links associated with a facet.
 
         It's used with expressions like context/menu:bugs/subscribe.
@@ -111,7 +111,18 @@ class MenuAPI:
         :raise AttributeError: when there is no application menu for the
             facet.
         """
-        if not self._has_facet(facet):
+        # Use __getattribute__ instead of __getattr__, since __getattr__
+        # gets called if any of the other properties raise an AttributeError,
+        # which makes troubleshooting confusing. The has_facet can't easily
+        # be placed first, since all the properties it uses would need to
+        # be retrieved with object.__getattribute().
+        missing = object()
+        if (getattr(MenuAPI, facet, missing) is not missing
+            or facet in object.__getattribute__(self, '__dict__')):
+            return object.__getattribute__(self, facet)
+
+        has_facet = object.__getattribute__(self, '_has_facet')
+        if not has_facet(facet):
             raise AttributeError(facet)
         menu = queryAdapter(self._context, IApplicationMenu, facet)
         if menu is None:
