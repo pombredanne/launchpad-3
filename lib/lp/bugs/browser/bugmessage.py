@@ -26,7 +26,7 @@ class BugMessageAddFormView(LaunchpadFormView):
 
     @property
     def label(self):
-        return 'Add a comment or attachment to Bug #%d' % self.context.bug.id
+        return 'Add a comment or attachment to bug #%d' % self.context.bug.id
 
     @property
     def page_title(self):
