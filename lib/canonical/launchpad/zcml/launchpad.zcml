@@ -460,11 +460,6 @@ these URLs in Apache.
   permission="zope.Public"
   />
 
-<!-- Help folders -->
-<lp:help-folder
-  folder="../help/bugs" type="canonical.launchpad.layers.BugsLayer"
-  />
-
 <browser:page
   for="*"
   name="+applicationbuttons"
