@@ -4568,6 +4568,11 @@ class PersonAnswerContactForView(LaunchpadView):
     contact for.
     """
 
+    @property
+    def label(self):
+        return 'Projects for which %s is an answer contact' % (
+            self.context.displayname)
+
     @cachedproperty
     def direct_question_targets(self):
         """List of targets that the IPerson is a direct answer contact.

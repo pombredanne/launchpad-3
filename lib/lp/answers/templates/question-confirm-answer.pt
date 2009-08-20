@@ -12,8 +12,6 @@
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
-    <h1 metal:fill-slot="heading"
-        tal:content="context/title">Bar doesn't work</h1>
 
     <div metal:fill-slot="extra_info"
          tal:define="answer view/getAnswerMessage;
