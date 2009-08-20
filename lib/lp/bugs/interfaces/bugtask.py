@@ -37,8 +37,8 @@ __all__ = [
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
-    'UserCannotEditBugTaskStatus',
     'UserCannotEditBugTaskMilestone',
+    'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url']
 
 from zope.component import getUtility
@@ -326,6 +326,7 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+
 class UserCannotEditBugTaskMilestone(Unauthorized):
     """User not permitted to change milestone.
 
@@ -333,6 +334,7 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
     the necessary permissions.
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
+
 
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""

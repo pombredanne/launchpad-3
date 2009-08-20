@@ -59,8 +59,8 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
     INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus,
-    UserCannotEditBugTaskMilestone)
+    UserCannotEditBugTaskImportance, UserCannotEditBugTaskMilestone,
+    UserCannotEditBugTaskStatus)
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
