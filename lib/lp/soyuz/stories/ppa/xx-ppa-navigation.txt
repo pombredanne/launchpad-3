@@ -109,7 +109,7 @@ the 'View build records' link.
 The user could return to the 'PPA' overview by using the breadcrumb link.
 
     >>> print anon_browser.getLink('Default PPA').url
-    http://launchpad.dev/%7Ecprov/+archive/ppa
+    http://launchpad.dev/~cprov/+archive/ppa
 
 The user can navigate to an individual build details:
 
@@ -134,7 +134,7 @@ The user can navigate to an individual build details:
 From that page the user can return to the PPA overview.
 
     >>> anon_browser.getLink('Default PPA').url
-    'http://launchpad.dev/%7Ecprov/+archive/ppa'
+    'http://launchpad.dev/~cprov/+archive/ppa'
 
 When the number of packages in the PPA is large the user will see them
 displayed in batches.
