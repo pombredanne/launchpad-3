@@ -135,6 +135,11 @@ def test_inline_subscriber():
     client.click(id=u'unsubscribe-icon-subscriber-17')
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertNotNode(xpath=PERSON_LINK % u'Ubuntu Team')
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
+    client.asserts.assertProperty(
+        xpath=SUBSCRIPTION_LINK,
+        validator=u'className|remove')
 
     # Test unsubscribing via the remove icon for duplicates.
     # First, go to bug 6 and subscribe.
