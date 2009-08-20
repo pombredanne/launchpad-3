@@ -84,7 +84,7 @@
         <tal:hierarchy replace="structure context/@@+hierarchy" />
       </div><!--id="locationbar"-->
 
-      <div class="branding-apps-portlet top-portlet"
+      <div class="watermark-apps-portlet top-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
         <span tal:replace="structure context/image:logo"></span>
         <h2 tal:replace="structure context/fmt:location_heading">

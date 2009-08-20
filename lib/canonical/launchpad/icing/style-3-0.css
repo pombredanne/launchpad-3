@@ -417,57 +417,57 @@ span.see-all {
     padding-left: 1em;
     }
 
-/* == Branding heading styles */
-div.branding-apps-portlet {
+/* == Watermark heading styles */
+div.watermark-apps-portlet {
     padding-bottom:1em;
     border-bottom: 1px solid #d6d6d6;
 }
-div.branding-apps-portlet img {
+div.watermark-apps-portlet img {
     float: left;
     margin: 0 1.5em 0 0;
 }
-div.branding-apps-portlet h1, div.branding-apps-portlet h2 {
+div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
     padding-top: 0.1em;
     margin-bottom: 0.8em;
     color: #000000;
     font-weight: bold;
     clear: none;
 }
-div.branding-apps-portlet h1 {
+div.watermark-apps-portlet h1 {
     margin-bottom: 0.2em;
     padding-top: 0;
 }
 
 /* === Application buttons === */
 /* In most pages, we present a list of six application buttons: */
-.branding-apps-portlet li {
+.watermark-apps-portlet li {
     display:inline;
     list-style-type: none;
 }
-.branding-apps-portlet li a, .branding-apps-portlet li span {
+.watermark-apps-portlet li a, .watermark-apps-portlet li span {
     padding: 0.3em 0.5em;
     margin-right: 0.4em;
 }
 /* The text of the first tab should align with the heading directly
    above it */
-.branding-apps-portlet li:first-child a, .branding-apps-portlet li:first-child span {
+.watermark-apps-portlet li:first-child a, .watermark-apps-portlet li:first-child span {
     margin-left: -0.5em;
 }
-.branding-apps-portlet li a:link, .branding-apps-portlet li a:visited {
+.watermark-apps-portlet li a:link, .watermark-apps-portlet li a:visited {
     color: #000;
     background-color: #fff;
     text-decoration: none;
 }
-.branding-apps-portlet li.active a, .branding-apps-portlet li.active span {
+.watermark-apps-portlet li.active a, .watermark-apps-portlet li.active span {
     font-weight: bold;
     color: #fff;
     background-color: #747474;
 }
-.branding-apps-portlet li a:hover {
+.watermark-apps-portlet li a:hover {
     color: #000;
     background-color: #f3f3f3;
 }
-.branding-apps-portlet li.disabled-tab {
+.watermark-apps-portlet li.disabled-tab {
     color: #747474;
 }
 
