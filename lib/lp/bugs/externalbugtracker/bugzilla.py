@@ -430,6 +430,24 @@ class BugzillaAPI(Bugzilla):
                 self.baseurl,
                 "Fault %s: %s" % (fault.faultCode, fault.faultString))
 
+    def getCurrentDBTime(self):
+        """See `IExternalBugTracker`."""
+        time_dict = self.xmlrpc_proxy.Bugzilla.time()
+
+        # Convert the XML-RPC DateTime we get back into a regular Python
+        # datetime.
+        server_timetuple = time.strptime(
+            str(time_dict['db_time']), '%Y%m%dT%H:%M:%S')
+        server_datetime = datetime(*server_timetuple[:6]).replace(
+            tzinfo=pytz.timezone(time_dict['tz_short_name']))
+
+        # The server's DB time is the one that we want to use. However,
+        # this may not be in UTC, so we need to convert it.
+        server_utc_datetime = server_datetime.astimezone(
+            pytz.timezone('UTC'))
+
+        return server_utc_datetime
+
 
 class BugzillaLPPlugin(BugzillaAPI):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""

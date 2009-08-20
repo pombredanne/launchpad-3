@@ -90,8 +90,15 @@ to get the current time on the remote server.
     >>> from datetime import datetime
     >>> remote_time = datetime(2009, 8, 19, 17, 2, 2)
 
-    >>> test_transport.utc_offset = 60**2
-    >>> test_transport.timezone = 'CET'
     >>> test_transport.local_datetime = remote_time
     >>> bugzilla.getCurrentDBTime()
-    datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)
+    CALLED Bugzilla.time()
+    datetime.datetime(2009, 8, 19, 17, 2, 2, tzinfo=<UTC>)
+
+If the remote system is in a different timezone, getCurrentDBTime() will
+convert its time to UTC before returning it.
+
+    >>> test_transport.utc_offset = 60**2
+    >>> test_transport.timezone = 'CET'
+    >>> bugzilla.getCurrentDBTime()
+    datetime.datetime(2009, 8, 19, 16, 2, 2, tzinfo=<UTC>)
