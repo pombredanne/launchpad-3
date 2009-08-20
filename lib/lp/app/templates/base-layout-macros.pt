@@ -298,7 +298,7 @@
 </metal:lp-client-cache>
 
 
-<metal:location-tabs define-macro="location-tabs">
+<metal:application-buttons define-macro="application-buttons">
   <!-- Application Menu -->
   <ul
     tal:define="facetmenu view/menu:facet">
@@ -328,7 +328,7 @@
            tal:content="link/escapedtext" /></li>
     </tal:facet>
   </ul>
-</metal:location-tabs>
+</metal:application-buttons>
 
 
 <metal:footer define-macro="footer">

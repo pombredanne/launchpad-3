@@ -30,7 +30,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".browser.QuestionMakeBugView"
     permission="launchpad.AnyPerson"
-    template="templates/question-makebug.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:page

@@ -33,7 +33,6 @@ import re
 import time
 import urllib
 from datetime import timedelta, datetime
-from urlparse import urlunsplit
 
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
@@ -102,7 +101,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
-from canonical.launchpad.webapp.url import urlparse, urlappend
+from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -216,58 +215,50 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    @property
+    def objects(self):
+        """The objects for which we want breadcrumbs."""
+        return self.request.traversed_objects
+
     def items(self):
         """Return a list of `IBreadcrumb` objects visible in the hierarchy.
 
         The list starts with the breadcrumb closest to the hierarchy root.
         """
-        urlparts = urlparse(self.request.getURL(0, path_only=False))
-        baseurl = urlunsplit((urlparts[0], urlparts[1], '', '', ''))
-
-        # Construct a list of complete URLs for each URL path segment.
-        pathurls = []
-        working_url = baseurl
-        for segment in urlparts[2].split('/'):
-            working_url = urlappend(working_url, segment)
-            # Segments starting with '+' should be ignored because they
-            # will never correspond to an object in navigation.
-            if segment.startswith('+'):
-                continue
-            pathurls.append(working_url)
-
-        # We assume a 1:1 relationship between the traversed_objects list and
-        # the URL path segments.  Note that there may be more segments than
-        # there are objects.
-        object_urls = zip(self.request.traversed_objects, pathurls)
-        return self._breadcrumbs(object_urls)
-
-    def _breadcrumbs(self, object_urls):
-        """Generate the breadcrumb list.
-
-        :param object_urls: A sequence of (object, url) pairs.
-        :return: A list of 'IBreadcrumb' objects.
-        """
         breadcrumbs = []
-        for obj, url in object_urls:
-            crumb = self.breadcrumb_for(obj, url)
+        for builder in self._getBreadcrumbBuilders():
+            crumb = builder.make_breadcrumb()
             if crumb is not None:
                 breadcrumbs.append(crumb)
         return breadcrumbs
 
-    def breadcrumb_for(self, obj, url):
-        """Return the breadcrumb for the an object, using the supplied URL.
+    def _getBreadcrumbBuilders(self):
+        builders = []
+        for obj in self.objects:
+            builder = queryAdapter(obj, IBreadcrumbBuilder)
+            if builder is not None:
+                builders.append(builder)
 
-        :return: An `IBreadcrumb` object, or None if a breadcrumb adaptation
-            for the object doesn't exist.
-        """
-        # If the object has an IBreadcrumbBuilder adaptation then the
-        # object is intended to be shown in the hierarchy.
-        builder = queryAdapter(obj, IBreadcrumbBuilder)
-        if builder is not None:
-            # The breadcrumb builder hasn't been given a URL yet.
-            builder.url = url
-            return builder.make_breadcrumb()
-        return None
+        host = URI(self.request.getURL()).host
+        if (len(builders) == 0
+            or host == allvhosts.configs['mainsite'].hostname):
+            return builders
+
+        # If we got this far it means we have breadcrumbs and we're not on the
+        # mainsite, so we'll sneak an extra breadcrumb for the vhost we're on.
+        vhost = host.split('.')[0]
+
+        # Iterate over the context of our builders in reverse order and for
+        # the first one we find an adapter named after the vhost we're on,
+        # generate an extra breadcrumb and insert it in our list.
+        for idx in reversed(xrange(len(builders))):
+            builder = builders[idx]
+            extra_builder = queryAdapter(
+                builder.context, IBreadcrumbBuilder, name=vhost)
+            if extra_builder is not None:
+                builders.insert(idx + 1, extra_builder)
+                break
+        return builders
 
     def render(self):
         """Render the hierarchy HTML.
