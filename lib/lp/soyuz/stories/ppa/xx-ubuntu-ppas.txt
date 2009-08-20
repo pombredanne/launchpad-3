@@ -16,7 +16,8 @@ published) and a list of context series and corresponding architectures
 supported for PPA.
 
     >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'supports_virtualized_archs'))
+    ...    find_tag_by_id(anon_browser.contents,
+    ...                   'supports_virtualized_architectures'))
     PPA supported series
     5.04
     "Hoary"
@@ -80,7 +81,8 @@ Those pages present coherent data for a distribution with no PPAs.
 PPA supported architectures reflects what we have in sampledata.
 
     >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'supports_virtualized_archs'))
+    ...    find_tag_by_id(anon_browser.contents,
+    ...                   'supports_virtualized_architectures'))
     PPA supported series
     3.1 "Sarge" - frozen
     3.0 "Woody" - current
@@ -146,7 +148,7 @@ When a search is requested the information sections are not rendered.
     None
 
     >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'supports_virtualized_archs')
+    ...     anon_browser.contents, 'supports_virtualized_architectures')
     None
 
 The information section will be only rendered if the page is reloaded
@@ -168,7 +170,8 @@ request.
     True
 
     >>> find_tag_by_id(
-    ...     anon_browser.contents, 'supports_virtualized_archs') is not None
+    ...     anon_browser.contents,
+    ...     'supports_virtualized_architectures') is not None
     True
 
 Back to the search form again anonymous users can click on a checkbox
@@ -873,7 +876,7 @@ quickly 'retry' the failure.
 At this point anyone can also visualise that 'cdrkit' source is being
 built in Celso's PPA.
 
-    >>> anon_browser.getLink('View PPA').click()
+    >>> anon_browser.getLink('PPA for Celso Providelo').click()
     >>> print_build_status(anon_browser.contents)
     Source                    Build Status
     cdrkit - 1.0              /@@/build-needed i386

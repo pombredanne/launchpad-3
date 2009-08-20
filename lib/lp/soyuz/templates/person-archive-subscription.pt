@@ -30,7 +30,7 @@
     </form>
   </tal:activate>
   <tal:active condition="view/active_token">
-    <div id="sources_list" class="portlet">
+    <div id="sources_list" class="top-portlet">
       <h2>Custom sources.list entries</h2>
       <p>To install packages from the archive
         <tal:archive_name content="context/archive/displayname">

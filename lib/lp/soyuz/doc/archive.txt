@@ -1143,6 +1143,11 @@ involved.
     >>> print primary_dependency.title
     Primary Archive for Ubuntu Linux - UPDATES (main, universe)
 
+They also expose the name of the component directly, for use in the API.
+
+    >>> print primary_dependency.component_name
+    universe
+
 See further implications of archive dependencies in
 doc/archive-dependencies.txt.
 
@@ -1169,6 +1174,11 @@ more concise title.
 
     >>> print primary_component_dep.title
     Primary Archive for Ubuntu Linux - SECURITY
+
+In this case the component name is None.
+
+    >>> print primary_component_dep.component_name
+    None
 
 However only PRIMARY archive dependencies support pockets other than
 RELEASE or other components than 'main'.
