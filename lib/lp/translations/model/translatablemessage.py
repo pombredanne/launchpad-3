@@ -65,8 +65,8 @@ class TranslatableMessage(object):
 
     def getImportedTranslation(self):
         """See 'ITranslatableMessage'"""
-        return self.potmsgset.getImportedTranslationMessage(self.language,
-                                                            self.potemplate,
+        return self.potmsgset.getImportedTranslationMessage(self.potemplate,
+                                                            self.language,
                                                             self.variant)
 
     def getSharedTranslation(self):
