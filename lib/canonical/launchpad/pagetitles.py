@@ -904,9 +904,12 @@ person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
 person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
-person_translations = ContextDisplayName('Translations made by %s')
+person_translations = ContextDisplayName('Translations related to %s')
 
 person_translations_relicensing = "Translations licensing"
+
+person_translations_to_review = ContextDisplayName(
+    'Translations for review by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
