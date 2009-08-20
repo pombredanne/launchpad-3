@@ -12,6 +12,9 @@ __all__ = [
     'DistroArchSeriesView',
     ]
 
+from zope.component import provideAdapter
+from zope.interface import implements, Interface
+
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
@@ -20,8 +23,9 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadEditFormView)
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
+from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp.menu import (
-    ContextMenu, enabled_with_permission, Link)
+    ContextMenu, enabled_with_permission, Link, NavigationMenu)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.lazr.utils import smartquote
 
@@ -49,8 +53,25 @@ class DistroArchSeriesContextMenu(ContextMenu):
         return Link('+builds', text, icon='info')
 
 
+class IDistroArchSeriesActionMenu(Interface):
+    """Marker interface for the action menu."""
+
+
+class DistroArchSeriesActionMenu(NavigationMenu, DistroArchSeriesContextMenu):
+    """Action menu for distro arch series."""
+    usedfor = IDistroArchSeriesActionMenu
+    facet = "overview"
+    title = "Actions"
+
+
+provideAdapter(
+    DistroArchSeriesActionMenu, [IDistroArchSeriesActionMenu],
+    INavigationMenu, name="overview")
+
+
 class DistroArchSeriesView(BuildRecordsView):
     """Default DistroArchSeries view class."""
+    implements(IDistroArchSeriesActionMenu)
 
 
 class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
