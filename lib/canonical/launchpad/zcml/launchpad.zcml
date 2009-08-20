@@ -7,7 +7,6 @@
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-  xmlns:lp="http://namespaces.canonical.com/lp"
   i18n_domain="canonical.launchpad">
 
   <!--  XXX: Steve Alexander 2004-11-24:
