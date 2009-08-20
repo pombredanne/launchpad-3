@@ -52,7 +52,7 @@ pillar.
     ...
     LinkNotFoundError
 
-    >>> priv_browser = setupBrowser(auth="Basic mark@hbd.com:test")
+    >>> priv_browser = setupBrowser(auth="Basic mark@example.com:test")
     >>> priv_browser.open('http://launchpad.dev/apache')
     >>> link = priv_browser.getLink('Make announcement')
     >>> print link.text

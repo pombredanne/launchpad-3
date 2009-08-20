@@ -39,6 +39,14 @@ class QuestionMakeBugView(LaunchpadFormView):
         LaunchpadFormView.initialize(self)
 
     @property
+    def page_title(self):
+        return 'Create bug report based on question #%s' % self.context.id
+
+    @property
+    def label(self):
+        return 'Create a bug based on a question'
+
+    @property
     def initial_values(self):
         """Return the initial form values."""
         question = self.context

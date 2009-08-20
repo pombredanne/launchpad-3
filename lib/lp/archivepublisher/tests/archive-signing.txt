@@ -84,11 +84,11 @@ Disabled PPAs are excluded from the 'PendingSigningKey' pool:
 
 Indeed, Marks's PPA does not have a defined 'signing_key'.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> print sabdfl.archive.signing_key
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> print mark.archive.signing_key
     None
 
-    >>> print sabdfl.archive.signing_key_fingerprint
+    >>> print mark.archive.signing_key_fingerprint
     None
 
 We will select the only available IGPGKey from the sampledata.
@@ -100,9 +100,9 @@ We will select the only available IGPGKey from the sampledata.
 
 And use it as the Mark's PPA signing key.
 
-    >>> sabdfl.archive.signing_key = a_key
+    >>> mark.archive.signing_key = a_key
 
-    >>> print sabdfl.archive.signing_key_fingerprint
+    >>> print mark.archive.signing_key_fingerprint
     ABCDEF0123456789ABCDDCBA0000111112345678
 
 It will exclude Mark's PPA from the 'PendingSigningKey' pool as well.

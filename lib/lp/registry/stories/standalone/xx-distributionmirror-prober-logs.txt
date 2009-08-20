@@ -4,7 +4,7 @@ Every time we probe a mirror for its contents we keep a log of the probe.
 All these logs can be seen by the mirror owner or the mirror admin of
 that mirror's distribution.
 
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser.addHeader('Authorization', 'Basic mark@example.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/archive-mirror2/')
 

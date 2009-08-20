@@ -782,7 +782,8 @@
                 PersonOverviewNavigationMenu
                 PersonEditNavigationMenu
                 PersonRelatedSoftwareNavigationMenu
-                TeamOverviewNavigationMenu"/>
+                TeamOverviewNavigationMenu
+                TeamEditMenu"/>
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
             path_expression="string:~${name}"
@@ -1121,12 +1122,6 @@
             name="+mailinglist-moderate"
             template="../templates/team-mailinglist-moderate.pt"/>
         <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="launchpad.Edit"
-            class="lp.registry.browser.person.PersonLanguagesView"
-            name="+editlanguages"
-            template="../templates/person-editlanguages.pt"/>
-        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.ITeam"
             class="canonical.launchpad.browser.TeamEditView"
@@ -1137,7 +1132,7 @@
             for="lp.registry.interfaces.person.ITeam"
             class="canonical.launchpad.browser.TeamBrandingView"
             permission="launchpad.Edit"
-            template="../templates/team-edit.pt"/>
+            template="../templates/object-branding.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.Owner"

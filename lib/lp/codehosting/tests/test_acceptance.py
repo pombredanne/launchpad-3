@@ -516,7 +516,7 @@ class AcceptanceTests(SSHTestCase):
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.makeDatabaseBranch('sabdfl', 'firefox', 'some-branch')
+        branch = self.makeDatabaseBranch('mark', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         self.assertCantPush(
@@ -550,16 +550,16 @@ class SmartserverTests(SSHTestCase):
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
         ro_branch_url = self.createBazaarBranch(
-            'sabdfl', '+junk', 'ro-branch')
+            'mark', '+junk', 'ro-branch')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
-            self.getTransportURL('~sabdfl/+junk/ro-branch'))
+            self.getTransportURL('~mark/+junk/ro-branch'))
         self.assertEqual(revision, remote_revision)
 
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
         ro_branch_url = self.createBazaarBranch(
-            'sabdfl', '+junk', 'ro-branch')
+            'mark', '+junk', 'ro-branch')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
 
         # Create a new revision on the local branch.
@@ -567,7 +567,7 @@ class SmartserverTests(SSHTestCase):
         tree.commit('Empty commit', rev_id='rev2')
 
         # Push the local branch to the remote url
-        remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
+        remote_url = self.getTransportURL('~mark/+junk/ro-branch')
         self.assertCantPush(self.local_branch_path, remote_url)
 
     def test_can_read_mirrored_branch(self):
@@ -583,10 +583,10 @@ class SmartserverTests(SSHTestCase):
     def test_can_read_unowned_mirrored_branch(self):
         # Users should be able to read mirrored branches even if they don't
         # own those branches.
-        ro_branch_url = self.makeMirroredBranch('sabdfl', 'firefox', 'mirror')
+        ro_branch_url = self.makeMirroredBranch('mark', 'firefox', 'mirror')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
-            self.getTransportURL('~sabdfl/firefox/mirror'))
+            self.getTransportURL('~mark/firefox/mirror'))
         self.assertEqual(revision, remote_revision)
 
     def test_authserver_error_propagation(self):
@@ -594,7 +594,7 @@ class SmartserverTests(SSHTestCase):
         # sensibly by the client.  We test this by pushing to a product that
         # does not exist (the other error message possibilities are covered by
         # unit tests).
-        remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
+        remote_url = self.getTransportURL('~mark/no-such-product/branch')
         message = "Project 'no-such-product' does not exist."
         last_line = self.assertCantPush(self.local_branch_path, remote_url)
         self.assertTrue(

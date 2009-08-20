@@ -146,6 +146,19 @@ messages.
     one line
     another line
 
+When accessed by logged in users, the build page renders the
+'buildlog' section with a timestamp at the bottom on the user
+timezone. This way they can easily find out if they are reading
+outdated information.
+
+    >>> user_browser.open(anon_browser.url)
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'buildlog'))
+    Buildlog
+    one line
+    another line
+    Updated on ...
+
 If the build procedure fails, the 'Build Status' section is augmented
 with links to the full 'buildlog' and optionally the failed
 'uploadlog' additionally to the instant when the process finished and
@@ -403,7 +416,7 @@ packages, since they do not exist.
     LinkNotFoundError
 
     >>> print anon_browser.getLink('PPA for Celso Providelo').url
-    http://launchpad.dev/%7Ecprov/+archive/ppa
+    http://launchpad.dev/~cprov/+archive/ppa
 
     >>> print anon_browser.getLink('Breezy Badger Autotest').url
     http://launchpad.dev/ubuntutest/breezy-autotest

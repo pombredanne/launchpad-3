@@ -42,7 +42,7 @@ Regular users can't approve items to be discussed in a sprint.
 It's possible to delegate the approval of a sprint agenda items to somebody else.
 First choose a driver for the UDS Guacamole sprint.
 
-  >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+  >>> browser = setupBrowser(auth='Basic mark@example.com:test')
   >>> browser.open('http://launchpad.dev/sprints/uds-guacamole')
   >>> browser.getLink('Change details').click()
   >>> browser.url
