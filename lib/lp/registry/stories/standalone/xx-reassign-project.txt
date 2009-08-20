@@ -32,11 +32,12 @@
   >>> print http(r"""
   ... POST /mozilla/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... 
-  ... field.owner=sabdfl&existing=existing&CHANGE_OWNER=Change+Owner""")
+  ...
+  ... field.owner=sabdfl&field.existing=existing"""
+  ... r"""&field.actions.change=Change""")
   HTTP/1.1 303 See Other
-  ... 
-  Location: .
+  ...
+  Location: http://localhost/mozilla
   ...
 
 

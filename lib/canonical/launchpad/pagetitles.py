@@ -187,26 +187,8 @@ branch_landing_candidates = ContextDisplayName(smartquote(
 
 branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 
-branchmergeproposal_delete = 'Delete proposal to merge branch'
-
-branchmergeproposal_edit = ViewLabel()
-
-branchmergeproposal_editstatus = ViewLabel()
-
-branchmergeproposal_enqueue = 'Queue branch for merging'
-
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
-
-branchmergeproposal_request_review = ViewLabel()
-
-branchmergeproposal_resubmit = ViewLabel()
-
-branchmergeproposal_review = ViewLabel()
-
-branchmergeproposal_vote = ViewLabel()
-
-branchmergeproposal_work_in_progress = ViewLabel()
 
 branch_register_merge_proposal = 'Propose branch for merging'
 
@@ -402,8 +384,6 @@ code_in_branches = 'Projects with active branches'
 def codeimport(context, view):
     """Return the view's title."""
     return view.title
-
-codeimport_edit = 'Edit import details'
 
 codeimport_list = 'Code Imports'
 
@@ -924,9 +904,12 @@ person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
 person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
-person_translations = ContextDisplayName('Translations made by %s')
+person_translations = ContextDisplayName('Translations related to %s')
 
 person_translations_relicensing = "Translations licensing"
+
+person_translations_to_review = ContextDisplayName(
+    'Translations for review by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 

@@ -1,0 +1,77 @@
+Bugzilla bugtrackers with an XML-RPC API
+========================================
+
+Instances of Bugzilla version 3.4+ offer an XML-RPC API for working with
+bugs. This is very similar in some regards to that offered by the
+Launchpad plugin for versions 3.0 and 3.2, however the differences
+between them necessitate Launchpad's support for Bugzilla 3.4+ being
+implemented as a separate ExternalBugTracker.
+
+As with the BugzillaLPPlugin ExternalBugTracker, we use a special XML-RPC
+transport for the purposes of testing.
+
+    >>> from lp.bugs.externalbugtracker.bugzilla import (
+    ...     BugzillaAPI)
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     TestBugzillaAPIXMLRPCTransport)
+    >>> test_transport = TestBugzillaAPIXMLRPCTransport(
+    ...     'http://bugzilla-3.4.example.com/')
+    >>> bugzilla = BugzillaAPI(
+    ...     'http://bugzilla-3.4.example.com/',
+    ...     xmlrpc_transport=test_transport)
+    >>> bugzilla.xmlrpc_transport == test_transport
+    True
+
+
+Authentication
+--------------
+
+Any XML-RPC method that modifies data on the remote server requires the
+user to be logged in. The Bugzilla 3.4 API provides a method to do this
+using a username and password.
+
+The BugzillaAPI._authenticate() method is responsible for attempting to
+log in to the remote server.
+
+    >>> test_transport.print_method_calls = True
+    >>> bugzilla._authenticate()
+    CALLED User.login({'login': 'foo.bar@canonical.com'...})
+
+The authorisation cookie will be stored in the auth_cookie property of
+the XML-RPC transport.
+
+    >>> test_transport.cookie_processor.cookiejar
+    <cookielib.CookieJar[Cookie(version=0, name='Bugzilla_login'...),
+                         Cookie(version=0, name='Bugzilla_logincookie'...)]>
+
+Trying to log in to a Bugzilla instance for which we have no credentials
+will raise an error:
+
+    >>> transport = TestBugzillaAPIXMLRPCTransport(
+    ...     'http://thiswillfail.example.com/')
+    >>> non_auth_bugzilla = BugzillaAPI(
+    ...     'http://thiswillfail.example.com/',
+    ...     xmlrpc_transport=transport)
+
+    >>> non_auth_bugzilla._authenticate()
+    Traceback (most recent call last):
+      ...
+    BugTrackerAuthenticationError: http://thiswillfail.example.com:
+    No credentials found.
+
+Trying to log in to a Bugzilla with incorrect credentials will also
+raise an error.
+
+    >>> class BadCredentialsBugzillaAPI(BugzillaAPI):
+    ...
+    ...     credentials = {'login': 'fail', 'password': 'fail'}
+
+    >>> non_auth_bugzilla = BadCredentialsBugzillaAPI(
+    ...     'http://thiswillfail.example.com/',
+    ...     xmlrpc_transport=transport)
+
+    >>> non_auth_bugzilla._authenticate()
+    Traceback (most recent call last):
+        ...
+    BugTrackerAuthenticationError: http://thiswillfail.example.com:
+    Fault 300: The username or password you entered is not valid.

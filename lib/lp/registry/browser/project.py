@@ -221,9 +221,13 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'More announcements'
+        text = 'Read all announcements'
         enabled = bool(self.context.getAnnouncements())
-        return Link('+announcements', text, enabled=enabled)
+        return Link('+announcements', text, icon='info', enabled=enabled)
+
+    def milestones(self):
+        text = 'See all milestones'
+        return Link('+milestones', text)
 
     def milestones(self):
         text = 'See all milestones'
