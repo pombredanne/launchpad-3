@@ -9,12 +9,13 @@ It implements the operations:
 
  - 'index' : returns key index information
  - 'get': returns an ASCII armored public key
+ - 'add': adds a key to the collection (does not update the index)
 
-It does not depend on GPG; it simply serves the information stored in
-files at a given HOME (default to /home/keys/) with the following name
-format:
+It only depends on GPG for key submission; for retrieval and searching
+it just looks for files in the root (eg. /var/tmp/zeca). The files
+are named like this:
 
-0x<keyid>.<operation>
+0x<keyid|fingerprint>.<operation>
 
 Example:
 
