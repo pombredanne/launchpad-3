@@ -10,6 +10,8 @@
   i18n:domain="launchpad"
 >
   <body>
+    <h1 metal:fill-slot="heading">People and teams</h1>
+
     <tal:side metal:fill-slot="side">
       <tal:menu replace="structure view/@@+global-actions" />
       <tal:menu replace="structure context/@@+related-pages" />

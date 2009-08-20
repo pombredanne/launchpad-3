@@ -1392,7 +1392,6 @@ class ProductSetView(LaunchpadView):
 
     implements(IRegistryCollectionNavigationMenu)
 
-    label = 'Projects'
     page_title = 'Projects registered in Launchpad'
 
     max_results_to_display = config.launchpad.default_batch_size
