@@ -126,7 +126,8 @@ class TestTranslatableMessage(TestCaseWithFactory):
 
         message = TranslatableMessage(self.potmsgset, self.pofile)
         externals = message.getExternalTranslations()
-        self.assertContentEqual([external_current, external_imported], externals)
+        self.assertContentEqual([external_current, external_imported],
+                                externals)
 
     def test_dismissAllSuggestions(self):
         # Add a suggestion that is newer than the current translation and

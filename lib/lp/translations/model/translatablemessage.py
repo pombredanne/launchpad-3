@@ -34,8 +34,9 @@ class TranslatableMessage(object):
         self.language = pofile.language
         self.variant = pofile.variant
 
-        self._current_translation = self.potmsgset.getCurrentTranslationMessage(
-            self.potemplate, self.language, self.variant)
+        self._current_translation = (
+            self.potmsgset.getCurrentTranslationMessage(
+                self.potemplate, self.language, self.variant))
 
     def isObsolete(self):
         """See 'ITranslatableMessage'"""
