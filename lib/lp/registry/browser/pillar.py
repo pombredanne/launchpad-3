@@ -20,6 +20,8 @@ from canonical.launchpad.webapp.menu import Link, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
 from canonical.launchpad.webapp.tales import MenuAPI
 
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.project import IProject
 
@@ -78,6 +80,10 @@ class PillarView(LaunchpadView):
                 self._set_official_launchpad(product)
             # Projectgroups do not support submit code.
             self.official_codehosting = False
+        elif IDistributionSourcePackage.providedBy(self.context):
+            # Distro source packages don't have blueprints.
+            self._set_official_launchpad(pillar)
+            self.official_blueprints = False
         else:
             self._set_official_launchpad(pillar)
 

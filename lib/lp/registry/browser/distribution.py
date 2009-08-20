@@ -474,7 +474,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
-        return Link('+subscribe', text)
+        return Link('+subscribe', text, icon='edit')
 
 
 class DistributionBountiesMenu(ApplicationMenu):

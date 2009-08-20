@@ -15,12 +15,15 @@ __all__ = [
 import itertools
 import operator
 
-from zope.component import getUtility
+from zope.component import getUtility, provideAdapter
 from zope.formlib import form
+from zope.interface import implements, Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
@@ -34,7 +37,10 @@ from lp.answers.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, Link,
     Navigation, StandardLaunchpadFacets, action, canonical_url, redirection)
-from canonical.launchpad.webapp.menu import enabled_with_permission
+from canonical.launchpad.webapp.interfaces import INavigationMenu
+from canonical.launchpad.webapp.menu import (
+    enabled_with_permission, NavigationMenu)
+
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 from lazr.delegates import delegates
@@ -60,7 +66,9 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['subscribe', 'publishinghistory', 'edit']
+    links = [
+        'subscribe', 'publishinghistory', 'edit', 'new_bugs',
+        'open_questions']
 
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
@@ -74,6 +82,16 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
         # This is titled "Edit bug reporting guidelines" because that
         # is the only editable property of a source package right now.
         return Link('+edit', 'Edit bug reporting guidelines', icon='edit')
+
+    def new_bugs(self):
+        base_path = "+bugs"
+        get_data = "?field.status:list=NEW"
+        return Link(base_path + get_data, "New bugs", site="bugs")
+
+    def open_questions(self):
+        base_path = "+questions"
+        get_data = "?field.status=OPEN"
+        return Link(base_path + get_data, "Open Questions", site="answers")
 
 
 class DistributionSourcePackageBugsMenu(
@@ -124,7 +142,30 @@ class DecoratedDistributionSourcePackageRelease:
         return self._package_diffs
 
 
+class IDistributionSourcePackageActionMenu(Interface):
+    """Marker interface for the action menu."""
+
+
+class DistributionSourcePackageActionMenu(NavigationMenu,
+                                          DistributionSourcePackageOverviewMenu):
+    """Action menu for distro source packages."""
+    usedfor = IDistributionSourcePackageActionMenu
+    facet = 'overview'
+    title = 'Actions'
+    links = ('change_log', 'subscribe', 'edit')
+
+    def change_log(self):
+        text = 'View full change log'
+        return Link('+changelog', text, icon="info")
+
+
+provideAdapter(
+    DistributionSourcePackageActionMenu, [IDistributionSourcePackageActionMenu],
+    INavigationMenu, name="overview")
+
+
 class DistributionSourcePackageView(LaunchpadFormView):
+    implements(IDistributionSourcePackageActionMenu)
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -349,6 +390,11 @@ class DistributionSourcePackageView(LaunchpadFormView):
             DecoratedDistributionSourcePackageRelease(
                 dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
             for (dspr, spphs) in dspr_pubs]
+
+    @cachedproperty
+    def open_questions(self):
+        """Return result set containing open questions for this package."""
+        return self.context.searchQuestions(status=QuestionStatus.OPEN)
 
 
 class DistributionSourcePackageEditView(LaunchpadEditFormView):
