@@ -765,6 +765,25 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
+    """Distribution drivers, owners, and admins may plan releases.
+
+    Drivers of `IDerivativeDistribution`s can create series. Owners and
+    admins can create series for all `IDistribution`s.
+    """
+    permission = 'launchpad.Append'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        if user.inTeam(self.obj.driver) and not self.obj.full_functionality:
+            # Drivers of derivative distributions can create a series that
+            # they will be the release manager for.
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(admins))
+
+
 class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
@@ -803,6 +822,11 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
+        if (user.inTeam(self.obj.driver)
+            and not self.obj.distribution.full_functionality):
+            # The series driver (release manager) may edit a series if the
+            # distribution is an `IDerivativeDistribution`
+            return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.owner) or
                 user.inTeam(self.obj.distribution.owner) or

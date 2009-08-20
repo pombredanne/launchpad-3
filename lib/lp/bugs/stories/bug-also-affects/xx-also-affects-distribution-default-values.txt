@@ -13,8 +13,8 @@ first source package found in the "Affects" list.
     Tomcat                      New         Low
     Ubuntu                      Status tracked in Hoary
     Hoary                       New         Undecided
-    mozilla-firefox (Debian)    Confirmed   Low         Sample Person
-    Woody                       New         Medium
+    mozilla-firefox (Debian)    Confirmed   Low         Sample Person ...
+    Woody                       New         Medium ...
 
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.url

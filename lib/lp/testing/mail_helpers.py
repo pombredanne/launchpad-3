@@ -22,7 +22,7 @@ def pop_notifications(sort_key=None, commit=True):
     :param sort_key: define sorting function.  sort_key specifies a
     function of one argument that is used to extract a comparison key from
     each list element.  (See the sorted() Python built-in.)
-    :param commit: whether to commit before reading email (defauls to False).
+    :param commit: whether to commit before reading email (defaults to True).
     """
     if commit:
         transaction.commit()
