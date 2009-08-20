@@ -45,7 +45,7 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
         <div class="yui-d0">
           <div id="locationbar"> ...
              <div id="lp-hierarchy" class="home">...
-          <div class="location-portlet top-portlet">
+          <div class="watermark-apps-portlet top-portlet">
             <img ...
             <h1>Waffles</h1>
             <!-- Application Menu -->
@@ -106,7 +106,7 @@ content to take up all the horizontal space.
         <div class="yui-d0">
           <div id="locationbar"> ...
              <div id="lp-hierarchy" class="home">...
-          <div class="location-portlet top-portlet">
+          <div class="watermark-apps-portlet top-portlet">
             <img ...
             <h1>Waffles</h1>
             <!-- Application Menu -->
@@ -164,7 +164,7 @@ slots are rendered, as are the application tabs.
             <div id="logincontrol"><a href="...">Log in / Register</a></div>
             <div id="lp-hierarchy" class="home">...
           </div><!--id="locationbar"-->
-          <div class="location-portlet top-portlet">
+          <div class="watermark-apps-portlet top-portlet">
             <img ...
             <h1>Waffles</h1>
             <!-- Application Menu -->

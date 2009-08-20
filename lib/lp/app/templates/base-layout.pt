@@ -84,14 +84,14 @@
         <tal:hierarchy replace="structure context/@@+hierarchy" />
       </div><!--id="locationbar"-->
 
-      <div class="location-portlet top-portlet"
+      <div class="watermark-apps-portlet top-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
         <span tal:replace="structure context/watermark:logo"></span>
         <h2 tal:replace="structure context/watermark:heading">
           Celso Providelo
         </h2>
         <metal:heading_nav
-          use-macro="context/@@+base-layout-macros/location-tabs"/>
+          use-macro="context/@@+base-layout-macros/application-buttons"/>
       </div>
 
       <div class="yui-t4"
