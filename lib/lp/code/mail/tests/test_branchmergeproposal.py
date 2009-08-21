@@ -179,6 +179,17 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
                          attachment['Content-Disposition'])
         self.assertEqual('Fake diff', attachment.get_payload(decode=True))
 
+    def test_generateEmail_no_diff_for_status_only(self):
+        """If the subscription is for status only, don't attach diffs."""
+        bmp, subscriber = self.makeProposalWithSubscriber(
+            diff_text="Fake diff")
+        bmp.source_branch.subscribe(subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.STATUS)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertEqual(0, len(ctrl.attachments))
+
     def test_generateEmail_attaches_diff_oversize_truncated(self):
         """An oversized diff will be truncated, and the receiver informed."""
         self.pushConfig("diff", max_read_size=25)
