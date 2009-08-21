@@ -433,7 +433,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                     _('You must provide details about your problem.'))
 
     @property
-    def pagetitle(self):
+    def page_title(self):
         """The current page title."""
         return _('Ask a question about ${context}',
                  mapping=dict(context=self.context.displayname))
@@ -495,6 +495,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 class QuestionChangeStatusView(LaunchpadFormView):
     """View for changing a question status."""
     schema = IQuestionChangeStatusForm
+    label = 'Change question status'
+
+    @property
+    def page_title(self):
+        return 'Change status of question #%s' % self.context.id
 
     def validate(self, data):
         """Check that the status and message are valid."""
@@ -566,6 +571,11 @@ class QuestionRejectView(LaunchpadFormView):
     """View for rejecting a question."""
     schema = IQuestionChangeStatusForm
     field_names = ['message']
+    label = 'Reject question'
+
+    @property
+    def page_title(self):
+        return 'Reject question #%s' % self.context.id
 
     def validate(self, data):
         """Check that required information was provided."""
@@ -953,6 +963,10 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
     schema = IFAQ
 
     label = _('Create a new FAQ')
+
+    @property
+    def page_title(self):
+        return 'Create a FAQ for %s' % self.context.product.displayname
 
     field_names = ['title', 'keywords', 'content']
 

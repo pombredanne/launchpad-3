@@ -630,7 +630,7 @@ class ProjectAddQuestionView(QuestionAddView):
             render_context=self.render_context)
 
     @property
-    def pagetitle(self):
+    def page_title(self):
         """The current page title."""
         return _('Ask a question about a project in ${project}',
                  mapping=dict(project=self.context.displayname))

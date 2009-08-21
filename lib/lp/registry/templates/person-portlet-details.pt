@@ -65,7 +65,7 @@
         <a
           tal:attributes="href context/teamowner/fmt:url"
           tal:content="context/teamowner/displayname"
-        >sabdfl</a>
+        >mark</a>
       <br />
 
       <b>Created on:</b>

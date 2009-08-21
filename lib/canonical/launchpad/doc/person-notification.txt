@@ -11,17 +11,17 @@ notifications and sending them.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> notification_set = getUtility(IPersonNotificationSet)
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
 
 To add a new notification we need the recipient, the email body and its
 subject.
 
     >>> notification = notification_set.addNotification(
-    ...     sabdfl, 'subject', 'body')
+    ...     mark, 'subject', 'body')
     >>> verifyObject(IPersonNotification, notification)
     True
     >>> notification.person.name
-    u'sabdfl'
+    u'mark'
     >>> notification.date_created
     datetime.datetime(...
     >>> print notification.date_emailed
@@ -53,7 +53,7 @@ sends it to the recipient.
     >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: bounces@canonical.com
-    To: Mark Shuttleworth <mark@hbd.com>
+    To: Mark Shuttleworth <mark@example.com>
     Subject: subject
     body
     ----------------------------------------
@@ -62,7 +62,7 @@ The send-person-notifications script will send all pending
 notifications.
 
     >>> notification = notification_set.addNotification(
-    ...     sabdfl, 'subject2', 'body2')
+    ...     mark, 'subject2', 'body2')
     >>> [n.subject for n in notification_set.getNotificationsToSend()]
     [u'subject2']
 

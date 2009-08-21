@@ -25,7 +25,7 @@ categories.
 
     >>> [(person.name, karmavalue)
     ...  for person, karmavalue in firefox.getTopContributors(limit=3)]
-    [(u'name12', 66), (u'sabdfl', 27), (u'name16', 8)]
+    [(u'name12', 66), (u'mark', 27), (u'name16', 8)]
 
     >>> from lp.registry.model.karma import KarmaCategory
     >>> bugs = KarmaCategory.byName('bugs')
@@ -36,7 +36,7 @@ categories.
     >>> specs = KarmaCategory.byName('specs')
     >>> top_speccers = firefox.getTopContributors(category=specs, limit=1)
     >>> [(person.name, karmavalue) for person, karmavalue in top_speccers]
-    [(u'sabdfl', 27)]
+    [(u'mark', 27)]
 
 We also have a way of retrieving the top contributors of a given
 product/project/distribution grouped by categories.
@@ -49,7 +49,7 @@ product/project/distribution grouped by categories.
     ...               for person, karmavalue in contributors[category]]
     ...     print "%s: %s" % (category.title, people)
     Bug Management: [(u'name16', 26), (u'name12', 13)]
-    Specification Tracking: [(u'sabdfl', 37)]
+    Specification Tracking: [(u'mark', 37)]
 
 The top contributors of a project are the ones with the most karma in all
 products of that project.
@@ -60,11 +60,11 @@ the mozilla project.
 
     >>> [(person.name, karmavalue)
     ...  for person, karmavalue in firefox.project.getTopContributors(limit=3)]
-    [(u'name12', 66), (u'sabdfl', 27), (u'name16', 23)]
+    [(u'name12', 66), (u'mark', 27), (u'name16', 23)]
 
     >>> [(person.name, karmavalue)
     ...  for person, karmavalue in firefox.getTopContributors(limit=3)]
-    [(u'name12', 66), (u'sabdfl', 27), (u'name16', 8)]
+    [(u'name12', 66), (u'mark', 27), (u'name16', 8)]
 
     >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
     >>> thunderbird.project == firefox.project
