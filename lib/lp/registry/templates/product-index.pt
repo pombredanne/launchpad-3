@@ -171,15 +171,19 @@
         <div class="yui-u first">
           <div tal:content="structure context/@@+portlet-listfaqs" />
 
+          <div tal:content="structure context/@@+portlet-latestbugs" />
+
           <div tal:content="structure context/@@+portlet-top-contributors" />
 
-          <div tal:content="structure context/@@+portlet-coming-sprints" />
+          <div tal:content="structure context/@@+portlet-packages" />
         </div>
 
         <div class="yui-u">
           <div tal:content="structure context/@@+portlet-latestquestions" />
 
-          <div tal:content="structure context/@@+portlet-packages" />
+          <div tal:content="structure context/@@+portlet-latestspecs" />
+
+          <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>
       </div>
     </tal:main>
