@@ -43,7 +43,7 @@
 
       <p class="discreet">
         This archive contains
-        <tal:count replace="context/package_count">bazillions of</tal:count> software packages.
+        <strong class="registry-stat" tal:content="context/package_count">bazillions of</strong> software packages.
       </p>
     </div><!--portlet-->
 
