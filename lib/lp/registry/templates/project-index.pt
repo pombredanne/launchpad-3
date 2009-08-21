@@ -64,14 +64,20 @@
     <div class="yui-g">
       <div class="yui-u first">
         <tal:details replace="structure context/@@+details" />
-        <tal:sprints content="structure context/@@+portlet-coming-sprints" />
+
         <tal:faqs content="structure context/@@+portlet-listfaqs" />
-        <tal:questions content="structure context/@@+portlet-latestquestions" />
-        <tal:bugs content="structure context/@@+portlet-latestbugs"
+
+        <tal:questions content="structure context/@@+portlet-latestquestions"
           condition="view/has_many_projects" />
+
+        <tal:bugs content="structure context/@@+portlet-latestbugs" />
+
         <tal:specs content="structure context/@@+portlet-latestspecs"
           condition="view/has_many_projects" />
-        <tal:contributors content="structure context/@@+portlet-top-contributors"
+
+        <tal:contributors content="structure context/@@+portlet-top-contributors"/>
+
+        <tal:sprints content="structure context/@@+portlet-coming-sprints"
           condition="view/has_many_projects" />
       </div>
 
@@ -114,11 +120,13 @@
           </ul>
         </div>
 
-        <tal:bugs content="structure context/@@+portlet-latestbugs"
+        <tal:questions content="structure context/@@+portlet-latestquestions"
           condition="not: view/has_many_projects" />
+
         <tal:specs content="structure context/@@+portlet-latestspecs"
           condition="not: view/has_many_projects" />
-        <tal:contributors content="structure context/@@+portlet-top-contributors"
+
+        <tal:sprints content="structure context/@@+portlet-coming-sprints"
           condition="not: view/has_many_projects" />
       </div>
     </div>
