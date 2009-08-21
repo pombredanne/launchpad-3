@@ -229,7 +229,9 @@ class TextAreaEditorWidget(TextLineEditorWidget):
                       }
                   }
             }});
-            widget.render();
+            if (!Y.UA.opera) {
+                widget.render();
+            }
         });
         </script>
         """)
