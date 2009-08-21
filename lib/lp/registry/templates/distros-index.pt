@@ -6,35 +6,23 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/pillarindex"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
   <body>
     <h1 metal:fill-slot="heading">Registered distributions</h1>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div class="portlet">
-    <h2>About these distributions</h2>
+    <tal:side metal:fill-slot="side">
+      <tal:menu replace="structure view/@@+global-actions" />
+      <tal:menu replace="structure context/@@+related-pages" />
+    </tal:side>
 
-    <div class="portletBody portletContent">
-      <img src="/@@/info" />
-      Launchpad can manage the source packages, builds, archive publishing
-      and historical record-keeping necessary to create a distribution.
-      Some of the distributions described here are fully managed in
-      Launchpad, others are managed elsewhere but Launchpad keeps track of
-      their progress.
-    </div>
-  </div>
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
-
-    <div id="application-summary">
-      Launchpad can keep track of the software packages in a distribution,
-      and provide information about the bugs, translations and code
-      associated with each of them.
-    </div>
-
+  <div metal:fill-slot="main">
+    There are currently
+    <strong class="registry-stat"
+            tal:content="view/count">2</strong>
+    distributions registered in Launchpad.
+    <p/>
     <table class="listing">
       <thead>
         <tr>
@@ -67,6 +55,13 @@
       and its information might be out of date.
     </p>
 
+    <div id="application-summary">
+      Launchpad manages the source packages, builds, archive publishing, bugs,
+      translations, code, and historical record-keeping necessary to create a
+      distribution.  Some of the distributions described here are fully
+      managed in Launchpad, others are managed elsewhere with Launchpad
+      keeping track of their progress.
+    </div>
   </div>
 
 </body>

@@ -2012,15 +2012,17 @@
         template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
-            DistributionFacets
-            DistributionOverviewMenu
-            DistributionBugsMenu
             DistributionBountiesMenu
-            DistributionSpecificationsMenu
-            DistributionSetFacets
-            DistributionSetContextMenu
+            DistributionBugsMenu
+            DistributionFacets
+            DistributionMirrorsNavigationMenu
             DistributionNavigationMenu
-            DistributionMirrorsNavigationMenu"
+            DistributionOverviewMenu
+            DistributionSetActionNavigationMenu
+            DistributionSetContextMenu
+            DistributionSetFacets
+            DistributionSpecificationsMenu
+            "
         module="lp.registry.browser.distribution"/>
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
