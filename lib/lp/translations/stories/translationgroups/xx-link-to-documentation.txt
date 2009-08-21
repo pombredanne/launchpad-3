@@ -79,7 +79,7 @@ the documentation url through the edit view.
     Set Esperanto guidelines for Just a testing team
     >>> test_browser.getControl('Translation guidelines').value = (
     ...     'http://www.launchpad.net/')
-    >>> test_browser.getControl('Change').click()
+    >>> test_browser.getControl('Set guidelines').click()
     >>> print test_browser.url
     http://translations.launchpad.dev/~name12
     >>> translator_listing = find_tag_by_id(
@@ -115,7 +115,7 @@ instructions displayed.
     ...         "+groups/testing-translation-team/es/+edit")
     ...     browser.open(team_edit_url)
     ...     browser.getControl('Translation guidelines').value = url
-    ...     browser.getControl('Change').click()
+    ...     browser.getControl('Set guidelines').click()
 
     >>> def get_notification_content(browser):
     ...     tags = find_tags_by_class(
