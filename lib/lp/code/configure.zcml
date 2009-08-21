@@ -525,7 +525,8 @@
                     branch
                     mail_header
                     recipient
-                    max_diff_lines"/>
+                    max_diff_lines
+                    review_level"/>
   </class>
   <class class="lp.code.model.branchnamespace.PackageNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
