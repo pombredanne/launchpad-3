@@ -9,44 +9,44 @@
        id="contact-details">
     <h2 tal:condition="context/is_team">Team details</h2>
 
-    <div class="two-column-list">
-      <dl id="contact-email">
-        <dt>Email:</dt>
+    <dl id="contact-email">
+      <dt>Email:</dt>
 
-        <dd>
-          <tal:not_logged_in
-            condition="view/email_address_visibility/is_login_required">
-            <a href="+login">Log in</a> for email information.
-          </tal:not_logged_in>
+      <dd>
+        <tal:not_logged_in
+          condition="view/email_address_visibility/is_login_required">
+          <a href="+login">Log in</a> for email information.
+        </tal:not_logged_in>
 
+        <tal:no_preferredemail
+          condition="view/email_address_visibility/are_none_available">
+          No contact email
+        </tal:no_preferredemail>
+
+        <div tal:condition="view/can_contact">
+          <img src="/@@/mail" alt="email"/>
+          <a href="+contactuser"
+            tal:attributes="title view/contact_link_title"
+            tal:content="view/specific_contact_text"
+            >Contact this person</a>
           <tal:no_preferredemail
             condition="view/email_address_visibility/are_none_available">
-            No contact email
+            <br /><small>(Launchpad notifications are sent to all
+                          team members)</small>
           </tal:no_preferredemail>
+        </div>
 
-          <div tal:condition="view/can_contact">
-            <img src="/@@/mail" alt="email"/>
-            <a href="+contactuser"
-              tal:attributes="title view/contact_link_title"
-              tal:content="view/specific_contact_text"
-              >Contact this person</a>
-            <tal:no_preferredemail
-              condition="view/email_address_visibility/are_none_available">
-              <br /><small>(Launchpad notifications are sent to all
-                            team members)</small>
-            </tal:no_preferredemail>
+        <tal:emails repeat="email view/visible_email_addresses">
+          <div style="white-space: nowrap">
+            <img src="/@@/mail" alt="mail" />
+            <tal:email replace="email">foo2@bar.com</tal:email>
           </div>
+        </tal:emails>
+        <a tal:replace="structure overview_menu/editemail/fmt:link" />
+      </dd>
+    </dl>
 
-          <tal:emails repeat="email view/visible_email_addresses">
-            <div style="white-space: nowrap">
-              <img src="/@@/mail" alt="mail" />
-              <tal:email replace="email">foo2@bar.com</tal:email>
-            </div>
-          </tal:emails>
-          <a tal:replace="structure overview_menu/editemail/fmt:link" />
-        </dd>
-      </dl>
-
+    <div class="two-column-list">
       <dl id="team-owner">
         <dt>Owner:</dt>
         <dd>
