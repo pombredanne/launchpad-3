@@ -572,10 +572,6 @@ karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
 language_index = ContextDisplayName("%s in Launchpad")
 
-language_add = 'Add a new Language to Launchpad'
-
-language_admin = ContextDisplayName("Edit %s")
-
 languageset_index = 'Languages in Launchpad'
 
 # launchpad_debug doesn't need a title.
