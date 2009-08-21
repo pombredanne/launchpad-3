@@ -76,7 +76,7 @@
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+answer-contact"
     permission="launchpad.AnyPerson"
-    class="canonical.launchpad.browser.ManageAnswerContactView"
+    class="lp.answers.browser.questiontarget.ManageAnswerContactView"
     template="../templates/questiontarget-manage-answercontacts.pt"
     />
   <browser:renamed-page
@@ -224,7 +224,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionCreateFAQView"
     permission="launchpad.Moderate"
-    template="../templates/question-createfaq.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:page
@@ -293,7 +293,7 @@
     for="lp.answers.interfaces.faqtarget.IFAQTarget"
     class=".faqtarget.FAQCreateView"
     permission="launchpad.Moderate"
-    template="../templates/questiontarget-createfaq.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:url
