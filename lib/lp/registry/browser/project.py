@@ -481,7 +481,17 @@ class ProjectAddProductView(ProductAddView):
 class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for project group index."""
     usedfor = IProjectSet
-    links = ['register_team', 'register_project', 'create_account']
+    links = ['register_team', 'register_project', 'create_account',
+             'register_project_group', 'view_all_project_groups']
+
+    @enabled_with_permission('launchpad.ProjectReview')
+    def register_project_group(self):
+        text = 'Register a project group'
+        return Link('+new', text, icon='add')
+
+    def view_all_project_groups(self):
+        text = 'View all project groups'
+        return Link('+all', text, icon='list')
 
 
 class ProjectSetView(LaunchpadView):
