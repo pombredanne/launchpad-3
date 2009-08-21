@@ -29,8 +29,8 @@
       </table>
 
       <p/>
-      <p id="application-summary">
-        Launchpad can help you organise your developer sprints, summits and
+      <p id="application-summary" class="application-summary">
+        Launchpad can help you organize your developer sprints, summits and
         gatherings. Register the meeting here, then you can invite people to
         nominate blueprints for discussion at the event. The meeting drivers
         control the agenda, but everyone can see what's proposed and what's
