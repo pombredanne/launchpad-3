@@ -1588,6 +1588,7 @@
             ProductBugsMenu
             ProductEditNavigationMenu
             ProductFacets
+            ProductNavigationMenu
             ProductOverviewMenu
             ProductSetContextMenu
             ProductSetFacets
