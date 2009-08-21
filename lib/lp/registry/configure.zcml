@@ -387,7 +387,6 @@
                 getUsedBugTagsWithOpenCounts
                 bugtargetdisplayname
                 bugtargetname
-                getMostCommonBugs
                 getBugCounts
                 bug_subscriptions
                 getSubscriptions
