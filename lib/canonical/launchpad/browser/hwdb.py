@@ -23,9 +23,9 @@ from z3c.ptcompat import ViewPageTemplateFile
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchBag, NotFoundError
 from canonical.launchpad.interfaces.hwdb import (
-    HWSubmissionMissingFields, IHWDBApplication, IHWDeviceSet, IHWDriverSet,
-    IHWSubmissionDeviceSet, IHWSubmissionForm, IHWSubmissionSet,
-    IHWSystemFingerprintSet, IHWVendorIDSet)
+    HWSubmissionMissingFields, IHWDBApplication, IHWDeviceClassSet,
+    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionForm,
+    IHWSubmissionSet, IHWSystemFingerprintSet, IHWVendorIDSet)
 from canonical.launchpad.webapp import (
     action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -217,6 +217,14 @@ class HWDBApplicationNavigation(Navigation):
         except ValueError:
             raise NotFoundError('invalid value for ID: %r' % id)
         return getUtility(IHWDeviceSet).getByID(id)
+
+    @stepthrough('+deviceclass')
+    def traverse_device_class(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            raise NotFoundError('invalid value for ID: %r' % id)
+        return getUtility(IHWDeviceClassSet).get(id)
 
     @stepthrough('+driver')
     def traverse_driver(self, id):

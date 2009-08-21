@@ -129,11 +129,9 @@ The construction of breadcrumb objects is handled by an
 IBreadcrumbBuilder factory.  The factory adapts a context object and
 produces an IBreadcrumb object for that context.
 
-The builder holds a temporary copy of a breadcrumb until the breadcrumb
-is in a usable state.  This allows us to adapt the breadcrumb context
-object in one place, and to defer setting the breadcrumb's URL.  We can
-ask the builder for a finished breadcrumb after both the text and the
-URL have been specified.
+The builder holds a temporary copy of a breadcrumb until the breadcrumb is in
+a usable state.  We can ask the builder for a finished breadcrumb after both
+the text and the URL have been specified.
 
     >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
     >>> from zope.interface.verify import verifyObject
@@ -143,7 +141,6 @@ URL have been specified.
     True
 
     >>> builder.text = 'Joy of cooking'
-    >>> builder.url = 'http://launchpad.dev/joy-of-cooking'
 
     >>> breadcrumb = builder.make_breadcrumb()
     >>> verifyObject(IBreadcrumb, breadcrumb)
@@ -152,18 +149,6 @@ URL have been specified.
     <Breadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
-
-The builder enforces the requirement for breadcrumbs to have a valid
-URL. The builder raises an error if a URL is not explicitly given by the
-developer.
-
-    >>> builder = BreadcrumbBuilder(cookbook)
-    >>> builder.text = 'Oops!'
-
-    >>> builder.make_breadcrumb()
-    Traceback (most recent call last):
-    ...
-    AssertionError: The builder has not been given a valid breadcrumb URL.
 
 The breadcrumb's attributes can be overridden with subclassing and
 Python properties.
@@ -238,16 +223,14 @@ consistency across the site.
     >>> from canonical.launchpad.browser.launchpad import Hierarchy
 
     >>> class CustomHierarchy(Hierarchy):
-    ...     def items(self):
-    ...         breadcrumb = self.breadcrumb_for(
-    ...             recipe, "http://launchpad.dev/some-spammy-url")
-    ...         # Omitted the check for 'breadcrumb is None'.
-    ...         return [breadcrumb]
+    ...     @property
+    ...     def objects(self):
+    ...         return [recipe]
 
     >>> spammy_hierarchy = CustomHierarchy(root, request)
     >>> spammy_hierarchy.items()
     [<Breadcrumb
-        url='http://launchpad.dev/some-spammy-url'
+        url='http://launchpad.dev/joy-of-cooking/spam'
         text='Spam'
         icon='<img src="/@@/recipe"/>'>]
 
@@ -273,7 +256,7 @@ location bar.
     >>> print_hierarchy(hierarchy.render())
     Location: Joy of cooking > Spam
 
-The Launchpad Homepage displays no items in it's location bar.  We are
+The Launchpad Homepage displays no items in its location bar.  We are
 considered to be on the home page if there are no breadcrumbs.
 
     # Simulate a visit to the site root

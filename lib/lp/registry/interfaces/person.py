@@ -71,6 +71,7 @@ from canonical.launchpad.fields import (
     is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
@@ -1499,7 +1500,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IHasStanding, ISetLocation):
+              IHasStanding, ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -1938,7 +1939,7 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner',
+    owner = PublicPersonChoice(title=_('New'), vocabulary='ValidOwner',
                                required=True)
 
 
@@ -1946,7 +1947,7 @@ class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
     owner = PublicPersonChoice(
-        title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+        title=_('New'), vocabulary='ValidTeamOwner', required=True)
 
 
 class ITeamCreation(ITeam):

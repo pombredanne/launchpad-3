@@ -78,16 +78,16 @@ pt_br language code is recognized properly.
 
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-browser-languages')
     >>> print extract_text(portlet)
-    Your browser languages
+    Your browser languages:
     Portuguese (Brazil)
 
 Launchpad detects that the requesting IP address (80.66.224.0) is in a
 range assigned to Liechtenstein.
 
-    >>> country_portlet = find_portlet(browser.contents,
-    ...     'Languages in Liechtenstein')
-    >>> country_portlet is None
-    False
+    >>> country_portlet = find_tag_by_id(browser.contents,
+    ...                                  'portlet-country-languages')
+    >>> print extract_text(country_portlet.dt)
+    Languages in Liechtenstein
 
 The system has no information about languages spoken in Liechtenstein,
 so instead Joao is shown how to provide the administrators with this
@@ -95,7 +95,7 @@ information.
 
     >>> def find_spoken_languages(spoken_in):
     ...     """Screen-scrape list of "spoken-in" languages out of html."""
-    ...     list_items = spoken_in.findAll('li', 'language')
+    ...     list_items = find_tags_by_class(str(spoken_in), 'language')
     ...     return [li.contents for li in list_items]
 
     >>> print find_spoken_languages(country_portlet)
@@ -110,8 +110,8 @@ equivalent information is known.
     >>> browser.addHeader('X-Forwarded-For', '143.54.0.1')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/~name12/+editlanguages')
-    >>> country_portlet = find_portlet(browser.contents,
-    ...     'Languages in Brazil')
+    >>> country_portlet = find_tag_by_id(browser.contents,
+    ...                                  'portlet-country-languages')
     >>> print find_spoken_languages(country_portlet)
     [[u'Portuguese (Brazil)']]
 
