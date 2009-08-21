@@ -614,10 +614,13 @@
                 name="+builds"
                 facet="overview"
                 template="../templates/distroarchseries-builds.pt"/>
-            <browser:page
-                name="+builds-list"
-                template="../templates/builds-list.pt"/>
         </browser:pages>
+        <browser:page
+            permission="zope.Public"
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesBuildsView"
+            name="+builds-list"
+            template="../templates/builds-list.pt"/>
         <browser:page
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
             name="+macros"

@@ -27,10 +27,7 @@
 
 <div metal:fill-slot="main">
 
-<div class="yui-g">
-  <div class="yui-u first">
-
-    <div class="portlet">
+    <div class="top-portlet">
       <h2>Search binary packages</h2>
 
       <form name="search" method="GET">
@@ -49,17 +46,13 @@
         <tal:count replace="context/package_count">bazillions of</tal:count> software packages.
       </p>
     </div><!--portlet-->
-  </div><!--yui-u-->
 
-  <div class="yui-u">
-    <div class="top-portlet">
-      <div tal:replace="structure context/@@+portlet-details" />
-    </div>
-  </div>
+    <metal:package-search use-macro="context/@@+macros/search-results" />
 
-</div><!--yui-g-->
+    <tal:details condition="not: view/search_requested"
+                 replace="structure context/@@+portlet-details" />
 
-<metal:package-search use-macro="context/@@+macros/search-results" />
+
 
 </div><!--metal-->
 

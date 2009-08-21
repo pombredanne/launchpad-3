@@ -59,11 +59,6 @@ class DistroArchSeriesActionMenu(NavigationMenu):
         return Link('+builds', text, icon='info')
 
 
-#provideAdapter(
-#    DistroArchSeriesActionMenu, [IDistroArchSeriesActionMenu],
-#    INavigationMenu, name="overview")
-
-
 class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for DistroArchSeries"""
 
@@ -76,6 +71,10 @@ class DistroArchSeriesView(BuildRecordsView,
                            DistroArchSeriesPackageSearchView):
     """Default DistroArchSeries view class."""
     implements(IDistroArchSeriesActionMenu)
+
+
+class DistroArchSeriesBuildsView(BuildRecordsView):
+    """View for +builds on a distro arch series."""
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):
