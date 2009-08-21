@@ -522,6 +522,23 @@ class BugzillaAPI(Bugzilla):
 
         self._storeBugs(remote_bugs)
 
+    def getRemoteStatus(self, bug_id):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(bug_id)
+
+        # Attempt to get the status and resolution from the bug. If
+        # we don't have the data for either of them, raise an error.
+        try:
+            status = self._bugs[actual_bug_id]['status']
+            resolution = self._bugs[actual_bug_id]['resolution']
+        except KeyError, error:
+            raise UnparseableBugData
+
+        if resolution != '':
+            return "%s %s" % (status, resolution)
+        else:
+            return status
+
 
 class BugzillaLPPlugin(BugzillaAPI):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
@@ -647,23 +664,6 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         server_utc_time = datetime(*server_timetuple[:6])
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
-
-    def getRemoteStatus(self, bug_id):
-        """See `IExternalBugTracker`."""
-        actual_bug_id = self._getActualBugId(bug_id)
-
-        # Attempt to get the status and resolution from the bug. If
-        # we don't have the data for either of them, raise an error.
-        try:
-            status = self._bugs[actual_bug_id]['status']
-            resolution = self._bugs[actual_bug_id]['resolution']
-        except KeyError, error:
-            raise UnparseableBugData
-
-        if resolution != '':
-            return "%s %s" % (status, resolution)
-        else:
-            return status
 
     def getRemoteProduct(self, remote_bug):
         """See `IExternalBugTracker`."""

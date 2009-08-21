@@ -301,34 +301,10 @@ remote system.
 Getting remote statuses
 -----------------------
 
-BugzillaLPPlugin.getRemoteStatus() will return the remote status of a
-given bug as a string. If the bug has a resolution, that will be
-returned too.
-
-    >>> print bugzilla.getRemoteStatus(1)
-    RESOLVED FIXED
-
-    >>> print bugzilla.getRemoteStatus(2)
-    NEW
-
-If a bug can't be found a BugNotFound error will be raised.
-
-    >>> bugzilla.getRemoteStatus('no-such-bug')
-    Traceback (most recent call last):
-      ...
-    BugNotFound: no-such-bug
-
-If the data we've imported from Bugzilla is incomplete and doesn't
-contain either the bug's status or its resolution an UnparseableBugData
-error will be raised. We can add a sample bug to demonstrate this.
-
-    >>> bugzilla._bugs[999] = {}
-    >>> bugzilla.getRemoteStatus(999)
-    Traceback (most recent call last):
-      ...
-    UnparseableBugData
-
-    >>> del bugzilla._bugs[999]
+BugzillaLPPlugin doesn't have any special functionality for getting
+remote statuses. See the "Getting remote statuses" section of 
+externalbugtracker-bugzilla-api.txt for details of getting remote
+statuses from Bugzilla APIs.
 
 
 Getting the remote product
