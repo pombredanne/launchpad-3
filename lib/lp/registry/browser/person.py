@@ -1121,6 +1121,17 @@ class PersonEditNavigationMenu(NavigationMenu):
 
 
 class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
+    """Base class of team menus.
+
+    You will need to override the team attribute if your menu subclass
+    has the view as its context object.
+    """
+
+    @property
+    def team(self):
+        """Allow subclasses that use the view as the context."""
+        return self.context
+
     def profile(self):
         target = ''
         text = 'Overview'
@@ -1220,11 +1231,6 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
             'The address Launchpad uses to contact %s' %
             self.team.displayname)
         return Link(target, text, summary, icon='edit')
-
-    @property
-    def team(self):
-        """Allow subclasses that use the view as the context."""
-        return self.context
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
