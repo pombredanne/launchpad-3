@@ -17,11 +17,11 @@ In order to prepare the tests below some initialization is required.
     >>> commit()
 
 Let's modify the current ACL rules for ubuntu, moving the upload
-rights to all components from 'ubuntu-team' to 'sabdfl':
+rights to all components from 'ubuntu-team' to 'mark':
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from canonical.launchpad.database import ArchivePermission
-    >>> new_uploader = getUtility(IPersonSet).getByName('sabdfl')
+    >>> new_uploader = getUtility(IPersonSet).getByName('mark')
     >>> for permission in ArchivePermission.select():
     ...     permission.person = new_uploader
     ...     permission.syncUpdate()

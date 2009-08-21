@@ -113,7 +113,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter()
         self.assertEquals(
             [ppa.owner.name for ppa in reporter.ppas],
-            ['cprov', 'sabdfl'])
+            ['cprov', 'mark'])
 
         reporter = self.getReporter(ppa_owner='cprov')
         self.assertEquals(
@@ -148,7 +148,7 @@ class TestPPAReport(unittest.TestCase):
             reporter.output.getvalue().splitlines(), [
                 '= PPAs over 0.01% of their quota =',
                 'http://launchpad.dev/~cprov/+archive/ppa | 1024 | 9',
-                'http://launchpad.dev/~sabdfl/+archive/ppa | 1024 | 9',
+                'http://launchpad.dev/~mark/+archive/ppa | 1024 | 9',
                 '',
                 ]
             )
@@ -164,7 +164,7 @@ class TestPPAReport(unittest.TestCase):
             reporter.output.getvalue().splitlines(), [
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
-                'sabdfl | Mark Shuttleworth | mark@hbd.com',
+                'mark | Mark Shuttleworth | mark@example.com',
                 '',
                 ]
             )
@@ -224,7 +224,7 @@ class TestPPAReport(unittest.TestCase):
             reporter.output.getvalue().splitlines(), [
                 '= Missing PPA repositories =',
                 '/var/tmp/ppa.test/cprov',
-                '/var/tmp/ppa.test/sabdfl',
+                '/var/tmp/ppa.test/mark',
                 '',
                 ]
             )
@@ -264,7 +264,7 @@ class TestPPAReport(unittest.TestCase):
             open(output_path).read().splitlines(),[
                 '= Missing PPA repositories =',
                 '/var/tmp/ppa.test/cprov',
-                '/var/tmp/ppa.test/sabdfl',
+                '/var/tmp/ppa.test/mark',
                 '',
                 ]
             )
@@ -286,7 +286,7 @@ class TestPPAReport(unittest.TestCase):
                 '',
                 '= Missing PPA repositories =',
                 '/var/tmp/ppa.test/cprov',
-                '/var/tmp/ppa.test/sabdfl',
+                '/var/tmp/ppa.test/mark',
                 '',
                 ]
             )
@@ -297,7 +297,7 @@ class TestPPAReport(unittest.TestCase):
             reporter.output.getvalue().splitlines(), [
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
-                'sabdfl | Mark Shuttleworth | mark@hbd.com',
+                'mark | Mark Shuttleworth | mark@example.com',
                 '',
                 ]
             )
