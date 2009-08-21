@@ -1384,7 +1384,16 @@ class Icon:
 class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for products index."""
     usedfor = IProductSet
-    links = ['register_team', 'register_project', 'create_account']
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        'review_licenses'
+        ]
+
+    @enabled_with_permission('launchpad.ProjectReview')
+    def review_licenses(self):
+        return Link('+review-licenses', 'Review projects')
 
 
 class ProductSetView(LaunchpadView):

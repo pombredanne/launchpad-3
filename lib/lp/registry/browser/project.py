@@ -232,6 +232,10 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
         text = 'See all milestones'
         return Link('+milestones', text)
 
+    def milestones(self):
+        text = 'See all milestones'
+        return Link('+milestones', text)
+
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
@@ -641,7 +645,7 @@ class ProjectAddQuestionView(QuestionAddView):
             render_context=self.render_context)
 
     @property
-    def pagetitle(self):
+    def page_title(self):
         """The current page title."""
         return _('Ask a question about a project in ${project}',
                  mapping=dict(project=self.context.displayname))

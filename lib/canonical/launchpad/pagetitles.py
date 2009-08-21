@@ -1101,19 +1101,7 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-def question_add(context, view):
-    """Return the page title to add a question."""
-    return view.pagetitle
-
-question_add_search = question_add
-
-question_change_status = ContextId('Change status of question #%s')
-
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
-
-def question_createfaq(context, view):
-    """Return the page title to create a FAQ for a question."""
-    return "Create a FAQ for %s" % view.faq_target.displayname
 
 question_history = ContextId('History of question #%s')
 
@@ -1128,15 +1116,7 @@ def question_listing(context, view):
     """Return the page title list questions."""
     return view.pagetitle
 
-question_reject = ContextId('Reject question #%s')
-
 questions_index = 'Launchpad Answers'
-
-def questiontarget_createfaq(context, view):
-    """Return the page title to create a FAQ for a questiontarget."""
-    return "Create a FAQ for %s" % context.displayname
-
-questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
