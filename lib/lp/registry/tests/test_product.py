@@ -31,7 +31,7 @@ class TestProductFiles(unittest.TestCase):
         # XXX EdwinGrubbs 2008-03-06 bug=69988
         # Doctests are difficult to use with non-ascii characters, so
         # I have used a unittest.
-        firefox_owner = setupBrowser(auth='Basic mark@hbd.com:test')
+        firefox_owner = setupBrowser(auth='Basic mark@example.com:test')
         filename = u'foo\xa5.txt'.encode('utf-8')
         firefox_owner.open(
             'http://launchpad.dev/firefox/1.0/1.0.0/+adddownloadfile')

@@ -25,6 +25,9 @@ from zope.interface import implements
 
 from canonical import encoding
 from canonical.config import config
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.webapp.url import urlappend, urlparse
+
 from lp.bugs.externalbugtracker.base import (
     BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
     ExternalBugTracker, InvalidBugId, LookupTree,
@@ -36,8 +39,6 @@ from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.url import urlappend
 
 
 class Bugzilla(ExternalBugTracker):
@@ -394,6 +395,40 @@ class BugzillaAPI(Bugzilla):
         return xmlrpclib.ServerProxy(
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
+    @property
+    def credentials(self):
+        credentials_config = config['checkwatches.credentials']
+
+        # Extract the hostname from the current base url using urlparse.
+        hostname = urlparse(self.baseurl)[1]
+        try:
+            # XXX gmb 2009-08-19 bug=391131
+            #     We shouldn't be using this here. Ideally we'd be able
+            #     to get the credentials from the BugTracker object.
+            #     If you find yourself adding credentials for, for
+            #     example, www.password.username.pirateninjah4x0rz.org,
+            #     think about fixing the above bug instead.
+            username = credentials_config['%s.username' % hostname]
+            password = credentials_config['%s.password' % hostname]
+            return {'login': username, 'password': password}
+        except KeyError:
+            raise BugTrackerAuthenticationError(
+                self.baseurl, "No credentials found.")
+
+    def _authenticate(self):
+        """Authenticate with the remote Bugzilla instance.
+
+        The native Bugzilla API uses a standard (username, password)
+        paradigm for authentication. If the username and password are
+        correct, Bugzilla will send back a login cookie which we can use
+        to re-authenticate with each subsequent method call.
+        """
+        try:
+            self.xmlrpc_proxy.User.login(self.credentials)
+        except xmlrpclib.Fault, fault:
+            raise BugTrackerAuthenticationError(
+                self.baseurl,
+                "Fault %s: %s" % (fault.faultCode, fault.faultString))
 
 
 class BugzillaLPPlugin(BugzillaAPI):

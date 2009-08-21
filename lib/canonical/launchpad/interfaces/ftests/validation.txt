@@ -104,8 +104,8 @@ Or a name that is not already in use.
 
 But you can't use Mark's name, of course. ;)
 
-    >>> field.validate(u'sabdfl')
+    >>> field.validate(u'mark')
     Traceback (most recent call last):
       ...
-    LaunchpadValidationError: ...sabdfl is already in use by another
+    LaunchpadValidationError: ...mark is already in use by another
     person or team...
