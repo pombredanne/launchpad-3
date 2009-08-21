@@ -47,6 +47,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -831,3 +832,19 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         """Return a link to the manage answer contact view."""
         text = 'Set answer contact'
         return Link('+answer-contact', text, icon='edit')
+
+
+class QuestionTargetOnAnswersVHostBreadcrumbBuilder(BreadcrumbBuilder):
+    rootsite = 'answers'
+
+    @property
+    def text(self):
+        return 'Questions for %s' % self.context.title
+
+
+class PersonOnAnswersVHostBreadcrumbBuilder(BreadcrumbBuilder):
+    rootsite = 'answers'
+
+    @property
+    def text(self):
+        return 'Questions involving %s' % self.context.displayname

@@ -109,7 +109,8 @@ Ubuntu Hoary".)
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04 > ?alsa-utils? package
+    Hierarchy: Launchpad > Ubuntu > 5.04 > ?alsa-utils? package >
+        Questions for alsa-utils in Ubuntu Hoary
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
