@@ -118,6 +118,14 @@ def test_inline_subscriber():
     client.click(
         xpath=u'//div[@class="yui-lazr-formoverlay-actions"]/button[2]')
 
+    # If we subscribe the user again, the icon should still be the person icon.
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertProperty(
+        xpath=(PERSON_LINK % u'Sample Person') + '/span',
+        validator=u'className|person')
+
+
     # Sample Person is logged in currently. She is not a
     # member of Ubuntu Team, and so, does not have permission
     # to unsubscribe the team.
@@ -135,6 +143,11 @@ def test_inline_subscriber():
     client.click(id=u'unsubscribe-icon-subscriber-17')
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertNotNode(xpath=PERSON_LINK % u'Ubuntu Team')
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
+    client.asserts.assertProperty(
+        xpath=SUBSCRIPTION_LINK,
+        validator=u'className|remove')
 
     # Test unsubscribing via the remove icon for duplicates.
     # First, go to bug 6 and subscribe.

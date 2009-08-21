@@ -3131,6 +3131,14 @@ class BugTaskTableRowView(LaunchpadView):
         """
         return self.context.userCanEditImportance(self.user)
 
+    @property
+    def user_can_edit_milestone(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        return self.context.userCanEditMilestone(self.user)
+
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
         return dumps({
@@ -3149,7 +3157,11 @@ class BugTaskTableRowView(LaunchpadView):
                                     request=IWebServiceClientRequest(
                                         self.request)) or
                                 None),
-            'user_can_edit_importance': self.user_can_edit_importance})
+            'user_can_edit_milestone': self.user_can_edit_milestone,
+            'user_can_edit_status': not self.context.bugwatch,
+            'user_can_edit_importance': (
+                self.user_can_edit_importance and
+                not self.context.bugwatch)})
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
@@ -3496,6 +3508,8 @@ class BugActivityItem:
 
 class BugTaskBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IBugTask`."""
+
+    rootsite = 'bugs'
 
     @property
     def text(self):

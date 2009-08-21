@@ -12,7 +12,7 @@ sys.path[0:0] = [${string-paths}]
 # Enable Storm's C extensions
 os.environ['STORM_CEXTENSIONS'] = '1'
 
-# we don't want to bother tests or logs with these.
+# We don't want to bother tests or logs with these.
 import warnings
 warnings.filterwarnings(
     'ignore',

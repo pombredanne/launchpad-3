@@ -69,12 +69,6 @@ project.
     >>> admin_browser.getLink('Register another project').url
     'http://launchpad.dev/mozilla/+newproduct'
 
-Also, it has a link to help translate it.
-
-    >>> admin_browser.getLink('Help translate').click()
-    >>> print admin_browser.title
-    Translatable projects for The Mozilla Project
-
 
 == Empty Project Groups ==
 

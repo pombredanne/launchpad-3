@@ -221,9 +221,13 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'More announcements'
+        text = 'Read all announcements'
         enabled = bool(self.context.getAnnouncements())
-        return Link('+announcements', text, enabled=enabled)
+        return Link('+announcements', text, icon='info', enabled=enabled)
+
+    def milestones(self):
+        text = 'See all milestones'
+        return Link('+milestones', text)
 
     def milestones(self):
         text = 'See all milestones'
@@ -478,6 +482,7 @@ class ProjectAddProductView(ProductAddView):
 class ProjectSetView(LaunchpadView):
 
     header = "Project groups registered in Launchpad"
+    page_title = header
 
     def __init__(self, context, request):
         super(ProjectSetView, self).__init__(context, request)
@@ -620,7 +625,7 @@ class ProjectAddQuestionView(QuestionAddView):
             render_context=self.render_context)
 
     @property
-    def pagetitle(self):
+    def page_title(self):
         """The current page title."""
         return _('Ask a question about a project in ${project}',
                  mapping=dict(project=self.context.displayname))

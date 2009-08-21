@@ -542,7 +542,7 @@ def print_location_apps(contents):
     """Print the application tabs' text and URL."""
     location_apps = find_tag_by_id(contents, 'lp-apps')
     if location_apps is None:
-        location_apps = first_tag_by_class(contents, 'location-portlet')
+        location_apps = first_tag_by_class(contents, 'watermark-apps-portlet')
         if location_apps is not None:
             location_apps = location_apps.ul.findAll('li')
     else:

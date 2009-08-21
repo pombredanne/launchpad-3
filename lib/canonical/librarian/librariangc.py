@@ -210,29 +210,15 @@ class UnreferencedLibraryFileContentPruner:
 
         cur = con.cursor()
 
-        # Start with a list of all unexpired and recently accessed
-        # content - we don't remove them even if they are unlinked. We
-        # currently don't remove stuff until it has been expired for
-        # more than one week, but we will change this if disk space
-        # becomes short and it actually will make a noticeable
-        # difference. Note that ReferencedLibraryFileContent will
+        # Note that ReferencedLibraryFileContent will
         # contain duplicates - duplicates are unusual so we are better
         # off filtering them once at the end rather than when we load
         # the data into the temporary file.
         cur.execute("DROP TABLE IF EXISTS ReferencedLibraryFileContent")
         cur.execute("""
-            SELECT LibraryFileAlias.content
-            INTO TEMPORARY TABLE ReferencedLibraryFileContent
-            FROM LibraryFileAlias
-            WHERE
-                expires >
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
-                OR last_accessed >
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
-                OR date_created >
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+            CREATE TEMPORARY TABLE ReferencedLibraryFileContent (
+                content integer)
             """)
-        con.commit()
 
         # Determine what columns link to LibraryFileAlias
         # references = [(table, column), ...]
@@ -249,7 +235,6 @@ class UnreferencedLibraryFileContentPruner:
         # Find all relevant LibraryFileAlias references and fill in
         # ReferencedLibraryFileContent
         for table, column in references:
-            log.debug("Getting references from %s.%s." % (table, column))
             cur.execute("""
                 INSERT INTO ReferencedLibraryFileContent
                 SELECT LibraryFileAlias.content
@@ -258,26 +243,52 @@ class UnreferencedLibraryFileContentPruner:
                 """ % {
                     'table': quoteIdentifier(table),
                     'column': quoteIdentifier(column)})
+            log.debug("%s.%s references %d LibraryFileContent rows." % (
+                table, column, cur.rowcount))
             con.commit()
 
-        log.debug("Calculating expired unreferenced LibraryFileContent set.")
+        log.debug("Calculating unreferenced LibraryFileContent set.")
         cur.execute("DROP TABLE IF EXISTS UnreferencedLibraryFileContent")
         cur.execute("""
             CREATE TEMPORARY TABLE UnreferencedLibraryFileContent (
                 id serial PRIMARY KEY,
                 content integer UNIQUE)
             """)
+        # Calculate the set of unreferenced LibraryFileContent.
+        # We also exclude all unexpired and recently accessed
+        # content - we don't remove them even if they are unlinked. We
+        # currently don't remove stuff until it has been expired for
+        # more than one week, but we will change this if disk space
+        # becomes short and it actually will make a noticeable
+        # difference. We handle excluding recently created content
+        # here rather than earlier when creating the
+        # ReferencedLibraryFileContent table to handle uploads going on
+        # while this script is running.
         cur.execute("""
             INSERT INTO UnreferencedLibraryFileContent (content)
             SELECT id AS content FROM LibraryFileContent
+            WHERE datecreated <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+            EXCEPT
+            SELECT content
+            FROM LibraryFileAlias
+            WHERE
+                expires >
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+                OR last_accessed >
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+                OR date_created >
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
             EXCEPT
             SELECT content FROM ReferencedLibraryFileContent
             """)
+        con.commit()
         cur.execute("DROP TABLE ReferencedLibraryFileContent")
         cur.execute(
             "SELECT COALESCE(max(id),0) FROM UnreferencedLibraryFileContent")
         self.max_id = cur.fetchone()[0]
-        log.debug("%d unferenced LibraryFileContent to remove." % self.max_id)
+        log.debug(
+            "%d unreferenced LibraryFileContent to remove." % self.max_id)
         con.commit()
 
     def isDone(self):
@@ -347,7 +358,9 @@ class UnreferencedContentPruner:
             SELECT COALESCE(max(id), 0) FROM UnreferencedLibraryFileContent
             """)
         self.max_id = cur.fetchone()[0]
-        log.debug("%d unreferenced LibraryFileContent rows to remove.")
+        log.debug(
+            "%d unreferenced LibraryFileContent rows to remove."
+            % self.max_id)
 
     def isDone(self):
         if self.index > self.max_id:
@@ -548,12 +561,6 @@ def delete_unwanted_files(con):
             except OSError, e:
                 if e.errno != errno.ENOENT:
                     raise
-                if config.librarian_server.upstream_host is None:
-                    # It is normal to have files in the database that
-                    # are not on disk if the Librarian has an upstream
-                    # Librarian, such as on staging. Don't annoy the
-                    # operator with noise in this case.
-                    log.info("%s already deleted", path)
 
     log.info(
             "Deleted %d files from disk that where no longer referenced "

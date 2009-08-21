@@ -513,6 +513,8 @@ class POFile(SQLBase, POFileMixIn):
 
     def prepareTranslationCredits(self, potmsgset):
         """See `IPOFile`."""
+        LP_CREDIT_HEADER = u'Launchpad Contributions:'
+        SPACE = u' '
         msgid = potmsgset.singular_text
         assert potmsgset.is_translation_credit, (
             "Calling prepareTranslationCredits on a message with "
@@ -542,15 +544,14 @@ class POFile(SQLBase, POFileMixIn):
             return u','.join(emails)
         elif msgid in [u'_: NAME OF TRANSLATORS\nYour names', u'Your names']:
             names = []
-            SPACE = u' '
+            
             if text is not None:
                 if text == u'':
                     text = SPACE
                 names.append(text)
             # Add an empty name as a separator, and 'Launchpad
             # Contributions' header; see bug #133817 for details.
-            names.extend([SPACE,
-                          u'Launchpad Contributions:'])
+            names.extend([SPACE, LP_CREDIT_HEADER])
             names.extend([
                 contributor.displayname
                 for contributor in self.contributors])
@@ -562,9 +563,14 @@ class POFile(SQLBase, POFileMixIn):
                 if text is None:
                     text = u''
                 else:
-                    text += u'\n\n'
-
-                text += 'Launchpad Contributions:'
+                    # Strip existing Launchpad contribution lists.
+                    header_index = text.find(LP_CREDIT_HEADER)
+                    if header_index != -1:
+                        text = text[:header_index]
+                    else:
+                        text += u'\n\n'
+                
+                text += LP_CREDIT_HEADER
                 for contributor in self.contributors:
                     text += ("\n  %s %s" %
                              (contributor.displayname,
@@ -1584,8 +1590,7 @@ class POFileSet:
         # and its ProductSeries and DistroSeries, if they are defined.
         OtherPOT = ClassAlias(POTemplate)
         OtherPOTJoin = Join(
-            OtherPOT, And(OtherPOT.name == MatchingPOT.name,
-                          OtherPOT.id >= MatchingPOT.id))
+            OtherPOT, And(OtherPOT.name == MatchingPOT.name))
         OtherProductSeries = ClassAlias(ProductSeries)
         OtherProductSeriesJoin = LeftJoin(
             OtherProductSeries,

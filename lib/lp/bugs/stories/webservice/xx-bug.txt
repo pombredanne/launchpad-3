@@ -620,7 +620,7 @@ service will return an unauthorized error.
 
     >>> print user_webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe',
-    ...     person=webservice.getAbsoluteUrl('/~sabdfl'))
+    ...     person=webservice.getAbsoluteUrl('/~mark'))
     HTTP/1.1 401 Unauthorized...
 
 An individual can, however, unsubscribe a team to which
@@ -779,7 +779,7 @@ report described by the bugwatch.
   date_last_changed: u'2004-10-04T01:00:00+00:00'
   date_last_checked: u'2004-10-04T01:00:00+00:00'
   last_error_type: None
-  owner_link: u'http://.../~sabdfl'
+  owner_link: u'http://.../~mark'
   remote_bug: u'2000'
   remote_importance: None
   remote_status: u''
