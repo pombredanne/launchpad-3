@@ -1393,7 +1393,7 @@ class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
 
     @enabled_with_permission('launchpad.ProjectReview')
     def review_licenses(self):
-        return Link('+review-licenses', 'Review projects')
+        return Link('+review-licenses', 'Review projects', icon='edit')
 
 
 class ProductSetView(LaunchpadView):
@@ -1405,27 +1405,27 @@ class ProductSetView(LaunchpadView):
 
     max_results_to_display = config.launchpad.default_batch_size
     results = None
-    searchrequested = False
+    search_requested = False
 
     def initialize(self):
-        """See `LaunchpadFormView`."""
+        """See `LaunchpadView`."""
         form = self.request.form_ng
         self.search_string = form.getOne('text')
         if self.search_string is not None:
-            self.searchrequested = True
+            self.search_requested = True
 
     def all_batched(self):
         return BatchNavigator(self.context.all_active, self.request)
 
     @cachedproperty
     def matches(self):
-        if not self.searchrequested:
+        if not self.search_requested:
             return None
         pillarset = getUtility(IPillarNameSet)
         return pillarset.count_search_matches(self.search_string)
 
     @cachedproperty
-    def searchresults(self):
+    def search_results(self):
         search_string = self.search_string.lower()
         limit = self.max_results_to_display
         return getUtility(IPillarNameSet).search(search_string, limit)
