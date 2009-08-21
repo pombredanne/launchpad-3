@@ -1,35 +1,15 @@
-<html
+<malone-index
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
-  i18n:domain="malone"
->
-  <body>
-
-    <div metal:fill-slot="help">
-      <p>
-        Read more <a href="+about">about the Launchpad Bug Tracker</a>,
-        the collaborative bug tracker for the open source world, and how you
-        can share information about bugs in distributions and upstream.
-      </p>
-      <ul class="info">
-        <li>
-          <a href="https://help.launchpad.net/BugTrackerEmailInterface"
-          >Sending commands by e-mail</a>
-        </li>
-      </ul>
-    </div>
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="malone">
 
     <h1 metal:fill-slot="heading">Bug tracking</h1>
 
-    <div metal:fill-slot="main">
-
-      <ul class="rollover buttons">
+      <ul class="rollover buttons"
+          metal:fill-slot="side">
         <li>
           <a href="/+tour/bugs"
              tal:attributes="href string:${rooturl}+tour/bugs">
@@ -48,6 +28,9 @@
           </a>
         </li>
       </ul>
+
+    <div metal:fill-slot="main">
+
       <p
         tal:condition="view/error_message"
         tal:content="view/error_message"
@@ -154,5 +137,5 @@
 
 
     </div><!--main-->
-  </body>
-</html>
+
+</malone-index>
