@@ -609,3 +609,35 @@ web_time_utc will be in UTC.
     tz_short_name: CET
     web_time: 20080501T01:01:01
     web_time_utc: 20080501T00:01:01
+
+
+Getting bugs from the server
+----------------------------
+
+The Bugzilla API method Bug.get() allows us to get one or more bugs from
+the remote server. It takes a list of bug IDs to return and returns a
+list of dicts containing those bugs' data.
+
+    >>> return_value = server.Bug.get(
+    ...     {'ids': [1], 'permissive': True})
+    >>> [bug_dict] = return_value['bugs']
+    >>> for key in sorted(bug_dict):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: 
+    assigned_to: test@canonical.com
+    component: GPPSystems
+    creation_time: 20080610T16:19:53
+    id: 1
+    internals:...
+    is_open: True
+    last_change_time: 20080610T16:19:53
+    priority: P1
+    product: Marvin
+    resolution: FIXED
+    severity: normal
+    status: RESOLVED
+    summary: That bloody robot still exists.
+
+Note that further tests for this functionality can be found in the
+"Launchpad.get_bugs()" section, above. This is because these two methods
+are synonymous.
