@@ -1393,7 +1393,7 @@ class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
 
     @enabled_with_permission('launchpad.ProjectReview')
     def review_licenses(self):
-        return Link('+review-licenses', 'Review projects')
+        return Link('+review-licenses', 'Review projects', icon='edit')
 
 
 class ProductSetView(LaunchpadView):
