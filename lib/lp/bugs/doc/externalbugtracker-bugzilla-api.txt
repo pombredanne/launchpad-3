@@ -111,3 +111,111 @@ This works whether the UTC offset is positive or negative.
     >>> bugzilla.getCurrentDBTime()
     CALLED Bugzilla.time()
     datetime.datetime(2009, 8, 19, 22, 2, 2, tzinfo=<UTC>)
+
+
+Initializing the bug database
+-----------------------------
+
+BugzillaAPI implements IExternalBugTracker.initializeRemoteBugDB(),
+which takes a list of bug IDs to fetch from the remote server and stores
+those bugs locally for future use.
+
+    >>> bugzilla.initializeRemoteBugDB([1, 2])
+    CALLED Bug.get({'ids': [1, 2], 'permissive': True})
+
+The bug data is stored as a list of dicts:
+
+    >>> def print_bugs(bugs):
+    ...     for bug in sorted(bugs):
+    ...         print "Bug %s:" % bug
+    ...         for key in sorted(bugzilla._bugs[bug]):
+    ...             print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...         print "\n"
+
+    >>> print_bugs(bugzilla._bugs)
+    Bug 1:
+        alias: 
+        assigned_to: test@canonical.com
+        component: GPPSystems
+        creation_time: 20080610T16:19:53
+        id: 1
+        internals:...
+        is_open: True
+        last_change_time: 20080610T16:19:53
+        priority: P1
+        product: Marvin
+        resolution: FIXED
+        severity: normal
+        status: RESOLVED
+        summary: That bloody robot still exists.
+    <BLANKLINE>
+    Bug 2:
+        alias: bug-two
+        assigned_to: marvin@heartofgold.ship
+        component: Crew
+        creation_time: 20080611T09:23:12
+        id: 2
+        internals:...
+        is_open: True
+        last_change_time: 20080611T09:24:29
+        priority: P1
+        product: HeartOfGold
+        resolution: 
+        severity: high
+        status: NEW
+        summary: Collect unknown persons in docking bay 2.
+    <BLANKLINE>
+    <BLANKLINE>
+
+
+Storing bugs
+------------
+
+initializeRemoteBugDB() uses the _storeBugs() method to store bug data.
+_storeBugs() will only store a bug once, even if it is requested both by
+alias and ID. We'll reset the test BugzillaAPI's _bugs and _bug_aliases
+dicts to demonstrate this.
+
+    >>> bugzilla._bugs = {}
+    >>> bugzilla._bug_aliases = {}
+    >>> bugzilla.initializeRemoteBugDB([2, 'bug-two'])
+    CALLED Bug.get({'ids': [2, 'bug-two'], 'permissive': True})
+
+    >>> for bug in sorted(bugzilla._bugs):
+    ...     print "Bug %r:" % bug
+    ...     for key in sorted(bugzilla._bugs[bug]):
+    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...     print "\n"
+    Bug 2:
+        alias: bug-two
+        assigned_to: marvin@heartofgold.ship
+        component: Crew
+        creation_time: 20080611T09:23:12
+        id: 2
+        internals:...
+        is_open: True
+        last_change_time: 20080611T09:24:29
+        priority: P1
+        product: HeartOfGold
+        resolution: 
+        severity: high
+        status: NEW
+        summary: Collect unknown persons in docking bay 2.
+    <BLANKLINE>
+    <BLANKLINE>
+
+Aliases are stored in a separate dict, which contains a mapping between
+the alias and the bug's actual ID.
+
+    >>> for alias, bug_id in bugzilla._bug_aliases.items():
+    ...     print "%s: %s" % (alias, bug_id)
+    bug-two: 2
+
+The method _getActualBugId() returns the correct bug ID for a passed bug
+ID or alias.
+
+    >>> bugzilla._getActualBugId('bug-two')
+    2
+
+    >>> bugzilla._getActualBugId(2)
+    2
