@@ -396,7 +396,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         return Link('+series', text, icon='info')
 
     def milestones(self):
-        text = 'All Milestones'
+        text = 'All milestones'
         return Link('+milestones', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
