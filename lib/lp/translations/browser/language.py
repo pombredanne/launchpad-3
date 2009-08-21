@@ -151,13 +151,23 @@ class LanguageAdminView(LaunchpadEditFormView):
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction', 'countries']
 
-    def initialize(self):
-        LaunchpadEditFormView.initialize(self)
+    @property
+    def page_title(self):
+        return "Edit %s" % self.context.displayname
+
+    @property
+    def label(self):
+        """The form label"""
         if self.context.nativename is None:
             name = self.context.englishname
         else:
             name = self.context.nativename
-        self.label = 'Edit %s in Launchpad' % name
+        return "Edit %s in Launchpad" % name
+
+    @property
+    def cancel_url(self):
+        """See LaunchpadFormView."""
+        return canonical_url(self.context)
 
     @property
     def next_url(self):
