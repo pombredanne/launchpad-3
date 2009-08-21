@@ -4,10 +4,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroArchSeriesActionMenu',
     'DistroArchSeriesAddView',
     'DistroArchSeriesAdminView',
     'DistroArchSeriesPackageSearchView',
-    'DistroArchSeriesContextMenu',
     'DistroArchSeriesNavigation',
     'DistroArchSeriesView',
     ]
@@ -35,9 +35,15 @@ class DistroArchSeriesNavigation(GetitemNavigation):
     usedfor = IDistroArchSeries
 
 
-class DistroArchSeriesContextMenu(ContextMenu):
+class IDistroArchSeriesActionMenu(Interface):
+    """Marker interface for the action menu."""
 
-    usedfor = IDistroArchSeries
+
+class DistroArchSeriesActionMenu(NavigationMenu):
+    """Action menu for distro arch series."""
+    usedfor = IDistroArchSeriesActionMenu
+    facet = "overview"
+    title = "Actions"
     links = ['admin', 'builds']
 
     @enabled_with_permission('launchpad.Admin')
@@ -53,20 +59,9 @@ class DistroArchSeriesContextMenu(ContextMenu):
         return Link('+builds', text, icon='info')
 
 
-class IDistroArchSeriesActionMenu(Interface):
-    """Marker interface for the action menu."""
-
-
-class DistroArchSeriesActionMenu(NavigationMenu, DistroArchSeriesContextMenu):
-    """Action menu for distro arch series."""
-    usedfor = IDistroArchSeriesActionMenu
-    facet = "overview"
-    title = "Actions"
-
-
-provideAdapter(
-    DistroArchSeriesActionMenu, [IDistroArchSeriesActionMenu],
-    INavigationMenu, name="overview")
+#provideAdapter(
+#    DistroArchSeriesActionMenu, [IDistroArchSeriesActionMenu],
+#    INavigationMenu, name="overview")
 
 
 class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
