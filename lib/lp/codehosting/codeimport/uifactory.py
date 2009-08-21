@@ -20,7 +20,7 @@ class LoggingUIFactory(TextUIFactory):
     (by default).
     """
 
-    def __init__(self, bar_type=None, stdin=None, stdout=None, stderr=None,
+    def __init__(self, stdin=None, stdout=None, stderr=None,
                  time_source=time.time, writer=None, interval=60.0):
         """Construct a `LoggingUIFactory`.
 
@@ -36,7 +36,7 @@ class LoggingUIFactory(TextUIFactory):
         :param interval: Don't produce output more often than once every this
             many seconds.  Defaults to 60 seconds.
         """
-        TextUIFactory.__init__(self, bar_type, stdin, stdout, stderr)
+        TextUIFactory.__init__(self, stdin=stdin, stdout=stdout, stderr=stderr)
         self.interval = interval
         self._progress_view = LoggingTextProgressView(
             time_source, writer, interval)
