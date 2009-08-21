@@ -74,12 +74,12 @@ If we triage a bugtask on firefox and thunderbird we'll see the count
 for triaged bugs updated:
 
     >>> login('foo.bar@canonical.com')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> ls_bug = getUtility(IBugTaskSet).get(23)
-    >>> ls_bug.transitionToStatus(BugTaskStatus.TRIAGED, sabdfl)
+    >>> ls_bug.transitionToStatus(BugTaskStatus.TRIAGED, mark)
     >>> sync(ls_bug)
     >>> mf_bug = getUtility(IBugTaskSet).get(17)
-    >>> mf_bug.transitionToStatus(BugTaskStatus.TRIAGED, sabdfl)
+    >>> mf_bug.transitionToStatus(BugTaskStatus.TRIAGED, mark)
     >>> sync(mf_bug)
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
     linux-source-2.6.15 None    1 0 0 0

@@ -678,7 +678,7 @@ specified in the testing configuration.
     >>> debian = getUtility(IDistributionSet).getByName('debian')
 
     # Only the distro owner and admins can create a new series.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> lenny = debian.newSeries(
     ...     "lenny", "lenny", "Lenny",
     ...     "---", "!!!", "8.06",

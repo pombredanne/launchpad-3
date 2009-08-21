@@ -35,7 +35,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
-    ContextMenu, enabled_with_permission, Link, NavigationMenu)
+    Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
 from canonical.widgets import AnnouncementDateWidget
 

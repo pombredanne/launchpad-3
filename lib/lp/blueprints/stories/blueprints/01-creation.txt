@@ -669,7 +669,7 @@ There are some locations in Launchpad from which it's not possible to register
 a blueprint. To start with, it's not possible to register a blueprint from an
 individual user's blueprint listing page:
 
-    >>> user_browser.open('http://blueprints.launchpad.dev/~sabdfl')
+    >>> user_browser.open('http://blueprints.launchpad.dev/~mark')
     >>> print user_browser.getLink('Register a blueprint')
     Traceback (most recent call last):
         ...

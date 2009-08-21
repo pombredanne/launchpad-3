@@ -54,7 +54,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # POTMsgSets) but it also needs to set up test conditions which
         # requires other privileges.
         self.layer.switchDbUser('postgres')
-        super(TestPOTMsgSetMerging, self).setUp(user='mark@hbd.com')
+        super(TestPOTMsgSetMerging, self).setUp(user='mark@example.com')
         super(TestPOTMsgSetMerging, self).setUpProduct()
 
     def test_matchedPOTMsgSetsShare(self):
@@ -244,7 +244,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         """
         self.layer.switchDbUser('postgres')
         super(TestPOTMsgSetMergingAndTranslations, self).setUp(
-            user='mark@hbd.com')
+            user='mark@example.com')
         super(TestPOTMsgSetMergingAndTranslations, self).setUpProduct()
 
     def test_sharingDivergedMessages(self):
@@ -400,7 +400,7 @@ class TestTranslationMessageNonMerging(TestCaseWithFactory,
     def setUp(self):
         self.layer.switchDbUser('postgres')
         super(TestTranslationMessageNonMerging, self).setUp(
-            user='mark@hbd.com')
+            user='mark@example.com')
         super(TestTranslationMessageNonMerging, self).setUpProduct()
 
     def test_MessagesAreNotSharedAcrossPOTMsgSets(self):
@@ -427,7 +427,7 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
 
     def setUp(self):
         self.layer.switchDbUser('postgres')
-        super(TestTranslationMessageMerging, self).setUp(user='mark@hbd.com')
+        super(TestTranslationMessageMerging, self).setUp(user='mark@example.com')
         super(TestTranslationMessageMerging, self).setUpProduct()
 
     def test_messagesCanStayDiverged(self):
@@ -587,7 +587,7 @@ class TestMapMessages(TestCaseWithFactory, TranslatedProductMixin):
 
     def setUp(self):
         self.layer.switchDbUser('postgres')
-        super(TestMapMessages, self).setUp(user='mark@hbd.com')
+        super(TestMapMessages, self).setUp(user='mark@example.com')
         super(TestMapMessages, self).setUpProduct()
 
     def test_NoMessagesToMap(self):

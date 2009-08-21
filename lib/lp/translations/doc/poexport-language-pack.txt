@@ -130,7 +130,7 @@ directory: xpi/translation_domain/
 
 Get hold of a person.
 
-    >>> mark = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> print mark.displayname
     Mark Shuttleworth
 
@@ -371,7 +371,7 @@ Check the files look OK.
     "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
     "POT-Creation-Date: ...\n"
     "PO-Revision-Date: ...\n"
-    "Last-Translator: Mark Shuttleworth <mark@hbd.com>\n"
+    "Last-Translator: Mark Shuttleworth <mark@example.com>\n"
     "Language-Team: Spanish <es@li.org>\n"
     "MIME-Version: 1.0\n"
     "Content-Type: text/plain; charset=UTF-8\n"
@@ -395,7 +395,7 @@ Check the files look OK.
     "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
     "POT-Creation-Date: ...\n"
     "PO-Revision-Date: ...\n"
-    "Last-Translator: Mark Shuttleworth <mark@hbd.com>\n"
+    "Last-Translator: Mark Shuttleworth <mark@example.com>\n"
     "Language-Team: Welsh <cy@li.org>\n"
     "MIME-Version: 1.0\n"
     "Content-Type: text/plain; charset=UTF-8\n"

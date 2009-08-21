@@ -771,19 +771,26 @@
         <browser:menus
             module="lp.registry.browser.person"
             classes="
+                PersonBugsMenu
+                PersonEditNavigationMenu
                 PersonFacets
                 PersonOverviewMenu
-                TeamOverviewMenu
-                PersonBugsMenu
+                PersonOverviewNavigationMenu
+                PersonRelatedSoftwareNavigationMenu
+                PersonSetActionNavigationMenu
+                PersonSetContextMenu
                 PersonSpecsMenu
                 TeamBugsMenu
-                TeamSpecsMenu
-                PersonSetContextMenu
-                PersonOverviewNavigationMenu
-                PersonEditNavigationMenu
-                PersonRelatedSoftwareNavigationMenu
+                TeamEditMenu
+                TeamOverviewMenu
                 TeamOverviewNavigationMenu
-                TeamEditMenu"/>
+                TeamSpecsMenu
+                "/>
+        <browser:menus
+            module="lp.registry.browser.menu"
+            classes="
+                RegistryCollectionNavigationMenu
+                "/>
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
             path_expression="string:~${name}"
@@ -1214,13 +1221,10 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="zope.Public"
-            class="lp.registry.browser.person.FOAFSearchView">
+            class="lp.registry.browser.person.PeopleSearchView">
             <browser:page
                 name="+index"
                 template="../templates/people-index.pt"/>
-            <browser:page
-                name="+portlet-stats"
-                template="../templates/people-portlet-stats.pt"/>
         </browser:pages>
         <browser:page
             name="+requestmerge"
@@ -1255,13 +1259,6 @@
             <browser:page
                 name="+mergerequest-sent"
                 template="../templates/people-mergerequest-sent.pt"/>
-        </browser:pages>
-        <browser:pages
-            for="lp.registry.interfaces.person.IPersonSet"
-            permission="zope.Public">
-            <browser:page
-                name="+portlet-about"
-                template="../templates/people-portlet-about.pt"/>
         </browser:pages>
     </facet>
     <browser:navigation
@@ -1542,7 +1539,8 @@
     <browser:navigation
         module="lp.registry.browser.product"
         classes="
-            ProductSetNavigation"/>
+            ProductSetNavigation
+            "/>
     <browser:url
         for="lp.registry.interfaces.product.IProductSet"
         path_expression="string:projects"
@@ -1586,16 +1584,18 @@
         />
     <browser:menus
         classes="
-            ProductFacets
-            ProductOverviewMenu
-            ProductBountiesMenu
-            ProductSpecificationsMenu
-            ProductBugsMenu
-            ProductSetFacets
-            ProductSetContextMenu
-            ProductNavigationMenu
             ProductActionNavigationMenu
-            ProductEditNavigationMenu"
+            ProductBountiesMenu
+            ProductBugsMenu
+            ProductEditNavigationMenu
+            ProductFacets
+            ProductNavigationMenu
+            ProductOverviewMenu
+            ProductSetContextMenu
+            ProductSetFacets
+            ProductSetNavigationMenu
+            ProductSpecificationsMenu
+            "
         module="lp.registry.browser.product"/>
     <browser:page
         name="+securitycontact"

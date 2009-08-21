@@ -11,7 +11,7 @@ authoritative source is in OOPS reports or in the web app's stderr.
 It's available for any page:
 
 
-  >>> browser.open('http://launchpad.dev/~sabdfl/')
+  >>> browser.open('http://launchpad.dev/~mark/')
   >>> print browser.contents
   <!DOCTYPE...
   ...<!-- at least ... queries issued in ... seconds -->...
