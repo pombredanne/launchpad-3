@@ -539,6 +539,27 @@ class BugzillaAPI(Bugzilla):
         else:
             return status
 
+    def getModifiedRemoteBugs(self, bug_ids, last_checked):
+        """See `IExternalBugTracker`."""
+        # We marshal last_checked into an xmlrpclib.DateTime since
+        # xmlrpclib can't do so cleanly itself.
+        # XXX 2009-08-21 gmb (bug 254999):
+        #     We can remove this once we upgrade to python 2.5.
+        changed_since = xmlrpclib.DateTime(last_checked.timetuple())
+
+        search_args = {
+            'id': bug_ids,
+            'last_change_time': changed_since,
+            }
+        response_dict = self.xmlrpc_proxy.Bug.search(search_args)
+        remote_bugs = response_dict['bugs']
+
+        # Store the bugs we've imported and return only their IDs.
+        self._storeBugs(remote_bugs)
+        bug_ids = [remote_bug['id'] for remote_bug in remote_bugs]
+
+        return bug_ids
+
 
 class BugzillaLPPlugin(BugzillaAPI):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
