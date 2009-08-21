@@ -30,6 +30,11 @@
     <div class="top-portlet">
       <h2>Search binary packages</h2>
 
+      <p class="discreet">
+        This archive contains
+        <strong class="registry-stat" tal:content="context/package_count">bazillions of</strong> software packages.
+      </p>
+
       <form name="search" method="GET">
 
         <input type="text"
@@ -41,10 +46,6 @@
 
       </form>
 
-      <p class="discreet">
-        This archive contains
-        <strong class="registry-stat" tal:content="context/package_count">bazillions of</strong> software packages.
-      </p>
     </div><!--portlet-->
 
     <metal:package-search use-macro="context/@@+macros/search-results" />

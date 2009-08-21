@@ -41,7 +41,6 @@ class DistroArchSeriesActionMenu(NavigationMenu):
     """Action menu for distro arch series."""
     usedfor = IDistroArchSeriesActionMenu
     facet = "overview"
-    title = "Actions"
     links = ['admin', 'builds']
 
     @enabled_with_permission('launchpad.Admin')
