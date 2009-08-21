@@ -759,6 +759,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
 
     # Map namespaces onto method names.
     methods = {
+        'Bug': ['get'],
         'Bugzilla': [
             'time',
             'version',
@@ -816,6 +817,11 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             'web_time': time_dict['local_time'],
             'web_time_utc': time_dict['utc_time'],
             }
+
+    def get(self, arguments):
+        """Return a list of bug dicts for a given set of bug ids."""
+        # This method is actually just a synonym for get_bugs().
+        return self.get_bugs(arguments)
 
 
 class TestMantis(Mantis):

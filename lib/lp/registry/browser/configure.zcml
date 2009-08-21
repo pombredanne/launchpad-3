@@ -600,7 +600,9 @@
         <browser:menus
             module="lp.registry.browser.poll"
             classes="
-                PollContextMenu"/>
+                PollOverviewMenu
+                PollActionNavigationMenu
+                PollEditNavigationMenu"/>
         <browser:defaultView
             for="lp.registry.interfaces.poll.IPoll"
             name="+index"/>
@@ -624,9 +626,6 @@
             for="lp.registry.interfaces.poll.IPoll"
             permission="zope.Public"
             class="lp.registry.browser.poll.BasePollView">
-            <browser:page
-                name="+options"
-                template="../templates/poll-options.pt"/>
             <browser:page
                 name="+portlet-details"
                 template="../templates/poll-portlet-details.pt"/>

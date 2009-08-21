@@ -310,6 +310,7 @@ h1 {
     }
 h2 {
     margin-bottom: 0.3em;
+    margin-top: 0.3em;
     font-size: 123.1%;
     color: #5a5a5a;
     }
@@ -430,7 +431,7 @@ span.see-all {
     clear: both;
     visibility: hidden;
 }
-.portlet dt {
+dt {
     font-weight: bold;
     }
 .portlet dd {
