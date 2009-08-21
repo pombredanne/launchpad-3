@@ -1422,20 +1422,4 @@ def translationmessage_translate(context, view):
         context.pofile.potemplate.displayname,
         context.pofile.language.englishname)
 
-def translator_admin(context, view):
-    """Return the page title for administering a translator in a group."""
-    return "Administer %s translator for %s" % (
-        context.language.englishname, context.translationgroup.title)
-
-def translator_edit(context, view):
-    """Return the page title for editing a the translator details."""
-    return "Edit %s translator for %s" % (
-        context.language.englishname, context.translationgroup.title)
-
-def translator_remove(context, view):
-    """Return the page title to remove a translator from a group."""
-    return "Remove %s as the %s translator for %s" % (
-        context.translator.displayname, context.language.englishname,
-        context.translationgroup.title)
-
 unauthorized = 'Error: Not authorized'
