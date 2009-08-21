@@ -84,7 +84,7 @@
 
       <table tal:condition="view/matches"
              tal:define="results view/search_results"
-             class="search-results">
+             class="search-results" id="search-results">
         <tbody>
           <tr tal:repeat="pillarname results"
               tal:replace="structure pillarname/@@+listing-simple">
