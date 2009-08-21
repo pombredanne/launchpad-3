@@ -1,0 +1,234 @@
+TestBugzillaAPIXMLRPCTransport
+==============================
+
+The TestBugzillaAPIXMLRPCTransport is an XML-RPC transport that behaves
+in the same way as the XML-RPC endpoint of a Bugzilla 3.4 installation.
+It implements the parts of the Bugzilla API which Launchpad uses to
+communicate with those instances. The TestBugzillaAPIXMLRPCTransport is
+very similar to the TestBugzillaXMLRPCTransport, which it subclasses.
+Only the parts of TestBugzillaAPIXMLRPCTransport that are different from
+its ancestor will be tested here.
+
+    >>> import xmlrpclib
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     TestBugzillaAPIXMLRPCTransport)
+    >>> bugzilla_transport = TestBugzillaAPIXMLRPCTransport(
+    ...     'http://example.com/xmlrpc.cgi')
+    >>> server = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi', transport=bugzilla_transport)
+
+
+Version discovery
+-----------------
+
+The TestBugzillaAPIXMLRPCTransport provides a method, Bugzilla.version(),
+which returns the version of the Bugzilla instance to which the client
+is currently connected.
+
+    >>> server.Bugzilla.version()
+    {'version': '3.4.1+'}
+
+
+Logging in
+----------
+
+Unlike TestBugzillaXMLRPCTransport, TestBugzillaAPIXMLRPCTransport uses
+the standard Bugzilla username and password system for authentication.
+Users can log in to the Bugzilla instance by calling User.login(). This
+method will return the user's user ID in a dict.
+
+    >>> server.User.login(
+    ...     {'login': 'foo.bar@canonical.com', 'password': 'test'})
+    {'id': 0}
+
+The Bugzilla_logincookie will now have been set for the transport, too.
+
+    >>> print bugzilla_transport.cookie_processor.cookiejar
+    <cookielib.CookieJar[<Cookie Bugzilla_login=...>,
+        <Cookie Bugzilla_logincookie=...>]>
+
+Trying to log in with an incorrect username or password will result in
+an error being raised.
+
+    >>> server.User.login(
+    ...     {'login': 'test@canonical.com', 'password': 'test'})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 300: 'The username or password you entered is not valid.'>
+
+
+Getting the current time
+------------------------
+
+The Bugzilla.time() method allows us to retrieve a dict of the time on
+the remote server.
+
+    >>> time_dict = server.Bugzilla.time()
+    >>> for key in sorted(time_dict):
+    ...     print "%s: %s" % (key, time_dict[key])
+    db_time: 20080501T01:01:01
+    tz_name: UTC
+    tz_offset: +0000
+    tz_short_name: UTC
+    web_time: 20080501T01:01:01
+    web_time_utc: 20080501T01:01:01
+
+If the remote server is in a different timezone, the db_time and
+web_time items will be in the server's local timezone whilst
+web_time_utc will be in UTC.
+
+    >>> bugzilla_transport.utc_offset = 60**2
+    >>> bugzilla_transport.timezone = 'CET'
+    >>> time_dict = server.Bugzilla.time()
+    >>> for key in sorted(time_dict):
+    ...     print "%s: %s" % (key, time_dict[key])
+    db_time: 20080501T01:01:01
+    tz_name: CET
+    tz_offset: +0100
+    tz_short_name: CET
+    web_time: 20080501T01:01:01
+    web_time_utc: 20080501T00:01:01
+
+
+Getting bugs from the server
+----------------------------
+
+The Bugzilla API method Bug.get() allows us to get one or more bugs from
+the remote server. It takes a list of bug IDs to return and returns a
+list of dicts containing those bugs' data.
+
+    >>> return_value = server.Bug.get(
+    ...     {'ids': [1], 'permissive': True})
+    >>> [bug_dict] = return_value['bugs']
+    >>> for key in sorted(bug_dict):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: 
+    assigned_to: test@canonical.com
+    component: GPPSystems
+    creation_time: 20080610T16:19:53
+    id: 1
+    internals:...
+    is_open: True
+    last_change_time: 20080610T16:19:53
+    priority: P1
+    product: Marvin
+    resolution: FIXED
+    severity: normal
+    status: RESOLVED
+    summary: That bloody robot still exists.
+
+Note that further tests for this functionality can be found in the
+"Bug.get()" section, above. This is because these two methods
+are synonymous.
+
+
+Getting the list of changed bugs
+--------------------------------
+
+Specifying a 'changed_since' parameter when calling Bug.get()
+will cause the method to only return bugs that have changed since that
+date / time. This acts as an intersection with the 'ids' parameter,
+allowing Launchpad to get only the recently-updated subset of a given
+set of remote bugs.
+
+    >>> from datetime import datetime
+    >>> from xmlrpclib import DateTime
+
+    >>> changed_since = datetime(2008, 6, 11, 9, 0, 0)
+
+    >>> # We encode changed_since into an XML-RPC DateTime manually.
+    >>> # This is because xmlrpclib can't handle DateTime encoding
+    >>> # within a dict.
+    >>> # XXX 2008-08-05 gmb (bug 254999):
+    >>> #     We can remove this once we upgrade to python 2.5.
+    >>> changed_since = DateTime(changed_since.timetuple())
+
+    >>> return_value = server.Bug.get({
+    ...     'ids': [1, 2],
+    ...     'changed_since': changed_since,
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> assert len(bug_dicts) == 1, "There should only be one bug dict."
+
+    >>> bug_dict = bug_dicts[0]
+    >>> for key in sorted(bug_dict):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution: 
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
+
+Setting changed_since to a date in the future will mean that no bugs are
+returned.
+
+    >>> from datetime import timedelta
+    >>> changed_since = datetime.now() + timedelta(days=42)
+
+    >>> # XXX 2008-08-05 gmb (bug 254999):
+    >>> #     We can remove this once we upgrade to python 2.5.
+    >>> changed_since = DateTime(changed_since.timetuple())
+
+    >>> return_value = server.Bug.get({
+    ...     'ids': [1, 2],
+    ...     'changed_since': changed_since,
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> len(bug_dicts)
+    0
+
+Specifying a 'products' parameter will cause Bug.get() to
+only return bugs which affect those products.
+
+    >>> return_value = server.Bug.get({
+    ...     'products': ['HeartOfGold'],
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> assert len(bug_dicts) == 1, "There should only be one bug dict."
+
+    >>> bug_dict = bug_dicts[0]
+    >>> for key in sorted(bug_dict):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution: 
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
+
+If both products and ids are specified when calling
+Bug.get(), the union of bugs in (ids, products) will be
+returned.
+
+    >>> return_value = server.Bug.get({
+    ...     'ids': [1],
+    ...     'products': ['HeartOfGold'],
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> len(bug_dicts)
+    0
