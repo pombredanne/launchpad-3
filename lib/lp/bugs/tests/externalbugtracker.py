@@ -828,6 +828,9 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
 
     def search(self, arguments):
         """Return a list of bug dicts that match search criteria."""
+        assert 'permissive' not in arguments, (
+            "You can't pass 'permissive' to Bug.search()")
+
         search_args = {'permissive': True}
 
         # Convert the search arguments into something that get_bugs()
@@ -842,6 +845,13 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         else:
             search_args['ids'] = [
                 bug_id for bug_id in self.bugs]
+
+        if arguments.get('product') is not None:
+            product_list = arguments['product']
+            assert isinstance(product_list, list), (
+                "product parameter must be a list.")
+
+            search_args['products'] = product_list
 
         return self.get_bugs(search_args)
 
