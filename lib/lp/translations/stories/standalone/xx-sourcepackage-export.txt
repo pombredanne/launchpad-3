@@ -12,7 +12,7 @@ translations."
 
 Mark is a qualified user.
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
     >>> download = browser.getLink('Download')

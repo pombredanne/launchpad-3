@@ -76,5 +76,3 @@ class ISpecificationGoal(ISpecificationTarget):
     """An interface for those things which can have specifications proposed
     as goals for them.
     """
-
-

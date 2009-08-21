@@ -20,7 +20,7 @@ class TestPillarNameSet(TestCaseWithFactory):
         """When we use a pillar's alias to search, that pillar will be the
         first one on the list.
         """
-        login('mark@hbd.com')
+        login('mark@example.com')
         lz_foo = self.factory.makeProduct(name='lz-foo')
         lz_bar = self.factory.makeProduct(name='lz-bar')
         launchzap = self.factory.makeProduct(name='launchzap')

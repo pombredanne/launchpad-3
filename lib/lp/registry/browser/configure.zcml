@@ -598,7 +598,9 @@
         <browser:menus
             module="lp.registry.browser.poll"
             classes="
-                PollContextMenu"/>
+                PollOverviewMenu
+                PollActionNavigationMenu
+                PollEditNavigationMenu"/>
         <browser:defaultView
             for="lp.registry.interfaces.poll.IPoll"
             name="+index"/>
@@ -622,9 +624,6 @@
             for="lp.registry.interfaces.poll.IPoll"
             permission="zope.Public"
             class="lp.registry.browser.poll.BasePollView">
-            <browser:page
-                name="+options"
-                template="../templates/poll-options.pt"/>
             <browser:page
                 name="+portlet-details"
                 template="../templates/poll-portlet-details.pt"/>
@@ -1539,7 +1538,8 @@
     <browser:navigation
         module="lp.registry.browser.product"
         classes="
-            ProductSetNavigation"/>
+            ProductSetNavigation
+            "/>
     <browser:url
         for="lp.registry.interfaces.product.IProductSet"
         path_expression="string:projects"
@@ -1583,16 +1583,18 @@
         />
     <browser:menus
         classes="
-            ProductFacets
-            ProductOverviewMenu
-            ProductBountiesMenu
-            ProductSpecificationsMenu
-            ProductBugsMenu
-            ProductSetFacets
-            ProductSetContextMenu
-            ProductNavigationMenu
             ProductActionNavigationMenu
-            ProductEditNavigationMenu"
+            ProductBountiesMenu
+            ProductBugsMenu
+            ProductEditNavigationMenu
+            ProductFacets
+            ProductNavigationMenu
+            ProductOverviewMenu
+            ProductSetContextMenu
+            ProductSetFacets
+            ProductSetNavigationMenu
+            ProductSpecificationsMenu
+            "
         module="lp.registry.browser.product"/>
     <browser:page
         name="+securitycontact"

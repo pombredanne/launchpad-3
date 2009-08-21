@@ -8,7 +8,7 @@
 
 The field takes a list of aliases separated by one or more spaces.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> aliases = u'iceweasel snowchicken'
     >>> bound_field.validate(aliases)
 

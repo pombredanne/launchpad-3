@@ -50,7 +50,7 @@ POFile.importFromQueue and POTemplate.importFromQueue methods.
 Here's the person who'll be doing the import.
 
     >>> person_set = getUtility(IPersonSet)
-    >>> person = person_set.getByName('sabdfl')
+    >>> person = person_set.getByName('mark')
 
 And this is the POTemplate where the import will be done.
 

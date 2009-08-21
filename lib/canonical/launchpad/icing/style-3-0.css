@@ -260,6 +260,38 @@ Pixels  Percent
 
 */
 
+/*
+
+Use the following 'application' colors for table column headings,
+app stats etc.
+
+Answers: #3840BE
+Blueprints: #3594BB
+Bugs: #9F2B33
+Code: #D18B39
+Registry: default (i.e. black)
+Translations: #BB3A84
+
+*/
+
+strong.answers-stat {
+    color: #3840BE;
+    }
+strong.blueprints-stat {
+    color: #3594BB;
+    }
+strong.bugs-stat {
+    color: #9F2B33;
+    }
+strong.code-stat {
+    color: #D18B39;
+    }
+strong.registry-stat {
+    }
+strong.translations-stat {
+    color: #BB3A84;
+    }
+
 
 /* Default text presentation */
 html, body {
@@ -398,7 +430,7 @@ span.see-all {
     clear: both;
     visibility: hidden;
 }
-.portlet dt {
+dt {
     font-weight: bold;
     }
 .portlet dd {
