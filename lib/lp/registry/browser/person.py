@@ -42,6 +42,7 @@ __all__ = [
     'PersonLatestQuestionsView',
     'PersonNavigation',
     'PersonOAuthTokensView',
+    'PersonOverviewNavigationMenu',
     'PersonOverviewMenu',
     'PersonRdfContentsView',
     'PersonRdfView',
@@ -71,11 +72,13 @@ __all__ = [
     'TeamBreadcrumbBuilder',
     'TeamEditLocationView',
     'TeamEditMenu',
+    'TeamIndexMenu',
     'TeamJoinView',
     'TeamLeaveView',
     'TeamMembershipView',
     'TeamMugshotView',
     'TeamNavigation',
+    'TeamOverviewNavigationMenu',
     'TeamOverviewMenu',
     'TeamReassignmentView',
     'TeamSpecsMenu',
@@ -866,6 +869,32 @@ class CommonMenuLinks:
                    'Package Archive and create a new PPA.')
         return Link(target, text, summary, icon='add')
 
+    def summary(self):
+        target = '+related-software'
+        text = 'Summary'
+        return Link(target, text)
+
+    def maintained(self):
+        target = '+maintained-packages'
+        text = 'Maintained Packages'
+        return Link(target, text, icon='info')
+
+    def uploaded(self):
+        target = '+uploaded-packages'
+        text = 'Uploaded Packages'
+        return Link(target, text)
+
+    def ppa(self):
+        target = '+ppa-packages'
+        text = 'PPA Packages'
+        return Link(target, text)
+
+    def projects(self):
+        target = '+related-projects'
+        text = 'Related Projects'
+        return Link(target, text)
+
+
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -876,7 +905,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma',
-             'administer', 'related_projects', 'activate_ppa',
+             'administer', 'related_projects', 'activate_ppa', 'maintained',
              'view_ppa_subscriptions']
 
     @enabled_with_permission('launchpad.Edit')
@@ -1055,31 +1084,6 @@ class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
     facet = 'overview'
     links = ('summary', 'maintained', 'uploaded', 'ppa', 'projects')
 
-    def summary(self):
-        target = '+related-software'
-        text = 'Summary'
-        return Link(target, text)
-
-    def maintained(self):
-        target = '+maintained-packages'
-        text = 'Maintained Packages'
-        return Link(target, text)
-
-    def uploaded(self):
-        target = '+uploaded-packages'
-        text = 'Uploaded Packages'
-        return Link(target, text)
-
-    def ppa(self):
-        target = '+ppa-packages'
-        text = 'PPA Packages'
-        return Link(target, text)
-
-    def projects(self):
-        target = '+related-projects'
-        text = 'Related Projects'
-        return Link(target, text)
-
 
 class PersonEditNavigationMenu(NavigationMenu):
     """A sub-menu for different aspects of editing a Person's profile."""
@@ -1175,8 +1179,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        team = self.context
-        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if self.team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             # This is a restricted team; users can't join.
             enabled = False
         return Link(target, text, icon='add', enabled=enabled)
@@ -1247,17 +1250,17 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         return Link(target, text, icon='edit')
 
     def joinleave(self):
-        team = self.context
         enabled = True
-        if userIsActiveTeamMember(team):
-            if team.teamowner == self.user:
+        if userIsActiveTeamMember(self.team):
+            if self.team.teamowner == self.user:
                 # The owner cannot leave his team
                 enabled = False
             target = '+leave'
             text = 'Leave the Team' # &#8230;
             icon = 'remove'
         else:
-            if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            if (self.team.subscriptionpolicy
+                == TeamSubscriptionPolicy.RESTRICTED):
                 # This is a restricted team; users can't join.
                 enabled = False
             target = '+join'
@@ -1277,7 +1280,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
              'reassign', 'related_projects',
-             'activate_ppa']
+             'activate_ppa', 'maintained']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -2578,18 +2581,17 @@ class PersonView(LaunchpadView, FeedsMixin):
     @property
     def subscription_policy_description(self):
         """Return the description of this team's subscription policy."""
-        team = self.context
-        assert team.isTeam(), (
+        assert self.team.isTeam(), (
             'This method can only be called when the context is a team.')
-        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if self.team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             description = _(
                 "This is a restricted team; new members can only be added "
                 "by one of the team's administrators.")
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
             description = _(
                 "This is a moderated team; all subscriptions are subjected "
                 "to approval by one of the team's administrators.")
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
             description = _(
                 "This is an open team; any user can join and no approval "
                 "is required.")
@@ -2696,7 +2698,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     def specific_contact_text(self):
         """Return the appropriate link text."""
         if self.context.is_team:
-            return 'Contact this team'
+            return "Contact this team's administrators"
         else:
             # Note that we explicitly do not change the text to "Contact
             # yourself" when viewing your own page.
@@ -3064,6 +3066,27 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
             return True
         else:
             return check_permission('launchpad.View', self.context.location)
+
+
+class TeamIndexView(PersonIndexView):
+    """The view class for the +index page.
+
+    This class is needed, so an action menu that only applies to
+    teams can be displayed without showing up on the person index page.
+    """
+
+    @property
+    def visibility(self):
+        return self.context.visibility.title + ' Team'
+
+    @property
+    def visibility_info(self):
+        if self.context.visibility == PersonVisibility.PRIVATE:
+            return 'Viewable by team members.'
+        elif self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
+            return 'Team membership is viewable by team members.'
+        else:
+            return ''
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
@@ -5447,11 +5470,32 @@ class EmailToPersonView(LaunchpadFormView):
             return 'Contact this user'
 
 
+class ITeamIndexMenu(Interface):
+    """A marker interface for the +index navigation menu."""
+
+
 class ITeamEditMenu(Interface):
     """A marker interface for the edit navigation menu."""
 
 
-class TeamEditMenu(NavigationMenu, TeamMenuMixin):
+class TeamNavigationMenuBase(NavigationMenu, TeamMenuMixin):
+
+    @property
+    def team(self):
+        """Override TeamOverviewMenu since the view is the context."""
+        return self.context.context
+
+
+class TeamIndexMenu(TeamNavigationMenuBase):
+    """A menu for different aspects of editing a team."""
+
+    usedfor = ITeamIndexMenu
+    facet = 'overview'
+    title = 'Change team'
+    links = ('edit', 'joinleave', 'add_member', 'add_my_teams')
+
+
+class TeamEditMenu(TeamNavigationMenuBase):
     """A menu for different aspects of editing a team."""
 
     usedfor = ITeamEditMenu
@@ -5460,10 +5504,6 @@ class TeamEditMenu(NavigationMenu, TeamMenuMixin):
     links = ('branding', 'common_edithomepage', 'editlanguages', 'reassign',
              'editemail')
 
-    @property
-    def team(self):
-        """Override TeamOverviewMenu since the view is the context."""
-        return self.context.context
 
-
+classImplements(TeamIndexView, ITeamIndexMenu)
 classImplements(TeamEditView, ITeamEditMenu)

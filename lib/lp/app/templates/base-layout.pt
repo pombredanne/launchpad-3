@@ -70,6 +70,8 @@
 
     <metal:load-javascript
       use-macro="context/@@+base-layout-macros/load-javascript" />
+    <metal:page-javascript
+      use-macro="context/@@+base-layout-macros/page-javascript" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
 
