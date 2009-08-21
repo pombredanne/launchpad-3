@@ -19,11 +19,20 @@
         </td>
       </tr>
     </tbody>
+    <tfoot>
+      <tr>
+        <td style="padding-top: .5em;">
+          <a class="sprite info" href="+projects"
+             tal:condition="view/has_more_related_projects">
+            Show all
+            <tal:count content="view/related_projects_count">8</tal:count>
+            related projects</a>
+          <a class="sprite info" href="+projects"
+             tal:condition="not: view/has_more_related_projects">
+            Show related projects</a>
+        </td>
+      </tr>
+    </tfoot>
   </table>
-
-  <a href="+projects" class="sprite info">
-    Show <tal:count condition="view/has_more_related_projects"
-                    content="string: all ${view/related_projects_count}"/>
-    related projects</a>
 </div>
 </tal:root>
