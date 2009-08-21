@@ -219,3 +219,38 @@ ID or alias.
 
     >>> bugzilla._getActualBugId(2)
     2
+
+
+Getting remote statuses
+-----------------------
+
+BugzillaAPI.getRemoteStatus() will return the remote status of a given
+bug as a string. If the bug has a resolution, that will be returned too.
+
+    >>> test_transport.print_method_calls = False
+    >>> bugzilla.initializeRemoteBugDB([1, 2])
+
+    >>> print bugzilla.getRemoteStatus(1)
+    RESOLVED FIXED
+
+    >>> print bugzilla.getRemoteStatus(2)
+    NEW
+
+If a bug can't be found a BugNotFound error will be raised.
+
+    >>> bugzilla.getRemoteStatus('no-such-bug')
+    Traceback (most recent call last):
+      ...
+    BugNotFound: no-such-bug
+
+If the data we've imported from Bugzilla is incomplete and doesn't
+contain either the bug's status or its resolution an UnparseableBugData
+error will be raised. We can add a sample bug to demonstrate this.
+
+    >>> bugzilla._bugs[999] = {}
+    >>> bugzilla.getRemoteStatus(999)
+    Traceback (most recent call last):
+      ...
+    UnparseableBugData
+
+    >>> del bugzilla._bugs[999]
