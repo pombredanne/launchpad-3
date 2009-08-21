@@ -254,3 +254,64 @@ error will be raised. We can add a sample bug to demonstrate this.
     UnparseableBugData
 
     >>> del bugzilla._bugs[999]
+
+
+Getting a list of changed bugs
+------------------------------
+
+IExternalBugTracker defines a method, getModifiedRemoteBugs(), which
+accepts a list of bug IDs and a datetime as a parameter and returns the
+list of all the bug IDs in the passed set that have been changed since
+that datetime.
+
+This is acheived by calling the Bug.search() method on the
+remote server and passing it a 'changed_since' parameter.
+
+    >>> bugzilla._bugs = {}
+    >>> bugzilla._bug_aliases = {}
+    >>> test_transport.print_method_calls = True
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> changed_since = datetime(2008, 6, 11, 9, 0, 0, 0)
+    >>> bug_ids = bugzilla.getModifiedRemoteBugs([1, 2], changed_since)
+    CALLED Bug.search({'id': [1, 2],
+        'last_change_time': <DateTime ...'20080611T09:00:00' at...>})
+
+    >>> print bug_ids
+    [2]
+
+If we alter the changed_since date to move it back by a day, we'll get
+both bugs 1 and 2 back from getModifiedRemoteBugs()
+
+    >>> changed_since = datetime(2008, 6, 10, 9, 0, 0, 0)
+    >>> bug_ids = bugzilla.getModifiedRemoteBugs([1, 2], changed_since)
+    CALLED Bug.search({'id': [1, 2],
+        'last_change_time': <DateTime ...'20080610T09:00:00' at...>})
+
+    >>> print bug_ids
+    [1, 2]
+
+Bugzilla's Bug.search() method returns all the data for each bug it
+returns. getModifiedRemoteBugs() saves this information into the
+BugzillaAPI instance's bugs dict.
+
+    >>> for bug in sorted(bugzilla._bugs):
+    ...     print "Bug %s:" % bug
+    ...     for key in sorted(bugzilla._bugs[bug]):
+    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...     print "\n"
+    Bug 1:
+        alias: 
+        assigned_to: test@canonical.com...
+    Bug 2:
+        alias: bug-two
+        assigned_to: marvin@heartofgold.ship...
+
+Once getModifiedRemoteBugs() has stored this data there's no need for
+initializeRemoteBugDB() to try to retrieve it again. If we pass bug IDs
+that getModifiedRemoteBugs() has already retrieved to
+initializeRemoteBugDB() it will not attempt to retrieve them from the
+remote system.
+
+    >>> bugzilla.initializeRemoteBugDB([1, 2, 3])
+    CALLED Bug.get({'ids': [3], 'permissive': True})
