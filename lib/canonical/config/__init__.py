@@ -195,8 +195,6 @@ class CanonicalConfig:
 
     def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
-        self.root = TREE_ROOT
-
         schemafile = pkg_resources.resource_filename(
             'zope.app.server', 'schema.xml')
         schema = ZConfig.loadSchema(schemafile)
