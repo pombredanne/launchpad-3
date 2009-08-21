@@ -19,20 +19,21 @@
         <div
           class="description"
           tal:content="structure context/description/fmt:text-to-html"/>
+
+        <tal:search-packages condition="context/full_functionality">
+          <h2>Packages</h2>
+
+          <form name="search" action="+search" method="get">
+            <input type="text" name="text" size="35"
+              tal:attributes="value request/name|nothing" />
+              <input type="submit" value="Find a Package"/>
+          </form>
+        </tal:search-packages>
       </div>
 
       <div class="yui-g">
         <div class="yui-u first">
-          <div id="project-info" class="portlet">
-            <h2>Distribution information</h2>
-
-            <tal:officers content="structure context/@@+details" />
-
-            <p id="registrant">
-              Registered
-              <tal:created replace="context/date_created/fmt:approximatedate" />
-            </p>
-          </div>
+           <tal:distro-information content="structure context/@@+details" />
         </div>
 
         <div class="yui-u">
@@ -43,86 +44,42 @@
       <div class="yui-g">
         <div class="yui-u first">
           <div tal:replace="structure context/@@+portlet-listfaqs" />
-          <div tal:replace="structure context/@@+portlet-latestquestions" />
+
+          <div tal:replace="structure context/@@+portlet-latestbugs" />
+
+          <div tal:replace="structure context/@@+portlet-top-contributors" />
         </div>
 
         <div class="yui-u">
-          <div class="portlet">
-            <tal:search-packages condition="context/full_functionality">
-              <h2>Packages</h2>
+          <div tal:replace="structure context/@@+portlet-latestquestions" />
 
-              <form name="search" action="+search" method="get">
-                <input type="text" name="text" size="35"
-                  tal:attributes="value request/name|nothing" />
-                  <input type="submit" value="Find a Package"/>
-              </form>
-            </tal:search-packages>
-
-            <ul class="horizontal">
-              <li>
-                <a tal:replace="structure overview_menu/ppas/fmt:link" />
-              </li>
-              <li>
-                <a tal:replace="structure overview_menu/builds/fmt:link" />
-              </li>
-            </ul>
-            <ul class="horizontal">
-              <li>
-                <a tal:replace="structure overview_menu/archive_mirrors/fmt:link" />
-              </li>
-              <li>
-                <a tal:replace="structure overview_menu/cdimage_mirrors/fmt:link" />
-              </li>
-            </ul>
-          </div>
-
-          <div tal:replace="structure context/@@+portlet-latestbugs" />
           <div tal:replace="structure context/@@+portlet-latestspecs" />
+
           <div tal:replace="structure context/@@+portlet-coming-sprints" />
-          <div tal:replace="structure context/@@+portlet-top-contributors" />
         </div>
       </div>
     </tal:main>
 
     <tal:side metal:fill-slot="side"
       define="overview_menu context/menu:overview">
-      <tal:menu replace="structure view/@@+global-actions" />
+      <tal:menu replace="structure context/@@+global-actions" />
 
-      <!--
-      <div id="downloads" class="top-portlet downloads"
-        tal:define="release view/latest_release_with_download_files">
-        <h2>Downloads</h2>
-
-        <tal:release condition="release">
-          <ul>
-            <li tal:repeat="file release/files">
-              <a tal:attributes="href file/fmt:url;
-                                 title file/description;"
-                tal:content="file/libraryfile/filename" />
-            </li>
-          </ul>
-
-          <div class="released">
-            <span>
-            released <tal:date replace="release/datereleased/fmt:displaydate" />
-            </span>
-          </div>
-        </tal:release>
-
-        <div class="alternate">
-          <a style="text-decoration: underline;"
-            tal:define="link overview_menu/downloads"
-            tal:attributes="href link/fmt:url;
-                            title link/summary"
-            tal:content="structure link/escapedtext" /> |
-          <a style="text-decoration: underline;"
-            tal:define="link overview_menu/rdf"
-            tal:attributes="href link/fmt:url;
-                            title link/summary"
-            tal:content="structure link/escapedtext" />
-        </div>
+      <div id="packages-archives" class="portlet">
+        <ul>
+          <li>
+            <a tal:replace="structure overview_menu/cdimage_mirrors/fmt:link" />
+          </li>
+          <li>
+            <a tal:replace="structure overview_menu/archive_mirrors/fmt:link" />
+          </li>
+          <li>
+            <a tal:replace="structure overview_menu/ppas/fmt:link" />
+          </li>
+          <li>
+            <a tal:replace="structure overview_menu/builds/fmt:link" />
+          </li>
+        </ul>
       </div>
-      -->
 
       <div tal:replace="structure context/@@+get-involved" />
 
