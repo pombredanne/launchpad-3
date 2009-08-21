@@ -311,6 +311,17 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         else:
             return "Switch to manual-mode"
 
+
+class BuilderHistoryView(BuilderView):
+    """This class exists only to override the page_title."""
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Build history for "%s"' % self.context.title)
+
+
 class BuilderSetAddView(LaunchpadFormView):
     """View class for adding new Builders."""
 
@@ -344,6 +355,16 @@ class BuilderSetAddView(LaunchpadFormView):
             )
         notify(ObjectCreatedEvent(builder))
         self.next_url = canonical_url(builder)
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """Canceling the add action should go back to the build farm."""
+        return canonical_url(self.context)
 
 
 class BuilderEditView(LaunchpadEditFormView):

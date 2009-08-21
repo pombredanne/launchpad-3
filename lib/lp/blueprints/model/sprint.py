@@ -335,7 +335,7 @@ class SprintSet:
         return Sprint.select(orderBy='-time_starts')
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
-            summary=None, address=None, driver=None, home_page=None,
+            summary, address=None, driver=None, home_page=None,
             mugshot=None, logo=None, icon=None):
         """See `ISprintSet`."""
         return Sprint(owner=owner, name=name, title=title,

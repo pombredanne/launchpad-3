@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'Bugzilla',
+    'BugzillaAPI',
     'BugzillaLPPlugin',
     'needs_authentication',
     ]
@@ -24,6 +25,9 @@ from zope.interface import implements
 
 from canonical import encoding
 from canonical.config import config
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.webapp.url import urlappend, urlparse
+
 from lp.bugs.externalbugtracker.base import (
     BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
     ExternalBugTracker, InvalidBugId, LookupTree,
@@ -35,8 +39,6 @@ from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.url import urlappend
 
 
 class Bugzilla(ExternalBugTracker):
@@ -370,16 +372,12 @@ def needs_authentication(func):
     return decorator
 
 
-class BugzillaLPPlugin(Bugzilla):
-    """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
-
-    implements(
-        ISupportsBackLinking, ISupportsCommentImport,
-        ISupportsCommentPushing)
+class BugzillaAPI(Bugzilla):
+    """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
-        super(BugzillaLPPlugin, self).__init__(baseurl)
+        super(BugzillaAPI, self).__init__(baseurl)
         self._bugs = {}
         self._bug_aliases = {}
 
@@ -396,6 +394,77 @@ class BugzillaLPPlugin(Bugzilla):
         """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
         return xmlrpclib.ServerProxy(
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+    @property
+    def credentials(self):
+        credentials_config = config['checkwatches.credentials']
+
+        # Extract the hostname from the current base url using urlparse.
+        hostname = urlparse(self.baseurl)[1]
+        try:
+            # XXX gmb 2009-08-19 bug=391131
+            #     We shouldn't be using this here. Ideally we'd be able
+            #     to get the credentials from the BugTracker object.
+            #     If you find yourself adding credentials for, for
+            #     example, www.password.username.pirateninjah4x0rz.org,
+            #     think about fixing the above bug instead.
+            username = credentials_config['%s.username' % hostname]
+            password = credentials_config['%s.password' % hostname]
+            return {'login': username, 'password': password}
+        except KeyError:
+            raise BugTrackerAuthenticationError(
+                self.baseurl, "No credentials found.")
+
+    def _authenticate(self):
+        """Authenticate with the remote Bugzilla instance.
+
+        The native Bugzilla API uses a standard (username, password)
+        paradigm for authentication. If the username and password are
+        correct, Bugzilla will send back a login cookie which we can use
+        to re-authenticate with each subsequent method call.
+        """
+        try:
+            self.xmlrpc_proxy.User.login(self.credentials)
+        except xmlrpclib.Fault, fault:
+            raise BugTrackerAuthenticationError(
+                self.baseurl,
+                "Fault %s: %s" % (fault.faultCode, fault.faultString))
+
+    def getCurrentDBTime(self):
+        """See `IExternalBugTracker`."""
+        time_dict = self.xmlrpc_proxy.Bugzilla.time()
+
+        # Convert the XML-RPC DateTime we get back into a regular Python
+        # datetime.
+        server_db_timetuple = time.strptime(
+            str(time_dict['db_time']), '%Y%m%dT%H:%M:%S')
+        server_db_datetime = datetime(*server_db_timetuple[:6])
+
+        # The server's DB time is the one that we want to use. However,
+        # this may not be in UTC, so we need to convert it. Since we
+        # can't guarantee that the timezone data returned by the server
+        # is sane, we work out the server's offset from UTC by looking
+        # at the difference between the web_time and the web_time_utc
+        # values.
+        server_web_time = time.strptime(
+            str(time_dict['web_time']), '%Y%m%dT%H:%M:%S')
+        server_web_datetime = datetime(*server_web_time[:6])
+        server_web_time_utc = time.strptime(
+            str(time_dict['web_time_utc']), '%Y%m%dT%H:%M:%S')
+        server_web_datetime_utc = datetime(*server_web_time_utc[:6])
+
+        server_utc_offset = server_web_datetime - server_web_datetime_utc
+        server_utc_datetime = server_db_datetime - server_utc_offset
+
+        return server_utc_datetime.replace(tzinfo=pytz.timezone('UTC'))
+
+
+class BugzillaLPPlugin(BugzillaAPI):
+    """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
+
+    implements(
+        ISupportsBackLinking, ISupportsCommentImport,
+        ISupportsCommentPushing)
 
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.
