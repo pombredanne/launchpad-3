@@ -12,7 +12,6 @@ __all__ = [
     'DistroArchSeriesView',
     ]
 
-from zope.component import provideAdapter
 from zope.interface import implements, Interface
 
 from canonical.launchpad import _
@@ -23,9 +22,8 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadEditFormView)
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
-from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp.menu import (
-    ContextMenu, enabled_with_permission, Link, NavigationMenu)
+    enabled_with_permission, Link, NavigationMenu)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.lazr.utils import smartquote
 
