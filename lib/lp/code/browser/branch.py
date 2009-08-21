@@ -102,27 +102,28 @@ class BranchURL:
     implements(ICanonicalUrlData)
 
     rootsite = 'code'
+    inside = None
 
     def __init__(self, branch):
         self.branch = branch
 
     @property
-    def inside(self):
-        return self.branch.owner
-
-    @property
     def path(self):
-        return '%s/%s' % (self.branch.target.name, self.branch.name)
+        return self.branch.unique_name
+
+
+def branch_root_context(branch):
+    """Return the IRootContext for the branch."""
+    return branch.target.components[0]
 
 
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
-    def items(self):
+    @property
+    def objects(self):
         """See `Hierarchy`."""
-        return self._breadcrumbs(
-            (obj, canonical_url(obj))
-            for obj in IHasBranchTarget(self.context).target.components)
+        return IHasBranchTarget(self.context).target.components
 
 
 class BranchNavigation(Navigation):
@@ -758,6 +759,10 @@ class BranchDeletionView(LaunchpadFormView):
     schema = IBranch
     field_names = []
 
+    @property
+    def page_title(self):
+        return smartquote('Delete branch "%s"' % self.context.displayname)
+
     @cachedproperty
     def display_deletion_requirements(self):
         """Normal deletion requirements, indication of permissions.
@@ -938,6 +943,10 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     initial_focus_widget = 'name'
+
+    @property
+    def page_title(self):
+        return 'Register a branch'
 
     @property
     def initial_values(self):

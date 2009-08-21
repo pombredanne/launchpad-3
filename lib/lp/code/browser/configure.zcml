@@ -9,7 +9,12 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
 
-<facet facet="branches">
+  <adapter
+      provides="lp.app.interfaces.rootcontext.IRootContext"
+      for="lp.code.interfaces.branch.IBranch"
+      factory="lp.code.browser.branch.branch_root_context"/>
+
+  <facet facet="branches">
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
@@ -181,7 +186,7 @@
         permission="launchpad.Edit">
         <browser:page
             name="+edit"
-            template="../templates/branchmergeproposal-edit.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
     </browser:pages>
     <browser:page
         name="+edit-commit-message"
@@ -189,7 +194,7 @@
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalCommitMessageEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-commitmessage-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+delete"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
@@ -210,7 +215,7 @@
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalRequestReviewView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-request-review.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+resubmit"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
@@ -231,7 +236,7 @@
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalDequeueView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+dequeue-inline"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
@@ -252,7 +257,7 @@
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalMergedView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+link-summary"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
@@ -427,7 +432,7 @@
         class="lp.code.browser.codeimport.CodeImportEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/codeimport-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+delete"
         for="lp.code.interfaces.branch.IBranch"
@@ -634,21 +639,21 @@
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/distribution-branches.pt"/>
+        template="../templates/generic-branch-listing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.code.browser.branchlisting.DistroSeriesBranchListingView"
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/distribution-branches.pt"/>
+        template="../templates/generic-branch-listing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.code.browser.branchlisting.DistributionSourcePackageBranchesView"
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/distributionsourcepackage-branches.pt"/>
+        template="../templates/generic-branch-listing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.code.browser.branchlisting.GroupedDistributionSourcePackageBranchesView"

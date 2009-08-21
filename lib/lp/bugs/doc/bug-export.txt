@@ -52,7 +52,7 @@ Now we serialise it as XML, and print it:
   <reporter name="name12">Sample Person</reporter>
   <status>NEW</status>
   <importance>LOW</importance>
-  <assignee name="sabdfl">Mark Shuttleworth</assignee>
+  <assignee name="mark">Mark Shuttleworth</assignee>
   <subscriptions>
   <subscriber name="name12">Sample Person</subscriber>
   <subscriber name="stevea">Steve Alexander</subscriber>

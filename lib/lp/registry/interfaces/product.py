@@ -38,6 +38,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -700,7 +701,7 @@ class IProductPublic(
 
 
 class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
-               IProductDriverRestricted, IProductPublic):
+               IProductDriverRestricted, IProductPublic, IRootContext):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and

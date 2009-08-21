@@ -429,6 +429,8 @@ class CodeImportEditView(CodeImportBaseView):
     # Need this to render the context to prepopulate the form fields.
     # Added here as the base class isn't LaunchpadEditFormView.
     render_context = True
+    page_title = 'Edit import details'
+    label = page_title
 
     @property
     def initial_values(self):

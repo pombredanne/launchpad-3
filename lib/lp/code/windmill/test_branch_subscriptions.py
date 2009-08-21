@@ -23,7 +23,7 @@ def test_branch_subscription_ajax_load():
     lpuser.FOO_BAR.ensure_login(client)
 
     client.open(
-        url=windmill.settings['TEST_URL'] + '/~sabdfl/firefox/release--0.9.1')
+        url=windmill.settings['TEST_URL'] + '/~mark/firefox/release--0.9.1')
     client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
     client.asserts.assertText(id=u'selfsubscription',
         validator='Subscribe yourself')

@@ -522,7 +522,9 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # what BugZilla will return.
         local_time = xmlrpclib.DateTime(local_datetime.timetuple())
 
-        utc_date_time = local_datetime - timedelta(seconds=self.utc_offset)
+        utc_offset_delta = timedelta(seconds=self.utc_offset)
+        utc_date_time = local_datetime - utc_offset_delta
+
         utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
         return {
             'local_time': local_time,
@@ -557,20 +559,21 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     def login(self, arguments):
         token_text = arguments['token']
-
         self._handleLoginToken(token_text)
+        self._setAuthCookie()
 
+        # We always return the same user ID.
+        # This has to be listified because xmlrpclib tries to expand
+        # sequences of length 1.
+        return [{'user_id': 42}]
+
+    def _setAuthCookie(self):
         # Generate some random cookies to use.
         random_cookie_1 = str(random.random())
         random_cookie_2 = str(random.random())
 
         self.setCookie('Bugzilla_login=%s;' % random_cookie_1)
         self.setCookie('Bugzilla_logincookie=%s;' % random_cookie_2)
-
-        # We always return the same user ID.
-        # This has to be listified because xmlrpclib tries to expand
-        # sequences of length 1.
-        return [{'user_id': 42}]
 
     def get_bugs(self, arguments):
         """Return a list of bug dicts for a given set of bug IDs."""
@@ -749,6 +752,70 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # expand sequences of length 1, which will fail horribly when
         # the sequence is in fact a dict.
         return [{'launchpad_id': old_launchpad_id}]
+
+
+class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
+    """A test implementation of the Bugzilla 3.4 XML-RPC API."""
+
+    # Map namespaces onto method names.
+    methods = {
+        'Bugzilla': [
+            'time',
+            'version',
+            ],
+        'Test': ['login_required'],
+        'User': ['login'],
+        }
+
+    # Methods that require authentication.
+    auth_required_methods = [
+        'login_required',
+        ]
+
+    # The list of users that can log in.
+    users = [
+        {'login': 'foo.bar@canonical.com', 'password': 'test'},
+        ]
+
+    def version(self):
+        """Return the version of Bugzilla being used."""
+        # This is to work around the old "xmlrpclib tries to expand
+        # sequences of length 1" problem (see above).
+        return [{'version': '3.4.1+'}]
+
+    def login(self, arguments):
+        login = arguments['login']
+        password = arguments['password']
+
+        # Clear the old login cookie for the sake of being thorough.
+        self.expireCookie(self.auth_cookie)
+
+        for user in self.users:
+            if user['login'] == login and user['password'] == password:
+                self._setAuthCookie()
+                return [{'id': self.users.index(user)}]
+            else:
+                raise xmlrpclib.Fault(
+                    300,
+                    "The username or password you entered is not valid.")
+
+    def time(self):
+        """Return a dict of the local time and associated data."""
+        # We cheat slightly by calling the superclass to get the time
+        # data. We do this the old fashioned way because XML-RPC
+        # Transports don't support new-style classes.
+        time_dict = TestBugzillaXMLRPCTransport.time(self)
+        offset_hours = (self.utc_offset / 60) / 60
+        offset_string = '+%02d00' % offset_hours
+
+        return {
+            'db_time': time_dict['local_time'],
+            'tz_name': time_dict['tz_name'],
+            'tz_offset': offset_string,
+            'tz_short_name': time_dict['tz_name'],
+            'web_time': time_dict['local_time'],
+            'web_time_utc': time_dict['utc_time'],
+            }
 
 
 class TestMantis(Mantis):

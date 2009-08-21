@@ -16,7 +16,7 @@ news feed.
     ...     """The contents of the latest news portlet."""
     ...     return extract_text(find_portlet(content, 'Announcements'))
     >>> def count_show_links(content):
-    ...     """Determine whether the "More announcements" link is shown."""
+    ...     """Determine whether the "Read more announcements" link is shown."""
     ...     return len(find_tags_by_class(
     ...         content, 'menu-link-announcements'))
     >>> def no_announcements(content):
@@ -52,7 +52,7 @@ pillar.
     ...
     LinkNotFoundError
 
-    >>> priv_browser = setupBrowser(auth="Basic mark@hbd.com:test")
+    >>> priv_browser = setupBrowser(auth="Basic mark@example.com:test")
     >>> priv_browser.open('http://launchpad.dev/apache')
     >>> link = priv_browser.getLink('Make announcement')
     >>> print link.text
@@ -75,6 +75,8 @@ project.
 
     >>> print priv_browser.url
     http://launchpad.dev/apache
+    >>> print priv_browser.title
+    Apache in Launchpad
 
 We'll repeat the process for Tomcat, an IProduct that is part of the
 Apache project, but this time we won't specify a URL, and we will
@@ -107,8 +109,8 @@ work too:
     ...     name='field.publication_date.announcement_date').value = (
     ...          '2007-11-24 09:00:00')
     >>> priv_browser.getControl('Make announcement').click()
-    >>> print priv_browser.url
-    http://launchpad.dev/tomcat
+    >>> print priv_browser.title
+    Tomcat in Launchpad
 
 And check out the results:
 
@@ -138,8 +140,8 @@ announcement immediately:
     >>> priv_browser.getControl('Summary').value = (
     ...     'Derby announcement summary')
     >>> priv_browser.getControl('Make announcement').click()
-    >>> print priv_browser.url
-    http://launchpad.dev/derby
+    >>> print priv_browser.title
+    Derby - Java Database in Launchpad
     >>> 'Derby announcement' in latest_news(priv_browser.contents)
     True
 
@@ -158,8 +160,8 @@ date in the future when the announcement will be made:
     ...     name='field.publication_date.announcement_date').value = (
     ...          '2021-12-24 09:00:00')
     >>> priv_browser.getControl('Make announcement').click()
-    >>> print priv_browser.url
-    http://launchpad.dev/jokosher
+    >>> print priv_browser.title
+    Jokosher Audio Editor in Launchpad
     >>> 'Jokosher announcement' in latest_news(priv_browser.contents)
     True
 
@@ -174,8 +176,8 @@ a date for the announcement at all:
     ...     'Kubuntu announcement summary')
     >>> priv_browser.getControl('some time in the future').click()
     >>> priv_browser.getControl('Make announcement').click()
-    >>> print priv_browser.url
-    http://launchpad.dev/kubuntu
+    >>> print priv_browser.title
+    Kubuntu - Free KDE-based Linux in Launchpad
     >>> "Kubuntu announcement" in latest_news(priv_browser.contents)
     True
 
@@ -188,8 +190,8 @@ And finally for RedHat, an IDistribution, with immediate announcement:
     >>> priv_browser.getControl('Summary').value = (
     ...     'RedHat announcement summary')
     >>> priv_browser.getControl('Make announcement').click()
-    >>> print priv_browser.url
-    http://launchpad.dev/redhat
+    >>> print priv_browser.title
+    Redhat Advanced Server in Launchpad
     >>> "RedHat announcement" in latest_news(priv_browser.contents)
     True
 
@@ -205,7 +207,7 @@ shows the Kubuntu announcement, then try to open the page with the
 anon_browser.
 
     >>> priv_browser.open('http://launchpad.dev/kubuntu/+announcements')
-    >>> priv_browser.getLink('Permalink').click()
+    >>> priv_browser.getLink('Kubuntu announcement headline').click()
     >>> link_url = priv_browser.url
     >>> anon_browser.open(link_url)
     Traceback (most recent call last):
@@ -216,7 +218,7 @@ We will show that the anonymous user can see an announcement that was
 published:
 
     >>> anon_browser.open('http://launchpad.dev/apache/+announcements')
-    >>> anon_browser.getLink('Permalink').click()
+    >>> anon_browser.getLink('Derby announcement headline').click()
     >>> print anon_browser.title
     Derby announcement
 
@@ -227,10 +229,10 @@ page that any user can navigate.
     >>> print extract_text(content.h1)
     Derby announcement headline
 
-    >>> print extract_text(content.p)
+    >>> print extract_text(content.findAll('p')[1])
     Derby announcement summary
 
-    >>> anon_browser.getLink("More announcements").click()
+    >>> anon_browser.getLink("Read all announcements").click()
     >>> print anon_browser.title
     Derby news and announcements
 
@@ -265,7 +267,7 @@ But we do see it when there are published announcements.
 
     >>> anon_browser.open('http://launchpad.dev/apache')
     >>> count_show_links(anon_browser.contents)
-    2
+    1
     >>> anon_browser.open('http://launchpad.dev/tomcat')
     >>> count_show_links(anon_browser.contents)
     1
@@ -317,17 +319,20 @@ an alert to that effect:
 
 We can publish this announcement immediately.
 
-    >>> priv_browser.getLink('Publish now').click()
-    >>> priv_browser.url
-    'http://launchpad.dev/kubuntu/+announceme.../+publish'
+    >>> priv_browser.getLink('Kubuntu announcement headline').click()
+    >>> priv_browser.getLink('Publish announcement').click()
+    >>> print priv_browser.title
+    Publish this announcement
+    >>> print priv_browser.url
+    http://launchpad.dev/kubuntu/+announceme.../+publish
     >>> radio = priv_browser.getControl(name="field.publication_date.action")
     >>> radio.value = ['immediately']
     >>> priv_browser.getControl('Publish').click()
 
 Doing so takes us back to the list of announcements.
 
-    >>> priv_browser.url
-    'http://launchpad.dev/kubuntu/+announcements'
+    >>> print priv_browser.title
+    Kubuntu news and announcements
 
 And since the announcement has been made, the everybody can now see
 it too:
@@ -418,47 +423,16 @@ It excludes future announcements too:
 Editing announcements
 ---------------------
 
-The page to edit that announcement is linked from the announcement
-listing.  If you are anonymous or don't have the right privileges then
-you cannot see any edit links:
-
-    >>> anon_browser.open('http://launchpad.dev/tomcat/+announcements')
-    >>> listed_announcements = find_tag_by_id(
-    ...    anon_browser.contents, 'announcements')
-    >>> edit_link_text = 'Edit this announcement.'
-    >>> edit_links = listed_announcements.fetch('a', text=edit_link_text)
-    >>> len(edit_links)
-    0
-
-    >>> nopriv_browser.open('http://launchpad.dev/tomcat/+announcements')
-    >>> listed_announcements = find_tag_by_id(
-    ...    nopriv_browser.contents, 'announcements')
-    >>> edit_links = listed_announcements.fetch('a', text=edit_link_text)
-    >>> len(edit_links)
-    0
-
-If you have the necessary privileges you will see links to edit the
-announcements.
+The announcement listing page does not have editing links.  They are
+available on the individual announcement pages.
 
     >>> priv_browser.open('http://launchpad.dev/tomcat/+announcements')
-    >>> listed_announcements = find_tag_by_id(
-    ...    priv_browser.contents, 'announcements')
-    >>> edit_links = listed_announcements.fetch('a', text=edit_link_text)
-    >>> len(edit_links)
-    2
-
-Following a link takes you to a form where you can change the headline,
-summary and URL of the announcement:
-
-    >>> 'Modified headline' not in announcements(priv_browser.contents)
-    True
-    >>> 'Modified summary' not in announcements(priv_browser.contents)
-    True
     >>> print priv_browser.getLink('Read more').url
     http://apache.org/announcement/rocking/
-    >>> priv_browser.getLink(edit_link_text).click()
-    >>> print priv_browser.url
-    http://launchpad.dev/apache/+announcement/...
+    >>> priv_browser.getLink('Apache announcement headline').click()
+    >>> priv_browser.getLink('Modify announcement').click()
+    >>> print priv_browser.title
+    Modify this announcement
     >>> headline = priv_browser.getControl('Headline')
     >>> print headline.value
     Apache announcement headline
@@ -473,8 +447,8 @@ summary and URL of the announcement:
     >>> url.value = (
     ...     'http://apache.org/modified/url/')
     >>> priv_browser.getControl('Modify').click()
-    >>> print priv_browser.url
-    http://launchpad.dev/apache/+announcements
+    >>> print priv_browser.title
+    Apache news and announcements
     >>> priv_browser.open('http://launchpad.dev/tomcat/+announcements')
     >>> 'Modified headline' in announcements(priv_browser.contents)
     True
@@ -494,16 +468,18 @@ You can retract an announcement which was previously announced.
     True
     >>> 'Retracted' in announcements(priv_browser.contents)
     False
-    >>> priv_browser.getLink('Retract').click()
-    >>> priv_browser.url
-    'http://launchpad.dev/kubuntu/+announcement/.../+retract'
+    >>> priv_browser.getLink('Kubuntu announcement headline').click()
+    >>> priv_browser.getLink('Delete announcement').click()
+    >>> priv_browser.getLink('retracting the announcement').click()
+    >>> print priv_browser.title
+    Retract this announcement
 
 Actually clicking "Retract" takes us back to the listing page. The item
 is shown as having been retracted if you are a privileged user.
 
     >>> priv_browser.getControl('Retract').click()
-    >>> priv_browser.url
-    'http://launchpad.dev/kubuntu/+announcements'
+    >>> print priv_browser.title
+    Kubuntu news and announcements
     >>> 'Kubuntu announcement ' in announcements(priv_browser.contents)
     True
     >>> 'Retracted' in announcements(priv_browser.contents)
@@ -525,16 +501,17 @@ And it has disappeared from the global listing too.
 
 Once something has been retracted, it can be published again.
 
-    >>> priv_browser.getLink('Publish now').click()
-    >>> priv_browser.url
-    'http://launchpad.dev/kubuntu/+announceme.../+publish'
+    >>> priv_browser.getLink('Kubuntu announcement headline').click()
+    >>> priv_browser.getLink('Publish announcement').click()
+    >>> print priv_browser.title
+    Publish this announcement
     >>> radio = priv_browser.getControl(name="field.publication_date.action")
     >>> radio.value = ['immediately']
     >>> priv_browser.getControl(
     ...     name="field.publication_date.announcement_date").value = ''
     >>> priv_browser.getControl('Publish').click()
-    >>> priv_browser.url
-    'http://launchpad.dev/kubuntu/+announcements'
+    >>> print priv_browser.title
+    Kubuntu news and announcements
 
 And once again it is visible to unprivileged users:
 
@@ -553,14 +530,14 @@ in another, then someone who is an administrator in both places can move
 it.
 
     >>> priv_browser.open('http://launchpad.dev/kubuntu/+announcements')
-    >>> priv_browser.getLink(edit_link_text).click()
+    >>> priv_browser.getLink('Kubuntu announcement headline').click()
     >>> priv_browser.getLink('Move announcement').click()
-    >>> print priv_browser.url
-    http://launchpad.dev/kubuntu/+announcement/.../+retarget
+    >>> print priv_browser.title
+    Move this announcement to a different project
     >>> priv_browser.getControl('For').value = 'guadalinex'
     >>> priv_browser.getControl('Retarget').click()
-    >>> print priv_browser.url
-    http://launchpad.dev/guadalinex/+announcements
+    >>> print priv_browser.title
+    GuadaLinex news and announcements
     >>> 'Kubuntu announcement' in announcements(priv_browser.contents)
     True
 
@@ -570,16 +547,16 @@ not be able to move it.
     >>> kamion_browser = \
     ...     setupBrowser(auth="Basic colin.watson@ubuntulinux.com:test")
     >>> kamion_browser.open('http://launchpad.dev/guadalinex/+announcements')
-    >>> kamion_browser.getLink(edit_link_text).click()
+    >>> kamion_browser.getLink('Kubuntu announcement headline').click()
     >>> kamion_browser.getLink('Move announcement').click()
-    >>> print kamion_browser.url
-    http://launchpad.dev/guadalinex/+announcement/.../+retarget
+    >>> print kamion_browser.title
+    Move this announcement to a different project
     >>> kamion_browser.getControl('For').value = 'kubuntu'
     >>> kamion_browser.getControl('Retarget').click()
     >>> "don't have permission" in extract_text(find_main_content(kamion_browser.contents))
     True
-    >>> print kamion_browser.url
-    http://launchpad.dev/guadalinex/+announcement/.../+retarget
+    >>> print kamion_browser.title
+    Move this announcement to a different project
 
 
 Atom/RSS Feeds
@@ -641,10 +618,11 @@ Retracted items do not show up either.
     >>> priv_browser.open('http://launchpad.dev/guadalinex/+announcements')
     >>> 'Kubuntu announcement headline' in announcements(priv_browser.contents)
     True
-
-    >>> priv_browser.getLink('Retract').click()
-    >>> priv_browser.url
-    'http://launchpad.dev/guadalinex/+announcement/.../+retract'
+    >>> priv_browser.getLink('Kubuntu announcement headline').click()
+    >>> priv_browser.getLink('Delete announcement').click()
+    >>> priv_browser.getLink('retracting the announcement').click()
+    >>> print priv_browser.title
+    Retract this announcement
     >>> priv_browser.getControl('Retract').click()
     >>> nopriv_browser.reload()
     >>> 'Kubuntu announcement ' in nopriv_browser.contents
@@ -734,11 +712,12 @@ An owner can permanently delete an announcement.
     >>> kamion_browser.open('http://launchpad.dev/guadalinex/+announcements')
     >>> no_announcements(kamion_browser.contents)
     False
-    >>> kamion_browser.getLink('Permanently delete').click()
-    >>> print kamion_browser.url
-    http://launchpad.dev/guadalinex/+announcement/.../+delete
+    >>> kamion_browser.getLink('Kubuntu announcement headline').click()
+    >>> kamion_browser.getLink('Delete announcement').click()
+    >>> print kamion_browser.title
+    Delete this announcement
     >>> kamion_browser.getControl('Delete').click()
-    >>> print kamion_browser.url
-    http://launchpad.dev/guadalinex/+announcements
+    >>> print priv_browser.title
+    GuadaLinex news and announcements
     >>> no_announcements(kamion_browser.contents)
     True
