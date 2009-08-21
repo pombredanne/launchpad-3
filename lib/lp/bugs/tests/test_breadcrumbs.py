@@ -5,67 +5,39 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getMultiAdapter
-
-from canonical.lazr.testing.menus import make_fake_request
-from canonical.launchpad.webapp.publisher import RootObject
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import (
-    ANONYMOUS, TestCaseWithFactory, login)
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.tests.breadcrumbs import (
+    BaseBreadcrumbTestCase)
+from lp.testing import ANONYMOUS, login
 
 
-class TestBugTaskBreadcrumbBuilder(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
+class TestBugTaskBreadcrumbBuilder(BaseBreadcrumbTestCase):
 
     def setUp(self):
         super(TestBugTaskBreadcrumbBuilder, self).setUp()
-        self.product = self.factory.makeProduct(
+        product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
-        self.bug = self.factory.makeBug(product=self.product)
-        self.root = RootObject()
+        self.bug = self.factory.makeBug(product=product)
+        self.bugtask_url = canonical_url(
+            self.bug.default_bugtask, rootsite='bugs')
+        self.traversed_objects = [
+            self.root, product, self.bug.default_bugtask]
 
-    def test_bugtask_on_mainsite(self):
-        request = make_fake_request(
-            'http://launchpad.dev/%s/+bug/%d' % (
-                self.product.name, self.bug.id),
-            [self.root, self.product, self.bug.default_bugtask])
-        hierarchy = getMultiAdapter((self.root, request), name='+hierarchy')
-        self.assertEquals(
-            ['http://launchpad.dev/crumb-tester',
-             'http://launchpad.dev/crumb-tester/+bug/%d' % self.bug.id],
-            [crumb.url for crumb in hierarchy.items()])
-        self.assertEquals(
-            ["Crumb Tester", "Bug #%d" % self.bug.id],
-            [crumb.text for crumb in hierarchy.items()])
+    def test_bugtask(self):
+        urls = self._getBreadcrumbsURLs(
+            self.bugtask_url, self.traversed_objects)
+        self.assertEquals(urls[-1], self.bugtask_url)
+        texts = self._getBreadcrumbsTexts(
+            self.bugtask_url, self.traversed_objects)
+        self.assertEquals(texts[-1], "Bug #%d" % self.bug.id)
 
-    def test_bugtask_on_vhost(self):
-        request = make_fake_request(
-            'http://bugs.launchpad.dev/%s/+bug/%d' % (
-                self.product.name, self.bug.id),
-            [self.root, self.product, self.bug.default_bugtask])
-        hierarchy = getMultiAdapter((self.root, request), name='+hierarchy')
-        self.assertEquals(
-            ['http://bugs.launchpad.dev/crumb-tester',
-             'http://bugs.launchpad.dev/crumb-tester/+bug/%d' % self.bug.id],
-            [crumb.url for crumb in hierarchy.items()])
-        self.assertEquals(
-            ["Crumb Tester", "Bug #%d" % self.bug.id],
-            [crumb.text for crumb in hierarchy.items()])
-
-    def test_bugtask_child_on_vhost(self):
-        request = make_fake_request(
-            'http://bugs.launchpad.dev/%s/+bug/%d/+activity' % (
-                self.product.name, self.bug.id),
-            [self.root, self.product, self.bug.default_bugtask])
-        hierarchy = getMultiAdapter((self.root, request), name='+hierarchy')
-        self.assertEquals(
-            ['http://bugs.launchpad.dev/crumb-tester',
-             'http://bugs.launchpad.dev/crumb-tester/+bug/%d' % self.bug.id],
-            [crumb.url for crumb in hierarchy.items()])
-        self.assertEquals(
-            ["Crumb Tester", "Bug #%d" % self.bug.id],
-            [crumb.text for crumb in hierarchy.items()])
+    def test_bugtask_child(self):
+        url = canonical_url(
+            self.bug.default_bugtask, rootsite='bugs', view_name='+activity')
+        urls = self._getBreadcrumbsURLs(url, self.traversed_objects)
+        self.assertEquals(urls[-1], self.bugtask_url)
+        texts = self._getBreadcrumbsTexts(url, self.traversed_objects)
+        self.assertEquals(texts[-1], "Bug #%d" % self.bug.id)
 
     def test_bugtask_private_bug(self):
         # A breadcrumb is not generated for a bug that the user does
@@ -73,16 +45,15 @@ class TestBugTaskBreadcrumbBuilder(TestCaseWithFactory):
         login('foo.bar@canonical.com')
         self.bug.setPrivate(True, self.bug.owner)
         login(ANONYMOUS)
-        request = make_fake_request(
-            'http://bugs.launchpad.dev/%s/+bug/%d/+activity' % (
-                self.product.name, self.bug.id),
-            [self.root, self.product, self.bug.default_bugtask])
-        hierarchy = getMultiAdapter((self.root, request), name='+hierarchy')
+        url = canonical_url(
+            self.bug.default_bugtask, rootsite='bugs', view_name='+activity')
         self.assertEquals(
-            ['http://bugs.launchpad.dev/crumb-tester'],
-            [crumb.url for crumb in hierarchy.items()])
+            ['http://launchpad.dev/crumb-tester',
+             'http://bugs.launchpad.dev/crumb-tester'],
+            self._getBreadcrumbsURLs(url, self.traversed_objects))
         self.assertEquals(
-            ["Crumb Tester"], [crumb.text for crumb in hierarchy.items()])
+            ["Crumb Tester", "Bugs on crumb-tester"],
+            self._getBreadcrumbsTexts(url, self.traversed_objects))
 
 
 def test_suite():

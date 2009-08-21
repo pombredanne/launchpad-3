@@ -179,7 +179,7 @@ class GetPersonTestCase(TestCaseWithFactory):
         # Test that getPerson() can correctly create new users when
         # they have a short name that conflicts with an existing user
         # in the database.
-        person1 = getUtility(IPersonSet).getByName('sabdfl')
+        person1 = getUtility(IPersonSet).getByName('mark')
         self.assertNotEqual(person1, None)
 
         product = getUtility(IProductSet).getByName('netapplet')
@@ -187,11 +187,11 @@ class GetPersonTestCase(TestCaseWithFactory):
             product, 'bugs.xml', 'bug-map.pickle')
         personnode = ET.fromstring('''\
         <person xmlns="https://launchpad.net/xmlns/2006/bugs"
-                name="sabdfl" email="foo@example.com">Foo User</person>''')
+                name="mark" email="foo@example.com">Foo User</person>''')
         person2 = importer.getPerson(personnode)
         self.assertNotEqual(person2, None)
         self.assertNotEqual(person1.id, person2.id)
-        self.assertNotEqual(person2.name, 'sabdfl')
+        self.assertNotEqual(person2.name, 'mark')
 
     def test_find_existing_person(self):
         # Test that getPerson() returns an existing person.
@@ -207,7 +207,7 @@ class GetPersonTestCase(TestCaseWithFactory):
             product, 'bugs.xml', 'bug-map.pickle')
         personnode = ET.fromstring('''\
         <person xmlns="https://launchpad.net/xmlns/2006/bugs"
-                name="sabdfl" email="foo@example.com">Foo User</person>''')
+                name="mark" email="foo@example.com">Foo User</person>''')
         self.assertEqual(importer.getPerson(personnode), person)
 
     def test_nobody_person(self):
@@ -387,7 +387,7 @@ sample_bug = '''\
     <text>A comment from an anonymous user</text>
   </comment>
   <comment>
-    <sender email="mark@hbd.com">Mark Shuttleworth</sender>
+    <sender email="mark@example.com">Mark Shuttleworth</sender>
     <date>2005-01-01T13:00:00Z</date>
     <text>
 A comment from mark about CVE-2005-2730
@@ -536,7 +536,8 @@ class ImportBugTestCase(unittest.TestCase):
                          'A comment from an anonymous user')
 
         # Message 3:
-        self.assertEqual(message3.owner.preferredemail.email, 'mark@hbd.com')
+        self.assertEqual(message3.owner.preferredemail.email,
+                         'mark@example.com')
         self.assertEqual(message3.datecreated.isoformat(),
                          '2005-01-01T13:00:00+00:00')
         self.assertEqual(message3.subject, 'Re: A test bug')

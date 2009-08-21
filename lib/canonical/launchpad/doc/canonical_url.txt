@@ -486,10 +486,8 @@ canonical url chain that provides at least one of the interfaces given.
     True
     >>> nearest(town_instance, ICountry) is country_instance
     True
-    >>> nearest(unrooted_object, ICountry)
-    Traceback (most recent call last):
-    ...
-    NoCanonicalUrl: No url for <...ObjectThatHasUrl...> because <...object...> broke the chain.
+    >>> print nearest(unrooted_object, ICountry)
+    None
 
 
 == canonical_url in the web service ==
