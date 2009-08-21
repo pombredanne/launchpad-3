@@ -560,6 +560,11 @@ class BugzillaAPI(Bugzilla):
 
         return bug_ids
 
+    def getRemoteProduct(self, remote_bug):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(remote_bug)
+        return self._bugs[actual_bug_id]['product']
+
 
 class BugzillaLPPlugin(BugzillaAPI):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
@@ -685,11 +690,6 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         server_utc_time = datetime(*server_timetuple[:6])
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
-
-    def getRemoteProduct(self, remote_bug):
-        """See `IExternalBugTracker`."""
-        actual_bug_id = self._getActualBugId(remote_bug)
-        return self._bugs[actual_bug_id]['product']
 
     def getCommentIds(self, bug_watch):
         """See `ISupportsCommentImport`."""
