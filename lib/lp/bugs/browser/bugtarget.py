@@ -464,7 +464,6 @@ class FileBugViewBase(LaunchpadFormView):
         security_related = data.get("security_related", False)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
-        product = getUtility(ILaunchBag).product
 
         context = self.context
         if distribution is not None:
@@ -898,20 +897,6 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
 
         return search_context
 
-    @cachedproperty
-    def most_common_bugs(self):
-        """Return a list of the most duplicated bugs."""
-        search_context = self.search_context
-        if search_context is None:
-            return []
-        else:
-            return search_context.getMostCommonBugs(
-                self.user, limit=self._MATCHING_BUGS_LIMIT)
-
-    @property
-    def found_possible_duplicates(self):
-        return self.similar_bugs or self.most_common_bugs
-
     @property
     def search_text(self):
         """Return the search string entered by the user."""
@@ -972,18 +957,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
             "This method should be called only when we know which"
             " product the user selected.")
         return self.widgets['product'].getInputValue()
-
-    @cachedproperty
-    def most_common_bugs(self):
-        """Return a list of the most duplicated bugs."""
-        # We can only discover the most common bugs when a product has
-        # been selected.
-        if self.widgets['product'].hasValidInput():
-            selected_product = self._getSelectedProduct()
-            return selected_product.getMostCommonBugs(
-                self.user, limit=self._MATCHING_BUGS_LIMIT)
-        else:
-            return []
 
     def getSecurityContext(self):
         """See FileBugViewBase."""
@@ -1099,7 +1072,7 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
         """See FileBugViewBase."""
         try:
             bugtarget = self.widgets['bugtarget'].getInputValue()
-        except InputErrors, error:
+        except InputErrors:
             return None
         if IDistributionSourcePackage.providedBy(bugtarget):
             return bugtarget.distribution
