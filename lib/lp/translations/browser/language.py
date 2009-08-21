@@ -84,7 +84,6 @@ class LanguageAddView(LaunchpadFormView):
     schema = ILanguage
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction']
-    label = 'Register a language in Launchpad'
     language = None
 
     @action('Add', name='add')
@@ -99,6 +98,21 @@ class LanguageAddView(LaunchpadFormView):
             visible=data['visible'],
             direction=data['direction'])
         notify(ObjectCreatedEvent(self.language))
+
+    @property
+    def page_title(self):
+        """Sets the page title."""
+        return "Add a new Language to Launchpad"
+
+    @property
+    def label(self):
+        """The form label"""
+        return "Register a language in Launchpad"
+
+    @property
+    def cancel_url(self):
+        """See LaunchpadFormView."""
+        return canonical_url(self.context)
 
     @property
     def next_url(self):
@@ -167,7 +181,7 @@ class LanguageAdminView(LaunchpadEditFormView):
     @property
     def cancel_url(self):
         """See LaunchpadFormView."""
-        return canonical_url(self.context)
+        return self.next_url
 
     @property
     def next_url(self):
