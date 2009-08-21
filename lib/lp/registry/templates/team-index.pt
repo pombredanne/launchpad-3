@@ -115,7 +115,6 @@
     <!-- First portlet column. -->
     <div class="first yui-u">
       <div tal:content="structure context/@@+portlet-membership" />
-      <metal:details use-macro="context/@@+person-macros/contact-details" />
       <div tal:content="structure context/@@+portlet-ppas" />
       <metal:subteam-of use-macro="context/@@+person-macros/subteam-of" />
     </div>
@@ -123,10 +122,12 @@
     <!-- Second portlet column. -->
     <div class="yui-u">
       <div tal:content="structure context/@@+portlet-related-projects" />
+      <metal:details use-macro="context/@@+person-macros/contact-details" />
       <div tal:content="structure context/@@+portlet-mailinglist" />
-      <div tal:content="structure context/@@+portlet-map" />
     </div>
   </div>
+
+  <div tal:content="structure context/@@+portlet-map" />
 
 </div>
 </body>

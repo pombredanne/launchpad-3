@@ -22,7 +22,6 @@
           <tal:no_preferredemail
             condition="view/email_address_visibility/are_none_available">
             No contact email
-            <a tal:replace="structure overview_menu/editemail/fmt:icon" />
           </tal:no_preferredemail>
 
           <div tal:condition="view/can_contact">
@@ -43,8 +42,8 @@
               <img src="/@@/mail" alt="mail" />
               <tal:email replace="email">foo2@bar.com</tal:email>
             </div>
-            <a tal:replace="structure overview_menu/editemail/fmt:icon" />
           </tal:emails>
+          <a tal:replace="structure overview_menu/editemail/fmt:link" />
         </dd>
       </dl>
 
