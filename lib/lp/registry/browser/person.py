@@ -2687,28 +2687,55 @@ class PersonView(LaunchpadView, FeedsMixin):
         return (
             self.user is not None and self.context.is_valid_person_or_team)
 
+    @cachedproperty
+    def group_to_contact(self):
+        """Contacting a team may contact different email addresses.
+
+        :return: the recipients of the message.
+        :rtype: `ContactViaWebNotificationRecipientSet` constant:
+                TO_USER
+                TO_TEAM (Send to team's preferredemail)
+                TO_OWNER
+                TO_MEMBERS
+        """
+        return ContactViaWebNotificationRecipientSet(
+            self.user, self.context)._primary_reason
+
     @property
     def contact_link_title(self):
         """Return the appropriate +contactuser link title for the tooltip."""
-        if self.context.is_team:
-            if self.user.inTeam(self.context):
-                return 'Send an email to your team through Launchpad'
+        ContactViaWeb = ContactViaWebNotificationRecipientSet
+        if self.group_to_contact == ContactViaWeb.TO_USER:
+            if self.viewing_own_page:
+                return 'Send an email to yourself through Launchpad'
             else:
-                return "Send an email to this team's owner through Launchpad"
-        elif self.viewing_own_page:
-            return 'Send an email to yourself through Launchpad'
+                return 'Send an email to this user through Launchpad'
+        elif self.group_to_contact == ContactViaWeb.TO_TEAM:
+            return ("Send an email to your team's contact email address "
+                    "through Launchpad")
+        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
+            return "Send an email to your team's members through Launchpad"
+        elif self.group_to_contact == ContactViaWeb.TO_OWNER:
+            return "Send an email to this team's owner through Launchpad"
         else:
-            return 'Send an email to this user through Launchpad'
+            raise AssertionError('Unknown group to contact.')
 
     @property
     def specific_contact_text(self):
         """Return the appropriate link text."""
-        if self.context.is_team:
-            return "Contact this team's administrators"
-        else:
+        ContactViaWeb = ContactViaWebNotificationRecipientSet
+        if self.group_to_contact == ContactViaWeb.TO_USER:
             # Note that we explicitly do not change the text to "Contact
             # yourself" when viewing your own page.
             return 'Contact this user'
+        elif self.group_to_contact == ContactViaWeb.TO_TEAM:
+            return "Contact this team's email address"
+        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
+            return "Contact this team's members"
+        elif self.group_to_contact == ContactViaWeb.TO_OWNER:
+            return "Contact this team's owner"
+        else:
+            raise AssertionError('Unknown group to contact.')
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
@@ -5192,7 +5219,7 @@ class ContactViaWebNotificationRecipientSet:
         """Return the primary recipient.
 
         The primary recipient is the ``person_or_team`` in all cases
-        except for then the email is restricted to a team owner.
+        except for when the email is restricted to a team owner.
 
         :param person_or_team: The party that is the context of the email.
         :type person_or_team: `IPerson`.

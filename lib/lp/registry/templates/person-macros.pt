@@ -4,7 +4,7 @@
   omit-tag="">
 
 <!-- contact-details macro. -->
-<metal:macro define-macro="contact-details">
+<metal:macro define-macro="team-details">
   <div class="portlet"
        id="contact-details">
     <h2 tal:condition="context/is_team">Team details</h2>
@@ -29,11 +29,6 @@
             tal:attributes="title view/contact_link_title"
             tal:content="view/specific_contact_text"
             >Contact this person</a>
-          <tal:no_preferredemail
-            condition="view/email_address_visibility/are_none_available">
-            <br /><small>(Launchpad notifications are sent to all
-                          team members)</small>
-          </tal:no_preferredemail>
         </div>
 
         <tal:emails repeat="email view/visible_email_addresses">

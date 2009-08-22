@@ -122,7 +122,7 @@
     <!-- Second portlet column. -->
     <div class="yui-u">
       <div tal:content="structure context/@@+portlet-related-projects" />
-      <metal:details use-macro="context/@@+person-macros/contact-details" />
+      <metal:details use-macro="context/@@+person-macros/team-details" />
       <div tal:content="structure context/@@+portlet-mailinglist" />
     </div>
   </div>
