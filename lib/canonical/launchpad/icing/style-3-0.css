@@ -310,6 +310,7 @@ h1 {
     }
 h2 {
     margin-bottom: 0.3em;
+    margin-top: 0.3em;
     font-size: 123.1%;
     color: #5a5a5a;
     }
@@ -442,6 +443,15 @@ dt {
     color: #000;
     font-weight: normal;
     }
+.application-summary {
+    font-size: 123.1%;
+}
+.search-results {
+    margin-top: 1em;
+}
+p.search-results {
+    font-size: 116%;
+}
 
 
 /* Exceptions they may be common. */

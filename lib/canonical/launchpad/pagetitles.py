@@ -508,8 +508,6 @@ distroserieslanguage_index = ContextTitle('%s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
-distros_index = 'Distributions registered in Launchpad'
-
 edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
@@ -1064,8 +1062,6 @@ project_specs = ContextTitle('Blueprints for %s')
 project_translations = ContextTitle('Translatable projects for %s')
 
 project_translators = ContextTitle('Set translation group for %s')
-
-projects_index = 'Project groups registered in Launchpad'
 
 projects_request = 'Launchpad Translations: Request a project group'
 
