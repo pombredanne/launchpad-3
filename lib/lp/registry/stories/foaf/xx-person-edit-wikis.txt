@@ -19,8 +19,8 @@ they can be managed on the +editwikinames page.
 
 Mark already has one WikiName registered.
 
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
-    >>> browser.open('http://localhost/~sabdfl/+editwikinames')
+    >>> browser.addHeader('Authorization', 'Basic mark@example.com:test')
+    >>> browser.open('http://localhost/~mark/+editwikinames')
     >>> print_existing_wikinames(browser.contents)
     https://wiki.ubuntu.com/MarkShuttleworth
 
@@ -30,7 +30,7 @@ But he wants to register another one.
     >>> browser.getControl(name='newwikiname').value = 'FooBar'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/~sabdfl/+editwikinames'
+    'http://localhost/~mark/+editwikinames'
     >>> print_existing_wikinames(browser.contents)
     http://foo.bar/wiki/FooBar
     https://wiki.ubuntu.com/MarkShuttleworth
@@ -41,7 +41,7 @@ He can't have two identical wiki names, though.
     >>> browser.getControl(name='newwikiname').value = 'FooBar'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/~sabdfl/+editwikinames'
+    'http://localhost/~mark/+editwikinames'
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
     The WikiName http://foo.bar/wiki/FooBar already belongs to you.
@@ -52,7 +52,7 @@ Nor can he have a WikiName that is already registered in Launchpad.
     >>> browser.getControl(name='newwikiname').value = 'GuilhermeSalgado'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/~sabdfl/+editwikinames'
+    'http://localhost/~mark/+editwikinames'
     >>> print "\n".join(get_feedback_messages(browser.contents))
     The WikiName https://wiki.ubuntu.com/GuilhermeSalgado is already
     registered by Guilherme Salgado.
@@ -63,7 +63,7 @@ A WikiName's URL can't be empty nor invalid.
     >>> browser.getControl(name='newwikiname').value = 'FooBar'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/~sabdfl/+editwikinames'
+    'http://localhost/~mark/+editwikinames'
     >>> print "\n".join(get_feedback_messages(browser.contents))
     Neither Wiki nor WikiName can be empty.
 
@@ -71,7 +71,7 @@ A WikiName's URL can't be empty nor invalid.
     >>> browser.getControl(name='newwikiname').value = 'FooBar'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/~sabdfl/+editwikinames'
+    'http://localhost/~mark/+editwikinames'
     >>> print "\n".join(get_feedback_messages(browser.contents))
     "/this-is-not-a-url/" is not a valid URL.
 
@@ -82,7 +82,7 @@ the user.
     >>> browser.getControl(name='newwikiname').value = 'FooBar'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/~sabdfl/+editwikinames'
+    'http://localhost/~mark/+editwikinames'
     >>> print "\n".join(get_feedback_messages(browser.contents))
     "&lt;script&gt;alert(1);&lt;/script&gt;/" is not a valid URL.
 
@@ -92,7 +92,7 @@ Only http and https URLs are allowed for wikis.
     >>> browser.getControl(name='newwikiname').value = 'FooBar'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/~sabdfl/+editwikinames'
+    'http://localhost/~mark/+editwikinames'
     >>> print "\n".join(get_feedback_messages(browser.contents))
     The URL scheme "javascript" is not allowed. Only http or https URLs may be
     used.
@@ -103,6 +103,6 @@ just added.
     >>> browser.getControl('Remove', index=0).selected = True
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/~sabdfl/+editwikinames'
+    'http://localhost/~mark/+editwikinames'
     >>> print_existing_wikinames(browser.contents)
     https://wiki.ubuntu.com/MarkShuttleworth

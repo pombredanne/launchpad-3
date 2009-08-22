@@ -212,8 +212,6 @@ def bug_attachment_edit(context, view):
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
 
-bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
-
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextBugId('Bug #%d - Edit')
@@ -510,8 +508,6 @@ distroserieslanguage_index = ContextTitle('%s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
-distros_index = 'Distributions registered in Launchpad'
-
 edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
@@ -797,8 +793,6 @@ def package_bugs(context, view):
     """Return the page title bug in a package."""
     return 'Bugs in %s' % context.name
 
-people_index = 'People and teams in Launchpad'
-
 people_adminrequestmerge = 'Merge Launchpad accounts'
 
 def people_list(context, view):
@@ -1025,8 +1019,6 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
-products_index = 'Projects registered in Launchpad'
-
 products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
@@ -1071,8 +1063,6 @@ project_translations = ContextTitle('Translatable projects for %s')
 
 project_translators = ContextTitle('Set translation group for %s')
 
-projects_index = 'Project groups registered in Launchpad'
-
 projects_request = 'Launchpad Translations: Request a project group'
 
 projects_search = 'Search for project groups in Launchpad'
@@ -1109,19 +1099,7 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-def question_add(context, view):
-    """Return the page title to add a question."""
-    return view.pagetitle
-
-question_add_search = question_add
-
-question_change_status = ContextId('Change status of question #%s')
-
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
-
-def question_createfaq(context, view):
-    """Return the page title to create a FAQ for a question."""
-    return "Create a FAQ for %s" % view.faq_target.displayname
 
 question_history = ContextId('History of question #%s')
 
@@ -1136,15 +1114,7 @@ def question_listing(context, view):
     """Return the page title list questions."""
     return view.pagetitle
 
-question_reject = ContextId('Reject question #%s')
-
 questions_index = 'Launchpad Answers'
-
-def questiontarget_createfaq(context, view):
-    """Return the page title to create a FAQ for a questiontarget."""
-    return "Create a FAQ for %s" % context.displayname
-
-questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
@@ -1313,8 +1283,6 @@ sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 sprint_workload = ContextTitle('Workload at %s')
 
 sprints_all = 'All sprints and meetings registered in Launchpad'
-
-sprints_index = 'Meetings and sprints registered in Launchpad'
 
 sprintspecification_decide = 'Consider spec for sprint agenda'
 

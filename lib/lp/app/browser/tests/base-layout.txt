@@ -28,10 +28,11 @@ define it in the pagetitles module.
     ...     page_title = 'Test base-layout: main_side'
 
 The main_side layout uses all the defined features of the base-layout
-template. The example template uses the epilogue, main, and side slots. The
-global search and the applications tabs are present. The main and side
-content are positioned using the "yui-t4", "yui-main", "yui-b", and
-"yui-b side" classes.
+template. The example template uses the epilogue, main, and side
+slots. The global search and the applications tabs are present. The
+main and side content are positioned using the "yui-t4", "yui-main",
+"yui-b", and "yui-b side" classes. Several standard Javascript set-up
+functions are called.
 
     >>> view = MainSideView(user, request)
     >>> print view.render()
@@ -39,6 +40,15 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
     <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
       <head>
         <title>Test base-layout: main_side</title> ...
+        <script type="text/javascript">
+          ...
+            sortables_init();
+            initInlineHelp();
+            Y.lp.activate_collapsibles();
+            activateFoldables();
+            activateConstrainBugExpiration();
+          ...
+        </script>
         <!-- Extra head content -->
       </head>
       <body id="document" class="tab-overview main_side public yui-skin-sam">
@@ -79,6 +89,7 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
             <form id="globalsearch" ...
           </div>
         </div><!-- yui-d0-->
+        <div id="help-pane" class="invisible">...
         <script>LP.client.cache['context'] ...
       </body>
     </html> ...
@@ -100,6 +111,15 @@ content to take up all the horizontal space.
     <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
       <head>
         <title>Test base-layout: main_only</title> ...
+        <script type="text/javascript">
+          ...
+            sortables_init();
+            initInlineHelp();
+            Y.lp.activate_collapsibles();
+            activateFoldables();
+            activateConstrainBugExpiration();
+          ...
+        </script>
         <!-- Extra head content -->
       </head>
       <body id="document" class="tab-overview main_only public yui-skin-sam">
@@ -136,6 +156,7 @@ content to take up all the horizontal space.
             <form id="globalsearch" ...
           </div>
         </div><!-- yui-d0-->
+        <div id="help-pane" class="invisible">...</div>
         <script>LP.client.cache['context'] ...
       </body>
     </html> ...
@@ -156,6 +177,15 @@ slots are rendered, as are the application tabs.
     <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
       <head>
         <title>Test base-layout: searchless</title> ...
+        <script type="text/javascript">
+          ...
+            sortables_init();
+            initInlineHelp();
+            Y.lp.activate_collapsibles();
+            activateFoldables();
+            activateConstrainBugExpiration();
+          ...
+        </script>
         <!-- Extra head content -->
       </head>
       <body id="document" class="tab-overview searchless public yui-skin-sam">
@@ -193,6 +223,7 @@ slots are rendered, as are the application tabs.
           <div id="footer" class="footer"> ...
           </div>
         </div><!-- yui-d0-->
+        <div id="help-pane" class="invisible">...</div>
         <script>LP.client.cache['context'] ...
       </body>
     </html> ...
@@ -210,11 +241,21 @@ or breadcrumbs; the template must provide its own h1 element.
     ...     page_title = 'Test base-layout: locationless'
 
     >>> view = LocationlessView(user, request)
-    >>> print view.render()
+    >>> content = view.render()
+    >>> print content
     <!DOCTYPE html ...
     <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
       <head>
         <title>Test base-layout: locationless</title> ...
+        <script type="text/javascript">
+          ...
+            sortables_init();
+            initInlineHelp();
+            Y.lp.activate_collapsibles();
+            activateFoldables();
+            activateConstrainBugExpiration();
+          ...
+        </script>
         <!-- Extra head content -->
       </head>
       <body id="document" class="tab-overview locationless public yui-skin-sam">
@@ -243,10 +284,27 @@ or breadcrumbs; the template must provide its own h1 element.
           <div id="footer" class="footer"> ...
           </div>
         </div><!-- yui-d0-->
+        <div id="help-pane" class="invisible">...</div>
         <script>LP.client.cache['context'] ...
       </body>
     </html> ...
 
+
+Page Diagnostics
+----------------
+
+The page includes a comment after the document with diagnotic information.
+
+    >>> print content[content.index('</html>') + 7:]
+    <!--
+      Facet name: overview
+      Page type: locationless
+      Has global search: False
+      Has application tabs: False
+      Has side portlets: False
+      At least ... queries issued in ... seconds
+      Launchpad ... (r...)
+    -->
 
 Page Headings
 -------------
