@@ -392,7 +392,7 @@ span.see-all {
     clear: both;
     font-size: 100%;
     }
-.summary {
+.top-portlet .summary {
     margin: 0 0 1em 0;
     font-size: 138.5%;
     }
