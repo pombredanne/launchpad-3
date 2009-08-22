@@ -595,6 +595,7 @@ is passed to transitionToImportance an exception is raised.
 4. Milestone
 
     >>> test_milestone = alsa_utils.development_focus.newMilestone("test")
+    >>> noway_milestone = alsa_utils.development_focus.newMilestone("noway")
     >>> Store.of(test_milestone).flush()
 
     >>> generic_alsa_utils_task.milestone is None
@@ -602,10 +603,23 @@ is passed to transitionToImportance an exception is raised.
     >>> devel_focus_alsa_utils_task.milestone is None
     True
 
-    >>> devel_focus_alsa_utils_task.milestone = test_milestone
+    >>> devel_focus_alsa_utils_task.transitionToMilestone(
+    ...     test_milestone, alsa_utils.owner)
 
     >>> print generic_alsa_utils_task.milestone.name
     test
+    >>> print devel_focus_alsa_utils_task.milestone.name
+    test
+
+But a normal unprivileged user can't set the milestone.
+
+    >>> devel_focus_alsa_utils_task.transitionToMilestone(
+    ...     noway_milestone, no_priv)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskMilestone:
+      User does not have sufficient permissions to edit the bug task milestone.
+
     >>> print devel_focus_alsa_utils_task.milestone.name
     test
 
