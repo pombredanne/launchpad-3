@@ -424,7 +424,7 @@
     <browser:pages
         for="lp.registry.interfaces.project.IProjectSet"
         facet="overview"
-        permission="launchpad.ProjectReview"
+        permission="zope.Public"
         class="lp.registry.browser.project.ProjectSetView">
         <browser:page
             name="+all"
@@ -456,16 +456,18 @@
         template="../templates/project-series-portlet-details.pt"/>
     <browser:menus
         classes="
-            ProjectFacets
             ProjectActionMenu
-            ProjectEditNavigationMenu
-            ProjectOverviewMenu
+            ProjectAnswersMenu
             ProjectBountiesMenu
             ProjectBugsMenu
+            ProjectEditNavigationMenu
+            ProjectFacets
+            ProjectOverviewMenu
             ProjectSeriesSpecificationsMenu
-            ProjectSpecificationsMenu
             ProjectSetContextMenu
-            ProjectAnswersMenu"
+            ProjectSetNavigationMenu
+            ProjectSpecificationsMenu
+            "
         module="lp.registry.browser.project"/>
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -2009,15 +2011,17 @@
         template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
-            DistributionFacets
-            DistributionOverviewMenu
-            DistributionBugsMenu
             DistributionBountiesMenu
-            DistributionSpecificationsMenu
-            DistributionSetFacets
-            DistributionSetContextMenu
+            DistributionBugsMenu
+            DistributionFacets
+            DistributionMirrorsNavigationMenu
             DistributionNavigationMenu
-            DistributionMirrorsNavigationMenu"
+            DistributionOverviewMenu
+            DistributionSetActionNavigationMenu
+            DistributionSetContextMenu
+            DistributionSetFacets
+            DistributionSpecificationsMenu
+            "
         module="lp.registry.browser.distribution"/>
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
