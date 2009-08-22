@@ -361,8 +361,8 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
-        text = u'\u00BB More contributors'
-        return Link('+topcontributors', text)
+        text = 'More contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def mentorship(self):
         text = 'Mentoring available'
