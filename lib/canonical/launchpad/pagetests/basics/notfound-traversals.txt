@@ -242,7 +242,6 @@ is still pointing to this old URL (see bug #138090).
 >>> check("/ubuntu/hoary/+bugs")
 
 >>> check("/ubuntu/hoary/i386")
->>> check("/ubuntu/hoary/i386/+search")
 
 >>> check("/bugs")
 >>> check_redirect("/bugs/assigned")
