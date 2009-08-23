@@ -881,18 +881,27 @@ def notify_team_join(event):
         # notification to the person too.
         member_addrs = get_contact_email_addresses(person)
 
-        subject = 'You have been added to %s' % team.name
-        templatename = 'new-member-notification.txt'
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
             subject = '%s joined %s' % (person.name, team.name)
+            header_rationale = "indirect member (%s)" % team.name
+            footer_rationale = (
+                "You received this notification because "
+                "%s is the new member." % person.name)
+        else:
+            templatename = 'new-member-notification.txt'
+            subject = 'You have been added to %s' % team.name
+            header_rationale = "member (%s)" % team.name
+            footer_rationale = (
+                "You received this notification because "
+                "you are the new member.")
 
         if team.mailing_list is not None:
-            list_instructions = """
-If you would like to subscribe to the team list, use the link below
-to update your Mailing List Subscription preferences.
-  <http://launchpad.dev/people/+me/+editemails>
-"""
+            list_instructions = (
+                "\nIf you would like to subscribe to the team list, "
+                "use the link below\n"
+                "to update your Mailing List Subscription preferences.\n"
+                "  <http://launchpad.dev/people/+me/+editemails>")
         else:
             list_instructions = ''
 
@@ -909,7 +918,12 @@ to update your Mailing List Subscription preferences.
             replacements['recipient_name'] = recipient.displayname
             msg = MailWrapper().format(
                 template % replacements, force_wrap=True)
-            simple_sendmail(from_addr, address, subject, msg)
+            headers = {
+                'X-Launchpad-Message-Rationale': header_rationale,
+                }
+            footer = "\n\n-- %s" % footer_rationale
+            msg = msg + footer
+            simple_sendmail(from_addr, address, subject, msg, headers)
 
         # The member's email address may be in admin_addrs too; let's remove
         # it so the member don't get two notifications.

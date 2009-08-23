@@ -779,6 +779,7 @@ email contain subscription information.
     ----------------------------------------
     From: Team One ...
     To: team-member...
+    X-Launchpad-Message-Rationale: member (team-one)
     Subject: You have been added to team-one
     <BLANKLINE>
     Team-owner (team-owner) added you as a member of Team One (team-one).
@@ -788,8 +789,8 @@ email contain subscription information.
     to update your Mailing List Subscription preferences.
       <http://launchpad.dev/people/+me/+editemails>
     <BLANKLINE>
-    Regards,
-    The Launchpad team
+    --
+    You received this notification because you are the new member.
     ----------------------------------------
 
 When a team join a team with a mailing list, the new member notification
@@ -803,6 +804,7 @@ emails contain subscription information.
     ----------------------------------------
     From: Team One ...
     To: team-two...
+    X-Launchpad-Message-Rationale: indirect member (team-one)
     Subject: team-two joined team-one
     <BLANKLINE>
     Team-owner (team-owner) added Team Two (team-two) (which you are a
@@ -813,7 +815,7 @@ emails contain subscription information.
     to update your Mailing List Subscription preferences.
       <http://launchpad.dev/people/+me/+editemails>
     <BLANKLINE>
-    Regards,
-    The Launchpad team
+    --
+    You received this notification because team-two is the new member.
     ----------------------------------------
 
