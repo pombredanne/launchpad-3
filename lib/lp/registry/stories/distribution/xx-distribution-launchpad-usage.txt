@@ -12,7 +12,7 @@ Unprivileged Launchpad users cannot access the page for changing these
 details.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu')
-    >>> user_browser.getLink('Change distribution details')
+    >>> user_browser.getLink('Change details')
     Traceback (most recent call last):
       ...
     LinkNotFound...
