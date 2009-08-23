@@ -887,12 +887,23 @@ def notify_team_join(event):
             templatename = 'new-member-notification-for-teams.txt'
             subject = '%s joined %s' % (person.name, team.name)
 
+        if team.mailing_list is not None:
+            list_instructions = """
+If you would like to subscribe to the team list, use the link below
+to update your Mailing List Subscription preferences.
+  <http://launchpad.dev/people/+me/+editemails>
+"""
+        else:
+            list_instructions = ''
+
         template = get_email_template(templatename)
         replacements = {
             'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
             'team_url': canonical_url(team),
             'member': '%s (%s)' % (person.displayname, person.name),
-            'team': '%s (%s)' % (team.displayname, team.name)}
+            'team': '%s (%s)' % (team.displayname, team.name),
+            'list_instructions': list_instructions,
+            }
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname

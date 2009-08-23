@@ -759,3 +759,61 @@ sense to the members of the team reading it.
     <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
 
+
+Joining a team with a mailing list
+----------------------------------
+
+When a user joins a team with a mailing list, the new member's notification
+email contain subscription information.
+
+    >>> owner = factory.makePerson(name='team-owner')
+    >>> login_person(owner)
+    >>> team_one, list_one = factory.makeTeamAndMailingList(
+    ...     'team-one', owner.name)
+    >>> dummy = pop_notifications()
+    >>> member = factory.makePerson(
+    ...     name='team-member', email='team-member@example.com')
+    >>> team_one.addMember(member, owner)
+    >>> print_distinct_emails()
+    From: Team One ...
+    ----------------------------------------
+    From: Team One ...
+    To: team-member...
+    Subject: You have been added to team-one
+    <BLANKLINE>
+    Team-owner (team-owner) added you as a member of Team One (team-one).
+      <http://launchpad.dev/~team-one>
+    <BLANKLINE>
+    If you would like to subscribe to the team list, use the link below
+    to update your Mailing List Subscription preferences.
+      <http://launchpad.dev/people/+me/+editemails>
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
+When a team join a team with a mailing list, the new member notification
+emails contain subscription information.
+
+    >>> team_two = factory.makeTeam(
+    ...     name='team-two', email='team-two@example.com', owner=owner)
+    >>> team_one.addMember(team_two, owner, force_team_add=True)
+    >>> print_distinct_emails()
+    From: Team One ...
+    ----------------------------------------
+    From: Team One ...
+    To: team-two...
+    Subject: team-two joined team-one
+    <BLANKLINE>
+    Team-owner (team-owner) added Team Two (team-two) (which you are a
+    member of) as a member of Team One (team-one).
+      <http://launchpad.dev/~team-one>
+    <BLANKLINE>
+    If you would like to subscribe to the team list, use the link below
+    to update your Mailing List Subscription preferences.
+      <http://launchpad.dev/people/+me/+editemails>
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
