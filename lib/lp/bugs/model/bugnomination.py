@@ -67,6 +67,9 @@ class BugNomination(SQLBase):
 
     def approve(self, approver):
         """See IBugNomination."""
+        if self.isApproved():
+            # Approving an approved nomination shouldn't duplicate tasks.
+            return
         self.status = BugNominationStatus.APPROVED
         self.decider = approver
         self.date_decided = datetime.now(pytz.timezone('UTC'))
