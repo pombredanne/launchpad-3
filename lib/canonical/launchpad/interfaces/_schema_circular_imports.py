@@ -24,6 +24,7 @@ from canonical.launchpad.components.apihelpers import (
 
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.soyuz.interfaces.build import (
@@ -118,6 +119,10 @@ patch_plain_parameter_type(
     IBug, 'unlinkHWSubmission', 'submission', IHWSubmission)
 patch_collection_return_type(
     IBug, 'getHWSubmissions', IHWSubmission)
+IBug['getNominations'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['nominations'].value_type.schema = (
+        IBugNomination)
+patch_collection_return_type(IBug, 'getNominations', IBugNomination)
 
 patch_choice_parameter_type(
     IHasBugs, 'searchTasks', 'hardware_bus', HWBus)

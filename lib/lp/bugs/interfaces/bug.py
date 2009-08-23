@@ -588,6 +588,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         :param nomination_target: An IDistroSeries or IProductSeries.
         """
 
+    @operation_parameters(
+        nominations=List(
+            title=_("Nominations to search through."),
+            value_type=Reference(schema=Interface), # IBugNomination
+            required=False))
+    @operation_returns_collection_of(Interface) # IBugNomination
+    @export_read_operation()
     def getNominations(target=None, nominations=None):
         """Return a list of all IBugNominations for this bug.
 
