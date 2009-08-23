@@ -29,6 +29,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
 from lp.bugs.interfaces.bug import IBug
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.interfaces.validation import (
@@ -89,7 +91,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     # attributes of our parent interfaces, so we redefine those specific
     # attributes below.
     id = Int(title=_("Bug Nomination #"))
-    bug = exported(Reference(schema=IBug))
+    bug = exported(Reference(schema=IBug, readonly=True))
     date_created = exported(Datetime(
         title=_("Date Submitted"),
         description=_("The date on which this nomination was submitted."),
@@ -99,18 +101,18 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         description=_(
             "The date on which this nomination was approved or declined."),
         required=False, readonly=True))
-    distroseries = Choice(
-        title=_("Series"), required=False,
-        vocabulary="DistroSeries")
-    productseries = Choice(
-        title=_("Series"), required=False,
-        vocabulary="ProductSeries")
-    owner = PublicPersonChoice(
+    distroseries = exported(ReferenceChoice(
+        title=_("Series"), required=False, readonly=True,
+        vocabulary="DistroSeries", schema=IDistroSeries))
+    productseries = exported(ReferenceChoice(
+        title=_("Series"), required=False, readonly=True,
+        vocabulary="ProductSeries", schema=IProductSeries))
+    owner = exported(PublicPersonChoice(
         title=_('Submitter'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
-    decider = PublicPersonChoice(
+        vocabulary='ValidPersonOrTeam'))
+    decider = exported(PublicPersonChoice(
         title=_('Decided By'), required=False, readonly=True,
-        vocabulary='ValidPersonOrTeam')
+        vocabulary='ValidPersonOrTeam'))
     target = Attribute(
         "The IProductSeries or IDistroSeries of this nomination.")
     status = exported(Choice(
