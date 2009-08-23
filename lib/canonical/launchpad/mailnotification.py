@@ -884,14 +884,14 @@ def notify_team_join(event):
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
             subject = '%s joined %s' % (person.name, team.name)
-            header_rationale = "indirect member (%s)" % team.name
+            header_rationale = "Indirect member (%s)" % team.name
             footer_rationale = (
                 "You received this notification because "
                 "%s is the new member." % person.name)
         else:
             templatename = 'new-member-notification.txt'
             subject = 'You have been added to %s' % team.name
-            header_rationale = "member (%s)" % team.name
+            header_rationale = "Member (%s)" % team.name
             footer_rationale = (
                 "You received this notification because "
                 "you are the new member.")
@@ -921,7 +921,7 @@ def notify_team_join(event):
             headers = {
                 'X-Launchpad-Message-Rationale': header_rationale,
                 }
-            footer = "\n\n-- %s" % footer_rationale
+            footer = "\n\n-- \n%s" % footer_rationale
             msg = msg + footer
             simple_sendmail(from_addr, address, subject, msg, headers)
 
@@ -960,6 +960,14 @@ def notify_team_join(event):
     for address in admin_addrs:
         recipient = getUtility(IPersonSet).getByEmail(address)
         replacements['recipient_name'] = recipient.displayname
+        if recipient.isTeam():
+            header_rationale = 'Admin (%s via %s)' % (
+                team.name, recpient.name)
+        elif recipient == team.teamowner:
+            header_rationale = 'Owner (%s)' % team.name
+        else:
+            header_rationale = 'Admin (%s)' % team.name
+        headers['X-Launchpad-Message-Rationale'] = header_rationale
         msg = MailWrapper().format(
             template % replacements, force_wrap=True)
         simple_sendmail(from_addr, address, subject, msg, headers=headers)
