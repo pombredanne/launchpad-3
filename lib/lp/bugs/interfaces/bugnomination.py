@@ -19,24 +19,34 @@ __all__ = [
 from zope.schema import Int, Datetime, Choice, Set
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, webservice_error)
+from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.interfaces.validation import (
     can_be_nominated_for_serieses)
 
+
 class NominationError(Exception):
     """The bug cannot be nominated for this release."""
+    webservice_error(400)
 
 
 class NominationSeriesObsoleteError(Exception):
     """A bug cannot be nominated for an obsolete series."""
+    webservice_error(400)
 
 
 class BugNominationStatusError(Exception):
     """A error occurred while trying to set a bug nomination status."""
+    webservice_error(400)
 
 
 class BugNominationStatus(DBEnumeratedType):
@@ -72,6 +82,8 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
 
     A nomination can apply to an IDistroSeries or an IProductSeries.
     """
+    export_as_webservice_entry()
+
     # We want to customize the titles and descriptions of some of the
     # attributes of our parent interfaces, so we redefine those specific
     # attributes below.
@@ -104,6 +116,8 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         title=_("Status"), vocabulary=BugNominationStatus,
         default=BugNominationStatus.PROPOSED)
 
+    @call_with(approver=REQUEST_USER)
+    @export_write_operation()
     def approve(approver):
         """Approve this bug for fixing in a series.
 
@@ -117,6 +131,8 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         /already/ approved, this method is a noop.
         """
 
+    @call_with(decliner=REQUEST_USER)
+    @export_write_operation()
     def decline(decliner):
         """Decline this bug for fixing in a series.
 
@@ -139,6 +155,8 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     def isApproved():
         """Is this nomination in Approved state?"""
 
+    @operation_parameters(person=Reference(schema=IPerson))
+    @export_read_operation()
     def canApprove(person):
         """Is this person allowed to approve the nomination?"""
 
