@@ -89,15 +89,15 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     # attributes below.
     id = Int(title=_("Bug Nomination #"))
     bug = Int(title=_("Bug #"))
-    date_created = Datetime(
+    date_created = exported(Datetime(
         title=_("Date Submitted"),
         description=_("The date on which this nomination was submitted."),
-        required=True, readonly=True)
-    date_decided = Datetime(
+        required=True, readonly=True))
+    date_decided = exported(Datetime(
         title=_("Date Decided"),
         description=_(
             "The date on which this nomination was approved or declined."),
-        required=False, readonly=True)
+        required=False, readonly=True))
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary="DistroSeries")
@@ -112,9 +112,9 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         vocabulary='ValidPersonOrTeam')
     target = Attribute(
         "The IProductSeries or IDistroSeries of this nomination.")
-    status = Choice(
+    status = exported(Choice(
         title=_("Status"), vocabulary=BugNominationStatus,
-        default=BugNominationStatus.PROPOSED)
+        default=BugNominationStatus.PROPOSED, readonly=True))
 
     @call_with(approver=REQUEST_USER)
     @export_write_operation()
