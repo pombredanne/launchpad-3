@@ -58,6 +58,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
+from lp.bugs.interfaces.bugnomination import IBugNominationSet
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
@@ -125,6 +126,13 @@ class BugNavigation(Navigation):
             attachment = getUtility(IBugAttachmentSet)[name]
             if attachment is not None and attachment.bug == self.context:
                 return attachment
+
+    @stepthrough('nominations')
+    def traverse_nominations(self, nomination_id):
+        """Traverse to a nomination by id."""
+        if not nomination_id.isdigit():
+            return None
+        return getUtility(IBugNominationSet).get(nomination_id)
 
 
 class BugFacets(StandardLaunchpadFacets):
