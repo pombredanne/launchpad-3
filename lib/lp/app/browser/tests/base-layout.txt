@@ -241,7 +241,8 @@ or breadcrumbs; the template must provide its own h1 element.
     ...     page_title = 'Test base-layout: locationless'
 
     >>> view = LocationlessView(user, request)
-    >>> print view.render()
+    >>> content = view.render()
+    >>> print content
     <!DOCTYPE html ...
     <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
       <head>
@@ -288,6 +289,22 @@ or breadcrumbs; the template must provide its own h1 element.
       </body>
     </html> ...
 
+
+Page Diagnostics
+----------------
+
+The page includes a comment after the document with diagnotic information.
+
+    >>> print content[content.index('</html>') + 7:]
+    <!--
+      Facet name: overview
+      Page type: locationless
+      Has global search: False
+      Has application tabs: False
+      Has side portlets: False
+      At least ... queries issued in ... seconds
+      Launchpad ... (r...)
+    -->
 
 Page Headings
 -------------
