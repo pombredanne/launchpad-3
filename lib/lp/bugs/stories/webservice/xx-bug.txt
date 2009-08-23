@@ -562,6 +562,171 @@ will return something more useful.
     "id": ...  "title": "Test bug"...
 
 
+Bug nominations
+---------------
+
+A bug may be nominated for any number of distro or product series.
+Nominations can be inspected, approved and declined through the
+webservice.
+
+First we'll create Fooix 0.1 and 0.2. Eric is the owner.
+
+    >>> login('foo.bar@canonical.com')
+    >>> eric = factory.makePerson(name='eric')
+    >>> fooix = factory.makeProduct(name='fooix', owner=eric)
+    >>> fx01 = fooix.newSeries(eric, '0.1', 'The 0.1.x series')
+    >>> fx02 = fooix.newSeries(eric, '0.2', 'The 0.2.x series')
+    >>> bug = factory.makeBug(product=fooix)
+    >>> logout()
+
+Initially there are no nominations.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody())
+    start: None
+    total_size: 0
+    ---
+
+But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
+
+    >>> login('foo.bar@canonical.com')
+    >>> john = factory.makePerson(name='john')
+    >>> bug.addNomination(john, fx01)
+    <BugNomination...>
+    >>> logout()
+
+    >>> nominations = webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
+    >>> pprint_collection(nominations)
+    start: 0
+    total_size: 1
+    ---
+    bug_link: u'http://.../bugs/...'
+    date_created: ...
+    date_decided: None
+    decider_link: None
+    distroseries_link: None
+    owner_link: u'http://.../~john'
+    productseries_link: u'http://.../fooix/0.1'
+    resource_type_link: u'http://.../#bug_nomination'
+    self_link: u'http://.../bugs/.../nominations/...'
+    status: u'Nominated'
+    ---
+
+    >>> nominations['entries'][0]['date_created'] is not None
+    True
+
+John cannot approve or decline the nomination.
+
+    >>> nom_url = nominations['entries'][0]['self_link']
+    
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+
+    >>> john_webservice = webservice_for_person(
+    ...     john, permission=OAuthPermission.WRITE_PRIVATE)
+
+    >>> print john_webservice.named_post(nom_url, 'approve')
+    HTTP/1.1 401 Unauthorized...
+
+    >>> print john_webservice.named_post(nom_url, 'decline')
+    HTTP/1.1 401 Unauthorized...
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    1
+    >>> logout()
+
+The owner, however, can decline the nomination.
+
+    >>> eric_webservice = webservice_for_person(
+    ...     eric, permission=OAuthPermission.WRITE_PRIVATE)    
+    >>> print eric_webservice.named_post(nom_url, 'decline')
+    HTTP/1.1 200 Ok...
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    1
+    >>> logout()
+
+We can see that the nomination was declined.
+
+    >>> nominations = webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
+    >>> pprint_collection(nominations)
+    start: 0
+    total_size: 1
+    ---
+    bug_link: u'http://.../bugs/...'
+    date_created: ...
+    date_decided: ...
+    decider_link: u'http://.../~eric'
+    distroseries_link: None
+    owner_link: u'http://.../~john'
+    productseries_link: u'http://.../fooix/0.1'
+    resource_type_link: u'http://.../#bug_nomination'
+    self_link: u'http://.../bugs/.../nominations/...'
+    status: u'Declined'
+    ---
+
+    >>> nominations['entries'][0]['date_created'] is not None
+    True
+    >>> nominations['entries'][0]['date_decided'] is not None
+    True
+
+The owner can approve a previously declined nomination.
+
+    >>> print eric_webservice.named_post(nom_url, 'approve')
+    HTTP/1.1 200 Ok...
+
+This marks the nomination as Approved, and creates a new task.
+
+    >>> nominations = webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
+    >>> pprint_collection(nominations)
+    start: 0
+    total_size: 1
+    ---
+    bug_link: u'http://.../bugs/...'
+    date_created: ...
+    date_decided: ...
+    decider_link: u'http://.../~eric'
+    distroseries_link: None
+    owner_link: u'http://.../~john'
+    productseries_link: u'http://.../fooix/0.1'
+    resource_type_link: u'http://.../#bug_nomination'
+    self_link: u'http://.../bugs/.../nominations/...'
+    status: u'Approved'
+    ---
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    2
+    >>> logout()
+
+The owner cannot change his mind and decline an approved task.
+
+    >>> print eric_webservice.named_post(nom_url, 'decline')
+    HTTP/1.1 400 Bad Request
+    ...
+    Cannot decline an approved nomination.
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    2
+    >>> logout()
+
+While he can approve it again, it's a no-op.
+
+    >>> print eric_webservice.named_post(nom_url, 'approve')
+    HTTP/1.1 200 Ok...
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    2
+    >>> logout()
+
+
 Bug subscriptions
 -----------------
 
@@ -638,9 +803,6 @@ any member will do.
 
 Once we have a member, a web service must be created for that user.
 Then, the user can unsubsribe the group from the bug.
-
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
 
     >>> member_webservice = webservice_for_person(
     ...     ubuntu_team_member, permission=OAuthPermission.WRITE_PRIVATE)
