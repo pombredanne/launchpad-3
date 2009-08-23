@@ -28,6 +28,7 @@ from lazr.restful.fields import Reference, ReferenceChoice
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
+from lp.bugs.interfaces.bug import IBug
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.interfaces.validation import (
@@ -88,7 +89,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     # attributes of our parent interfaces, so we redefine those specific
     # attributes below.
     id = Int(title=_("Bug Nomination #"))
-    bug = Int(title=_("Bug #"))
+    bug = exported(Reference(schema=IBug))
     date_created = exported(Datetime(
         title=_("Date Submitted"),
         description=_("The date on which this nomination was submitted."),
