@@ -7,7 +7,6 @@
   i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
-      <tal:full-functionality tal:condition="context/full_functionality">
         <div metal:use-macro="context/@@launchpad_form/form">
           <p id="full-functionality" metal:fill-slot="extra_info">
             To register a new mirror you have to provide at least an HTTP or FTP
@@ -23,13 +22,6 @@
           (including the one at
           <a href="http://www.ubuntu.com/download">the Ubuntu website</a>).
         </p>
-      </tal:full-functionality>
-
-      <tal:no-full-functionality tal:condition="not: context/full_functionality">
-        <p id="not-full-functionality" class="informational message">
-          This functionality is not yet available for all distributions.
-        </p>
-      </tal:no-full-functionality>
     </div>
   </body>
 </html>

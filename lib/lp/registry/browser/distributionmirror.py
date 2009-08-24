@@ -10,15 +10,17 @@ __all__ = [
     'DistributionMirrorView',
     'DistributionMirrorReviewView',
     'DistributionMirrorReassignmentView',
-    'DistributionMirrorDeleteView'
+    'DistributionMirrorDeleteView',
+    'DistributionMirrorProberLogView',
     ]
 
 from datetime import datetime
 import pytz
 
 from zope.lifecycleevent import ObjectCreatedEvent
+from zope.component import provideAdapter
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implements, Interface
 
 from lp.archivepublisher.debversion import Version
 from canonical.launchpad import _
@@ -33,12 +35,13 @@ from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadFormView, Link)
+    LaunchpadEditFormView, LaunchpadFormView, Link, NavigationMenu, action,
+    canonical_url, enabled_with_permission)
 
 
-class DistributionMirrorOverviewMenu(ApplicationMenu):
+class DistributionMirrorOverviewMenu(NavigationMenu):
 
     usedfor = IDistributionMirror
     facet = 'overview'
@@ -52,7 +55,10 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def proberlogs(self):
         text = 'Prober logs'
-        return Link('+prober-logs', text, icon='info')
+        enabled = True
+        if self.context.last_probe_record is None:
+            enabled = False
+        return Link('+prober-logs', text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Admin')
     def delete(self):
@@ -98,10 +104,6 @@ class DistributionMirrorView(LaunchpadView):
                                      valid_series)
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request, initially_without_selection=True)
-
-    @cachedproperty
-    def probe_records(self):
-        return BatchNavigator(self.context.all_probe_records, self.request)
 
     # Cached because it is used to construct the entries in initialize()
     @cachedproperty
@@ -272,3 +274,42 @@ class DistributionMirrorReassignmentView(ObjectReassignmentView):
     def contextName(self):
         return self.context.title
 
+
+class IDistributionMirrorProberLogNavigationMenu(Interface):
+    """A marker interface for prober log navigation menu."""
+
+
+class DistributionMirrorProberLogNavigationMenu(
+    DistributionMirrorOverviewMenu):
+    """NavigationMenu for prober logs.
+
+    Same as `DistributionMirrorOverviewMenu` except it omits proberlogs.
+    """
+    usedfor = IDistributionMirrorProberLogNavigationMenu
+    facet = "overview"
+    links = ['edit', 'review', 'reassign', 'delete']
+
+    def __init__(self, context):
+        cls = DistributionMirrorProberLogNavigationMenu
+        super(cls, self).__init__(context)
+        # Links always expect the context if be a model object, not a view.
+        if isinstance(self.context, LaunchpadView):
+            self.view = context
+            self.context = context.context
+        else:
+            self.view = None
+            self.context = context
+
+class DistributionMirrorProberLogView(DistributionMirrorView):
+    """View class for prober logs."""
+    implements(IDistributionMirrorProberLogNavigationMenu)
+
+    @cachedproperty
+    def probe_records(self):
+        return BatchNavigator(self.context.all_probe_records, self.request)
+
+# Register the novel mirror prober menu.
+provideAdapter(
+    DistributionMirrorProberLogNavigationMenu,
+    [IDistributionMirrorProberLogNavigationMenu],
+    INavigationMenu, name="overview")

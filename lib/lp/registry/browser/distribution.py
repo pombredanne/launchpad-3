@@ -372,14 +372,12 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+mentoring', text, icon='info')
 
     def cdimage_mirrors(self):
-        text = 'Show CD mirrors'
-        enabled = self.context.full_functionality
-        return Link('+cdmirrors', text, enabled=enabled, icon='info')
+        text = 'CD mirrors'
+        return Link('+cdmirrors', text, icon='info')
 
     def archive_mirrors(self):
-        text = 'Show archive mirrors'
-        enabled = self.context.full_functionality
-        return Link('+archivemirrors', text, enabled=enabled, icon='info')
+        text = 'Archive mirrors'
+        return Link('+archivemirrors', text, icon='info')
 
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""
@@ -916,6 +914,8 @@ class DistributionMirrorsView(LaunchpadView):
 
     implements(IDistributionMirrorMenuMarker)
     show_freshness = True
+    is_archive_mirror = False
+    is_cd_mirror = False
 
     @cachedproperty
     def mirror_count(self):
@@ -989,6 +989,9 @@ class DistributionMirrorsView(LaunchpadView):
 class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     heading = 'Official Archive Mirrors'
+    description = ('These mirrors provide repositories and archives of all '
+                   'software for the distribution.')
+    is_archive_mirror = True
 
     @cachedproperty
     def mirrors(self):
@@ -998,6 +1001,9 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     heading = 'Official CD Mirrors'
+    description = ('These mirrors offer ISO images which you can download '
+                   'and burn to CD to make installation disks.')
+    is_cd_mirror = True
     show_freshness = False
 
     @cachedproperty
