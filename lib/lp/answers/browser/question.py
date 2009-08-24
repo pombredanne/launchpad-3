@@ -720,6 +720,13 @@ class QuestionWorkflowView(LaunchpadFormView):
     # Do not autofocus the message widget.
     initial_focus_widget = None
 
+    @property
+    def page_title(self):
+        return smartquote('%s question #%d: "%s"') % (
+            self.context.target.displayname,
+            self.context.id,
+            self.context.title)
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
