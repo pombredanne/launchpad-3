@@ -524,11 +524,12 @@ def delete_unwanted_files(con):
             return result[0]
 
     removed_count = 0
-    next_wanted_content_id = get_next_wanted_content_id()
+    next_wanted_content_id = -1
 
     hex_content_id_re = re.compile('^[0-9a-f]{8}$')
+    ONE_DAY = 24 * 60 * 60
 
-    for dirpath, dirnames, filenames in os.walk(config.librarian_server.root):
+    for dirpath, dirnames, filenames in os.walk(get_storage_root()):
 
         # Ignore known and harmless noise in the Librarian storage area.
         if 'incoming' in dirnames:
@@ -568,7 +569,7 @@ def delete_unwanted_files(con):
                     "Ignoring invalid path %s" % path)
                 continue
 
-            content_id = int(''.join(path.split(os.sep)[-4:]), 16)
+            content_id = int(hex_content_id, 16)
 
             while (next_wanted_content_id is not None
                     and content_id > next_wanted_content_id):
@@ -586,8 +587,7 @@ def delete_unwanted_files(con):
                     and next_wanted_content_id == content_id)
 
             if not file_wanted:
-                one_day = 24 * 60 * 60
-                if time() - os.path.getctime(path) < one_day:
+                if time() - os.path.getctime(path) < ONE_DAY:
                     log.debug(
                         "File %d not removed - created too recently"
                         % content_id)
@@ -616,17 +616,18 @@ def delete_unwanted_files(con):
 def get_file_path(content_id):
     """Return the physical file path to the matching LibraryFileContent id.
     """
-    assert isinstance(content_id, (int, long)), 'Invalid content_id %r' % (
-            content_id,
-            )
+    assert isinstance(content_id, (int, long)), (
+        'Invalid content_id %s' % repr(content_id))
+    return os.path.join(get_storage_root(), relative_file_path(content_id))
+
+
+def get_storage_root():
+    """Return the path to the root of the Librarian storage area.
+
+    Performs some basic sanity checking to avoid accidents.
+    """
     storage_root = config.librarian_server.root
     # Do a basic sanity check.
-    if not os.path.isdir(os.path.join(storage_root, 'incoming')):
-        raise RuntimeError(
-                "Librarian file storage not found at %s" % storage_root
-                )
-    path = os.path.join(
-            storage_root, relative_file_path(content_id)
-            )
-    return path
-
+    assert os.path.isdir(os.path.join(storage_root, 'incoming')), (
+        '%s is not a Librarian storage area' % storage_root)
+    return storage_root
