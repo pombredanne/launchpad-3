@@ -122,6 +122,8 @@ patch_collection_return_type(
 IBug['getNominations'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['nominations'].value_type.schema = (
         IBugNomination)
+patch_entry_return_type(IBug, 'addNomination', IBugNomination)
+patch_entry_return_type(IBug, 'getNominationFor', IBugNomination)
 patch_collection_return_type(IBug, 'getNominations', IBugNomination)
 
 patch_choice_parameter_type(

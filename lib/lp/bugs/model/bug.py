@@ -1096,48 +1096,48 @@ class Bug(SQLBase):
         self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
-    def canBeNominatedFor(self, nomination_target):
+    def canBeNominatedFor(self, target):
         """See `IBug`."""
         try:
-            self.getNominationFor(nomination_target)
+            self.getNominationFor(target)
         except NotFoundError:
             # No nomination exists. Let's see if the bug is already
-            # directly targeted to this nomination_target.
-            if IDistroSeries.providedBy(nomination_target):
+            # directly targeted to this nomination target.
+            if IDistroSeries.providedBy(target):
                 target_getter = operator.attrgetter("distroseries")
-            elif IProductSeries.providedBy(nomination_target):
+            elif IProductSeries.providedBy(target):
                 target_getter = operator.attrgetter("productseries")
             else:
                 raise AssertionError(
                     "Expected IDistroSeries or IProductSeries target. "
-                    "Got %r." % nomination_target)
+                    "Got %r." % target)
 
             for task in self.bugtasks:
-                if target_getter(task) == nomination_target:
+                if target_getter(task) == target:
                     # The bug is already targeted at this
-                    # nomination_target.
+                    # nomination target.
                     return False
 
             # No nomination or tasks are targeted at this
-            # nomination_target.
+            # nomination target.
             return True
         else:
-            # The bug is already nominated for this nomination_target.
+            # The bug is already nominated for this nomination target.
             return False
 
-    def getNominationFor(self, nomination_target):
+    def getNominationFor(self, target):
         """See `IBug`."""
-        if IDistroSeries.providedBy(nomination_target):
-            filter_args = dict(distroseriesID=nomination_target.id)
+        if IDistroSeries.providedBy(target):
+            filter_args = dict(distroseriesID=target.id)
         else:
-            filter_args = dict(productseriesID=nomination_target.id)
+            filter_args = dict(productseriesID=target.id)
 
         nomination = BugNomination.selectOneBy(bugID=self.id, **filter_args)
 
         if nomination is None:
             raise NotFoundError(
                 "Bug #%d is not nominated for %s." % (
-                self.id, nomination_target.displayname))
+                self.id, target.displayname))
 
         return nomination
 

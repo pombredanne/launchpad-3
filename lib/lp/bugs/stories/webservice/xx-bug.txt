@@ -566,8 +566,8 @@ Bug nominations
 ---------------
 
 A bug may be nominated for any number of distro or product series.
-Nominations can be inspected, approved and declined through the
-webservice.
+Nominations can be inspected, created, approved and declined through
+the webservice.
 
 First we'll create Fooix 0.1 and 0.2. Eric is the owner.
 
@@ -576,6 +576,9 @@ First we'll create Fooix 0.1 and 0.2. Eric is the owner.
     >>> fooix = factory.makeProduct(name='fooix', owner=eric)
     >>> fx01 = fooix.newSeries(eric, '0.1', 'The 0.1.x series')
     >>> fx02 = fooix.newSeries(eric, '0.2', 'The 0.2.x series')
+    >>> debuntu = factory.makeDistribution(name='debuntu', owner=eric)
+    >>> debuntu50 = debuntu.newSeries(
+    ...     '5.0', '5.0', '5.0', '5.0', '5.0', '5.0', None, eric)
     >>> bug = factory.makeBug(product=fooix)
     >>> logout()
 
@@ -587,14 +590,26 @@ Initially there are no nominations.
     total_size: 0
     ---
 
-But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
-
     >>> login('foo.bar@canonical.com')
     >>> john = factory.makePerson(name='john')
-    >>> bug.addNomination(john, fx01)
-    <BugNomination...>
     >>> logout()
 
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+
+    >>> john_webservice = webservice_for_person(
+    ...     john, permission=OAuthPermission.WRITE_PRIVATE)
+
+But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
+
+    >>> print john_webservice.named_post(
+    ...     '/bugs/%d' % bug.id, 'addNomination',
+    ...     target=john_webservice.getAbsoluteUrl('/fooix/0.1'))
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../bugs/.../nominations/...
+    ...
+  
     >>> nominations = webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
     >>> pprint_collection(nominations)
@@ -620,11 +635,10 @@ John cannot approve or decline the nomination.
 
     >>> nom_url = nominations['entries'][0]['self_link']
     
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-
-    >>> john_webservice = webservice_for_person(
-    ...     john, permission=OAuthPermission.WRITE_PRIVATE)
+    >>> print john_webservice.named_get(
+    ...     nom_url, 'canApprove',
+    ...     person=john_webservice.getAbsoluteUrl('/~john')).jsonBody()
+    False
 
     >>> print john_webservice.named_post(nom_url, 'approve')
     HTTP/1.1 401 Unauthorized...
@@ -638,6 +652,11 @@ John cannot approve or decline the nomination.
     >>> logout()
 
 The owner, however, can decline the nomination.
+    
+    >>> print john_webservice.named_get(
+    ...     nom_url, 'canApprove',
+    ...     person=john_webservice.getAbsoluteUrl('/~eric')).jsonBody()
+    True
 
     >>> eric_webservice = webservice_for_person(
     ...     eric, permission=OAuthPermission.WRITE_PRIVATE)    

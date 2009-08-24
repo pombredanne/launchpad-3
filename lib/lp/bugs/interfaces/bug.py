@@ -559,6 +559,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
                     distroseries=None):
         """Create an INullBugTask and return it for the given parameters."""
 
+    @operation_parameters(
+        target=Reference(schema=IBugTarget, title=_('Target')))
+    @call_with(owner=REQUEST_USER)
+    @export_factory_operation(Interface, [])
     def addNomination(owner, target):
         """Nominate a bug for an IDistroSeries or IProductSeries.
 
@@ -569,7 +573,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         lp.bugs.model.bugnomination.BugNomination.)
         """
 
-    def canBeNominatedFor(nomination_target):
+    @operation_parameters(
+        target=Reference(schema=IBugTarget, title=_('Target')))
+    @export_read_operation()
+    def canBeNominatedFor(target):
         """Can this bug nominated for this target?
 
         :nomination_target: An IDistroSeries or IProductSeries.
@@ -577,7 +584,11 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         Returns True or False.
         """
 
-    def getNominationFor(nomination_target):
+    @operation_parameters(
+        target=Reference(schema=IBugTarget, title=_('Target')))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getNominationFor(target):
         """Return the IBugNomination for the target.
 
         If no nomination is found, a NotFoundError is raised.
@@ -586,6 +597,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
     @operation_parameters(
+        target=Reference(
+            schema=IBugTarget, title=_('Target'), required=False),
         nominations=List(
             title=_("Nominations to search through."),
             value_type=Reference(schema=Interface), # IBugNomination
