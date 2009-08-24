@@ -107,7 +107,7 @@ changes to that test.
     ...     "T2PIWy0CUJsX8RXSt/M51WE=\n"
     ...     "=J2S5\n"
     ...     "-----END PGP SIGNATURE-----\n")
-    >>> user_browser.getControl('Save Changes', index=-1).click()
+    >>> user_browser.getControl('Post comment', index=-1).click()
 
 No Privileges Person is authenticated in user_browser, so he can see
 email addresses in messages.

@@ -24,6 +24,8 @@ __all__ = [
     'WrongBranchMergeProposal',
     ]
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from zope.event import notify
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bytes, Choice, Datetime, Int, Object, Text, TextLine)
@@ -395,21 +397,6 @@ class IBranchMergeProposal(Interface):
         user-entered data like the whiteboard.
         """
 
-    @operation_parameters(
-        reviewer=Reference(
-            title=_("A person for which the reviewer status is in question."),
-            schema=IPerson))
-    @export_read_operation()
-    def isPersonValidReviewer(reviewer):
-        """Return true if the `reviewer` is able to review the proposal.
-
-        There is an attribute on branches called `reviewer` which allows
-        a specific person or team to be set for a branch as an authorised
-        person to approve merges for a branch.  If a reviewer is not set
-        on the target branch, then the owner of the target branch is used
-        as the authorised user.
-        """
-
     def isMergable():
         """Is the proposal in a state that allows it to being merged?
 
@@ -431,6 +418,7 @@ class IBranchMergeProposal(Interface):
             title=_("A reviewer."), schema=IPerson),
         review_type=Text())
     @call_with(registrant=REQUEST_USER)
+    @operation_returns_entry(Interface) # Really ICodeReviewVoteReference
     @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
@@ -609,3 +597,19 @@ class IMergeProposalCreatedJobSource(Interface):
 
     def iterReady():
         """Iterate through all ready MergeProposalCreatedJobs."""
+
+
+def notify_modified(proposal, func, *args, **kwargs):
+    """Call func, then notify about the changes it made.
+
+    :param proposal: the merge proposal to notify about.
+    :param func: The callable that will modify the merge proposal.
+    :param args: Additional arguments for the method.
+    :param kwargs: Keyword arguments for the method.
+    :return: The return value of the method.
+    """
+    from lp.code.adapters.branch import BranchMergeProposalDelta
+    snapshot = BranchMergeProposalDelta.snapshot(proposal)
+    result = func(*args, **kwargs)
+    notify(ObjectModifiedEvent(proposal, snapshot, []))
+    return result

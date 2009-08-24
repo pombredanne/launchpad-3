@@ -1,4 +1,4 @@
-= Distro Releases =
+= DistroSeries =
 
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
@@ -87,7 +87,8 @@ To search the set of IDistroSeriess, use IDistroSeriesSet.search:
 
 DistroSeries.getPublishedReleases:
 
-    >>> from canonical.launchpad.database import SourcePackageName, DistroSeries
+    >>> from lp.registry.model.distroseries import DistroSeries
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> warty2 = DistroSeries.get(1)
 
 Passing a ISourcePackageName as argument:
@@ -442,18 +443,16 @@ netapplet are translatable in Hoary.
    >>> from canonical.launchpad.interfaces import (
    ...     ISourcePackage,
    ...     IDistroSeriesBinaryPackage,
-   ...     IDistroSeriesSourcePackageRelease,
-   ...     ISourcePackagePublishingHistory)
+   ...     IDistroSeriesSourcePackageRelease)
 
-
-   >>> pmount_src_name =  SourcePackageName.byName('pmount')
+   >>> pmount_src_name = SourcePackageName.byName('pmount')
    >>> pmount_source = hoary.getSourcePackage(pmount_src_name)
    >>> ISourcePackage.providedBy(pmount_source)
    True
 
    >>> from lp.soyuz.model.binarypackagename import (
    ...                                       BinaryPackageName)
-   >>> pmount_bin_name =  BinaryPackageName.byName('pmount')
+   >>> pmount_bin_name = BinaryPackageName.byName('pmount')
    >>> pmount_drbp = hoary.getBinaryPackage(pmount_bin_name)
    >>> IDistroSeriesBinaryPackage.providedBy(pmount_drbp)
    True
@@ -763,7 +762,75 @@ Similarly for binary publications:
     (u'mozilla-firefox-data', u'0.9')
 
 
-= Specification Listings =
+Creating DistroSeries
+---------------------
+
+Users with launchpad.Driver permission may create DistroSeries. In the
+case of an `IDerivativeDistribution` A user who is a driver can create
+the series and he is automatically assigned to the series' driver role
+so that he can edit it.
+
+    >>> youbuntu = factory.makeDistribution(name='youbuntu')
+    >>> yo_driver = factory.makePerson(name='yo-driver')
+    >>> youbuntu.driver = yo_driver
+    >>> login_person(yo_driver)
+    >>> youbuntu.full_functionality
+    False
+
+    >>> yo_series = youbuntu.newSeries(
+    ...     name='island', displayname='Island', title='YouBuntu Island',
+    ...     summary='summary', description='description', version='09.07',
+    ...     parent_series=warty, owner=yo_driver)
+    >>> print yo_series.name
+    island
+    >>> print yo_series.driver.name
+    yo-driver
+
+Owners of derivative distributions, and admins can create series too, but
+they are not automatically set as the series driver because they always
+have permission to edit the series.
+
+    >>> login_person(youbuntu.owner)
+    >>> yo_series = youbuntu.newSeries(
+    ...     name='forest', displayname='Forest', title='YouBuntu Forest',
+    ...     summary='summary', description='description', version='09.07',
+    ...     parent_series=warty, owner=youbuntu.owner)
+    >>> print yo_series.name
+    forest
+    >>> print yo_series.driver
+    None
+
+Ubuntu is an `IBaseDistribution` which requires special preparation for
+Soyuz and Translations before a series can be created. Ubuntu driver can
+not create series.
+
+    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> ubuntu.driver = yo_driver
+    >>> login_person(yo_driver)
+    >>> ubuntu.newSeries(
+    ...     name='finch', displayname='Finch', title='Ubuntu Finch',
+    ...     summary='summary', description='description', version='9.06',
+    ...     parent_series=warty, owner=ubuntu.driver)
+    Traceback (most recent call last):
+     ...
+    Unauthorized: ...
+
+Owners and admins of base distributions are the only users who can create a
+series.
+
+    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> u_series = ubuntu.newSeries(
+    ...     name='finch', displayname='Finch', title='Ubuntu Finch',
+    ...     summary='summary', description='description', version='9.06',
+    ...     parent_series=warty, owner=ubuntu.owner)
+    >>> print u_series.name
+    finch
+    >>> print u_series.driver
+    None
+
+
+Specification Listings
+----------------------
 
 We should be able to get lists of specifications in different states
 related to a distroseries.
@@ -892,14 +959,14 @@ the distribution.
     >>> print debian.driver
     None
     >>> print debian.owner.name
-    sabdfl
+    mark
     >>> sarge = debian.getSeries('sarge')
     >>> print sarge.driver.name
     jdub
     >>> for d in sarge.drivers:
     ...     print d.name
     jdub
-    sabdfl
+    mark
 
 
 Now, a release where there is no driver on the release but there is a driver
@@ -923,7 +990,7 @@ driver. Here, we expect the driver to be the owner of the distribution
     >>> print debian.driver
     None
     >>> print debian.owner.name
-    sabdfl
+    mark
     >>> print sid.driver
     None
     >>> print sid.owner.name
@@ -931,7 +998,7 @@ driver. Here, we expect the driver to be the owner of the distribution
 
     >>> for d in sid.drivers:
     ...     print d.name
-    sabdfl
+    mark
 
 
 == Lastest Uploads ==

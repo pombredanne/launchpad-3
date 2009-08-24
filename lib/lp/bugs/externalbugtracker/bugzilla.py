@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'Bugzilla',
+    'BugzillaAPI',
     'BugzillaLPPlugin',
     'needs_authentication',
     ]
@@ -24,6 +25,9 @@ from zope.interface import implements
 
 from canonical import encoding
 from canonical.config import config
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.webapp.url import urlappend, urlparse
+
 from lp.bugs.externalbugtracker.base import (
     BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
     ExternalBugTracker, InvalidBugId, LookupTree,
@@ -35,8 +39,6 @@ from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.url import urlappend
 
 
 class Bugzilla(ExternalBugTracker):
@@ -370,16 +372,12 @@ def needs_authentication(func):
     return decorator
 
 
-class BugzillaLPPlugin(Bugzilla):
-    """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
-
-    implements(
-        ISupportsBackLinking, ISupportsCommentImport,
-        ISupportsCommentPushing)
+class BugzillaAPI(Bugzilla):
+    """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
-        super(BugzillaLPPlugin, self).__init__(baseurl)
+        super(BugzillaAPI, self).__init__(baseurl)
         self._bugs = {}
         self._bug_aliases = {}
 
@@ -396,6 +394,179 @@ class BugzillaLPPlugin(Bugzilla):
         """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
         return xmlrpclib.ServerProxy(
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+    @property
+    def credentials(self):
+        credentials_config = config['checkwatches.credentials']
+
+        # Extract the hostname from the current base url using urlparse.
+        hostname = urlparse(self.baseurl)[1]
+        try:
+            # XXX gmb 2009-08-19 bug=391131
+            #     We shouldn't be using this here. Ideally we'd be able
+            #     to get the credentials from the BugTracker object.
+            #     If you find yourself adding credentials for, for
+            #     example, www.password.username.pirateninjah4x0rz.org,
+            #     think about fixing the above bug instead.
+            username = credentials_config['%s.username' % hostname]
+            password = credentials_config['%s.password' % hostname]
+            return {'login': username, 'password': password}
+        except KeyError:
+            raise BugTrackerAuthenticationError(
+                self.baseurl, "No credentials found.")
+
+    def _authenticate(self):
+        """Authenticate with the remote Bugzilla instance.
+
+        The native Bugzilla API uses a standard (username, password)
+        paradigm for authentication. If the username and password are
+        correct, Bugzilla will send back a login cookie which we can use
+        to re-authenticate with each subsequent method call.
+        """
+        try:
+            self.xmlrpc_proxy.User.login(self.credentials)
+        except xmlrpclib.Fault, fault:
+            raise BugTrackerAuthenticationError(
+                self.baseurl,
+                "Fault %s: %s" % (fault.faultCode, fault.faultString))
+
+    def _storeBugs(self, remote_bugs):
+        """Store remote bugs in the local `bugs` dict."""
+        for remote_bug in remote_bugs:
+            self._bugs[remote_bug['id']] = remote_bug
+
+            # The bug_aliases dict is a mapping between aliases and bug
+            # IDs. We use the aliases dict to look up the correct ID for
+            # a bug. This allows us to reference a bug by either ID or
+            # alias.
+            if remote_bug['alias'] != '':
+                self._bug_aliases[remote_bug['alias']] = remote_bug['id']
+
+    def getCurrentDBTime(self):
+        """See `IExternalBugTracker`."""
+        time_dict = self.xmlrpc_proxy.Bugzilla.time()
+
+        # Convert the XML-RPC DateTime we get back into a regular Python
+        # datetime.
+        server_db_timetuple = time.strptime(
+            str(time_dict['db_time']), '%Y%m%dT%H:%M:%S')
+        server_db_datetime = datetime(*server_db_timetuple[:6])
+
+        # The server's DB time is the one that we want to use. However,
+        # this may not be in UTC, so we need to convert it. Since we
+        # can't guarantee that the timezone data returned by the server
+        # is sane, we work out the server's offset from UTC by looking
+        # at the difference between the web_time and the web_time_utc
+        # values.
+        server_web_time = time.strptime(
+            str(time_dict['web_time']), '%Y%m%dT%H:%M:%S')
+        server_web_datetime = datetime(*server_web_time[:6])
+        server_web_time_utc = time.strptime(
+            str(time_dict['web_time_utc']), '%Y%m%dT%H:%M:%S')
+        server_web_datetime_utc = datetime(*server_web_time_utc[:6])
+
+        server_utc_offset = server_web_datetime - server_web_datetime_utc
+        server_utc_datetime = server_db_datetime - server_utc_offset
+
+        return server_utc_datetime.replace(tzinfo=pytz.timezone('UTC'))
+
+    def _getActualBugId(self, bug_id):
+        """Return the actual bug id for an alias or id."""
+        # See if bug_id is actually an alias.
+        actual_bug_id = self._bug_aliases.get(bug_id)
+
+        # bug_id isn't an alias, so try turning it into an int and
+        # looking the bug up by ID.
+        if actual_bug_id is not None:
+            return actual_bug_id
+        else:
+            try:
+                actual_bug_id = int(bug_id)
+            except ValueError:
+                # If bug_id can't be int()'d then it's likely an alias
+                # that doesn't exist, so raise BugNotFound.
+                raise BugNotFound(bug_id)
+
+            # Check that the bug does actually exist. That way we're
+            # treating integer bug IDs and aliases in the same way.
+            if actual_bug_id not in self._bugs:
+                raise BugNotFound(bug_id)
+
+            return actual_bug_id
+
+    def _getBugIdsToRetrieve(self, bug_ids):
+        """For a set of bug IDs, return those for which we have no data."""
+        bug_ids_to_retrieve = []
+        for bug_id in bug_ids:
+            try:
+                actual_bug_id = self._getActualBugId(bug_id)
+            except BugNotFound:
+                bug_ids_to_retrieve.append(bug_id)
+
+        return bug_ids_to_retrieve
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `IExternalBugTracker`."""
+        # First, discard all those bug IDs about which we already have
+        # data.
+        bug_ids_to_retrieve = self._getBugIdsToRetrieve(bug_ids)
+
+        # Pull the bug data from the remote server. permissive=True here
+        # prevents Bugzilla from erroring if we ask for a bug it doesn't
+        # have.
+        response_dict = self.xmlrpc_proxy.Bug.get({
+            'ids': bug_ids_to_retrieve,
+            'permissive': True,
+            })
+        remote_bugs = response_dict['bugs']
+
+        self._storeBugs(remote_bugs)
+
+    def getRemoteStatus(self, bug_id):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(bug_id)
+
+        # Attempt to get the status and resolution from the bug. If
+        # we don't have the data for either of them, raise an error.
+        try:
+            status = self._bugs[actual_bug_id]['status']
+            resolution = self._bugs[actual_bug_id]['resolution']
+        except KeyError, error:
+            raise UnparseableBugData
+
+        if resolution != '':
+            return "%s %s" % (status, resolution)
+        else:
+            return status
+
+    def getModifiedRemoteBugs(self, bug_ids, last_checked):
+        """See `IExternalBugTracker`."""
+        # We marshal last_checked into an xmlrpclib.DateTime since
+        # xmlrpclib can't do so cleanly itself.
+        # XXX 2009-08-21 gmb (bug 254999):
+        #     We can remove this once we upgrade to python 2.5.
+        changed_since = xmlrpclib.DateTime(last_checked.timetuple())
+
+        search_args = {
+            'id': bug_ids,
+            'last_change_time': changed_since,
+            }
+        response_dict = self.xmlrpc_proxy.Bug.search(search_args)
+        remote_bugs = response_dict['bugs']
+
+        # Store the bugs we've imported and return only their IDs.
+        self._storeBugs(remote_bugs)
+        bug_ids = [remote_bug['id'] for remote_bug in remote_bugs]
+
+        return bug_ids
+
+
+class BugzillaLPPlugin(BugzillaAPI):
+    """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
+
+    implements(
+        ISupportsBackLinking, ISupportsCommentImport,
+        ISupportsCommentPushing)
 
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.
@@ -430,18 +601,6 @@ class BugzillaLPPlugin(Bugzilla):
                 error.errcode, error.errmsg)
             raise BugTrackerAuthenticationError(
                 self.baseurl, message)
-
-    def _storeBugs(self, remote_bugs):
-        """Store remote bugs in the local `bugs` dict."""
-        for remote_bug in remote_bugs:
-            self._bugs[remote_bug['id']] = remote_bug
-
-            # The bug_aliases dict is a mapping between aliases and bug
-            # IDs. We use the aliases dict to look up the correct ID for
-            # a bug. This allows us to reference a bug by either ID or
-            # alias.
-            if remote_bug['alias'] != '':
-                self._bug_aliases[remote_bug['alias']] = remote_bug['id']
 
     def getModifiedRemoteBugs(self, bug_ids, last_checked):
         """See `IExternalBugTracker`."""
@@ -497,12 +656,7 @@ class BugzillaLPPlugin(Bugzilla):
         """See `IExternalBugTracker`."""
         # First, discard all those bug IDs about which we already have
         # data.
-        bug_ids_to_retrieve = []
-        for bug_id in bug_ids:
-            try:
-                actual_bug_id = self._getActualBugId(bug_id)
-            except BugNotFound:
-                bug_ids_to_retrieve.append(bug_id)
+        bug_ids_to_retrieve = self._getBugIdsToRetrieve(bug_ids)
 
         # Next, grab the bugs we still need from the remote server.
         # We pass permissive=True to ensure that Bugzilla won't error if
@@ -531,47 +685,6 @@ class BugzillaLPPlugin(Bugzilla):
 
         server_utc_time = datetime(*server_timetuple[:6])
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
-
-    def _getActualBugId(self, bug_id):
-        """Return the actual bug id for an alias or id."""
-        # See if bug_id is actually an alias.
-        actual_bug_id = self._bug_aliases.get(bug_id)
-
-        # bug_id isn't an alias, so try turning it into an int and
-        # looking the bug up by ID.
-        if actual_bug_id is not None:
-            return actual_bug_id
-        else:
-            try:
-                actual_bug_id = int(bug_id)
-            except ValueError:
-                # If bug_id can't be int()'d then it's likely an alias
-                # that doesn't exist, so raise BugNotFound.
-                raise BugNotFound(bug_id)
-
-            # Check that the bug does actually exist. That way we're
-            # treating integer bug IDs and aliases in the same way.
-            if actual_bug_id not in self._bugs:
-                raise BugNotFound(bug_id)
-
-            return actual_bug_id
-
-    def getRemoteStatus(self, bug_id):
-        """See `IExternalBugTracker`."""
-        actual_bug_id = self._getActualBugId(bug_id)
-
-        # Attempt to get the status and resolution from the bug. If
-        # we don't have the data for either of them, raise an error.
-        try:
-            status = self._bugs[actual_bug_id]['status']
-            resolution = self._bugs[actual_bug_id]['resolution']
-        except KeyError, error:
-            raise UnparseableBugData
-
-        if resolution != '':
-            return "%s %s" % (status, resolution)
-        else:
-            return status
 
     def getRemoteProduct(self, remote_bug):
         """See `IExternalBugTracker`."""

@@ -494,6 +494,9 @@ class IPOTemplate(IRosettaStats):
             to be sent to the uploader.
         """
 
+    def getTranslationRows():
+        """Return the `IVPOTexport` objects for this template."""
+
 
 class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""

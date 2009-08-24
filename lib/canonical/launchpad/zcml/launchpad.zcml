@@ -7,7 +7,6 @@
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-  xmlns:lp="http://namespaces.canonical.com/lp"
   i18n_domain="canonical.launchpad">
 
   <!--  XXX: Steve Alexander 2004-11-24:
@@ -148,6 +147,10 @@
 
   <adapter
     factory="canonical.launchpad.browser.vocabulary.branch_to_pickerentry"
+    />
+
+  <adapter
+    factory="canonical.launchpad.browser.vocabulary.sourcepackagename_to_pickerentry"
     />
 
 <facet facet="overview">
@@ -454,19 +457,6 @@ these URLs in Apache.
   class="canonical.launchpad.browser.launchpad.IcingContribFolder"
   attribute="__call__"
   permission="zope.Public"
-  />
-
-<!-- Help folders -->
-<lp:help-folder
-  folder="../help/bugs" type="canonical.launchpad.layers.BugsLayer"
-  />
-<lp:help-folder
-  folder="../help/blueprints" 
-  type="canonical.launchpad.layers.BlueprintsLayer"
-  />
-<lp:help-folder
-  folder="../help/translations" 
-  type="canonical.launchpad.layers.TranslationsLayer"
   />
 
 <browser:page

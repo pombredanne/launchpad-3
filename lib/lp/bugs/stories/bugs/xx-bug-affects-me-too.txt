@@ -1,7 +1,7 @@
 = Marking a bug as affecting the user =
 
-Users can mark bugs as affecting them. Let's create a sample bug to try
-this on.
+Users can mark bugs as affecting them. Let's create a sample bug to
+try this out.
 
    >>> login(ANONYMOUS)
    >>> from canonical.launchpad.webapp import canonical_url
@@ -9,15 +9,27 @@ this on.
    >>> test_bug_url = canonical_url(test_bug)
    >>> logout()
 
-The user goes to the bug's index page, and clicks the edit action link
-near 'This bug affects me too'.
+The user goes to the bug's index page, and finds a statement that the
+bug is not marked as affecting them.
 
    >>> user_browser.open(test_bug_url)
    >>> print extract_text(find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetooform'))
-   This bug doesn't affect me...
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         None, 'static'))
+   This bug doesn't affect me
 
-   >>> user_browser.getLink('change').click()
+Next to the statement is a link containing an edit icon.
+
+   >>> edit_link = find_tag_by_id(
+   ...     user_browser.contents, 'affectsmetoo').a
+   >>> print edit_link['href']
+   +affectsmetoo
+   >>> print edit_link.img['src']
+   /@@/edit
+
+The user is affected by this bug, so clicks the link.
+
+   >>> user_browser.getLink(url='+affectsmetoo').click()
    >>> print user_browser.url
    http://bugs.launchpad.dev/.../+bug/.../+affectsmetoo
    >>> user_browser.getControl(name='field.affects').value
@@ -28,22 +40,26 @@ The form defaults to 'Yes', and the user submits the form.
    >>> user_browser.getControl('Change').click()
 
 The bug page loads again, and now the text is changed, to make it
-clear to the user that they can change the selection.
+clear to the user that they have marked this bug as affecting them.
 
-   >>> print extract_text(find_tags_by_class(
-   ...     user_browser.contents, 'menu-link-affectsmetoo')[0])
-   change
+   >>> print extract_text(find_tag_by_id(
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         None, 'static'))
+   This bug affects me too
 
 Next to it, we also see the 'hot bug' icon, to indicate that the user
 has marked the bug as affecting them.
 
    >>> print find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetooform').img['src']
+   ...     user_browser.contents, 'affectsmetoo').img['src']
    /@@/flame-icon
 
-   >>> user_browser.getLink('change').click()
+On second thoughts, the user realises that this bug does not affect
+them, so they click on the edit link once more.
 
-The user is changing his selection to 'No' and submits the form.
+   >>> user_browser.getLink(url='+affectsmetoo').click()
+
+The user changes his selection to 'No' and submits the form.
 
    >>> user_browser.getControl(name='field.affects').value = ['NO']
    >>> user_browser.getControl('Change').click()
@@ -51,18 +67,43 @@ The user is changing his selection to 'No' and submits the form.
 Back at the bug page, the text changes once again.
 
    >>> print extract_text(find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetooform'))
-   This bug doesn't affect me...
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         None, 'static'))
+   This bug doesn't affect me
 
-== One-click interaction ==
 
-If the user's browser provides javascript, they don't need to go to
-another page to change their selection. Instead, an in-page form is
-submitted when they click the action link.
+== Static and dynamic support ==
 
-   >>> me_too_form = user_browser.getForm(id='affectsmetooform')
-   >>> user_browser.getControl(name='field.affects').value
-   'YES'
-   >>> me_too_form.submit()
-   >>> user_browser.getControl(name='field.affects').value
-   'NO'
+A bug page contains markup to support both static (no Javascript) and
+dynamic (Javascript enabled) scenarios.
+
+   >>> def class_filter(css_class):
+   ...     def test(node):
+   ...         return css_class in node.get('class', '').split()
+   ...     return test
+
+   >>> static_content = find_tag_by_id(
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         class_filter('static'))
+
+   >>> static_content is not None
+   True
+
+   >>> dynamic_content = find_tag_by_id(
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         class_filter('dynamic'))
+
+   >>> dynamic_content is not None
+   True
+
+The dynamic content is hidden by the presence of the "unseen" CSS
+class.
+
+   >>> print static_content.get('class')
+   static
+
+   >>> print dynamic_content.get('class')
+   dynamic unseen
+
+It is the responsibilty of Javascript running in the page to unhide
+the dynamic content and hide the static content.

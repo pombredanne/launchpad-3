@@ -12,17 +12,20 @@ __all__ = [
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
     'DistributionBreadcrumbBuilder',
+    'DistributionChangeMembersView',
+    'DistributionChangeMirrorAdminView',
     'DistributionCountryArchiveMirrorsView',
     'DistributionDisabledMirrorsView',
     'DistributionEditView',
     'DistributionFacets',
     'DistributionLanguagePackAdminView',
     'DistributionNavigation',
+    'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
-    'DistributionPPASearchView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
+    'DistributionSetActionNavigationMenu',
     'DistributionSetBreadcrumbBuilder',
     'DistributionSetContextMenu',
     'DistributionSetFacets',
@@ -44,6 +47,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.soyuz.browser.archive import traverse_distro_archive
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
@@ -67,7 +72,7 @@ from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
+    enabled_with_permission, GetitemNavigation,
     LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
     StandardLaunchpadFacets, stepthrough, stepto)
 from canonical.launchpad.webapp.interfaces import (
@@ -77,6 +82,8 @@ from canonical.launchpad.webapp import NavigationMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets.image import ImageChangeWidget
+
+from lp.registry.browser import RegistryEditFormView
 
 
 class UsesLaunchpadMixin:
@@ -290,6 +297,9 @@ class DistributionNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def announcements(self):
+        # XXX: BradCrittenden 2009-08-19 bug=410491: When the distribution
+        # index page is updated to UI 3.0 the text needs to read "Read all
+        # announcements".
         target = '+announcements'
         text = 'Announcements'
         return Link(target, text)
@@ -354,8 +364,8 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
-        text = u'\u00BB More contributors'
-        return Link('+topcontributors', text)
+        text = 'More contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def mentorship(self):
         text = 'Mentoring available'
@@ -425,9 +435,9 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = u'\u00BB More announcements'
-        enabled = bool(self.context.announcements().count())
-        return Link('+announcements', text, enabled=enabled)
+        text = 'Read all announcements'
+        enabled = bool(self.context.getAnnouncements())
+        return Link('+announcements', text, icon='info', enabled=enabled)
 
     def builds(self):
         text = 'Builds'
@@ -763,12 +773,21 @@ class DistributionAllPackagesView(LaunchpadView):
         self.batchnav = BatchNavigator(results, self.request)
 
 
-class DistributionSetView:
+class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for `DistributionSetView`."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    usedfor = IDistributionSet
+    links = ['register_team', 'register_project', 'create_account']
 
+
+class DistributionSetView(LaunchpadView):
+    """View for /distros top level collection."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'Distributions registered in Launchpad'
+
+    @cachedproperty
     def count(self):
         return self.context.count()
 
@@ -776,11 +795,21 @@ class DistributionSetView:
 class DistributionAddView(LaunchpadFormView):
 
     schema = IDistribution
-    label = "Create a new distribution"
+    label = "Register a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
                    "domainname", "members",
                    "official_malone", "official_blueprints",
                    "official_rosetta", "official_answers"]
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -798,10 +827,9 @@ class DistributionAddView(LaunchpadFormView):
         self.next_url = canonical_url(distribution)
 
 
-class DistributionEditView(LaunchpadEditFormView):
+class DistributionEditView(RegistryEditFormView):
 
     schema = IDistribution
-    label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
                    'bug_reporting_guidelines', 'icon', 'logo', 'mugshot',
                    'official_malone', 'enable_bug_expiration',
@@ -812,6 +840,11 @@ class DistributionEditView(LaunchpadEditFormView):
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Change %s details' % self.context.displayname
+
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
         # enable_bug_expiration is disabled by JavaScript when official_malone
@@ -821,10 +854,27 @@ class DistributionEditView(LaunchpadEditFormView):
         if not official_malone:
             data['enable_bug_expiration'] = False
 
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
+
+class DistributionChangeMirrorAdminView(RegistryEditFormView):
+    """A view to change the mirror administrator."""
+    schema = IDistribution
+    field_names = ['mirror_admin']
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return "Change the %s mirror administrator" % self.context.displayname
+
+
+class DistributionChangeMembersView(RegistryEditFormView):
+    """A view to change the members team."""
+    schema = IDistribution
+    field_names = ['members']
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return "Change the %s members team" % self.context.displayname
 
 
 class DistributionCountryArchiveMirrorsView(LaunchpadView):
@@ -1028,4 +1078,3 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
     @cachedproperty
     def mirrors(self):
         return self.context.disabled_mirrors
-

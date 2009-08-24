@@ -36,12 +36,15 @@ import simplejson
 from zope.app.form.browser import TextAreaWidget
 from zope.traversing.interfaces import IPathAdapter
 from zope.component import getUtility, queryAdapter
+from zope.event import notify
 from zope.formlib import form
-from zope.interface import Interface, implements
+from zope.interface import Interface, implements, providedBy
 from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, Text
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.uri import URI
 
 from canonical.cachedproperty import cachedproperty
@@ -65,6 +68,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
+from canonical.lazr.utils import smartquote
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
@@ -98,27 +102,28 @@ class BranchURL:
     implements(ICanonicalUrlData)
 
     rootsite = 'code'
+    inside = None
 
     def __init__(self, branch):
         self.branch = branch
 
     @property
-    def inside(self):
-        return self.branch.owner
-
-    @property
     def path(self):
-        return '%s/%s' % (self.branch.target.name, self.branch.name)
+        return self.branch.unique_name
+
+
+def branch_root_context(branch):
+    """Return the IRootContext for the branch."""
+    return branch.target.components[0]
 
 
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
-    def items(self):
+    @property
+    def objects(self):
         """See `Hierarchy`."""
-        return self._breadcrumbs(
-            (obj, canonical_url(obj))
-            for obj in IHasBranchTarget(self.context).target.components)
+        return IHasBranchTarget(self.context).target.components
 
 
 class BranchNavigation(Navigation):
@@ -574,7 +579,6 @@ class BranchEditSchema(Interface):
     the user to be able to edit it.
     """
     use_template(IBranch, include=[
-        'owner',
         'name',
         'url',
         'description',
@@ -582,6 +586,8 @@ class BranchEditSchema(Interface):
         'whiteboard',
         ])
     private = copy_field(IBranch['private'], readonly=False)
+    reviewer = copy_field(IBranch['reviewer'], required=True)
+    owner = copy_field(IBranch['owner'], readonly=False)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -591,6 +597,14 @@ class BranchEditFormView(LaunchpadEditFormView):
     field_names = None
 
     @property
+    def page_title(self):
+        return 'Edit %s' % self.context.displayname
+
+    @property
+    def label(self):
+        return self.page_title
+
+    @property
     def adapters(self):
         """See `LaunchpadFormView`"""
         return {BranchEditSchema: self.context}
@@ -598,9 +612,18 @@ class BranchEditFormView(LaunchpadEditFormView):
     @action('Change Branch', name='change')
     def change_action(self, action, data):
         # If the owner or product has changed, add an explicit notification.
+        # We take our own snapshot here to make sure that the snapshot records
+        # changes to the owner and private, and we notify the listeners
+        # explicitly below rather than the notification that would normally be
+        # sent in updateContextFromData.
+        changed = False
+        branch_before_modification = Snapshot(
+            self.context, providing=providedBy(self.context))
         if 'owner' in data:
-            new_owner = data['owner']
+            new_owner = data.pop('owner')
             if new_owner != self.context.owner:
+                self.context.setOwner(new_owner, self.user)
+                changed = True
                 self.request.response.addNotification(
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
@@ -609,6 +632,7 @@ class BranchEditFormView(LaunchpadEditFormView):
             if private != self.context.private:
                 # We only want to show notifications if it actually changed.
                 self.context.setPrivate(private)
+                changed = True
                 if private:
                     self.request.response.addNotification(
                         "The branch is now private, and only visible to the "
@@ -616,7 +640,26 @@ class BranchEditFormView(LaunchpadEditFormView):
                 else:
                     self.request.response.addNotification(
                         "The branch is now publicly accessible.")
-        if self.updateContextFromData(data):
+        if 'reviewer' in data:
+            reviewer = data.pop('reviewer')
+            if reviewer != self.context.code_reviewer:
+                if reviewer == self.context.owner:
+                    # Clear the reviewer if set to the same as the owner.
+                    self.context.reviewer = None
+                else:
+                    self.context.reviewer = reviewer
+                changed = True
+
+        if self.updateContextFromData(data, notify_modified=False):
+            changed = True
+
+        if changed:
+            # Notify the object has changed with the snapshot that was taken
+            # earler.
+            field_names = [
+                form_field.__name__ for form_field in self.form_fields]
+            notify(ObjectModifiedEvent(
+                self.context, branch_before_modification, field_names))
             # Only specify that the context was modified if there
             # was in fact a change.
             self.context.date_last_modified = UTC_NOW
@@ -715,6 +758,10 @@ class BranchDeletionView(LaunchpadFormView):
 
     schema = IBranch
     field_names = []
+
+    @property
+    def page_title(self):
+        return smartquote('Delete branch "%s"' % self.context.displayname)
 
     @cachedproperty
     def display_deletion_requirements(self):
@@ -875,47 +922,14 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             pass
 
 
-class BranchReviewerEditSchema(Interface):
-    """The schema to edit the branch reviewer."""
-
-    reviewer = copy_field(IBranch['reviewer'], required=True)
-
-
-class BranchReviewerEditView(LaunchpadEditFormView):
+class BranchReviewerEditView(BranchEditFormView):
     """The view to set the review team."""
 
-    schema = BranchReviewerEditSchema
-
-    @property
-    def adapters(self):
-        """See `LaunchpadFormView`"""
-        return {BranchReviewerEditSchema: self.context}
+    field_names = ['reviewer']
 
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-    @action('Save', name='save')
-    def save_action(self, action, data):
-        """Save the values."""
-        reviewer = data['reviewer']
-        if reviewer == self.context.code_reviewer:
-            # No change, so don't update last modified.
-            return
-
-        if reviewer == self.context.owner:
-            # Clear the reviewer if set to the same as the owner.
-            self.context.reviewer = None
-        else:
-            self.context.reviewer = reviewer
-
-        self.context.date_last_modified = UTC_NOW
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    cancel_url = next_url
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
@@ -929,6 +943,10 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     initial_focus_widget = 'name'
+
+    @property
+    def page_title(self):
+        return 'Register a branch'
 
     @property
     def initial_values(self):

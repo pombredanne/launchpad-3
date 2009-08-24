@@ -22,7 +22,9 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from lazr.lifecycle.event import ObjectModifiedEvent
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob)
@@ -33,7 +35,7 @@ from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
 from canonical.launchpad.ftests import (
-    ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
+    ANONYMOUS, import_secret_test_key, login, syncUpdate)
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
     BranchType, CodeReviewNotificationLevel, CodeReviewVote)
@@ -42,7 +44,7 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, WrongBranchMergeProposal)
+    IMergeProposalCreatedJob, notify_modified, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
@@ -394,36 +396,6 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         proposal.requestReview()
         self.assertEqual(
             proposal.date_created, proposal.date_review_requested)
-
-
-class TestBranchMergeProposalCanReview(TestCase):
-    """Test the different cases that makes a branch deletable or not."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        login('test@canonical.com')
-
-        factory = LaunchpadObjectFactory()
-        self.source_branch = factory.makeProductBranch()
-        self.target_branch = factory.makeProductBranch(
-            product=self.source_branch.product)
-        registrant = factory.makePerson()
-        self.proposal = self.source_branch.addLandingTarget(
-            registrant, self.target_branch)
-
-    def tearDown(self):
-        logout()
-
-    def test_validReviewer(self):
-        """A newly created branch can be deleted without any problems."""
-        self.assertEqual(self.proposal.isPersonValidReviewer(None),
-                         False, "No user cannot review code")
-        # The owner of the target branch is a valid reviewer.
-        self.assertEqual(
-            self.proposal.isPersonValidReviewer(
-                self.target_branch.owner),
-            True, "No user cannot review code")
 
 
 class TestBranchMergeProposalQueueing(TestCase):
@@ -1109,6 +1081,28 @@ class TestBranchMergeProposalDeletion(TestCaseWithFactory):
         proposal.deleteProposal()
         self.assertRaises(
             SQLObjectNotFound, BranchMergeProposalJob.get, job_id)
+
+
+class TestNotifyModified(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_notify_modified_generates_notification(self):
+        """notify_modified generates an event.
+
+        notify_modified runs the callable with the specified args and kwargs,
+        and generates a ObjectModifiedEvent.
+        """
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.target_branch.owner)
+        # Approve branch to prevent enqueue from approving it, which would
+        # generate an undesired event.
+        bmp.approveBranch(bmp.target_branch.owner, revision_id='abc')
+        self.assertNotifies(
+            ObjectModifiedEvent, notify_modified, bmp, bmp.enqueue,
+            bmp.target_branch.owner, revision_id='abc')
+        self.assertEqual(BranchMergeProposalStatus.QUEUED, bmp.queue_status)
+        self.assertEqual('abc', bmp.queued_revision_id)
 
 
 class TestBranchMergeProposalJob(TestCaseWithFactory):

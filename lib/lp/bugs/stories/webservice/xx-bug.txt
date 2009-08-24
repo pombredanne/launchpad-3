@@ -268,6 +268,24 @@ We can add a new message to a bug by calling the newMessage method.
   self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/1'
   subject: u'A new message'
 
+We don't have to submit a subject when we add a new message.
+
+  >>> print webservice.named_post(
+  ...     "/bugs/5", 'newMessage',
+  ...     content='This is a new message with no subject.')
+  HTTP/1.1 201 Created
+  Content-Length: 0
+  Content-Type: text/plain
+  Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/2
+  ...
+
+  >>> pprint_entry(webservice.get("/firefox/+bug/5/comments/2").jsonBody())
+  bug_attachments_collection_link: ...
+  content: u'This is a new message with no subject.'
+  ...
+  self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/2'
+  subject: u'Re: Firefox install instructions should be complete'
+
 
 Bug tasks
 ---------
@@ -406,6 +424,35 @@ If an error occurs during a request that sets both 'status' and
   New
   >>> print task['importance']
   Low
+
+Like the importance, the milestone can be set either directly or via a
+named operation, and only by appropriately privileged users.
+
+  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+  None
+
+  >>> patch = {u'milestone_link': webservice.getAbsoluteUrl(
+  ...                                 '/debian/+milestone/3.1')}
+  >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+  HTTP/1.1 209 Content Returned...
+
+  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+  http://.../debian/+milestone/3.1
+
+  >>> print webservice.named_post(
+  ...     bugtask_path, 'transitionToMilestone',
+  ...     milestone=webservice.getAbsoluteUrl('/debian/+milestone/3.1-rc1'))
+  HTTP/1.1 200 Ok...
+
+  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+  http://.../debian/+milestone/3.1-rc1
+
+  >>> print user_webservice.patch(
+  ...     bugtask_path, 'application/json', dumps(patch))
+  HTTP/1.1 401 Unauthorized...
+
+  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+  http://.../debian/+milestone/3.1-rc1
 
 We can change the task's target. Here we change the task's target from
 the mozilla-firefox package to alsa-utils.
@@ -602,7 +649,7 @@ service will return an unauthorized error.
 
     >>> print user_webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe',
-    ...     person=webservice.getAbsoluteUrl('/~sabdfl'))
+    ...     person=webservice.getAbsoluteUrl('/~mark'))
     HTTP/1.1 401 Unauthorized...
 
 An individual can, however, unsubscribe a team to which
@@ -761,7 +808,7 @@ report described by the bugwatch.
   date_last_changed: u'2004-10-04T01:00:00+00:00'
   date_last_checked: u'2004-10-04T01:00:00+00:00'
   last_error_type: None
-  owner_link: u'http://.../~sabdfl'
+  owner_link: u'http://.../~mark'
   remote_bug: u'2000'
   remote_importance: None
   remote_status: u''
@@ -1033,7 +1080,7 @@ attachment. This is where our comment is recorded.
   parent_link: None
   resource_type_link: u'http://.../#message'
   self_link: u'http://.../firefox/+bug/1/comments/2'
-  subject: None
+  subject: u'Re: Firefox does not support SVG'
 
 The message also links back to the attachments that were uploaded at
 the same time.

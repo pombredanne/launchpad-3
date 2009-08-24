@@ -58,7 +58,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
-from canonical.launchpad.database.account import Account
+from canonical.launchpad.database.account import Account, AccountPassword
 from lp.bugs.model.bugtarget import HasBugsBase
 from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
@@ -298,7 +298,6 @@ class Person(
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
         # this method is scheduled for demolition -- StuartBishop 20080514
-        from canonical.launchpad.database.account import AccountPassword
         password = IStore(AccountPassword).find(
             AccountPassword, accountID=self.accountID).one()
         if password is None:
@@ -952,7 +951,7 @@ class Person(
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
         # Import here to work around a circular import problem.
-        from canonical.launchpad.database import Product
+        from lp.registry.model.product import Product
 
         clauses = ["""
             SELECT DISTINCT Product.id

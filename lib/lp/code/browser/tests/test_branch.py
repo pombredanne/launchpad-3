@@ -20,6 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.code.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
     BranchSparkView, BranchView)
@@ -261,7 +262,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         reviewer = self.factory.makePerson()
         login_person(branch.owner)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': reviewer})
+        view.initialize()
+        view.change_action.success({'reviewer': reviewer})
         self.assertEqual(reviewer, branch.reviewer)
         # Last modified has been updated.
         self.assertSqlAttributeEqualsDate(
@@ -274,7 +276,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         login_person(branch.owner)
         branch.reviewer = self.factory.makePerson()
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': branch.owner})
+        view.initialize()
+        view.change_action.success({'reviewer': branch.owner})
         self.assertIs(None, branch.reviewer)
         # Last modified has been updated.
         self.assertSqlAttributeEqualsDate(
@@ -287,7 +290,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         modified_date = datetime(2007, 1, 1, tzinfo=pytz.UTC)
         branch = self.factory.makeAnyBranch(date_created=modified_date)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': branch.owner})
+        view.initialize()
+        view.change_action.success({'reviewer': branch.owner})
         self.assertIs(None, branch.reviewer)
         # Last modified has not been updated.
         self.assertEqual(modified_date, branch.date_last_modified)
@@ -460,6 +464,30 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.dependent_branches)
+
+
+class TestBranchRootContext(TestCaseWithFactory):
+    """Test the adaptation of IBranch to IRootContext."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_personal_branch(self):
+        # The root context of a personal branch is the person.
+        branch = self.factory.makePersonalBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.owner, root_context)
+
+    def test_package_branch(self):
+        # The root context of a package branch is the distribution.
+        branch = self.factory.makePackageBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.distroseries.distribution, root_context)
+
+    def test_product_branch(self):
+        # The root context of a product branch is the product.
+        branch = self.factory.makeProductBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.product, root_context)
 
 
 def test_suite():

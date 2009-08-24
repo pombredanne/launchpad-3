@@ -35,7 +35,7 @@ results when we use a valid assignee.
     2 Blackhole Trash folder mozilla-firefox Low Confirmed
 
     >>> anon_browser.open('http://bugs.launchpad.dev/~name12/+reportedbugs?advanced=1')
-    >>> anon_browser.getControl(name='field.assignee').value = 'sabdfl'
+    >>> anon_browser.getControl(name='field.assignee').value = 'mark'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG Mozilla Firefox Low New

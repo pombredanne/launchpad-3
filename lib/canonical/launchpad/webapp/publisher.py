@@ -504,10 +504,10 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    if request is None and rootsite is not None:
+    if request is None:
+        if rootsite is None:
+            rootsite = 'mainsite'
         root_url = allvhosts.configs[rootsite].rooturl
-    elif request is None:
-        root_url = allvhosts.configs['mainsite'].rooturl
     else:
         root_url = request.getRootURL(rootsite)
 
@@ -542,13 +542,17 @@ def nearest(obj, *interfaces):
     The object returned might be the object given as an argument, if that
     object provides one of the given interfaces.
 
-    Return None is no suitable object is found.
+    Return None is no suitable object is found or if there is no canonical_url
+    defined for the object.
     """
-    for current_obj in canonical_url_iterator(obj):
-        for interface in interfaces:
-            if interface.providedBy(current_obj):
-                return current_obj
-    return None
+    try:
+        for current_obj in canonical_url_iterator(obj):
+            for interface in interfaces:
+                if interface.providedBy(current_obj):
+                    return current_obj
+        return None
+    except NoCanonicalUrl:
+        return None
 
 
 class RootObject:

@@ -20,9 +20,9 @@ after publishing, and they can be deleted, permanently.
     >>> apache = getUtility(IProjectSet).getByName('apache')
     >>> tomcat = getUtility(IProductSet).getByName('tomcat')
     >>> derby = getUtility(IProductSet).getByName('derby')
-    >>> sabdfl = apache.owner
-    >>> print sabdfl.name
-    sabdfl
+    >>> mark = apache.owner
+    >>> print mark.name
+    mark
 
 == Beta testers ==
 
@@ -32,7 +32,7 @@ For the moment, this is only available to beta testers.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-    >>> beta.addMember(sabdfl, sabdfl)
+    >>> beta.addMember(mark, mark)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
@@ -50,7 +50,7 @@ published:
     >>> from datetime import datetime
     >>> import pytz
     >>> apache_asia = apache.announce(
-    ...  sabdfl,
+    ...  mark,
     ...  "OS Summit Asia 2007 - New Event by Apache and Eclipse",
     ...  summary="""Two of the leading organizations in the
     ...  Open Source community, The Apache Software Foundation and the Eclipse
@@ -68,7 +68,7 @@ We can also create an announcement that has no specified date of
 publication:
 
     >>> apache_oss = apache.announce(
-    ...  sabdfl,
+    ...  mark,
     ...  "Last Call for OSSummit Asia CFP",
     ...  summary="""For all those procrastinating submitting talks and
     ...  tutorials for OS Summit Asia, here's your friendly reminder!  The call
@@ -79,7 +79,7 @@ publication:
 Announcements can also be made on an IProduct:
 
     >>> derby_perf = derby.announce(
-    ...  sabdfl,
+    ...  mark,
     ...  "ApacheCon Europe 2006  had a Derby session on performance",
     ...  summary="""We just finished an excellent series of discussions on
     ...  performance at ApacheCon, and there is a summary of our current plans
@@ -90,7 +90,7 @@ Announcements can also be made on an IProduct:
 And we can also force immediate publication of the announcement:
 
     >>> tomcat_release = tomcat.announce(
-    ...  sabdfl,
+    ...  mark,
     ...  "Apache Tomcat JK 1.2.25 Web Server Connector released",
     ...  summary="""The Apache Tomcat team is pleased to announce the
     ...  immediate availability of version 1.2.25 of the Apache Tomcat
@@ -104,7 +104,7 @@ And we can also force immediate publication of the announcement:
 And we can set a date in the future for publishing too:
 
     >>> tomcat_future_release = tomcat.announce(
-    ...  sabdfl,
+    ...  mark,
     ...  "The future Tomcat will yawl all night without interruption",
     ...  summary="""Work is under way to ensure that Tomcat is the YAWLiest
     ...  application server around. You won't believe how much yawl we are
@@ -116,7 +116,7 @@ And we can set a date in the future for publishing too:
 And finally, we can make announcements on an IDistribution, too:
 
     >>> kubuntu_release = kubuntu.announce(
-    ...  sabdfl,
+    ...  mark,
     ...  "Kubuntu 7.10 now available for download""",
     ...  summary="""The moment you have all been waiting for has arrived! We
     ...  have pushed Kubuntu 7.10 to mirrors and published the final packages
@@ -165,7 +165,7 @@ announcements, and vice versa.
 
     >>> for pillar in [tomcat, derby, apache, kubuntu]:
     ...   print pillar.name
-    ...   for announcement in pillar.announcements():
+    ...   for announcement in pillar.getAnnouncements():
     ...     print announcement.title
     tomcat
     Apache Tomcat JK 1.2.25 Web Server Connector released
@@ -180,7 +180,7 @@ announcements, and vice versa.
     kubuntu
     Kubuntu 7.10 now available for download
 
-    >>> for announcement in apache.announcements(published_only=False):
+    >>> for announcement in apache.getAnnouncements(published_only=False):
     ...   if announcement.published is False:
     ...     print announcement.title
     Last Call for OSSummit Asia CFP
@@ -192,7 +192,7 @@ announcements, and vice versa.
 You can change the title, summary or URL of an announcement only through the
 modify() method.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> kubuntu_release.title = 'Foo'
     Traceback (most recent call last):
       ...
@@ -245,8 +245,8 @@ Announcements which have been retracted can be published again:
 
     >>> apache_asia.published
     False
-    >>> apache_asia.set_publication_date(datetime(2007, 11, 11, 7, 0, 0,
-    ...                                           tzinfo=pytz.utc))
+    >>> apache_asia.setPublicationDate(datetime(2007, 11, 11, 7, 0, 0,
+    ...                                         tzinfo=pytz.utc))
     >>> apache_asia.published
     True
 
@@ -255,13 +255,13 @@ current date and time:
 
     >>> print apache_oss.date_announced
     None
-    >>> apache_oss.set_publication_date(NOW)
+    >>> apache_oss.setPublicationDate(NOW)
     >>> apache_oss.date_announced is not None
     True
 
 And you can reset the date of publication:
 
-    >>> apache_oss.set_publication_date(None)
+    >>> apache_oss.setPublicationDate(None)
 
 
 == Retargeting ==

@@ -32,7 +32,6 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.person import Person
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationimportqueue import (
     collect_import_info)
@@ -67,7 +66,8 @@ from lp.translations.utilities.translation_common_format import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 
-from storm.expr import SQL
+from storm.expr import And, Join, LeftJoin, Or, SQL
+from storm.info import ClassAlias
 from storm.store import Store
 
 
@@ -497,6 +497,7 @@ class POFile(SQLBase, POFileMixIn):
     @property
     def contributors(self):
         """See `IPOFile`."""
+        from lp.registry.model.person import Person
         contributors = Person.select("""
             POFileTranslator.person = Person.id AND
             POFileTranslator.pofile = %s""" % quote(self),
@@ -512,6 +513,8 @@ class POFile(SQLBase, POFileMixIn):
 
     def prepareTranslationCredits(self, potmsgset):
         """See `IPOFile`."""
+        LP_CREDIT_HEADER = u'Launchpad Contributions:'
+        SPACE = u' '
         msgid = potmsgset.singular_text
         assert potmsgset.is_translation_credit, (
             "Calling prepareTranslationCredits on a message with "
@@ -541,15 +544,14 @@ class POFile(SQLBase, POFileMixIn):
             return u','.join(emails)
         elif msgid in [u'_: NAME OF TRANSLATORS\nYour names', u'Your names']:
             names = []
-            SPACE = u' '
+            
             if text is not None:
                 if text == u'':
                     text = SPACE
                 names.append(text)
             # Add an empty name as a separator, and 'Launchpad
             # Contributions' header; see bug #133817 for details.
-            names.extend([SPACE,
-                          u'Launchpad Contributions:'])
+            names.extend([SPACE, LP_CREDIT_HEADER])
             names.extend([
                 contributor.displayname
                 for contributor in self.contributors])
@@ -561,9 +563,14 @@ class POFile(SQLBase, POFileMixIn):
                 if text is None:
                     text = u''
                 else:
-                    text += u'\n\n'
-
-                text += 'Launchpad Contributions:'
+                    # Strip existing Launchpad contribution lists.
+                    header_index = text.find(LP_CREDIT_HEADER)
+                    if header_index != -1:
+                        text = text[:header_index]
+                    else:
+                        text += u'\n\n'
+                
+                text += LP_CREDIT_HEADER
                 for contributor in self.contributors:
                     text += ("\n  %s %s" %
                              (contributor.displayname,
@@ -1501,15 +1508,6 @@ class DummyPOFile(POFileMixIn):
 class POFileSet:
     implements(IPOFileSet)
 
-    def getPOFilesPendingImport(self):
-        """See `IPOFileSet`."""
-        results = POFile.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING,
-            orderBy='-daterawimport')
-
-        for pofile in results:
-            yield pofile
-
     def getDummy(self, potemplate, language):
         return DummyPOFile(potemplate, language)
 
@@ -1564,6 +1562,77 @@ class POFileSet:
         """See `IPOFileSet`."""
         return POFile.select(
             "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
+
+    def getPOFilesTouchedSince(self, date):
+        """See `IPOFileSet`."""
+        # Avoid circular imports.
+        from lp.translations.model.potemplate import POTemplate
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.productseries import ProductSeries
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        # Find a matching POTemplate and its ProductSeries
+        # and DistroSeries, if they are defined.
+        MatchingPOT = ClassAlias(POTemplate)
+        MatchingPOTJoin = Join(
+            MatchingPOT, POFile.potemplate == MatchingPOT.id)
+        MatchingProductSeries = ClassAlias(ProductSeries)
+        MatchingProductSeriesJoin = LeftJoin(
+            MatchingProductSeries,
+            MatchingPOT.productseriesID == MatchingProductSeries.id)
+        MatchingDistroSeries = ClassAlias(DistroSeries)
+        MatchingDistroSeriesJoin = LeftJoin(
+            MatchingDistroSeries,
+            MatchingPOT.distroseriesID == MatchingDistroSeries.id)
+
+        # Find any sharing POTemplate corresponding to MatchingPOT
+        # and its ProductSeries and DistroSeries, if they are defined.
+        OtherPOT = ClassAlias(POTemplate)
+        OtherPOTJoin = Join(
+            OtherPOT, And(OtherPOT.name == MatchingPOT.name))
+        OtherProductSeries = ClassAlias(ProductSeries)
+        OtherProductSeriesJoin = LeftJoin(
+            OtherProductSeries,
+            OtherPOT.productseriesID == OtherProductSeries.id)
+        OtherDistroSeries = ClassAlias(DistroSeries)
+        OtherDistroSeriesJoin = LeftJoin(
+            OtherDistroSeries,
+            OtherPOT.distroseriesID == OtherDistroSeries.id)
+
+        # And find a sharing POFile corresponding to a sharing POTemplate,
+        # i.e. OtherPOT.
+        OtherPOFile = ClassAlias(POFile)
+        OtherPOFileJoin = Join(
+            OtherPOFile,
+            And(OtherPOFile.languageID == POFile.languageID,
+                OtherPOFile.potemplateID == OtherPOT.id))
+
+        source = store.using(
+            POFile, MatchingPOTJoin, MatchingProductSeriesJoin,
+            MatchingDistroSeriesJoin, OtherPOTJoin,
+            OtherProductSeriesJoin, OtherDistroSeriesJoin, OtherPOFileJoin)
+
+        results = source.find(
+            OtherPOFile,
+            And(POFile.date_changed >= date,
+                Or(
+                    # OtherPOT is a sharing template with MatchingPOT
+                    # in the same distribution and sourcepackagename.
+                    And(MatchingPOT.distroseriesID is not None,
+                        OtherPOT.distroseriesID is not None,
+                        (MatchingDistroSeries.distributionID ==
+                         OtherDistroSeries.distributionID),
+                        (MatchingPOT.sourcepackagenameID ==
+                         OtherPOT.sourcepackagenameID)),
+                    # OtherPOT is a sharing template with MatchingPOT
+                    # in the same product.
+                    And(MatchingPOT.productseriesID is not None,
+                        OtherPOT.productseriesID is not None,
+                        (MatchingProductSeries.productID ==
+                         OtherProductSeries.productID)) )))
+        results.config(distinct=True)
+        return results
 
 
 class POFileToTranslationFileDataAdapter:

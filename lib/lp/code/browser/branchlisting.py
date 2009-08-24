@@ -246,10 +246,10 @@ class BranchListingSort(EnumeratedType):
         Sort branches by the display name of the registrant.
         """)
 
-    REGISTRANT = Item("""
-        by registrant name
+    OWNER = Item("""
+        by owner name
 
-        Sort branches by the display name of the registrant.
+        Sort branches by the display name of the owner.
         """)
 
     MOST_RECENTLY_CHANGED_FIRST = Item("""
@@ -331,54 +331,11 @@ class BranchListingItemsMixin:
         branches = list(self.currentBatch())
         # XXX: TimPenhey 2009-04-08 bug=324546
         # Until there is an API to do this nicely, shove the launchpad.view
-        # permission into the request cache directly.  This is done because the
-        # security proxy sometimes causes extra requests to be made.
+        # permission into the request cache directly.  This is done because
+        # the security proxy sometimes causes extra requests to be made.
         request = self.view.request
         precache_permission_for_objects(request, 'launchpad.View', branches)
         return branches
-
-    @cachedproperty
-    def branch_ids_with_bug_links(self):
-        """Return a set of branch ids that should show bug badges."""
-        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            self._branches_for_current_batch, self.view.user)
-        return set(bug_branch.branch.id for bug_branch in bug_branches)
-
-    @cachedproperty
-    def branch_ids_with_spec_links(self):
-        """Return a set of branch ids that should show blueprint badges."""
-        spec_branches = getUtility(
-            ISpecificationBranchSet).getSpecificationBranchesForBranches(
-            self._branches_for_current_batch, self.view.user)
-        return set(spec_branch.branch.id for spec_branch in spec_branches)
-
-    @cachedproperty
-    def branch_ids_with_merge_proposals(self):
-        """Return a set of branches that should show merge proposal badges.
-
-        Branches have merge proposals badges if they've been proposed for
-        merging into another branch (source branches).
-        """
-        branches = self.view._getCollection().visibleByUser(self.view.user)
-        proposals = branches.getMergeProposals(
-            for_branch=self._branch_for_current_batch)
-        return set(proposal.source_branch.id for proposal in proposals)
-
-    @cachedproperty
-    def tip_revisions(self):
-        """Return a set of branch ids that should show blueprint badges."""
-        revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
-            self._branches_for_current_batch)
-        if revisions is None:
-            revision_map = {}
-        else:
-            # Key the revisions by revision id.
-            revision_map = dict((revision.revision_id, revision)
-                                for revision in revisions)
-
-        # Return a dict keyed on branch id.
-        return dict((branch.id, revision_map.get(branch.last_scanned_id))
-                     for branch in self._branches_for_current_batch)
 
     @cachedproperty
     def product_series_map(self):
@@ -526,16 +483,12 @@ class BranchListingBatchNavigator(TableBatchNavigator,
         """Return a list of BranchListingItems."""
         return self.decoratedBranches(self.visible_branches_for_view)
 
-    @cachedproperty
-    def multiple_pages(self):
-        return self.batch.total() > self.batch.size
-
     @property
     def table_class(self):
         # XXX: MichaelHudson 2007-10-18 bug=153894: This means there are two
         # ways of sorting a one-page branch listing, which is a confusing and
         # incoherent.
-        if self.multiple_pages:
+        if self.has_multiple_pages:
             return "listing"
         else:
             return "listing sortable"
@@ -574,7 +527,13 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     @property
     def heading(self):
         return self.heading_template % {
-            'displayname': self.context.displayname}
+            'displayname': self.context.displayname,
+            'title': getattr(self.context, 'title', 'no-title')}
+
+    @property
+    def page_title(self):
+        # The page title uses the view heading.
+        return self.heading
 
     @property
     def initial_values(self):
@@ -727,7 +686,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,
             BranchListingSort.LIFECYCLE,
-            BranchListingSort.REGISTRANT,
+            BranchListingSort.OWNER,
             BranchListingSort.NAME,
             ]
 
@@ -735,7 +694,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             BranchListingSort.PRODUCT: (Asc, Branch.target_suffix),
             BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
             BranchListingSort.NAME: (Asc, Branch.name),
-            BranchListingSort.REGISTRANT: (Asc, Branch.owner_name),
+            BranchListingSort.OWNER: (Asc, Branch.owner_name),
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
                 Desc, Branch.date_last_modified),
             BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
@@ -1026,7 +985,7 @@ class PersonRegisteredBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
         return getUtility(IAllBranches).registeredBy(self.context)
@@ -1036,7 +995,7 @@ class PersonOwnedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
         return getUtility(IAllBranches).ownedBy(self.context)
@@ -1204,6 +1163,7 @@ class ProductBranchListingView(BranchListingView):
 
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
+    heading_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context)
@@ -1417,6 +1377,7 @@ class ProjectBranchesView(BranchListingView):
 
     no_sort_by = (BranchListingSort.DEFAULT,)
     extra_columns = ('author', 'product')
+    heading_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProject(self.context)
@@ -1455,6 +1416,8 @@ class BaseSourcePackageBranchesView(BranchListingView):
 class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
 
+    heading_template = 'Bazaar branches for %(title)s'
+
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
@@ -1477,6 +1440,12 @@ class DistroSeriesBranchListingView(BaseSourcePackageBranchesView):
 class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
                                                    BranchListingItemsMixin):
     """A view that groups branches into distro series."""
+
+    @property
+    def heading(self):
+        return 'Bazaar branches for %s' % self.context.title
+
+    page_title = heading
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -1631,6 +1600,8 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
 
 class SourcePackageBranchesView(BranchListingView):
 
+    heading_template = 'Bazaar branches of %(displayname)s'
+
     # XXX: JonathanLange 2009-03-03 spec=package-branches: This page has no
     # menu yet -- do we need one?
 
@@ -1687,7 +1658,7 @@ class PersonProductOwnedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's owned branches."""
 
     no_sort_by = (BranchListingSort.DEFAULT,
-                  BranchListingSort.REGISTRANT,
+                  BranchListingSort.OWNER,
                   BranchListingSort.PRODUCT)
 
     def _getCountCollection(self):

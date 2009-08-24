@@ -31,11 +31,11 @@ Login as an admin to be able to do changes to the import queue.
 Here's the person who'll be doing the import.
 
     >>> person_set = getUtility(IPersonSet)
-    >>> person = person_set.getByName('sabdfl')
+    >>> person = person_set.getByName('mark')
 
 Now, is time to create the new potemplate
 
-    >>> from canonical.launchpad.database import ProductRelease
+    >>> from lp.registry.model.productrelease import ProductRelease
     >>> release = ProductRelease.get(3)
     >>> release.productseries.product.name
     u'firefox'

@@ -11,6 +11,7 @@ __all__ = [
 
 from zope.event import notify
 
+from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.bugs.browser.bug import BugViewMixin
@@ -60,7 +61,9 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         The list is sorted such that subscriptions you can unsubscribe appear
         before all other subscriptions.
         """
-        direct_subscriptions = self.context.getDirectSubscriptions()
+        direct_subscriptions = [
+            SubscriptionAttrDecorator(subscription)
+            for subscription in self.context.getDirectSubscriptions()]
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
@@ -76,4 +79,18 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
 
     def getSortedSubscriptionsFromDuplicates(self):
         """Get the list of subscriptions to duplicates of this bug."""
-        return self.context.getSubscriptionsFromDuplicates()
+        return [
+            SubscriptionAttrDecorator(subscription)
+            for subscription in self.context.getSubscriptionsFromDuplicates()]
+
+
+class SubscriptionAttrDecorator:
+    """A BugSubscription with added attributes for HTML/JS."""
+    delegates(IBugSubscription, 'subscription')
+
+    def __init__(self, subscription):
+        self.subscription = subscription
+
+    @property
+    def css_name(self):
+        return 'subscriber-%s' % self.subscription.person.id

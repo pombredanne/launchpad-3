@@ -48,7 +48,7 @@ internals a bit.
     >>> browser.getControl(name="submit").click()
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'no-imports'))
-    No matching code imports found!
+    No matching code imports found.
 
 Of course selecting the "Any" filtering option ensures that all
 imports appear again.

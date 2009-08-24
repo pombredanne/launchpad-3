@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'TextAreaEditorWidget',
     'InlineEditPickerWidget',
     'vocabulary_to_choice_edit_items',
     'TextLineEditorWidget',
@@ -154,6 +155,110 @@ class TextLineEditorWidget:
             params['activation_script'] = self.ACTIVATION_TEMPLATE % params
         return self.WIDGET_TEMPLATE % params 
 
+
+class TextAreaEditorWidget(TextLineEditorWidget):
+    """Wrapper for the multine-line lazr-js inlineedit/editor.js widget."""
+
+    def __init__(self, *args, **kwds):
+        """Create the widget wrapper."""
+        if 'value' in kwds:
+            self.value = kwds.get('value', '')
+            kwds.pop('value')
+        super(TextAreaEditorWidget, self).__init__(*args, **kwds)
+
+    # The HTML template used to render the widget.
+    # Replacements:
+    #   activation_script: the JS script to active the widget
+    #   attribute: the name of the being edited
+    #   context_url: the url to the current context
+    #   edit_url: the URL used to edit the value when JS is turned off
+    #   id: the widget unique id
+    #   title: the widget title
+    #   trigger: the trigger (button) HTML code
+    #   value: the current field value
+    WIDGET_TEMPLATE = dedent(u"""\
+        <div id="multi-text-editor">
+          <div class="clearfix">
+            %(edit_controls)s
+            <h2>%(title)s</h2>
+          </div>
+          <div class="yui-editable_text-text">%(value)s</div>
+        </div>
+        %(activation_script)s
+        """)
+
+    CONTROLS_TEMPLATE = dedent(u"""\
+        <div class="edit-controls">
+          &nbsp;
+          %(trigger)s
+        </div>
+        """)
+
+    ACTIVATION_TEMPLATE = dedent(u"""\
+        <script>
+        YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
+            var widget = new Y.EditableText({
+                contentBox: '#%(id)s',
+                multiline: true,
+                buttons: 'top'
+            });
+            widget.editor.plug({
+                fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
+                  patch: '%(attribute)s',
+                  resource: '%(context_url)s',
+                  accept: 'application/xhtml+xml',
+                  formatter: function(result, attribute) {
+                      var dl = Y.DOM.create(result)[1]
+                      var dl_nodes = dl.childNodes;
+                      var i;
+                      // <dd> in XHR responses breaks description formatting.
+                      for (i=0; i<dl_nodes.length; i++) {
+                          var child = dl_nodes[i];
+                          // Ignore text nodes when looking for the attribute.
+                          // 3 is the text nodeType.
+                          if (child.nodeType != 3 &&
+                              child.firstChild.textContent == attribute) {
+                              var ptags = dl_nodes[i+2].childNodes;
+                              var span = Y.Node.create('<span></span>');
+                              var n;
+                              for (n=0; n<ptags.length; n++) {
+                                  span.appendChild(ptags[n]);
+                              }
+                              return span;
+                          }
+                      }
+                  }
+            }});
+            if (!Y.UA.opera) {
+                widget.render();
+            }
+        });
+        </script>
+        """)
+
+    def __call__(self):
+        """Return the HTML to include to render the widget."""
+        params = {
+            'activation_script': '',
+            'trigger': '',
+            'edit_url': self.edit_url,
+            'id': self.id,
+            'title': self.title,
+            'value': self.value,
+            'context_url': canonical_url(
+                self.context, path_only_if_possible=True),
+            'attribute': self.attribute,
+            'edit_controls': '',
+            }
+        # Only display the trigger link and the activation script if
+        # the user can write the attribute.
+        if canWrite(self.context, self.attribute):
+            params['trigger'] = self.TRIGGER_TEMPLATE % params
+            params['activation_script'] = self.ACTIVATION_TEMPLATE % params
+            params['edit_controls'] = self.CONTROLS_TEMPLATE % params
+        return self.WIDGET_TEMPLATE % params
+
+
 class InlineEditPickerWidget:
     """Wrapper for the lazr-js picker widget.
 
@@ -245,18 +350,32 @@ class InlineEditPickerWidget:
 
 
 def vocabulary_to_choice_edit_items(
-    vocab, css_class_prefix=None, disabled_items=[], as_json=False):
+    vocab, css_class_prefix=None, disabled_items=None, as_json=False,
+    name_fn=None, value_fn=None):
     """Convert an enumerable to JSON for a ChoiceEdit.
-    
+
     :vocab: The enumeration to iterate over.
     :css_class_prefix: If present, append this to an item's value to create
         the css_class property for it.
     :disabled_items: A list of items that should be displayed, but disabled.
+    :name_fn: A function receiving an item and returning its name.
+    :value_fn: A function receiving an item and returning its value.
     """
+    if disabled_items is None:
+        disabled_items = []
     items = []
     for item in vocab:
-        new_item = {'name': item.value.title,
-            'value': item.value.title,
+        if name_fn is not None:
+            name = name_fn(item.value)
+        else:
+            name = item.value.title
+        if value_fn is not None:
+            value = value_fn(item.value)
+        else:
+            value = item.value.title
+        new_item = {
+            'name': name,
+            'value': value,
             'style': '', 'help': '', 'disabled': False}
         for disabled_item in disabled_items:
             if disabled_item == item.value:
