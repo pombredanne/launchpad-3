@@ -55,8 +55,8 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase):
 
     layer = ZopelessDatabaseLayer
 
-    def test_DirectBranchCommit_emtpy_initial_commit_noop(self):
-        # Committing to an empty branch leaves an empty branch empty.
+    def test_DirectBranchCommit_empty_initial_commit_noop(self):
+        # An empty initial commit to a branch is a no-op.
         self.assertEqual('null:', self.tree.branch.last_revision())
         self.committer.commit('')
         self.assertEqual({}, self._getContents())
@@ -69,7 +69,7 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase):
         return rev_id
 
     def test_DirectBranchCommit_commits_no_changes(self):
-        # Committing to an empty branch leaves an empty branch empty.
+        # Committing nothing to an empty branch leaves its tree empty.
         self.assertEqual('null:', self.tree.branch.last_revision())
         old_rev_id = self.tree.branch.last_revision()
         self._addInitialCommit()
