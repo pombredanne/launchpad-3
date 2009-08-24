@@ -141,6 +141,9 @@ class StructuralSubscriptionTargetMixin:
                 subscribed_by.inTeam(admins))
 
     def addSubscription(self, subscriber, subscribed_by):
+        if subscriber is None:
+            subscriber = subscribed_by
+
         """See `IStructuralSubscriptionTarget`."""
         if not self._userCanAlterSubscription(subscriber, subscribed_by):
             raise UserCannotSubscribePerson(
@@ -167,8 +170,16 @@ class StructuralSubscriptionTargetMixin:
         sub.bug_notification_level = BugNotificationLevel.COMMENTS
         return sub
 
-    def removeBugSubscription(self, subscriber):
+    def removeBugSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
+        if subscriber is None:
+            subscriber = subscribed_by
+
+        if not self._userCanAlterSubscription(subscriber, subscribed_by):
+            raise UserCannotSubscribePerson(
+                '%s does not have permission to unsubscribe %s.' % (
+                    subscribed_by.name, subscriber.name))
+
         subscription_to_remove = None
         for subscription in self.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.METADATA):

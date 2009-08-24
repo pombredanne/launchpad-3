@@ -176,9 +176,9 @@ class IStructuralSubscriptionTarget(Interface):
         :return: The new subscription.
         """
 
-    # TODO: Allow admins to subscribe their teams.
     @operation_parameters(
-        subscriber=Reference(schema=IPerson, title=_('Person')))
+        subscriber=Reference(
+            schema=IPerson, title=_('Person'), required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
     def addBugSubscription(subscriber, subscribed_by):
@@ -193,10 +193,12 @@ class IStructuralSubscriptionTarget(Interface):
         :return: The new bug subscription.
         """
 
-    # TODO: Allow admins to unsubscribe their teams.
-    @call_with(subscriber=REQUEST_USER)
+    @operation_parameters(
+        subscriber=Reference(
+            schema=IPerson, title=_('Person'), required=False))
+    @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
-    def removeBugSubscription(subscriber):
+    def removeBugSubscription(subscriber, subscribed_by):
         """Remove a subscription to bugs from this structure.
 
         If subscription levels for other applications are set,
