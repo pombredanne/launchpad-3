@@ -44,7 +44,6 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
@@ -293,6 +292,7 @@ class BranchMergeProposalNavigation(Navigation):
 
     @stepthrough('reviews')
     def traverse_review(self, id):
+        """Navigate to a CodeReviewVoteReference through its BMP."""
         try:
             id = int(id)
         except ValueError:
@@ -301,7 +301,6 @@ class BranchMergeProposalNavigation(Navigation):
             return self.context.getVoteReference(id)
         except WrongBranchMergeProposal:
             return None
-
 
     @stepthrough('comments')
     def traverse_comment(self, id):
@@ -441,8 +440,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return DecoratedBugs linked to the source branch."""
         # Avoid import loop
         from lp.code.browser.branch import DecoratedBug
-        branch = self.context.source_branch
-        return [DecoratedBug(bug, branch) for bug in branch.linked_bugs]
+        return [DecoratedBug(bug, self.context.source_branch)
+                for bug in self.context.related_bugs]
 
 
 class DecoratedCodeReviewVoteReference:
@@ -509,22 +508,6 @@ class DecoratedCodeReviewVoteReference:
     def status_text(self):
         """The text shown in the table of the users vote."""
         return self.status_text_map[self.context.comment.vote]
-
-class ReassignSchema(Interface):
-
-    reviewer = PublicPersonChoice( title=_('Reviewer'), required=True,
-            description=_('A person who you want to review this.'),
-            vocabulary='ValidPersonOrTeam')
-
-
-class CodeReviewVoteReassign(LaunchpadFormView):
-
-    schema = ReassignSchema
-
-    @action('Reassign', name='reassign')
-    def reassign_action(self, action, data):
-        self.context.reviewer = data['reviewer']
-        self.next_url = canonical_url(self.context.branch_merge_proposal)
 
 
 class BranchMergeProposalVoteView(LaunchpadView):

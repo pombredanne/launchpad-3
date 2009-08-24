@@ -6,8 +6,10 @@
 
 __metaclass__ = type
 
+from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchMergeProposalDelta
@@ -32,8 +34,12 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
     """Notify branch subscribers when merge proposals are updated."""
     if event.user is None:
         return
+    if isinstance(event.user, UnauthenticatedPrincipal):
+        from_person = None
+    else:
+        from_person = IPerson(event.user)
     mailer = BMPMailer.forModification(
-        event.object_before_modification, merge_proposal, IPerson(event.user))
+        event.object_before_modification, merge_proposal, from_person)
     if mailer is not None:
         mailer.sendAll()
 
@@ -104,18 +110,22 @@ class BMPMailer(BranchMailer):
             review_diff=merge_proposal.review_diff)
 
     @classmethod
-    def forModification(cls, old_merge_proposal, merge_proposal, from_user):
+    def forModification(cls, old_merge_proposal, merge_proposal,
+                        from_user=None):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
         :param from_user: The user that the creation notification should
-            come from.
+            come from.  Optional.
         """
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
-        assert from_user.preferredemail is not None, (
-            'The sender must have an email address.')
-        from_address = cls._format_user_address(from_user)
+        if from_user is not None:
+            assert from_user.preferredemail is not None, (
+                'The sender must have an email address.')
+            from_address = cls._format_user_address(from_user)
+        else:
+            from_address = config.canonical.noreply_from_address
         delta = BranchMergeProposalDelta.construct(
                 old_merge_proposal, merge_proposal)
         if delta is None:
@@ -219,7 +229,22 @@ class BMPMailer(BranchMailer):
             params['diff_cutoff_warning'] = (
                 "The attached diff has been truncated due to its size.")
 
+        params['related_bugs'] = self._getRelatedBugs()
         return params
+
+    def _getRelatedBugs(self):
+        """Return a string describing related bugs, if any.
+
+        Related bugs are provided by `IBranchMergeProposal.related_bugs`
+        """
+        bug_chunks = []
+        for bug in self.merge_proposal.related_bugs:
+            bug_chunks.append('  #%d %s\n' % (bug.id, bug.title))
+            bug_chunks.append('  %s\n' % canonical_url(bug))
+        if len(bug_chunks) == 0:
+            return ''
+        else:
+            return 'Related bugs:\n' + ''.join(bug_chunks)
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""

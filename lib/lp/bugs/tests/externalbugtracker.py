@@ -759,6 +759,10 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
 
     # Map namespaces onto method names.
     methods = {
+        'Bug': [
+            'get',
+            'search',
+            ],
         'Bugzilla': [
             'time',
             'version',
@@ -816,6 +820,30 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             'web_time': time_dict['local_time'],
             'web_time_utc': time_dict['utc_time'],
             }
+
+    def get(self, arguments):
+        """Return a list of bug dicts for a given set of bug ids."""
+        # This method is actually just a synonym for get_bugs().
+        return self.get_bugs(arguments)
+
+    def search(self, arguments):
+        """Return a list of bug dicts that match search criteria."""
+        search_args = {'permissive': True}
+
+        # Convert the search arguments into something that get_bugs()
+        # understands. This may seem like a hack, but since we're only
+        # trying to simulate the way Bugzilla behaves it doesn't really
+        # matter that we just pass the buck to get_bugs().
+        if arguments.get('last_change_time') is not None:
+            search_args['changed_since'] = arguments['last_change_time']
+
+        if arguments.get('id') is not None:
+            search_args['ids'] = arguments['id']
+        else:
+            search_args['ids'] = [
+                bug_id for bug_id in self.bugs]
+
+        return self.get_bugs(search_args)
 
 
 class TestMantis(Mantis):

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ProjectActionMenu',
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
@@ -18,14 +19,14 @@ __all__ = [
     'ProjectFacets',
     'ProjectMaintainerReassignmentView',
     'ProjectNavigation',
+    'ProjectOverviewMenu',
     'ProjectRdfView',
     'ProjectReviewView',
-    'ProjectActionMenu',
-    'ProjectOverviewMenu',
     'ProjectSeriesSpecificationsMenu',
     'ProjectSetBreadcrumbBuilder',
     'ProjectSetContextMenu',
     'ProjectSetNavigation',
+    'ProjectSetNavigationMenu',
     'ProjectSetView',
     'ProjectSpecificationsMenu',
     'ProjectView',
@@ -49,6 +50,8 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.registry.browser.product import (
     ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -198,8 +201,8 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def new_product(self):
-        text = 'Register another project in %s' % self.context.displayname
-        return Link('+newproduct', text, icon='edit')
+        text = 'Register a project in %s' % self.context.displayname
+        return Link('+newproduct', text, icon='add')
 
     def top_contributors(self):
         text = 'More contributors'
@@ -227,7 +230,7 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
 
     def milestones(self):
         text = 'See all milestones'
-        return Link('+milestones', text)
+        return Link('+milestones', text, icon='info')
 
     def rdf(self):
         text = structured(
@@ -344,6 +347,15 @@ class ProjectBugsMenu(ApplicationMenu):
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
     implements(IProjectActionMenu)
+
+    @cachedproperty
+    def has_many_projects(self):
+        """Does the projectgroup have many sub projects.
+
+        The number of sub projects can break the preferred layout so the
+        template may want to plan for a long list.
+        """
+        return self.context.products.count() > 10
 
 
 class ProjectEditView(LaunchpadEditFormView):
@@ -475,10 +487,28 @@ class ProjectAddProductView(ProductAddView):
         return ProjectGroupAddStepOne
 
 
-class ProjectSetView(LaunchpadView):
+class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for project group index."""
+    usedfor = IProjectSet
+    links = ['register_team', 'register_project', 'create_account',
+             'register_project_group', 'view_all_project_groups']
 
-    header = "Project groups registered in Launchpad"
-    page_title = header
+    @enabled_with_permission('launchpad.ProjectReview')
+    def register_project_group(self):
+        text = 'Register a project group'
+        return Link('+new', text, icon='add')
+
+    def view_all_project_groups(self):
+        text = 'View all project groups'
+        return Link('+all', text, icon='list')
+
+
+class ProjectSetView(LaunchpadView):
+    """View for project group index page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = "Project groups registered in Launchpad"
 
     def __init__(self, context, request):
         super(ProjectSetView, self).__init__(context, request)
@@ -488,17 +518,26 @@ class ProjectSetView(LaunchpadView):
         self.malone = self.form.getOne('malone', None)
         self.bazaar = self.form.getOne('bazaar', None)
         self.text = self.form.getOne('text', None)
-        self.searchrequested = False
+        self.search_requested = False
+        self.search_string = None
         if (self.text is not None or
             self.bazaar is not None or
             self.malone is not None or
             self.rosetta is not None or
             self.soyuz is not None):
-            self.searchrequested = True
+            self.search_requested = True
         self.results = None
         self.matches = 0
 
-    def searchresults(self):
+    def initialize(self):
+        """See `LaunchpadView`."""
+        form = self.request.form_ng
+        self.search_string = form.getOne('text')
+        if self.search_string is not None:
+            self.search_requested = True
+
+    @cachedproperty
+    def search_results(self):
         """Use searchtext to find the list of Projects that match
         and then present those as a list. Only do this the first
         time the method is called, otherwise return previous results.
