@@ -72,7 +72,7 @@
         class="lp.code.browser.codereviewvote.CodeReviewVoteReassign"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/reviewrequest-reassign.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <facet
         facet="branches">
         <browser:url

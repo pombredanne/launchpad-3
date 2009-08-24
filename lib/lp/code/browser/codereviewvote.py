@@ -29,6 +29,8 @@ class CodeReviewVoteReassign(LaunchpadFormView):
 
     schema = ReassignSchema
 
+    page_title = label = 'Reassign review request'
+
     @action('Reassign', name='reassign')
     def reassign_action(self, action, data):
         """Use the form data to change the review request reviewer."""
