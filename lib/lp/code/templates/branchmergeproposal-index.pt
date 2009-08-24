@@ -84,14 +84,14 @@
   <div id="votes-target"
     tal:content="structure context/@@+votes" />
 
-  <tal:comments condition="view/conversation"
-                replace="structure view/conversation/@@+render"/>
-
   <div tal:define="link context/menu:context/add_comment"
        tal:condition="link/enabled"
        tal:content="structure link/render">
        Add comment
   </div>
+
+  <tal:comments condition="view/conversation"
+                replace="structure view/conversation/@@+render"/>
 
   <div id="related-bugs-and-blueprints"
     tal:define="branch context/source_branch"

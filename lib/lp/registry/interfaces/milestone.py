@@ -25,6 +25,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description, NoneableDescription, NoneableTextLine)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.components.apihelpers import (
+    patch_plain_parameter_type)
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
@@ -170,6 +172,8 @@ class IMilestone(IHasBugs):
 
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
+patch_plain_parameter_type(
+    IBugTask, 'transitionToMilestone', 'new_milestone', IMilestone)
 
 
 class IMilestoneSet(Interface):

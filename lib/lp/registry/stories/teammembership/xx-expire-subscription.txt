@@ -7,7 +7,7 @@ value for the year 2000 is not available in HTML, but we can encode the
 variables:
 
     >>> import urllib
-    >>> browser = setupBrowser(auth="Basic mark@hbd.com:test")
+    >>> browser = setupBrowser(auth="Basic mark@example.com:test")
     >>> browser.open("http://launchpad.dev/~name20/+member/name12",
     ...              urllib.urlencode({
     ...                   "admin": "no",

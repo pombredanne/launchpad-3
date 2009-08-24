@@ -244,13 +244,6 @@ class IBugTarget(IHasBugs):
             required=False,
             max_length=50000))
 
-    def getMostCommonBugs(user, limit=10):
-        """Return the list of most commonly-reported bugs.
-
-        This is the list of bugs that have the most dupes, ordered from
-        most to least duped.
-        """
-
     def createBug(bug_params):
         """Create a new bug on this target.
 

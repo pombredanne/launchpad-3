@@ -197,6 +197,17 @@ class QuestionSubscriptionView(LaunchpadView):
             self.context, question_unmodified, list(modified_fields)))
 
     @property
+    def page_title(self):
+        return 'Subscription to question #%s' % self.context.id
+
+    @property
+    def label(self):
+        if self.subscription:
+            return 'Unsubscribe from question'
+        else:
+            return 'Subscribe to question'
+
+    @property
     def subscription(self):
         """Establish if this user has a subscription"""
         if self.user is None:
@@ -422,7 +433,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                     _('You must provide details about your problem.'))
 
     @property
-    def pagetitle(self):
+    def page_title(self):
         """The current page title."""
         return _('Ask a question about ${context}',
                  mapping=dict(context=self.context.displayname))
@@ -484,6 +495,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 class QuestionChangeStatusView(LaunchpadFormView):
     """View for changing a question status."""
     schema = IQuestionChangeStatusForm
+    label = 'Change question status'
+
+    @property
+    def page_title(self):
+        return 'Change status of question #%s' % self.context.id
 
     def validate(self, data):
         """Check that the status and message are valid."""
@@ -518,6 +534,12 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     custom_widget('whiteboard', TextAreaWidget, height=5)
     custom_widget('target', LaunchpadTargetWidget)
 
+    @property
+    def page_title(self):
+        return 'Edit question #%s details' % self.context.id
+
+    label = page_title
+
     def setUpFields(self):
         """Select the subset of fields to display.
 
@@ -549,6 +571,11 @@ class QuestionRejectView(LaunchpadFormView):
     """View for rejecting a question."""
     schema = IQuestionChangeStatusForm
     field_names = ['message']
+    label = 'Reject question'
+
+    @property
+    def page_title(self):
+        return 'Reject question #%s' % self.context.id
 
     def validate(self, data):
         """Check that required information was provided."""
@@ -937,6 +964,10 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     label = _('Create a new FAQ')
 
+    @property
+    def page_title(self):
+        return 'Create a FAQ for %s' % self.context.product.displayname
+
     field_names = ['title', 'keywords', 'content']
 
     custom_widget('keywords', TokensTextWidget)
@@ -1119,6 +1150,10 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
     custom_widget("message", TextAreaWidget, height=5)
 
     label = _('Is this a FAQ?')
+
+    @property
+    def page_title(self):
+        return _('Is question #%s a FAQ?' % self.context.id)
 
     @property
     def initial_values(self):

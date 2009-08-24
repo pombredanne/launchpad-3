@@ -134,7 +134,7 @@ The bug data is stored as a list of dicts:
 
     >>> print_bugs(bugzilla._bugs)
     Bug 1:
-        alias: 
+        alias:
         assigned_to: test@canonical.com
         component: GPPSystems
         creation_time: 20080610T16:19:53
@@ -160,7 +160,7 @@ The bug data is stored as a list of dicts:
         last_change_time: 20080611T09:24:29
         priority: P1
         product: HeartOfGold
-        resolution: 
+        resolution:
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
@@ -197,7 +197,7 @@ dicts to demonstrate this.
         last_change_time: 20080611T09:24:29
         priority: P1
         product: HeartOfGold
-        resolution: 
+        resolution:
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
