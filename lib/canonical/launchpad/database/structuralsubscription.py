@@ -151,20 +151,20 @@ class StructuralSubscriptionTargetMixin:
         sub.bug_notification_level = BugNotificationLevel.COMMENTS
         return sub
 
-    def removeBugSubscription(self, person):
+    def removeBugSubscription(self, subscriber):
         """See `IStructuralSubscriptionTarget`."""
         subscription_to_remove = None
         for subscription in self.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.METADATA):
             # Only search for bug subscriptions
-            if subscription.subscriber == person:
+            if subscription.subscriber == subscriber:
                 subscription_to_remove = subscription
                 break
 
         if subscription_to_remove is None:
             raise DeleteSubscriptionError(
                 "%s is not subscribed to %s." % (
-                person.name, self.displayname))
+                subscriber.name, self.displayname))
         else:
             if (subscription_to_remove.blueprint_notification_level >
                 BlueprintNotificationLevel.NOTHING):
