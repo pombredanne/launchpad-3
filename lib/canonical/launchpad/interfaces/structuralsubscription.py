@@ -13,7 +13,8 @@ __all__ = [
     'DeleteSubscriptionError',
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
-    'IStructuralSubscriptionTarget'
+    'IStructuralSubscriptionTarget',
+    'UserCannotSubscribePerson',
     ]
 
 from zope.interface import Attribute, Interface
@@ -240,3 +241,8 @@ class DeleteSubscriptionError(Exception):
     structural subscription."""
 
     webservice_error(400)
+
+
+class UserCannotSubscribePerson(Exception):
+    """User does not have permission to subscribe the person or team."""
+    webservice_error(401)

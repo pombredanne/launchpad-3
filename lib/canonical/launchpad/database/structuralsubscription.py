@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = ['StructuralSubscription',
            'StructuralSubscriptionTargetMixin']
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey
@@ -16,9 +17,10 @@ from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
-    IProduct, IProductSeries, IProject, IStructuralSubscription,
-    IStructuralSubscriptionTarget)
+    IDistribution, IDistributionSourcePackage, IDistroSeries,
+    ILaunchpadCelebrities, IMilestone, IProduct, IProductSeries, IProject,
+    IStructuralSubscription, IStructuralSubscriptionTarget,
+    UserCannotSubscribePerson)
 from lp.registry.interfaces.person import (
     validate_public_person, validate_person_not_private_membership)
 
@@ -132,6 +134,16 @@ class StructuralSubscriptionTargetMixin:
     def addSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
         existing_subscription = self.getSubscription(subscriber)
+
+        # Only a Launchpad administrator or the user can subscribe a user.
+        # Only a Launchpad or team admin can subscribe a team.
+        admins = getUtility(ILaunchpadCelebrities).admins
+        if (subscriber is not subscribed_by and
+            not subscribed_by.inTeam(admins) and
+            subscriber not in subscribed_by.getAdministratedTeams()):
+            UserCannotSubscribePerson(
+                '%s does not have permission to subscribe %s.' % (
+                    subscribed_by.name, subscriber.name))
 
         if existing_subscription is not None:
             return existing_subscription
