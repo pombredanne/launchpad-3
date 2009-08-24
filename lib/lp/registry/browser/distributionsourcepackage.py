@@ -12,8 +12,10 @@ __all__ = [
     'DistributionSourcePackageView',
     ]
 
+from datetime import datetime
 import itertools
 import operator
+import pytz
 
 from zope.component import getUtility, provideAdapter
 from zope.formlib import form
@@ -338,41 +340,91 @@ class DistributionSourcePackageView(LaunchpadFormView):
               distroseries=distroseries.displayname)))
         self.next_url = canonical_url(self.context)
 
-    def version_listing(self):
-        result = []
-        for sourcepackage in self.context.get_distroseries_packages():
-            packaging = sourcepackage.direct_packaging
+    @cachedproperty
+    def active_distroseries_packages(self):
+        """Cached proxy call to context/get_distroseries_packages."""
+        return self.context.get_distroseries_packages()
+
+    @property
+    def packages_by_active_distroseries(self):
+        """Dict of packages keyed by distroseries."""
+        packages_dict = {}
+        for package in self.active_distroseries_packages:
+            packages_dict[package.distroseries] = package
+        return packages_dict
+
+    @property
+    def active_series(self):
+        """Return active distroseries where this package is published.
+
+        Used in the template code that shows the table of versions.
+        """
+        series = set()
+        for package in self.active_distroseries_packages:
+            series.add(package.distroseries)
+        return list(series)
+
+    def published_by_version(self, sourcepackage):
+        """Return a dict of publications keyed by version.
+
+        :param sourcepackage: ISourcePackage
+        """
+        publications = sourcepackage.distroseries.getPublishedReleases(
+            sourcepackage.sourcepackagename)
+        pocket_dict = {}
+        for pub in publications:
+            version = pub.source_package_version
+            if version not in pocket_dict:
+                pocket_dict[version] = [pub]
+            else:
+                pocket_dict[version].append(pub)
+        return pocket_dict
+
+    @property
+    def version_table(self):
+        """Rows of data for the template to render in the packaging table."""
+        rows = []
+        packages_by_series = self.packages_by_active_distroseries
+        for distroseries in self.active_series:
+            # The first row for each series is the "title" row.
+            packaging = packages_by_series[distroseries].direct_packaging
             if packaging is None:
                 delete_packaging_form_id = None
-                packaging_field = None
+                hidden_packaging_field = None
             else:
                 delete_packaging_form_id = "delete_%s_%s_%s" % (
                     packaging.distroseries.name,
                     packaging.productseries.product.name,
                     packaging.productseries.name)
-                packaging_field = self._renderHiddenPackagingField(packaging)
-            series_result = []
-            for published in \
-                sourcepackage.published_by_pocket.iteritems():
-                for drspr in published[1]:
-                    series_result.append({
-                        'series': sourcepackage.distroseries,
-                        'pocket': published[0].name.lower(),
-                        'package': drspr,
-                        'packaging': packaging,
-                        'delete_packaging_form_id': delete_packaging_form_id,
-                        'packaging_field': packaging_field,
-                        'sourcepackage': sourcepackage
-                        })
-            for row in range(len(series_result)-1, 0, -1):
-                for column in ['series', 'pocket', 'package', 'packaging',
-                               'packaging_field', 'sourcepackage']:
-                    if (series_result[row][column] ==
-                            series_result[row-1][column]):
-                        series_result[row][column] = None
-            for row in series_result:
-                result.append(row)
-        return result
+                hidden_packaging_field = self._renderHiddenPackagingField(
+                    packaging)
+            title_row = {
+                'title_row': True,
+                'distroseries': distroseries,
+                'packaging': packaging,
+                'hidden_packaging_field': hidden_packaging_field,
+                'delete_packaging_form_id': delete_packaging_form_id,
+                }
+            rows.append(title_row)
+
+            # After the title row, we list each package version that's
+            # currently published, and which pockets it's published in.
+            package = packages_by_series[distroseries]
+            pocket_dict = self.published_by_version(package)
+            for version in pocket_dict.iterkeys():
+                row = {
+                    'title_row': False,
+                    'version': version,
+                    'publications': pocket_dict[version],
+                    'pockets': ",".join(
+                        [pub.pocket.name for pub in pocket_dict[version]]),
+                    'component': pocket_dict[version][0].component_name,
+                    'published_since': datetime.now(
+                        tz=pytz.UTC) - pocket_dict[version][0].datepublished,
+                    }
+                rows.append(row)
+
+        return rows
 
     def releases(self):
         dspr_pubs = self.context.getReleasesAndPublishingHistory()

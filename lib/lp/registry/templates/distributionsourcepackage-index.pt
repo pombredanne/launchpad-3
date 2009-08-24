@@ -145,6 +145,59 @@
 
 
   <div class="yui-u">
+
+    <table class="listing" id="packaging">
+      <tal:rows repeat="row view/version_table">
+
+      <tal:title_row condition="row/title_row">
+      <tr class="section-heading shaded">
+        <td colspan=3>
+          <div style="float:right;">
+            <a tal:condition="not: row/packaging"
+               tal:replace="structure view/menu:overview/set_upstream/fmt:link"/>
+            <tal:has_packaging condition="row/packaging">
+              <tal:title replace="row/packaging/productseries/title"/>
+              <a tal:attributes="href view/menu:overview/set_upstream/url">
+                <img src="/@@/edit">
+              </a>
+              <form style="display: inline"
+                    method="POST"
+                    tal:condition="row/hidden_packaging_field"
+                    tal:attributes="action request/URL;
+                                    id row/delete_packaging_form_id">
+                <tal:hidden replace="structure row/hidden_packaging_field" />
+                <tal:action replace="structure view/renderDeletePackagingAction" />
+              </form>
+            </tal:has_packaging>
+          </div><!--float right-->
+          <a tal:attributes="href row/distroseries/fmt:url"
+             tal:content="row/distroseries/title"/>
+          (<span tal:content="row/distroseries/status/title/lower"/>)
+        </td>
+      </tr>
+      </tal:title_row>
+
+      <tal:package_row condition="not: row/title_row">
+      <tr>
+        <td>
+          <img style="padding-right:0.5em;" src="/@@/treeCollapsed">
+          <tal:version content="row/version"/>
+        </td>
+        <td>
+          <tal:pockets content="row/pockets/lower"/>
+          (<tal:component content="row/component"/>)
+        </td>
+        <td>
+          <tal:last_published
+               content="row/published_since/fmt:approximateduration"/> ago
+        </td>
+      </tr>
+      </tal:package_row>
+
+      </tal:rows>
+    </table>
+
+
     <table class="listing" id="packages_list">
       <tr class="section-heading shaded" style="font-weight: bold">
         <td colspan=3>
