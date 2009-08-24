@@ -962,14 +962,26 @@ def notify_team_join(event):
         replacements['recipient_name'] = recipient.displayname
         if recipient.isTeam():
             header_rationale = 'Admin (%s via %s)' % (
-                team.name, recpient.name)
+                team.name, recipient.name)
+            footer_rationale = (
+                "you are an admin of the %s team\n"
+                "via the %s team." % (
+                team.displayname, recipient.displayname))
         elif recipient == team.teamowner:
             header_rationale = 'Owner (%s)' % team.name
+            footer_rationale = (
+                "you are the owner of the %s team." % team.displayname)
         else:
             header_rationale = 'Admin (%s)' % team.name
+            footer_rationale = (
+                "you are an admin of the %s team." % team.displayname)
         headers['X-Launchpad-Message-Rationale'] = header_rationale
         msg = MailWrapper().format(
             template % replacements, force_wrap=True)
+        footer = (
+            "\n\n-- \n"
+            "You received this email because %s" % footer_rationale)
+        msg = msg + footer
         simple_sendmail(from_addr, address, subject, msg, headers=headers)
 
 
