@@ -1073,22 +1073,21 @@ class Bug(SQLBase):
 
     def addNomination(self, owner, target):
         """See `IBug`."""
+        if not self.canBeNominatedFor(target):
+            raise NominationError(
+                "This bug cannot be nominated for %s." %
+                    target.bugtargetdisplayname)
+
         distroseries = None
         productseries = None
         if IDistroSeries.providedBy(target):
             distroseries = target
-            target_displayname = target.fullseriesname
             if target.status == DistroSeriesStatus.OBSOLETE:
                 raise NominationSeriesObsoleteError(
-                    "%s is an obsolete series." % target_displayname)
+                    "%s is an obsolete series." % target.bugtargetdisplayname)
         else:
             assert IProductSeries.providedBy(target)
             productseries = target
-            target_displayname = target.title
-
-        if not self.canBeNominatedFor(target):
-            raise NominationError(
-                "This bug cannot be nominated for %s." % target_displayname)
 
         nomination = BugNomination(
             owner=owner, bug=self, distroseries=distroseries,
@@ -1108,9 +1107,7 @@ class Bug(SQLBase):
             elif IProductSeries.providedBy(target):
                 target_getter = operator.attrgetter("productseries")
             else:
-                raise AssertionError(
-                    "Expected IDistroSeries or IProductSeries target. "
-                    "Got %r." % target)
+                return False
 
             for task in self.bugtasks:
                 if target_getter(task) == target:
