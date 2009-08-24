@@ -181,8 +181,6 @@ def branch_merges(context, view):
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
-branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
-
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
 
