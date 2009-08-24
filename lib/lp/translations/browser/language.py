@@ -186,7 +186,7 @@ class LanguageAdminView(LaunchpadEditFormView):
     @property
     def cancel_url(self):
         """See LaunchpadFormView."""
-        return self.next_url
+        return canonical_url(self.context, rootsite=self.rootsite)
 
     @property
     def next_url(self):
