@@ -34,6 +34,7 @@ the previous and next steps of editing a language are returning to its index.
 
 Add Language
 ------------------
+
     >>> language_add_view = create_view(language_set, '+add', 
     ...     layer=TranslationsLayer)
 
@@ -63,8 +64,8 @@ The view provides also a cancel_url and a next_url:
     ...     'field.actions.add': 'Add',
     ...     }
 
-
-    >>> language_add_view = create_initialized_view(language_set, '+add', form=form, 
+    >>> language_add_view = create_initialized_view(
+    ...     language_set, '+add', form=form,
     ...     layer=TranslationsLayer)
     >>> language_add_view.errors
     []
