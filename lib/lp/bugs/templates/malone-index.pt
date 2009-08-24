@@ -9,7 +9,19 @@
   <h1 metal:fill-slot="heading">Bug tracking</h1>
 
   <div metal:fill-slot="side">
-    <tal:menu replace="structure view/@@+global-actions" />
+    <div id="involvement" class="portlet involvement">
+      <h2>Get Involved</h2>
+      <ul>
+        <li>
+          <a href="https://bugs.launchpad.dev/+tour"
+             class="menu-link-tour sprite bugs">Take a tour</a>
+        </li>
+        <li>
+          <a href="https://bugs.launchpad.dev/bugs/+filebug"
+             class="menu-link-filebug sprite bugs">Report a bug</a>
+        </li>
+      </ul>
+    </div>
   </div>
 
   <div metal:fill-slot="main">
