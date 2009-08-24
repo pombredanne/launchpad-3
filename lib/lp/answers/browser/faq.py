@@ -38,6 +38,10 @@ class FAQEditView(LaunchpadEditFormView):
     label = _('Edit FAQ')
     field_names = ["title", "keywords", "content"]
 
+    @property
+    def page_title(self):
+        return 'Edit FAQ #%s details' % self.context.id
+
     @action(_('Save'), name="save")
     def save_action(self, action, data):
         """Update the FAQ details."""
