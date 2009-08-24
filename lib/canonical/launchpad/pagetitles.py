@@ -189,8 +189,6 @@ def branchmergeproposal_index(context, view):
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
-branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
-
 def branch_visibility_edit(context, view):
     """Return the view's pagetitle."""
     return view.pagetitle

@@ -142,6 +142,11 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
 class BranchVisibilityPolicyView(LaunchpadView):
     """Simple view for displaying branch visibility policies."""
 
+    @property
+    def page_title(self):
+        name = self.context.displayname
+        return 'Set branch visibility policy for %s' % name
+
     @cachedproperty
     def items(self):
         return self.context.getBranchVisibilityTeamPolicies()
