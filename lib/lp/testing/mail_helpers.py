@@ -82,10 +82,10 @@ def print_emails(include_reply_to=False, group_similar=False,
         print 'To:', ", ".join(sorted(recipients))
         if include_reply_to:
             print 'Reply-To:', message['Reply-To']
-        if include_rationale:
+        rationale_header = 'X-Launchpad-Message-Rationale'
+        if include_rationale and rationale_header in message:
             print (
-                'X-Launchpad-Message-Rationale: %s' %
-                    message['X-Launchpad-Message-Rationale'])
+                '%s: %s' % (rationale_header, message[rationale_header]))
         print 'Subject:', message['Subject']
         print body
         print "-"*40

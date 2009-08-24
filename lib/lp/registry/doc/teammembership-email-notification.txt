@@ -101,7 +101,6 @@ and each of the team's admins.
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: lifeless declined by mark
     <BLANKLINE>
     The membership status of Robert Collins (lifeless) in the team Ubuntu
@@ -111,7 +110,6 @@ and each of the team's admins.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: robertc@robertcollins.net
-    X-Launchpad-Message-Rationale: None
     Subject: lifeless declined by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
@@ -141,7 +139,6 @@ The same goes for approving a proposed member.
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: daf approved by mark
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -154,7 +151,6 @@ The same goes for approving a proposed member.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: daf@canonical.com
-    X-Launchpad-Message-Rationale: None
     Subject: daf approved by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
@@ -176,7 +172,6 @@ The same for deactivating a membership.
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: daf deactivated by mark
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -186,7 +181,6 @@ The same for deactivating a membership.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: daf@canonical.com
-    X-Launchpad-Message-Rationale: None
     Subject: daf deactivated by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
@@ -313,7 +307,6 @@ only be activated if they accept the invitation.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: Invitation for ubuntu-mirror-admins to join
     <BLANKLINE>
     Celso Providelo (cprov) has invited Mirror Administrators (ubuntu-
@@ -344,7 +337,6 @@ team which just became a member and to the admins of the hosting team.
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, karl@canonical.com, limi@plone.org,
         mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: Invitation to ubuntu-mirror-admins accepted by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has accepted the invitation to make Mirror
@@ -378,7 +370,6 @@ Similarly, a notification is sent if the invitation is declined.
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         guilherme.salgado@canonical.com, jeff.waugh@ubuntulinux.com,
         limi@plone.org, mark@example.com, test@canonical.com
-    X-Launchpad-Message-Rationale: None
     Subject: Invitation to landscape-developers declined by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has declined the invitation to make Landscape
@@ -474,7 +465,6 @@ the other team admins.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com
-    X-Launchpad-Message-Rationale: None
     Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
     On ..., nine days from now, your membership
@@ -512,7 +502,6 @@ ubuntu-team's admins.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: beta-admin@launchpad.net
-    X-Launchpad-Message-Rationale: None
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., nine days from now, the membership
@@ -547,7 +536,6 @@ renew his own membership.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com
-    X-Launchpad-Message-Rationale: None
     Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
     On ..., nine days from now, your membership
@@ -570,7 +558,6 @@ renew his own membership.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: beta-admin@launchpad.net
-    X-Launchpad-Message-Rationale: None
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., nine days from now, the membership
@@ -607,7 +594,6 @@ where he can extend it.
     >>> print_distinct_emails()
     From: Landscape Developers <noreply@launchpad.net>
     To: test@canonical.com
-    X-Launchpad-Message-Rationale: None
     Subject: Your membership in landscape-developers is about to expire
     <BLANKLINE>
     On ..., nine days from now, your membership
@@ -670,7 +656,6 @@ is automatically renewed.
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         limi@plone.org, mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: jdub renewed automatically
     <BLANKLINE>
     The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
@@ -682,7 +667,6 @@ is automatically renewed.
     ----------------------------------------
     From: Launchpad Administrators <noreply@launchpad.net>
     To: foo.bar@canonical.com, guilherme.salgado@canonical.com
-    X-Launchpad-Message-Rationale: None
     Subject: mark expired from team
     <BLANKLINE>
     The membership of Mark Shuttleworth (mark) in the Launchpad
@@ -694,7 +678,6 @@ is automatically renewed.
     ----------------------------------------
     From: Launchpad Administrators <noreply@launchpad.net>
     To: mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: mark expired from team
     <BLANKLINE>
     Your membership in the Launchpad Administrators (admins) team has
@@ -706,7 +689,6 @@ is automatically renewed.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: jeff.waugh@ubuntulinux.com
-    X-Launchpad-Message-Rationale: None
     Subject: jdub renewed automatically
     <BLANKLINE>
     Your membership in the Ubuntu Team (ubuntu-team) team has been
@@ -752,7 +734,6 @@ sent to all team admins.
     >>> print_distinct_emails()
     From: Mirror Administrators <noreply@launchpad.net>
     To: mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: karl extended their membership
     <BLANKLINE>
     Karl Tilbury (karl) renewed their own membership in the Mirror
@@ -792,7 +773,6 @@ notification.
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: cprov made admin by mark
     <BLANKLINE>
     The membership status of Celso Providelo (cprov) in the team Ubuntu Team
@@ -802,7 +782,6 @@ notification.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com
-    X-Launchpad-Message-Rationale: None
     Subject: cprov made admin by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
@@ -824,7 +803,6 @@ sent to the team administrators.
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
         foo.bar@canonical.com, limi@plone.org, mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: Membership change: jdub in ubuntu-team
     <BLANKLINE>
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
@@ -851,7 +829,6 @@ sense to the members of the team reading it.
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
         foo.bar@canonical.com, karl@canonical.com, limi@plone.org,
         mark@example.com
-    X-Launchpad-Message-Rationale: None
     Subject: ubuntu-mirror-admins deactivated by mark
     <BLANKLINE>
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
