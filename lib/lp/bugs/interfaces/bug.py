@@ -565,9 +565,6 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         :owner: An IPerson.
         :target: An IDistroSeries or IProductSeries.
 
-        The nomination will be automatically approved, if the user has
-        permission to approve it.
-
         This method creates and returns a BugNomination. (See
         lp.bugs.model.bugnomination.BugNomination.)
         """
