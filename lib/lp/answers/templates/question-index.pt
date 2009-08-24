@@ -1,4 +1,4 @@
-<html xmlns="http://www.w3.org/1999/xhtml" 
+<html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal"
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -61,18 +61,6 @@
 
     <div metal:fill-slot="main">
 
-      <table class="listing" xml:lang="en" lang="en" dir="ltr"
-        tal:condition="context/whiteboard">
-        <tbody>
-          <tr>
-            <td><b>Whiteboard:</b></td>
-            <td tal:content="context/whiteboard">
-              whiteboard contents
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
       <tal:description
         define="global description context/description/fmt:obfuscate-email/fmt:text-to-html" />
 
@@ -114,6 +102,34 @@
             for more information if necessary.
           </p>
         </div>
+        <div class="yui-g">
+          <ul class="horizontal">
+            <li tal:define="link context/menu:answers/history"
+                tal:content="structure link/render" />
+            <li tal:define="link context/menu:answers/linkbug"
+                tal:content="structure link/render" />
+            <li tal:define="link context/menu:answers/unlinkbug"
+                tal:content="structure link/render" />
+            <li tal:define="link context/menu:answers/makebug"
+                tal:content="structure link/render" />
+            <li tal:define="link context/menu:answers/linkfaq"
+                tal:content="structure link/render" />
+            <li tal:define="link context/menu:answers/createfaq"
+                tal:content="structure link/render" />
+          </ul>
+        </div>
+
+        <table class="listing" xml:lang="en" lang="en" dir="ltr"
+          tal:condition="context/whiteboard">
+          <tbody>
+            <tr>
+              <td><b>Whiteboard:</b></td>
+              <td tal:content="context/whiteboard">
+                whiteboard contents
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
         <div tal:condition="view/hasActions">
           <div metal:use-macro="context/@@launchpad_form/form">

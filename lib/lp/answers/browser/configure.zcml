@@ -118,8 +118,11 @@
     classes="FAQContextMenu"
     />
   <browser:menus
-    classes="QuestionEditMenu"
-    module="lp.answers.browser.question"/>
+    module="lp.answers.browser.question"
+    classes="
+        QuestionEditMenu
+        QuestionExtrasMenu
+        QuestionSetContextMenu" />
 
   <browser:defaultView
     for="lp.answers.interfaces.question.IQuestion"

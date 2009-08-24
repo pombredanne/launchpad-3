@@ -13,6 +13,7 @@ __all__ = [
     'QuestionCreateFAQView',
     'QuestionEditMenu',
     'QuestionEditView',
+    'QuestionExtrasMenu',
     'QuestionLinkFAQView',
     'QuestionMessageDisplayView',
     'QuestionSetContextMenu',
@@ -58,9 +59,10 @@ from canonical.launchpad.interfaces import (
     QuestionSort, NotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
-    LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
-    custom_widget, redirection, safe_action, NavigationMenu)
+    ApplicationMenu, ContextMenu, Link, canonical_url,
+    enabled_with_permission, Navigation, LaunchpadView, action,
+    LaunchpadFormView, LaunchpadEditFormView, custom_widget, redirection,
+    safe_action, NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
@@ -100,7 +102,7 @@ class QuestionLinksMixin:
         """Return a Link to the subscription view."""
         if self.user is not None and self.context.isSubscribed(self.user):
             text = 'Unsubscribe'
-            icon = 'edit'
+            icon = 'remove'
         else:
             text = 'Subscribe'
             icon = 'mail'
@@ -114,7 +116,7 @@ class QuestionLinksMixin:
     def unlinkbug(self):
         """Return a Link to the unlink bug view."""
         text = 'Remove bug link'
-        return Link('+unlinkbug', text, icon='edit', enabled=self.has_bugs)
+        return Link('+unlinkbug', text, icon='remove', enabled=self.has_bugs)
 
     def makebug(self):
         """Return a Link to the make bug view."""
@@ -124,10 +126,16 @@ class QuestionLinksMixin:
                     enabled=not self.has_bugs)
 
     def linkfaq(self):
-        """Link for This is a FAQ."""
-        text = 'This is a FAQ'
-        summary = 'Answer this question using a FAQ, or add one as a comment.'
-        return Link('+linkfaq', text, summary)
+        """Link for linking to a FAQ."""
+        text = 'Link to a FAQ'
+        summary = 'Link this question to a FAQ.'
+        return Link('+linkfaq', text, summary, icon='add')
+
+    def createfaq(self):
+        """LInk for creating a FAQ."""
+        text = 'Create a new FAQ'
+        summary = 'Create a new FAQ from this question.'
+        return Link('+createfaq', text, summary, icon='add')
 
 
 class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
@@ -137,6 +145,18 @@ class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
     facet = 'answers'
     title = 'Edit question'
     links = ['edit', 'changestatus', 'reject', 'subscription']
+
+
+class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
+    """Context menu of actions that can be performed upon a Question."""
+    usedfor = IQuestion
+    facet = 'answers'
+    links = ['history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
+        'createfaq']
+
+    def initialize(self):
+        """Initialize the menu from the Question's state."""
+        self.has_bugs = bool(self.context.bugs)
 
 
 class QuestionSetContextMenu(ContextMenu):
