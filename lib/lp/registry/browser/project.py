@@ -229,10 +229,6 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
         text = 'See all milestones'
         return Link('+milestones', text)
 
-    def milestones(self):
-        text = 'See all milestones'
-        return Link('+milestones', text)
-
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'

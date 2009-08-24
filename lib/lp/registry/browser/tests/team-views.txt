@@ -5,7 +5,6 @@
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, ITeamMembershipSet)
     >>> from zope.component import getMultiAdapter
-    >>> from zope.publisher.browser import TestRequest
     >>> person_set = getUtility(IPersonSet)
 
 On a team home page, we show up to the latest five members who were approved
