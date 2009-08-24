@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'MaloneApplicationNavigation',
-    'MaloneNavigationMenu',
+    'MaloneContextMenu',
     ]
 
 
@@ -16,11 +16,9 @@ from zope.security.interfaces import Unauthorized
 import canonical.launchpad.layers
 
 from canonical.launchpad.webapp import (
-    Link, Navigation, canonical_url, stepto)
+    ContextMenu, Link, Navigation, canonical_url, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import NavigationMenu
 
-from lp.bugs.browser.bug import MaloneView
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.cve import ICveSet
@@ -69,15 +67,11 @@ class MaloneApplicationNavigation(Navigation):
         return bug
 
 
-class MaloneNavigationMenu(NavigationMenu):
-    usedfor = MaloneView
-    facet = 'bugs'
-    links = ['tour', 'filebug']
+class MaloneContextMenu(ContextMenu):
+    # XXX mpt 2006-03-27: No longer visible on Bugs front page.
+    usedfor = IMaloneApplication
+    links = ['cvetracker']
 
-    def tour(self):
-        text = 'Take a tour'
-        return Link('/+tour', text, icon='info')
-
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='bug')
+    def cvetracker(self):
+        text = 'CVE tracker'
+        return Link('cve/', text, icon='cve')
