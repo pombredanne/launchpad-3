@@ -408,9 +408,9 @@
         factory="lp.soyuz.browser.archive.ArchiveBadges"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.archive.IArchive"
-        factory="lp.soyuz.browser.archive.ArchiveBreadcrumbBuilder"
+        factory="lp.soyuz.browser.archive.ArchiveBreadcrumb"
         permission="zope.Public"/>
 
     <!-- ArchiveSet -->
@@ -514,14 +514,14 @@
             interface="lp.soyuz.interfaces.builder.IBuilderSet"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.builder.IBuilder"
-        factory="lp.soyuz.browser.builder.BuilderBreadcrumbBuilder"
+        factory="lp.soyuz.browser.builder.BuilderBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.builder.IBuilderSet"
-        factory="lp.soyuz.browser.builder.BuilderSetBreadcrumbBuilder"
+        factory="lp.soyuz.browser.builder.BuilderSetBreadcrumb"
         permission="zope.Public"/>
 
     <!-- Builder -->
@@ -656,9 +656,9 @@
             interface="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"/>
     </class>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
-        factory="lp.soyuz.browser.distroseriesbinarypackage.DistroSeriesBinaryPackageBreadcrumbBuilder"
+        factory="lp.soyuz.browser.distroseriesbinarypackage.DistroSeriesBinaryPackageBreadcrumb"
         permission="zope.Public"/>
 
     <facet

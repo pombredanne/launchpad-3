@@ -62,9 +62,9 @@
   </class>
 
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
-      factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumbBuilder"
+      factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumb"
       permission="zope.Public"/>
 
   <!-- CodeImportMachineSet -->
@@ -693,9 +693,9 @@
 
   </class>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.code.interfaces.codeimport.ICodeImportSet"
-      factory="lp.code.browser.codeimport.CodeImportSetBreadcrumbBuilder"
+      factory="lp.code.browser.codeimport.CodeImportSetBreadcrumb"
       permission="zope.Public"/>
   <subscriber
       for="lp.code.interfaces.codeimport.ICodeImport

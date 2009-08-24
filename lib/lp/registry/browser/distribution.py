@@ -11,7 +11,7 @@ __all__ = [
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
-    'DistributionBreadcrumbBuilder',
+    'DistributionBreadcrumb',
     'DistributionChangeMembersView',
     'DistributionChangeMirrorAdminView',
     'DistributionCountryArchiveMirrorsView',
@@ -26,7 +26,7 @@ __all__ = [
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
     'DistributionSetActionNavigationMenu',
-    'DistributionSetBreadcrumbBuilder',
+    'DistributionSetBreadcrumb',
     'DistributionSetContextMenu',
     'DistributionSetFacets',
     'DistributionSetNavigation',
@@ -80,7 +80,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import NavigationMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.image import ImageChangeWidget
 
 from lp.registry.browser import RegistryEditFormView
@@ -170,7 +170,7 @@ class DistributionSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(distribution))
 
 
-class DistributionBreadcrumbBuilder(BreadcrumbBuilder):
+class DistributionBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistribution`."""
     @property
     def text(self):
@@ -190,7 +190,7 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class DistributionSetBreadcrumbBuilder(BreadcrumbBuilder):
+class DistributionSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSet`."""
     text = 'Distributions'
 
