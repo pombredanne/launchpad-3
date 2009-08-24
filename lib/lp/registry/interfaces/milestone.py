@@ -18,6 +18,8 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import IBugTask
@@ -66,7 +68,7 @@ class MilestoneNameField(ContentNameField):
         return milestone
 
 
-class IMilestone(IHasBugs):
+class IMilestone(IHasBugs, IStructuralSubscriptionTarget):
     """A milestone, or a targeting point for bugs and other
     release-management items that need coordination.
     """
