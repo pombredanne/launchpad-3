@@ -651,6 +651,18 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # explodes in your face. Annoying? Insane? You bet.
         return [{'bugs': bugs_to_return}]
 
+    def _copy_comment(self, comment, fields_to_return=None):
+        # Copy wanted fields.
+        comment = dict(
+            (key, value) for (key, value) in comment.iteritems()
+            if fields_to_return is None or key in fields_to_return)
+        # Replace the time field with an XML-RPC DateTime.
+        if 'time' in comment:
+            comment['time'] = xmlrpclib.DateTime(
+                comment['time'].timetuple())
+        return comment
+
+
     def comments(self, arguments):
         """Return comments for a given set of bugs."""
         # We'll always pass bug IDs when we call comments().
@@ -662,17 +674,6 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         fields_to_return = arguments.get('include_fields')
         comments_by_bug_id = {}
 
-        def copy_comment(comment):
-            # Copy wanted fields.
-            comment = dict(
-                (key, value) for (key, value) in comment.iteritems()
-                if fields_to_return is None or key in fields_to_return)
-            # Replace the time field with an XML-RPC DateTime.
-            if 'time' in comment:
-                comment['time'] = xmlrpclib.DateTime(
-                    comment['time'].timetuple())
-            return comment
-
         for bug_id in bug_ids:
             comments_for_bug = self.bug_comments[bug_id].values()
 
@@ -681,7 +682,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             # dict can have a value but no type; hence Python defaults
             # to treating them as strings).
             comments_by_bug_id[str(bug_id)] = [
-                copy_comment(comment) for comment in comments_for_bug
+                self._copy_comment(comment) for comment in comments_for_bug
                 if comment_ids is None or comment['id'] in comment_ids]
 
         # More xmlrpclib:1387 odd-knobbery avoidance.
@@ -760,6 +761,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
     # Map namespaces onto method names.
     methods = {
         'Bug': [
+            'comments',
             'get',
             'search',
             ],
@@ -780,6 +782,43 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
     users = [
         {'login': 'foo.bar@canonical.com', 'password': 'test'},
         ]
+
+    # A list of comments on bugs.
+    bug_comments = {
+        1: {
+            1: {'author': 'trillian',
+                'bug_id': 1,
+                'id': 1,
+                'is_private': False,
+                'text': "I'd really appreciate it if Marvin would "
+                        "enjoy life a bit.",
+                'time': datetime(2008, 6, 16, 12, 44, 29),
+                },
+            2: {'author': 'marvin',
+                'bug_id': 1,
+                'id': 3,
+                'is_private': False,
+                'text': "Life? Don't talk to me about life.",
+                'time': datetime(2008, 6, 16, 13, 22, 29),
+                },
+            },
+        2: {
+            1: {'author': 'trillian',
+                'bug_id': 2,
+                'id': 2,
+                'is_private': False,
+                'text': "Bring the passengers to the bridge please Marvin.",
+                'time': datetime(2008, 6, 16, 13, 8, 8),
+                },
+             2: {'author': 'Ford Prefect <ford.prefect@h2g2.com>',
+                'bug_id': 2,
+                'id': 4,
+                'is_private': False,
+                'text': "I appear to have become a perfectly safe penguin.",
+                'time': datetime(2008, 6, 17, 20, 28, 40),
+                },
+            },
+        }
 
     def version(self):
         """Return the version of Bugzilla being used."""
@@ -854,6 +893,39 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             search_args['products'] = product_list
 
         return self.get_bugs(search_args)
+
+    def comments(self, arguments):
+        """Return comments for a given set of bugs."""
+        # Turn the arguments into something that
+        # TestBugzillaXMLRPCTransport.comments() will understand and
+        # then pass the buck.
+
+        comments_args = dict(arguments)
+        if arguments.get('ids') is not None:
+            # We nuke the 'ids' argument because it means something
+            # different when passed to TestBugzillaXMLRPCTransport.comments.
+            del comments_args['ids']
+            comments_args['bug_ids'] = arguments['ids']
+        else:
+            comments_args['bug_ids'] = [id for id in self.bugs]
+
+        [return_dict] = TestBugzillaXMLRPCTransport.comments(
+            self, comments_args)
+
+        if arguments.get('comment_ids') is not None:
+            # We need to return all the comments listed.
+            comments_to_return = {}
+            for bug_id, comments in self.bug_comments.items():
+                for comment_number, comment in comments.items():
+                    if comment['id'] in arguments['comment_ids']:
+                        comments_to_return[comment['id']] = (
+                            self._copy_comment(comment))
+
+            return_dict['comments'] = comments_to_return
+
+        # Stop xmlrpclib:1387 from throwing a wobbler at having a
+        # length-1 dict to deal with.
+        return [return_dict]
 
 
 class TestMantis(Mantis):
