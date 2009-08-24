@@ -130,11 +130,15 @@ class IStructuralSubscription(Interface):
         title=_("The date on which this subscription was last updated."),
         required=False, readonly=True))
 
-    target = Attribute("The structure to which this subscription belongs.")
+    target = exported(Reference(
+        schema=Interface, # IStructuralSubscriptionTarget
+        required=True, readonly=True,
+        title=_("The structure to which this subscription belongs.")))
 
 
 class IStructuralSubscriptionTarget(Interface):
     """A Launchpad Structure allowing users to subscribe to it."""
+    export_as_webservice_entry()
 
     # We don't really want to expose the level details yet. Only
     # BugNotificationLevel.COMMENTS is used at this time.
@@ -155,8 +159,10 @@ class IStructuralSubscriptionTarget(Interface):
         :return: A sequence of `IStructuralSubscription`.
         """
 
-    parent_subscription_target = Attribute(
-        "The target's parent, or None if one doesn't exist.")
+    parent_subscription_target = exported(Reference(
+        schema=Interface, # IStructuralSubscriptionTarget
+        required=True, readonly=True,
+        title=_("The target's parent, or None if one doesn't exist.")))
 
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.
