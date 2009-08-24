@@ -28,7 +28,8 @@ from lp.registry.interfaces.person import IPerson
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, exported, export_as_webservice_entry,
     export_factory_operation, export_read_operation, export_write_operation,
-    operation_parameters, operation_returns_entry, webservice_error)
+    operation_parameters, operation_returns_collection_of,
+    operation_returns_entry, webservice_error)
 from lazr.restful.fields import Reference
 
 
@@ -135,6 +136,13 @@ class IStructuralSubscription(Interface):
 class IStructuralSubscriptionTarget(Interface):
     """A Launchpad Structure allowing users to subscribe to it."""
 
+    # We don't really want to expose the level details yet. Only
+    # BugNotificationLevel.COMMENTS is used at this time.
+    @call_with(
+        min_bug_notification_level=BugNotificationLevel.COMMENTS,
+        min_blueprint_notification_level=BlueprintNotificationLevel.NOTHING)
+    @operation_returns_collection_of(IStructuralSubscription)
+    @export_read_operation()
     def getSubscriptions(min_bug_notification_level,
                          min_blueprint_notification_level):
         """Return all the subscriptions with the specified levels.
