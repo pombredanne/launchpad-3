@@ -854,6 +854,17 @@ def notify_invitation_to_join_team(event):
         simple_sendmail(from_addr, address, subject, msg)
 
 
+def send_team_email(from_addr, address, subject, template, replacements,
+                    rationale, headers=None):
+    """Send a team message with a rationale."""
+    if headers is None:
+        headers = {}
+    body = MailWrapper().format(template % replacements, force_wrap=True)
+    footer = "-- \n%s" % rationale
+    message = '%s\n\n%s' % (body, footer)
+    simple_sendmail(from_addr, address, subject, message, headers)
+
+
 @block_implicit_flushes
 def notify_team_join(event):
     """Notify team admins that someone has asked to join the team.
@@ -881,26 +892,24 @@ def notify_team_join(event):
         # notification to the person too.
         member_addrs = get_contact_email_addresses(person)
 
+        headers = {}
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
             subject = '%s joined %s' % (person.name, team.name)
-            header_rationale = "Indirect member (%s)" % team.name
+            header_rational = "Indirect member (%s)" % team.name
             footer_rationale = (
                 "You received this email because "
                 "%s is the new member." % person.name)
         else:
             templatename = 'new-member-notification.txt'
             subject = 'You have been added to %s' % team.name
-            header_rationale = "Member (%s)" % team.name
+            header_rational = "Member (%s)" % team.name
             footer_rationale = (
                 "You received this email because you are the new member.")
 
         if team.mailing_list is not None:
-            list_instructions = (
-                "\nIf you would like to subscribe to the team list, "
-                "use the link below\n"
-                "to update your Mailing List Subscription preferences.\n"
-                "  <http://launchpad.dev/people/+me/+editemails>")
+            list_instructions = get_email_template(
+                'team-list-subscribe-block.txt')
         else:
             list_instructions = ''
 
@@ -912,17 +921,13 @@ def notify_team_join(event):
             'team': '%s (%s)' % (team.displayname, team.name),
             'list_instructions': list_instructions,
             }
+        headers = {'X-Launchpad-Message-Rationale': header_rational}
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(
-                template % replacements, force_wrap=True)
-            headers = {
-                'X-Launchpad-Message-Rationale': header_rationale,
-                }
-            footer = "\n\n-- \n%s" % footer_rationale
-            msg = msg + footer
-            simple_sendmail(from_addr, address, subject, msg, headers)
+            send_team_email(
+                from_addr, address, subject, template, replacements,
+                footer_rationale, headers)
 
         # The member's email address may be in admin_addrs too; let's remove
         # it so the member don't get two notifications.
@@ -974,14 +979,11 @@ def notify_team_join(event):
             header_rationale = 'Admin (%s)' % team.name
             footer_rationale = (
                 "you are an admin of the %s team." % team.displayname)
+        footer = 'You received this email because %s' % footer_rationale
         headers['X-Launchpad-Message-Rationale'] = header_rationale
-        msg = MailWrapper().format(
-            template % replacements, force_wrap=True)
-        footer = (
-            "\n\n-- \n"
-            "You received this email because %s" % footer_rationale)
-        msg = msg + footer
-        simple_sendmail(from_addr, address, subject, msg, headers=headers)
+        send_team_email(
+            from_addr, address, subject, template, replacements,
+            footer, headers)
 
 
 def specification_notification_subject(spec):
