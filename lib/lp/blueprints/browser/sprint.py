@@ -15,7 +15,6 @@ __all__ = [
     'SprintNavigation',
     'SprintOverviewMenu',
     'SprintSetBreadcrumbBuilder',
-    'SprintSetContextMenu',
     'SprintSetFacets',
     'SprintSetNavigation',
     'SprintSetView',
@@ -44,7 +43,7 @@ from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
+    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
@@ -157,32 +156,6 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
     usedfor = ISprintSet
     enable_only = ['overview', ]
-
-
-class SprintSetContextMenu(ContextMenu):
-
-    usedfor = ISprintSet
-    links = ['products', 'distributions', 'people', 'sprints', 'all', 'new']
-
-    def all(self):
-        text = 'List all meetings'
-        return Link('+all', text)
-
-    def new(self):
-        text = 'Register a meeting'
-        return Link('+new', text, icon='add')
-
-    def products(self):
-        return Link('/projects/', 'View projects')
-
-    def distributions(self):
-        return Link('/distros/', 'View distributions')
-
-    def people(self):
-        return Link('/people/', 'View people')
-
-    def sprints(self):
-        return Link('/sprints/', 'View meetings')
 
 
 class SprintView(HasSpecificationsView, LaunchpadView):

@@ -165,7 +165,6 @@
         classes="
             SprintFacets
             SprintOverviewMenu
-            SprintSetContextMenu
             SprintSetFacets
             SprintSetNavigationMenu
             SprintSpecificationsMenu
