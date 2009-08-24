@@ -186,9 +186,6 @@ branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
 
-branch_subscription = ContextDisplayName(smartquote(
-    'Subscription to branch "%s"'))
-
 bug_activity = ContextBugId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")

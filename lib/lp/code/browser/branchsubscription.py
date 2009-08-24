@@ -125,6 +125,8 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
 
     subscribing_self = True
 
+    page_title = label = "Subscribe to branch"
+
     @action("Subscribe")
     def subscribe(self, action, data):
         # To catch the stale post problem, check that the user is not

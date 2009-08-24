@@ -458,7 +458,7 @@
         class="lp.code.browser.branchsubscription.BranchSubscriptionAddView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-subscription.pt"/>
+        template="../app/templates/generic-edit.pt"/>
     <browser:page
         name="+register-merge"
         for="lp.code.interfaces.branch.IBranch"
