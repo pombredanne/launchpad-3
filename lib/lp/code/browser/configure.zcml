@@ -531,7 +531,7 @@
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
         permission="launchpad.Commercial"
-        template="../templates/branch-visibility-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+spark"
         for="lp.code.interfaces.branch.IBranch"

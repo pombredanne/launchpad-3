@@ -91,7 +91,7 @@ class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
 class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """The view to remove zero or more branch visibility policy items."""
 
-    pagetitle = "Remove branch visibility policy for teams"
+    page_title = label = "Remove branch visibility policy for teams"
 
     def _policyDescription(self, item):
         """The text visible to the user displayed by the widget."""
