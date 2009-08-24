@@ -178,28 +178,11 @@ branch_index = ContextDisplayName(smartquote(
 def branch_merges(context, view):
     return 'Merges involving "%s" in Launchpad' % context.bzr_identity
 
-def branch_listing_cross_product(context, view):
-    """Return the view's page_title."""
-    return view.page_title
-
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
-branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
-
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
-
-branch_register_merge_proposal = 'Propose branch for merging'
-
-branch_subscription = ContextDisplayName(smartquote(
-    'Subscription to branch "%s"'))
-
-branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
-
-def branch_visibility_edit(context, view):
-    """Return the view's pagetitle."""
-    return view.pagetitle
 
 bug_activity = ContextBugId('Bug #%s - Activity log')
 
@@ -397,10 +380,6 @@ codeofconduct_admin = 'Administer Codes of Conduct'
 codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Ubuntu Codes of Conduct'
-
-codereviewcomment_index = 'Code review comment'
-
-codereviewcomment_reply = 'Reply to code review comment'
 
 def contact_user(context, view):
     return view.specific_contact_title_text
@@ -1373,8 +1352,6 @@ translationgroup_edit = ContextTitle(smartquote(
 
 translationgroup_reassignment = ContextTitle(smartquote(
     'Change the owner of "%s" translation group'))
-
-reviewrequest_reassign = 'Reassign review request'
 
 translationgroups_index = 'Launchpad translation groups'
 
