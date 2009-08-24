@@ -403,6 +403,11 @@
             <allow
                 interface="lp.translations.interfaces.translationgroup.ITranslationGroupSet"/>
         </securedutility>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
+            factory="lp.translations.browser.translationgroup.TranslationGroupSetBreadcrumbBuilder"
+            permission="zope.Public"/>
     </facet>
     <class
         class="lp.translations.model.potmsgset.POTMsgSet">
