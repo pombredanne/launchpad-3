@@ -8,25 +8,9 @@
 
   <h1 metal:fill-slot="heading">Bug tracking</h1>
 
-  <ul class="rollover buttons" metal:fill-slot="side">
-        <li>
-          <a href="/+tour/bugs"
-             tal:attributes="href string:${rooturl}+tour/bugs">
-            <img
-              alt="Take a tour"
-              src="/+icing/but-lrg-takeatour.gif"
-            />
-          </a>
-        </li>
-        <li>
-          <a href="+filebug">
-            <img
-              alt="Report a bug"
-              src="/+icing/but-lrg-reportabug.gif"
-            />
-          </a>
-        </li>
-  </ul>
+  <div metal:fill-slot="side">
+    <tal:menu replace="structure view/@@+global-actions" />
+  </div>
 
   <div metal:fill-slot="main">
 
