@@ -23,7 +23,7 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
         self.useBzrBranches()
 
         self.series = self.factory.makeProductSeries()
-        self.db_branch, tree = self.create_branch_and_tree(
+        self.db_branch, self.tree = self.create_branch_and_tree(
             db_branch=self.db_branch, hosted=True)
 
         self.series.translations_branch = self.db_branch
@@ -55,10 +55,27 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase):
 
     layer = ZopelessDatabaseLayer
 
-    def test_DirectBranchCommit_commits_no_changes(self):
+    def test_DirectBranchCommit_emtpy_initial_commit_noop(self):
         # Committing to an empty branch leaves an empty branch empty.
+        self.assertEqual('null:', self.tree.branch.last_revision())
         self.committer.commit('')
         self.assertEqual({}, self._getContents())
+        self.assertEqual('null:', self.tree.branch.last_revision())
+
+    def _addInitialCommit(self):
+        self.committer._getDir('')
+        rev_id = self.committer.commit('Commit creation of root dir.')
+        self._setUpCommitter()
+        return rev_id
+
+    def test_DirectBranchCommit_commits_no_changes(self):
+        # Committing to an empty branch leaves an empty branch empty.
+        self.assertEqual('null:', self.tree.branch.last_revision())
+        old_rev_id = self.tree.branch.last_revision()
+        self._addInitialCommit()
+        self.committer.commit('')
+        self.assertEqual({}, self._getContents())
+        self.assertNotEqual(old_rev_id, self.tree.branch.last_revision())
 
     def test_DirectBranchCommit_rejects_change_after_commit(self):
         # Changes are not accepted after commit.
