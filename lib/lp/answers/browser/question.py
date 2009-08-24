@@ -77,6 +77,25 @@ from canonical.lazr.utils import smartquote
 class QuestionLinksMixin:
     """A mixin class that provides links used by more than one menu."""
 
+    def subscription(self):
+        """Return a Link to the subscription view."""
+        if self.user is not None and self.context.isSubscribed(self.user):
+            text = 'Unsubscribe'
+            icon = 'remove'
+        else:
+            text = 'Subscribe'
+            icon = 'mail'
+        return Link('+subscribe', text, icon=icon)
+
+
+class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
+    """A menu for different aspects of editing a object."""
+
+    usedfor = IQuestion
+    facet = 'answers'
+    title = 'Edit question'
+    links = ['edit', 'changestatus', 'reject', 'subscription']
+
     def edit(self):
         """Return a Link to the edit view."""
         text = 'Edit question'
@@ -93,21 +112,23 @@ class QuestionLinksMixin:
         text = 'Reject question'
         return Link('+reject', text, icon='edit', enabled=enabled)
 
+
+class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
+    """Context menu of actions that can be performed upon a Question."""
+    usedfor = IQuestion
+    facet = 'answers'
+    links = ['history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
+        'createfaq']
+
+    def initialize(self):
+        """Initialize the menu from the Question's state."""
+        self.has_bugs = bool(self.context.bugs)
+
     def history(self):
         """Return a Link to the history view."""
         text = 'History'
         return Link('+history', text, icon='list',
                     enabled=bool(self.context.messages))
-
-    def subscription(self):
-        """Return a Link to the subscription view."""
-        if self.user is not None and self.context.isSubscribed(self.user):
-            text = 'Unsubscribe'
-            icon = 'remove'
-        else:
-            text = 'Subscribe'
-            icon = 'mail'
-        return Link('+subscribe', text, icon=icon)
 
     def linkbug(self):
         """Return a Link to the link bug view."""
@@ -137,27 +158,6 @@ class QuestionLinksMixin:
         text = 'Create a new FAQ'
         summary = 'Create a new FAQ from this question.'
         return Link('+createfaq', text, summary, icon='add')
-
-
-class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
-    """A menu for different aspects of editing a object."""
-
-    usedfor = IQuestion
-    facet = 'answers'
-    title = 'Edit question'
-    links = ['edit', 'changestatus', 'reject', 'subscription']
-
-
-class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
-    """Context menu of actions that can be performed upon a Question."""
-    usedfor = IQuestion
-    facet = 'answers'
-    links = ['history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
-        'createfaq']
-
-    def initialize(self):
-        """Initialize the menu from the Question's state."""
-        self.has_bugs = bool(self.context.bugs)
 
 
 class QuestionSetContextMenu(ContextMenu):
