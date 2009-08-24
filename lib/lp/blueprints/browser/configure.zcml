@@ -147,9 +147,6 @@
         <browser:page
             name="+all"
             template="../templates/sprints-all.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/sprints-portlet-details.pt"/>
     </browser:pages>
     <browser:page
         name="+new"

@@ -393,7 +393,7 @@ span.see-all {
     clear: both;
     font-size: 100%;
     }
-.summary {
+.top-portlet .summary {
     margin: 0 0 1em 0;
     font-size: 138.5%;
     }
@@ -443,6 +443,15 @@ dt {
     color: #000;
     font-weight: normal;
     }
+.application-summary {
+    font-size: 123.1%;
+}
+.search-results {
+    margin-top: 1em;
+}
+p.search-results {
+    font-size: 116%;
+}
 
 
 /* Exceptions they may be common. */

@@ -508,8 +508,6 @@ distroserieslanguage_index = ContextTitle('%s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
-distros_index = 'Distributions registered in Launchpad'
-
 edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
@@ -1065,8 +1063,6 @@ project_translations = ContextTitle('Translatable projects for %s')
 
 project_translators = ContextTitle('Set translation group for %s')
 
-projects_index = 'Project groups registered in Launchpad'
-
 projects_request = 'Launchpad Translations: Request a project group'
 
 projects_search = 'Search for project groups in Launchpad'
@@ -1287,8 +1283,6 @@ sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 sprint_workload = ContextTitle('Workload at %s')
 
 sprints_all = 'All sprints and meetings registered in Launchpad'
-
-sprints_index = 'Meetings and sprints registered in Launchpad'
 
 sprintspecification_decide = 'Consider spec for sprint agenda'
 

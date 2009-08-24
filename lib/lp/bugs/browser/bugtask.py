@@ -73,6 +73,7 @@ from lazr.enum import EnumeratedType, Item
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer, IReferenceChoice, IWebServiceClientRequest)
 
@@ -1226,8 +1227,11 @@ class BugTaskEditView(LaunchpadEditFormView):
                 __name__='milestone',
                 title=self.schema['milestone'].title,
                 source=milestone_source, required=False)
-            self.form_fields = self.form_fields.omit('milestone')
-            self.form_fields += formlib.form.Fields(milestone_field)
+        else:
+            milestone_field = copy_field(IBugTask['milestone'], readonly=False)
+
+        self.form_fields = self.form_fields.omit('milestone')
+        self.form_fields += formlib.form.Fields(milestone_field)
 
         for field in read_only_field_names:
             self.form_fields[field].for_display = True

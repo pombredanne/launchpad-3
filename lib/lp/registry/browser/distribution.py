@@ -20,11 +20,12 @@ __all__ = [
     'DistributionFacets',
     'DistributionLanguagePackAdminView',
     'DistributionNavigation',
+    'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
-    'DistributionPPASearchView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
+    'DistributionSetActionNavigationMenu',
     'DistributionSetBreadcrumbBuilder',
     'DistributionSetContextMenu',
     'DistributionSetFacets',
@@ -46,6 +47,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.soyuz.browser.archive import traverse_distro_archive
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
@@ -361,8 +364,8 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
-        text = u'\u00BB More contributors'
-        return Link('+topcontributors', text)
+        text = 'More contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def mentorship(self):
         text = 'Mentoring available'
@@ -770,12 +773,21 @@ class DistributionAllPackagesView(LaunchpadView):
         self.batchnav = BatchNavigator(results, self.request)
 
 
-class DistributionSetView:
+class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for `DistributionSetView`."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    usedfor = IDistributionSet
+    links = ['register_team', 'register_project', 'create_account']
 
+
+class DistributionSetView(LaunchpadView):
+    """View for /distros top level collection."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'Distributions registered in Launchpad'
+
+    @cachedproperty
     def count(self):
         return self.context.count()
 
