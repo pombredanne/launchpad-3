@@ -59,9 +59,6 @@ def nearest_provides_or_adapted(obj, interface):
     :return None: if there is no object that provides or can be adapted in
         the url chain.
     """
-    # XXX 20090821 Danilo: a note for reviewer to remind me about this being
-    # quite similar code to canonical.launchpad.webapp.publisher.nearest
-    # to check with Curtis if new templating stuff should use that instead.
     try:
         for curr_obj in canonical_url_iterator(obj):
             # If the curr_obj implements the interface, it is returned.
@@ -69,6 +66,6 @@ def nearest_provides_or_adapted(obj, interface):
             if impl is not None:
                 return impl
     except NoCanonicalUrl:
-        # Drop out of the try-except and return None like it would otherwise.
+        # Do not break when canonical URL is not defined for an object.
         pass
     return None
