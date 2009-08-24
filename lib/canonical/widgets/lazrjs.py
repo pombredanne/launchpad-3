@@ -229,7 +229,9 @@ class TextAreaEditorWidget(TextLineEditorWidget):
                       }
                   }
             }});
-            widget.render();
+            if (!Y.UA.opera) {
+                widget.render();
+            }
         });
         </script>
         """)
@@ -348,10 +350,10 @@ class InlineEditPickerWidget:
 
 
 def vocabulary_to_choice_edit_items(
-    vocab, css_class_prefix=None, disabled_items=[], as_json=False,
+    vocab, css_class_prefix=None, disabled_items=None, as_json=False,
     name_fn=None, value_fn=None):
     """Convert an enumerable to JSON for a ChoiceEdit.
-    
+
     :vocab: The enumeration to iterate over.
     :css_class_prefix: If present, append this to an item's value to create
         the css_class property for it.
@@ -359,6 +361,8 @@ def vocabulary_to_choice_edit_items(
     :name_fn: A function receiving an item and returning its name.
     :value_fn: A function receiving an item and returning its value.
     """
+    if disabled_items is None:
+        disabled_items = []
     items = []
     for item in vocab:
         if name_fn is not None:

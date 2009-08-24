@@ -37,7 +37,7 @@ Login as an admin to be able to do changes to the import queue.
 Here's the person who'll be doing the import.
 
     >>> person_set = getUtility(IPersonSet)
-    >>> person = person_set.getByName('sabdfl')
+    >>> person = person_set.getByName('mark')
 
 Now it's time to create the new potemplate
 

@@ -959,14 +959,14 @@ the distribution.
     >>> print debian.driver
     None
     >>> print debian.owner.name
-    sabdfl
+    mark
     >>> sarge = debian.getSeries('sarge')
     >>> print sarge.driver.name
     jdub
     >>> for d in sarge.drivers:
     ...     print d.name
     jdub
-    sabdfl
+    mark
 
 
 Now, a release where there is no driver on the release but there is a driver
@@ -990,7 +990,7 @@ driver. Here, we expect the driver to be the owner of the distribution
     >>> print debian.driver
     None
     >>> print debian.owner.name
-    sabdfl
+    mark
     >>> print sid.driver
     None
     >>> print sid.owner.name
@@ -998,7 +998,7 @@ driver. Here, we expect the driver to be the owner of the distribution
 
     >>> for d in sid.drivers:
     ...     print d.name
-    sabdfl
+    mark
 
 
 == Lastest Uploads ==

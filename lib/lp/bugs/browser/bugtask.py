@@ -73,6 +73,7 @@ from lazr.enum import EnumeratedType, Item
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer, IReferenceChoice, IWebServiceClientRequest)
 
@@ -1226,8 +1227,11 @@ class BugTaskEditView(LaunchpadEditFormView):
                 __name__='milestone',
                 title=self.schema['milestone'].title,
                 source=milestone_source, required=False)
-            self.form_fields = self.form_fields.omit('milestone')
-            self.form_fields += formlib.form.Fields(milestone_field)
+        else:
+            milestone_field = copy_field(IBugTask['milestone'], readonly=False)
+
+        self.form_fields = self.form_fields.omit('milestone')
+        self.form_fields += formlib.form.Fields(milestone_field)
 
         for field in read_only_field_names:
             self.form_fields[field].for_display = True
@@ -3131,6 +3135,14 @@ class BugTaskTableRowView(LaunchpadView):
         """
         return self.context.userCanEditImportance(self.user)
 
+    @property
+    def user_can_edit_milestone(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        return self.context.userCanEditMilestone(self.user)
+
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
         return dumps({
@@ -3149,6 +3161,7 @@ class BugTaskTableRowView(LaunchpadView):
                                     request=IWebServiceClientRequest(
                                         self.request)) or
                                 None),
+            'user_can_edit_milestone': self.user_can_edit_milestone,
             'user_can_edit_status': not self.context.bugwatch,
             'user_can_edit_importance': (
                 self.user_can_edit_importance and
@@ -3499,6 +3512,8 @@ class BugActivityItem:
 
 class BugTaskBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IBugTask`."""
+
+    rootsite = 'bugs'
 
     @property
     def text(self):
