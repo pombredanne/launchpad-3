@@ -141,7 +141,6 @@ text must be overriden in subclasses.
 As said above, the breadcrumb's attributes can be overridden with subclassing
 and Python properties.
 
-    >>> from canonical.launchpad.webapp.publisher import canonical_url
     >>> class DynamicBreadcrumb(Breadcrumb):
     ...     @property
     ...     def text(self):
