@@ -18,7 +18,6 @@
     </tal:side>
 
     <div metal:fill-slot="main">
-
       <table class="listing">
         <tbody>
           <tal:sprint

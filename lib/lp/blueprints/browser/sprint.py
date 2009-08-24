@@ -498,7 +498,12 @@ class SprintSetNavigationMenu(RegistryCollectionActionMenuBase):
         'register_team',
         'register_project',
         'create_account',
+        'view_all_sprints',
         ]
+
+    def view_all_sprints(self):
+        text = 'Show all sprints'
+        return Link('+all', text, icon='list')
 
 
 class SprintSetView(LaunchpadView):
