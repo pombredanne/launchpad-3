@@ -41,7 +41,7 @@ def pop_notifications(sort_key=None, commit=True):
 
 
 def print_emails(include_reply_to=False, group_similar=False,
-                 include_rationale=True, notifications=None):
+                 include_rationale=False, notifications=None):
     """Pop all messages from stub.test_emails and print them with
      their recipients.
 
@@ -93,4 +93,5 @@ def print_emails(include_reply_to=False, group_similar=False,
 def print_distinct_emails(include_reply_to=False, include_rationale=True):
     """A convenient shortcut for `print_emails`(group_similar=True)."""
     return print_emails(group_similar=True,
-                        include_reply_to=include_reply_to)
+                        include_reply_to=include_reply_to,
+                        include_rationale=include_rationale)
