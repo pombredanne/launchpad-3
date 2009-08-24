@@ -486,7 +486,7 @@
         class="lp.code.browser.branchsubscription.BranchSubscriptionAddOtherView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-subscription.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+edit-subscription"
         for="lp.code.interfaces.branch.IBranch"

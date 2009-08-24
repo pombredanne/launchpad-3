@@ -214,6 +214,8 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     user_is_subscribed = False
     subscribing_self = False
 
+    page_title = label = "Subscribe to branch"
+
     @action("Subscribe", name="subscribe_action")
     def subscribe_action(self, action, data):
         """Subscribe the specified user to the branch.
