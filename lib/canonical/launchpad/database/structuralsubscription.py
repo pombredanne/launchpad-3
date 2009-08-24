@@ -133,8 +133,18 @@ class StructuralSubscriptionTargetMixin:
 
     def _userCanAlterSubscription(self, subscriber, subscribed_by):
         """Check if a user can change a subscription for a person."""
-        # Only a Launchpad administrator or the user can subscribe a user.
-        # Only a Launchpad or team admin can subscribe a team.
+        # A Launchpad administrator or the user can subscribe a user.
+        # A Launchpad or team admin can subscribe a team.
+
+        # Nobody else can, unless the context is a IDistributionSourcePackage,
+        # in which case the drivers or owner can.
+        if IDistributionSourcePackage.providedBy(self):
+            for driver in self.distribution.drivers:
+                if subscribed_by.inTeam(driver):
+                    return True
+            if subscribed_by.inTeam(self.distribution.owner):
+                return True
+
         admins = getUtility(ILaunchpadCelebrities).admin
         return (subscriber is subscribed_by or
                 subscriber in subscribed_by.getAdministratedTeams() or
