@@ -148,6 +148,15 @@ class BranchMergeProposal(SQLBase):
         default=None)
 
     @property
+    def related_bugs(self):
+        """Bugs which are linked to the source but not the target.
+
+        Implies that these bugs would be fixed, in the target, by the merge.
+        """
+        return (bug for bug in self.source_branch.linked_bugs
+                if bug not in self.target_branch.linked_bugs)
+
+    @property
     def address(self):
         return 'mp+%d@%s' % (self.id, config.launchpad.code_domain)
 

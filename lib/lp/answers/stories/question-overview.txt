@@ -168,6 +168,7 @@ Project also have the 'Latest questions' portlet and the
     >>> questions = find_tag_by_id(
     ...     user_browser.contents, 'portlet-latest-questions')
     >>> print extract_text(questions).encode('ASCII', 'backslashreplace')
+    All questions
     Latest questions
     Problemas de Impress\xe3o no Firefox ...
     Newly installed plug-in doesn't seem to be used ...
