@@ -209,6 +209,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
     custom_widget('vote', MyDropWidget)
 
+    page_title = 'Reply to code review comment'
 
     @property
     def initial_values(self):
