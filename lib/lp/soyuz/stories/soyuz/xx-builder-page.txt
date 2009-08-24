@@ -18,8 +18,23 @@ builder state. In the sampledata, the builder 'bob' is building
     View full history Current status
     i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
     Started ... ago.
-    Tail of the builder log at ...
+    Buildlog
     Dummy sampledata entry, not processing
+
+When accessed by logged in users, the builder page renders the
+'current-status' section with a timestamp at the bottom on the user
+timezone. This way they can easily find out if they are reading
+outdated information.
+
+    >>> user_browser.open(anon_browser.url)
+    >>> print extract_text(find_portlet(
+    ...     user_browser.contents, 'View full history Current status'))
+    View full history Current status
+    i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+    Started ... ago.
+    Buildlog
+    Dummy sampledata entry, not processing
+    Updated on ...
 
 The anonymous user can see the builder details portlet and it contains
 information about the builder itself, like name, architecture,

@@ -169,6 +169,13 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     """View for editing team details."""
     schema = ITeam
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit "%s" team' % self.context.displayname
+
+    page_title = label
+
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
@@ -200,8 +207,12 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
             # XXX: BradCrittenden 2009-04-13 bug=360540: Remove the call to
             # abort if it is moved up to updateContextFromData.
             self._abort()
-        else:
-            self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.

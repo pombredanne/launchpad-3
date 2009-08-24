@@ -276,7 +276,7 @@ a display widget.
 
 The distribution owner gets an edit widget for the distribution task.
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
 
     >>> request = LaunchpadTestRequest()
     >>> ubuntu_task = getUtility(IBugTaskSet).get(17)

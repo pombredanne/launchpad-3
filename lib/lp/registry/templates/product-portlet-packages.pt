@@ -19,10 +19,11 @@
           tal:attributes="href package/fmt:url"
           tal:content="package/title">apache in ubuntu hoary</a>
       </dt>
-      <dd tal:repeat="release package/distinctreleases">
+      <dd tal:define="release package/currentrelease"
+        tal:condition="release">
         <strong>Version
           <tal:version content="release/version">2.3</tal:version></strong>
-        uploaded <tal:date replace="release/dateuploaded/fmt:date" />
+        uploaded <tal:date replace="release/dateuploaded/fmt:displaydate" />
       </dd>
     </tal:pair>
   </dl>

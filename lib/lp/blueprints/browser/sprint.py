@@ -28,8 +28,9 @@ import csv
 import pytz
 from StringIO import StringIO
 
-from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
@@ -40,6 +41,8 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
     SpecificationSort)
 from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -488,7 +491,22 @@ class SprintMeetingExportView(LaunchpadView):
         return body.encode('utf-8')
 
 
+class SprintSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for sprints index."""
+    usedfor = ISprintSet
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        ]
+
+
 class SprintSetView(LaunchpadView):
+    """View for the /sprints top level collection page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'Meetings and sprints registered in Launchpad'
 
     def all_batched(self):
         return BatchNavigator(self.context.all, self.request)

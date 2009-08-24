@@ -68,8 +68,8 @@
       </style>
     </noscript>
 
-    <metal:load-javascript
-      use-macro="context/@@+base-layout-macros/load-javascript" />
+    <metal:page-javascript
+        use-macro="context/@@+base-layout-macros/page-javascript" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
 
@@ -84,27 +84,29 @@
         <tal:hierarchy replace="structure context/@@+hierarchy" />
       </div><!--id="locationbar"-->
 
-      <div class="location-portlet top-portlet"
+      <div class="watermark-apps-portlet top-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
-        <span tal:replace="structure context/image:logo"></span>
-        <h2 tal:replace="structure context/fmt:location_heading">
+        <span tal:replace="structure context/watermark:logo"></span>
+        <h2 tal:replace="structure context/watermark:heading">
           Celso Providelo
         </h2>
         <metal:heading_nav
-          use-macro="context/@@+base-layout-macros/location-tabs"/>
+          use-macro="context/@@+base-layout-macros/application-buttons"/>
       </div>
-
-      <tal:maintenance replace="structure context/@@+maintenancemessage" />
-      <tal:notifications
-        define="notifications request/notifications"
-        condition="notifications">
-        <metal:notifications
-          use-macro="context/@@+base-layout-macros/notifications"/>
-      </tal:notifications>
 
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
         <div id="maincontent" class="yui-main">
+
+          <tal:maintenance
+            replace="structure context/@@+maintenancemessage" />
+          <tal:notifications
+            define="notifications request/notifications"
+            condition="notifications">
+            <metal:notifications
+              use-macro="context/@@+base-layout-macros/notifications"/>
+          </tal:notifications>
+
           <div class="yui-b"
             tal:attributes="
               lang view/lang|default_language|default;
@@ -133,12 +135,29 @@
         use-macro="context/@@+base-layout-macros/footer"/>
     </div><!-- yui-d0-->
 
+    <div id="help-pane" class="invisible">
+      <div id="help-body">
+        <tal:XXX condition="nothing">
+          # XXX mars 2008-11-07 bug=295254:
+          # We use this ugly src="" hack to get rid of an IE6 security
+          # warning.  See bug #295234.
+        </tal:XXX>
+        <iframe
+          id="help-pane-content"
+          class="invisible"
+          src="javascript:void(0);"></iframe>
+      </div>
+      <div id="help-footer">
+        <span id="help-close"></span>
+      </div>
+    </div>
+
     <metal:lp-client-cache
       use-macro="context/@@+base-layout-macros/lp-client-cache" />
   </body>
 </html>
 
-<tal:template tal:condition="devmode">
+<tal:template>
   <tal:comment
     define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
     replace="structure string:&lt;!--

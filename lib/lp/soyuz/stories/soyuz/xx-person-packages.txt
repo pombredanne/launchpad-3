@@ -27,7 +27,7 @@ each category where all items can be perused.
 Each category on the summary page has a heading that shows how many
 packages are being displayed.
 
-    >>> browser.open("http://launchpad.dev/~sabdfl/+related-software")
+    >>> browser.open("http://launchpad.dev/~mark/+related-software")
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     Maintained packages
     Displaying first 5 packages out of 7 total
@@ -84,7 +84,7 @@ package release page:
 Following the navigation link to "Maintained Packages" takes the user
 to the page that lists maintained packages in batches.
 
-    >>> browser.open("http://launchpad.dev/~sabdfl/+related-software")
+    >>> browser.open("http://launchpad.dev/~mark/+related-software")
     >>> browser.getLink("Maintained Packages").click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     Maintained packages
@@ -178,7 +178,7 @@ so that they appear in his +packages page.
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
     >>> source1 = test_publisher.getPubSource(
@@ -186,8 +186,8 @@ so that they appear in his +packages page.
     ...     sourcename='source1',
     ...     archive=cprov.archive)
     >>> source1.sourcepackagerelease.creator=cprov
-    >>> source1_sabdfl = source1.copyTo(
-    ...     source1.distroseries, source1.pocket, sabdfl.archive)
+    >>> source1_mark = source1.copyTo(
+    ...     source1.distroseries, source1.pocket, mark.archive)
     >>> source2 = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='source2',
@@ -197,7 +197,7 @@ so that they appear in his +packages page.
     >>> flush_database_updates()
     >>> logout()
 
-"source1" is now published in cprov and sabdfl's PPA.  "source2" is only
+"source1" is now published in cprov and mark's PPA.  "source2" is only
 published in no-priv's PPA.
 
 Make user_browser a known user that does not conflict with "no-priv":
@@ -256,9 +256,9 @@ both packages:
     source2 PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
-Let's make sabdfl's archive private and view the page again.
+Let's make mark's archive private and view the page again.
 
-    >>> set_private("sabdfl")
+    >>> set_private("mark")
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
@@ -270,9 +270,9 @@ Let's make sabdfl's archive private and view the page again.
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
-Notice that the source1 package in sabdfl's PPA is still appearing
+Notice that the source1 package in mark's PPA is still appearing
 because it is also published in some non-private archives, which
-override the private nature of sabdfl's archive.
+override the private nature of mark's archive.
 
 Let's make cprov's archive private:
 

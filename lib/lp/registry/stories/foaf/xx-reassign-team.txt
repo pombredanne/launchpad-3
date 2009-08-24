@@ -12,14 +12,14 @@ launchpad user or team.
     Unauthorized: ...
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.open('http://launchpad.dev/~landscape-developers/+edit')
     >>> browser.getLink('Change owner').click()
     >>> browser.url
     'http://launchpad.dev/~landscape-developers/+reassign'
 
     >>> browser.getControl(name='field.owner').value = 'cprov'
-    >>> browser.getControl(name='existing').value = ['existing']
-    >>> browser.getControl('Change owner').click()
+    >>> browser.getControl(name='field.existing').value = ['existing']
+    >>> browser.getControl('Change').click()
 
 Now we can see the new owner and also the old owner which has been made an
 administrator of the team.
@@ -51,14 +51,14 @@ Now Sample Person can't change the owner anymore.
 But cprov can.
 
     >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
-    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.open('http://launchpad.dev/~landscape-developers/+edit')
     >>> browser.getLink('Change owner').click()
     >>> browser.url
     'http://launchpad.dev/~landscape-developers/+reassign'
 
     >>> browser.getControl(name='field.owner').value = 'ubuntu-team'
-    >>> browser.getControl(name='existing').value = ['existing']
-    >>> browser.getControl('Change owner').click()
+    >>> browser.getControl(name='field.existing').value = ['existing']
+    >>> browser.getControl('Change').click()
 
     >>> browser.url
     'http://launchpad.dev/~landscape-developers'
