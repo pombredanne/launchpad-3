@@ -60,7 +60,7 @@ Let's add an ITeam as one of the subscribers:
 To remove a bug subscription, use
 IStructuralSubscriptionTarget.removeBugSubscription:
 
-    >>> target.removeBugSubscription(no_priv)
+    >>> target.removeBugSubscription(no_priv, no_priv)
     >>> sorted([sub.subscriber.name for sub in target.bug_subscriptions])
     [u'ubuntu-team']
 
@@ -68,7 +68,7 @@ Trying to remove a subscription that doesn't exist on a target raises a
 DeleteSubscriptionError.
 
     >>> foobar = personset.getByName("name16")
-    >>> target.removeBugSubscription(foobar)
+    >>> target.removeBugSubscription(foobar, foobar)
     Traceback (most recent call last):
       ...
     DeleteSubscriptionError: ...
@@ -93,7 +93,7 @@ notification level for bugs is set to NOTHING.
     >>> print_subscriptions_list(target.getSubscriptions())
     name16 COMMENTS LIFECYCLE
     ubuntu-team COMMENTS NOTHING
-    >>> target.removeBugSubscription(foobar)
+    >>> target.removeBugSubscription(foobar, foobar)
     >>> print_subscriptions_list(target.getSubscriptions())
     name16 NOTHING LIFECYCLE
     ubuntu-team COMMENTS NOTHING

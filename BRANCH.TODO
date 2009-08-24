@@ -3,5 +3,4 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-Make IProject an IStructuralSubscriptionTarget.
-This needs IProject to be split up into permission interfaces like IProduct.
+Need to let drivers (currently just for IDSP) (un)subscribe everyone from their structure.
