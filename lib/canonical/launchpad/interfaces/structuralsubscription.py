@@ -23,6 +23,13 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ParticipatingPersonChoice, PublicPersonChoice)
+from lp.registry.interfaces.person import IPerson
+
+from lazr.restful.declarations import (
+    REQUEST_USER, call_with, exported, export_as_webservice_entry,
+    export_factory_operation, export_read_operation, export_write_operation,
+    operation_parameters, operation_returns_entry, webservice_error)
+from lazr.restful.fields import Reference
 
 
 class BugNotificationLevel(DBEnumeratedType):
@@ -83,6 +90,7 @@ class BlueprintNotificationLevel(DBEnumeratedType):
 
 class IStructuralSubscription(Interface):
     """A subscription to a Launchpad structure."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
     product = Int(title=_('Product'), required=False, readonly=True)
@@ -95,13 +103,13 @@ class IStructuralSubscription(Interface):
         title=_('Distribution series'), required=False, readonly=True)
     sourcepackagename = Int(
         title=_('Source package name'), required=False, readonly=True)
-    subscriber = ParticipatingPersonChoice(
+    subscriber = exported(ParticipatingPersonChoice(
         title=_('Subscriber'), required=True, vocabulary='ValidPersonOrTeam',
-        readonly=True, description=_("The person subscribed."))
-    subscribed_by = PublicPersonChoice(
+        readonly=True, description=_("The person subscribed.")))
+    subscribed_by = exported(PublicPersonChoice(
         title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
-        description=_("The person creating the subscription."))
+        description=_("The person creating the subscription.")))
     bug_notification_level = Choice(
         title=_("Bug notification level"), required=True,
         vocabulary=BugNotificationLevel,
@@ -114,12 +122,12 @@ class IStructuralSubscription(Interface):
         default=BlueprintNotificationLevel.NOTHING,
         description=_("The volume and type of blueprint notifications "
                       "this subscription will generate."))
-    date_created = Datetime(
+    date_created = exported(Datetime(
         title=_("The date on which this subscription was created."),
-        required=False)
-    date_last_updated = Datetime(
+        required=False, readonly=True))
+    date_last_updated = exported(Datetime(
         title=_("The date on which this subscription was last updated."),
-        required=False)
+        required=False, readonly=True))
 
     target = Attribute("The structure to which this subscription belongs.")
 
@@ -153,6 +161,9 @@ class IStructuralSubscriptionTarget(Interface):
         :return: The new subscription.
         """
 
+    # TODO: Allow admins to subscribe their teams.
+    @call_with(subscriber=REQUEST_USER, subscribed_by=REQUEST_USER)
+    @export_factory_operation(IStructuralSubscription, [])
     def addBugSubscription(subscriber, subscribed_by):
         """Add a bug subscription for this structure.
 
@@ -165,6 +176,9 @@ class IStructuralSubscriptionTarget(Interface):
         :return: The new bug subscription.
         """
 
+    # TODO: Allow admins to unsubscribe their teams.
+    @call_with(subscriber=REQUEST_USER)
+    @export_write_operation()
     def removeBugSubscription(subscriber):
         """Remove a subscription to bugs from this structure.
 
@@ -175,6 +189,9 @@ class IStructuralSubscriptionTarget(Interface):
         :subscriber: The IPerson who will be subscribed.
         """
 
+    @operation_parameters(person=Reference(schema=IPerson))
+    @operation_returns_entry(IStructuralSubscription)
+    @export_read_operation()
     def getSubscription(person):
         """Return the subscription for `person`, if it exists."""
 
@@ -207,3 +224,5 @@ class DeleteSubscriptionError(Exception):
 
     Raised when an error occurred trying to delete a
     structural subscription."""
+
+    webservice_error(400)
