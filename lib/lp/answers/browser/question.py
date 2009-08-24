@@ -10,8 +10,8 @@ __all__ = [
     'QuestionAddView',
     'QuestionChangeStatusView',
     'QuestionConfirmAnswerView',
-    'QuestionContextMenu',
     'QuestionCreateFAQView',
+    'QuestionEditMenu',
     'QuestionEditView',
     'QuestionLinkFAQView',
     'QuestionMessageDisplayView',
@@ -60,7 +60,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
-    custom_widget, redirection, safe_action)
+    custom_widget, redirection, safe_action, NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
@@ -69,6 +69,90 @@ from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 from canonical.lazr.utils import smartquote
+
+
+class QuestionLinksMixin:
+    """A mixin class that provides links used by more than one menu."""
+
+    def edit(self):
+        """Return a Link to the edit view."""
+        text = 'Edit question'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def changestatus(self):
+        """Return a Link to the change status view."""
+        return Link('+change-status', _('Change status'), icon='edit')
+
+    def reject(self):
+        """Return a Link to the reject view."""
+        enabled = self.user is not None and self.context.canReject(self.user)
+        text = 'Reject question'
+        return Link('+reject', text, icon='edit', enabled=enabled)
+
+    def history(self):
+        """Return a Link to the history view."""
+        text = 'History'
+        return Link('+history', text, icon='list',
+                    enabled=bool(self.context.messages))
+
+    def subscription(self):
+        """Return a Link to the subscription view."""
+        if self.user is not None and self.context.isSubscribed(self.user):
+            text = 'Unsubscribe'
+            icon = 'edit'
+        else:
+            text = 'Subscribe'
+            icon = 'mail'
+        return Link('+subscribe', text, icon=icon)
+
+    def linkbug(self):
+        """Return a Link to the link bug view."""
+        text = 'Link existing bug'
+        return Link('+linkbug', text, icon='add')
+
+    def unlinkbug(self):
+        """Return a Link to the unlink bug view."""
+        text = 'Remove bug link'
+        return Link('+unlinkbug', text, icon='edit', enabled=self.has_bugs)
+
+    def makebug(self):
+        """Return a Link to the make bug view."""
+        text = 'Create bug report'
+        summary = 'Create a bug report from this question.'
+        return Link('+makebug', text, summary, icon='add',
+                    enabled=not self.has_bugs)
+
+    def linkfaq(self):
+        """Link for This is a FAQ."""
+        text = 'This is a FAQ'
+        summary = 'Answer this question using a FAQ, or add one as a comment.'
+        return Link('+linkfaq', text, summary)
+
+
+class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
+    """A menu for different aspects of editing a object."""
+
+    usedfor = IQuestion
+    facet = 'answers'
+    title = 'Edit question'
+    links = ['edit', 'changestatus', 'reject', 'subscription']
+
+
+class QuestionSetContextMenu(ContextMenu):
+    """Context menu of actions that can be preformed upon a QuestionSet."""
+    usedfor = IQuestionSet
+    links = ['findproduct', 'finddistro']
+
+    def findproduct(self):
+        """Return a Link to the find product view."""
+        text = 'Find upstream project'
+        return Link('/projects', text, icon='search')
+
+    def finddistro(self):
+        """Return a Link to the find distribution view."""
+        text = 'Find distribution'
+        return Link('/distros', text, icon='search')
 
 
 class QuestionSetNavigation(Navigation):
@@ -1180,94 +1264,3 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
             data['message'] += '\n' + self.getFAQMessageReference(data['faq'])
         self.context.linkFAQ(self.user, data['faq'], data['message'])
         self.next_url = canonical_url(self.context)
-
-
-class QuestionContextMenu(ContextMenu):
-    """Context menu of actions that can be performed upon a Question."""
-    usedfor = IQuestion
-    links = [
-        'edit',
-        'reject',
-        'changestatus',
-        'history',
-        'subscription',
-        'linkbug',
-        'unlinkbug',
-        'makebug',
-        'linkfaq',
-        ]
-
-    def initialize(self):
-        """Initialize the menu from the Question's state."""
-        self.has_bugs = bool(self.context.bugs)
-
-    def edit(self):
-        """Return a Link to the edit view."""
-        text = 'Edit question'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def changestatus(self):
-        """Return a Link to the change status view."""
-        return Link('+change-status', _('Change status'), icon='edit')
-
-    def reject(self):
-        """Return a Link to the reject view."""
-        enabled = self.user is not None and self.context.canReject(self.user)
-        text = 'Reject question'
-        return Link('+reject', text, icon='edit', enabled=enabled)
-
-    def history(self):
-        """Return a Link to the history view."""
-        text = 'History'
-        return Link('+history', text, icon='list',
-                    enabled=bool(self.context.messages))
-
-    def subscription(self):
-        """Return a Link to the subscription view."""
-        if self.user is not None and self.context.isSubscribed(self.user):
-            text = 'Unsubscribe'
-            icon = 'edit'
-        else:
-            text = 'Subscribe'
-            icon = 'mail'
-        return Link('+subscribe', text, icon=icon)
-
-    def linkbug(self):
-        """Return a Link to the link bug view."""
-        text = 'Link existing bug'
-        return Link('+linkbug', text, icon='add')
-
-    def unlinkbug(self):
-        """Return a Link to the unlink bug view."""
-        text = 'Remove bug link'
-        return Link('+unlinkbug', text, icon='edit', enabled=self.has_bugs)
-
-    def makebug(self):
-        """Return a Link to the make bug view."""
-        text = 'Create bug report'
-        summary = 'Create a bug report from this question.'
-        return Link('+makebug', text, summary, icon='add',
-                    enabled=not self.has_bugs)
-
-    def linkfaq(self):
-        """Link for This is a FAQ."""
-        text = 'This is a FAQ'
-        summary = 'Answer this question using a FAQ, or add one as a comment.'
-        return Link('+linkfaq', text, summary)
-
-
-class QuestionSetContextMenu(ContextMenu):
-    """Context menu of actions that can be preformed upon a QuestionSet."""
-    usedfor = IQuestionSet
-    links = ['findproduct', 'finddistro']
-
-    def findproduct(self):
-        """Return a Link to the find product view."""
-        text = 'Find upstream project'
-        return Link('/projects', text, icon='search')
-
-    def finddistro(self):
-        """Return a Link to the find distribution view."""
-        text = 'Find distribution'
-        return Link('/distros', text, icon='search')
