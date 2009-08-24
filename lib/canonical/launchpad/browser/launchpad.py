@@ -243,8 +243,7 @@ class Hierarchy(LaunchpadView):
         # Iterate over the context of our breadcrumbs in reverse order and for
         # the first one we find an adapter named after the vhost we're on,
         # generate an extra breadcrumb and insert it in our list.
-        for idx in reversed(xrange(len(breadcrumbs))):
-            breadcrumb = breadcrumbs[idx]
+        for idx, breadcrumb in reversed(enumerate(breadcrumbs)):
             extra_breadcrumb = queryAdapter(
                 breadcrumb.context, IBreadcrumb, name=vhost)
             if extra_breadcrumb is not None:
