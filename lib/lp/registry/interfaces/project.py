@@ -39,6 +39,8 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
@@ -286,7 +288,7 @@ class IProjectPublic(
         """Return a ProjectSeries object with name `series_name`."""
 
 
-class IProject(IProjectPublic):
+class IProject(IProjectPublic, IStructuralSubscriptionTarget):
     """A Project."""
 
     export_as_webservice_entry('project_group')
