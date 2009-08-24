@@ -272,7 +272,7 @@ div.package-details {
 <metal:build_status_summary define-macro="build-status-summary">
 
   <tal:comment replace="nothing">
-    Present the build pie chart for the context IArchiveRebuild.
+    Present a summary of the packages with build statuses for the archive.
     :archive: targetted IArchive.
   </tal:comment>
 
@@ -287,19 +287,19 @@ div.package-details {
     </thead>
     <tbody>
       <tr>
-        <th>Failed</th>
+        <th>Failed:</th>
         <td class="failed" tal:content="build_counters/failed">100</td>
       </tr>
       <tr>
-        <th>Pending</th>
+        <th>Pending:</th>
         <td class="pending" tal:content="build_counters/pending">100</td>
       </tr>
       <tr>
-        <th>Superseded</th>
+        <th>Superseded:</th>
         <td class="superseded" tal:content="build_counters/superseded">100</td>
       </tr>
       <tr>
-        <th>Succeeded</th>
+        <th>Succeeded:</th>
         <td class="succeeded" tal:content="build_counters/succeeded">100</td>
       </tr>
     </tbody>

@@ -98,125 +98,143 @@ tr#package-counters p{
                      archive_label  view/archive_label;"
          tal:attributes="class string:archive">
 
-      <h1 tal:content="view/page_title">
-        PPA for user
-      </h1>
+      <div class="top-portlet">
+        <h1 tal:content="view/page_title">
+          PPA for user
+       </h1>
 
-      <p tal:condition="not: context/enabled"
-         style="clear: right;" class="warning message">
-        This archive has been disabled.
-      </p>
+        <p tal:condition="not: context/enabled"
+           style="clear: right;" class="warning message">
+          This archive has been disabled.
+        </p>
 
-      <div tal:define="archive context"
-           tal:condition="archive_active"
-           id="build-status-summary">
-        <h2>
-          <tal:archive_label replace="archive_label" /> build status
-        </h2>
+        <p>This
+          <tal:archive_label replace="archive_label">PPA</tal:archive_label>
+          currently contains 20 published packages.
+        </p>
+      </div>
 
-        <metal:build-status-summary
-            use-macro="archive/@@+macros/build-status-summary" />
+      <div class="yui-g">
+        <div class="first yui-u">
+          <div tal:define="archive context"
+               tal:condition="archive_active"
+               id="build-status-summary"
+               class="portlet">
+            <h2>
+              Package build summary
+            </h2>
 
-        <div class="actions">
-          <tal:builds
-            define="link context/menu:context/builds"
+            <metal:build-status-summary
+                use-macro="archive/@@+macros/build-status-summary" />
+
+            <div class="actions">
+              <tal:builds
+                define="link context/menu:context/builds"
+                condition="link/enabled"
+                replace="structure link/render" />
+            </div>
+          </div>
+        </div>
+
+        <div class="yui-u"><div class="portlet">
+          <h2>What is this really? Not a group...</h2>
+          <dl>
+            <dt>
+          </dl>
+          <table id="archive-details-table">
+            <tbody>
+              <tr id="upload-hint"
+                  tal:condition="context/required:launchpad.Append">
+                <th>Upload packages:</th>
+                <td>
+                  <tt>dput ppa:<tal:owner-name
+                      replace="context/owner/name" />/<tal:ppa-name
+                      replace="context/name" /> &lt;source.changes&gt;</tt>
+                  (<a href="https://help.launchpad.net/Packaging/PPA/Uploading"
+                     >Read about uploading</a>)
+                </td>
+              </tr>
+              <tr id="package-counters" tal:condition="view/archive_url">
+                <th>Repository disk usage:</th>
+                <td>
+                    <p class="discreet">
+                      Package counters and estimated archive size temporarily
+                      unavailable.
+                    </p>
+                </td>
+              </tr>
+              <tr id="archive-dependencies"
+                  tal:condition="view/show_dependencies">
+                <th>Build dependencies:</th>
+                <td>
+                  <ul>
+                    <li tal:repeat="dependency context/dependencies">
+                      <a tal:attributes="href dependency/dependency/fmt:url"
+                         tal:content="dependency/title" />
+                      (included <span
+                       tal:replace="dependency/date_created/fmt:displaydate" />)
+                    </li>
+                 </ul>
+                 <div class="actions">
+                   <tal:edit-dependencies
+                     define="link context/menu:context/edit_dependencies"
+                     condition="link/enabled"
+                     replace="structure link/fmt:link-icon" />
+                 </div>
+                </td>
+              </tr>
+              <tr id="signing-key"
+                  tal:define="signing_key context/signing_key"
+                  tal:condition="signing_key">
+                <th>Signing key:</th>
+                <td>
+                  <a tal:attributes="href signing_key/keyserverURL">
+                    <code tal:content="signing_key/displayname"
+                      >1024R/23456789</code>
+                  </a>
+                  (<a href="/+help/soyuz/ppa-sources-list.html"
+                      target="help">What is this?</a>)
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div></div> <!-- portlet, yui-u -->
+      </div> <!-- yui-g -->
+
+      <div class="portlet">
+        <tal:package-copy-request-list tal:condition="context/is_copy">
+          <metal:package-copy-request-list
+              use-macro="context/@@+macros/package-copy-request-list" />
+        </tal:package-copy-request-list>
+
+        <p tal:condition="not: archive_active">
+          This <tal:archive_label replace="archive_label" /> does not contain
+          any packages yet. Find more information about how to upload
+          packages in the <a href="https://help.launchpad.net/Packaging/PPA"
+          >PPA help page</a>
+        </p>
+
+        <tal:active_archive condition="archive_active">
+
+        <div class="actions" style="clear:right;float:right;">
+          <tal:copy
+            define="link context/menu:context/copy"
+            condition="link/enabled"
+            replace="structure link/render" />
+          <tal:delete
+            define="link context/menu:context/delete"
             condition="link/enabled"
             replace="structure link/render" />
         </div>
 
-      </div>
+        <metal:package_filter_form
+          use-macro="context/@@+macros/package-filter-form" />
 
-      <table id="archive-details-table">
-        <tbody>
-          <tr id="upload-hint"
-              tal:condition="context/required:launchpad.Append">
-            <th>Upload packages:</th>
-            <td>
-              <tt>dput ppa:<tal:owner-name
-                  replace="context/owner/name" />/<tal:ppa-name
-                  replace="context/name" /> &lt;source.changes&gt;</tt>
-              (<a href="https://help.launchpad.net/Packaging/PPA/Uploading"
-                 >Read about uploading</a>)
-            </td>
-          </tr>
-          <tr id="package-counters" tal:condition="view/archive_url">
-            <th>Repository disk usage:</th>
-            <td>
-                <p class="discreet">
-                  Package counters and estimated archive size temporarily
-                  unavailable.
-                </p>
-            </td>
-          </tr>
-          <tr id="archive-dependencies"
-              tal:condition="view/show_dependencies">
-            <th>Build dependencies:</th>
-            <td>
-              <ul>
-                <li tal:repeat="dependency context/dependencies">
-                  <a tal:attributes="href dependency/dependency/fmt:url"
-                     tal:content="dependency/title" />
-                  (included <span
-                   tal:replace="dependency/date_created/fmt:displaydate" />)
-                </li>
-             </ul>
-             <div class="actions">
-               <tal:edit-dependencies
-                 define="link context/menu:context/edit_dependencies"
-                 condition="link/enabled"
-                 replace="structure link/fmt:link-icon" />
-             </div>
-            </td>
-          </tr>
-          <tr id="signing-key"
-              tal:define="signing_key context/signing_key"
-              tal:condition="signing_key">
-            <th>Signing key:</th>
-            <td>
-              <a tal:attributes="href signing_key/keyserverURL">
-                <code tal:content="signing_key/displayname"
-                  >1024R/23456789</code>
-              </a>
-              (<a href="/+help/soyuz/ppa-sources-list.html"
-                  target="help">What is this?</a>)
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <metal:package-list
+            use-macro="context/@@+macros/source-package-list" />
 
-      <tal:package-copy-request-list tal:condition="context/is_copy">
-        <metal:package-copy-request-list
-            use-macro="context/@@+macros/package-copy-request-list" />
-      </tal:package-copy-request-list>
-
-      <p tal:condition="not: archive_active">
-        This <tal:archive_label replace="archive_label" /> does not contain
-        any packages yet. Find more information about how to upload
-        packages in the <a href="https://help.launchpad.net/Packaging/PPA"
-        >PPA help page</a>
-      </p>
-
-      <tal:active_archive condition="archive_active">
-
-      <div class="actions" style="clear:right;float:right;">
-        <tal:copy
-          define="link context/menu:context/copy"
-          condition="link/enabled"
-          replace="structure link/render" />
-        <tal:delete
-          define="link context/menu:context/delete"
-          condition="link/enabled"
-          replace="structure link/render" />
-      </div>
-
-      <metal:package_filter_form
-              use-macro="context/@@+macros/package-filter-form" />
-
-      <metal:package-list
-          use-macro="context/@@+macros/source-package-list" />
-
-      </tal:active_archive>
-
+        </tal:active_archive>
+      </div> <!-- portlet -->
     </div> <!--main -->
 
   </body>
