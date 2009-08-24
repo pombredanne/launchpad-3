@@ -189,10 +189,6 @@ def branchmergeproposal_index(context, view):
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
-def branch_visibility_edit(context, view):
-    """Return the view's pagetitle."""
-    return view.pagetitle
-
 bug_activity = ContextBugId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")

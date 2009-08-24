@@ -47,7 +47,7 @@ class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
 class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """Simple form view to add branch visibility policy items."""
 
-    pagetitle = "Set branch visibility policy for team"
+    page_title = label = "Set branch visibility policy for team"
 
     initial_values = {'rule': TeamBranchVisibilityRule.PRIVATE}
     custom_widget('rule', LaunchpadRadioWidgetWithDescription)

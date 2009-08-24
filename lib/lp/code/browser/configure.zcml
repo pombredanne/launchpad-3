@@ -524,7 +524,7 @@
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.AddBranchVisibilityTeamPolicyView"
         permission="launchpad.Commercial"
-        template="../templates/branch-visibility-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+removebranchvisibilitypolicy"
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
