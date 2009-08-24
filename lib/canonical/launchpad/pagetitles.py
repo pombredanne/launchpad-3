@@ -386,8 +386,6 @@ codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Ubuntu Codes of Conduct'
 
-codereviewcomment_index = 'Code review comment'
-
 codereviewcomment_reply = 'Reply to code review comment'
 
 def contact_user(context, view):
