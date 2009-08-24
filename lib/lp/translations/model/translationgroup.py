@@ -85,6 +85,37 @@ class TranslationGroup(SQLBase):
     def projects(self):
         return Project.selectBy(translationgroup=self.id, active=True)
 
+    # A limit of projects to get for the `top_projects`.
+    TOP_PROJECTS_LIMIT = 6
+
+    @property
+    def top_projects(self):
+        """See `ITranslationGroup`."""
+        goal = self.TOP_PROJECTS_LIMIT
+        projects = list(self.distributions[:goal])
+        found = len(projects)
+        if found < goal:
+            projects.extend(
+                list(self.projects[:goal-found]))
+            found = len(projects)
+        if found < goal:
+            projects.extend(
+                list(self.products[:goal-found]))
+        return projects
+
+    @property
+    def number_of_remaining_projects(self):
+        """See `ITranslationGroup`."""
+        total = (
+            self.projects.count() +
+            self.products.count() +
+            self.distributions.count())
+        if total > self.TOP_PROJECTS_LIMIT:
+            return total - self.TOP_PROJECTS_LIMIT
+        else:
+            return 0
+
+
     # get a translator by code
     def __getitem__(self, code):
         """See ITranslationGroup."""

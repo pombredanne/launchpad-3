@@ -159,6 +159,12 @@ class ITranslationGroup(IHasOwner):
     def add(content):
         """Add a new object."""
 
+    top_projects = Attribute(
+        "Most relevant projects using this translation group.")
+
+    number_of_remaining_projects = Attribute(
+        "Count of remaining projects not listed in the `top_projects`.")
+
 
 class ITranslationGroupSet(Interface):
     """A container for translation groups."""
