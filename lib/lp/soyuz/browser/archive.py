@@ -18,6 +18,7 @@ __all__ = [
     'ArchiveNavigationMenu',
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
+    'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
     'traverse_distro_archive',
@@ -38,6 +39,7 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.lazr.utils import smartquote
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
@@ -688,6 +690,22 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         """Return any package copy requests associated with this archive."""
         return(getUtility(
                 IPackageCopyRequestSet).getByTargetArchive(self.context))
+
+
+class ArchivePackagesView(ArchiveSourcePackageListViewBase):
+    """Detailed packages view for an archive."""
+
+    @property
+    def page_title(self):
+        return smartquote('Packages in "%s"' % self.context.displayname)
+
+    @property
+    def sources_list_entries(self):
+        """Setup and return the source list entries widget."""
+        entries = SourcesListEntries(
+            self.context.distribution, self.archive_url,
+            self.context.series_with_sources)
+        return SourcesListEntriesView(entries, self.request)
 
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
