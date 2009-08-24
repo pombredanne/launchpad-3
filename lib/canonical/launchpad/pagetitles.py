@@ -499,8 +499,6 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-faq_edit = ContextId('Edit FAQ #%s details')
-
 def faq_index(context, view):
     """Return the FAQ index page title."""
     return (
