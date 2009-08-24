@@ -229,4 +229,4 @@ because bart is not a member of the team.
     >>> print view.contact_link_title
     Send an email to this team's owner through Launchpad
     >>> print view.specific_contact_text
-    Contact this team's administrators
+    Contact this team's owner
