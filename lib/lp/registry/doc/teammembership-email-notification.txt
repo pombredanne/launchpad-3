@@ -74,16 +74,7 @@ generates a notification email only to Ubuntu Team administrators.
     Reply-To: robertc@robertcollins.net
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
     Subject: lifeless wants to join
-    <BLANKLINE>
-    Robert Collins (lifeless) wants to be a member of Ubuntu Team (ubuntu-
-    team), but this is a moderated team, so that membership has to be
-    approved.  You can approve, decline or leave it as proposed by following
-    the link below.
-    <BLANKLINE>
-        http://launchpad.dev/~ubuntu-team/+member/lifeless
-    <BLANKLINE>
-    -- =
-    <BLANKLINE>
+    ...
     You received this email because you are the owner of the Ubuntu Team team.
     ----------------------------------------
 
@@ -221,16 +212,7 @@ other's member) email address in the 'Reply-To' header of the message sent.
     Reply-To: mark@example.com
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
     Subject: admins wants to join
-    <BLANKLINE>
-    Mark Shuttleworth (mark) wants to make Launchpad Administrators
-    (admins) a member of Ubuntu Team (ubuntu-team), but this is a moderated
-    team, so that membership has to be approved.  You can approve, decline
-    or leave it as proposed by following the link below.
-    <BLANKLINE>
-        http://launchpad.dev/~ubuntu-team/+member/admins
-    <BLANKLINE>
-    -- =
-    <BLANKLINE>
+     ...
     You received this email because you are the owner of the Ubuntu Team team.
     ----------------------------------------
 
@@ -281,15 +263,7 @@ member.
     To: mark@example.com
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
     Subject: marilize joined ubuntu-team
-    <BLANKLINE>
-    Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
-    (ubuntu-team) by Celso Providelo (cprov). Follow the link below for more
-    details.
-    <BLANKLINE>
-        http://launchpad.dev/~ubuntu-team/+member/marilize
-    <BLANKLINE>
-    -- =
-    <BLANKLINE>
+      ...
     You received this email because you are the owner of the Ubuntu Team team.
     ----------------------------------------
 
@@ -394,13 +368,7 @@ passing force_team_add=True to the addMember() method.
     To: foo.bar@canonical.com
     X-Launchpad-Message-Rationale: Indirect member (ubuntu-team)
     Subject: launchpad joined ubuntu-team
-    <BLANKLINE>
-    Celso Providelo (cprov) added Launchpad Developers (launchpad) (which
-    you are a member of) as a member of Ubuntu Team (ubuntu-team).
-    <http://launchpad.dev/~ubuntu-team>
-    <BLANKLINE>
-    -- =
-    <BLANKLINE>
+     ...
     You received this email because launchpad is the new member.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
@@ -423,15 +391,7 @@ passing force_team_add=True to the addMember() method.
     To: mark@example.com
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
     Subject: launchpad joined ubuntu-team
-    <BLANKLINE>
-    Launchpad Developers (launchpad) has been added as a member of Ubuntu
-    Team (ubuntu-team) by Celso Providelo (cprov). Follow the link below for
-    more details.
-    <BLANKLINE>
-        http://launchpad.dev/~ubuntu-team/+member/launchpad
-    <BLANKLINE>
-    -- =
-    <BLANKLINE>
+     ...
     You received this email because you are the owner of the Ubuntu Team team.
     ----------------------------------------
 
