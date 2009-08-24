@@ -14,6 +14,7 @@ __all__ = [
     'QuestionEditMenu',
     'QuestionEditView',
     'QuestionExtrasMenu',
+    'QuestionHistoryView',
     'QuestionLinkFAQView',
     'QuestionMessageDisplayView',
     'QuestionSetContextMenu',
@@ -451,6 +452,16 @@ class QuestionSupportLanguageMixin:
 
         old_chosen_language = self.request.form.get('chosen_language')
         return self.chosen_language.code != old_chosen_language
+
+
+class QuestionHistoryView(LaunchpadView):
+    """A view for listing the history of a question."""
+
+    @property
+    def page_title(self):
+        return 'History of question #%s' % self.context.id
+
+    label = page_title
 
 
 class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
