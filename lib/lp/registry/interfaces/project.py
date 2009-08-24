@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IProject',
+    'IProjectPublic',
     'IProjectSeries',
     'IProjectSet',
     ]
@@ -56,14 +57,13 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-               IHasBugs, IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon,
-               IHasLogo, IHasMentoringOffers, IHasMergeProposals,
-               IHasMilestones, IHasMugshot, IHasOwner, IHasSpecifications,
-               IHasSprints, IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext, IPillar, IRootContext):
-    """A Project."""
-    export_as_webservice_entry('project_group')
+class IProjectPublic(
+    ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
+    IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
+    IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
+    IHasOwner, IHasSpecifications, IHasSprints, IHasTranslationGroup,
+    IMakesAnnouncements, IKarmaContext, IPillar, IRootContext):
+    """Public IProject properties."""
 
     id = Int(title=_('ID'), readonly=True)
 
@@ -284,6 +284,12 @@ class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
 
     def getSeries(series_name):
         """Return a ProjectSeries object with name `series_name`."""
+
+
+class IProject(IProjectPublic):
+    """A Project."""
+
+    export_as_webservice_entry('project_group')
 
 
 # Interfaces for set
