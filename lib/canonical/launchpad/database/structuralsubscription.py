@@ -131,14 +131,18 @@ class StructuralSubscriptionTargetMixin:
                 '%s is not a valid structural subscription target.')
         return args
 
-    def addSubscription(self, subscriber, subscribed_by):
-        """See `IStructuralSubscriptionTarget`."""
+    def _userCanAlterSubscription(self, subscriber, subscribed_by):
+        """Check if a user can change a subscription for a person."""
         # Only a Launchpad administrator or the user can subscribe a user.
         # Only a Launchpad or team admin can subscribe a team.
         admins = getUtility(ILaunchpadCelebrities).admin
-        if (subscriber is not subscribed_by and
-            not subscribed_by.inTeam(admins) and
-            subscriber not in subscribed_by.getAdministratedTeams()):
+        return (subscriber is subscribed_by or
+                subscriber in subscribed_by.getAdministratedTeams() or
+                subscribed_by.inTeam(admins))
+
+    def addSubscription(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
+        if not self._userCanAlterSubscription(subscriber, subscribed_by):
             raise UserCannotSubscribePerson(
                 '%s does not have permission to subscribe %s.' % (
                     subscribed_by.name, subscriber.name))
