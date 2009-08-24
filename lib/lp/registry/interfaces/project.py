@@ -19,6 +19,7 @@ from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -60,7 +61,7 @@ class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
                IHasLogo, IHasMentoringOffers, IHasMergeProposals,
                IHasMilestones, IHasMugshot, IHasOwner, IHasSpecifications,
                IHasSprints, IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext, IPillar):
+               IKarmaContext, IPillar, IRootContext):
     """A Project."""
     export_as_webservice_entry('project_group')
 

@@ -30,7 +30,7 @@ product or distro, can edit Importance.
 
     >>> personset = getUtility(IPersonSet)
     >>> no_priv = personset.getByName("no-priv")
-    >>> sabdfl = personset.getByName("sabdfl")
+    >>> mark = personset.getByName("mark")
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> logout()
@@ -105,12 +105,12 @@ For a distribution bug supervisor.
 For a distribution owner.
 
     >>> login("foo.bar@canonical.com")
-    >>> sabdfl.inTeam(ubuntu.owner)
+    >>> mark.inTeam(ubuntu.owner)
     True
     >>> logout()
 
     >>> user_sees_importance_widget(
-    ...     user=sabdfl,
+    ...     user=mark,
     ...     url='http://bugs.launchpad.dev/'
     ...         'ubuntu/+source/mozilla-firefox/+bug/1/+editstatus')
     True

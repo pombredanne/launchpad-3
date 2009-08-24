@@ -522,7 +522,9 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # what BugZilla will return.
         local_time = xmlrpclib.DateTime(local_datetime.timetuple())
 
-        utc_date_time = local_datetime - timedelta(seconds=self.utc_offset)
+        utc_offset_delta = timedelta(seconds=self.utc_offset)
+        utc_date_time = local_datetime - utc_offset_delta
+
         utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
         return {
             'local_time': local_time,
@@ -757,7 +759,14 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
 
     # Map namespaces onto method names.
     methods = {
-        'Bugzilla': ['version'],
+        'Bug': [
+            'get',
+            'search',
+            ],
+        'Bugzilla': [
+            'time',
+            'version',
+            ],
         'Test': ['login_required'],
         'User': ['login'],
         }
@@ -793,6 +802,48 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                 raise xmlrpclib.Fault(
                     300,
                     "The username or password you entered is not valid.")
+
+    def time(self):
+        """Return a dict of the local time and associated data."""
+        # We cheat slightly by calling the superclass to get the time
+        # data. We do this the old fashioned way because XML-RPC
+        # Transports don't support new-style classes.
+        time_dict = TestBugzillaXMLRPCTransport.time(self)
+        offset_hours = (self.utc_offset / 60) / 60
+        offset_string = '+%02d00' % offset_hours
+
+        return {
+            'db_time': time_dict['local_time'],
+            'tz_name': time_dict['tz_name'],
+            'tz_offset': offset_string,
+            'tz_short_name': time_dict['tz_name'],
+            'web_time': time_dict['local_time'],
+            'web_time_utc': time_dict['utc_time'],
+            }
+
+    def get(self, arguments):
+        """Return a list of bug dicts for a given set of bug ids."""
+        # This method is actually just a synonym for get_bugs().
+        return self.get_bugs(arguments)
+
+    def search(self, arguments):
+        """Return a list of bug dicts that match search criteria."""
+        search_args = {'permissive': True}
+
+        # Convert the search arguments into something that get_bugs()
+        # understands. This may seem like a hack, but since we're only
+        # trying to simulate the way Bugzilla behaves it doesn't really
+        # matter that we just pass the buck to get_bugs().
+        if arguments.get('last_change_time') is not None:
+            search_args['changed_since'] = arguments['last_change_time']
+
+        if arguments.get('id') is not None:
+            search_args['ids'] = arguments['id']
+        else:
+            search_args['ids'] = [
+                bug_id for bug_id in self.bugs]
+
+        return self.get_bugs(search_args)
 
 
 class TestMantis(Mantis):

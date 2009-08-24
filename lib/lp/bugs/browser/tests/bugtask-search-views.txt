@@ -563,6 +563,6 @@ get_buglisting_search_filter_url().
 
     >>> print get_buglisting_search_filter_url(
     ...     status_upstream='open_upstream', status='NEW',
-    ...     importance='WISHLIST', assignee='sabdfl')
-    +bugs?search=Search&field.assignee=sabdfl&field.importance=WISHLIST&field.status=NEW&field.status_upstream=open_upstream
+    ...     importance='WISHLIST', assignee='mark')
+    +bugs?search=Search&field.assignee=mark&field.importance=WISHLIST&field.status=NEW&field.status_upstream=open_upstream
 

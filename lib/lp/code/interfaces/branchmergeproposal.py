@@ -24,6 +24,8 @@ __all__ = [
     'WrongBranchMergeProposal',
     ]
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from zope.event import notify
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bytes, Choice, Datetime, Int, Object, Text, TextLine)
@@ -600,3 +602,19 @@ class IMergeProposalCreatedJobSource(Interface):
 
     def iterReady():
         """Iterate through all ready MergeProposalCreatedJobs."""
+
+
+def notify_modified(proposal, func, *args, **kwargs):
+    """Call func, then notify about the changes it made.
+
+    :param proposal: the merge proposal to notify about.
+    :param func: The callable that will modify the merge proposal.
+    :param args: Additional arguments for the method.
+    :param kwargs: Keyword arguments for the method.
+    :return: The return value of the method.
+    """
+    from lp.code.adapters.branch import BranchMergeProposalDelta
+    snapshot = BranchMergeProposalDelta.snapshot(proposal)
+    result = func(*args, **kwargs)
+    notify(ObjectModifiedEvent(proposal, snapshot, []))
+    return result

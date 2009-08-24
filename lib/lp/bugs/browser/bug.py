@@ -412,7 +412,8 @@ class BugViewMixin:
     @cachedproperty
     def subscriber_ids(self):
         """Return a dictionary mapping a css_name to user name."""
-        subscribers = self.direct_subscribers.union(self.duplicate_subscribers)
+        subscribers = self.direct_subscribers.union(
+            self.duplicate_subscribers)
 
         # The current user has to be in subscribers_id so
         # in case the id is needed for a new subscription.
@@ -554,6 +555,21 @@ class BugEditView(BugEditViewBase):
     def __init__(self, context, request):
         BugEditViewBase.__init__(self, context, request)
         self.notifications = []
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit details for bug #%d' % self.context.id
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def validate(self, data):
         """Make sure new tags are confirmed."""
