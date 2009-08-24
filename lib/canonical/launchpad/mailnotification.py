@@ -886,15 +886,14 @@ def notify_team_join(event):
             subject = '%s joined %s' % (person.name, team.name)
             header_rationale = "Indirect member (%s)" % team.name
             footer_rationale = (
-                "You received this notification because "
+                "You received this email because "
                 "%s is the new member." % person.name)
         else:
             templatename = 'new-member-notification.txt'
             subject = 'You have been added to %s' % team.name
             header_rationale = "Member (%s)" % team.name
             footer_rationale = (
-                "You received this notification because "
-                "you are the new member.")
+                "You received this email because you are the new member.")
 
         if team.mailing_list is not None:
             list_instructions = (

@@ -265,7 +265,7 @@ member.
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You received this notification because you are the new member.
+    You received this email because you are the new member.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
@@ -410,7 +410,7 @@ passing force_team_add=True to the addMember() method.
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You received this notification because launchpad is the new member.
+    You received this email because launchpad is the new member.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com,
@@ -892,7 +892,7 @@ email contain subscription information.
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You received this notification because you are the new member.
+    You received this email because you are the new member.
     ----------------------------------------
 
 When a team join a team with a mailing list, the new member notification
@@ -919,6 +919,6 @@ emails contain subscription information.
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You received this notification because team-two is the new member.
+    You received this email because team-two is the new member.
     ----------------------------------------
 
