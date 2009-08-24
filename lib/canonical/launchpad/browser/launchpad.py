@@ -96,7 +96,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
     stepto)
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -226,39 +226,31 @@ class Hierarchy(LaunchpadView):
         The list starts with the breadcrumb closest to the hierarchy root.
         """
         breadcrumbs = []
-        for builder in self._getBreadcrumbBuilders():
-            crumb = builder.make_breadcrumb()
-            if crumb is not None:
-                breadcrumbs.append(crumb)
-        return breadcrumbs
-
-    def _getBreadcrumbBuilders(self):
-        builders = []
         for obj in self.objects:
-            builder = queryAdapter(obj, IBreadcrumbBuilder)
-            if builder is not None:
-                builders.append(builder)
+            breadcrumb = queryAdapter(obj, IBreadcrumb)
+            if breadcrumb is not None:
+                breadcrumbs.append(breadcrumb)
 
         host = URI(self.request.getURL()).host
-        if (len(builders) == 0
+        if (len(breadcrumbs) == 0
             or host == allvhosts.configs['mainsite'].hostname):
-            return builders
+            return breadcrumbs
 
         # If we got this far it means we have breadcrumbs and we're not on the
         # mainsite, so we'll sneak an extra breadcrumb for the vhost we're on.
         vhost = host.split('.')[0]
 
-        # Iterate over the context of our builders in reverse order and for
+        # Iterate over the context of our breadcrumbs in reverse order and for
         # the first one we find an adapter named after the vhost we're on,
         # generate an extra breadcrumb and insert it in our list.
-        for idx in reversed(xrange(len(builders))):
-            builder = builders[idx]
-            extra_builder = queryAdapter(
-                builder.context, IBreadcrumbBuilder, name=vhost)
-            if extra_builder is not None:
-                builders.insert(idx + 1, extra_builder)
+        for idx in reversed(xrange(len(breadcrumbs))):
+            breadcrumb = breadcrumbs[idx]
+            extra_breadcrumb = queryAdapter(
+                breadcrumb.context, IBreadcrumb, name=vhost)
+            if extra_breadcrumb is not None:
+                breadcrumbs.insert(idx + 1, extra_breadcrumb)
                 break
-        return builders
+        return breadcrumbs
 
     def render(self):
         """Render the hierarchy HTML.
