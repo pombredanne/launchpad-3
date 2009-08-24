@@ -37,6 +37,8 @@ from lp.registry.interfaces.distroseries import (
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
@@ -53,7 +55,8 @@ from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
-class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
+                             StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistroSeries
 
