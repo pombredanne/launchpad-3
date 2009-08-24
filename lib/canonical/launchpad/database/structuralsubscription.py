@@ -133,17 +133,17 @@ class StructuralSubscriptionTargetMixin:
 
     def addSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
-        existing_subscription = self.getSubscription(subscriber)
-
         # Only a Launchpad administrator or the user can subscribe a user.
         # Only a Launchpad or team admin can subscribe a team.
-        admins = getUtility(ILaunchpadCelebrities).admins
+        admins = getUtility(ILaunchpadCelebrities).admin
         if (subscriber is not subscribed_by and
             not subscribed_by.inTeam(admins) and
             subscriber not in subscribed_by.getAdministratedTeams()):
-            UserCannotSubscribePerson(
+            raise UserCannotSubscribePerson(
                 '%s does not have permission to subscribe %s.' % (
                     subscribed_by.name, subscriber.name))
+
+        existing_subscription = self.getSubscription(subscriber)
 
         if existing_subscription is not None:
             return existing_subscription

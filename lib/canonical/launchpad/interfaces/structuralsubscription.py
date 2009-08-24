@@ -177,7 +177,9 @@ class IStructuralSubscriptionTarget(Interface):
         """
 
     # TODO: Allow admins to subscribe their teams.
-    @call_with(subscriber=REQUEST_USER, subscribed_by=REQUEST_USER)
+    @operation_parameters(
+        subscriber=Reference(schema=IPerson, title=_('Person')))
+    @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
     def addBugSubscription(subscriber, subscribed_by):
         """Add a bug subscription for this structure.
