@@ -68,7 +68,7 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'subscribe', 'publishinghistory', 'edit', 'new_bugs',
-        'open_questions']
+        'open_questions', 'set_upstream']
 
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
@@ -92,6 +92,9 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
         base_path = "+questions"
         get_data = "?field.status=OPEN"
         return Link(base_path + get_data, "Open Questions", site="answers")
+
+    def set_upstream(self):
+        return Link("+edit-packaging", "Set upstream link", icon="add")
 
 
 class DistributionSourcePackageBugsMenu(

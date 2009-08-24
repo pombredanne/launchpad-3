@@ -33,7 +33,7 @@
 
     <tal:menu replace="structure view/@@+global-actions" />
 
-    <div tal:replace="structure context/@@+get-involved" />
+    <tal:involved replace="structure context/@@+get-involved" />
 
     <tal:current define="current context/currentrelease">
     <div class="portlet" tal:condition="current">
@@ -51,8 +51,8 @@
     </div>
     </tal:current>
 
-    <div class="portlet"
-       tal:replace="structure context/@@+portlet-structural-subscribers"/>
+    <tal:subscribers
+      replace="structure context/@@+portlet-structural-subscribers"/>
 </tal:side>
 
 <tal:main metal:fill-slot="main">
@@ -144,7 +144,7 @@
   </div><!--yui-g -->
 
 
-  <div style="clear:both;" class="yui-u">
+  <div class="yui-u">
     <table class="listing" id="packages_list">
       <tr class="section-heading shaded" style="font-weight: bold">
         <td colspan=3>
@@ -159,7 +159,10 @@
       </tr>
       <tr class="section-heading shaded" style="font-weight: bold">
         <td colspan=3>
-        <div style="float:right;"><a href="product-series-page"><tal:icon replace="structure context/image:icon" />Mozilla 3.5 series</a> <img src="/@@/edit"> <img src="/@@/remove"></div>
+        <div style="float:right;">
+          <a tal:replace="structure view/menu:overview/set_upstream/fmt:link"/>
+          <img src="/@@/remove">
+        </div>
         <a href="distroseries">Jaunty 9.04</a> (current release)
         </td>
       </tr>
