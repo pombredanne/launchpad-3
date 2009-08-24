@@ -1,16 +1,12 @@
-<html
+<bug-trackers-index
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
->
-  <body>
-    <div metal:fill-slot="main">
-      <h1>Bug trackers registered in Launchpad</h1>
+  metal:use-macro="view/macro:page/main_only">
+
+  <div metal:fill-slot="main">
+
       <p>
         A bug report in Launchpad can be linked to a bug report in any of
         these bug trackers.
@@ -122,5 +118,4 @@
 
 </div>
 
-</body>
-</html>
+</bug-trackers-index>
