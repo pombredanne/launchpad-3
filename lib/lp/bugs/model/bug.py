@@ -1093,10 +1093,7 @@ class Bug(SQLBase):
         nomination = BugNomination(
             owner=owner, bug=self, distroseries=distroseries,
             productseries=productseries)
-        if nomination.canApprove(owner):
-            nomination.approve(owner)
-        else:
-            self.addChange(SeriesNominated(UTC_NOW, owner, target))
+        self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
     def canBeNominatedFor(self, nomination_target):

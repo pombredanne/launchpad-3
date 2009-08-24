@@ -296,8 +296,8 @@ no_privs can actually approve the nomination.)
     thunderbird (Ubuntu Grumpy)
     thunderbird (Ubuntu)
 
-If the one nominating a goal is a driver of the series, the
-nomination will be automatically approved.
+Let's now nominate for Warty. no_privs is the driver, so will have
+no problems.
 
     >>> ubuntu_warty = ubuntu.getSeries("warty")
     >>> login("foo.bar@canonical.com")
@@ -306,6 +306,7 @@ nomination will be automatically approved.
 
     >>> warty_nomination = bug_one.addNomination(
     ...     target=ubuntu_warty, owner=no_privs)
+    >>> warty_nomination.approve(no_privs)
 
     >>> print warty_nomination.status.title
     Approved

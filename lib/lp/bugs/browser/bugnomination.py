@@ -105,8 +105,9 @@ class BugNominationView(LaunchpadFormView):
                 target=series, owner=self.user)
 
             # If the user has the permission to approve the nomination,
-            # then nomination was approved automatically.
-            if nomination.isApproved():
+            # we approve it automatically.
+            if nomination.canApprove(self.user):
+                nomination.approve(self.user)
                 approved_nominations.append(
                     nomination.target.bugtargetdisplayname)
             else:
