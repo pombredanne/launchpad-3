@@ -440,8 +440,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return DecoratedBugs linked to the source branch."""
         # Avoid import loop
         from lp.code.browser.branch import DecoratedBug
-        branch = self.context.source_branch
-        return [DecoratedBug(bug, branch) for bug in branch.linked_bugs]
+        return [DecoratedBug(bug, self.context.source_branch)
+                for bug in self.context.related_bugs]
 
 
 class DecoratedCodeReviewVoteReference:

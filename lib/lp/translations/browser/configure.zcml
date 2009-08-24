@@ -89,21 +89,21 @@
             for="lp.translations.interfaces.translator.ITranslator"
             permission="launchpad.Admin"
             class="lp.translations.browser.translator.TranslatorAdminView"
-            template="../templates/translator-admin.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+edit"
             for="lp.translations.interfaces.translator.IEditTranslator"
             permission="launchpad.Edit"
             class="lp.translations.browser.translator.TranslatorEditView"
-            template="../templates/translator-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+remove"
             for="lp.translations.interfaces.translator.ITranslator"
             permission="launchpad.Edit"
             class="lp.translations.browser.translator.TranslatorRemoveView"
-            template="../templates/translator-remove.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
     </facet>
     <facet

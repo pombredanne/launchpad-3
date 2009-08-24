@@ -32,8 +32,7 @@ We have one page which lists all archive mirrors and another one which lists
 the release (cdimage) ones.
 
     >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> browser.getLink('Mirrors').click()
-    >>> browser.getLink('Archive Mirrors').click()
+    >>> browser.getLink('Archive mirrors').click()
     >>> browser.title
     'Mirrors of Ubuntu Linux'
     >>> print_mirrors_by_countries(browser.contents)
@@ -42,7 +41,7 @@ the release (cdimage) ones.
     United Kingdom: [u'Canonical-archive']
 
     >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> browser.getLink('Mirrors').click()
+    >>> browser.getLink('CD mirrors').click()
     >>> browser.url
     'http://launchpad.dev/ubuntu/+cdmirrors'
     >>> print_mirrors_by_countries(browser.contents)

@@ -279,68 +279,33 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
 
-class DistributionNavigationMenu(NavigationMenu):
+class DistributionLinksMixin:
+    """A mixing to provide common links to menus."""
 
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+
+class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
+    """A menu of context actions."""
     usedfor = IDistribution
     facet = 'overview'
-    links = ('details',
-             'announcements',
-             'mentoring',
-             'mirrors',
-             'builds',
-             'ppas',
-             )
-
-    def details(self):
-        target = ''
-        text = 'Details'
-        return Link(target, text)
-
-    def announcements(self):
-        # XXX: BradCrittenden 2009-08-19 bug=410491: When the distribution
-        # index page is updated to UI 3.0 the text needs to read "Read all
-        # announcements".
-        target = '+announcements'
-        text = 'Announcements'
-        return Link(target, text)
-
-    def mentoring(self):
-        target = '+mentoring'
-        text = "Mentoring"
-        return Link(target, text)
-
-    def mirrors(self):
-        target = '+cdmirrors'
-        text = 'Mirrors'
-        menu = IDistributionMirrorMenuMarker
-        return Link(target, text, menu=menu)
-
-    def builds(self):
-        target = '+builds'
-        text = "Builds"
-        return Link(target, text)
-
-    def ppas(self):
-        target = '+ppas'
-        text = 'PPAs'
-        return Link(target, text)
+    links = ['edit']
 
 
-class DistributionOverviewMenu(ApplicationMenu):
+class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     usedfor = IDistribution
     facet = 'overview'
     links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
-             'mirror_admin', 'reassign', 'addseries', 'top_contributors',
+             'mirror_admin', 'reassign', 'addseries', 'series', 'milestones',
+             'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
              'ppas',]
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change distribution details'
-        return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -372,12 +337,12 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+mentoring', text, icon='info')
 
     def cdimage_mirrors(self):
-        text = 'Show CD mirrors'
+        text = 'CD mirrors'
         enabled = self.context.full_functionality
         return Link('+cdmirrors', text, enabled=enabled, icon='info')
 
     def archive_mirrors(self):
-        text = 'Show archive mirrors'
+        text = 'Archive mirrors'
         enabled = self.context.full_functionality
         return Link('+archivemirrors', text, enabled=enabled, icon='info')
 
@@ -427,6 +392,14 @@ class DistributionOverviewMenu(ApplicationMenu):
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
+
+    def series(self):
+        text = 'All series'
+        return Link('+series', text, icon='info')
+
+    def milestones(self):
+        text = 'All milestones'
+        return Link('+milestones', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
