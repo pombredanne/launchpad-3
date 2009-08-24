@@ -22,6 +22,7 @@ from canonical.config import config
 from lp.code.enums import BranchLifecycleStatus, BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing import TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -261,6 +262,16 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
+        notifications = pop_notifications()
+        self.assertIn('Work in progress => Merged',
+                      notifications[0].get_payload(decode=True))
+        self.assertEqual(
+            config.canonical.noreply_from_address, notifications[0]['From'])
+        recipients = set(msg['x-envelope-to'] for msg in notifications)
+        expected = set(
+            [proposal.source_branch.registrant.preferredemail.email,
+             proposal.target_branch.registrant.preferredemail.email])
+        self.assertEqual(expected, recipients)
 
     def test_mergeProposalMergeDetected_not_series(self):
         # If the target branch is not a series branch, then the merge proposal

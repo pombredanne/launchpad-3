@@ -14,8 +14,8 @@ from canonical.uuid import generate_uuid
 WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'
 WAIT_CHECK_CHANGE = u'1000'
-ADD_COMMENT_LINK = (
-    u'//a[@href="+addcomment" and @class="sprite add js-action"]')
+ADD_COMMENT_BUTTON = (
+    u'//input[@id="field.actions.save" and @class="button js-action"]')
 
 
 def test_bug_commenting():
@@ -25,13 +25,13 @@ def test_bug_commenting():
 
     client.open(url='http://bugs.launchpad.dev:8085/bugs/1')
     client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
-    client.waits.forElement(xpath=ADD_COMMENT_LINK)
+    client.waits.forElement(xpath=ADD_COMMENT_BUTTON)
 
     # Generate a unique piece of text, so we can run the test multiple
     # times, without resetting the db.
     new_comment_text = generate_uuid()
     client.type(text=new_comment_text, id="field.comment")
-    client.click(xpath=ADD_COMMENT_LINK)
+    client.click(xpath=ADD_COMMENT_BUTTON)
     client.waits.forElement(
         xpath=u'//div[@class="bug-comment"]/p[contains(., "%s")]' % (
             new_comment_text))

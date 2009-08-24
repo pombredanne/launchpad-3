@@ -229,4 +229,22 @@
 
   <lp:help-folder 
       folder="help" type="canonical.launchpad.layers.AnswersLayer" />
+  <adapter
+      name="answers"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="lp.answers.interfaces.questiontarget.IQuestionTarget"
+      factory="lp.answers.browser.questiontarget.QuestionTargetOnAnswersVHostBreadcrumbBuilder"
+      permission="zope.Public"/>
+  <adapter
+      name="answers"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="lp.registry.interfaces.project.IProject"
+      factory="lp.answers.browser.questiontarget.QuestionTargetOnAnswersVHostBreadcrumbBuilder"
+      permission="zope.Public"/>
+  <adapter
+      name="answers"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="lp.registry.interfaces.person.IPerson"
+      factory="lp.answers.browser.questiontarget.PersonOnAnswersVHostBreadcrumbBuilder"
+      permission="zope.Public"/>
 </configure>

@@ -25,6 +25,14 @@ class BugMessageAddFormView(LaunchpadFormView):
     initial_focus_widget = None
 
     @property
+    def label(self):
+        return 'Add a comment or attachment to bug #%d' % self.context.bug.id
+
+    @property
+    def page_title(self):
+        return self.label
+
+    @property
     def initial_values(self):
         return dict(subject=self.context.bug.followup_subject())
 

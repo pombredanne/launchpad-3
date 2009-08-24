@@ -7,7 +7,7 @@
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/never-closes2 HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic foo.bar@canonical.com:test
   ... """)
   HTTP/1.1 303 See Other
   ...
@@ -16,7 +16,7 @@
 
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic foo.bar@canonical.com:test
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -44,7 +44,7 @@
 
   >>> print http(r"""
   ... POST /~ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic foo.bar@canonical.com:test
   ... Content-Type: application/x-www-form-urlencoded
   ...
   ... token=xn9FDCTp4m&showvote=Show+My+Vote&option_12=&option_13=&option_14=&option_15=""")
@@ -79,7 +79,7 @@
 
   >>> print http(r"""
   ... POST /~ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic foo.bar@canonical.com:test
   ... Content-Type: application/x-www-form-urlencoded
   ...
   ... token=xn9FDCTp4m&option_12=2&option_13=3&option_14=4&option_15=1&changevote=Change+Vote""")
@@ -120,7 +120,7 @@
 
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/never-closes3 HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic foo.bar@canonical.com:test
   ... """)
   HTTP/1.1 303 See Other
   ...
@@ -129,7 +129,7 @@
 
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/never-closes3/+vote-condorcet HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic foo.bar@canonical.com:test
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -166,7 +166,7 @@
 
   >>> print http(r"""
   ... POST /~ubuntu-team/+poll/never-closes3/+vote-condorcet HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic foo.bar@canonical.com:test
   ... Content-Type: application/x-www-form-urlencoded
   ...
   ... option_16=4&option_17=2&option_18=1&option_19=3&changevote=Change+Vote""")
@@ -200,13 +200,13 @@
   ...
 
 
-  Logged in as mark@hbd.com (which is a member of ubuntu-team), go to a public
+  Logged in as mark@example.com (which is a member of ubuntu-team), go to a public
   condorcet-style poll that's still open and get redirected to a page where
   it's possible to vote (and see the current vote).
 
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/never-closes3 HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... """)
   HTTP/1.1 303 See Other
   ...
@@ -219,7 +219,7 @@
 
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/never-closes3/+vote-condorcet HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... """)
   HTTP/1.1 200 Ok
   ...

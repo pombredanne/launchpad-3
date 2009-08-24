@@ -4,13 +4,15 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroArchSeriesActionMenu',
     'DistroArchSeriesAddView',
     'DistroArchSeriesAdminView',
     'DistroArchSeriesPackageSearchView',
-    'DistroArchSeriesContextMenu',
     'DistroArchSeriesNavigation',
     'DistroArchSeriesView',
     ]
+
+from zope.interface import implements, Interface
 
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
@@ -21,7 +23,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
-    ContextMenu, enabled_with_permission, Link)
+    enabled_with_permission, Link, NavigationMenu)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.lazr.utils import smartquote
 
@@ -31,9 +33,14 @@ class DistroArchSeriesNavigation(GetitemNavigation):
     usedfor = IDistroArchSeries
 
 
-class DistroArchSeriesContextMenu(ContextMenu):
+class IDistroArchSeriesActionMenu(Interface):
+    """Marker interface for the action menu."""
 
-    usedfor = IDistroArchSeries
+
+class DistroArchSeriesActionMenu(NavigationMenu):
+    """Action menu for distro arch series."""
+    usedfor = IDistroArchSeriesActionMenu
+    facet = "overview"
     links = ['admin', 'builds']
 
     @enabled_with_permission('launchpad.Admin')
@@ -49,16 +56,22 @@ class DistroArchSeriesContextMenu(ContextMenu):
         return Link('+builds', text, icon='info')
 
 
-class DistroArchSeriesView(BuildRecordsView):
-    """Default DistroArchSeries view class."""
-
-
 class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for DistroArchSeries"""
 
     def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
         return self.context.searchBinaryPackages(self.text)
+
+
+class DistroArchSeriesView(BuildRecordsView,
+                           DistroArchSeriesPackageSearchView):
+    """Default DistroArchSeries view class."""
+    implements(IDistroArchSeriesActionMenu)
+
+
+class DistroArchSeriesBuildsView(BuildRecordsView):
+    """View for +builds on a distro arch series."""
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):

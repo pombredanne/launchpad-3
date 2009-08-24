@@ -323,7 +323,7 @@ project. He can see the question on the second page of "My questions"...
     >>> sample_person_browser.getLink(
     ...     'Change your preferred languages').click()
     >>> sample_person_browser.title
-    "Sample Person's preferred languages"
+    'Your language preferences'
 
     >>> sample_person_browser.getControl('Arabic', index=0).selected
     False

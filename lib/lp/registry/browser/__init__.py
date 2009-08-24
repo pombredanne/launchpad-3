@@ -127,7 +127,7 @@ class RegistryDeleteViewMixin:
 
 
 class RegistryEditFormView(LaunchpadEditFormView):
-    """"A base class that provides consistent edit form behaviour."""
+    """A base class that provides consistent edit form behaviour."""
     @property
     def page_title(self):
         """The page title."""

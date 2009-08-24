@@ -6,18 +6,18 @@
 
   >>> print http(r"""
   ... GET /mozilla/+reassign HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic no-priv@canonical.com:test
   ... """)
   HTTP/1.1 403 Forbidden
   ...
 
 
-  Now we're logged in as mark@hbd.com and he's the owner of the admins team,
+  Now we're logged in as mark@example.com and he's the owner of the admins team,
   so he can do everything.
 
   >>> print http(r"""
   ... GET /mozilla/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -31,12 +31,13 @@
 
   >>> print http(r"""
   ... POST /mozilla/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... 
-  ... field.owner=sabdfl&existing=existing&CHANGE_OWNER=Change+Owner""")
+  ... Authorization: Basic mark@example.com:test
+  ...
+  ... field.owner=mark&field.existing=existing"""
+  ... r"""&field.actions.change=Change""")
   HTTP/1.1 303 See Other
-  ... 
-  Location: .
+  ...
+  Location: http://localhost/mozilla
   ...
 
 
@@ -45,7 +46,7 @@
 
   >>> print http(r"""
   ... GET /mozilla/ HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

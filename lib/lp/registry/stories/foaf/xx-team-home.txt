@@ -143,7 +143,7 @@ It is also possible to view the set of mugshots of the people in the team.
 
 Team owners and admins can see a link to approve and decline applicants.
 
-    >>> owner_browser = setupBrowser(auth="Basic mark@hbd.com:test")
+    >>> owner_browser = setupBrowser(auth="Basic mark@example.com:test")
     >>> owner_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
     ...     find_tag_by_id(owner_browser.contents, 'recently-applied'))
