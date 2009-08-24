@@ -3,26 +3,10 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_side"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="malone">
 
   <h1 metal:fill-slot="heading">Bug tracking</h1>
-
-  <div metal:fill-slot="side">
-    <div id="involvement" class="portlet involvement">
-      <h2>Get Involved</h2>
-      <ul>
-        <li>
-          <a href="https://bugs.launchpad.dev/+tour"
-             class="menu-link-tour sprite bugs">Take a tour</a>
-        </li>
-        <li>
-          <a href="https://bugs.launchpad.dev/bugs/+filebug"
-             class="menu-link-filebug sprite bugs">Report a bug</a>
-        </li>
-      </ul>
-    </div>
-  </div>
 
   <div metal:fill-slot="main">
 
@@ -76,7 +60,8 @@
       <p id="application-summary">
         Launchpad&rsquo;s bug tracker helps software teams to
         collaborate on bug reports and fixes.
-        (<a href="https://help.launchpad.net/Bugs">Read our guide</a>)
+        (<a href="https://help.launchpad.net/Bugs">Read our guide</a> or
+         <a href="/+tour">take a tour</a>)
       </p>
     </div>
 
