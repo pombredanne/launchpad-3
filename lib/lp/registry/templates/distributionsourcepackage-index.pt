@@ -198,37 +198,6 @@
     </table>
 
 
-    <table class="listing" id="packages_list">
-      <tr class="section-heading shaded" style="font-weight: bold">
-        <td colspan=3>
-        <div style="float:right;"><a href="blah"><img src="/@@/add"> Set upstream link</a> </div>
-        <a href="distroseries">Karmic 9.10</a> (development focus)
-        </td>
-      </tr>
-      <tr>
-        <td><img style="padding-right:0.5em;" src="/@@/treeCollapsed">3.5</td>
-        <td>Release (main)</td>
-        <td>13 days ago</td>
-      </tr>
-      <tr class="section-heading shaded" style="font-weight: bold">
-        <td colspan=3>
-        <div style="float:right;">
-          <a tal:replace="structure view/menu:overview/set_upstream/fmt:link"/>
-          <img src="/@@/remove">
-        </div>
-        <a href="distroseries">Jaunty 9.04</a> (current release)
-        </td>
-      </tr>
-      <tr>
-        <td><img style="padding-right:0.5em;" src="/@@/treeCollapsed">3.5</td>
-        <td>Release (main)</td>
-        <td>13 days ago</td>
-      </tr>
-      <tr>
-        <td><img style="padding-right:0.5em;" src="/@@/treeCollapsed">3.4</td>
-        <td>Security, Updates (main)</td>
-        <td>18 days ago</td>
-      </tr>
       <!-- this needs to be a slightly different expander so we don't get all
            the extra unnecessary table columns
       <tr tal:define="pub context/latest_overall_publication">
@@ -236,7 +205,6 @@
         <metal:js use-macro="pub/archive/@@+macros/expandable-table-js"/>
       </tr>
       -->
-    </table>
 
     <p style="float:right; padding-top:1em">
       <a href="+publishinghistory">See full publishing history</a>
