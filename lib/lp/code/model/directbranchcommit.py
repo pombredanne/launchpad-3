@@ -14,7 +14,7 @@ import os.path
 
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
-from bzrlib.transform import TransformPreview
+from bzrlib.transform import TransformPreview, ROOT_PARENT
 
 from canonical.launchpad.interfaces import IMasterObject
 from lp.codehosting.vfs import make_branch_mirrorer
@@ -111,7 +111,7 @@ class DirectBranchCommit:
         if dirname:
             parent_id = self._getDir(parent_dir)
         else:
-            parent_id = None
+            parent_id = ROOT_PARENT
 
         # Create new directory.
         dirfile_id = gen_file_id(path)
@@ -169,32 +169,14 @@ class DirectBranchCommit:
         try:
             self._checkForRace()
 
-            preview_tree = self.transform_preview.get_preview_tree()
-
             rev_id = self.revision_tree.get_revision_id()
             if rev_id == NULL_REVISION:
-                parents = []
-            else:
-                parents = [rev_id]
-
-            builder = self.bzrbranch.get_commit_builder(parents)
-
-            list(builder.record_iter_changes(
-                preview_tree, rev_id, self.transform_preview.iter_changes()))
-
-            builder.finish_inventory()
-
-            new_rev_id = builder.commit(commit_message)
-            builder = None
-
-            revno, old_rev_id = self.bzrbranch.last_revision_info()
-            self.bzrbranch.set_last_revision_info(revno + 1, new_rev_id)
-
+                if list(self.transform_preview.iter_changes()) == []:
+                    return
+            self.transform_preview.commit(self.bzrbranch, commit_message)
             IMasterObject(self.db_branch).requestMirror()
 
         finally:
-            if builder:
-                builder.abort()
             self.unlock()
             self.is_open = False
 
