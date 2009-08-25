@@ -274,34 +274,28 @@ div.package-details {
     :archive: targetted IArchive.
   </tal:comment>
 
-  <table id="build-count-table"
-         summary="An overview of the build status for this archive."
-         tal:define="build_counters view/build_counters">
-    <thead>
-      <tr>
-        <th>Total builds:</th>
-        <td class="total" tal:content="view/build_counters/total">100</td>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <th>Failed:</th>
-        <td class="failed" tal:content="build_counters/failed">100</td>
-      </tr>
-      <tr>
-        <th>Pending:</th>
-        <td class="pending" tal:content="build_counters/pending">100</td>
-      </tr>
-      <tr>
-        <th>Superseded:</th>
-        <td class="superseded" tal:content="build_counters/superseded">100</td>
-      </tr>
-      <tr>
-        <th>Succeeded:</th>
-        <td class="succeeded" tal:content="build_counters/succeeded">100</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="two-column-list" id="build-count-summary">
+    <dl>
+      <dt>Total builds:</dt>
+      <dd class="total" tal:content="view/build_counters/total">100</dd>
+    </dl>
+    <dl>
+      <dt>Pending:</dt>
+      <dd class="pending" tal:content="view/build_counters/pending">100</dd>
+    </dl>
+    <dl>
+      <dt>Successful:</dt>
+      <dd class="succeeded" tal:content="view/build_counters/succeeded">100</dd>
+    </dl>
+    <dl>
+      <dt>Superseded:</dt>
+      <dd class="superseded" tal:content="view/build_counters/superseded">100</dd>
+    </dl>
+    <dl>
+      <dt>Failed:</dt>
+      <dd class="failed" tal:content="view/build_counters/failed">100</dd>
+    </dl>
+  </div>
 </metal:build_status_summary>
 
 <metal:package_filter_form define-macro="package-filter-form">
