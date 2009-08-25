@@ -424,7 +424,7 @@
     <browser:pages
         for="lp.registry.interfaces.project.IProjectSet"
         facet="overview"
-        permission="launchpad.ProjectReview"
+        permission="zope.Public"
         class="lp.registry.browser.project.ProjectSetView">
         <browser:page
             name="+all"
@@ -456,16 +456,18 @@
         template="../templates/project-series-portlet-details.pt"/>
     <browser:menus
         classes="
-            ProjectFacets
             ProjectActionMenu
-            ProjectEditNavigationMenu
-            ProjectOverviewMenu
+            ProjectAnswersMenu
             ProjectBountiesMenu
             ProjectBugsMenu
+            ProjectEditNavigationMenu
+            ProjectFacets
+            ProjectOverviewMenu
             ProjectSeriesSpecificationsMenu
-            ProjectSpecificationsMenu
             ProjectSetContextMenu
-            ProjectAnswersMenu"
+            ProjectSetNavigationMenu
+            ProjectSpecificationsMenu
+            "
         module="lp.registry.browser.project"/>
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -598,7 +600,9 @@
         <browser:menus
             module="lp.registry.browser.poll"
             classes="
-                PollContextMenu"/>
+                PollOverviewMenu
+                PollActionNavigationMenu
+                PollEditNavigationMenu"/>
         <browser:defaultView
             for="lp.registry.interfaces.poll.IPoll"
             name="+index"/>
@@ -622,9 +626,6 @@
             for="lp.registry.interfaces.poll.IPoll"
             permission="zope.Public"
             class="lp.registry.browser.poll.BasePollView">
-            <browser:page
-                name="+options"
-                template="../templates/poll-options.pt"/>
             <browser:page
                 name="+portlet-details"
                 template="../templates/poll-portlet-details.pt"/>
@@ -678,16 +679,11 @@
         name="+index"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
+        class="lp.registry.browser.announcement.AnnouncementView"
         facet="overview"
         permission="launchpad.View"
         template="../templates/announcement-index.pt"
         name="+index"/>
-    <browser:page
-        for="lp.registry.interfaces.announcement.IAnnouncement"
-        facet="overview"
-        permission="launchpad.View"
-        template="../templates/announcement-listing-detailed.pt"
-        name="+listing-detailed"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
         class="lp.registry.browser.announcement.AnnouncementEditView"
@@ -756,10 +752,15 @@
         class="lp.registry.browser.announcement.AnnouncementSetView"
         permission="zope.Public"
         template="../templates/announcements-all.pt"/>
+    <browser:page
+        for="*"
+        name="+announcement-macros"
+        permission="zope.Public"
+        template="../templates/announcement-macros.pt" />
     <browser:menus
         module="lp.registry.browser.announcement"
         classes="
-            AnnouncementContextMenu
+            AnnouncementCreateNavigationMenu
             AnnouncementEditNavigationMenu"/>
     <facet
         facet="overview">
@@ -771,19 +772,26 @@
         <browser:menus
             module="lp.registry.browser.person"
             classes="
+                PersonBugsMenu
+                PersonEditNavigationMenu
                 PersonFacets
                 PersonOverviewMenu
-                TeamOverviewMenu
-                PersonBugsMenu
+                PersonOverviewNavigationMenu
+                PersonRelatedSoftwareNavigationMenu
+                PersonSetActionNavigationMenu
+                PersonSetContextMenu
                 PersonSpecsMenu
                 TeamBugsMenu
-                TeamSpecsMenu
-                PersonSetContextMenu
-                PersonOverviewNavigationMenu
-                PersonEditNavigationMenu
-                PersonRelatedSoftwareNavigationMenu
+                TeamEditMenu
+                TeamOverviewMenu
                 TeamOverviewNavigationMenu
-                TeamEditMenu"/>
+                TeamSpecsMenu
+                "/>
+        <browser:menus
+            module="lp.registry.browser.menu"
+            classes="
+                RegistryCollectionNavigationMenu
+                "/>
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
             path_expression="string:~${name}"
@@ -1214,13 +1222,10 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="zope.Public"
-            class="lp.registry.browser.person.FOAFSearchView">
+            class="lp.registry.browser.person.PeopleSearchView">
             <browser:page
                 name="+index"
                 template="../templates/people-index.pt"/>
-            <browser:page
-                name="+portlet-stats"
-                template="../templates/people-portlet-stats.pt"/>
         </browser:pages>
         <browser:page
             name="+requestmerge"
@@ -1255,13 +1260,6 @@
             <browser:page
                 name="+mergerequest-sent"
                 template="../templates/people-mergerequest-sent.pt"/>
-        </browser:pages>
-        <browser:pages
-            for="lp.registry.interfaces.person.IPersonSet"
-            permission="zope.Public">
-            <browser:page
-                name="+portlet-about"
-                template="../templates/people-portlet-about.pt"/>
         </browser:pages>
     </facet>
     <browser:navigation
@@ -1542,7 +1540,8 @@
     <browser:navigation
         module="lp.registry.browser.product"
         classes="
-            ProductSetNavigation"/>
+            ProductSetNavigation
+            "/>
     <browser:url
         for="lp.registry.interfaces.product.IProductSet"
         path_expression="string:projects"
@@ -1586,16 +1585,18 @@
         />
     <browser:menus
         classes="
-            ProductFacets
-            ProductOverviewMenu
-            ProductBountiesMenu
-            ProductSpecificationsMenu
-            ProductBugsMenu
-            ProductSetFacets
-            ProductSetContextMenu
-            ProductNavigationMenu
             ProductActionNavigationMenu
-            ProductEditNavigationMenu"
+            ProductBountiesMenu
+            ProductBugsMenu
+            ProductEditNavigationMenu
+            ProductFacets
+            ProductNavigationMenu
+            ProductOverviewMenu
+            ProductSetContextMenu
+            ProductSetFacets
+            ProductSetNavigationMenu
+            ProductSpecificationsMenu
+            "
         module="lp.registry.browser.product"/>
     <browser:page
         name="+securitycontact"
@@ -1877,12 +1878,15 @@
         name="+series-and-milestones"
         facet="overview"
         template="../templates/distribution-series-and-milestones.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionView"
+        permission="zope.Public"
+        name="+details"
+        template="../templates/distribution-details.pt"/>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="zope.Public">
-        <browser:page
-            name="+details"
-            template="../templates/distribution-details.pt"/>
         <browser:page
             name="+portlet-lifecycle"
             template="../templates/distribution-portlet-lifecycle.pt"/>
@@ -2010,15 +2014,17 @@
         template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
-            DistributionFacets
-            DistributionOverviewMenu
-            DistributionBugsMenu
             DistributionBountiesMenu
-            DistributionSpecificationsMenu
-            DistributionSetFacets
-            DistributionSetContextMenu
+            DistributionBugsMenu
+            DistributionFacets
+            DistributionMirrorsNavigationMenu
             DistributionNavigationMenu
-            DistributionMirrorsNavigationMenu"
+            DistributionOverviewMenu
+            DistributionSetActionNavigationMenu
+            DistributionSetContextMenu
+            DistributionSetFacets
+            DistributionSpecificationsMenu
+            "
         module="lp.registry.browser.distribution"/>
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

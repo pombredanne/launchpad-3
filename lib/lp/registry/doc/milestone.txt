@@ -88,7 +88,7 @@ Now, lets test all of that for DistroSeriess too!
     >>> krunch = kubuntu.getSeries('krunch')
 
     # Only owners, experts, or admins can create a milestone.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> new_ms = krunch.newMilestone('1.3rc2')
     >>> print new_ms.name
     1.3rc2

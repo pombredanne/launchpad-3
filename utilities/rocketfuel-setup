@@ -209,7 +209,7 @@ if [ $? -ne 0 ]; then
 Host bazaar.launchpad.dev
     Hostname launchpad.dev
     HostKeyAlias bazaar.launchpad.dev
-    User sabdfl
+    User mark
     Port 5022
     IdentityFile ~/.ssh/launchpad_id_dsa
 ------------------------------------------------------------

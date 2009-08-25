@@ -88,7 +88,7 @@
               <td tal:content="packaging/distroseries/name">hoary</td>
               <td tal:content="packaging/sourcepackagename/name">evolution</td>
               <td><span tal:condition="packaging/owner"
-                        tal:replace="packaging/owner/displayname">sabdfl
+                        tal:replace="packaging/owner/displayname">mark
                   </span></td>
             </tr>
           </tbody>
