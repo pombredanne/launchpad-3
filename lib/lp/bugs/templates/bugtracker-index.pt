@@ -20,8 +20,9 @@
   </metal:heading>
 
   <metal:side fill-slot="side">
+    <tal:menu replace="structure view/@@+global-actions" />
     <div tal:replace="structure context/@@+portlet-details" />
-      <div tal:replace="structure context/@@+portlet-projects" />
+    <div tal:replace="structure context/@@+portlet-projects" />
   </metal:side>
 
   <metal:macros fill-slot="bogus">

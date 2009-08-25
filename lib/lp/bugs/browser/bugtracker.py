@@ -11,6 +11,7 @@ __all__ = [
     'BugTrackerContextMenu',
     'BugTrackerEditView',
     'BugTrackerNavigation',
+    'BugTrackerNavigationMenu',
     'BugTrackerSetContextMenu',
     'BugTrackerSetNavigation',
     'BugTrackerSetView',
@@ -42,6 +43,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
 
 
@@ -66,7 +68,7 @@ class BugTrackerSetNavigation(GetitemNavigation):
 class BugTrackerContextMenu(ContextMenu):
 
     usedfor = IBugTracker
-
+    facet = 'bugs'
     links = ['edit']
 
     def edit(self):
@@ -198,9 +200,6 @@ BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
 class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
-    field_names = ['name', 'title', 'bugtrackertype',
-                   'summary', 'baseurl', 'aliases', 'contactdetails',
-                   'active']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
     custom_widget('aliases', DelimitedListWidget, height=3)
@@ -405,3 +404,13 @@ class RemoteBug:
         return 'Remote Bug #%s in %s' % (self.remotebug,
                                          self.bugtracker.title)
 
+
+class BugTrackerNavigationMenu(NavigationMenu):
+
+    usedfor = BugTrackerView
+    facet = 'bugs'
+    links = ['edit']
+
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')

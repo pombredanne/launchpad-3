@@ -713,7 +713,8 @@
             module="lp.bugs.browser.bugtracker"
             classes="
                 BugTrackerContextMenu
-                BugTrackerSetContextMenu"/>
+                BugTrackerSetContextMenu
+                BugTrackerNavigationMenu"/>
         <browser:navigation
             module="lp.bugs.browser.bugtracker"
             classes="
