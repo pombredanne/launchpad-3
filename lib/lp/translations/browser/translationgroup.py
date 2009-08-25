@@ -65,8 +65,10 @@ class TranslationGroupView:
             result.append({'lang': item.language.englishname,
                            'person': item.translator,
                            'code': item.language.code,
+                           'language' : item.language,
                            'datecreated': item.datecreated,
                            'style_guide_url': item.style_guide_url,
+                           'context' : item,
                            })
         result.sort(key=operator.itemgetter('lang'))
         return result

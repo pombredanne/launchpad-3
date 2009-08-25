@@ -4,45 +4,52 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-related">
-  <h2>This group supervises translations for</h2>
+<div id="portlet-related">
+  <h2>Projects using this group</h2>
 
-  <div class="portletBody">
-    <div class="portletContent">
+  <p>
+    Projects listed here are using
+    <a tal:attributes="href context/fmt:url"
+       tal:content="context/title"
+       >this group</a> to manage their translations.
+    This means that members of the group (as displayed above in
+    the <a href="#teams">Translation teams</a> section) are in charge
+    of managing translations for their particular language.
+  </p>
 
-      <tal:distributions condition="context/distributions">
-        <h3>Distributions:</h3>
-        <ul>
-          <li tal:repeat="distribution context/distributions">
-            <a href="#"
-              tal:content="distribution/displayname"
-              tal:attributes="href distribution/fmt:url">Ubuntu</a>
-          </li>
-        </ul>
-      </tal:distributions>
+  <p>
+    Want to set your project as using 
+    <a tal:attributes="href context/fmt:url"
+       tal:content="context/title"
+       >this group</a>?  Set it on Translations Settings page.
+  </p>
 
-      <tal:products condition="context/products">
-        <h3>Projects:</h3>
-        <ul>
-          <li tal:repeat="product context/products">
-            <tal:link replace="structure product/fmt:link:translations" />
-            <tal:link replace="structure product/fmt:url:translations" />
-          </li>
-        </ul>
-      </tal:products>
-
-      <tal:projects condition="context/projects">
-        <h3>Project Groups:</h3>
-        <ul>
-          <li tal:repeat="project context/projects">
-            <a href="#"
-                tal:content="project/displayname"
-                tal:attributes="href project/fmt:url">Gnome</a>
-          </li>
-        </ul>
-      </tal:projects>
-
-    </div>
+  <div tal:condition="context/distributions" style="margin-top:1em;">
+    <h3 style="display: inline;">Distributions:</h3>
+    <tal:distribution
+       repeat="distribution context/distributions">
+      <a href="#" tal:replace="structure distribution/fmt:link">Ubuntu
+      </a><tal:comma condition="not:repeat/distribution/end">, </tal:comma>
+    </tal:distribution>
   </div>
+
+  <div tal:condition="context/projects" style="margin-top:1em;">
+    <h3 style="display: inline;">Project groups:</h3>
+    <tal:project
+       repeat="project context/projects">
+      <a href="#" tal:replace="structure project/fmt:link">GNOME
+      </a><tal:comma condition="not:repeat/project/end">, </tal:comma>
+    </tal:project>
+  </div>
+
+  <div tal:condition="context/products" style="margin-top:1em;">
+    <h3 style="display: inline;">Projects:</h3>
+    <tal:product
+       repeat="product context/products">
+      <a href="#" tal:replace="structure product/fmt:link">Firefox
+      </a><tal:comma condition="not:repeat/product/end">, </tal:comma>
+    </tal:product>
+  </div>
+
 </div>
 </tal:root>
