@@ -375,6 +375,8 @@ def needs_authentication(func):
 class BugzillaAPI(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
+    implements(ISupportsCommentImport)
+
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
         super(BugzillaAPI, self).__init__(baseurl)
