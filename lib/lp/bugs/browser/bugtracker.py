@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'BugTrackerAddView',
     'BugTrackerBreadcrumbBuilder',
-    'BugTrackerContextMenu',
     'BugTrackerEditView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
@@ -63,17 +62,6 @@ NO_DIRECT_CREATION_TRACKERS = (
 class BugTrackerSetNavigation(GetitemNavigation):
 
     usedfor = IBugTrackerSet
-
-
-class BugTrackerContextMenu(ContextMenu):
-
-    usedfor = IBugTracker
-    facet = 'bugs'
-    links = ['edit']
-
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
 
 
 class BugTrackerSetContextMenu(ContextMenu):
