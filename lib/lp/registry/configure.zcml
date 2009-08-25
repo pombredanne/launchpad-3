@@ -267,14 +267,14 @@
     <class
         class="lp.registry.model.project.Project">
         <allow
-            interface="lp.registry.interfaces.project.IProject"/>
+            interface="lp.registry.interfaces.project.IProjectPublic"/>
         <allow
             interface="canonical.launchpad.interfaces.IFAQCollection"/>
         <allow
             interface="canonical.launchpad.interfaces.IQuestionCollection"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.registry.interfaces.project.IProject"/>
+            set_schema="lp.registry.interfaces.project.IProjectPublic"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
