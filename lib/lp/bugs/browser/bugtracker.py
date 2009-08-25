@@ -373,7 +373,7 @@ class BugTrackerNavigation(Navigation):
 class BugTrackerSetBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for the `IBugTrackerSet`."""
 
-    rootsite = "bugs"
+    rootsite = None
 
     @property
     def text(self):
@@ -383,7 +383,7 @@ class BugTrackerSetBreadcrumbBuilder(BreadcrumbBuilder):
 class BugTrackerBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IBugTracker`."""
 
-    rootsite = "bugs"
+    rootsite = None
 
     @property
     def text(self):
