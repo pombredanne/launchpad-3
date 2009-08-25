@@ -459,6 +459,22 @@ p.search-results {
     padding-left: 1em;
     }
 
+/* Breadcrumb styling */
+ol.breadcrumbs {
+    margin-left: 0;
+}
+ol.breadcrumbs li {
+    display:inline;
+    list-style-type: none;
+}
+ol.breadcrumbs li a {
+    font-color: #494949; /* why won't this work */
+}
+ol.breadcrumbs li:before { content: "»" }
+ol.breadcrumbs li:first-child:before { content: ""; }
+ol.breadcrumbs li:last-child {
+    font-weight: bold;
+}
 /* == Watermark heading styles */
 div.watermark-apps-portlet {
     padding-bottom:1em;
