@@ -20,7 +20,7 @@
   <body>
     <metal:heading fill-slot="heading">
       <h1 tal:content="context/title">Bar doesn't work</h1>
-      <div xml:lang="en" lang="en" dir="ltr">
+      <div id="question-details">
         <img alt="Open" title="Open" src="/@@/question"
           tal:attributes="alt context/status/title;
                           title context/status/title;" />
@@ -49,6 +49,12 @@
           tal:attributes="href context/owner/fmt:url"
           tal:content="context/owner/displayname">Foo Bar</a>
       </div>
+
+      <div id="question-lang">
+        <b>Language:</b>
+        <span tal:replace="context/language/englishname">English</span><br />
+      </div>
+
     </metal:heading>
 
     <metal:portlets fill-slot="side">
@@ -89,7 +95,8 @@
         <div tal:replace="structure message/@@+display" />
       </tal:message>
 
-      <div xml:lang="en" lang="en" dir="ltr">
+      <div id="question"
+          tal:attributes="xml:lang view/lang; lang view/lang; dir view/lang">
         <div id="can-you-help-with-this-problem"
           tal:condition="view/show_call_to_answer">
           <h2>
