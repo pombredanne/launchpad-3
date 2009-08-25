@@ -135,8 +135,11 @@ class IPoll(Interface):
         default=PollAlgorithm.CONDORCET)
 
     allowspoilt = Bool(
-        title=_('Users can spoil their votes?'), required=True,
-        readonly=False, default=True)
+        title=_('Users can spoil their votes?'),
+        description=_(
+            'Allow users to leave the ballot blank (i.e. cast a vote for '
+            '"None of the above")'),
+        required=True, readonly=False, default=True)
 
     secrecy = Choice(
         title=_('The secrecy of the Poll'), required=True,

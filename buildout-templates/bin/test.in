@@ -132,6 +132,7 @@ from canonical.ftests import pgsql
 pgsql.installFakeConnect()
 
 from zope.testing import testrunner
+from zope.testing.testrunner import options
 
 defaults = [
     # Find tests in the tests and ftests directories
@@ -188,24 +189,24 @@ if __name__ == '__main__':
 
     def load_list(option, opt_str, list_name, parser):
         patch_find_tests(filter_tests(list_name))
-    testrunner.parser.add_option(
+    options.parser.add_option(
         '--load-list', type=str, action='callback', callback=load_list)
 
     def list_test_option(option, opt, value, parser):
         patch_find_tests(list_tests)
-    testrunner.parser.add_option(
+    options.parser.add_option(
         '--list', action='callback', callback=list_test_option)
 
     def use_subunit(option, opt, value, parser):
         patch_zope_testresult(TestProtocolClient(sys.stdout))
-    testrunner.parser.add_option(
+    options.parser.add_option(
         '--subunit', action='callback', callback=use_subunit)
 
-    options = testrunner.get_options(args=args, defaults=defaults)
+    local_options = options.get_options(args=args, defaults=defaults)
 
     # Turn on Layer profiling if requested.
     from canonical.testing import profiled
-    if options.verbose >= 3 and main_process:
+    if local_options.verbose >= 3 and main_process:
         profiled.setup_profiling()
 
     # The working directory change is just so that the test script
@@ -222,6 +223,6 @@ if __name__ == '__main__':
     logging.disable(999999999)
 
     # Print Layer profiling report if requested.
-    if main_process and options.verbose >= 3:
+    if main_process and local_options.verbose >= 3:
         profiled.report_profile_stats()
     sys.exit(result)

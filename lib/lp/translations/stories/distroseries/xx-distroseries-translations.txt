@@ -101,7 +101,7 @@ the system tells them that they're not allowed to see those pages.
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 503: Service Unavailable
+    httperror_seek_wrapper: HTTP Error 503: Service Unavailable
     >>> main_content = find_main_content(user_browser.contents)
     >>> print main_content.findNext('p').renderContents()
     Translations for this release series are not available yet.

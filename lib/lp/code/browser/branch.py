@@ -1120,6 +1120,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     custom_widget('target_branch', TargetBranchWidget)
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
+    page_title = label = 'Propose branch for merging'
+
     @property
     def initial_values(self):
         """The default reviewer is the code reviewer of the target."""

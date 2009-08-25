@@ -14,7 +14,7 @@ __all__ = [
     'BugTargetView',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
-    'BugTaskBreadcrumbBuilder',
+    'BugTaskBreadcrumb',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
     'BugTaskListingItem',
@@ -54,7 +54,8 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
-from zope.component import getAdapter, getUtility, getMultiAdapter
+from zope.component import (
+    ComponentLookupError, getAdapter, getUtility, getMultiAdapter)
 from zope.event import notify
 from zope import formlib
 from zope.interface import implementer, implements, providedBy
@@ -118,7 +119,7 @@ from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnexpectedFormData)
 
@@ -3510,22 +3511,20 @@ class BugActivityItem:
         return "%(old_value)s &#8594; %(new_value)s" % return_dict
 
 
-class BugTaskBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `IBugTask`."""
+class BugTaskBreadcrumb(Breadcrumb):
+    """Breadcrumb for an `IBugTask`."""
 
     rootsite = 'bugs'
+
+    def __init__(self, context):
+        super(BugTaskBreadcrumb, self).__init__(context)
+        # If the user does not have permission to view the bug for
+        # whatever reason, raise ComponentLookupError.
+        try:
+            name = context.bug.displayname
+        except Unauthorized:
+            raise ComponentLookupError()
 
     @property
     def text(self):
         return self.context.bug.displayname
-
-    def make_breadcrumb(self):
-        """Return a breadcrumb for this `BugTask`.
-
-        If the user does not have permission to view the bug for
-        whatever reason, don't return a breadcrumb.
-        """
-        try:
-            return super(BugTaskBreadcrumbBuilder, self).make_breadcrumb()
-        except Unauthorized:
-            return None

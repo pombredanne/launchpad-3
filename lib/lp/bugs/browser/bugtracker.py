@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BugTrackerAddView',
-    'BugTrackerBreadcrumbBuilder',
+    'BugTrackerBreadcrumb',
     'BugTrackerContextMenu',
     'BugTrackerEditView',
     'BugTrackerNavigation',
@@ -41,7 +41,7 @@ from canonical.launchpad.webapp import (
     redirection, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
 
 
@@ -379,7 +379,7 @@ class BugTrackerNavigation(Navigation):
             return RemoteBug(self.context, remotebug, bugs)
 
 
-class BugTrackerBreadcrumbBuilder(BreadcrumbBuilder):
+class BugTrackerBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBugTracker`."""
     @property
     def text(self):
