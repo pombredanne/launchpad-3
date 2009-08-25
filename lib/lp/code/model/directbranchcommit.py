@@ -67,6 +67,7 @@ class DirectBranchCommit:
 
         :param db_branch: a Launchpad `Branch` object.
         :param committer: the `Person` writing to the branch.
+        :param mirror: If True, update the mirrored copy of the branch.
         """
         self.db_branch = db_branch
         self.mirror = mirror

@@ -63,6 +63,14 @@ class Diff(SQLBase):
     @classmethod
     def mergePreviewFromBranches(cls, source_branch, source_revision,
                                  target_branch):
+        """Generate a merge preview diff from the supplied branches.
+
+        :param source_branch: The branch that will be merged.
+        :param source_revision: The revision_id of the revision that will be
+            merged.
+        :param target_branch: The branch that the source will merge into.
+        :return: A Diff for a merge preview.
+        """
         source_branch.lock_read()
         target_branch.lock_write()
         try:
@@ -200,6 +208,12 @@ class PreviewDiff(Storm):
 
     @classmethod
     def fromBMP(cls, bmp):
+        """Create a PreviewDiff from a BranchMergeProposal.
+
+        Includes a diff from the source to the target.
+        :param bmp: The BranchMergeProposal to generate a PreviewDiff for.
+        :return: A PreviewDiff.
+        """
         source_branch = bmp.source_branch.getBzrBranch()
         source_revision = source_branch.last_revision()
         target_branch = bmp.target_branch.getBzrBranch()

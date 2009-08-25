@@ -25,6 +25,7 @@ from lp.testing import login, login_person, TestCaseWithFactory
 class DiffTestCase(TestCaseWithFactory):
 
     def createExampleMerge(self):
+        """Create a merge proposal with conflicts and updates."""
         self.useBzrBranches()
         bmp = removeSecurityProxy(self.factory.makeBranchMergeProposal())
         bzr_target = self.createBzrBranch(bmp.target_branch)
@@ -41,6 +42,7 @@ class DiffTestCase(TestCaseWithFactory):
         return bmp, source_rev_id, target_rev_id
 
     def checkExampleMerge(self, text):
+        """Ensure the diff text matches the values for ExampleMerge."""
         # b is added (by source)
         self.assertIn('+b\n', text)
         # a is common to source and target
@@ -97,6 +99,7 @@ class TestDiff(DiffTestCase):
         self.assertTrue(diff.oversized)
 
     def test_mergePreviewFromBranches(self):
+        # mergePreviewFromBranches generates the correct diff.
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
         source_branch = bmp.source_branch.getBzrBranch()
         target_branch = bmp.target_branch.getBzrBranch()
@@ -258,7 +261,8 @@ class TestPreviewDiff(DiffTestCase):
         dep_branch.last_scanned_id = 'rev-d'
         self.assertEqual(True, mp.preview_diff.stale)
 
-    def test_generatePreviewDiff(self):
+    def test_fromBMP(self):
+        # Correctly generates a PreviewDiff from a BranchMergeProposal.
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
         preview = PreviewDiff.fromBMP(bmp)
         self.assertEqual(source_rev_id, preview.source_revision_id)
