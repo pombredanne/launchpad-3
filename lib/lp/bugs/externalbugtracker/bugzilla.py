@@ -590,6 +590,26 @@ class BugzillaAPI(Bugzilla):
 
         return bug_products
 
+    def getCommentIds(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # Check that the bug exists, first.
+        if actual_bug_id not in self._bugs:
+            raise BugNotFound(bug_watch.remotebug)
+
+        # Get only the remote comment IDs and store them in the
+        # 'comments' field of the bug.
+        bug_comments_dict = self.xmlrpc_proxy.Bug.comments({
+            'ids': [actual_bug_id],
+            'include_fields': ['id'],
+            })
+
+        # We need to convert bug and comment ids to strings (see bugs
+        # 248662 amd 248938).
+        bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
+        return [str(comment['id']) for comment in bug_comments]
+
 
 class BugzillaLPPlugin(BugzillaAPI):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
