@@ -17,6 +17,12 @@ Anyone logged in is able to register a new bug tracker.
   >>> user_browser.title
   'Register an external bug tracker'
 
+In case the user gets cold feet, there is always a cancel link that
+takes them back to the bug tracker listing page.
+
+  >>> user_browser.getLink('Cancel').url
+  'http://bugs.launchpad.dev/bugs/bugtrackers'
+
 Supported external bug tracker types include Bugzilla, Debbugs,
 Roundup, SourceForge and Trac. We don't provide all of these as
 options to the user. We don't provide Debbugs because the status

@@ -125,6 +125,10 @@ class BugTrackerAddView(LaunchpadFormView):
             owner=getUtility(ILaunchBag).user)
         self.next_url = canonical_url(bugtracker)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class BugTrackerSetView(LaunchpadView):
     """View for actions on the bugtracker index pages."""
