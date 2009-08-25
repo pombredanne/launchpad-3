@@ -48,7 +48,7 @@ class MilestoneSetNavigation(GetitemNavigation):
 
 
 class MilestoneNavigation(Navigation,
-                          StructuralSubscriptionTargetTraversalMixin):
+    StructuralSubscriptionTargetTraversalMixin):
     """The navigation to traverse to a milestone."""
     usedfor = IMilestone
 

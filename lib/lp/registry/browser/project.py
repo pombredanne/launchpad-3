@@ -73,7 +73,7 @@ from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 
 class ProjectNavigation(Navigation,
-                        StructuralSubscriptionTargetTraversalMixin):
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IProject
 
