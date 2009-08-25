@@ -13,7 +13,8 @@ __all__ = [
     'DeleteSubscriptionError',
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
-    'IStructuralSubscriptionTarget'
+    'IStructuralSubscriptionTarget',
+    'UserCannotSubscribePerson',
     ]
 
 from zope.interface import Attribute, Interface
@@ -165,7 +166,7 @@ class IStructuralSubscriptionTarget(Interface):
         :return: The new bug subscription.
         """
 
-    def removeBugSubscription(subscriber):
+    def removeBugSubscription(subscriber, unsubscribed_by):
         """Remove a subscription to bugs from this structure.
 
         If subscription levels for other applications are set,
@@ -173,6 +174,7 @@ class IStructuralSubscriptionTarget(Interface):
         `NOTHING`, otherwise, destroy the subscription.
 
         :subscriber: The IPerson who will be subscribed.
+        :unsubscribed_by: The IPerson removing the subscription.
         """
 
     def getSubscription(person):
@@ -207,3 +209,7 @@ class DeleteSubscriptionError(Exception):
 
     Raised when an error occurred trying to delete a
     structural subscription."""
+
+
+class UserCannotSubscribePerson(Exception):
+    """User does not have permission to subscribe the person or team."""
