@@ -115,6 +115,7 @@ But a team admin can.
     [u'kamion']
 
 An unprivileged user also cannot unsubscribe another user.
+
     >>> target.removeBugSubscription(kamion, no_priv)
     Traceback (most recent call last):
       ...
