@@ -9,8 +9,8 @@ __metaclass__ = type
 from cStringIO import StringIO
 from unittest import TestLoader
 
+from bzrlib.branch import Branch
 import transaction
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
@@ -27,7 +27,7 @@ class DiffTestCase(TestCaseWithFactory):
     def createExampleMerge(self):
         """Create a merge proposal with conflicts and updates."""
         self.useBzrBranches()
-        bmp = removeSecurityProxy(self.factory.makeBranchMergeProposal())
+        bmp = self.factory.makeBranchMergeProposal()
         bzr_target = self.createBzrBranch(bmp.target_branch)
         target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
         target_commit.writeFile('foo', 'a\n')
@@ -101,8 +101,8 @@ class TestDiff(DiffTestCase):
     def test_mergePreviewFromBranches(self):
         # mergePreviewFromBranches generates the correct diff.
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
-        source_branch = bmp.source_branch.getBzrBranch()
-        target_branch = bmp.target_branch.getBzrBranch()
+        source_branch = Branch.open(bmp.source_branch.warehouse_url)
+        target_branch = Branch.open(bmp.target_branch.warehouse_url)
         diff = Diff.mergePreviewFromBranches(
             source_branch, source_rev_id, target_branch)
         transaction.commit()

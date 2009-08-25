@@ -8,6 +8,7 @@ __all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
 
 from cStringIO import StringIO
 
+from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
 from bzrlib.merge import Merger, Merge3Merger
 from lazr.delegates import delegates
@@ -214,9 +215,9 @@ class PreviewDiff(Storm):
         :param bmp: The BranchMergeProposal to generate a PreviewDiff for.
         :return: A PreviewDiff.
         """
-        source_branch = bmp.source_branch.getBzrBranch()
+        source_branch = Branch.open(bmp.source_branch.warehouse_url)
         source_revision = source_branch.last_revision()
-        target_branch = bmp.target_branch.getBzrBranch()
+        target_branch = Branch.open(bmp.target_branch.warehouse_url)
         target_revision = target_branch.last_revision()
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
