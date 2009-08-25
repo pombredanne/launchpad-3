@@ -122,7 +122,7 @@ An email is sent to subscribers of either branch.
     ~person-name...
     >>> print notification['X-Launchpad-Message-Rationale']
     Subscriber
-    >>> print notification.get_payload()[0].get_payload(decode=True)
+    >>> print notification.get_payload(decode=True)
     Eric has proposed merging
     lp://dev/~person-name...into lp://dev/~person-name...
     --
