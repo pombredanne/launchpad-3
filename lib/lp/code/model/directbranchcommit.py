@@ -79,9 +79,10 @@ class DirectBranchCommit:
         self.path_ids = {}
 
         if mirror:
-            self.bzrbranch = self.db_branch.getBzrBranch()
+            url = self.db_branch.warehouse_url
         else:
-            self.bzrbranch = Branch.open(self.db_branch.getPullURL())
+            url = self.db_branch.getPullURL()
+        self.bzrbranch = Branch.open(url)
         self.bzrbranch.lock_write()
         self.is_locked = True
 
