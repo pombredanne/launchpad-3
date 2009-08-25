@@ -633,6 +633,51 @@ class BugzillaAPI(Bugzilla):
 
         self._bugs[actual_bug_id]['comments'] = return_dict['comments']
 
+    def getPosterForComment(self, bug_watch, comment_id):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # We need to cast comment_id to integers, since
+        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # bug 248938).
+        comment_id = int(comment_id)
+
+        comment = self._bugs[actual_bug_id]['comments'][comment_id]
+        display_name, email = parseaddr(comment['author'])
+
+        # If the name is empty then we return None so that
+        # IPersonSet.ensurePerson() can actually do something with it.
+        if not display_name:
+            display_name = None
+
+        return (display_name, email)
+
+    def getMessageForComment(self, bug_watch, comment_id, poster):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # We need to cast comment_id to integers, since
+        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # bug 248938).
+        comment_id = int(comment_id)
+        comment = self._bugs[actual_bug_id]['comments'][comment_id]
+
+        # Turn the time in the comment, which is an XML-RPC datetime
+        # into something more useful to us.
+        # XXX 2008-08-05 gmb (bug 254999):
+        #     We can remove these lines once we upgrade to python 2.5.
+        comment_timestamp = time.mktime(
+            time.strptime(str(comment['time']), '%Y%m%dT%H:%M:%S'))
+        comment_datetime = datetime.fromtimestamp(comment_timestamp)
+        comment_datetime = comment_datetime.replace(
+            tzinfo=pytz.timezone('UTC'))
+
+        message = getUtility(IMessageSet).fromText(
+            owner=poster, subject='', content=comment['text'],
+            datecreated=comment_datetime)
+
+        return message
+
 
 class BugzillaLPPlugin(BugzillaAPI):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
@@ -786,51 +831,6 @@ class BugzillaLPPlugin(BugzillaAPI):
             (comment['id'], comment) for comment in comment_list)
 
         self._bugs[actual_bug_id]['comments'] = bug_comments
-
-    def getPosterForComment(self, bug_watch, comment_id):
-        """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
-
-        # We need to cast comment_id to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a string (see
-        # bug 248938).
-        comment_id = int(comment_id)
-
-        comment = self._bugs[actual_bug_id]['comments'][comment_id]
-        display_name, email = parseaddr(comment['author'])
-
-        # If the name is empty then we return None so that
-        # IPersonSet.ensurePerson() can actually do something with it.
-        if not display_name:
-            display_name = None
-
-        return (display_name, email)
-
-    def getMessageForComment(self, bug_watch, comment_id, poster):
-        """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
-
-        # We need to cast comment_id to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a string (see
-        # bug 248938).
-        comment_id = int(comment_id)
-        comment = self._bugs[actual_bug_id]['comments'][comment_id]
-
-        # Turn the time in the comment, which is an XML-RPC datetime
-        # into something more useful to us.
-        # XXX 2008-08-05 gmb (bug 254999):
-        #     We can remove these lines once we upgrade to python 2.5.
-        comment_timestamp = time.mktime(
-            time.strptime(str(comment['time']), '%Y%m%dT%H:%M:%S'))
-        comment_datetime = datetime.fromtimestamp(comment_timestamp)
-        comment_datetime = comment_datetime.replace(
-            tzinfo=pytz.timezone('UTC'))
-
-        message = getUtility(IMessageSet).fromText(
-            owner=poster, subject='', content=comment['text'],
-            datecreated=comment_datetime)
-
-        return message
 
     @needs_authentication
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
