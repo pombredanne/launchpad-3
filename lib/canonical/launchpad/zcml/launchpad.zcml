@@ -378,7 +378,7 @@
       for="zope.interface.Interface"
       name="+hierarchy"
       class="canonical.launchpad.browser.launchpad.Hierarchy"
-      attribute="__call__"
+      template="../templates/launchpad-hierarchy.pt"
       permission="zope.Public"
       />
 

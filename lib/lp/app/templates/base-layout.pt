@@ -81,7 +81,6 @@
     <div class="yui-d0">
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
-        <tal:hierarchy replace="structure context/@@+hierarchy" />
       </div><!--id="locationbar"-->
 
       <div class="watermark-apps-portlet top-portlet"
@@ -117,8 +116,8 @@
                 tal:condition="context/title|nothing"
                 tal:content="context/title"
                 metal:define-slot="heading" />
-              <tal:breadcrumbs>
-                <!-- future breadcrumb rule -->
+              <tal:breadcrumbs replace="structure context/@@+hierarchy">
+                ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
             </div>
             <metal:main define-slot="main" />

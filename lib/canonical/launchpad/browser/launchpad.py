@@ -257,7 +257,11 @@ class Hierarchy(LaunchpadView):
         The hierarchy elements are taken from the request.breadcrumbs list.
         For each element, element.text is cgi escaped.
         """
-        elements = self.items()
+#        elements = self.items()
+#        if len(elements) == 0:
+#            return ''
+#        else:
+        return self.template()
 
         if config.launchpad.site_message:
             site_message = (
