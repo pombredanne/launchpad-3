@@ -139,7 +139,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import (
-    FormattersAPI, PersonFormatterAPI, PillarFormatterAPI)
+    FormattersAPI, ObjectImageDisplayAPI, PersonFormatterAPI)
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -163,8 +163,7 @@ from lp.registry.vocabularies import MilestoneVocabulary
 def assignee_renderer(context, field, request):
     """Render a bugtask assignee as a link."""
     def render(value):
-        return 'A PERSON'
-        # return PersonFormatterAPI(context.assignee).link('+assignedbugs')
+        return PersonFormatterAPI(context.assignee).link(None)
     return render
 
 @component.adapter(IBugTask, IReference, IWebServiceClientRequest)
@@ -172,7 +171,13 @@ def assignee_renderer(context, field, request):
 def bugtarget_renderer(context, field, request):
     """Render a bugtarget as a link."""
     def render(value):
-        return PillarFormatterAPI(context.target).link('+index')
+        html = """<span>
+          <a href="%(href)s" class="%(class)s">%(displayname)s</a>
+        </span>""" % {
+            'href': canonical_url(context.target),
+            'class': ObjectImageDisplayAPI(context.target).sprite_css(),
+            'displayname': context.bugtargetdisplayname}
+        return html
     return render
 
 def unique_title(title):
