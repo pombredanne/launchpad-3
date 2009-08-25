@@ -73,22 +73,24 @@ class Diff(SQLBase):
         :return: A Diff for a merge preview.
         """
         source_branch.lock_read()
-        target_branch.lock_write()
         try:
-            merge_target = target_branch.basis_tree()
-            merger = Merger.from_revision_ids(
-                None, merge_target, source_revision,
-                other_branch=source_branch, tree_branch=target_branch)
-            merger.merge_type = Merge3Merger
-            transform = merger.make_merger().make_preview_transform()
+            target_branch.lock_write()
             try:
-                to_tree = transform.get_preview_tree()
-                return Diff.fromTrees(merge_target, to_tree)
+                merge_target = target_branch.basis_tree()
+                merger = Merger.from_revision_ids(
+                    None, merge_target, source_revision,
+                    other_branch=source_branch, tree_branch=target_branch)
+                merger.merge_type = Merge3Merger
+                transform = merger.make_merger().make_preview_transform()
+                try:
+                    to_tree = transform.get_preview_tree()
+                    return Diff.fromTrees(merge_target, to_tree)
+                finally:
+                    transform.finalize()
             finally:
-                transform.finalize()
+                target_branch.unlock()
         finally:
             source_branch.unlock()
-            target_branch.unlock()
 
     @classmethod
     def fromTrees(klass, from_tree, to_tree, filename=None):
