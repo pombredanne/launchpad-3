@@ -877,7 +877,8 @@ class CommonMenuLinks:
     def maintained(self):
         target = '+maintained-packages'
         text = 'Maintained Packages'
-        return Link(target, text, icon='info')
+        enabled = bool(self.team.getLatestMaintainedPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def uploaded(self):
         target = '+uploaded-packages'
