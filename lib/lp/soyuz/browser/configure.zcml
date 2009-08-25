@@ -244,7 +244,7 @@
     <browser:page
         for="lp.soyuz.interfaces.archive.IArchive"
         permission="launchpad.View"
-        name="packages"
+        name="+packages"
         template="../templates/archive-packages.pt"
         facet="overview"
         class="lp.soyuz.browser.archive.ArchivePackagesView"/>
