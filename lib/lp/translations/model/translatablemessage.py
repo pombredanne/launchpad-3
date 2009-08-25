@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Database and utility classes for ITranslatableMessage."""
+"""Implementation for `ITranslatableMessage`."""
 
 __metaclass__ = type
 
@@ -24,6 +24,16 @@ class TranslatableMessage(object):
     sequence = 0
 
     def __init__(self, potmsgset, pofile):
+        """Create a new TranslatableMessage object.
+
+        :param potmsgset: The `IPOTMsgSet` instance that this object refers
+          to.
+        :param pofile: The `IPOFile` instance that the potmsgset is used
+          with.
+          
+        Both potmsgset and pofile must be related, meaning they refer to the
+        same `IPOTemplate` instance.
+        """
         assert (pofile.potemplate.getPOTMsgSetByID(potmsgset.id) != None,
           "POTMsgSet and POFile must refer to the same POTemplate.")
 
@@ -38,60 +48,82 @@ class TranslatableMessage(object):
             self.potmsgset.getCurrentTranslationMessage(
                 self.potemplate, self.language, self.variant))
 
-    def isObsolete(self):
-        """See 'ITranslatableMessage'"""
+    @property
+    def is_obsolete(self):
+        """See `ITranslatableMessage`"""
         return self.sequence == 0
 
-    def isCurrentDiverged(self):
-        """See 'ITranslatableMessage'"""
+    @property
+    def is_current_diverged(self):
+        """See `ITranslatableMessage`"""
         if self._current_translation is None:
             return False
         return self._current_translation.potemplate == self.potemplate
 
-    def isCurrentEmpty(self):
-        """See 'ITranslatableMessage'"""
+    @property
+    def is_current_empty(self):
+        """See `ITranslatableMessage`"""
         if self._current_translation is None:
-            return False
+            return True
         return self._current_translation.is_empty
 
-    def isCurrentImported(self):
-        """See 'ITranslatableMessage'"""
+    @property
+    def is_current_imported(self):
+        """See `ITranslatableMessage`"""
         if self._current_translation is None:
             return False
         return self._current_translation.is_imported
 
+    @property
+    def has_plural(self):
+        """See `ITranslatableMessage`"""
+        return self.potmsgset.plural_text is not None
+
     def getCurrentTranslation(self):
-        """See 'ITranslatableMessage'"""
+        """See `ITranslatableMessage`"""
         return self._current_translation
 
     def getImportedTranslation(self):
-        """See 'ITranslatableMessage'"""
+        """See `ITranslatableMessage`"""
         return self.potmsgset.getImportedTranslationMessage(self.potemplate,
                                                             self.language,
                                                             self.variant)
 
     def getSharedTranslation(self):
-        """See 'ITranslatableMessage'"""
+        """See `ITranslatableMessage`"""
         return self.potmsgset.getSharedTranslationMessage(self.language,
                                                           self.variant)
 
-    def getSuggestions(self, only_new=True):
-        """See 'ITranslatableMessage'"""
-        return self.potmsgset.getLocalTranslationMessages(self.potemplate,
-                                                          self.language,
-                                                          only_new)
+    def getAllSuggestedTranslations(self):
+        """See `ITranslatableMessage`"""
+        return self.potmsgset.getLocalTranslationMessages(
+                   self.potemplate, self.language,
+                   include_dismissed=True, include_unreviewed=True)
 
-    def getExternalTranslations(self):
-        """See 'ITranslatableMessage'"""
+    def getUnreviewedSuggestedTranslations(self):
+        """See `ITranslatableMessage`"""
+        return self.potmsgset.getLocalTranslationMessages(
+                   self.potemplate, self.language,
+                   include_dismissed=False, include_unreviewed=True)
+
+    def getDismissedSuggestedTranslations(self):
+        """See `ITranslatableMessage`"""
+        return self.potmsgset.getLocalTranslationMessages(
+                   self.potemplate, self.language,
+                   include_dismissed=True, include_unreviewed=False)
+
+    def getExternalCurrentTranslations(self):
+        """See `ITranslatableMessage`"""
         lang = self.language
-        externally_used = (
-            self.potmsgset.getExternallyUsedTranslationMessages(lang))
-        externally_suggested = (
-            self.potmsgset.getExternallySuggestedTranslationMessages(lang))
-        return list(externally_used) + list(externally_suggested)
+        return self.potmsgset.getExternallyUsedTranslationMessages(lang)
+
+    def getExternalSuggestedTranslations(self):
+        """See `ITranslatableMessage`"""
+        lang = self.language
+        return self.potmsgset.getExternallySuggestedTranslationMessages(lang)
 
     def dismissAllSuggestions(self, reviewer, lock_timestamp):
-        """See 'ITranslatableMessage'"""
+        """See `ITranslatableMessage`"""
         self.potmsgset.dismissAllSuggestions(self.pofile,
                                              reviewer, lock_timestamp)
 

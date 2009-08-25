@@ -107,14 +107,21 @@ class IPOTMsgSet(Interface):
     def getSharedTranslationMessage(language, variant=None):
         """Returns a shared TranslationMessage."""
 
-    def getLocalTranslationMessages(potemplate, language, only_new=True):
+    def getLocalTranslationMessages(potemplate, language,
+                                    include_dismissed=False,
+                                    include_unreviewed=True):
         """Return all local unused translation messages for the POTMsgSet.
 
         Unused are those which are not current or imported, and local are
         those which are directly attached to this POTMsgSet.
 
         :param language: language we want translations for.
-        :param only_new: Only return messages newer than the current one.
+        :param include_dismissed: Also return those translation messages
+          that have a creation date older than the review date of the current
+          message (== have been dismissed).
+        :param include_unreviewed: Also return those translation messages
+          that have a creation date newer than the review date of the current
+          message (== that are unreviewed). This is the default.
         """
 
     def getExternallyUsedTranslationMessages(language):

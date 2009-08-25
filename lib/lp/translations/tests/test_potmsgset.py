@@ -291,7 +291,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 self.stable_potemplate, serbian)),
             set([shared_suggestion, another_suggestion]))
 
-        # Setting one of the suggestions as current will leave make
+        # Setting one of the suggestions as current will leave
         # them both 'reviewed' and thus hidden.
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=False)
@@ -300,12 +300,41 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 self.devel_potemplate, serbian)),
             set([]))
 
-        # There is a switch to the message that shows all suggestions
-        # regardless of wether they were reviewed.
+    def test_getLocalTranslationMessages_selection(self):
+        # Suggestions that are older than the current translation are
+        # considered "dismissed" (or "reviewed"). To retrieve them, the
+        # include_dismissed parameter must be set to true. The parameter
+        # include_unreviewed defaults to True, but it is always shown here
+        # to be more explicit.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        serbian = sr_pofile.language
+        old_suggestion = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=True)
+        current_translation = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=False)
+        new_suggestion = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=True)
+
+        # Setting both parameters to True retrieves all suggestions.
         self.assertEquals(
             set(self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, serbian, only_new=False)),
-            set([shared_suggestion, another_suggestion]))
+                self.devel_potemplate, serbian,
+                include_dismissed=True, include_unreviewed=True)),
+            set([old_suggestion, new_suggestion]))
+
+        # Setting one of the two parameters to False retrieves only the
+        # requested suggestions.
+        self.assertEquals(
+            set(self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, serbian,
+                include_dismissed=False, include_unreviewed=True)),
+            set([new_suggestion]))
+        self.assertEquals(
+            set(self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, serbian,
+                include_dismissed=True, include_unreviewed=False)),
+            set([old_suggestion]))
+
 
     def test_getLocalTranslationMessages_empty_message(self):
         # An empty suggestion is never returned.

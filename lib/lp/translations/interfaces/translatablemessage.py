@@ -4,7 +4,7 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Attribute, Interface
-from zope.schema import Int
+from zope.schema import Bool, Int
 
 from canonical.launchpad import _
 
@@ -24,17 +24,25 @@ class ITranslatableMessage(Interface):
         title=_("The sequence number within the POTemplate."),
         required=True)
 
-    def isObsolete():
-        """Flag indicating that this TranslatableMessage is obsolete"""
+    is_obsolete = Bool(
+        title=_("Flag indicating that this TranslatableMessage is obsolete"),
+        required=True)
 
-    def isCurrentDiverged():
-        """Flag indicating that the current translation is diverged"""
+    is_current_diverged = Bool(
+        title=_("Flag indicating that the current translation is diverged"),
+        required=True)
 
-    def isCurrentEmpty():
-        """Flag indicating that the current translation is empty"""
+    is_current_empty = Bool(
+        title=_("Flag indicating that the current translation is empty"),
+        required=True)
 
-    def isCurrentImported():
-        """Flag indicating that the current translation is imported"""
+    is_current_imported = Bool(
+        title=_("Flag indicating that the current translation is imported"),
+        required=True)
+
+    has_plural = Bool(
+        title=_("Flag indicating that there is an English plural string"),
+        required=True)
 
     def getCurrentTranslation():
         """Get the TranslationMessage that holds the current translation."""
@@ -53,18 +61,35 @@ class ITranslatableMessage(Interface):
         to the current translation if the current translation is shared.
         """
 
-    def getSuggestions(only_new=True):
-        """Return an iterator over suggested translations.
+    def getAllSuggestedTranslations():
+        """Return an iterator over all suggested translations."""
 
-        :param only_new: Return only those translations that are newer than
-          the review date of the current translation.
+    def getUnreviewedSuggestedTranslations():
+        """Return an iterator over unreviewed suggested translations.
+
+        Return those translation messages that have a creation date newer
+        than the review date of the current message (have not been reviewed).
         """
 
-    def getExternalTranslations():
+    def getDismissedSuggestedTranslations(include_dismissed=True):
+        """Return an iterator over dismissed suggested translations.
+
+        Return those translation messages that have a creation date older
+        than the review date of the current message (have been dismissed).
+        """
+
+    def getExternalCurrentTranslations():
         """Return an iterator over external translations.
 
         External translations are translations for the same English string
         in other products and source packages.
+        """
+
+    def getExternalSuggestedTranslations():
+        """Return an iterator over externally suggested translations.
+
+        External suggested translations are suggestions for the same English
+        string in other products and source packages.
         """
 
     def dismissAllSuggestions(reviewer, lock_timestamp):
@@ -74,6 +99,6 @@ class ITranslatableMessage(Interface):
         :param lock_timestamp: the timestamp when we checked the values we
             want to update.
 
-        If a translation conflict is detected, TranslationConflict is raised.
+        Raises TranslationConflict if two edits happen simultaneously.
         """
 
