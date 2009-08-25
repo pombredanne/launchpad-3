@@ -335,6 +335,12 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 include_dismissed=True, include_unreviewed=False)),
             set([old_suggestion]))
 
+        # Setting both parameters to False retrieves nothing.
+        self.assertEquals(
+            set(self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, serbian,
+                include_dismissed=False, include_unreviewed=False)),
+            set([]))
 
     def test_getLocalTranslationMessages_empty_message(self):
         # An empty suggestion is never returned.
