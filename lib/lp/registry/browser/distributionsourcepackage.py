@@ -306,6 +306,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
         """Render a submit input for the delete_packaging_action."""
         assert self.can_delete_packaging, 'User cannot delete Packaging.'
         return ('<input type="submit" class="button" value="Delete Link" '
+                'style="padding: 0pt; font-size: 80%%" '
                 'name="%s"/>' % (self.delete_packaging_action.__name__,))
 
     def handleDeletePackagingError(self, action, data, errors):
