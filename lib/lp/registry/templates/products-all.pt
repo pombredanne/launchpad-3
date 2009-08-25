@@ -17,13 +17,15 @@
     <tal:menu replace="structure context/@@+related-pages" />
   </tal:side>
 
-  <div metal:fill-slot="main" tal:define="batch view/all_batched">
-    There are
+  <div metal:fill-slot="main"
+       class="main-portlet"
+       tal:define="batch view/all_batched">
+    <p>There are
     <strong class="registry-stat"
             tal:content="batch/batch/total">7</strong>
     projects registered in Launchpad.
+    </p>
 
-    <p/>
     <tal:navigation replace="structure batch/@@+navigation-links-upper" />
     <table class="listing">
       <tr tal:repeat="product batch/currentBatch"

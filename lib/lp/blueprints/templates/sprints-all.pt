@@ -11,7 +11,6 @@
 
   <body>
     <h1 metal:fill-slot="heading">All meetings and sprints</h1>
-    <p/>
 
     <tal:side metal:fill-slot="side">
       <tal:menu replace="structure view/@@+global-actions" />
@@ -19,6 +18,7 @@
     </tal:side>
 
     <div metal:fill-slot="main"
+         class="main-portlet"
          tal:define="batch view/all_batched">
       <tal:multipage condition="batch/has_multiple_pages">
         <tal:navigation replace="structure batch/@@+navigation-links-upper" />
