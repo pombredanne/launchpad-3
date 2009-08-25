@@ -6,14 +6,14 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
   <body>
     <tal:heading metal:fill-slot="heading">
       <h1>Translation groups</h1>
     </tal:heading>
     <div metal:fill-slot="main"
-         style="max-width:800px; margin-bottom: 2em;">
+         style="margin-bottom: 2em;">
       <p>
         A <dfn>translation group</dfn> is a set of teams or individual
         supervisors chosen by the owner of a distribution, project group, or
@@ -38,12 +38,13 @@
           what that group is about</a>.
       </p>
 
-      <table class="listing" id="translation-groups" width="100%"
+      <table class="sortable listing" id="translation-groups"
              style="margin-top:1em; margin-bottom:1em;">
         <thead>
           <tr>
-            <th style="text-align:left;">Translation Group</th>
-            <th>Supervises Translations for</th>
+            <th style="text-align:left;">Translation group</th>
+            <th>Manages translations for</th>
+            <th>Languages</th>
             <th>Created</th>
           </tr>
         </thead>
@@ -66,10 +67,19 @@
                   and
                   <a tal:attributes="href group/name"
                      tal:content="
-                         string:${group/number_of_remaining_projects} other">
-                    5 other</a>
-                  projects</span>
+                         string:${group/number_of_remaining_projects}
+                         other projects">
+                    5 other projects</a>
+                </span>
               </tal:projects>
+            </td>
+            <td style="text-align: center;">
+              <span class="sortkey"
+                tal:content="group/translators/count" />
+              <span
+                tal:content="group/translators/count">
+                50
+              </span>
             </td>
             <td>
               <span class="sortkey"
@@ -83,11 +93,15 @@
           </tr>
         </tbody>
       </table>
-      <tal:can-edit condition="context/required:launchpad.Admin">
-        <span class="add sprite" style="float:right;">
+    </div><!--main-->
+    <tal:side metal:fill-slot="side"
+              define="overview_menu context/menu:overview"
+              condition="context/required:launchpad.Admin">
+      <div class="portlet ">
+        <span class="add sprite">
           <a href="+new">Create a new translation group</a>
         </span>
-      </tal:can-edit>
-    </div><!--main-->
+      </div>
+    </tal:side>
   </body>
 </html>
