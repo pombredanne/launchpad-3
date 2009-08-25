@@ -165,6 +165,17 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
 
         self.assertEqual(map_link(package, pofiles), links)
 
+    def test_circumscribe_pofile_plus_template(self):
+        # A template circumscribes both itself and any of its
+        # translations.
+        pofile = self.factory.makePOFile(language_code='uga')
+        template = pofile.potemplate
+
+        sheets = [pofile, template]
+        links = self.aggregator._circumscribe(sheets)
+
+        self.assertEqual(map_link(template, sheets), links)
+
     def test_aggregate(self):
         # The aggregator represents a series of POFiles as a series of
         # target descriptions, aggregating where possible.
@@ -181,7 +192,17 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         expected = [(product, canonical_url(pofile), [pofile])]
         self.assertEqual(expected, descriptions)
 
-    def test_aggregateTranslationTargets_product_and_package(self):
+    def test_aggregate_potemplate(self):
+        # Besides POFiles, you can also feed an aggregator POTemplates.
+        template = self.factory.makePOTemplate()
+        product = template.productseries.product
+
+        descriptions = self.aggregator.aggregate([template])
+
+        expected = [(product, canonical_url(template), [template])]
+        self.assertEqual(expected, descriptions)
+
+    def test_aggregate_product_and_package(self):
         # The aggregator keeps a product and a package separate.
         product_pofile = self.factory.makePOFile(language_code='th')
         product = product_pofile.potemplate.productseries.product
@@ -205,7 +226,7 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
             ]
         self.assertEqual(expected, descriptions)
 
-    def test_aggregateTranslationTargets_bundles_productseries(self):
+    def test_aggregate_bundles_productseries(self):
         # _aggregateTranslationTargets describes POFiles for the same
         # ProductSeries together.
         pofile1 = self.factory.makePOFile(language_code='es')
@@ -221,7 +242,7 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         self.assertEqual(
             [(series.product, canonical_url(series), pofiles)], descriptions)
 
-    def test_aggregateTranslationTargets_bundles_package(self):
+    def test_aggregate_bundles_package(self):
         # _aggregateTranslationTargets describes POFiles for the same
         # ProductSeries together.
         package = self.factory.makeSourcePackage()
