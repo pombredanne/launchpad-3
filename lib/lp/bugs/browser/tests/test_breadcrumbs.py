@@ -14,10 +14,10 @@ from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.testing import ANONYMOUS, login
 
 
-class TestBugTaskBreadcrumbBuilder(BaseBreadcrumbTestCase):
+class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
 
     def setUp(self):
-        super(TestBugTaskBreadcrumbBuilder, self).setUp()
+        super(TestBugTaskBreadcrumb, self).setUp()
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
         self.bug = self.factory.makeBug(product=product)

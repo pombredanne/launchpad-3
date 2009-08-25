@@ -146,7 +146,6 @@ date / time.
 
     >>> return_value = server.Bug.search({
     ...     'last_change_time': last_change_time,
-    ...     'permissive': True,
     ...     })
 
     >>> bug_dicts = return_value['bugs']
@@ -178,7 +177,6 @@ results to those IDs.
     >>> return_value = server.Bug.search({
     ...     'id': [1],
     ...     'last_change_time': last_change_time,
-    ...     'permissive': True,
     ...     })
 
     >>> bug_dicts = return_value['bugs']
@@ -212,9 +210,71 @@ returned.
 
     >>> return_value = server.Bug.search({
     ...     'last_change_time': last_change_time,
-    ...     'permissive': True,
     ...     })
 
     >>> bug_dicts = return_value['bugs']
     >>> len(bug_dicts)
     0
+
+It's possible to search for bugs filed on a particular product.
+
+    >>> return_value = server.Bug.search({
+    ...     'product': ['HeartOfGold'],
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> for bug_dict in bug_dicts:
+    ...     for key in sorted(bug_dict):
+    ...         print "%s: %s" % (key, bug_dict[key])
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution: 
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
+
+You can search for more than one product.
+
+    >>> return_value = server.Bug.search({
+    ...     'product': ['HeartOfGold', 'Marvin'],
+    ...     })
+    >>> bug_dicts = return_value['bugs']
+    >>> for bug_dict in bug_dicts:
+    ...     for key in sorted(bug_dict):
+    ...         print "%s: %s" % (key, bug_dict[key])
+    alias: 
+    assigned_to: test@canonical.com
+    component: GPPSystems
+    creation_time: 20080610T16:19:53
+    id: 1
+    internals:...
+    is_open: True
+    last_change_time: 20080610T16:19:53
+    priority: P1
+    product: Marvin
+    resolution: FIXED
+    severity: normal
+    status: RESOLVED
+    summary: That bloody robot still exists.
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution: 
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.

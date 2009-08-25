@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BugTrackerAddView',
-    'BugTrackerBreadcrumbBuilder',
+    'BugTrackerBreadcrumb',
     'BugTrackerEditView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
@@ -41,7 +41,7 @@ from canonical.launchpad.webapp import (
     redirection, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
 
@@ -380,7 +380,7 @@ class BugTrackerSetBreadcrumbBuilder(BreadcrumbBuilder):
         return u"Bug trackers"
 
 
-class BugTrackerBreadcrumbBuilder(BreadcrumbBuilder):
+class BugTrackerBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBugTracker`."""
 
     rootsite = None

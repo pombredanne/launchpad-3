@@ -10,13 +10,12 @@ from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
 
 
-class TestHasSpecificationsBreadcrumbBuilderOnBlueprintsVHost(
+class TestHasSpecificationsBreadcrumbOnBlueprintsVHost(
         BaseBreadcrumbTestCase):
     """Test Breadcrumbs for IHasSpecifications on the blueprints vhost."""
 
     def setUp(self):
-        super(TestHasSpecificationsBreadcrumbBuilderOnBlueprintsVHost,
-              self).setUp()
+        super(TestHasSpecificationsBreadcrumbOnBlueprintsVHost, self).setUp()
         self.person = self.factory.makePerson()
         self.person_specs_url = canonical_url(
             self.person, rootsite='blueprints')
