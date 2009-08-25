@@ -15,7 +15,8 @@ from zope.component import queryAdapter
 from zope.interface import implements
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
+from canonical.launchpad.webapp.interfaces import (
+    IBreadcrumb, ICanonicalUrlData)
 
 
 class Breadcrumb:
@@ -25,11 +26,23 @@ class Breadcrumb:
     """
     implements(IBreadcrumb)
 
-    rootsite = 'mainsite'
     text = None
 
     def __init__(self, context):
         self.context = context
+
+    @property
+    def rootsite(self):
+        """The rootsite of this breadcrumb's URL.
+
+        If the `ICanonicalUrlData` for our context defines a rootsite, we
+        return that, otherwise we return 'mainsite'.
+        """
+        url_data = ICanonicalUrlData(self.context)
+        if url_data.rootsite:
+            return url_data.rootsite
+        else:
+            return 'mainsite'
 
     @property
     def url(self):
