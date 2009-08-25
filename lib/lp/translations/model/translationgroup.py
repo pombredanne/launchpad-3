@@ -137,8 +137,15 @@ class TranslationGroupSet:
     title = 'Rosetta Translation Groups'
 
     def __iter__(self):
-        """See ITranslationGroupSet."""
-        for group in TranslationGroup.select():
+        """See `ITranslationGroupSet`."""
+        # XXX Danilo 2009-08-25: See bug #418490: we should get
+        # group names from their respective celebrities.  For now,
+        # just hard-code them so they show up at the top of the
+        # listing of all translation groups.
+        for group in TranslationGroup.select(
+            orderBy=[
+                "-(name in ('launchpad-translators', 'ubuntu-translators'))",
+                "title"]):
             yield group
 
     def __getitem__(self, name):
