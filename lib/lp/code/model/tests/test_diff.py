@@ -22,7 +22,35 @@ from lp.code.interfaces.diff import (
 from lp.testing import login, login_person, TestCaseWithFactory
 
 
-class TestDiff(TestCaseWithFactory):
+class DiffTestCase(TestCaseWithFactory):
+
+    def createExampleMerge(self):
+        self.useBzrBranches()
+        bmp = removeSecurityProxy(self.factory.makeBranchMergeProposal())
+        bzr_target = self.createBzrBranch(bmp.target_branch)
+        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
+        target_commit.writeFile('foo', 'a\n')
+        target_commit.commit('committing')
+        bzr_source = self.createBzrBranch(bmp.source_branch, bzr_target)
+        source_commit = DirectBranchCommit(bmp.source_branch, mirror=True)
+        source_commit.writeFile('foo', 'd\na\nb\n')
+        source_rev_id = source_commit.commit('committing')
+        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
+        target_commit.writeFile('foo', 'c\na\n')
+        target_rev_id = target_commit.commit('committing')
+        return bmp, source_rev_id, target_rev_id
+
+    def checkExampleMerge(self, text):
+        # b is added (by source)
+        self.assertIn('+b\n', text)
+        # a is common to source and target
+        self.assertNotIn('+a\n', text)
+        # A conflict was detected because source adds 'd' and target adds 'c'.
+        self.assertIn(
+            '+<<<<<<< TREE\n c\n+=======\n+d\n+>>>>>>> MERGE-SOURCE\n', text)
+
+
+class TestDiff(DiffTestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -67,6 +95,15 @@ class TestDiff(TestCaseWithFactory):
         content = "1234567890" * 10
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
+
+    def test_mergePreviewFromBranches(self):
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        source_branch = bmp.source_branch.getBzrBranch()
+        target_branch = bmp.target_branch.getBzrBranch()
+        diff = Diff.mergePreviewFromBranches(
+            source_branch, source_rev_id, target_branch)
+        transaction.commit()
+        self.checkExampleMerge(diff.text)
 
 
 class TestStaticDiff(TestCaseWithFactory):
@@ -134,7 +171,7 @@ class TestStaticDiff(TestCaseWithFactory):
         self.assertEqual('abc', static_diff.diff.text)
 
 
-class TestPreviewDiff(TestCaseWithFactory):
+class TestPreviewDiff(DiffTestCase):
     """Test that PreviewDiff objects work."""
 
     layer = LaunchpadFunctionalLayer
@@ -222,31 +259,12 @@ class TestPreviewDiff(TestCaseWithFactory):
         self.assertEqual(True, mp.preview_diff.stale)
 
     def test_generatePreviewDiff(self):
-        self.useBzrBranches()
-        bmp = removeSecurityProxy(self.factory.makeBranchMergeProposal())
-        bzr_target = self.createBzrBranch(bmp.target_branch)
-        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
-        target_commit.writeFile('foo', 'a\n')
-        target_commit.commit('committing')
-        bzr_source = self.createBzrBranch(bmp.source_branch, bzr_target)
-        source_commit = DirectBranchCommit(bmp.source_branch, mirror=True)
-        source_commit.writeFile('foo', 'd\na\nb\n')
-        source_rev_id = source_commit.commit('committing')
-        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
-        target_commit.writeFile('foo', 'c\na\n')
-        target_rev_id = target_commit.commit('committing')
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
         preview = PreviewDiff.fromBMP(bmp)
         self.assertEqual(source_rev_id, preview.source_revision_id)
         self.assertEqual(target_rev_id, preview.target_revision_id)
         transaction.commit()
-        # b is added (by source)
-        self.assertIn('+b\n', preview.text)
-        # a is common to source and target
-        self.assertNotIn('+a\n', preview.text)
-        # A conflict was detected because source adds 'd' and target adds 'c'.
-        self.assertIn(
-            '+<<<<<<< TREE\n c\n+=======\n+d\n+>>>>>>> MERGE-SOURCE\n',
-            preview.text)
+        self.checkExampleMerge(preview.text)
 
 
 def test_suite():
