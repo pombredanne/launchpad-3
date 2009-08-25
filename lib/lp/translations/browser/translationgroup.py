@@ -47,20 +47,15 @@ class TranslationGroupSetNavigation(GetitemNavigation):
 class TranslationGroupSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITranslationGroupSet`."""
 
-    rootsite = "translations"
-
     text = u"Translation groups"
 
 
 class TranslationGroupBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITranslationGroup`."""
 
-    rootsite = "translations"
-
     @property
     def text(self):
         return self.context.title
-
 
 class TranslationGroupView:
 
