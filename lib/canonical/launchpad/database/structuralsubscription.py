@@ -151,10 +151,10 @@ class StructuralSubscriptionTargetMixin:
                 subscribed_by.inTeam(admins))
 
     def addSubscription(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
         if subscriber is None:
             subscriber = subscribed_by
 
-        """See `IStructuralSubscriptionTarget`."""
         if not self._userCanAlterSubscription(subscriber, subscribed_by):
             raise UserCannotSubscribePerson(
                 '%s does not have permission to subscribe %s.' % (
