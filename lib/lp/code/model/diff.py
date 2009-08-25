@@ -9,6 +9,7 @@ __all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
 from cStringIO import StringIO
 
 from bzrlib.diff import show_diff_trees
+from bzrlib.merge import Merger, Merge3Merger
 from lazr.delegates import delegates
 from sqlobject import ForeignKey, IntCol, StringCol
 from storm.locals import Int, Reference, Storm, Unicode
@@ -175,6 +176,39 @@ class PreviewDiff(Storm):
     branch_merge_proposal = Reference(
         "PreviewDiff.id", "BranchMergeProposal.preview_diff_id",
         on_remote=True)
+
+    @classmethod
+    def fromBMP(cls, bmp):
+        source_branch = bmp.source_branch.getBzrBranch()
+        source_revision = source_branch.last_revision()
+        target_branch = bmp.target_branch.getBzrBranch()
+        target_revision = target_branch.last_revision()
+        preview = cls()
+        preview.source_revision_id = source_revision.decode('utf-8')
+        preview.target_revision_id = target_revision.decode('utf-8')
+        preview.diff = cls.generateDiff(
+            source_branch, source_revision, target_branch)
+        return preview
+
+    @classmethod
+    def generateDiff(cls, source_branch, source_revision, target_branch):
+        source_branch.lock_read()
+        target_branch.lock_write()
+        try:
+            merge_target = target_branch.basis_tree()
+            merger = Merger.from_revision_ids(
+                None, merge_target, source_revision,
+                other_branch=source_branch, tree_branch=target_branch)
+            merger.merge_type = Merge3Merger
+            transform = merger.make_merger().make_preview_transform()
+            try:
+                to_tree = transform.get_preview_tree()
+                return Diff.fromTrees(merge_target, to_tree)
+            finally:
+                transform.finalize()
+        finally:
+            source_branch.unlock()
+            target_branch.unlock()
 
     def update(self, diff_content, diffstat,
                source_revision_id, target_revision_id,

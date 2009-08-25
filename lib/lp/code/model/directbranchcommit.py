@@ -12,12 +12,12 @@ __all__ = [
 
 import os.path
 
+from bzrlib.branch import Branch
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview
 
 from canonical.launchpad.interfaces import IMasterObject
-from lp.codehosting.vfs import make_branch_mirrorer
 
 
 class ConcurrentUpdateError(Exception):
@@ -48,7 +48,7 @@ class DirectBranchCommit:
     is_locked = False
     commit_builder = None
 
-    def __init__(self, db_branch, committer=None):
+    def __init__(self, db_branch, committer=None, mirror=False):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
@@ -69,6 +69,7 @@ class DirectBranchCommit:
         :param committer: the `Person` writing to the branch.
         """
         self.db_branch = db_branch
+        self.mirror = mirror
 
         if committer is None:
             committer = db_branch.owner
@@ -77,8 +78,10 @@ class DirectBranchCommit:
         # Directories we create on the branch, and their ids.
         self.path_ids = {}
 
-        mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
-        self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
+        if mirror:
+            self.bzrbranch = self.db_branch.getBzrBranch()
+        else:
+            self.bzrbranch = Branch.open(self.db_branch.getPullURL())
         self.bzrbranch.lock_write()
         self.is_locked = True
 
@@ -153,6 +156,8 @@ class DirectBranchCommit:
 
         If it does, raise `ConcurrentUpdateError`.
         """
+        if self.mirror:
+            return
         assert self.is_locked, "Getting revision on un-locked branch."
         last_revision = None
         last_revision = self.bzrbranch.last_revision()
@@ -197,6 +202,7 @@ class DirectBranchCommit:
                 builder.abort()
             self.unlock()
             self.is_open = False
+        return new_rev_id
 
     def unlock(self):
         """Release commit lock, if held."""

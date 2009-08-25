@@ -12,6 +12,8 @@ from textwrap import dedent
 from unittest import TestCase, TestLoader
 
 from bzrlib import errors as bzr_errors
+from bzrlib.bzrdir import BzrDir
+from bzrlib.transport import get_transport
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
@@ -32,6 +34,7 @@ from lp.code.model.diff import StaticDiff
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
+from lp.code.model.directbranchcommit import DirectBranchCommit
 from canonical.launchpad.ftests import (
     ANONYMOUS, import_secret_test_key, login, syncUpdate)
 from lp.code.enums import (
@@ -1534,6 +1537,41 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
     """Test the updateMergeDiff method of BranchMergeProposal."""
 
     layer = LaunchpadFunctionalLayer
+
+    def create_bzr_branch(self, db_branch, parent=None):
+        transport = get_transport(db_branch.warehouse_url)
+        transport.create_prefix()
+        bzr_branch = BzrDir.create_branch_convenience(transport.base)
+        if parent:
+            bzr_branch.pull(parent)
+        return bzr_branch
+
+    def test_generatePreviewDiff(self):
+        self.useBzrBranches()
+        bmp = removeSecurityProxy(self.factory.makeBranchMergeProposal())
+        bzr_target = self.create_bzr_branch(bmp.target_branch)
+        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
+        target_commit.writeFile('foo', 'a\n')
+        target_commit.commit('committing')
+        bzr_source = self.create_bzr_branch(bmp.source_branch, bzr_target)
+        source_commit = DirectBranchCommit(bmp.source_branch, mirror=True)
+        source_commit.writeFile('foo', 'd\na\nb\n')
+        source_rev_id = source_commit.commit('committing')
+        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
+        target_commit.writeFile('foo', 'c\na\n')
+        target_rev_id = target_commit.commit('committing')
+        preview = bmp.generatePreviewDiff()
+        self.assertEqual(source_rev_id, preview.source_revision_id)
+        self.assertEqual(target_rev_id, preview.target_revision_id)
+        transaction.commit()
+        # b is added (by source)
+        self.assertIn('+b\n', preview.text)
+        # a is common to source and target
+        self.assertNotIn('+a\n', preview.text)
+        # A conflict was detected because source adds 'd' and target adds 'c'.
+        self.assertIn(
+            '+<<<<<<< TREE\n c\n+=======\n+d\n+>>>>>>> MERGE-SOURCE\n',
+            preview.text)
 
     def _updatePreviewDiff(self, merge_proposal):
         # Update the preview diff for the merge proposal.
