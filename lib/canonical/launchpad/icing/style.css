@@ -1886,6 +1886,17 @@ div.builds_list form {
     padding: 1em 1em 2em 0em;
 }
 
+/* Temporary style for actions on the ppa/+packages page until we move
+ * the copy/delete packages functionality into the page itself. */
+div.ppa-packaging-tmp-actions {
+    float:right;
+}
+
+div.ppa-packaging-tmp-actions .portlet {
+    border-top: 0 none;
+}
+
+
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}

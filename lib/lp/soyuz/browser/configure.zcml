@@ -327,7 +327,8 @@
     <browser:menus
         classes="
             ArchiveContextMenu
-            ArchiveNavigationMenu"
+            ArchiveNavigationMenu
+            ArchivePackagesActionMenu"
         module="lp.soyuz.browser.archive"/>
     <browser:url
         for="lp.soyuz.interfaces.archivepermission.IArchiveUploader"

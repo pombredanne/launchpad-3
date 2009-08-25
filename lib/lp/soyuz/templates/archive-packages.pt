@@ -99,9 +99,12 @@ tr#package-counters p{
          tal:attributes="class string:archive">
 
       <div class="top-portlet">
+
+        <div class="ppa-packaging-tmp-actions"
+             tal:content="structure view/@@+global-actions" />
         <h1 tal:content="view/page_title">
           PPA for user
-       </h1>
+        </h1>
 
         <p tal:condition="not: context/enabled"
            style="clear: right;" class="warning message">
@@ -163,17 +166,6 @@ tr#package-counters p{
         </p>
 
         <tal:active_archive condition="archive_active">
-
-        <div class="actions" style="clear:right;float:right;">
-          <tal:copy
-            define="link context/menu:context/copy"
-            condition="link/enabled"
-            replace="structure link/render" />
-          <tal:delete
-            define="link context/menu:context/delete"
-            condition="link/enabled"
-            replace="structure link/render" />
-        </div>
 
         <metal:package_filter_form
           use-macro="context/@@+macros/package-filter-form" />

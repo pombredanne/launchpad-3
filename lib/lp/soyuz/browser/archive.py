@@ -19,6 +19,7 @@ __all__ = [
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchivePackagesView',
+    'ArchivePackagesActionMenu',
     'ArchiveView',
     'ArchiveViewBase',
     'traverse_distro_archive',
@@ -31,7 +32,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import implements
+from zope.interface import implements, Interface
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -310,13 +311,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
         return self.context.getArchiveDependency(archive)
 
-class ArchiveContextMenu(ContextMenu):
-    """Overview Menu for IArchive."""
 
-    usedfor = IArchive
-    links = ['ppa', 'admin', 'edit', 'builds', 'delete', 'copy',
-             'edit_dependencies', 'manage_subscribers']
-
+class ArchiveMenuMixin:
     def ppa(self):
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
@@ -374,6 +370,14 @@ class ArchiveContextMenu(ContextMenu):
         return Link('+edit-dependencies', text, icon='edit')
 
 
+class ArchiveContextMenu(ContextMenu, ArchiveMenuMixin):
+    """Overview Menu for IArchive."""
+
+    usedfor = IArchive
+    links = ['ppa', 'admin', 'edit', 'builds', 'delete', 'copy',
+             'edit_dependencies', 'manage_subscribers']
+
+
 class ArchiveNavigationMenu(NavigationMenu):
     """IArchive navigation menu.
 
@@ -382,6 +386,17 @@ class ArchiveNavigationMenu(NavigationMenu):
     usedfor = IArchive
     facet = 'overview'
     links = []
+
+
+class IArchivePackagesActionMenu(Interface):
+    """A marker interface for the packages action menu."""
+
+
+class ArchivePackagesActionMenu(NavigationMenu, ArchiveMenuMixin):
+    #"""An action menu for archive package-related actions."""
+        usedfor = IArchivePackagesActionMenu
+        facet= 'overview'
+        links = ['copy', 'delete']
 
 
 class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
@@ -694,6 +709,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
+    implements(IArchivePackagesActionMenu)
 
     @property
     def page_title(self):
@@ -706,6 +722,14 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
             self.context.distribution, self.archive_url,
             self.context.series_with_sources)
         return SourcesListEntriesView(entries, self.request)
+
+    @property
+    def is_copy(self):
+        """Return whether the context of this view is a copy archive."""
+        # This property enables menu items to be shared between a
+        # context and view menues.
+        # TODO: can I use a simple delegate statement here instead?
+        return self.context.is_copy
 
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
