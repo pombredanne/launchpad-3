@@ -15,18 +15,12 @@
     <div metal:fill-slot="main"
          style="margin-bottom: 2em;">
       <p>
-        A <dfn>translation group</dfn> is a set of teams or individual
-        supervisors chosen by the owner of a distribution, project group, or
-        project to manage its translations.
-        Each team or supervisor in a group is responsible for one or more
-        specific languages.
-      </p>
-
-      <p>
-        To read more about translation groups, you can go through our
-        <a href="
-            https://help.launchpad.net/Translations/JoiningATranslationGroup">
-          documentation</a>.
+        Translation groups are communities of teams and individuals
+        who have each taken responsibility for reviewing translations
+        in a particular language. Projects and distributions select
+        the translation group best suited to their translation
+        policies. (<a href="https://help.launchpad.net/Translations/YourProject/ChoosingAGroup">More
+          about translation groups</a>)
       </p>
 
       <p>
