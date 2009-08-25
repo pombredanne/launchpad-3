@@ -139,7 +139,7 @@ bugtracker without them is acceptable.
   >>> user_browser.getControl('Location').value = 'http://bugzilla.example.org/'
   >>> user_browser.getControl('Add').click()
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/test-bugzilla'
 
   >>> login('test@canonical.com')
   >>> bugtrackerset = getUtility(IBugTrackerSet)
@@ -173,7 +173,7 @@ We can edit the details of the newly added bugtracker.
   >>> user_browser.getLink('Change details').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testmantis/+edit'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis/+edit'
 
   >>> user_browser.title
   'Change details for \xe2\x80\x9cTest Mantis Tracker\xe2\x80\x9d bug tracker'
@@ -192,7 +192,7 @@ tracker uses.
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testmantis/+edit'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis/+edit'
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
   There is 1 error.
@@ -227,7 +227,7 @@ the bugtracker name is reflected in the url.
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testbugzilla'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testbugzilla'
 
 And now the test tracker should have been updated:
 
@@ -351,13 +351,13 @@ Being brand-new and pristine, there will be nothing to prevent its
 deletion yet:
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/freddy'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/freddy'
 
   >>> user_browser.getLink('Change details').click()
   >>> user_browser.getControl('Delete').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers'
+  'http://bugs.launchpad.dev/bugs/bugtrackers'
 
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
