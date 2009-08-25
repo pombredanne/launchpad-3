@@ -113,9 +113,10 @@ tr#package-counters p{
 
         <p>This
           <tal:archive_label replace="archive_label">PPA</tal:archive_label>
-          currently publishes
-          <span tal:replace="view/batchnav/batch/total" /> packages for
-          [distroseries list]?.
+          currently publishes packages for
+          <tal:series_list replace="view/series_list_string">
+            Gutsy, Hardy and Karmic
+          </tal:series_list>.
         </p>
       </div>
 

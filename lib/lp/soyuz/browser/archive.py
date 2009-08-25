@@ -40,6 +40,7 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.browser.sourceslist import (
@@ -553,6 +554,11 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
         return SimpleVocabulary(status_terms)
 
     @cachedproperty
+    def series_with_sources(self):
+        """Cache the context's series with sources."""
+        return self.context.series_with_sources
+
+    @property
     def series_vocabulary(self):
         """Return a vocabulary for selecting a distribution series.
 
@@ -560,7 +566,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
         selection of a series
         """
         series_terms = [SimpleTerm(None, token='any', title='Any Series')]
-        for distroseries in self.context.series_with_sources:
+        for distroseries in self.series_with_sources:
             series_terms.append(
                 SimpleTerm(distroseries, token=distroseries.name,
                            title=distroseries.displayname))
@@ -722,6 +728,12 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
             self.context.distribution, self.archive_url,
             self.context.series_with_sources)
         return SourcesListEntriesView(entries, self.request)
+
+    @property
+    def series_list_string(self):
+        """Return an English string of the distroseries."""
+        return english_list(
+            [series.displayname for series in self.series_with_sources])
 
     @property
     def is_copy(self):
