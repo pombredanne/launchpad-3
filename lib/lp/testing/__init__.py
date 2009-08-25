@@ -15,6 +15,7 @@ import tempfile
 import unittest
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.bzrdir import BzrDir
 from bzrlib.transport import get_transport
 
 import pytz
@@ -426,6 +427,14 @@ class TestCaseWithFactory(TestCase):
             branch_url, format=format)
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
+
+    def createBzrBranch(self, db_branch, parent=None):
+        transport = get_transport(db_branch.warehouse_url)
+        transport.create_prefix()
+        bzr_branch = BzrDir.create_branch_convenience(transport.base)
+        if parent:
+            bzr_branch.pull(parent)
+        return bzr_branch
 
     @staticmethod
     def getBranchPath(branch, base):

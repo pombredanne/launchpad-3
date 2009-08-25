@@ -61,6 +61,27 @@ class Diff(SQLBase):
         return diff_size > config.diff.max_read_size
 
     @classmethod
+    def mergePreviewFromBranches(cls, source_branch, source_revision,
+                                 target_branch):
+        source_branch.lock_read()
+        target_branch.lock_write()
+        try:
+            merge_target = target_branch.basis_tree()
+            merger = Merger.from_revision_ids(
+                None, merge_target, source_revision,
+                other_branch=source_branch, tree_branch=target_branch)
+            merger.merge_type = Merge3Merger
+            transform = merger.make_merger().make_preview_transform()
+            try:
+                to_tree = transform.get_preview_tree()
+                return Diff.fromTrees(merge_target, to_tree)
+            finally:
+                transform.finalize()
+        finally:
+            source_branch.unlock()
+            target_branch.unlock()
+
+    @classmethod
     def fromTrees(klass, from_tree, to_tree, filename=None):
         """Create a Diff from two Bazaar trees.
 
@@ -186,29 +207,9 @@ class PreviewDiff(Storm):
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
-        preview.diff = cls.generateDiff(
+        preview.diff = Diff.mergePreviewFromBranches(
             source_branch, source_revision, target_branch)
         return preview
-
-    @classmethod
-    def generateDiff(cls, source_branch, source_revision, target_branch):
-        source_branch.lock_read()
-        target_branch.lock_write()
-        try:
-            merge_target = target_branch.basis_tree()
-            merger = Merger.from_revision_ids(
-                None, merge_target, source_revision,
-                other_branch=source_branch, tree_branch=target_branch)
-            merger.merge_type = Merge3Merger
-            transform = merger.make_merger().make_preview_transform()
-            try:
-                to_tree = transform.get_preview_tree()
-                return Diff.fromTrees(merge_target, to_tree)
-            finally:
-                transform.finalize()
-        finally:
-            source_branch.unlock()
-            target_branch.unlock()
 
     def update(self, diff_content, diffstat,
                source_revision_id, target_revision_id,

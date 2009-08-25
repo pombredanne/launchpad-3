@@ -675,9 +675,6 @@ class BranchMergeProposal(SQLBase):
         Store.of(self).flush()
         return self.preview_diff
 
-    def generatePreviewDiff(self):
-        return PreviewDiff.fromBMP(self)
-
 
 class BranchMergeProposalGetter:
     """See `IBranchMergeProposalGetter`."""

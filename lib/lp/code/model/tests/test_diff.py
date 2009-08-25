@@ -10,11 +10,13 @@ from cStringIO import StringIO
 from unittest import TestLoader
 
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
-from lp.code.model.diff import Diff, StaticDiff
+from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
+from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
@@ -218,6 +220,33 @@ class TestPreviewDiff(TestCaseWithFactory):
         self.assertEqual(False, mp.preview_diff.stale)
         dep_branch.last_scanned_id = 'rev-d'
         self.assertEqual(True, mp.preview_diff.stale)
+
+    def test_generatePreviewDiff(self):
+        self.useBzrBranches()
+        bmp = removeSecurityProxy(self.factory.makeBranchMergeProposal())
+        bzr_target = self.createBzrBranch(bmp.target_branch)
+        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
+        target_commit.writeFile('foo', 'a\n')
+        target_commit.commit('committing')
+        bzr_source = self.createBzrBranch(bmp.source_branch, bzr_target)
+        source_commit = DirectBranchCommit(bmp.source_branch, mirror=True)
+        source_commit.writeFile('foo', 'd\na\nb\n')
+        source_rev_id = source_commit.commit('committing')
+        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
+        target_commit.writeFile('foo', 'c\na\n')
+        target_rev_id = target_commit.commit('committing')
+        preview = PreviewDiff.fromBMP(bmp)
+        self.assertEqual(source_rev_id, preview.source_revision_id)
+        self.assertEqual(target_rev_id, preview.target_revision_id)
+        transaction.commit()
+        # b is added (by source)
+        self.assertIn('+b\n', preview.text)
+        # a is common to source and target
+        self.assertNotIn('+a\n', preview.text)
+        # A conflict was detected because source adds 'd' and target adds 'c'.
+        self.assertIn(
+            '+<<<<<<< TREE\n c\n+=======\n+d\n+>>>>>>> MERGE-SOURCE\n',
+            preview.text)
 
 
 def test_suite():
