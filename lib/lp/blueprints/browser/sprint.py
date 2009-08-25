@@ -8,13 +8,13 @@ __all__ = [
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
-    'SprintBreadcrumbBuilder',
+    'SprintBreadcrumb',
     'SprintEditView',
     'SprintFacets',
     'SprintMeetingExportView',
     'SprintNavigation',
     'SprintOverviewMenu',
-    'SprintSetBreadcrumbBuilder',
+    'SprintSetBreadcrumb',
     'SprintSetContextMenu',
     'SprintSetFacets',
     'SprintSetNavigation',
@@ -28,8 +28,9 @@ import csv
 import pytz
 from StringIO import StringIO
 
-from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
@@ -40,13 +41,15 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
     SpecificationSort)
 from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.helpers import shortlist
 from canonical.widgets.date import DateTimeWidget
 
@@ -68,7 +71,7 @@ class SprintNavigation(Navigation):
     usedfor = ISprint
 
 
-class SprintBreadcrumbBuilder(BreadcrumbBuilder):
+class SprintBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISprint`."""
     @property
     def text(self):
@@ -144,7 +147,7 @@ class SprintSetNavigation(GetitemNavigation):
     usedfor = ISprintSet
 
 
-class SprintSetBreadcrumbBuilder(BreadcrumbBuilder):
+class SprintSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISprintSet`."""
     text = 'Meetings'
 
@@ -488,7 +491,22 @@ class SprintMeetingExportView(LaunchpadView):
         return body.encode('utf-8')
 
 
+class SprintSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for sprints index."""
+    usedfor = ISprintSet
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        ]
+
+
 class SprintSetView(LaunchpadView):
+    """View for the /sprints top level collection page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'Meetings and sprints registered in Launchpad'
 
     def all_batched(self):
         return BatchNavigator(self.context.all, self.request)

@@ -25,6 +25,11 @@ to allow binary package searching.
     Ubuntu Warty for i386
     Search binary packages
     This archive contains 5 software packages.
+    Details for Ubuntu Warty i386
+    Architecture tag: i386
+    Processor family: Intel 386 compatible chips
+    Port registrant: Mark Shuttleworth
+    5 binary packages
 
 
 == Searching BinaryPackages ==
@@ -38,7 +43,7 @@ considering partial string matches as well (fti).
     >>> anon_browser.getControl(name="text").value = "firefox"
     >>> anon_browser.getControl("Search Packages").click()
     >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/warty/i386/+search?text=firefox'
+    'http://launchpad.dev/ubuntu/warty/i386/+index?text=firefox'
 
 Searching for "firefox" finds several binary packages. Each search
 result is displayed as the binary package name followed by the binary
@@ -68,15 +73,16 @@ that was done, and explain that no matches were found.
 All users can browse to the builds page from the DistroArchSeries
 page. The builds page is described in 23-builds-page.txt.
 
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
-    Administer (disabled)
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'global-actions'))
     Show builds
 
 Only administrators can edit ('administer', in fact) the
 distroarchseries details.
 
     >>> admin_browser.open("http://launchpad.dev/ubuntu/warty/i386/")
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'actions'))
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'global-actions'))
     Administer
     Show builds
 

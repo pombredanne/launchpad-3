@@ -108,6 +108,8 @@ class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
     __used_for__ = ICodeReviewComment
 
+    page_title = "Code review comment"
+
     @cachedproperty
     def comment(self):
         """The decorated code review comment."""
@@ -207,6 +209,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
     custom_widget('vote', MyDropWidget)
 
+    page_title = 'Reply to code review comment'
 
     @property
     def initial_values(self):

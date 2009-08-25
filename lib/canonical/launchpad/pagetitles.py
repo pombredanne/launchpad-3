@@ -178,28 +178,11 @@ branch_index = ContextDisplayName(smartquote(
 def branch_merges(context, view):
     return 'Merges involving "%s" in Launchpad' % context.bzr_identity
 
-def branch_listing_cross_product(context, view):
-    """Return the view's page_title."""
-    return view.page_title
-
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
-branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
-
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
-
-branch_register_merge_proposal = 'Propose branch for merging'
-
-branch_subscription = ContextDisplayName(smartquote(
-    'Subscription to branch "%s"'))
-
-branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
-
-def branch_visibility_edit(context, view):
-    """Return the view's pagetitle."""
-    return view.pagetitle
 
 bug_activity = ContextBugId('Bug #%s - Activity log')
 
@@ -211,8 +194,6 @@ def bug_attachment_edit(context, view):
         context.bug.id, context.title)
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
-
-bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
@@ -400,10 +381,6 @@ codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Ubuntu Codes of Conduct'
 
-codereviewcomment_index = 'Code review comment'
-
-codereviewcomment_reply = 'Reply to code review comment'
-
 def contact_user(context, view):
     return view.specific_contact_title_text
 
@@ -510,8 +487,6 @@ distroserieslanguage_index = ContextTitle('%s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
-distros_index = 'Distributions registered in Launchpad'
-
 edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
@@ -569,10 +544,6 @@ karmaaction_index = 'Karma actions'
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
 language_index = ContextDisplayName("%s in Launchpad")
-
-language_add = 'Add a new Language to Launchpad'
-
-language_admin = ContextDisplayName("Edit %s")
 
 languageset_index = 'Languages in Launchpad'
 
@@ -794,8 +765,6 @@ official_bug_target_manage_tags = 'Manage Official Bug Tags'
 def package_bugs(context, view):
     """Return the page title bug in a package."""
     return 'Bugs in %s' % context.name
-
-people_index = 'People and teams in Launchpad'
 
 people_adminrequestmerge = 'Merge Launchpad accounts'
 
@@ -1023,8 +992,6 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
-products_index = 'Projects registered in Launchpad'
-
 products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
@@ -1068,8 +1035,6 @@ project_specs = ContextTitle('Blueprints for %s')
 project_translations = ContextTitle('Translatable projects for %s')
 
 project_translators = ContextTitle('Set translation group for %s')
-
-projects_index = 'Project groups registered in Launchpad'
 
 projects_request = 'Launchpad Translations: Request a project group'
 
@@ -1285,8 +1250,6 @@ sprint_workload = ContextTitle('Workload at %s')
 
 sprints_all = 'All sprints and meetings registered in Launchpad'
 
-sprints_index = 'Meetings and sprints registered in Launchpad'
-
 sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve blueprint for sprint agenda'
@@ -1366,8 +1329,6 @@ token_authorized = 'Almost finished ...'
 translationgroup_index = ContextTitle(
     smartquote('"%s" Launchpad translation group'))
 
-translationgroup_add = 'Add a new translation group to Launchpad'
-
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
@@ -1376,8 +1337,6 @@ translationgroup_edit = ContextTitle(smartquote(
 
 translationgroup_reassignment = ContextTitle(smartquote(
     'Change the owner of "%s" translation group'))
-
-reviewrequest_reassign = 'Reassign review request'
 
 translationgroups_index = 'Launchpad translation groups'
 
@@ -1392,21 +1351,5 @@ def translationmessage_translate(context, view):
     return 'Translating %s into %s' % (
         context.pofile.potemplate.displayname,
         context.pofile.language.englishname)
-
-def translator_admin(context, view):
-    """Return the page title for administering a translator in a group."""
-    return "Administer %s translator for %s" % (
-        context.language.englishname, context.translationgroup.title)
-
-def translator_edit(context, view):
-    """Return the page title for editing a the translator details."""
-    return "Edit %s translator for %s" % (
-        context.language.englishname, context.translationgroup.title)
-
-def translator_remove(context, view):
-    """Return the page title to remove a translator from a group."""
-    return "Remove %s as the %s translator for %s" % (
-        context.translator.displayname, context.language.englishname,
-        context.translationgroup.title)
 
 unauthorized = 'Error: Not authorized'

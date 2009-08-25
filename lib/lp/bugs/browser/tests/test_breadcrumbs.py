@@ -6,14 +6,15 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests import BaseBreadcrumbTestCase
+from canonical.launchpad.webapp.tests.breadcrumbs import (
+    BaseBreadcrumbTestCase)
 from lp.testing import ANONYMOUS, login
 
 
-class TestBugTaskBreadcrumbBuilder(BaseBreadcrumbTestCase):
+class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
 
     def setUp(self):
-        super(TestBugTaskBreadcrumbBuilder, self).setUp()
+        super(TestBugTaskBreadcrumb, self).setUp()
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
         self.bug = self.factory.makeBug(product=product)

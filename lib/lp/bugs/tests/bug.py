@@ -90,21 +90,6 @@ def print_remote_bugtasks(content):
                 print target, extract_text(span.findNext('a'))
 
 
-def print_bugs_table(content, table_id):
-    """Print the bugs table with the given ID.
-
-    The table is assumed to consist of rows of bugs whose first column
-    is a bug ID, and whose second column is a bug title.
-    """
-    bugs_table = find_tag_by_id(content, table_id)
-
-    for tr in bugs_table("tr"):
-        if not tr.td:
-            continue
-        bug_id, bug_title = tr("td", limit=2)
-        print bug_id.string, bug_title.a.string
-
-
 def print_bugs_list(content, list_id):
     """Print the bugs list with the given ID.
 

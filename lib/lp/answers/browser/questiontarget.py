@@ -47,6 +47,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -106,11 +107,6 @@ class UserSupportLanguagesMixin:
 
 class QuestionCollectionLatestQuestionsView:
     """View used to display the latest questions on a question target."""
-
-    @cachedproperty
-    def latest_questions_url(self):
-        """The link to the latest questions."""
-        return canonical_url(self.context, rootsite='answers')
 
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
@@ -831,3 +827,19 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         """Return a link to the manage answer contact view."""
         text = 'Set answer contact'
         return Link('+answer-contact', text, icon='edit')
+
+
+class QuestionTargetOnAnswersVHostBreadcrumb(Breadcrumb):
+    rootsite = 'answers'
+
+    @property
+    def text(self):
+        return 'Questions for %s' % self.context.title
+
+
+class PersonOnAnswersVHostBreadcrumb(Breadcrumb):
+    rootsite = 'answers'
+
+    @property
+    def text(self):
+        return 'Questions involving %s' % self.context.displayname

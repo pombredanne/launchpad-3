@@ -39,7 +39,7 @@ class XpiTestCase(unittest.TestCase):
 
     def setUp(self):
         # Get the importer.
-        self.importer = getUtility(IPersonSet).getByName('sabdfl')
+        self.importer = getUtility(IPersonSet).getByName('mark')
 
         # Get the Firefox template.
         firefox_product = getUtility(IProductSet).getByName('firefox')

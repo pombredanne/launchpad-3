@@ -21,7 +21,7 @@ the main heading repeats the bug number for clarity:
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
-    Main heading: Activity log for bug #3: Bug Title Test
+    Main heading: Activity log for bug #3
 
 The activity log itself is presented as a table.
 

@@ -27,7 +27,7 @@ For a distroarchseries we publish a subset of its attributes.
     is_nominated_arch_indep: True
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     official: True
-    owner_link: u'http://.../~sabdfl'
+    owner_link: u'http://.../~mark'
     package_count: 1
     resource_type_link: u'http://.../#distro_arch_series'
     self_link: u'http://.../ubuntu/hoary/i386'

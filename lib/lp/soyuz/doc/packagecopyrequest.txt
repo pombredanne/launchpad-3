@@ -36,9 +36,9 @@ and a copy archive for rebuilds.
 As well as Mark's identity and the 'ubuntu' distribution..
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> snapshot_archive = getUtility(IArchiveSet).new(
-    ...     owner=sabdfl, purpose=ArchivePurpose.COPY,
+    ...     owner=mark, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='our-sample-sbapshot-archive')
 
 .. and a package location targeting ubuntu/warty and a different copy
@@ -80,7 +80,7 @@ not set either since this is a new package copy request.
 Now let's instantiate more package copy requests in order to check some
 of the filtering capabilities of the IPackageCopyRequestSet component.
 
-    >>> inprogress_pcr = pcr_set.new(source, snapshot_target, sabdfl)
+    >>> inprogress_pcr = pcr_set.new(source, snapshot_target, mark)
     >>> inprogress_pcr.markAsInprogress()
 
 Make sure the 'in progress' package copy request has its 'date_started'
@@ -110,7 +110,7 @@ The completed package copy request will have a "date completed" set.
 The cancelled package copy request will have a "date completed" set as
 well.
 
-    >>> cancelled_pcr = pcr_set.new(source, snapshot_target, sabdfl)
+    >>> cancelled_pcr = pcr_set.new(source, snapshot_target, mark)
     >>> cancelled_pcr.markAsCancelled()
 
     >>> cancelled_pcr.status == PackageCopyStatus.CANCELLED
@@ -134,7 +134,7 @@ A package copy request in state "canceling" is somewhat similar to one in
 state "in progress" i.e. it has a 'date_started' set but its status is
 'CANCELING'.
 
-    >>> canceling_pcr = pcr_set.new(source, snapshot_target, sabdfl)
+    >>> canceling_pcr = pcr_set.new(source, snapshot_target, mark)
 
 The package copy request has just been instantiated, has status "new" and
 no 'date_started' value yet.
@@ -161,7 +161,7 @@ Now let's query for package copy requests belonging to a particular person
 and being in a certain state.
 
     >>> cancelled_pcrs = pcr_set.getByPersonAndStatus(
-    ...     sabdfl, PackageCopyStatus.CANCELLED)
+    ...     mark, PackageCopyStatus.CANCELLED)
     >>> cancelled_pcrs.count() == 1
     True
     >>> cancelled_pcrs[0].status == PackageCopyStatus.CANCELLED
@@ -169,7 +169,7 @@ and being in a certain state.
 
 Make sure that the returned package copy requests do belong to Mark.
 
-    >>> len([pcr for pcr in cancelled_pcrs if pcr.requester != sabdfl]) == 0
+    >>> len([pcr for pcr in cancelled_pcrs if pcr.requester != mark]) == 0
     True
 
 Now let's exercise some of the other package copy request filtering
@@ -234,7 +234,7 @@ the instantiation of the package copy request will fail.
     AssertionError: target archive must be set in package location
 
     >>> source.archive = None
-    >>> will_fail_as_well = pcr_set.new(source, snapshot_target, sabdfl)
+    >>> will_fail_as_well = pcr_set.new(source, snapshot_target, mark)
     Traceback (most recent call last):
     ...
     AssertionError: source archive must be set in package location

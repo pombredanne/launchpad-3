@@ -12,7 +12,7 @@ __all__ = [
     'ProductAdminView',
     'ProductBountiesMenu',
     'ProductBrandingView',
-    'ProductBreadcrumbBuilder',
+    'ProductBreadcrumb',
     'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductDownloadFileMixin',
@@ -26,7 +26,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSetBreadcrumbBuilder',
+    'ProductSetBreadcrumb',
     'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -82,7 +82,9 @@ from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from lp.registry.browser.distribution import UsesLaunchpadMixin
-from lp.registry.browser.menu import TopLevelMenuMixin
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase,
+    TopLevelMenuMixin)
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
@@ -97,7 +99,7 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
@@ -244,7 +246,7 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProduct`."""
     @property
     def text(self):
@@ -320,6 +322,7 @@ class ProductNavigationMenu(NavigationMenu):
     def branchvisibility(self):
         text = 'Branch Visibility Policy'
         return Link('+branchvisibility', text)
+
 
 class ProductEditLinksMixin:
     """A mixin class for menus that need Product edit links."""
@@ -534,7 +537,7 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
-class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSetBreadcrumb(Breadcrumb):
     """Return a breadcrumb for an `IProductSet`."""
     text = "Projects"
 
@@ -1378,33 +1381,51 @@ class Icon:
         return self.library_alias.getURL()
 
 
-class ProductSetView(LaunchpadView):
+class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for products index."""
+    usedfor = IProductSet
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        'review_licenses'
+        ]
 
-    __used_for__ = IProductSet
+    @enabled_with_permission('launchpad.ProjectReview')
+    def review_licenses(self):
+        return Link('+review-licenses', 'Review projects', icon='edit')
+
+
+class ProductSetView(LaunchpadView):
+    """View for products index page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'Projects registered in Launchpad'
 
     max_results_to_display = config.launchpad.default_batch_size
     results = None
-    searchrequested = False
+    search_requested = False
 
     def initialize(self):
-        """See `LaunchpadFormView`."""
+        """See `LaunchpadView`."""
         form = self.request.form_ng
         self.search_string = form.getOne('text')
         if self.search_string is not None:
-            self.searchrequested = True
+            self.search_requested = True
 
     def all_batched(self):
         return BatchNavigator(self.context.all_active, self.request)
 
     @cachedproperty
     def matches(self):
-        if not self.searchrequested:
+        if not self.search_requested:
             return None
         pillarset = getUtility(IPillarNameSet)
         return pillarset.count_search_matches(self.search_string)
 
     @cachedproperty
-    def searchresults(self):
+    def search_results(self):
         search_string = self.search_string.lower()
         limit = self.max_results_to_display
         return getUtility(IPillarNameSet).search(search_string, limit)
