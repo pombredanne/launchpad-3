@@ -4,7 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div id="portlet-related">
   <h2>Projects using this group</h2>
 
   <p>
@@ -24,32 +23,33 @@
        >this group</a>?  Set it on Translations Settings page.
   </p>
 
-  <div tal:condition="context/distributions" style="margin-top:1em;">
-    <h3 style="display: inline;">Distributions:</h3>
-    <tal:distribution
-       repeat="distribution context/distributions">
-      <a href="#" tal:replace="structure distribution/fmt:link">Ubuntu
-      </a><tal:comma condition="not:repeat/distribution/end">, </tal:comma>
-    </tal:distribution>
-  </div>
+  <div id="related-projects">
+    <div tal:condition="context/distributions" style="margin-top:1em;">
+      <h3 style="display: inline;">Distributions:</h3>
+      <tal:distribution
+         repeat="distribution context/distributions">
+        <a href="#" tal:replace="structure distribution/fmt:link">Ubuntu
+        </a><tal:comma condition="not:repeat/distribution/end">, </tal:comma>
+      </tal:distribution>
+    </div>
 
-  <div tal:condition="context/projects" style="margin-top:1em;">
-    <h3 style="display: inline;">Project groups:</h3>
-    <tal:project
-       repeat="project context/projects">
-      <a href="#" tal:replace="structure project/fmt:link">GNOME
-      </a><tal:comma condition="not:repeat/project/end">, </tal:comma>
-    </tal:project>
-  </div>
+    <div tal:condition="context/projects" style="margin-top:1em;">
+      <h3 style="display: inline;">Project groups:</h3>
+      <tal:project
+         repeat="project context/projects">
+        <a href="#" tal:replace="structure project/fmt:link">GNOME
+        </a><tal:comma condition="not:repeat/project/end">, </tal:comma>
+      </tal:project>
+    </div>
 
-  <div tal:condition="context/products" style="margin-top:1em;">
-    <h3 style="display: inline;">Projects:</h3>
-    <tal:product
+    <div tal:condition="context/products" style="margin-top:1em;">
+      <h3 style="display: inline;">Projects:</h3>
+      <tal:product
        repeat="product context/products">
-      <a href="#" tal:replace="structure product/fmt:link">Firefox
-      </a><tal:comma condition="not:repeat/product/end">, </tal:comma>
-    </tal:product>
-  </div>
+        <a href="#" tal:replace="structure product/fmt:link">Firefox
+        </a><tal:comma condition="not:repeat/product/end">, </tal:comma>
+      </tal:product>
+    </div>
 
-</div>
+  </div>
 </tal:root>

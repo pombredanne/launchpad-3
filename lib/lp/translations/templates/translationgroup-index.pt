@@ -23,7 +23,7 @@
            class="link" />
         <a tal:condition="context/required:launchpad.Edit"
            href="+reassign" title="Change administrator"
-           class="edit sprite"></a>
+           class="edit sprite" id="link-reassign"></a>
       </p>
 
       <div tal:content="structure context/summary/fmt:text-to-html"
@@ -46,6 +46,7 @@
 
       <div style="height:2em;"></div><!-- separator -->
 
+      <div id="translation-teams-listing">
       <h2><a name="teams"></a>Translation teams</h2>
         <tal:translators condition="context/translators">
           <table class="sortable listing" id="group-members">
@@ -60,12 +61,12 @@
             </thead>
             <tbody>
               <tr tal:repeat="translator view/translator_list">
-                <td>
-                  <a tal:attributes="href translator/language/fmt:url" 
+                <td class="translator-language">
+                  <a tal:attributes="href translator/language/fmt:url"
                      tal:content="translator/language/displayname">
                     Serbian</a>
                 </td>
-                <td class="translator_info">
+                <td class="translator-team">
                   <a tal:replace="structure translator/person/fmt:link">
                     Translator</a>
                   <tal:team condition="translator/person/is_team">
@@ -75,13 +76,13 @@
                     members
                   </tal:team>
                 </td>
-                <td>
+                <td class="translator-link">
                   <a tal:condition="translator/style_guide_url"
                      tal:attributes="href translator/style_guide_url"
                      ><img src="/@@/link" alt="Doc"
                            tal:attributes="title translator/style_guide_url"
                            />
-                    <tal:link 
+                    <tal:link
                        replace="translator/style_guide_url/fmt:shorten/30"
                        ></tal:link></a>
                   <span tal:condition="not:translator/style_guide_url">
@@ -103,9 +104,11 @@
                   </span>
                 </td>
                 <td tal:condition="context/required:launchpad.Edit">
-                  <a tal:attributes="href translator/code" alt="Change"
+                  <a tal:attributes="
+                      href translator/code;
+                      id string:edit-${translator/code}-translator"
                      title="Change translator and documentation link"
-                     class="edit sprite"></a>
+                     alt="Change" class="edit sprite"></a>
                   <a tal:attributes="href string:${translator/code}/+remove"
                      alt="Remove" title="Remove translator"
                      class="remove sprite"></a>
@@ -123,10 +126,11 @@
              href="+appoint" class="add sprite">Appoint a new translation
             team</a>
         </div>
+        </div><!-- id="translations-team-listing" -->
 
         <div class="section">
           <a name="projects"></a>
-          <div tal:replace="structure context/@@+portlet-relateds" />
+          <div tal:replace="structure context/@@+portlet-projects" />
         </div>
 
     </div><!-- main -->
