@@ -6,12 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuilderBreadcrumbBuilder',
+    'BuilderBreadcrumb',
     'BuilderFacets',
     'BuilderOverviewMenu',
     'BuilderNavigation',
     'BuilderSetAddView',
-    'BuilderSetBreadcrumbBuilder',
+    'BuilderSetBreadcrumb',
     'BuilderSetFacets',
     'BuilderSetOverviewMenu',
     'BuilderSetNavigation',
@@ -41,7 +41,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from lazr.delegates import delegates
 from canonical.widgets import HiddenUserWidget
@@ -65,7 +65,7 @@ class BuilderSetNavigation(GetitemNavigation):
             return self.redirectSubTree(canonical_url(build))
 
 
-class BuilderSetBreadcrumbBuilder(BreadcrumbBuilder):
+class BuilderSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBuilderSet`."""
     text = 'Build Farm'
 
@@ -75,7 +75,7 @@ class BuilderNavigation(Navigation):
     usedfor = IBuilder
 
 
-class BuilderBreadcrumbBuilder(BreadcrumbBuilder):
+class BuilderBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBuilder`."""
     @property
     def text(self):

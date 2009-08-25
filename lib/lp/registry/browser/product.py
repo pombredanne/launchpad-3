@@ -12,7 +12,7 @@ __all__ = [
     'ProductAdminView',
     'ProductBountiesMenu',
     'ProductBrandingView',
-    'ProductBreadcrumbBuilder',
+    'ProductBreadcrumb',
     'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductDownloadFileMixin',
@@ -26,7 +26,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSetBreadcrumbBuilder',
+    'ProductSetBreadcrumb',
     'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -99,7 +99,7 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
@@ -246,7 +246,7 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProduct`."""
     @property
     def text(self):
@@ -537,7 +537,7 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
-class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSetBreadcrumb(Breadcrumb):
     """Return a breadcrumb for an `IProductSet`."""
     text = "Projects"
 
