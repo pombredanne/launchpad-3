@@ -1023,6 +1023,8 @@ productseries_translations_bzr_import = (
 
 project_add = 'Register a project group with Launchpad'
 
+project_index = ContextTitle('%s in Launchpad')
+
 project_bugs = ContextTitle('Bugs in %s')
 
 project_edit = 'Change project group details'

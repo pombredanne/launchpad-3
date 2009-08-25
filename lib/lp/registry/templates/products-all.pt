@@ -27,7 +27,7 @@
     </p>
 
     <tal:navigation replace="structure batch/@@+navigation-links-upper" />
-    <table class="listing">
+    <table class="listing" id="product-listing">
       <tr tal:repeat="product batch/currentBatch"
           tal:replace="structure product/@@+listing-detailed" />
     </table>
