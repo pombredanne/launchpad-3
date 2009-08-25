@@ -448,6 +448,7 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
             path_expression="name"
+            rootsite="translations"
             parent_utility="lp.translations.interfaces.translationgroup.ITranslationGroupSet"/>
         <browser:pages
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
