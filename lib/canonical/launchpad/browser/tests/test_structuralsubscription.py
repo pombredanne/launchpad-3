@@ -71,7 +71,6 @@ class TestBaseStructuralSubscriptionTraversal(TestCaseWithFactory):
             request, '+subscription')
 
     def test_structural_subscription_canonical_url(self):
-        request = FakeLaunchpadRequest([], ['eric'])
         self.assertEqual(
             canonical_url(self.target.getSubscription(self.eric)),
             canonical_url(self.target) + '/+subscription/eric')
