@@ -10,6 +10,7 @@ __all__ = [
     'BugListingBatchNavigator',
     'BugListingPortletView',
     'BugNominationsView',
+    'bugtarget_renderer',
     'BugTargetTraversalMixin',
     'BugTargetView',
     'BugTaskContextMenu',
@@ -73,7 +74,7 @@ from lazr.enum import EnumeratedType, Item
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IReferenceChoice, IWebServiceClientRequest)
+    IFieldHTMLRenderer, IReference, IReferenceChoice, IWebServiceClientRequest)
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -133,7 +134,8 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from canonical.launchpad.webapp.tales import (
+    PersonFormatterAPI, PillarFormatterAPI)
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -157,7 +159,16 @@ from lp.registry.vocabularies import MilestoneVocabulary
 def assignee_renderer(context, field, request):
     """Render a bugtask assignee as a link."""
     def render(value):
-        return PersonFormatterAPI(context.assignee).link('+assignedbugs')
+        return 'A PERSON'
+        # return PersonFormatterAPI(context.assignee).link('+assignedbugs')
+    return render
+
+@component.adapter(IBugTask, IReference, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def bugtarget_renderer(context, field, request):
+    """Render a bugtarget as a link."""
+    def render(value):
+        return PillarFormatterAPI(context.target).link('+index')
     return render
 
 def unique_title(title):
@@ -3122,6 +3133,7 @@ class BugTaskTableRowView(LaunchpadView):
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'target_is_product': IProduct.providedBy(self.context.target),
             'status_widget_items': self.status_widget_items,
             'status_value': self.context.status.title,
             'importance_widget_items': self.importance_widget_items,

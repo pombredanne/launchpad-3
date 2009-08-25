@@ -263,6 +263,9 @@
         <adapter
             factory="lp.bugs.browser.bugtask.assignee_renderer"
             name="assignee"/>
+        <adapter
+            factory="lp.bugs.browser.bugtask.bugtarget_renderer"
+            name="target"/>
         
         <!-- NullBugTask -->
         

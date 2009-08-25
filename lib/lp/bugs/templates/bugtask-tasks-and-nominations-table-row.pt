@@ -36,12 +36,20 @@
       </tal:not-conjoined-task>
     </td>
     <td tal:condition="not:indent_task">
-      <a tal:attributes="
-            href context/target/fmt:url;
-            title view/target_link_title;
-            class context/target/image:sprite_css"
-        tal:content="context/bugtargetdisplayname"
-      />
+      <span tal:attributes="id string:bugtarget-picker-${row_id}">
+        <span class="yui-activator-data-box">
+          <span title="This project&rsquo;s license has not been specified.">
+            <a tal:attributes="href context/target/fmt:url;
+                                    title view/target_link_title;
+                                    class context/target/image:sprite_css"
+               tal:content="context/bugtargetdisplayname" />
+          </span>
+        </span>
+        <button class="lazr-btn yui-activator-act yui-activator-hidden">
+          Edit
+        </button>
+        <div class="yui-activator-message-box yui-activator-hidden" />
+      </span>
     </td>
 
     <tal:conjoined-task condition="is_conjoined_slave">
