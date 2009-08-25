@@ -60,7 +60,7 @@ Today we'll be cooking with Spam!
 
 The Hierarchy class builds the breadcrumbs by looking at each object in
 the request.traversed_objects attribute.  If a traversed object can be
-adapted to IBreadcrumbBuilder, then it is added to the breadcrumbs list.
+adapted to IBreadcrumb, then it is added to the breadcrumbs list.
 
 We'll add the objects to the request's list of traversed objects so
 the hierarchy will discover them.
@@ -71,38 +71,35 @@ the hierarchy will discover them.
     ...     [root, cookbook, recipe])
 
 The hierarchy's list of breadcrumbs is empty since none of the objects
-have an IBreadcrumbBuilder adapter.
+have an IBreadcrumb adapter.
 
     >>> hierarchy = getMultiAdapter((recipe, request), name='+hierarchy')
     >>> hierarchy.items()
     []
 
-The ICookbook and IRecipe breadcrumb objects show up in the hierarchy
-after IBreadcrumbBuilder adapters are registered for them.  The
-hierarchy builds a list of breadcrumbs starting with the breadcrumb
-closest to the hierarchy root.
+The ICookbook and IRecipe breadcrumb objects show up in the hierarchy after
+IBreadcrumb adapters are registered for them.  The hierarchy builds a list of
+breadcrumbs starting with the breadcrumb closest to the hierarchy root.
 
-    >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+    >>> from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
     # give it a valid .text attribute.
-    >>> class TextualBreadcrumbBuilder(BreadcrumbBuilder):
+    >>> class TextualBreadcrumb(Breadcrumb):
     ...     @property
     ...     def text(self):
     ...         return self.context.name.capitalize().replace('-', ' ')
 
-    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumbBuilder
+    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
 
-    >>> provideAdapter(
-    ...     TextualBreadcrumbBuilder, [ICookbook], IBreadcrumbBuilder)
-    >>> provideAdapter(
-    ...     TextualBreadcrumbBuilder, [IRecipe], IBreadcrumbBuilder)
+    >>> provideAdapter(TextualBreadcrumb, [ICookbook], IBreadcrumb)
+    >>> provideAdapter(TextualBreadcrumb, [IRecipe], IBreadcrumb)
 
     >>> hierarchy.items()
-    [<Breadcrumb
+    [<TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>,
-     <Breadcrumb
+     <TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking/spam'
         text='Spam'>]
 
@@ -114,59 +111,44 @@ domains. The `Hierarchy` model copes fine with objects like that.
     ...     'http://launchpad.dev/+cooker/jamie',
     ...     [root, cooker])
 
-    >>> provideAdapter(
-    ...     TextualBreadcrumbBuilder, [ICooker], IBreadcrumbBuilder)
+    >>> provideAdapter(TextualBreadcrumb, [ICooker], IBreadcrumb)
 
     >>> cooker_hierarchy = getMultiAdapter(
     ...     (cooker, cooker_request), name='+hierarchy')
     >>> cooker_hierarchy.items()
-    [<Breadcrumb url='http://launchpad.dev/+cooker/jamie' text='Jamie'>]
+    [<TextualBreadcrumb url='http://launchpad.dev/+cooker/jamie' text='Jamie'>]
 
 
 == Building IBreadcrumb objects ==
 
-The construction of breadcrumb objects is handled by an
-IBreadcrumbBuilder factory.  The factory adapts a context object and
-produces an IBreadcrumb object for that context.
-
-The builder holds a temporary copy of a breadcrumb until the breadcrumb is in
-a usable state.  We can ask the builder for a finished breadcrumb after both
-the text and the URL have been specified.
+The construction of breadcrumb objects is handled by an IBreadcrumb adapter,
+which adapts a context object and produces an IBreadcrumb object for that
+context.  The default adapter provides the url attribute, but the breadcrumb's
+text must be overriden in subclasses.
 
     >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
     >>> from zope.interface.verify import verifyObject
-
-    >>> builder = BreadcrumbBuilder(cookbook)
-    >>> verifyObject(IBreadcrumbBuilder, builder)
-    True
-
-    >>> builder.text = 'Joy of cooking'
-
-    >>> breadcrumb = builder.make_breadcrumb()
+    >>> breadcrumb = Breadcrumb(cookbook)
     >>> verifyObject(IBreadcrumb, breadcrumb)
     True
+    >>> print breadcrumb.text
+    None
     >>> breadcrumb
     <Breadcrumb
         url='http://launchpad.dev/joy-of-cooking'
-        text='Joy of cooking'>
+        text='None'>
 
-The breadcrumb's attributes can be overridden with subclassing and
-Python properties.
+As said above, the breadcrumb's attributes can be overridden with subclassing
+and Python properties.
 
-    >>> from canonical.launchpad.webapp.publisher import canonical_url
-
-    >>> class DynamicBreadcrumbBuilder(BreadcrumbBuilder):
+    >>> class DynamicBreadcrumb(Breadcrumb):
     ...     @property
     ...     def text(self):
     ...         return self.context.name.capitalize().replace('-', ' ')
-    ...
-    ...     @property
-    ...     def url(self):
-    ...         return canonical_url(self.context)
 
-    >>> builder = DynamicBreadcrumbBuilder(cookbook)
-    >>> builder.make_breadcrumb()
-    <Breadcrumb
+    >>> breadcrumb = DynamicBreadcrumb(cookbook)
+    >>> breadcrumb
+    <DynamicBreadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
 
@@ -186,9 +168,9 @@ the builder's context has an IPathAdapter registration.
     >>> provideAdapter(
     ...     RecipeImageDisplayAPI, [IRecipe], IPathAdapter, 'image')
 
-    >>> builder = DynamicBreadcrumbBuilder(recipe)
-    >>> builder.make_breadcrumb()
-    <Breadcrumb
+    >>> breadcrumb = DynamicBreadcrumb(recipe)
+    >>> breadcrumb
+    <DynamicBreadcrumb
         url='http://launchpad.dev/joy-of-cooking/spam'
         text='Spam'
         icon='<img src="/@@/recipe"/>'>
@@ -204,9 +186,9 @@ icon for the object.
     >>> print queryAdapter(cookbook, IPathAdapter, name='image').icon()
     None
 
-    >>> builder = DynamicBreadcrumbBuilder(cookbook)
-    >>> builder.make_breadcrumb()
-    <Breadcrumb
+    >>> breadcrumb = DynamicBreadcrumb(cookbook)
+    >>> breadcrumb
+    <DynamicBreadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
 
@@ -221,7 +203,6 @@ itself.  It should let the IBreadcrumbBuilder handle it: this ensures
 consistency across the site.
 
     >>> from canonical.launchpad.browser.launchpad import Hierarchy
-
     >>> class CustomHierarchy(Hierarchy):
     ...     @property
     ...     def objects(self):
@@ -229,7 +210,7 @@ consistency across the site.
 
     >>> spammy_hierarchy = CustomHierarchy(root, request)
     >>> spammy_hierarchy.items()
-    [<Breadcrumb
+    [<TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking/spam'
         text='Spam'
         icon='<img src="/@@/recipe"/>'>]
@@ -276,7 +257,7 @@ tag.  Breadcrumbs without icons are not.
     >>> breadcrumb_no_icon, breadcrumb_with_icon = hierarchy.items()
 
     >>> breadcrumb_no_icon
-    <Breadcrumb
+    <TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
 
@@ -284,7 +265,7 @@ tag.  Breadcrumbs without icons are not.
     False
 
     >>> breadcrumb_with_icon
-    <Breadcrumb
+    <TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking/spam'
         text='Spam'
         icon='<img src="/@@/recipe"/>'>

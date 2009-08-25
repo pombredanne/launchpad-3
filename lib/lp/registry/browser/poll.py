@@ -357,6 +357,11 @@ class PollAddView(LaunchpadFormView):
     field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
                    "datecloses"]
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
     @action("Continue", name="continue")
     def continue_action(self, action, data):
         # XXX: salgado, 2008-10-08: Only secret polls can be created until we

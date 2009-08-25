@@ -3,7 +3,7 @@
 The Ubuntu Linux page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
-    >>> anon_browser.getLink("PPAs").click()
+    >>> anon_browser.getLink("Personal Package Archives").click()
     >>> anon_browser.title
     'Ubuntu Linux Personal Package Archives'
 
@@ -72,7 +72,7 @@ Currently we only support PPAs for ubuntu, although the '+ppas' page
 is presented for other distribution.
 
     >>> anon_browser.open("http://launchpad.dev/debian")
-    >>> anon_browser.getLink("PPAs").click()
+    >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print anon_browser.title
     Debian GNU/Linux Personal Package Archives
 
@@ -122,7 +122,7 @@ The default search shows only active (those with, at least one,
 PENDING or PUBLISHED source record) PPAs.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
-    >>> anon_browser.getLink("PPAs").click()
+    >>> anon_browser.getLink("Personal Package Archives").click()
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
@@ -738,7 +738,7 @@ PPAs are targeted to a specific distribution and currently we only
 allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntutest")
-    >>> anon_browser.getLink("PPAs").click()
+    >>> anon_browser.getLink("Personal Package Archives").click()
     >>> anon_browser.title
     'Ubuntu Test Personal Package Archives'
 

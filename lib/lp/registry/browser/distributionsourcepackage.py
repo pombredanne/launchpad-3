@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionSourcePackageBreadcrumbBuilder',
+    'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
@@ -42,14 +42,13 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp.menu import (
     enabled_with_permission, NavigationMenu)
-
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from lazr.delegates import delegates
 from canonical.lazr.utils import smartquote
 
 
-class DistributionSourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
     @property
     def text(self):

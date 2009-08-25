@@ -81,10 +81,11 @@ class LanguageSetView:
 class LanguageAddView(LaunchpadFormView):
     """View to handle ILanguage creation form."""
 
+    rootsite = 'translations'
+
     schema = ILanguage
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction']
-    label = 'Register a language in Launchpad'
     language = None
 
     @action('Add', name='add')
@@ -101,9 +102,24 @@ class LanguageAddView(LaunchpadFormView):
         notify(ObjectCreatedEvent(self.language))
 
     @property
+    def page_title(self):
+        """Sets the page title."""
+        return 'Add a new language to Launchpad'
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Register a language in Launchpad'
+
+    @property
+    def cancel_url(self):
+        """See LaunchpadFormView."""
+        return canonical_url(self.context, rootsite=self.rootsite)
+
+    @property
     def next_url(self):
         assert self.language is not None, 'No language has been created'
-        return canonical_url(self.language)
+        return canonical_url(self.language, rootsite=self.rootsite)
 
     def validate(self, data):
         # XXX CarlosPerelloMarin 2007-04-04 bug=102898:
@@ -143,6 +159,9 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
 class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
+
+    rootsite = 'translations'
+
     schema = ILanguage
 
     custom_widget('countries', LabeledMultiCheckBoxWidget,
@@ -151,17 +170,27 @@ class LanguageAdminView(LaunchpadEditFormView):
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction', 'countries']
 
-    def initialize(self):
-        LaunchpadEditFormView.initialize(self)
+    @property
+    def page_title(self):
+        return "Edit %s" % self.context.displayname
+
+    @property
+    def label(self):
+        """The form label"""
         if self.context.nativename is None:
             name = self.context.englishname
         else:
             name = self.context.nativename
-        self.label = 'Edit %s in Launchpad' % name
+        return "Edit %s in Launchpad" % name
+
+    @property
+    def cancel_url(self):
+        """See LaunchpadFormView."""
+        return canonical_url(self.context, rootsite=self.rootsite)
 
     @property
     def next_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite=self.rootsite)
 
     @action("Admin Language", name="admin")
     def admin_action(self, action, data):

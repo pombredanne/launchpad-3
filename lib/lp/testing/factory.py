@@ -443,8 +443,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             poll_type=PollAlgorithm.SIMPLE)
 
     def makeTranslationGroup(
-        self, owner, name=None, title=None, summary=None, url=None):
+        self, owner=None, name=None, title=None, summary=None, url=None):
         """Create a new, arbitrary `TranslationGroup`."""
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString("translationgroup")
         if title is None:
