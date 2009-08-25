@@ -154,10 +154,11 @@
         <td colspan=3>
           <div style="float:right;">
             <a tal:condition="not: row/packaging"
-               tal:replace="structure view/menu:overview/set_upstream/fmt:link"/>
+               tal:replace="structure row/series_package/menu:overview/set_upstream/fmt:link"/>
             <tal:has_packaging condition="row/packaging">
               <tal:title replace="row/packaging/productseries/title"/>
-              <a tal:attributes="href view/menu:overview/set_upstream/url">
+              <a tal:attributes="
+                href row/series_package/menu:overview/edit_packaging/url">
                 <img src="/@@/edit">
               </a>
               <form style="display: inline"

@@ -69,7 +69,7 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'subscribe', 'publishinghistory', 'edit', 'new_bugs',
-        'open_questions', 'set_upstream']
+        'open_questions']
 
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
@@ -93,9 +93,6 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
         base_path = "+questions"
         get_data = "?field.status=OPEN"
         return Link(base_path + get_data, "Open Questions", site="answers")
-
-    def set_upstream(self):
-        return Link("+edit-packaging", "Set upstream link", icon="add")
 
 
 class DistributionSourcePackageBugsMenu(
@@ -398,9 +395,11 @@ class DistributionSourcePackageView(LaunchpadFormView):
                     packaging.productseries.name)
                 hidden_packaging_field = self._renderHiddenPackagingField(
                     packaging)
+            package = packages_by_series[distroseries]
             title_row = {
                 'title_row': True,
                 'distroseries': distroseries,
+                'series_package': package,
                 'packaging': packaging,
                 'hidden_packaging_field': hidden_packaging_field,
                 'delete_packaging_form_id': delete_packaging_form_id,
@@ -409,7 +408,6 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
             # After the title row, we list each package version that's
             # currently published, and which pockets it's published in.
-            package = packages_by_series[distroseries]
             pocket_dict = self.published_by_version(package)
             for version in pocket_dict.iterkeys():
                 row = {
