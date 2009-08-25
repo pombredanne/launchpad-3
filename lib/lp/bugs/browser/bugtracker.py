@@ -11,6 +11,7 @@ __all__ = [
     'BugTrackerEditView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
+    'BugTrackerSetBreadcrumb',
     'BugTrackerSetContextMenu',
     'BugTrackerSetNavigation',
     'BugTrackerSetView',
@@ -370,7 +371,7 @@ class BugTrackerNavigation(Navigation):
             return RemoteBug(self.context, remotebug, bugs)
 
 
-class BugTrackerSetBreadcrumbBuilder(BreadcrumbBuilder):
+class BugTrackerSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for the `IBugTrackerSet`."""
 
     rootsite = None

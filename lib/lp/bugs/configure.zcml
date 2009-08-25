@@ -399,9 +399,9 @@
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
         </securedutility>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
-            factory="lp.bugs.browser.bugtracker.BugTrackerSetBreadcrumbBuilder"
+            factory="lp.bugs.browser.bugtracker.BugTrackerSetBreadcrumb"
             permission="zope.Public"/>
         
         <!-- BugTrackerAlias -->

@@ -59,10 +59,10 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
             self._getBreadcrumbsTexts(url, self.traversed_objects))
 
 
-class TestBugTrackerBreadcrumbBuilders(BaseBreadcrumbTestCase):
+class TestBugTrackerBreadcrumbs(BaseBreadcrumbTestCase):
 
     def setUp(self):
-        super(TestBugTrackerBreadcrumbBuilders, self).setUp()
+        super(TestBugTrackerBreadcrumbs, self).setUp()
         self.bug_tracker_set = getUtility(IBugTrackerSet)
         self.bug_tracker_set_url = canonical_url(
             self.bug_tracker_set, rootsite='bugs')
@@ -71,7 +71,7 @@ class TestBugTrackerBreadcrumbBuilders(BaseBreadcrumbTestCase):
             self.bug_tracker, rootsite='bugs')
 
     def test_bug_tracker_set(self):
-        # Check TestBugTrackerSetBreadcrumbBuilder.
+        # Check TestBugTrackerSetBreadcrumb.
         traversed_objects = [
             self.root, self.bug_tracker_set]
         urls = self._getBreadcrumbsURLs(
@@ -82,8 +82,8 @@ class TestBugTrackerBreadcrumbBuilders(BaseBreadcrumbTestCase):
         self.assertEquals("Bug trackers", texts[-1])
 
     def test_bug_tracker(self):
-        # Check TestBugTrackerBreadcrumbBuilder (and
-        # TestBugTrackerSetBreadcrumbBuilder).
+        # Check TestBugTrackerBreadcrumb (and
+        # TestBugTrackerSetBreadcrumb).
         traversed_objects = [
             self.root, self.bug_tracker_set, self.bug_tracker]
         urls = self._getBreadcrumbsURLs(
