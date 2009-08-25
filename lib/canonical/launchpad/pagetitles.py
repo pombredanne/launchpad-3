@@ -499,8 +499,6 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-faq_edit = ContextId('Edit FAQ #%s details')
-
 def faq_index(context, view):
     """Return the FAQ index page title."""
     return (
@@ -546,10 +544,6 @@ karmaaction_index = 'Karma actions'
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
 language_index = ContextDisplayName("%s in Launchpad")
-
-language_add = 'Add a new Language to Launchpad'
-
-language_admin = ContextDisplayName("Edit %s")
 
 languageset_index = 'Languages in Launchpad'
 
@@ -1336,8 +1330,6 @@ token_authorized = 'Almost finished ...'
 translationgroup_index = ContextTitle(
     smartquote('"%s" Launchpad translation group'))
 
-translationgroup_add = 'Add a new translation group to Launchpad'
-
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
@@ -1360,21 +1352,5 @@ def translationmessage_translate(context, view):
     return 'Translating %s into %s' % (
         context.pofile.potemplate.displayname,
         context.pofile.language.englishname)
-
-def translator_admin(context, view):
-    """Return the page title for administering a translator in a group."""
-    return "Administer %s translator for %s" % (
-        context.language.englishname, context.translationgroup.title)
-
-def translator_edit(context, view):
-    """Return the page title for editing a the translator details."""
-    return "Edit %s translator for %s" % (
-        context.language.englishname, context.translationgroup.title)
-
-def translator_remove(context, view):
-    """Return the page title to remove a translator from a group."""
-    return "Remove %s as the %s translator for %s" % (
-        context.translator.displayname, context.language.englishname,
-        context.translationgroup.title)
 
 unauthorized = 'Error: Not authorized'

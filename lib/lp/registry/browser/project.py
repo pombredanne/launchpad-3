@@ -13,7 +13,7 @@ __all__ = [
     'ProjectAnswersMenu',
     'ProjectBountiesMenu',
     'ProjectBrandingView',
-    'ProjectBreadcrumbBuilder',
+    'ProjectBreadcrumb',
     'ProjectBugsMenu',
     'ProjectEditView',
     'ProjectFacets',
@@ -23,7 +23,7 @@ __all__ = [
     'ProjectRdfView',
     'ProjectReviewView',
     'ProjectSeriesSpecificationsMenu',
-    'ProjectSetBreadcrumbBuilder',
+    'ProjectSetBreadcrumb',
     'ProjectSetContextMenu',
     'ProjectSetNavigation',
     'ProjectSetNavigationMenu',
@@ -67,7 +67,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
     canonical_url, custom_widget, enabled_with_permission, stepthrough,
     structured)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 
 class ProjectNavigation(Navigation):
@@ -102,14 +102,14 @@ class ProjectSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(project))
 
 
-class ProjectBreadcrumbBuilder(BreadcrumbBuilder):
+class ProjectBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProject`."""
     @property
     def text(self):
         return self.context.displayname
 
 
-class ProjectSetBreadcrumbBuilder(BreadcrumbBuilder):
+class ProjectSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProjectSet`."""
     text = 'Project Groups'
 

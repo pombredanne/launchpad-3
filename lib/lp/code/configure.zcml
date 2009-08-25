@@ -62,9 +62,9 @@
   </class>
 
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
-      factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumbBuilder"
+      factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumb"
       permission="zope.Public"/>
 
   <!-- CodeImportMachineSet -->
@@ -182,6 +182,7 @@
                     votes
                     root_comment
                     all_comments
+                    related_bugs
                     isMergable
                     getComment
                     getNotificationRecipients
@@ -525,7 +526,8 @@
                     branch
                     mail_header
                     recipient
-                    max_diff_lines"/>
+                    max_diff_lines
+                    review_level"/>
   </class>
   <class class="lp.code.model.branchnamespace.PackageNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
@@ -693,9 +695,9 @@
 
   </class>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.code.interfaces.codeimport.ICodeImportSet"
-      factory="lp.code.browser.codeimport.CodeImportSetBreadcrumbBuilder"
+      factory="lp.code.browser.codeimport.CodeImportSetBreadcrumb"
       permission="zope.Public"/>
   <subscriber
       for="lp.code.interfaces.codeimport.ICodeImport

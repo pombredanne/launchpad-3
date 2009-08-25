@@ -19,8 +19,6 @@ from storm.expr import And, Desc, In
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
@@ -55,9 +53,7 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(
-        IDistributionSourcePackage, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+    implements(IDistributionSourcePackage, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution

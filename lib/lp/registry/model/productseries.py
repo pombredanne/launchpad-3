@@ -59,8 +59,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
@@ -87,9 +85,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(
-        IProductSeries, IHasTranslationTemplates,
-        IStructuralSubscriptionTarget)
+    implements(IProductSeries, IHasTranslationTemplates)
 
     _table = 'ProductSeries'
 
