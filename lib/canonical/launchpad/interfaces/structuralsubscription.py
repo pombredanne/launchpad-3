@@ -196,9 +196,9 @@ class IStructuralSubscriptionTarget(Interface):
     @operation_parameters(
         subscriber=Reference(
             schema=IPerson, title=_('Person'), required=False))
-    @call_with(subscribed_by=REQUEST_USER)
+    @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
-    def removeBugSubscription(subscriber, subscribed_by):
+    def removeBugSubscription(subscriber, unsubscribed_by):
         """Remove a subscription to bugs from this structure.
 
         If subscription levels for other applications are set,
@@ -206,6 +206,7 @@ class IStructuralSubscriptionTarget(Interface):
         `NOTHING`, otherwise, destroy the subscription.
 
         :subscriber: The IPerson who will be subscribed.
+        :unsubscribed_by: The IPerson removing the subscription.
         """
 
     @operation_parameters(person=Reference(schema=IPerson))
