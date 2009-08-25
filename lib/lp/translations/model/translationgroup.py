@@ -91,6 +91,8 @@ class TranslationGroup(SQLBase):
     @property
     def top_projects(self):
         """See `ITranslationGroup`."""
+        # XXX Danilo 2009-08-25: We should make this list show a list
+        # of projects based on the top translations karma (bug #418493).
         goal = self.TOP_PROJECTS_LIMIT
         projects = list(self.distributions[:goal])
         found = len(projects)

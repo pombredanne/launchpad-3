@@ -1342,8 +1342,6 @@ token_authorized = 'Almost finished ...'
 translationgroup_index = ContextTitle(
     smartquote('"%s" Launchpad translation group'))
 
-translationgroup_add = 'Add a new translation group to Launchpad'
-
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
