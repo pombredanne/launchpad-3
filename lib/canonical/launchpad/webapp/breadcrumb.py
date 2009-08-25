@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'Breadcrumb',
-    'BreadcrumbBuilder',
     ]
 
 
@@ -16,38 +15,15 @@ from zope.component import queryAdapter
 from zope.interface import implements
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, IBreadcrumbBuilder)
+from canonical.launchpad.webapp.interfaces import IBreadcrumb
 
 
 class Breadcrumb:
-    """See `IBreadcrumb`."""
-    implements(IBreadcrumb)
-
-    def __init__(self, url, text, icon=None):
-        self.url = url
-        self.text = text
-        self.icon = icon
-
-    def __repr__(self):
-        if self.icon is not None:
-            icon_repr = " icon='%s'" % self.icon
-        else:
-            icon_repr = ""
-
-        return "<%s url='%s' text='%s'%s>" % (
-            self.__class__.__name__, self.url, self.text, icon_repr)
-
-
-# XXX: salgado, 2009-08-17: Since this adapter now provides a default
-# value for the 'url' attribute, we could easily convert it into an
-# adapter for IBreadcrumb, just changing the Hierarchy view.
-class BreadcrumbBuilder:
-    """See `IBreadcrumbBuilder`.
+    """See `IBreadcrumb`.
 
     This class is intended for use as an adapter.
     """
-    implements(IBreadcrumbBuilder)
+    implements(IBreadcrumb)
 
     rootsite = 'mainsite'
     text = None
@@ -66,14 +42,11 @@ class BreadcrumbBuilder:
         return queryAdapter(
             self.context, IPathAdapter, name='image').icon()
 
-    def make_breadcrumb(self):
-        """See `IBreadcrumbBuilder.`"""
-        if self.text is None:
-            raise AssertionError(
-                "The builder has not been given valid text for the "
-                "breadcrumb.")
-        if self.url is None:
-            raise AssertionError(
-               "The builder has not been given a valid breadcrumb URL.")
+    def __repr__(self):
+        if self.icon is not None:
+            icon_repr = " icon='%s'" % self.icon
+        else:
+            icon_repr = ""
 
-        return Breadcrumb(self.url, self.text, icon=self.icon)
+        return "<%s url='%s' text='%s'%s>" % (
+            self.__class__.__name__, self.url, self.text, icon_repr)

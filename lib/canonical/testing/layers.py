@@ -1326,6 +1326,11 @@ class PageTestLayer(LaunchpadFunctionalLayer):
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
 
+        # Setting STAGGER_RETRIES makes tests like notfound-traversals.txt go
+        # much, much faster by avoiding calls to time.sleep()
+        cls._original_stagger_retries = zope.publisher.http.STAGGER_RETRIES
+        zope.publisher.http.STAGGER_RETRIES = False
+
         PageTestLayer.orig__call__ = (
                 zope.app.testing.functional.HTTPCaller.__call__)
         zope.app.testing.functional.HTTPCaller.__call__ = my__call__
@@ -1337,6 +1342,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         PageTestLayer.resetBetweenTests(True)
         zope.app.testing.functional.HTTPCaller.__call__ = (
                 PageTestLayer.orig__call__)
+        zope.publisher.http.STAGGER_RETRIES = cls._original_stagger_retries
         if PageTestLayer.profiler:
             PageTestLayer.profiler.dump_stats(
                 os.environ.get('PROFILE_PAGETESTS_REQUESTS'))

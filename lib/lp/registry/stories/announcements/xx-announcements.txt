@@ -257,9 +257,9 @@ any links to show announcements.
     >>> count_show_links(anon_browser.contents)
     0
 
-Distribution pages always have the link in the navigation menu,
+Distribution pages may have the link in the annoucements portlet,
 
-    >>> anon_browser.open('http://launchpad.dev/kubuntu')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
     >>> count_show_links(anon_browser.contents)
     1
 
@@ -273,7 +273,7 @@ But we do see it when there are published announcements.
     1
     >>> anon_browser.open('http://launchpad.dev/redhat')
     >>> count_show_links(anon_browser.contents)
-    2
+    1
 
 Let's make sure the page is useful when there are no announcements!
 
