@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 <body>
@@ -11,22 +11,32 @@
     <h1><tal:name replace="view/heading" /> for <tal:context replace="context/title" /></h1>
   </tal:heading>
 
-<div metal:fill-slot="main">
+<tal:main metal:fill-slot="main">
 
-  <p tal:content="view/description" style="margin-top: 0.5em;"/>
+  <p tal:condition="view/description"
+     tal:content="view/description" style="margin-top: 0.5em;"/>
   <p tal:condition="view/mirror_count">
     There are <tal:total_number replace="view/mirror_count" />
     mirror(s) registered for <tal:context replace="context/title" />.
   </p>
-  <ul class="horizontal">
+  <ul class="horizontal" id="navigation">
     <li>
       <a tal:replace="structure view/menu:overview/newmirror/fmt:link" />
     </li>
-    <li tal:condition="view/is_cd_mirror">
+    <li tal:condition="view/show_archive_mirror">
       <a tal:replace="structure view/menu:overview/archive_mirrors/fmt:link" />
     </li>
-    <li tal:condition="view/is_archive_mirror">
+    <li tal:condition="view/show_cd_mirror">
       <a tal:replace="structure view/menu:overview/cdimage_mirrors/fmt:link" />
+    </li>
+    <li tal:condition=" view/menu:overview/disabled_mirrors/enabled">
+      <a tal:replace="structure view/menu:overview/disabled_mirrors/fmt:link" />
+    </li>
+    <li tal:condition=" view/menu:overview/pending_review_mirrors/enabled">
+      <a tal:replace="structure view/menu:overview/pending_review_mirrors/fmt:link" />
+    </li>
+    <li tal:condition=" view/menu:overview/unofficial_mirrors/enabled">
+      <a tal:replace="structure view/menu:overview/unofficial_mirrors/fmt:link" />
     </li>
   </ul>
   <div class="top-portlet" style="margin-top: 0.5em;">
@@ -54,8 +64,14 @@
 
   </tal:block>
   </div>
+</tal:main>
 
-</div>
+<tal:side metal:fill-slot="side">
+  <tal:menu replace="structure view/@@+global-actions" />
+  <div class="portlet">
+      <a tal:replace="structure view/menu:overview/newmirror/fmt:link" />
+  </div>
+</tal:side>
 
 </body>
 </html>
