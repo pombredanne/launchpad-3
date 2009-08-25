@@ -10,7 +10,7 @@ __all__ = [
     'TranslationGroupEditView',
     'TranslationGroupNavigation',
     'TranslationGroupReassignmentView',
-    'TranslationGroupSetBreadcrumbBuilder',
+    'TranslationGroupSetBreadcrumb',
     'TranslationGroupSetNavigation',
     'TranslationGroupView',
     ]
@@ -30,7 +30,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView
     )
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -43,10 +43,8 @@ class TranslationGroupSetNavigation(GetitemNavigation):
     usedfor = ITranslationGroupSet
 
 
-class TranslationGroupSetBreadcrumbBuilder(BreadcrumbBuilder):
+class TranslationGroupSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITranslationGroupSet`."""
-
-    rootsite = "translations"
 
     text = u"Translation groups"
 
