@@ -144,7 +144,8 @@
   </div><!--yui-g -->
 
 
-  <div class="yui-u">
+  <div class="yui-u"
+       tal:define="archive context/latest_overall_publication/archive">
 
     <table class="listing" id="packages_list">
       <tal:rows repeat="row view/version_table">
@@ -213,7 +214,9 @@
 
       </tal:rows>
     </table>
-    <metal:js use-macro="context/latest_overall_publication/archive/@@+macros/expandable-table-js"/>
+    <script
+       tal:content="string:LP.client.cache['archive_context_url'] = '${archive/fmt:url}';"/>
+    <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
 
 
       <!-- this needs to be a slightly different expander so we don't get all
