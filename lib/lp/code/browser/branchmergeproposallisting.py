@@ -13,7 +13,7 @@ __all__ = [
     'ProjectActiveReviewsView',
     ]
 
-
+from storm.expr import Union
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -358,7 +358,7 @@ class PersonActiveReviewsView(ActiveReviewsView):
             [BranchMergeProposalStatus.CODE_APPROVED,
              BranchMergeProposalStatus.NEEDS_REVIEW])
 
-        return own_proposals.union(requested_reviews)
+        return Union(own_proposals, requested_reviews)
 
 
 class ProductActiveReviewsView(ActiveReviewsView):

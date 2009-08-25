@@ -66,6 +66,8 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
 
+from lp.code.browser.branchmergeproposallisting import (
+    PersonActiveReviewsView, ProductActiveReviewsView)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
     BranchMergeProposalStatus, BranchType)
@@ -910,13 +912,6 @@ class PersonBranchCountMixin:
         return self._getCountCollection().subscribedBy(self.person).count()
 
     @cachedproperty
-    def active_review_count(self):
-        """Return the number of active reviews for self.person's branches."""
-        return self._getCountCollection().ownedBy(
-            self.person).getMergeProposals(
-            [BranchMergeProposalStatus.NEEDS_REVIEW]).count()
-
-    @cachedproperty
     def requested_review_count(self):
         """Return the number of review requests for self.person."""
         return self._getCountCollection().getMergeProposalsForReviewer(
@@ -930,7 +925,10 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'requested_reviews']
+             'active_reviews']
+    extra_attributes = [
+        'active_review_count',
+        ]
 
     def owned(self):
         return Link(
@@ -952,14 +950,18 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
                 self.subscribed_branch_count,
                 'subscribed branch', 'subscribed branches'))
 
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for self.person's branches."""
+        active_reviews = PersonActiveReviewsView(self.context, self.request)
+        return active_reviews.getProposals().count()
+
     def active_reviews(self):
         text = get_plural_text(
-            self.active_review_count, 'active proposal', 'active proposals')
-        if self.user == self.context:
-            summary = 'Proposals I have submitted'
-        else:
-            summary = 'Proposals %s has submitted' % self.context.displayname
-        return Link('+activereviews', text, summary=summary)
+            self.active_review_count,
+            'active review or unmerged proposal',
+            'active reviews or unmerged proposals')
+        return Link('+activereviews', text)
 
     def addbranch(self):
         if self.user is None:
@@ -969,16 +971,6 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         text = 'Register a branch'
         summary = 'Register a new Bazaar branch'
         return Link('+addbranch', text, summary, icon='add', enabled=enabled)
-
-    def requested_reviews(self):
-        text = get_plural_text(
-            self.requested_review_count,
-            'requested review', 'requested reviews')
-        if self.user == self.context:
-            summary = 'Proposals I am reviewing'
-        else:
-            summary = 'Proposals %s is reviewing' % self.context.displayname
-        return Link('+requestedreviews', text, summary=summary)
 
 
 class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
@@ -1137,6 +1129,9 @@ class ProductBranchesMenu(ApplicationMenu):
         'code_import',
         'branch_visibility',
         ]
+    extra_attributes = [
+        'active_review_count',
+        ]
 
     def branch_add(self):
         text = 'Register a branch'
@@ -1151,16 +1146,14 @@ class ProductBranchesMenu(ApplicationMenu):
     @cachedproperty
     def active_review_count(self):
         """Return the number of active reviews for the user."""
-        collection = IBranchCollection(self.context).visibleByUser(self.user)
-        return collection.getMergeProposals(
-            [BranchMergeProposalStatus.NEEDS_REVIEW,
-             BranchMergeProposalStatus.CODE_APPROVED]).count()
+        active_reviews = ProductActiveReviewsView(self.context, self.request)
+        return active_reviews.getProposals().count()
 
     def active_reviews(self):
-        if self.active_review_count == 1:
-            text = 'pending proposal'
-        else:
-            text = 'pending proposals'
+        text = get_plural_text(
+            self.active_review_count,
+            'active review or unmerged proposal',
+            'active reviews or unmerged proposals')
         return Link('+activereviews', text)
 
     @enabled_with_permission('launchpad.Commercial')
