@@ -812,7 +812,8 @@ sub fetch_source_files {
 
 			  retry:
 				print PLOG "Checking available source versions...\n";
-				if (!open( PIPE, "$conf::apt_cache $main::chroot_apt_options ".
+				if (!open( PIPE, "$conf::sudo /usr/sbin/chroot ".
+						   "$main::chroot_dir $conf::apt_cache ".
 						   "-q showsrc $pkg 2>&1 </dev/null |" )) {
 					print PLOG "Can't open pipe to apt-cache: $!\n";
 					return ("ERROR");
@@ -834,8 +835,9 @@ sub fetch_source_files {
 				if (!defined($entries{$version})) {
 					if (!$retried) {
 						# try to update apt's cache if nothing found
-						system "$conf::sudo $conf::apt_get ".
-							   "$main::chroot_apt_options update >/dev/null";
+						system "$conf::sudo /usr/sbin/chroot ".
+							   "$main::chroot_dir $conf::apt_get ".
+							   "update >/dev/null";
 						$retried = 1;
 						goto retry;
 					}
@@ -1618,10 +1620,7 @@ sub install_deps {
 	}
 	
 	local (*F);
-	my $chroot_opt =
-		$main::chroot_dir ? "--root=$main::cwd/$main::chroot_dir" : "";
-
-	if (open( F, "| $conf::sudo $conf::dpkg $chroot_opt --set-selections")) {
+	if (open( F, "| $conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::dpkg --set-selections")) {
 		foreach my $tpkg (@instd) {
 			print F $tpkg . " purge\n";
 		}
@@ -1762,12 +1761,10 @@ sub uninstall_debs {
 	
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $main::debug;
-	my $chroot_opt =
-		$main::chroot_dir ? "--root=$main::cwd/$main::chroot_dir" : "";
-	print PLOG "  $conf::sudo dpkg $chroot_opt --$mode @_\n";
+	print PLOG "  $conf::sudo dpkg --$mode @_\n";
   repeat:
 	my $output;
-	if (!open( PIPE, "cd $main::chroot_dir/ && $conf::sudo $conf::dpkg $chroot_opt --$mode @_ 2>&1 </dev/null |")) {
+	if (!open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::dpkg --$mode @_ 2>&1 </dev/null |")) {
 		print PLOG "Can't open pipe to dpkg: $!\n";
 		return 0;
 	}
@@ -1829,7 +1826,8 @@ sub run_apt {
 	# treated as if RETURN was pressed.
 	# dpkg since 1.4.1.18 issues an error on the conffile question if it reads
 	# EOF -- hardwire the new --force-confold option to avoid the questions.
-	if (!open( PIPE, "$conf::sudo $conf::apt_get --purge $main::chroot_apt_options ".
+	if (!open( PIPE, "$conf::sudo /usr/sbin/chroot ".
+			   "$main::chroot_dir $conf::apt_get --purge ".
 			   ($main::new_dpkg ? "-o DPkg::Options::=--force-confold " : "").
 			   "-q $mode install @to_install 2>&1 </dev/null |" )) {
 		print PLOG "Can't open pipe to apt-get: $!\n";
@@ -1844,7 +1842,7 @@ sub run_apt {
 
 	if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
 		print PLOG "$conf::sudo $conf::apt_get $main::chroot_apt_op -q update\n";
-		if (!open( PIPE, "$conf::sudo $conf::apt_get $main::chroot_apt_options -q update 2>&1 |" )) {
+		if (!open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::apt_get -q update 2>&1 |" )) {
 			print PLOG "Can't open pipe to apt-get: $!\n";
 			return 0;
 		}
@@ -2640,7 +2638,7 @@ sub get_dependencies {
 	local(*PIPE);
 	my %deps;
 	
-	open( PIPE, "$conf::apt_cache $main::chroot_apt_options show @_ 2>&1 |" )
+	open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::apt_cache show @_ 2>&1 |" )
 		or die "Cannot start $conf::apt_cache $main::chroot_apt_op: $!\n";
 	local($/) = "";
 	while( <PIPE> ) {
@@ -2662,7 +2660,7 @@ sub get_dependencies {
 sub get_virtuals {
 	local(*PIPE);
 
-	open( PIPE, "$conf::apt_cache $main::chroot_apt_options showpkg @_ 2>&1 |" )
+	open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::apt_cache showpkg @_ 2>&1 |" )
 		or die "Cannot start $conf::apt_cache $main::chroot_apt_op: $!\n";
 	my $name;
 	my $in_rprov = 0;
@@ -2694,7 +2692,8 @@ sub get_virtuals {
 sub package_exists {
 	local(*PIPE);
 
-	open( PIPE, "$conf::apt_cache $main::chroot_apt_options showpkg @_ 2>&1 |" )
+	open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir ".
+                    "$conf::apt_cache showpkg @_ 2>&1 |" )
 		or die "Cannot start $conf::apt_cache $main::chroot_apt_op: $!\n";
 	my $name;
 	my $in_versions = 0;

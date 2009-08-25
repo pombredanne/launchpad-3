@@ -24,13 +24,13 @@ TRIAGED to ensure that they are picked up by the report.
     ...     sourcepackagename='linux-source-2.6.15', owner='name12',
     ...     summary='take one', description='funk philosophy',
     ...     status=BugTaskStatus.TRIAGED)
-    >>> update_task_status(bug.bugtasks[0].id, 'sabdfl',
+    >>> update_task_status(bug.bugtasks[0].id, 'mark',
     ...     BugTaskStatus.TRIAGED)
-    >>> update_task_status(25, 'sabdfl', BugTaskStatus.TRIAGED)
+    >>> update_task_status(25, 'mark', BugTaskStatus.TRIAGED)
     >>> task = create_task_from_strings(bug.id, 'name12', 'firefox')
     >>> task = create_task_from_strings(10, 'name12', 'tomcat')
-    >>> update_task_status(23, 'sabdfl', BugTaskStatus.TRIAGED)
-    >>> update_task_status(17, 'sabdfl', BugTaskStatus.TRIAGED)
+    >>> update_task_status(23, 'mark', BugTaskStatus.TRIAGED)
+    >>> update_task_status(17, 'mark', BugTaskStatus.TRIAGED)
 
     >>> flush_database_updates()
     >>> import transaction

@@ -84,7 +84,7 @@ level checks.
     >>> def form_processing():
     ...     form_processed = True
     >>> voting_page.processCondorcetVotingForm = form_processing
-    >>> voting_page.processForm()
+    >>> voting_page.initialize()
 
     >>> form_processed
     False

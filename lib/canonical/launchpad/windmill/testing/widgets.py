@@ -77,7 +77,7 @@ class InlineEditorWidgetTest:
             xpath=widget_base + '//textarea', timeout=constants.FOR_ELEMENT)
         client.type(
             xpath=widget_base + '//textarea', text=self.new_value)
-        client.click(xpath=widget_base + '//button[1]')
+        client.click(xpath=widget_base + '//button[last()]')
         client.asserts.assertNode(
             xpath=widget_base + '/span[1]')
         client.asserts.assertText(

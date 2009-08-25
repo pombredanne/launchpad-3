@@ -9,7 +9,7 @@ __all__ = [
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBadges',
-    'ArchiveBreadcrumbBuilder',
+    'ArchiveBreadcrumb',
     'ArchiveBuildsView',
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
@@ -78,7 +78,7 @@ from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.widgets import (
@@ -382,7 +382,7 @@ class ArchiveNavigationMenu(NavigationMenu):
     links = []
 
 
-class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
+class ArchiveBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IArchive`."""
 
     @property
@@ -478,6 +478,16 @@ class ArchiveViewBase(LaunchpadView):
     def build_counters(self):
         """Return a dict representation of the build counters."""
         return self.context.getBuildCounters()
+
+    @property
+    def show_dependencies(self):
+        """Whether or not to present the archive-dependencies section.
+
+        The dependencies section is presented if there are any dependency set
+        or if the user has permission to change it.
+        """
+        can_edit = check_permission('launchpad.Edit', self.context)
+        return can_edit or self.context.dependencies
 
 
 class ArchiveSourcePackageListViewBase(ArchiveViewBase):

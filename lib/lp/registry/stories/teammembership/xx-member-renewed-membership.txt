@@ -54,7 +54,7 @@ Other users (apart from Karl) can't see that page.
 If we change the team's renewal policy it still won't be possible for
 the user to renew that membership because it's not about to expire.
 
-    >>> team_admin_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> team_admin_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-mirror-admins/+edit')
     >>> team_admin_browser.getControl(
@@ -130,7 +130,7 @@ In the case of subteams whose membership is about to expire, any admin of the
 member team can renew the soon-to-expire membership, as long as the parent
 team's renewal policy is ONDEMAND.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
     >>> landscape_devs = personset.getByName('landscape-developers')
     >>> mirror_admins.addMember(

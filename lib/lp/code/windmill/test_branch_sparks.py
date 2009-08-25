@@ -16,7 +16,7 @@ def test_branch_sparks_var():
     client = WindmillTestClient("Branch bug links")
 
     client.open(
-        url=windmill.settings['TEST_URL'] + '/~sabdfl/')
+        url=windmill.settings['TEST_URL'] + '/~mark/')
     client.waits.forPageLoad(timeout=u'10000')
     client.asserts.assertJS(js=u'''(function() {
         return branch_sparks.length == 5;
@@ -24,6 +24,6 @@ def test_branch_sparks_var():
     client.asserts.assertJS(js=u'''(function() {
         var first_branch_spark = branch_sparks[0];
         return (first_branch_spark[0] == 'b-1' &&
-            first_branch_spark[1] == '%s/~sabdfl/+junk/testdoc/+spark')
+            first_branch_spark[1] == '%s/~mark/+junk/testdoc/+spark')
         }());''' % (windmill.settings['TEST_URL']))
 

@@ -19,7 +19,10 @@ from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
-    ContentNameField, NoneableDescription, PublicPersonChoice, Title)
+    ContentNameField, NoneableDescription, ParticipatingPersonChoice,
+    PublicPersonChoice, Title)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -125,12 +128,12 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         exported_as='date_created')
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_('Project owner, either a valid Person or Team')))
 
     driver = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_("Release manager"),
             description=_(
                 "The person or team responsible for decisions about features "
@@ -308,7 +311,8 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return basic timeline data useful for creating a diagram."""
 
 
-class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):
+class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
+                     IStructuralSubscriptionTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 
