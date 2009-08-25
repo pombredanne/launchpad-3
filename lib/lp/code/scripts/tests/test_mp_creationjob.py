@@ -26,12 +26,14 @@ class TestDiffBMPs(TestCaseWithFactory):
         target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
         target_tree.add('foo')
         target_tree.commit('added foo')
+        target.linkBug(self.factory.makeBug(), target.registrant)
         source, source_tree = self.createMirroredBranchAndTree()
         source_tree.pull(target_tree.branch)
         source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\n')
         source_tree.commit('added bar')
         # Add a fake revisions so the proposal is ready.
         self.factory.makeRevisionsForBranch(source, count=1)
+        source.linkBug(self.factory.makeBug(), source.registrant)
         bmp = BranchMergeProposal(
             source_branch=source, target_branch=target,
             registrant=source.owner)

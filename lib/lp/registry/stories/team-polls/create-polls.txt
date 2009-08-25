@@ -29,7 +29,7 @@ create a new poll.
 
     >>> team_admin_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> team_admin_browser.getLink('Show polls').click()
-    >>> team_admin_browser.getLink('Create a poll').click()
+    >>> team_admin_browser.getLink('Set up a new poll').click()
     >>> team_admin_browser.url
     'http://launchpad.dev/~ubuntu-team/+newpoll'
 
