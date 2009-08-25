@@ -146,7 +146,7 @@
 
   <div class="yui-u">
 
-    <table class="listing" id="packaging">
+    <table class="listing" id="packages_list">
       <tal:rows repeat="row view/version_table">
 
       <tal:title_row condition="row/title_row">
@@ -179,10 +179,18 @@
       </tal:title_row>
 
       <tal:package_row condition="not: row/title_row">
-      <tr>
-        <td>
-          <img style="padding-right:0.5em;" src="/@@/treeCollapsed">
-          <tal:version content="row/version"/>
+      <tal:define define="pubid row/publication/id">
+
+      <tr class="archive_package_row">
+        <td style="white-space: nowrap">
+          <a class="expander"
+             tal:attributes="id string:pub${pubid}-expander;
+                             href string:+sourcepub/${pubid}/+listing-archive-extra">
+            <img style="padding-right:0.5em;" src="/@@/treeCollapsed"
+                 alt="Show details" title="Show details"
+                 tal:attributes="id string:pub${pubid}-arrow"/>
+            <tal:version content="row/version"/>
+          </a>
         </td>
         <td>
           <tal:pockets content="row/pockets/lower"/>
@@ -193,10 +201,19 @@
                content="row/published_since/fmt:approximateduration"/> ago
         </td>
       </tr>
+      <tr tal:attributes="id string:pub${pubid}" style="display: none">
+        <td colspan=3>
+          <div class="package-details"
+               tal:attributes="id string:pub${pubid}-container" />
+        </td>
+      </tr>
+
+      </tal:define>
       </tal:package_row>
 
       </tal:rows>
     </table>
+    <metal:js use-macro="context/latest_overall_publication/archive/@@+macros/expandable-table-js"/>
 
 
       <!-- this needs to be a slightly different expander so we don't get all

@@ -410,15 +410,16 @@ class DistributionSourcePackageView(LaunchpadFormView):
             # currently published, and which pockets it's published in.
             pocket_dict = self.published_by_version(package)
             for version in pocket_dict.iterkeys():
+                most_recent_publication = pocket_dict[version][0]
                 row = {
                     'title_row': False,
                     'version': version,
-                    'publications': pocket_dict[version],
+                    'publication': most_recent_publication,
                     'pockets': ",".join(
                         [pub.pocket.name for pub in pocket_dict[version]]),
-                    'component': pocket_dict[version][0].component_name,
+                    'component': most_recent_publication.component_name,
                     'published_since': datetime.now(
-                        tz=pytz.UTC) - pocket_dict[version][0].datepublished,
+                        tz=pytz.UTC) - most_recent_publication.datepublished,
                     }
                 rows.append(row)
 
