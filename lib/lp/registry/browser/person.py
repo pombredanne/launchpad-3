@@ -1078,7 +1078,7 @@ class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
         return Link(target, text)
 
 
-class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
+class PersonRelatedSoftwareNavigationMenu(NavigationMenu, CommonMenuLinks):
 
     usedfor = IPersonRelatedSoftwareMenu
     facet = 'overview'

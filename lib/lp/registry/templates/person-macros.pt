@@ -75,7 +75,9 @@
 <!-- subteam-of macro. -->
 <metal:macro define-macro="subteam-of">
   <div class="portlet"
-       id="subteam-of">
+       id="subteam-of"
+       tal:condition="
+          python: context.super_teams or context.open_membership_invitations">
     <h2>Subteam of</h2>
 
     <p tal:condition="not: context/super_teams">
@@ -95,13 +97,14 @@
       </ul>
     </tal:is-a-subteam>
 
-    <p>
-      <tal:memberships
-        replace="structure overview_menu/memberships/fmt:link" />
-      &nbsp;
-      <tal:received_invitations
-        replace="structure overview_menu/received_invitations/fmt:link" />
-    </p>
+    <ul class="horizontal">
+      <li
+        tal:condition="context/super_teams"
+        tal:replace="structure overview_menu/memberships/fmt:link" />
+      <li
+        tal:condition="context/open_membership_invitations"
+        tal:replace="structure overview_menu/received_invitations/fmt:link" />
+    </ul>
   </div>
 </metal:macro>
 

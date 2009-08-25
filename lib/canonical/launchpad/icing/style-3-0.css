@@ -369,9 +369,7 @@ span.see-all {
     }
 .see-all a {
     padding-left: 8px;
-    background: url(/@@/link-grey-arrow.png) left center no-repeat;
     font-size: 72%;
-    color: #484848;
     text-decoration: underline;
     }
 .rss-right {

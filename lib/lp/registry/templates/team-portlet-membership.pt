@@ -5,7 +5,14 @@
   omit-tag="">
 
 <div id="membership" class="portlet">
-  <h2>Members</h2>
+  <h2>
+    <span class="see-all">
+      <a tal:attributes="href context/menu:overview/members/fmt:url">
+        Show all members
+      </a>
+    </span>
+    Members
+  </h2>
 
   <div id="membership-summary" class="portletBody portletContent"
     style="margin-bottom: 1.5em;">
@@ -38,9 +45,6 @@
             >proposed members</a>
         </tal:proposed>
       </div>
-      <tal:members
-        replace="structure context/menu:overview/members/fmt:link" />
-      &nbsp;
       <tal:mugshots replace="structure context/menu:overview/mugshots/fmt:link" />
     </div>
 
