@@ -682,7 +682,8 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             # dict can have a value but no type; hence Python defaults
             # to treating them as strings).
             comments_by_bug_id[str(bug_id)] = [
-                self._copy_comment(comment) for comment in comments_for_bug
+                self._copy_comment(comment, fields_to_return)
+                for comment in comments_for_bug
                 if comment_ids is None or comment['id'] in comment_ids]
 
         # More xmlrpclib:1387 odd-knobbery avoidance.
@@ -899,8 +900,8 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         # Turn the arguments into something that
         # TestBugzillaXMLRPCTransport.comments() will understand and
         # then pass the buck.
-
         comments_args = dict(arguments)
+        fields_to_return = arguments.get('include_fields')
         if arguments.get('ids') is not None:
             # We nuke the 'ids' argument because it means something
             # different when passed to TestBugzillaXMLRPCTransport.comments.
@@ -919,7 +920,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                 for comment_number, comment in comments.items():
                     if comment['id'] in arguments['comment_ids']:
                         comments_to_return[comment['id']] = (
-                            self._copy_comment(comment))
+                            self._copy_comment(comment, fields_to_return))
 
             return_dict['comments'] = comments_to_return
 

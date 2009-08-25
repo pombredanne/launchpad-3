@@ -369,3 +369,43 @@ those comments in a 'comments' dict.
         text: I appear to have become a perfectly safe penguin.
         time: 20080617T20:28:40
     <BLANKLINE>
+
+Passing an include_fields parameter allows us to limit which fields are
+returned for each comment.
+
+    >>> return_dict = server.Bug.comments(
+    ...     {'ids': [1, 2], 'include_fields': ('id', 'author')})
+    >>> bugs_dict = return_dict['bugs']
+
+    >>> print_bug_comments(bugs_dict, sort_key='id')
+    Bug 1:
+        author: trillian
+        id: 1
+    <BLANKLINE>
+        author: marvin
+        id: 3
+    <BLANKLINE>
+    <BLANKLINE>
+    Bug 2:
+        author: trillian
+        id: 2
+    <BLANKLINE>
+        author: Ford Prefect <ford.prefect@h2g2.com>
+        id: 4
+
+    >>> return_dict = server.Bug.comments(
+    ...     {'comment_ids': [1, 4], 'include_fields': ('id', 'author')})
+    >>> comments_dict = return_dict['comments']
+
+    >>> for comment_id, comment in comments_dict.items():
+    ...     print "Comment %s:" % comment_id
+    ...     for comment_key in sorted(comment):
+    ...         print "    %s: %s" % (
+    ...             comment_key, comment[comment_key])
+    Comment 1:
+        author: trillian
+        id: 1
+    Comment 4:
+        author: Ford Prefect <ford.prefect@h2g2.com>
+        id: 4
+    <BLANKLINE>
