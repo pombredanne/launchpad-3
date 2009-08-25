@@ -370,8 +370,21 @@ class BugTrackerNavigation(Navigation):
             return RemoteBug(self.context, remotebug, bugs)
 
 
+class BugTrackerSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for the `IBugTrackerSet`."""
+
+    rootsite = "bugs"
+
+    @property
+    def text(self):
+        return u"Bug trackers"
+
+
 class BugTrackerBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IBugTracker`."""
+
+    rootsite = "bugs"
+
     @property
     def text(self):
         return self.context.title
