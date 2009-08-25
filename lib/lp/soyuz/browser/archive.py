@@ -340,7 +340,7 @@ class ArchiveMenuMixin:
         return Link('+edit', text, icon='edit')
 
     def builds(self):
-        text = 'View build records'
+        text = 'View all builds'
         return Link('+builds', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')

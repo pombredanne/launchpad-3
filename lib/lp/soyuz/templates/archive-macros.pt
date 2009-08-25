@@ -274,27 +274,24 @@ div.package-details {
     :archive: targetted IArchive.
   </tal:comment>
 
-  <div class="two-column-list" id="build-count-summary">
-    <dl>
-      <dt>Total builds:</dt>
-      <dd class="total" tal:content="view/build_counters/total">100</dd>
-    </dl>
-    <dl>
-      <dt>Pending:</dt>
-      <dd class="pending" tal:content="view/build_counters/pending">100</dd>
-    </dl>
-    <dl>
-      <dt>Successful:</dt>
-      <dd class="succeeded" tal:content="view/build_counters/succeeded">100</dd>
-    </dl>
-    <dl>
-      <dt>Superseded:</dt>
-      <dd class="superseded" tal:content="view/build_counters/superseded">100</dd>
-    </dl>
-    <dl>
-      <dt>Failed:</dt>
-      <dd class="failed" tal:content="view/build_counters/failed">100</dd>
-    </dl>
+  <div id="build-count-summary">
+
+  <p>A total of
+    <span class="build-count total"
+          tal:content="view/build_counters/total">100</span> builds have
+    been dispatched for this PPA, resulting in
+    <a href=""><span class="build-count succeeded"
+             tal:content="view/build_counters/succeeded">100</span> successful
+    builds</a> and
+    <a href=""><span class="build-count failed"
+             tal:content="view/build_counters/failed">100</span> failed builds</a>.
+  </p>
+
+  <p>A recent upload has resulted in
+    <a href=""><span class="build-count pending"
+             tal:content="view/build_counters/pending">100</span> pending
+         builds</a>.
+  </p>
   </div>
 </metal:build_status_summary>
 
