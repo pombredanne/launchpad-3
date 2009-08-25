@@ -10,6 +10,7 @@ __all__ = [
     'TranslationGroupEditView',
     'TranslationGroupNavigation',
     'TranslationGroupReassignmentView',
+    'TranslationGroupSetBreadcrumbBuilder',
     'TranslationGroupSetNavigation',
     'TranslationGroupView',
     ]
@@ -29,6 +30,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView
     )
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -39,6 +41,14 @@ class TranslationGroupNavigation(GetitemNavigation):
 class TranslationGroupSetNavigation(GetitemNavigation):
 
     usedfor = ITranslationGroupSet
+
+
+class TranslationGroupSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ITranslationGroupSet`."""
+
+    rootsite = "translations"
+
+    text = u"Translation groups"
 
 
 class TranslationGroupView:
@@ -131,9 +141,11 @@ class TranslationGroupAddView(LaunchpadFormView):
 
     schema = ITranslationGroup
     field_names = ['name', 'title', 'summary', 'translation_guide_url']
+    label = "Create a new translation group"
+    page_title = "Create a new Launchpad translation group"
 
-    @action("Add", name="add")
-    def add_action(self, action, data):
+    @action("Create", name="create")
+    def create_action(self, action, data):
         """Add a new translation group to Launchpad."""
         name = data.get('name')
         title = data.get('title')
@@ -157,6 +169,10 @@ class TranslationGroupAddView(LaunchpadFormView):
             return
         self.setFieldError('name',
             "There is already a translation group with such name")
+
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(ITranslationGroupSet))
 
 
 class TranslationGroupReassignmentView(ObjectReassignmentView):
