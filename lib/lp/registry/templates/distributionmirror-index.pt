@@ -3,27 +3,39 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 <body>
 
-<div metal:fill-slot="main">
+  <tal:heading metal:fill-slot="heading">
     <h1>
       <tal:distro replace="context/distribution/displayname">Ubuntu
       Linux</tal:distro>
       mirror "<tal:mirror replace="context/title">foobar</tal:mirror>"
     </h1>
+  </tal:heading>
 
-    <tal:is-owner-or-admin condition="context/required:launchpad.Edit">
-      <div tal:condition="context/whiteboard" class="highlighted"
-           id="whiteboard">
-        <p tal:content="context/whiteboard">Whiteboard goes here.</p>
+  <tal:main metal:fill-slot="main"
+            define="overview_menu context/menu:overview">
+
+    <p id="status" class="registered">
+      <strong>
+        <tal:status replace="context/status/title">Official</tal:status>
+      </strong>
+      <span tal:replace="context/distribution/title" /> Mirror registered by
+      <span tal:content="structure context/owner/fmt:link" />
+      <span tal:content="context/date_created/fmt:displaydate" />
+    </p>
+
+    <tal:is-admin condition="context/required:launchpad.Admin">
+      <div class="whiteboard" id="whiteboard">
+        <h2>Whiteboard
+          <a tal:replace="structure overview_menu/review/fmt:icon"/>
+        </h2>
+        <tal:whiteboard replace="structure context/whiteboard/fmt:text-to-html" />
       </div>
-    </tal:is-owner-or-admin>
+    </tal:is-admin>
 
     <table id="mirror-details" class="summary" style="float: right">
       <tr>
@@ -39,15 +51,6 @@
         <td tal:content="context/content/title">Archive</td>
       </tr>
     </table>
-
-    <p id="status">
-      <strong>
-        <tal:status replace="context/status/title">Official</tal:status>
-      </strong>
-      <span tal:replace="context/distribution/title" /> Mirror registered by
-      <span tal:content="structure context/owner/fmt:link" /> 
-      <span tal:content="context/date_created/fmt:displaydate" />
-    </p>
 
     <div class="highlighted" style="font-size: 80%;"
          tal:condition="context/description">
@@ -100,7 +103,7 @@
             tal:content="probe/date_created/fmt:approximatedate" />.
 
           <tal:is-owner condition="context/required:launchpad.Edit">
-            You can see the 
+            You can see the
             <a tal:attributes="href probe/log_file/http_url">log file</a> of the
             probe.
           </tal:is-owner>
@@ -122,8 +125,11 @@
           use-macro="context/@@+distributionmirror-macros/cdimage-mirror-content" />
       </tal:cdimage-mirror>
     </tal:has-last-probe>
+  </tal:main>
 
-</div>
+  <tal:side metal:fill-slot="side">
+    <tal:menu replace="structure context/@@+global-actions" />
+  </tal:side>
+
 </body>
 </html>
-
