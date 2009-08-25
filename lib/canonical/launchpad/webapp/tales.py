@@ -134,9 +134,10 @@ class MenuAPI:
     def _getMenuLinksAndAttributes(self, menu):
         """Return a dict of the links and attributes of the menu."""
         menu.request = self._request
+        request_url = self._request_url()
         result = dict(
             (link.name, link)
-            for link in menu.iterlinks(request_url=self._request_url()))
+            for link in menu.iterlinks(request_url=request_url))
         extras = menu.extra_attributes
         if extras is not None:
             for attr in extras:

@@ -29,12 +29,12 @@
     </p>
 
     <tal:is-admin condition="context/required:launchpad.Admin">
-      <div class="whiteboard">
+      <div class="whiteboard" id="whiteboard">
         <h2>Whiteboard
           <a tal:replace="structure overview_menu/review/fmt:icon"/>
         </h2>
+        <tal:whiteboard replace="structure context/whiteboard/fmt:text-to-html" />
       </div>
-      <tal:whiteboard replace="structure context/whiteboard/fmt:text-to-html" />
     </tal:is-admin>
 
     <table id="mirror-details" class="summary" style="float: right">

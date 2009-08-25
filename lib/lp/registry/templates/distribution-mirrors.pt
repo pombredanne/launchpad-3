@@ -19,26 +19,7 @@
     There are <tal:total_number replace="view/mirror_count" />
     mirror(s) registered for <tal:context replace="context/title" />.
   </p>
-  <ul class="horizontal" id="navigation">
-    <li>
-      <a tal:replace="structure view/menu:overview/newmirror/fmt:link" />
-    </li>
-    <li tal:condition="view/show_archive_mirror">
-      <a tal:replace="structure view/menu:overview/archive_mirrors/fmt:link" />
-    </li>
-    <li tal:condition="view/show_cd_mirror">
-      <a tal:replace="structure view/menu:overview/cdimage_mirrors/fmt:link" />
-    </li>
-    <li tal:condition=" view/menu:overview/disabled_mirrors/enabled">
-      <a tal:replace="structure view/menu:overview/disabled_mirrors/fmt:link" />
-    </li>
-    <li tal:condition=" view/menu:overview/pending_review_mirrors/enabled">
-      <a tal:replace="structure view/menu:overview/pending_review_mirrors/fmt:link" />
-    </li>
-    <li tal:condition=" view/menu:overview/unofficial_mirrors/enabled">
-      <a tal:replace="structure view/menu:overview/unofficial_mirrors/fmt:link" />
-    </li>
-  </ul>
+
   <div class="top-portlet" style="margin-top: 0.5em;">
   <tal:block define="mirrors_by_country view/getMirrorsGroupedByCountry">
 
@@ -68,7 +49,8 @@
 
 <tal:side metal:fill-slot="side">
   <tal:menu replace="structure view/@@+global-actions" />
-  <div class="portlet">
+  <div class="portlet" id="register"
+       tal:condition="view/menu:overview/newmirror/enabled">
       <a tal:replace="structure view/menu:overview/newmirror/fmt:link" />
   </div>
 </tal:side>

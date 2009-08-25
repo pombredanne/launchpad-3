@@ -226,7 +226,6 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
     facet = 'overview'
     links = ('cdimage_mirrors',
              'archive_mirrors',
-             'newmirror',
              'disabled_mirrors',
              'pending_review_mirrors',
              'unofficial_mirrors',
@@ -241,18 +240,21 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return self.context.context
 
     def cdimage_mirrors(self):
-        text = 'CD Mirrors'
+        text = 'CD mirrors'
         enabled = self.distribution.full_functionality
+        enabled = True
         return Link('+cdmirrors', text, enabled=enabled, icon='info')
 
     def archive_mirrors(self):
-        text = 'Archive Mirrors'
+        text = 'Archive mirrors'
         enabled = self.distribution.full_functionality
+        enabled = True
         return Link('+archivemirrors', text, enabled=enabled, icon='info')
 
     def newmirror(self):
-        text = 'Register Mirror'
+        text = 'Register mirror'
         enabled = self.distribution.full_functionality
+        enabled = True
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def _userCanSeeNonPublicMirrorListings(self):
@@ -263,18 +265,18 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
                 and user.inTeam(self.distribution.mirror_admin))
 
     def disabled_mirrors(self):
-        text = 'Disabled Mirrors'
+        text = 'Disabled mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
     def pending_review_mirrors(self):
-        text = 'Pending-Review Mirrors'
+        text = 'Pending-review mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link(
             '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
-        text = 'Unofficial Mirrors'
+        text = 'Unofficial mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
@@ -387,18 +389,18 @@ class DistributionOverviewMenu(ApplicationMenu):
                 and user.inTeam(self.context.mirror_admin))
 
     def disabled_mirrors(self):
-        text = 'Show disabled mirrors'
+        text = 'Disabled mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
     def pending_review_mirrors(self):
-        text = 'Show pending-review mirrors'
+        text = 'Pending-review mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link(
             '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
-        text = 'Show unofficial mirrors'
+        text = 'Unofficial mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
@@ -914,8 +916,9 @@ class DistributionMirrorsView(LaunchpadView):
 
     implements(IDistributionMirrorMenuMarker)
     show_freshness = True
-    is_archive_mirror = False
-    is_cd_mirror = False
+    show_archive_mirror = True
+    show_cd_mirror = True
+    description = None
 
     @cachedproperty
     def mirror_count(self):
@@ -991,7 +994,7 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
     heading = 'Official Archive Mirrors'
     description = ('These mirrors provide repositories and archives of all '
                    'software for the distribution.')
-    is_archive_mirror = True
+    show_archive_mirror = False
 
     @cachedproperty
     def mirrors(self):
@@ -1003,7 +1006,7 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     heading = 'Official CD Mirrors'
     description = ('These mirrors offer ISO images which you can download '
                    'and burn to CD to make installation disks.')
-    is_cd_mirror = True
+    show_cd_mirror = False
     show_freshness = False
 
     @cachedproperty

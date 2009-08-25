@@ -51,7 +51,7 @@
       </tr>
     </tal:country_and_mirrors>
     <tr class="highlighted">
-      <td colspan="4" style="text-align: left; font-weight: bold;">Total</td>
+      <th colspan="4" style="text-align: left; font-weight: bold;">Total</th>
     </tr>
     <tr>
       <td colspan="2" />
