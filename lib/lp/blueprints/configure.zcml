@@ -26,14 +26,14 @@
             set_schema="lp.blueprints.interfaces.sprint.ISprint"/>
     </class>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        factory="lp.blueprints.browser.sprint.SprintBreadcrumbBuilder"
+        factory="lp.blueprints.browser.sprint.SprintBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.blueprints.interfaces.sprint.ISprintSet"
-        factory="lp.blueprints.browser.sprint.SprintSetBreadcrumbBuilder"
+        factory="lp.blueprints.browser.sprint.SprintSetBreadcrumb"
         permission="zope.Public"/>
 
     <!-- This is a view used to export data needed by the sprint scheduler.
@@ -251,14 +251,14 @@
         handler="canonical.launchpad.mailnotification.notify_specification_modified"/>
     <adapter
         name="blueprints"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
-        factory="lp.blueprints.browser.specificationtarget.HasSpecificationsOnBlueprintsVHostBreadcrumbBuilder"
+        factory="lp.blueprints.browser.specificationtarget.HasSpecificationsOnBlueprintsVHostBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="blueprints"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.person.IPerson"
-        factory="lp.blueprints.browser.specificationtarget.PersonOnBlueprintsVHostBreadcrumbBuilder"
+        factory="lp.blueprints.browser.specificationtarget.PersonOnBlueprintsVHostBreadcrumb"
         permission="zope.Public"/>
 </configure>

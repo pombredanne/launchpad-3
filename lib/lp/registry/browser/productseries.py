@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'get_series_branch_error',
     'LinkTranslationsBranchView',
-    'ProductSeriesBreadcrumbBuilder',
+    'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
     'ProductSeriesEditView',
@@ -63,7 +63,7 @@ from canonical.launchpad.webapp import (
     stepthrough, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -122,11 +122,11 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
         return self.context.getRelease(name)
 
 
-class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProductSeries`."""
     @property
     def text(self):
-        """See `IBreadcrumbBuilder`."""
+        """See `IBreadcrumb`."""
         return 'Series ' + self.context.name
 
 
