@@ -9,6 +9,7 @@ __all__ = [
 
 from canonical.launchpad.webapp import canonical_url
 from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 
 
 class TranslationLinksAggregator:
@@ -78,6 +79,20 @@ class TranslationLinksAggregator:
             return sheet.potemplate
         else:
             return sheet
+
+    def _getLanguage(self, sheet):
+        """Return language `sheet` is in, if `sheet` is an `IPOFile`."""
+        if IPOFile.providedBy(sheet):
+            return sheet.language
+        else:
+            return None
+
+    def _countLanguages(self, sheets):
+        """Count languages among `sheets`.
+
+        A template's language is None, which also counts.
+        """
+        return len(set(self._getLanguage(sheet) for sheet in sheets))
 
     def _circumscribe(self, sheets):
         """Find the best common UI link to cover all of `sheets`.
