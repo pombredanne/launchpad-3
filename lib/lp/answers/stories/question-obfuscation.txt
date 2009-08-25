@@ -44,7 +44,7 @@ in the question's description.
 No Privileges Person can see email addresses in the FAQ's
 Related question's portlet.
 
-    >>> user_browser.getLink('This is a FAQ').click()
+    >>> user_browser.getLink('Link to a FAQ').click()
     >>> user_browser.title
     'Is question #... a FAQ?'
 

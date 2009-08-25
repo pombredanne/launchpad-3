@@ -12,12 +12,10 @@ __all__ = [
     ]
 
 
-from zope.component import getUtility
 from zope.interface import Interface
 
 from canonical.launchpad.webapp.menu import (
     Link, NavigationMenu, enabled_with_permission)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
 class TopLevelMenuMixin:
@@ -93,7 +91,8 @@ class RegistryCollectionActionMenuBase(NavigationMenu, TopLevelMenuMixin):
     Because of the way menus work, you need to subclass this menu class and
     set the `usedfor` attribute on the subclass.  `usedfor` should point to
     the interface of the context object, so we can't do that for you.
+
+    You should also set the `links` attribute to get just the menu items you
+    want for the collection's overview page.
     """
     facet = 'overview'
-    links = ['register_team', 'register_project', 'create_account',
-             'request_merge', 'admin_merge_people', 'admin_merge_teams']

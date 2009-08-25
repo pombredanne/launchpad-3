@@ -19,7 +19,7 @@ Create a Test distribution:
   >>> admin_browser.getControl("Summary").value = 'Test Distro Summary'
   >>> admin_browser.getControl("Description").value = 'Test Distro Description'
   >>> admin_browser.getControl("Domain name").value = 'foo.com'
-  >>> admin_browser.getControl("Members").value = 'sabdfl'
+  >>> admin_browser.getControl("Members").value = 'mark'
 
   >>> admin_browser.getControl("Save").click()
   >>> admin_browser.url
