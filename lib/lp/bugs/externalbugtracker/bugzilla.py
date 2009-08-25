@@ -610,6 +610,29 @@ class BugzillaAPI(Bugzilla):
         bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
         return [str(comment['id']) for comment in bug_comments]
 
+    def fetchComments(self, bug_watch, comment_ids):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # We need to cast comment_ids to integers, since
+        # BugWatchUpdater.importBugComments() will pass us a list of
+        # strings (see bug 248938).
+        comment_ids = [int(comment_id) for comment_id in comment_ids]
+
+        # Fetch the comments we want.
+        return_dict = self.xmlrpc_proxy.Bug.comments({
+            'comment_ids': comment_ids,
+            })
+        comments = return_dict['comments']
+
+        # As a sanity check, drop any comments that don't belong to the
+        # bug in bug_watch.
+        for comment_id, comment in comments.items():
+            if int(comment['bug_id']) != actual_bug_id:
+                del comments[comment_id]
+
+        self._bugs[actual_bug_id]['comments'] = return_dict['comments']
+
 
 class BugzillaLPPlugin(BugzillaAPI):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""

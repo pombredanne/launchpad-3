@@ -370,6 +370,12 @@ those comments in a 'comments' dict.
         time: 20080617T20:28:40
     <BLANKLINE>
 
+Note that only comments have been returned when only 'comment_ids' have
+been passed. The bugs dict is empty.
+
+    >>> print return_dict['bugs']
+    {}
+
 Passing an include_fields parameter allows us to limit which fields are
 returned for each comment.
 

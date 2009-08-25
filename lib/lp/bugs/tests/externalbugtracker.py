@@ -907,11 +907,10 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             # different when passed to TestBugzillaXMLRPCTransport.comments.
             del comments_args['ids']
             comments_args['bug_ids'] = arguments['ids']
+            [return_dict] = TestBugzillaXMLRPCTransport.comments(
+                self, comments_args)
         else:
-            comments_args['bug_ids'] = [id for id in self.bugs]
-
-        [return_dict] = TestBugzillaXMLRPCTransport.comments(
-            self, comments_args)
+            return_dict = {'bugs': {}}
 
         if arguments.get('comment_ids') is not None:
             # We need to return all the comments listed.
