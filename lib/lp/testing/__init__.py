@@ -474,15 +474,8 @@ class TestCaseWithFactory(TestCase):
         :return: a `Branch` and a workingtree.
         """
         db_branch = self.factory.makeAnyBranch()
-        transport = get_transport(
-            self.getBranchPath(
+        bzr_branch = self.createBranchAtURL(self.getBranchPath(
                 db_branch, config.codehosting.internal_branch_by_id_root))
-        # Ensure the parent directories exist so that we can stick a branch
-        # in them.
-        transport.create_prefix()
-        bzr_branch = BzrDir.create_branch_convenience(
-            transport.base, possible_transports=[transport])
-        self.addCleanup(lambda: transport.delete_tree('.'))
         return db_branch, bzr_branch.bzrdir.open_workingtree()
 
     def useTempBzrHome(self):
