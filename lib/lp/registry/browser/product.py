@@ -800,12 +800,6 @@ class ProductDownloadFileMixin:
                     "%d files have been deleted." %
                     del_count)
 
-    def seriesHasDownloadFiles(self, series):
-        """Determine whether a series has any download files."""
-        for release in series.releases:
-            if len(release.files) > 0:
-                return True
-
     @cachedproperty
     def latest_release_with_download_files(self):
         """Return the latest release with download files."""
@@ -1022,7 +1016,7 @@ class ProductDownloadFilesView(LaunchpadView,
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
         for series in self.product.serieses:
-            if self.seriesHasDownloadFiles(series):
+            if series.has_release_files:
                 return True
         return False
 
