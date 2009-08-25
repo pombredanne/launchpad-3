@@ -11,14 +11,14 @@ according the selected buildstate, by default All.
     ...
     ...     Check the presence of "build_state" selection widget via assertion.
     ...
-    ...     Check the presence of "Update" submit button via assertion.
+    ...     Check the presence of "Filter" submit button via assertion.
     ...
     ...     Return "State and Name present" if the page provide both parameters,
     ...     "State present, Name not present" if the page only permits browse
     ...     by state and "mismatch" if the page, erroneously,  provide only
     ...     part of the required arguments to enable filter by name.
     ...     """
-    ...     assert '<input type="submit" value="Update" />' in contents
+    ...     assert '<input type="submit" value="Filter" />' in contents
     ...
     ...     field_state = find_tag_by_id(contents, 'build_state') is not None
     ...     field_name = find_tag_by_id(contents, 'build_text') is not None
@@ -69,9 +69,9 @@ For DistroArchSeries, same as Distribution:
 For Builder, same as Distribution:
 
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
-    >>> anon_browser.getLink("Show build history").click()
+    >>> anon_browser.getLink("View full history").click()
     >>> print anon_browser.title
-    Build history for Bob The Builder
+    Build history for ...Bob The Builder...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -122,7 +122,7 @@ initialised' one (fix bug #52704).
    contain dependencies-line.
 
     >>> anon_browser.getControl(name="build_state").value = ['all']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
 
     >>> def print_build_rows(contents):
     ...     rule = 30 * '-'
@@ -189,7 +189,7 @@ initialised' one (fix bug #52704).
 Then anonymous user checks the results of some searches on build state.
 
     >>> anon_browser.getControl(name="build_state").value = ['built']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
     >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Successfully built
@@ -219,7 +219,7 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
 
     >>> anon_browser.getControl(name="build_state").value = ['depwait']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
     >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Dependency wait
@@ -231,7 +231,7 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
 
     >>> anon_browser.getControl(name="build_state").value = ['failed']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
     >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Failed to build
@@ -293,7 +293,7 @@ job processed by this builder. The main difference for the other
 each record, since they were obviously built by the context builder.
 
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
-    >>> anon_browser.getLink("Show build history").click()
+    >>> anon_browser.getLink("View full history").click()
 
 In the first batch anonymous user can see successfully-built and
 failed-to-build builds.
@@ -391,7 +391,7 @@ from searches, helping the anonymous user to figure out exactly what
 was done before.
 
     >>> anon_browser.getControl(name="build_state").value = ['all']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
 
     >>> find_tag_by_id(
     ...     anon_browser.contents, 'no-default-result') is None
@@ -435,7 +435,7 @@ When he updates the page, the message for empty results changes to 'No
 matching builds'.
 
     >>> anon_browser.getControl(name="build_state").value = ['all']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
 
     >>> find_tag_by_id(anon_browser.contents, 'no-default-result') is None
     True

@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesAddView',
     'DistroSeriesAdminView',
-    'DistroSeriesBreadcrumbBuilder',
+    'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesPackageSearchView',
@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
@@ -121,7 +121,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return getUtility(IPackageUploadSet).get(id)
 
 
-class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
     @property
     def text(self):
@@ -361,7 +361,17 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     @property
     def label(self):
         """See `LaunchpadFormView`."""
-        return 'Change %s details' % self.context.title
+        return 'Edit %s details' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
@@ -379,7 +389,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     def change_action(self, action, data):
         """Update the context and redirects to its overviw page."""
         if not self.context.distribution.full_functionality:
-                self.updateDateReleased(data.get('status'))
+            self.updateDateReleased(data.get('status'))
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
@@ -399,6 +409,16 @@ class DistroSeriesAdminView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Administer %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.
@@ -431,12 +451,16 @@ class DistroSeriesAddView(LaunchpadFormView):
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description', 'version',
         'parent_series']
-    label = "Register a new series"
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Register a series in %s' % self.context.displayname
 
     @property
     def page_title(self):
         """The page title."""
-        return 'Register a series in %s' % self.context.displayname
+        return self.label
 
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):

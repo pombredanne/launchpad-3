@@ -62,7 +62,7 @@ source creator (mark) as specified in the test configuration:
   ...      build_notification['To']
   'celso.providelo@canonical.com'
   'foo.bar@canonical.com'
-  'mark@hbd.com'
+  'mark@example.com'
 
 Note that the generated notification contain the 'extra_info' content:
 
@@ -75,7 +75,7 @@ Note that the generated notification contain the 'extra_info' content:
   'FAILEDTOUPLOAD'
 
   >>> build_notification['X-Creator-Recipient']
-  'mark@hbd.com'
+  'mark@example.com'
 
   >>> notification_body = build_notification.get_payload()
   >>> print notification_body #doctest: -NORMALIZE_WHITESPACE

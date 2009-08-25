@@ -32,7 +32,7 @@ spec home page.
   ... -----------------------------9851763078341624562133848003
   ... Content-Disposition: form-data; name="field.reviewer"
   ... 
-  ... sabdfl
+  ... mark
   ... -----------------------------9851763078341624562133848003
   ... Content-Disposition: form-data; name="field.queuemsg"
   ... 
@@ -59,7 +59,7 @@ we'll get a nice error message
   ... -----------------------------9851763078341624562133848003
   ... Content-Disposition: form-data; name="field.reviewer"
   ... 
-  ... sabdfl
+  ... mark
   ... -----------------------------9851763078341624562133848003
   ... Content-Disposition: form-data; name="field.queuemsg"
   ... 
@@ -118,7 +118,7 @@ Now We should see that review request message on the spec page.
   ...specification, review thyself...
 
 
-We will do another 2 feedback requests for sabdfl with different logged in
+We will do another 2 feedback requests for mark with different logged in
 users, first with Carlos.
 
   >>> print http(r"""
@@ -129,7 +129,7 @@ users, first with Carlos.
   ... -----------------------------9563630295607919491334846818
   ... Content-Disposition: form-data; name="field.reviewer"
   ... 
-  ... sabdfl
+  ... mark
   ... -----------------------------9563630295607919491334846818
   ... Content-Disposition: form-data; name="field.queuemsg"
   ... 
@@ -156,7 +156,7 @@ And then with Foo Bar
   ... -----------------------------3460313531928717451553877484
   ... Content-Disposition: form-data; name="field.reviewer"
   ... 
-  ... sabdfl
+  ... mark
   ... -----------------------------3460313531928717451553877484
   ... Content-Disposition: form-data; name="field.queuemsg"
   ... 
@@ -179,7 +179,7 @@ asked to review this page in particular.
 
   >>> print http(r"""
   ... GET /firefox/+spec/canvas HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... """)
   HTTP/1.1 200 Ok
   ...You have 3 feedback request(s)...
@@ -197,7 +197,7 @@ And we see the "Give Feedback" menu item.
 
   >>> print http(r"""
   ... GET /firefox/+spec/canvas HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... """)
   HTTP/1.1 200 Ok
   ...Give feedback...
@@ -207,7 +207,7 @@ complete. Note that the form posts back to the main spec home page.
 
   >>> print http(r"""
   ... GET /firefox/+spec/canvas/+givefeedback HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -216,7 +216,7 @@ Now we POST this page back to itself. First, we clear a single item.
 
   >>> print http(r"""
   ... POST /firefox/+spec/canvas/+givefeedback HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... Content-Length: 43
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -229,7 +229,7 @@ And now, the remaining two. This time we expect to be redirected.
 
   >>> print http(r"""
   ... POST /firefox/+spec/canvas/+givefeedback HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... Content-Length: 66
   ... Content-Type: application/x-www-form-urlencoded
   ... 

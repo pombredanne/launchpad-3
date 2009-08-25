@@ -38,7 +38,7 @@ Login as an admin to be able to do changes to the import queue.
 Here's the person who'll be doing the import.
 
     >>> person_set = getUtility(IPersonSet)
-    >>> person = person_set.getByName('sabdfl')
+    >>> person = person_set.getByName('mark')
 
 Now, is time to create the new potemplate
 
@@ -138,7 +138,7 @@ commit.
     >>> subset = POTemplateSubset(productseries=series)
     >>> potemplate = subset.getPOTemplateByName('firefox')
     >>> pofile = potemplate.getPOFileByLang('cy')
-    >>> person = person_set.getByName('sabdfl')
+    >>> person = person_set.getByName('mark')
 
 Now, attach the file again, but this time as published.
 

@@ -34,7 +34,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
         self.translation_exporter = XPIPOExporter()
 
         # Get the importer.
-        self.importer = getUtility(IPersonSet).getByName('sabdfl')
+        self.importer = getUtility(IPersonSet).getByName('mark')
 
         # Get the Firefox template.
         firefox_product = getUtility(IProductSet).getByName('firefox')

@@ -13,7 +13,7 @@ to change the bug supervisor.
 
 Now we login as Mark...
 
-  >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+  >>> browser.addHeader('Authorization', 'Basic mark@example.com:test')
   >>> browser.reload()
   >>> browser.url
   'http://launchpad.dev/ubuntu/+bugs'
@@ -25,7 +25,7 @@ Now we login as Mark...
   'http://launchpad.dev/ubuntu/+bugsupervisor'
 
 Anyone with launchpad.Edit permission can edit the distribution bug
-supervisor. In this example, we're using mark@hbd.com to set the
+supervisor. In this example, we're using mark@example.com to set the
 distribution bug supervisor.
 
   >>> bug_supervisor_link.click()

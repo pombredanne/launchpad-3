@@ -126,13 +126,9 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
         proposals = self._proposals_for_current_batch
         return [self._createItem(proposal) for proposal in proposals]
 
-    @cachedproperty
-    def multiple_pages(self):
-        return self.batch.total() > self.batch.size
-
     @property
     def table_class(self):
-        if self.multiple_pages:
+        if self.has_multiple_pages:
             return "listing"
         else:
             return "listing sortable"

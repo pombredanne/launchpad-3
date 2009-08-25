@@ -112,14 +112,18 @@ class BranchURL:
         return self.branch.unique_name
 
 
+def branch_root_context(branch):
+    """Return the IRootContext for the branch."""
+    return branch.target.components[0]
+
+
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
-    def items(self):
+    @property
+    def objects(self):
         """See `Hierarchy`."""
-        return self._breadcrumbs(
-            (obj, canonical_url(obj))
-            for obj in IHasBranchTarget(self.context).target.components)
+        return IHasBranchTarget(self.context).target.components
 
 
 class BranchNavigation(Navigation):
@@ -1115,6 +1119,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
     custom_widget('target_branch', TargetBranchWidget)
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+
+    page_title = label = 'Propose branch for merging'
 
     @property
     def initial_values(self):

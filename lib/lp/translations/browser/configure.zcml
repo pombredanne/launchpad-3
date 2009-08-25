@@ -62,12 +62,6 @@
             name="+portlet-preflangs"
             template="../templates/object-portlet-preflangs.pt"/>
         <browser:page
-            name="+portlet-countrylangs"
-            template="../templates/object-portlet-countrylangs.pt"/>
-        <browser:page
-            name="+portlet-browserlangs"
-            template="../templates/object-portlet-browserlangs.pt"/>
-        <browser:page
             name="+rosetta-status-legend"
             template="../templates/rosetta-status-legend.pt"/>
     </browser:pages>
@@ -95,21 +89,21 @@
             for="lp.translations.interfaces.translator.ITranslator"
             permission="launchpad.Admin"
             class="lp.translations.browser.translator.TranslatorAdminView"
-            template="../templates/translator-admin.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+edit"
             for="lp.translations.interfaces.translator.IEditTranslator"
             permission="launchpad.Edit"
             class="lp.translations.browser.translator.TranslatorEditView"
-            template="../templates/translator-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+remove"
             for="lp.translations.interfaces.translator.ITranslator"
             permission="launchpad.Edit"
             class="lp.translations.browser.translator.TranslatorRemoveView"
-            template="../templates/translator-remove.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
     </facet>
     <facet
@@ -317,7 +311,7 @@
             for="canonical.launchpad.interfaces.ILanguage"
             class="lp.translations.browser.language.LanguageAdminView"
             permission="launchpad.Admin"
-            template="../templates/language-admin.pt"
+            template="../../app/templates/generic-edit.pt"
             name="+admin"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:pages
@@ -351,7 +345,7 @@
             for="canonical.launchpad.interfaces.ILanguageSet"
             class="lp.translations.browser.language.LanguageAddView"
             permission="launchpad.Admin"
-            template="../templates/language-add.pt"
+            template="../../app/templates/generic-edit.pt"
             name="+add"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:navigation
@@ -503,7 +497,8 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             path_expression="string:+groups"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            rootsite="translations" />
         <browser:defaultView
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             name="+index"
@@ -513,7 +508,7 @@
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             class="lp.translations.browser.translationgroup.TranslationGroupAddView"
             permission="launchpad.Admin"
-            template="../templates/translationgroup-add.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
@@ -729,6 +724,20 @@
             facet="translations"
             permission="zope.Public"
             template="../templates/hastranslationimports-index.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-review"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-review.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-review-table"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-review-table.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 

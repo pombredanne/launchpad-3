@@ -9,21 +9,21 @@ Do some imports.
 
 Login as Mark.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
 
 Get Mark's person and another person, wrapped in security proxies.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> spiv = getUtility(IPersonSet).getByName('spiv')
-    >>> print type(sabdfl)
+    >>> print type(mark)
     <type 'zope.security._proxy._Proxy'>
 
 Get a bug task assigned to Mark.  The bug task is also security-proxied.
 
     >>> bugtask = BugTask.get(2)
     >>> print bugtask.assignee.name
-    sabdfl
-    >>> print type(sabdfl)
+    mark
+    >>> print type(mark)
     <type 'zope.security._proxy._Proxy'>
 
 Assign a different person as the assignee, and check that it worked by reading

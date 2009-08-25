@@ -225,10 +225,15 @@
     </securedutility>
 
     <class class="canonical.launchpad.database.HWDeviceClass">
-        <allow
+        <require permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IHWDeviceClass" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWDeviceClass"
+        path_expression="string:+deviceclass/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.hwdb.HWDeviceClassSet"

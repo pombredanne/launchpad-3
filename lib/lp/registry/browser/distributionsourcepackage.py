@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionSourcePackageBreadcrumbBuilder',
+    'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
@@ -35,13 +35,13 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, Link,
     Navigation, StandardLaunchpadFacets, action, canonical_url, redirection)
 from canonical.launchpad.webapp.menu import enabled_with_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from lazr.delegates import delegates
 from canonical.lazr.utils import smartquote
 
 
-class DistributionSourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
     @property
     def text(self):
@@ -355,10 +355,19 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     """Edit a distribution source package."""
 
     schema = IDistributionSourcePackage
-    label = "Change source package details"
     field_names = [
         'bug_reporting_guidelines',
         ]
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @action("Change", name='change')
     def change_action(self, action, data):

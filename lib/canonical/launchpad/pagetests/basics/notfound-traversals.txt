@@ -242,7 +242,6 @@ is still pointing to this old URL (see bug #138090).
 >>> check("/ubuntu/hoary/+bugs")
 
 >>> check("/ubuntu/hoary/i386")
->>> check("/ubuntu/hoary/i386/+search")
 
 >>> check("/bugs")
 >>> check_redirect("/bugs/assigned")
@@ -367,7 +366,6 @@ Test /people traversals.
 >>> check("/people/")
 >>> check("/people/+requestmerge", auth=True)
 >>> check_redirect("/people/+mergerequest-sent", auth=True)
->>> check("/people/+portlet-about")
 
 This is for a team:
 
@@ -421,10 +419,10 @@ And this is for a person:
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 
-sabdfl owns many packages, so he's a better test for some pages:
+mark owns many packages, so he's a better test for some pages:
 
->>> check("/~sabdfl/+packagebugs")
->>> check("/~sabdfl/+related-software")
+>>> check("/~mark/+packagebugs")
+>>> check("/~mark/+related-software")
 
 >>> check("/+code")
 
