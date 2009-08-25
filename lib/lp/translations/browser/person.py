@@ -36,8 +36,6 @@ from lp.translations.interfaces.translationrelicensingagreement import (
     TranslationRelicensingAgreementOptions)
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
-from lp.translations.model.pofile import POFile
-from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 
 
 class WorkListLinksAggregator(TranslationLinksAggregator):
