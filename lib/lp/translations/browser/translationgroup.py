@@ -7,10 +7,11 @@ __metaclass__ = type
 __all__ = [
     'TranslationGroupAddTranslatorView',
     'TranslationGroupAddView',
+    'TranslationGroupBreadcrumb',
     'TranslationGroupEditView',
     'TranslationGroupNavigation',
     'TranslationGroupReassignmentView',
-    'TranslationGroupSetBreadcrumbBuilder',
+    'TranslationGroupSetBreadcrumb',
     'TranslationGroupSetNavigation',
     'TranslationGroupView',
     ]
@@ -30,7 +31,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView
     )
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -43,12 +44,22 @@ class TranslationGroupSetNavigation(GetitemNavigation):
     usedfor = ITranslationGroupSet
 
 
-class TranslationGroupSetBreadcrumbBuilder(BreadcrumbBuilder):
+class TranslationGroupSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITranslationGroupSet`."""
 
     rootsite = "translations"
 
     text = u"Translation groups"
+
+
+class TranslationGroupBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `ITranslationGroup`."""
+
+    rootsite = "translations"
+
+    @property
+    def text(self):
+        return self.context.title
 
 
 class TranslationGroupView:
@@ -80,8 +91,8 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
     schema = ITranslator
     field_names = ['language', 'translator', 'style_guide_url']
 
-    @action("Add", name="add")
-    def add_action(self, action, data):
+    @action("Appoint", name="appoint")
+    def appoint_action(self, action, data):
         """Appoint a translator to do translations for given language.
 
         Create a translator who, within this group, will be responsible for
@@ -103,8 +114,18 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
                 "There is already a translator for this language")
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    label = "Appoint a translation team"
+
+    @property
+    def page_title(self):
+        return 'Apoint a translation team in "%s"' % (self.context.title)
 
 
 class TranslationGroupEditView(LaunchpadEditFormView):
@@ -134,8 +155,20 @@ class TranslationGroupEditView(LaunchpadEditFormView):
                 "There is already a translation group with this name")
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    @property
+    def label(self):
+        return "Change %s details" % (self.context.title)
+
+    @property
+    def page_title(self):
+        return 'Change "%s" translation group details' % (self.context.title)
 
 
 class TranslationGroupAddView(LaunchpadFormView):
