@@ -82,7 +82,7 @@
   <div class="yui-g">
 
     <div class="yui-u first" tal:define="current context/currentrelease">
-      <div class="portlet">
+      <div class="portlet" tal:condition="current">
         <h2>Package information</h2>
         <div class="two-column-list">
           <dl>
