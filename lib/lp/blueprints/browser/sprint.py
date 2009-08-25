@@ -8,13 +8,13 @@ __all__ = [
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
-    'SprintBreadcrumbBuilder',
+    'SprintBreadcrumb',
     'SprintEditView',
     'SprintFacets',
     'SprintMeetingExportView',
     'SprintNavigation',
     'SprintOverviewMenu',
-    'SprintSetBreadcrumbBuilder',
+    'SprintSetBreadcrumb',
     'SprintSetContextMenu',
     'SprintSetFacets',
     'SprintSetNavigation',
@@ -49,7 +49,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.helpers import shortlist
 from canonical.widgets.date import DateTimeWidget
 
@@ -71,7 +71,7 @@ class SprintNavigation(Navigation):
     usedfor = ISprint
 
 
-class SprintBreadcrumbBuilder(BreadcrumbBuilder):
+class SprintBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISprint`."""
     @property
     def text(self):
@@ -147,7 +147,7 @@ class SprintSetNavigation(GetitemNavigation):
     usedfor = ISprintSet
 
 
-class SprintSetBreadcrumbBuilder(BreadcrumbBuilder):
+class SprintSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISprintSet`."""
     text = 'Meetings'
 

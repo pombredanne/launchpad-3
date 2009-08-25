@@ -499,8 +499,6 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-faq_edit = ContextId('Edit FAQ #%s details')
-
 def faq_index(context, view):
     """Return the FAQ index page title."""
     return (
@@ -546,10 +544,6 @@ karmaaction_index = 'Karma actions'
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
 language_index = ContextDisplayName("%s in Launchpad")
-
-language_add = 'Add a new Language to Launchpad'
-
-language_admin = ContextDisplayName("Edit %s")
 
 languageset_index = 'Languages in Launchpad'
 

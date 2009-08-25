@@ -330,7 +330,7 @@
     for="lp.answers.interfaces.faq.IFAQ"
     class=".faq.FAQEditView"
     permission="launchpad.Edit"
-    template="../templates/faq-edit.pt"
+    template="../../app/templates/generic-edit.pt"
     />
   <browser:menus
     module="canonical.launchpad.browser"

@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces._schema_circular_imports import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IFrontPageBugAddForm, IProjectBugAddForm)
@@ -1319,7 +1319,7 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BugTargetOnBugsVHostBreadcrumbBuilder(BreadcrumbBuilder):
+class BugTargetOnBugsVHostBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
 
     @property
