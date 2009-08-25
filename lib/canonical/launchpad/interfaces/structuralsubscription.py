@@ -244,7 +244,6 @@ class DeleteSubscriptionError(Exception):
 
     Raised when an error occurred trying to delete a
     structural subscription."""
-
     webservice_error(400)
 
 
