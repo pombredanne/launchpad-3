@@ -83,7 +83,7 @@ def quote(text):
 
 
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
-                              StructuralSubscriptionTargetTraversalMixin):
+    StructuralSubscriptionTargetTraversalMixin):
     """A class to navigate `IProductSeries` URLs."""
     usedfor = IProductSeries
 

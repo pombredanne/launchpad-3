@@ -56,7 +56,7 @@ from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
-                             StructuralSubscriptionTargetTraversalMixin):
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistroSeries
 
