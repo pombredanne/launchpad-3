@@ -68,7 +68,7 @@ class BugNomination(SQLBase):
     def approve(self, approver):
         """See IBugNomination."""
         if self.isApproved():
-            # Approving an approved nomination shouldn't duplicate tasks.
+            # Approving an approved nomination is a no-op.
             return
         self.status = BugNominationStatus.APPROVED
         self.decider = approver
