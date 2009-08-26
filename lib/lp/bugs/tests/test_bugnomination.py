@@ -23,6 +23,9 @@ class TestBugCanBeNominatedForProductSeries(TestCaseWithFactory):
         self.eric = self.factory.makePerson(name='eric')
         self.setUpTarget()
 
+    def tearDown(self):
+        logout()
+        super(TestBugCanBeNominatedForProductSeries, self).tearDown()
 
     def setUpTarget(self):
         self.series = self.factory.makeProductSeries()
@@ -58,10 +61,6 @@ class TestBugCanBeNominatedForProductSeries(TestCaseWithFactory):
         # A bug may only be nominated for a series if that series' pillar
         # already has a task.
         self.assertFalse(self.bug.canBeNominatedFor(self.random_series))
-
-    def tearDown(self):
-        logout()
-        super(TestBugCanBeNominatedForProductSeries, self).tearDown()
 
 
 class TestBugCanBeNominatedForDistroSeries(
