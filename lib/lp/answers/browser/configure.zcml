@@ -114,9 +114,15 @@
     classes="QuestionCollectionAnswersMenu QuestionTargetAnswersMenu"
     />
   <browser:menus
-    module=".question"
-    classes="QuestionContextMenu QuestionSetContextMenu"
+    module="canonical.launchpad.browser"
+    classes="FAQContextMenu"
     />
+  <browser:menus
+    module="lp.answers.browser.question"
+    classes="
+        QuestionEditMenu
+        QuestionExtrasMenu
+        QuestionSetContextMenu" />
 
   <browser:defaultView
     for="lp.answers.interfaces.question.IQuestion"
@@ -331,10 +337,6 @@
     class=".faq.FAQEditView"
     permission="launchpad.Edit"
     template="../../app/templates/generic-edit.pt"
-    />
-  <browser:menus
-    module="canonical.launchpad.browser"
-    classes="FAQContextMenu"
     />
 
   <browser:defaultView

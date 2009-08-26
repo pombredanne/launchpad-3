@@ -1076,13 +1076,6 @@ question_confirm_answer = ContextId('Confirm an answer to question #%s')
 
 question_history = ContextId('History of question #%s')
 
-def question_index(context, view):
-    """Return the page title to a question's index view."""
-    text = (
-        smartquote('%s question #%d: "%s"') %
-        (context.target.displayname, context.id, context.title))
-    return text
-
 def question_listing(context, view):
     """Return the page title list questions."""
     return view.pagetitle
