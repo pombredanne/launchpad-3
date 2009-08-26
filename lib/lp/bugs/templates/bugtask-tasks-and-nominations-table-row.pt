@@ -40,8 +40,8 @@
         <span class="yui-activator-data-box">
           <span title="This project&rsquo;s license has not been specified.">
             <a tal:attributes="href context/target/fmt:url;
-                                    title view/target_link_title;
-                                    class context/target/image:sprite_css"
+                               title view/target_link_title;
+                               class context/target/image:sprite_css"
                tal:content="context/bugtargetdisplayname" />
           </span>
         </span>
@@ -144,17 +144,17 @@
         <tal:not-milestoned condition="python: not context.milestone and
                                                view.user_can_edit_milestone">
           <a href="+editstatus"> 
-            <img class="addicon" src="/@@/add">
+            <img class="addicon" src="/@@/add" />
           </a>
           <a href="+editstatus" class="nulltext js-action">Target to milestone</a>
           <a href="+editstatus" class="value" style="display:none" />
           <a href="+editstatus">
-            <img class="editicon" style="display:none" src="/@@/edit">
+            <img class="editicon" style="display:none" src="/@@/edit" />
           </a>
         </tal:not-milestoned>
         <tal:milestoned condition="context/milestone">
           <a href="+editstatus">
-            <img class="addicon" style="display:none" src="/@@/add">
+            <img class="addicon" style="display:none" src="/@@/add" />
           </a>
           <a href="+editstatus" style="display:none" class="nulltext js-sction">
             Target to milestone
@@ -162,7 +162,7 @@
           <a tal:attributes="href context/milestone/fmt:url" class="value"
              tal:content="context/milestone/title" />
           <a href="+editstatus" tal:condition="view/user_can_edit_milestone">
-            <img class="editicon" src="/@@/edit">
+            <img class="editicon" src="/@@/edit" />
           </a>
         </tal:milestoned>
       </div>

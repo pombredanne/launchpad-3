@@ -77,7 +77,8 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IReference, IReferenceChoice, IWebServiceClientRequest)
+    IFieldHTMLRenderer, IReference, IReferenceChoice,
+    IWebServiceClientRequest)
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -179,7 +180,7 @@ def bugtarget_renderer(context, field, request):
         </span>""" % {
             'href': canonical_url(context.target),
             'class': ObjectImageDisplayAPI(context.target).sprite_css(),
-            'displayname': context.bugtargetdisplayname}
+            'displayname': cgi.escape(context.bugtargetdisplayname)}
         return html
     return render
 
@@ -1248,7 +1249,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                 title=self.schema['milestone'].title,
                 source=milestone_source, required=False)
         else:
-            milestone_field = copy_field(IBugTask['milestone'], readonly=False)
+            milestone_field = copy_field(
+                IBugTask['milestone'], readonly=False)
 
         self.form_fields = self.form_fields.omit('milestone')
         self.form_fields += formlib.form.Fields(milestone_field)
