@@ -55,16 +55,12 @@ class DistributionMirrorOverviewMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def proberlogs(self):
         text = 'Prober logs'
-        enabled = True
-        if self.context.last_probe_record is None:
-            enabled = False
+        enabled = self.context.last_probe_record is not None
         return Link('+prober-logs', text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Admin')
     def delete(self):
-        enabled = False
-        if self.context.last_probe_record is None:
-            enabled = True
+        enabled = self.context.last_probe_record is None
         text = 'Delete this mirror'
         return Link('+delete', text, icon='remove', enabled=enabled)
 
@@ -91,6 +87,13 @@ class _FlavoursByDistroSeries:
 
 class DistributionMirrorView(LaunchpadView):
 
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        values = dict(distribution=self.context.distribution.displayname,
+                      name=self.context.title)
+        return '%(distribution)s mirror "%(name)s"' % values
+
     def initialize(self):
         """Set up the sources.list entries for display."""
         valid_series = []
@@ -104,6 +107,10 @@ class DistributionMirrorView(LaunchpadView):
                                      valid_series)
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request, initially_without_selection=True)
+
+    @cachedproperty
+    def probe_records(self):
+        return BatchNavigator(self.context.all_probe_records, self.request)
 
     # Cached because it is used to construct the entries in initialize()
     @cachedproperty
@@ -275,41 +282,10 @@ class DistributionMirrorReassignmentView(ObjectReassignmentView):
         return self.context.title
 
 
-class IDistributionMirrorProberLogNavigationMenu(Interface):
-    """A marker interface for prober log navigation menu."""
-
-
-class DistributionMirrorProberLogNavigationMenu(
-    DistributionMirrorOverviewMenu):
-    """NavigationMenu for prober logs.
-
-    Same as `DistributionMirrorOverviewMenu` except it omits proberlogs.
-    """
-    usedfor = IDistributionMirrorProberLogNavigationMenu
-    facet = "overview"
-    links = ['edit', 'review', 'reassign', 'delete']
-
-    def __init__(self, context):
-        cls = DistributionMirrorProberLogNavigationMenu
-        super(cls, self).__init__(context)
-        # Links always expect the context if be a model object, not a view.
-        if isinstance(self.context, LaunchpadView):
-            self.view = context
-            self.context = context.context
-        else:
-            self.view = None
-            self.context = context
-
 class DistributionMirrorProberLogView(DistributionMirrorView):
     """View class for prober logs."""
-    implements(IDistributionMirrorProberLogNavigationMenu)
 
-    @cachedproperty
-    def probe_records(self):
-        return BatchNavigator(self.context.all_probe_records, self.request)
-
-# Register the novel mirror prober menu.
-provideAdapter(
-    DistributionMirrorProberLogNavigationMenu,
-    [IDistributionMirrorProberLogNavigationMenu],
-    INavigationMenu, name="overview")
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return '%s mirror prober logs' % self.context.title

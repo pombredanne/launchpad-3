@@ -9,11 +9,7 @@
 <body>
 
   <tal:heading metal:fill-slot="heading">
-    <h1>
-      <tal:distro replace="context/distribution/displayname">Ubuntu
-      Linux</tal:distro>
-      mirror "<tal:mirror replace="context/title">foobar</tal:mirror>"
-    </h1>
+    <h1 tal:content="view/page_title" />
   </tal:heading>
 
   <tal:main metal:fill-slot="main"

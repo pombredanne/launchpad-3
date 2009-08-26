@@ -46,9 +46,15 @@
           <span tal:replace="freshness/title" />
         </td>
       </tr>
-      <tr tal:condition="not: repeat/country_and_mirrors/end" class="note">
+
+      <tal:comment condition="nothing">
+        Include a blank row after the last entry of a country to provide
+        vertical spacing to separate the next country.
+      </tal:comment>
+      <tr class="note">
         <td>&nbsp;</td>
       </tr>
+
     </tal:country_and_mirrors>
     <tr class="highlighted">
       <th colspan="4" style="text-align: left; font-weight: bold;">Total</th>

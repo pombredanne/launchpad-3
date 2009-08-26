@@ -241,21 +241,15 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
 
     def cdimage_mirrors(self):
         text = 'CD mirrors'
-        enabled = self.distribution.full_functionality
-        enabled = True
-        return Link('+cdmirrors', text, enabled=enabled, icon='info')
+        return Link('+cdmirrors', text, icon='info')
 
     def archive_mirrors(self):
         text = 'Archive mirrors'
-        enabled = self.distribution.full_functionality
-        enabled = True
-        return Link('+archivemirrors', text, enabled=enabled, icon='info')
+        return Link('+archivemirrors', text, icon='info')
 
     def newmirror(self):
         text = 'Register mirror'
-        enabled = self.distribution.full_functionality
-        enabled = True
-        return Link('+newmirror', text, enabled=enabled, icon='add')
+        return Link('+newmirror', text, icon='add')
 
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""

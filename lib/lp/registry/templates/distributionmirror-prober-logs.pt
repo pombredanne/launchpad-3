@@ -8,20 +8,17 @@
 >
 
 <body>
-  <tal:heading metal:fill-slot="heading">
-    <h1>
-      Prober logs for "<tal:mirror replace="context/title">foobar</tal:mirror>"
-    </h1>
-  </tal:heading>
 
 <tal:main metal:fill-slot="main"
           define="overview_menu context/menu:overview;
                   has_records view/probe_records/currentBatch">
+  <div class="top-portlet">
+    <h1 tal:content="view/page_title">Foo mirror prober logs</h1>
 
-  <p tal:condition="not: has_records">
-    This mirror has never been probed.
-  </p>
-
+    <p tal:condition="not: has_records">
+      This mirror has never been probed.
+    </p>
+  </div>
   <tal:logs condition="has_records">
     <tal:navigation replace="structure view/probe_records/@@+navigation-links-upper" />
     <table class="listing">
@@ -49,7 +46,7 @@
 </tal:main>
 
 <tal:side metal:fill-slot="side">
-  <tal:menu replace="structure view/@@+global-actions" />
+  <tal:menu replace="structure context/@@+global-actions" />
 </tal:side>
 
 </body>

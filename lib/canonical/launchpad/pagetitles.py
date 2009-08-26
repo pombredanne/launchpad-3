@@ -400,8 +400,6 @@ default_editform = 'Default "Edit" Page'
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
-
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')

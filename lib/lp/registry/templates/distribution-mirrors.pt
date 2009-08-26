@@ -39,9 +39,8 @@
         Mirrors</span> for this distribution.
         <span tal:condition="context/full_functionality">
           If you know of one, please
-          <a tal:attributes="href
-          string:${context/fmt:url}/+newmirror">register it</a>.
-          </span>
+          <a tal:attributes="href context/fmt:url/+newmirror">register it</a>.
+        </span>
       </p>
     </div>
 
