@@ -170,28 +170,6 @@ class PersonBMPListingView(BranchMergeProposalListingView):
         return self.context
 
 
-class PersonRequestedReviewsView(PersonBMPListingView):
-    """Branch merge proposals for the person that are needing review."""
-
-    extra_columns = ['date_review_requested', 'review',]
-    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED,
-                     BranchMergeProposalStatus.NEEDS_REVIEW]
-
-    @property
-    def heading(self):
-        return "Code reviews requested of %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no reviews pending." % self.context.displayname
-
-    def getVisibleProposalsForUser(self):
-        """Branch merge proposals that are visible by the logged in user."""
-        return self._getCollection().getMergeProposalsForReviewer(
-            self.getUserFromContext(), self._queue_status)
-
-
 class ActiveReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for a context that are needing review."""
 
@@ -300,7 +278,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             self.APPROVED: 'Approved reviews ready to land',
             self.TO_DO: 'Reviews I have to do',
             self.ARE_DOING: 'Reviews I am doing',
-            self.CAN_DO: 'Reviews requested I can do',
+            self.CAN_DO: 'Requested reviews I can do',
             self.MINE: 'Reviews I am waiting on',
             self.OTHER: 'Other reviews I am not actively reviewing',
             self.WIP: 'Work in progress'}
@@ -308,7 +286,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             # If there is no reviewer, then there will be no TO_DO, ARE_DOING,
             # CAN_DO or MINE, and we are not in a person context.
             headings[self.OTHER] = 'Reviews requested or in progress'
-        elif self.user.inTeam(reviewer):
+        elif self.user is not None and self.user.inTeam(reviewer):
             # The user is either looking at their own person review page, or a
             # reviews for a team that they are a member of.  The default
             # headings are good.

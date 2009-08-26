@@ -742,13 +742,6 @@
             name="+activereviews"
             template="../templates/active-reviews.pt"/>
         <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchmergeproposallisting.PersonRequestedReviewsView"
-            permission="zope.Public"
-            facet="branches"
-            name="+requestedreviews"
-            template="../templates/person-mergeproposals.pt"/>
-        <browser:page
             name="+addbranch"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branch.BranchAddView"
