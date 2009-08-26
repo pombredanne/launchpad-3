@@ -124,6 +124,8 @@ class Diff(SQLBase):
                 filename, size, diff_content, 'text/x-diff')
             diff_content.seek(0)
             diff_content_bytes = diff_content.read(size)
+            diffstat = klass.generateDiffstat(diff_content_bytes)
+            diffstat_string = klass.stringifyDiffstat(diffstat)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
         return klass(diff_text=diff_text, diff_lines_count=diff_lines_count)
 

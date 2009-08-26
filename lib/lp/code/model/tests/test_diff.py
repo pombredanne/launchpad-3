@@ -149,6 +149,11 @@ class TestDiff(DiffTestCase):
             'bar: -3 +0\nbaz: -0 +2\nfoo: -1 +2\n',
             Diff.stringifyDiffstat(Diff.generateDiffstat(self.diff_bytes)))
 
+    def test_fromFileSetsDiffstat(self):
+        Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
+        self.assertEqual(
+            'bar: -3 +0\nbaz: -0 +2\nfoo: -1 +2\n', Diff.diffstat)
+
 
 class TestStaticDiff(TestCaseWithFactory):
     """Test that StaticDiff objects work."""
