@@ -21,7 +21,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branchcollection import (
+    IAllBranches, IBranchCollection)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal,
     IBranchMergeProposalGetter, IBranchMergeProposalListingBatchNavigator)
@@ -210,7 +211,12 @@ class ActiveReviewsView(BranchMergeProposalListingView):
 
     def getProposals(self):
         """Get the proposals for the view."""
-        raise NotImplementedError(self.getProposals)
+        collection = IBranchCollection(self.context)
+        collection = collection.visibleByUser(self.user)
+        proposals = collection.getMergeProposals(
+            [BranchMergeProposalStatus.CODE_APPROVED,
+             BranchMergeProposalStatus.NEEDS_REVIEW,])
+        return proposals
 
     def _getReviewGroup(self, proposal, votes, reviewer):
         """One of APPROVED, MINE, TO_DO, CAN_DO, ARE_DOING, OTHER or WIP.
@@ -314,7 +320,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             # Looking at a person team page.
             name = reviewer.displayname
             headings[self.CAN_DO] = 'Reviews %s can do' % name
-            headings[self.OTHER] = 'Reviews %s is not actively reviewing' % name
+            headings[self.OTHER] = (
+                'Reviews %s is not actively reviewing' % name)
         else:
             # A user is looking at someone elses personal review page.
             name = reviewer.displayname
@@ -322,7 +329,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             headings[self.ARE_DOING] = 'Reviews %s is doing' % name
             headings[self.CAN_DO] = 'Reviews %s can do' % name
             headings[self.MINE] = 'Reviews %s is waiting on' % name
-            headings[self.OTHER] = 'Reviews %s is not actively reviewing' % name
+            headings[self.OTHER] = (
+                'Reviews %s is not actively reviewing' % name)
         return headings
 
     @property
@@ -340,44 +348,16 @@ class ActiveReviewsView(BranchMergeProposalListingView):
 class PersonActiveReviewsView(ActiveReviewsView):
     """Branch merge proposals for the person that are needing review."""
 
+    def _getReviewer(self):
+        return self.context
+
     def getProposals(self):
         """See `ActiveReviewsView`."""
         collection = getUtility(IAllBranches).visibleByUser(self.user)
-        own_branches = collection.ownedBy(self.context)
-        own_proposals = collection.getMergeProposals(
+        proposals = collection.getMergeProposalsForPerson(
+            self.context,
             [BranchMergeProposalStatus.CODE_APPROVED,
              BranchMergeProposalStatus.NEEDS_REVIEW,
              BranchMergeProposalStatus.WORK_IN_PROGRESS])
 
-        requested_reviews = collection.getMergeProposalsForReviewer(
-            self.context,
-            [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW])
-
-        return Union(own_proposals, requested_reviews)
-
-
-class ProductActiveReviewsView(ActiveReviewsView):
-    """Branch merge proposals for the product that are needing review."""
-
-    def getProposals(self):
-        """See `ActiveReviewsView`."""
-        collection = getUtility(IAllBranches).visibleByUser(self.user)
-        collection = collection.inProduct(self.context)
-        proposals = collection.getMergeProposals(
-            [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW,])
-        return proposals
-
-
-class ProjectActiveReviewsView(ActiveReviewsView):
-    """Branch merge proposals for the project that are needing review."""
-
-    def getProposals(self):
-        """See `ActiveReviewsView`."""
-        collection = getUtility(IAllBranches).visibleByUser(self.user)
-        collection = collection.inProject(self.context)
-        proposals = collection.getMergeProposals(
-            [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW,])
         return proposals

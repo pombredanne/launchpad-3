@@ -70,6 +70,13 @@ class IBranchCollection(Interface):
             branches specified.
         """
 
+    def getMergeProposalsForPerson(self, person, status=None):
+        """Proposals for `person`.
+
+        Return the proposals for branches owned by `person` or where `person`
+        is reviewing or been asked to review.
+        """
+
     def getMergeProposalsForReviewer(reviewer, status=None):
         """Return a result set of merge proposals for the given reviewer.
 
