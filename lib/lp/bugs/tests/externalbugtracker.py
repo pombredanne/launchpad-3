@@ -469,8 +469,15 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get(
-            'example.com', {}).get('', {}).get('Bugzilla_logincookie')
+
+        assert len(cookies) < 2, (
+            "There should only be cookies for one domain.")
+
+        if len(cookies) == 1:
+            [(domain, domain_cookies)] = cookies.items()
+            return domain_cookies.get('', {}).get('Bugzilla_logincookie')
+        else:
+            return None
 
     @property
     def has_valid_auth_cookie(self):
