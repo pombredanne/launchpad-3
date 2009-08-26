@@ -29,6 +29,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.person import IPerson
@@ -113,8 +114,9 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     decider = exported(PublicPersonChoice(
         title=_('Decided By'), required=False, readonly=True,
         vocabulary='ValidPersonOrTeam'))
-    target = Attribute(
-        "The IProductSeries or IDistroSeries of this nomination.")
+    target = exported(Reference(
+        schema=IBugTarget,
+        title=_("The IProductSeries or IDistroSeries of this nomination.")))
     status = exported(Choice(
         title=_("Status"), vocabulary=BugNominationStatus,
         default=BugNominationStatus.PROPOSED, readonly=True))

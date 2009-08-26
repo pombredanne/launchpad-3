@@ -626,6 +626,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
     resource_type_link: u'http://.../#bug_nomination'
     self_link: u'http://.../bugs/.../nominations/...'
     status: u'Nominated'
+    target_link: u'http://.../fooix/0.1'
     ---
 
 John cannot approve or decline the nomination.
@@ -683,6 +684,7 @@ We can see that the nomination was declined.
     resource_type_link: u'http://.../#bug_nomination'
     self_link: u'http://.../bugs/.../nominations/...'
     status: u'Declined'
+    target_link: u'http://.../fooix/0.1'
     ---
 
 The owner can approve a previously declined nomination.
@@ -708,6 +710,7 @@ This marks the nomination as Approved, and creates a new task.
     resource_type_link: u'http://.../#bug_nomination'
     self_link: u'http://.../bugs/.../nominations/...'
     status: u'Approved'
+    target_link: u'http://.../fooix/0.1'
     ---
 
     >>> login('foo.bar@canonical.com')
