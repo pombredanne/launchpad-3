@@ -120,6 +120,23 @@ domains. The `Hierarchy` model copes fine with objects like that.
     [<TextualBreadcrumb url='http://launchpad.dev/+cooker/jamie' text='Jamie'>]
 
 
+== Displaying breadcrumbs ==
+
+Breadcrumbs are only displayed if there is more than one breadcrumb, as
+otherwise the breadcrumb will simply replicate the context.title heading
+above it.
+
+    >>> len(hierarchy.items)
+    2
+    >>> hierarchy.display_breadcrumbs
+    True
+
+    >>> len(cooker_hierarchy.items)
+    1
+    >>> cooker_hierarchy.display_breadcrumbs
+    False
+
+
 == Building IBreadcrumb objects ==
 
 The construction of breadcrumb objects is handled by an IBreadcrumb adapter,
