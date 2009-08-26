@@ -1103,21 +1103,30 @@ class Bug(SQLBase):
             # No nomination exists. Let's see if the bug is already
             # directly targeted to this nomination target.
             if IDistroSeries.providedBy(target):
-                target_getter = operator.attrgetter("distroseries")
+                series_getter = operator.attrgetter("distroseries")
+                pillar_getter = operator.attrgetter("distribution")
             elif IProductSeries.providedBy(target):
-                target_getter = operator.attrgetter("productseries")
+                series_getter = operator.attrgetter("productseries")
+                pillar_getter = operator.attrgetter("product")
             else:
                 return False
 
             for task in self.bugtasks:
-                if target_getter(task) == target:
+                if series_getter(task) == target:
                     # The bug is already targeted at this
                     # nomination target.
                     return False
 
             # No nomination or tasks are targeted at this
-            # nomination target.
-            return True
+            # nomination target. But we also don't want to nominate for a
+            # series of a product or distro for which we don't have a
+            # plain pillar task.
+            for task in self.bugtasks:
+                if pillar_getter(task) == pillar_getter(target):
+                    return True
+
+            # No tasks match the candidate's pillar. We must refuse.
+            return False
         else:
             # The bug is already nominated for this nomination target.
             return False
