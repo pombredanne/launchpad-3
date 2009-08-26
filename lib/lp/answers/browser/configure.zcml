@@ -141,10 +141,6 @@
     permission="zope.Public"
     >
     <browser:page
-      name="+history"
-      template="../templates/question-history.pt"
-      />
-    <browser:page
       name="+portlet-reopenings"
       template="../templates/question-portlet-reopenings.pt"
       />
@@ -175,6 +171,14 @@
     class=".question.QuestionWorkflowView"
     permission="zope.Public"
     template="../templates/question-index.pt"
+    />
+
+  <browser:page
+    name="+history"
+    for="lp.answers.interfaces.question.IQuestion"
+    class=".question.QuestionHistoryView"
+    permission="zope.Public"
+    template="../templates/question-history.pt"
     />
 
   <browser:page
