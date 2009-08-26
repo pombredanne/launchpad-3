@@ -617,7 +617,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
     total_size: 1
     ---
     bug_link: u'http://.../bugs/...'
-    date_created: ...
+    date_created: u'...'
     date_decided: None
     decider_link: None
     distroseries_link: None
@@ -627,9 +627,6 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
     self_link: u'http://.../bugs/.../nominations/...'
     status: u'Nominated'
     ---
-
-    >>> nominations['entries'][0]['date_created'] is not None
-    True
 
 John cannot approve or decline the nomination.
 
@@ -677,8 +674,8 @@ We can see that the nomination was declined.
     total_size: 1
     ---
     bug_link: u'http://.../bugs/...'
-    date_created: ...
-    date_decided: ...
+    date_created: u'...'
+    date_decided: u'...'
     decider_link: u'http://.../~eric'
     distroseries_link: None
     owner_link: u'http://.../~john'
@@ -687,11 +684,6 @@ We can see that the nomination was declined.
     self_link: u'http://.../bugs/.../nominations/...'
     status: u'Declined'
     ---
-
-    >>> nominations['entries'][0]['date_created'] is not None
-    True
-    >>> nominations['entries'][0]['date_decided'] is not None
-    True
 
 The owner can approve a previously declined nomination.
 
@@ -707,8 +699,8 @@ This marks the nomination as Approved, and creates a new task.
     total_size: 1
     ---
     bug_link: u'http://.../bugs/...'
-    date_created: ...
-    date_decided: ...
+    date_created: u'...'
+    date_decided: u'...'
     decider_link: u'http://.../~eric'
     distroseries_link: None
     owner_link: u'http://.../~john'
