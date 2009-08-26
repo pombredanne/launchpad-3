@@ -221,6 +221,16 @@ class PreviewDiff(Storm):
     def create(cls, diff_content, diffstat,
                source_revision_id, target_revision_id,
                dependent_revision_id, conflicts):
+        """Create a PreviewDiff with specified values.
+
+        :param diff_content: The text of the dift, as bytes.
+        :param diffstat: The diffstat associated with the diff, as bytes.
+        :param source_revision_id: The revision_id of the source branch.
+        :param target_revision_id: The revision_id of the target branch.
+        :param dependent_revision_id: The revision_id of the dependent branch.
+        :param conflicts: The conflicts, as text.
+        :return: A `PreviewDiff` with specified values.
+        """
         preview = cls()
         preview.source_revision_id = source_revision_id
         preview.target_revision_id = target_revision_id
