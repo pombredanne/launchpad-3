@@ -6,20 +6,17 @@
 __metaclass__ = type
 
 __all__ = [
+    'ActiveReviewsView',
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     'PersonActiveReviewsView',
-    'ProductActiveReviewsView',
-    'ProjectActiveReviewsView',
     ]
 
-from storm.expr import Union
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad import _
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
