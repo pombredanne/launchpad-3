@@ -430,7 +430,7 @@ class TestCaseWithFactory(TestCase):
             branch_url = db_branch.warehouse_url
         if self.real_bzr_server:
             transaction.commit()
-        bzr_branch = self.createBranchAtURL(branch_url)
+        bzr_branch = self.createBranchAtURL(branch_url, format=format)
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
 
