@@ -43,6 +43,7 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
@@ -220,6 +221,7 @@ class Hierarchy(LaunchpadView):
         """The objects for which we want breadcrumbs."""
         return self.request.traversed_objects
 
+    @cachedproperty
     def items(self):
         """Return a list of `IBreadcrumb` objects visible in the hierarchy.
 
@@ -251,6 +253,12 @@ class Hierarchy(LaunchpadView):
                 break
         return breadcrumbs
 
+    @property
+    def display_breadcrumbs(self):
+        """Return whether the breadcrumbs should be displayed."""
+        # If there is only one breadcrumb then it does not make sense
+        # to display it as it will simply repeat the context.title.
+        return len(self.items) > 1
 
 class MaintenanceMessage:
     """Display a maintenance message if the control file is present and

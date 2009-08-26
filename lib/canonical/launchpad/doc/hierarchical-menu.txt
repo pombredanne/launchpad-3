@@ -74,7 +74,7 @@ The hierarchy's list of breadcrumbs is empty since none of the objects
 have an IBreadcrumb adapter.
 
     >>> hierarchy = getMultiAdapter((recipe, request), name='+hierarchy')
-    >>> hierarchy.items()
+    >>> hierarchy.items
     []
 
 The ICookbook and IRecipe breadcrumb objects show up in the hierarchy after
@@ -95,7 +95,8 @@ breadcrumbs starting with the breadcrumb closest to the hierarchy root.
     >>> provideAdapter(TextualBreadcrumb, [ICookbook], IBreadcrumb)
     >>> provideAdapter(TextualBreadcrumb, [IRecipe], IBreadcrumb)
 
-    >>> hierarchy.items()
+    >>> hierarchy = getMultiAdapter((recipe, request), name='+hierarchy')
+    >>> hierarchy.items
     [<TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>,
@@ -115,7 +116,7 @@ domains. The `Hierarchy` model copes fine with objects like that.
 
     >>> cooker_hierarchy = getMultiAdapter(
     ...     (cooker, cooker_request), name='+hierarchy')
-    >>> cooker_hierarchy.items()
+    >>> cooker_hierarchy.items
     [<TextualBreadcrumb url='http://launchpad.dev/+cooker/jamie' text='Jamie'>]
 
 
@@ -209,7 +210,7 @@ consistency across the site.
     ...         return [recipe]
 
     >>> spammy_hierarchy = CustomHierarchy(root, request)
-    >>> spammy_hierarchy.items()
+    >>> spammy_hierarchy.items
     [<TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking/spam'
         text='Spam'
@@ -227,12 +228,11 @@ location bar.
     # Borrowed from launchpad.testing.pages.print_location()
     >>> def print_hierarchy(html):
     ...     soup = BeautifulSoup(html)
-    ...     hierarchy = soup.find(attrs={'id': 'lp-hierarchy'}).findAll(
+    ...     hierarchy = soup.find(attrs={'class': 'breadcrumbs'}).findAll(
     ...         recursive=False)
     ...     segments = [extract_text(step).encode('us-ascii', 'replace')
-    ...                 for step in hierarchy
-    ...                 if step.name != 'small']
-    ...     print 'Location:', ' > '.join(segments[2:])
+    ...                     for step in hierarchy]
+    ...     print 'Location:', ' > '.join(segments)
 
     >>> print_hierarchy(hierarchy.render())
     Location: Joy of cooking > Spam
@@ -245,7 +245,7 @@ considered to be on the home page if there are no breadcrumbs.
     >>> homepage_hierarchy = getMultiAdapter(
     ...     (root, request), name='+hierarchy')
 
-    >>> homepage_hierarchy.items()
+    >>> homepage_hierarchy.items
     []
 
     >>> print_hierarchy(homepage_hierarchy.render())
@@ -254,15 +254,12 @@ considered to be on the home page if there are no breadcrumbs.
 Breadcrumbs in the hierarchy that have icons are rendered with an <img>
 tag.  Breadcrumbs without icons are not.
 
-    >>> breadcrumb_no_icon, breadcrumb_with_icon = hierarchy.items()
+    >>> breadcrumb_no_icon, breadcrumb_with_icon = hierarchy.items
 
     >>> breadcrumb_no_icon
     <TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
-
-    >>> 'img' in hierarchy.getHtmlForBreadcrumb(breadcrumb_no_icon)
-    False
 
     >>> breadcrumb_with_icon
     <TextualBreadcrumb
@@ -270,5 +267,9 @@ tag.  Breadcrumbs without icons are not.
         text='Spam'
         icon='<img src="/@@/recipe"/>'>
 
-    >>> print hierarchy.getHtmlForBreadcrumb(breadcrumb_with_icon)
-    <span ...><a ...><img src="/@@/recipe"/> Spam</a></span>
+    >>> soup = BeautifulSoup(hierarchy.render())
+    >>> img_elems = soup.findAll('img')
+    >>> for img in img_elems:
+    ...     print img
+    <img src="/@@/recipe" />
+

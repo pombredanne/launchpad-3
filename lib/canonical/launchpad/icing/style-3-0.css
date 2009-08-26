@@ -462,16 +462,21 @@ p.search-results {
 /* Breadcrumb styling */
 ol.breadcrumbs {
     margin-left: 0;
+    clear: both;
 }
 ol.breadcrumbs li {
     display:inline;
     list-style-type: none;
+    padding: 0;
 }
 ol.breadcrumbs li a {
-    font-color: #494949; /* why won't this work */
+    color: #494949;
 }
 ol.breadcrumbs li:before { content: "»" }
-ol.breadcrumbs li:first-child:before { content: ""; }
+/* The following leaves a small margin in chrome/webkit, but using none
+ * doesn't hide the » in webkit either (both work for FF3.5).
+ */
+ol.breadcrumbs li:first-child:before { content: ''; }
 ol.breadcrumbs li:last-child {
     font-weight: bold;
 }

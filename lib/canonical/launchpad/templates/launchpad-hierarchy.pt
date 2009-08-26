@@ -6,7 +6,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   i18n:domain="launchpad">
 
-<tal:breadcrumbs repeat="breadcrumb view/items">
+<tal:breadcrumbs repeat="breadcrumb view/items"
+                 condition="view/display_breadcrumbs">
   <li>
     <a tal:attributes="href breadcrumb/url">
       <tal:icon condition="breadcrumb/icon"
