@@ -6,29 +6,31 @@
 __metaclass__ = type
 
 __all__ = [
-    'FAQContextMenu',
+    'FAQNavigationMenu',
     'FAQEditView',
     ]
 
 from canonical.launchpad import _
-from lp.answers.browser.faqcollection import FAQCollectionMenu
-from canonical.launchpad.interfaces import IFAQ
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, LaunchpadEditFormView,
-    Link)
+    action, NavigationMenu, canonical_url, enabled_with_permission,
+    LaunchpadEditFormView, Link)
+
+from lp.answers.browser.faqcollection import FAQCollectionMenu
+from lp.answers.interfaces.faq import IFAQ
 
 
-class FAQContextMenu(FAQCollectionMenu):
+class FAQNavigationMenu(NavigationMenu):
     """Context menu of actions that can be performed upon a FAQ."""
+
     usedfor = IFAQ
-    links = FAQCollectionMenu.links + [
-        'edit',
-        ]
+    title = 'Edit FAQ'
+    facet = 'answers'
+    links = ['edit']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         """Return a Link to the edit view."""
-        return Link('+edit', _('Edit FAQ'))
+        return Link('+edit', _('Edit FAQ'), icon='edit')
 
 
 class FAQEditView(LaunchpadEditFormView):
