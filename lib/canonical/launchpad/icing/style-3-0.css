@@ -398,6 +398,9 @@ span.see-all {
     font-size: 138.5%;
     }
 
+.main-portlet {
+    margin: 1em 0 1em 0;
+    }
 
 /* Common list presentations. */
 .bulleted {

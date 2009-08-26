@@ -13,12 +13,22 @@
 
 <tal:main metal:fill-slot="main">
 
-  <p tal:condition="view/description"
-     tal:content="view/description" style="margin-top: 0.5em;"/>
-  <p tal:condition="view/mirror_count">
-    There are <tal:total_number replace="view/mirror_count" />
-    mirror(s) registered for <tal:context replace="context/title" />.
-  </p>
+  <div class="main-portlet">
+    <p class="application-summary"
+       tal:condition="view/description"
+       tal:content="view/description"/>
+    <p tal:define="mirror_count view/mirror_count"
+       tal:condition="mirror_count">
+      <span tal:condition="python: mirror_count == 1">
+        There is <strong class="registry-stat">1</strong> mirror</span>
+      <span tal:condition="python: mirror_count != 1">
+        There are
+        <strong class="registry-stat" tal:content="mirror_count" />
+        mirrors
+      </span>
+      registered for <tal:context replace="context/title" />.
+    </p>
+  </div>
 
   <div class="top-portlet" style="margin-top: 0.5em;">
   <tal:block define="mirrors_by_country view/getMirrorsGroupedByCountry">
