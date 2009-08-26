@@ -8,19 +8,9 @@
 
   <p>
     Projects listed here are using
-    <a tal:attributes="href context/fmt:url"
-       tal:content="context/title"
-       >this group</a> to manage their translations.
-    This means that members of the group (as displayed above in
-    the <a href="#teams">Translation teams</a> section) are in charge
-    of managing translations for their particular language.
-  </p>
-
-  <p>
-    Want to set your project as using 
-    <a tal:attributes="href context/fmt:url"
-       tal:content="context/title"
-       >this group</a>?  Set it on Translations Settings page.
+    <tal:group content="context/title">this group</tal:group>
+    to manage their translations through the respective
+    <a href="#teams">translation teams</a>.
   </p>
 
   <div id="related-projects">
