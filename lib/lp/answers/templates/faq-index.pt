@@ -16,13 +16,13 @@
 <div metal:fill-slot="main">
 
     <div id="faq-details">
-        Created by:
+        Created by
         <span tal:content="structure context/owner/fmt:link" /> on
         <tal:creationdate
             attributes="title context/date_created/fmt:datetime"
             content="context/date_created/fmt:datetime" />
         <tal:last_updated_by condition="context/last_updated_by">
-          - Last updated by:
+          - Last updated by
           <span tal:content="structure context/last_updated_by/fmt:link" /> on
           <tal:updateddate
               attributes="title context/date_last_updated/fmt:datetime"
