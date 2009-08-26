@@ -3,7 +3,7 @@
 Setting the bug supervisor for an upstream requires launchpad.Edit
 permission on the product.
 
-    >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
+    >>> browser.addHeader("Authorization", "Basic mark@example.com:test")
 
     >>> browser.open("http://localhost:9000/firefox/+bugsupervisor")
     >>> browser.getControl(name="field.bug_supervisor").value = (

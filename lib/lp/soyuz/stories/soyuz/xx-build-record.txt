@@ -146,6 +146,19 @@ messages.
     one line
     another line
 
+When accessed by logged in users, the build page renders the
+'buildlog' section with a timestamp at the bottom on the user
+timezone. This way they can easily find out if they are reading
+outdated information.
+
+    >>> user_browser.open(anon_browser.url)
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'buildlog'))
+    Buildlog
+    one line
+    another line
+    Updated on ...
+
 If the build procedure fails, the 'Build Status' section is augmented
 with links to the full 'buildlog' and optionally the failed
 'uploadlog' additionally to the instant when the process finished and
@@ -189,7 +202,7 @@ they are private.
 Administrators can retry failed builds using the 'retry' icon in the
 'Build Status' section.
 
-    >>> admin_browser.reload()
+    >>> admin_browser.open(admin_browser.url)
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'status'))
     Build status
@@ -326,7 +339,7 @@ corresponding page.
     >>> unused = upload.realiseUpload()
     >>> logout()
 
-    >>> anon_browser.reload()
+    >>> anon_browser.open(anon_browser.url)
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'binaries'))
@@ -403,7 +416,7 @@ packages, since they do not exist.
     LinkNotFoundError
 
     >>> print anon_browser.getLink('PPA for Celso Providelo').url
-    http://launchpad.dev/%7Ecprov/+archive/ppa
+    http://launchpad.dev/~cprov/+archive/ppa
 
     >>> print anon_browser.getLink('Breezy Badger Autotest').url
     http://launchpad.dev/ubuntutest/breezy-autotest
@@ -434,4 +447,3 @@ Finally, the 'Build files' section is identical for PPA builds.
 
     >>> print anon_browser.getLink('ppa-test-bin_1.0_all.deb').url
     http://.../+build/32/+files/ppa-test-bin_1.0_all.deb
-

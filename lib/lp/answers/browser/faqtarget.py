@@ -40,6 +40,10 @@ class FAQCreateView(LaunchpadFormView):
 
     custom_widget('keywords', TokensTextWidget)
 
+    @property
+    def page_title(self):
+        return 'Create a FAQ for %s' % self.context.displayname
+
     @action(_('Create'), name='create')
     def create__action(self, action, data):
         """Creates the FAQ."""

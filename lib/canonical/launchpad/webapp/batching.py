@@ -62,6 +62,16 @@ class BatchNavigator(lazr.batchnavigator.BatchNavigator):
     def max_batch_size(self):
         return config.launchpad.max_batch_size
 
+    @property
+    def has_multiple_pages(self):
+        """Whether the total size is greater than the batch size.
+
+        When true, it means that the batch should be rendered on multiple
+        pages, and a navigation heading should be included above and below the
+        table.
+        """
+        return self.batch.total() > self.batch.size
+
 
 class TableBatchNavigator(BatchNavigator):
     """See canonical.launchpad.interfaces.ITableBatchNavigator."""
@@ -75,4 +85,3 @@ class TableBatchNavigator(BatchNavigator):
         if columns_to_show:
             for column_to_show in columns_to_show:
                 self.show_column[column_to_show] = True
-

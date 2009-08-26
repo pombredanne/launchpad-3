@@ -148,7 +148,7 @@ Or by any of its URLs (HTTP, FTP or Rsync)
 First we'll have to add some of this URLs to sample data:
 
     >>> from canonical.launchpad.ftests import login
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
     >>> example_mirror.ftp_base_url = 'ftp://localhost/example-ftp'
     >>> example_mirror.rsync_base_url = 'rsync://localhost/example-rsync'
 
@@ -337,11 +337,11 @@ up on the public mirror listings.
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
-    'mark@hbd.com,karl@canonical.com'
+    'mark@example.com,karl@canonical.com'
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
-    'mark@hbd.com'
+    'mark@example.com'
     >>> valid_mirror.enabled
     False
     >>> print msg.get_payload()
@@ -371,7 +371,7 @@ single notification to the distribution's mirror admins.
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
-    'mark@hbd.com,karl@canonical.com'
+    'mark@example.com,karl@canonical.com'
 
     Now we delete the MirrorProbeRecord we've just created, to make
     sure this mirror is probed by our prober script.

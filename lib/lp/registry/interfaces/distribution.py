@@ -34,6 +34,9 @@ from lazr.restful.declarations import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
@@ -528,7 +531,8 @@ class IDistributionPublic(
         """Can the user edit this distribution?"""
 
 
-class IDistribution(IDistributionEditRestricted, IDistributionPublic):
+class IDistribution(IDistributionEditRestricted, IDistributionPublic,
+                    IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution."""
     export_as_webservice_entry()
 

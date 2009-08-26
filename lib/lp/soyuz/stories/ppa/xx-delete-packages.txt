@@ -84,9 +84,9 @@ matching the given text.
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 The user may delete packages from a PPA without providing a reason
-(deletion comment). Let's try it on sabdfl's archive.
+(deletion comment). Let's try it on mark's archive.
 
-    >>> admin_browser.open('http://launchpad.dev/~sabdfl/+archive')
+    >>> admin_browser.open('http://launchpad.dev/~mark/+archive')
     >>> admin_browser.getLink('Delete packages').click()
     >>> print_ppa_packages(admin_browser.contents)
     Source            Published   Status     Series          Section  Build
@@ -110,7 +110,7 @@ Please note that the 'deletion_comment' field (which is optional) is empty.
     iceweasel 1.0 in breezy-autotest
     Deletion comment: None
 
-The single package in sabdfl's archive was deleted successfully.
+The single package in mark's archive was deleted successfully.
 
     >>> print_ppa_packages(admin_browser.contents)
 
@@ -242,8 +242,9 @@ Multiple packages can be deleted in one single batch.
 The page doesn't present the form anymore, since there are no sources
 available for deletion.
 
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Delete packages from PPA for Celso Providelo
+    >>> main_content = find_main_content(admin_browser.contents)
+    >>> print extract_text(
+    ...   find_tags_by_class(str(main_content), 'top-portlet')[0])
     This PPA does not contain any source packages published.
 
 All the packages were deleted via the admin_browser, now we will

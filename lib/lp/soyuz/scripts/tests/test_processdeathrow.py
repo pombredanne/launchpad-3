@@ -91,7 +91,7 @@ class TestProcessDeathRow(TestCase):
     def setupPPA(self):
         """Create pending removal publications in cprov PPA.
 
-        Firstly, transform the cprov & sabdfl PPAs in a ubuntutest PPA,
+        Firstly, transform the cprov & mark PPAs in a ubuntutest PPA,
         since ubuntu publish configuration is broken in the sampledata.
 
         Also create one respective file in disk, so it can be removed and
@@ -104,9 +104,9 @@ class TestProcessDeathRow(TestCase):
         ppa_pubrecs = cprov.archive.getPublishedSources('iceweasel')
         self.ppa_pubrec_ids = self.markPublishingForRemoval(ppa_pubrecs)
 
-        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-        removeSecurityProxy(sabdfl.archive).distribution = ubuntutest
-        ppa_pubrecs = sabdfl.archive.getPublishedSources('iceweasel')
+        mark = getUtility(IPersonSet).getByName('mark')
+        removeSecurityProxy(mark.archive).distribution = ubuntutest
+        ppa_pubrecs = mark.archive.getPublishedSources('iceweasel')
         self.ppa_pubrec_ids.extend(self.markPublishingForRemoval(ppa_pubrecs))
 
         # Fill one of the files in cprov PPA just to ensure that deathrow

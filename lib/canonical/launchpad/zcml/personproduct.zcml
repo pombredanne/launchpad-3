@@ -28,9 +28,9 @@
       />
 
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      factory="canonical.launchpad.browser.personproduct.PersonProductBreadcrumbBuilder"
+      factory="canonical.launchpad.browser.personproduct.PersonProductBreadcrumb"
       permission="zope.Public"
       />
 

@@ -6,12 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuilderBreadcrumbBuilder',
+    'BuilderBreadcrumb',
     'BuilderFacets',
     'BuilderOverviewMenu',
     'BuilderNavigation',
     'BuilderSetAddView',
-    'BuilderSetBreadcrumbBuilder',
+    'BuilderSetBreadcrumb',
     'BuilderSetFacets',
     'BuilderSetOverviewMenu',
     'BuilderSetNavigation',
@@ -41,7 +41,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from lazr.delegates import delegates
 from canonical.widgets import HiddenUserWidget
@@ -65,7 +65,7 @@ class BuilderSetNavigation(GetitemNavigation):
             return self.redirectSubTree(canonical_url(build))
 
 
-class BuilderSetBreadcrumbBuilder(BreadcrumbBuilder):
+class BuilderSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBuilderSet`."""
     text = 'Build Farm'
 
@@ -75,7 +75,7 @@ class BuilderNavigation(Navigation):
     usedfor = IBuilder
 
 
-class BuilderBreadcrumbBuilder(BreadcrumbBuilder):
+class BuilderBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBuilder`."""
     @property
     def text(self):
@@ -311,6 +311,17 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         else:
             return "Switch to manual-mode"
 
+
+class BuilderHistoryView(BuilderView):
+    """This class exists only to override the page_title."""
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Build history for "%s"' % self.context.title)
+
+
 class BuilderSetAddView(LaunchpadFormView):
     """View class for adding new Builders."""
 
@@ -344,6 +355,16 @@ class BuilderSetAddView(LaunchpadFormView):
             )
         notify(ObjectCreatedEvent(builder))
         self.next_url = canonical_url(builder)
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """Canceling the add action should go back to the build farm."""
+        return canonical_url(self.context)
 
 
 class BuilderEditView(LaunchpadEditFormView):

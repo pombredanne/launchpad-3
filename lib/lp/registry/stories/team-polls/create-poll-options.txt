@@ -37,10 +37,6 @@ After adding an options we're taken back to the poll's home page.
 And here we see the option listed as one of the active options for this
 poll.
 
-    >>> team_admin_browser.getLink('Show option details').click()
-    >>> team_admin_browser.url
-    'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+options'
-
     >>> print extract_text(
     ...     find_tag_by_id(team_admin_browser.contents, 'options'))
     Name        Title           Active
