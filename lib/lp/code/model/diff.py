@@ -115,27 +115,15 @@ class Diff(SQLBase):
         """
         if size == 0:
             diff_text = None
+            diff_lines_count = 0
         else:
             if filename is None:
                 filename = generate_uuid() + '.txt'
             diff_text = getUtility(ILibraryFileAliasSet).create(
                 filename, size, diff_content, 'text/x-diff')
-        return klass(diff_text=diff_text)
-
-    def _update(self, diff_content, diffstat, filename):
-        """Update the diff content and diffstat."""
-        # XXX: Tim Penhey, 2009-02-12, bug 328271
-        # If the branch is private we should probably use the restricted
-        # librarian.
-        if diff_content is None or len(diff_content) == 0:
-            self.diff_text = None
-            self.diff_lines_count = 0
-        else:
-            self.diff_text = getUtility(ILibraryFileAliasSet).create(
-                filename, len(diff_content), StringIO(diff_content),
-                'text/x-diff')
-            self.diff_lines_count = len(diff_content.strip().split('\n'))
-        self.diffstat = diffstat
+            diff_content.seek(0)
+            diff_lines_count = len(diff_content.read(size).strip().split('\n'))
+        return klass(diff_text=diff_text, diff_lines_count=diff_lines_count)
 
 
 class StaticDiff(SQLBase):
@@ -228,16 +216,21 @@ class PreviewDiff(Storm):
             source_branch, source_revision, target_branch)
         return preview
 
-    def update(self, diff_content, diffstat,
+    @classmethod
+    def create(cls, diff_content, diffstat,
                source_revision_id, target_revision_id,
                dependent_revision_id, conflicts):
-        self.source_revision_id = source_revision_id
-        self.target_revision_id = target_revision_id
-        self.dependent_revision_id = dependent_revision_id
-        self.conflicts = conflicts
+        preview = cls()
+        preview.source_revision_id = source_revision_id
+        preview.target_revision_id = target_revision_id
+        preview.dependent_revision_id = dependent_revision_id
+        preview.conflicts = conflicts
 
         filename = generate_uuid() + '.txt'
-        self.diff._update(diff_content, diffstat, filename)
+        size = len(diff_content)
+        preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
+        preview.diffstat = diffstat
+        return preview
 
     @property
     def stale(self):

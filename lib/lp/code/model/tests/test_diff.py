@@ -223,7 +223,7 @@ class TestPreviewDiff(DiffTestCase):
     def test_empty_diff(self):
         # Once the source is merged into the target, the diff between the
         # branches will be empty.
-        mp = self._createProposalWithPreviewDiff(content=None)
+        mp = self._createProposalWithPreviewDiff(content='')
         preview = mp.preview_diff
         self.assertIs(None, preview.diff_text)
         self.assertEqual(0, preview.diff_lines_count)
