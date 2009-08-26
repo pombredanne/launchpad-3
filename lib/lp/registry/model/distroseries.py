@@ -88,7 +88,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
@@ -848,19 +848,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getSourcesPublishedForAllArchives(self):
         """See `IDistroSeries`."""
-        # Both, PENDING and PUBLISHED sources will be considered for
-        # as PUBLISHED. It's part of the assumptions made in:
-        # https://launchpad.net/soyuz/+spec/build-unpublished-source
-        pend_build_statuses = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED,
-            )
-
         query = """
             SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.status in %s
-         """ % sqlvalues(self, pend_build_statuses)
+            SourcePackagePublishingHistory.status in %s AND
+            Archive.purpose != %s
+         """ % sqlvalues(self, active_publishing_status, ArchivePurpose.COPY)
 
         if not self.isUnstable():
             # Stable distroseries don't allow builds for the release
