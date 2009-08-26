@@ -25,12 +25,21 @@ class FAQNavigationMenu(NavigationMenu):
     usedfor = IFAQ
     title = 'Edit FAQ'
     facet = 'answers'
-    links = ['edit']
+    links = ['edit', 'list_all']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         """Return a Link to the edit view."""
         return Link('+edit', _('Edit FAQ'), icon='edit')
+
+    def list_all(self):
+        """Return a Link to list all FAQs."""
+        # We adapt to IFAQCollection so that the link can be used
+        # on objects which don't provide `IFAQCollection` directly, but for
+        # which an adapter exists that gives the proper context.
+        collection = IFAQCollection(self.context)
+        url = canonical_url(collection, rootsite='answers') + '/+faqs'
+        return Link(url, 'List all FAQs', icon='info')
 
 
 class FAQEditView(LaunchpadEditFormView):
