@@ -17,12 +17,12 @@ __all__ = [
     'NominationSeriesObsoleteError']
 
 from zope.schema import Int, Datetime, Choice, Set
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_read_operation, export_write_operation, exported,
-    operation_parameters, webservice_error)
+    webservice_error)
 from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
@@ -32,7 +32,6 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.interfaces.validation import (
     can_be_nominated_for_serieses)
