@@ -12,26 +12,20 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 
-class TestBugCanBeNominatedForProductSeries(TestCaseWithFactory):
-    """Test IBug.canBeNominated for IProductSeries nominations."""
+class CanBeNominatedForTestMixin:
+    """Test case mixin for IBug.canBeNominatedFor."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugCanBeNominatedForProductSeries, self).setUp()
+        super(CanBeNominatedForTestMixin, self).setUp()
         login('foo.bar@canonical.com')
         self.eric = self.factory.makePerson(name='eric')
         self.setUpTarget()
 
     def tearDown(self):
         logout()
-        super(TestBugCanBeNominatedForProductSeries, self).tearDown()
-
-    def setUpTarget(self):
-        self.series = self.factory.makeProductSeries()
-        self.bug = self.factory.makeBug(product=self.series.product)
-        self.milestone = self.factory.makeMilestone(productseries=self.series)
-        self.random_series = self.factory.makeProductSeries()
+        super(CanBeNominatedForTestMixin, self).tearDown()
 
     def test_canBeNominatedFor_series(self):
         # A bug may be nominated for a series of a product with an existing
@@ -63,8 +57,19 @@ class TestBugCanBeNominatedForProductSeries(TestCaseWithFactory):
         self.assertFalse(self.bug.canBeNominatedFor(self.random_series))
 
 
+class TestBugCanBeNominatedForProductSeries(
+    CanBeNominatedForTestMixin, TestCaseWithFactory):
+    """Test IBug.canBeNominated for IProductSeries nominations."""
+
+    def setUpTarget(self):
+        self.series = self.factory.makeProductSeries()
+        self.bug = self.factory.makeBug(product=self.series.product)
+        self.milestone = self.factory.makeMilestone(productseries=self.series)
+        self.random_series = self.factory.makeProductSeries()
+
+
 class TestBugCanBeNominatedForDistroSeries(
-    TestBugCanBeNominatedForProductSeries):
+    CanBeNominatedForTestMixin, TestCaseWithFactory):
     """Test IBug.canBeNominated for IDistroSeries nominations."""
 
     def setUpTarget(self):
