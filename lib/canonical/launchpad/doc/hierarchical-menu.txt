@@ -231,7 +231,7 @@ location bar.
     ...     hierarchy = soup.find(attrs={'class': 'breadcrumbs'}).findAll(
     ...         recursive=False)
     ...     segments = [extract_text(step).encode('us-ascii', 'replace')
-    ...                     for step in hierarchy]
+    ...                 for step in hierarchy]
     ...     print 'Location:', ' > '.join(segments)
 
     >>> print_hierarchy(hierarchy.render())
