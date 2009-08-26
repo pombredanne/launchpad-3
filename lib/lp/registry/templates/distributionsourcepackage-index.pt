@@ -104,17 +104,6 @@
             <dd tal:content="current/architecturehintlist"/>
           </dl>
         </div>
-        <dl>
-          <dt>Initially uploaded to:</dt>
-          <dd>
-            <a tal:content="current/upload_distroseries/distribution/displayname"
-               tal:attributes="href current/upload_distroseries/distribution/fmt:url"
-               >Ubuntu</a>
-            <a tal:content="current/upload_distroseries/displayname"
-               tal:attributes="href current/upload_distroseries/fmt:url"
-               >Warty</a>
-          </dd>
-        </dl>
         <p style="font-size: 80%;">
           <sup>*</sup>actual publishing details may vary in this distribution, these are just the package defaults.
         </p>
@@ -172,7 +161,7 @@
               </form>
             </tal:has_packaging>
           </div><!--float right-->
-          <a tal:attributes="href row/distroseries/fmt:url"
+          <a tal:attributes="href row/series_package/fmt:url"
              tal:content="row/distroseries/title"/>
           (<span tal:content="row/distroseries/status/title/lower"/>)
         </td>
@@ -186,7 +175,7 @@
         <td style="white-space: nowrap">
           <a class="expander"
              tal:attributes="id string:pub${pubid}-expander;
-                             href string:+sourcepub/${pubid}/+listing-archive-extra">
+                             href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra">
             <img style="padding-right:0.5em;" src="/@@/treeCollapsed"
                  alt="Show details" title="Show details"
                  tal:attributes="id string:pub${pubid}-arrow"/>
@@ -217,15 +206,6 @@
     <script
        tal:content="string:LP.client.cache['archive_context_url'] = '${archive/fmt:url}';"/>
     <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
-
-
-      <!-- this needs to be a slightly different expander so we don't get all
-           the extra unnecessary table columns
-      <tr tal:define="pub context/latest_overall_publication">
-        <td tal:replace="structure pub/@@+listing-archive-detailed"/>
-        <metal:js use-macro="pub/archive/@@+macros/expandable-table-js"/>
-      </tr>
-      -->
 
     <p style="float:right; padding-top:1em">
       <a href="+publishinghistory">See full publishing history</a>
