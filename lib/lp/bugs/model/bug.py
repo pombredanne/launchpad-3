@@ -1135,8 +1135,10 @@ class Bug(SQLBase):
         """See `IBug`."""
         if IDistroSeries.providedBy(target):
             filter_args = dict(distroseriesID=target.id)
-        else:
+        elif IProductSeries.providedBy(target):
             filter_args = dict(productseriesID=target.id)
+        else:
+            return None
 
         nomination = BugNomination.selectOneBy(bugID=self.id, **filter_args)
 
