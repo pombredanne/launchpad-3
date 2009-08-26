@@ -159,8 +159,8 @@
           <a href="+editstatus" style="display:none" class="nulltext js-sction">
             Target to milestone
           </a>
-          <a href="+editstatus" class="value"
-              tal:content="context/milestone/title" />
+          <a tal:attributes="href context/milestone/fmt:url" class="value"
+             tal:content="context/milestone/title" />
           <a href="+editstatus" tal:condition="view/user_can_edit_milestone">
             <img class="editicon" src="/@@/edit">
           </a>

@@ -1,6 +1,6 @@
 = BinaryPackageRelease Pages =
 
-  >>> from zope.component import queryMultiAdapter
+  >>> from zope.component import getMultiAdapter
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.database import BinaryPackageRelease
 
@@ -16,7 +16,7 @@ Get a "mock" request:
 
 Let's instantiate the view for +portlet-details:
 
-  >>> pmount_view = queryMultiAdapter(
+  >>> pmount_view = getMultiAdapter(
   ...     (pmount_bin, request), name="+portlet-details")
 
 Main functionality of this class is to provide abstracted model of the
@@ -52,4 +52,3 @@ should be rendered for this dependency.
   ('tramp-package', None, '', None)
 
 Other relationship groups use the same mechanism.
-
