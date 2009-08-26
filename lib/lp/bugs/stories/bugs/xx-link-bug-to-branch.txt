@@ -1,0 +1,49 @@
+Linking a bug to a branch
+=========================
+
+The main page of a bug has a link to another page where users can
+link a branch to a bug.
+
+    >>> user_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bug/1")
+    >>> user_browser.getLink('Link a related branch').click()
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+bug/1/+addbranch
+    >>> print extract_text(find_tag_by_id(
+    ...    user_browser.contents, 'maincontent'))
+    Add a branch to bug #1
+    Bug #1: Firefox does not support SVG
+    Adding a Bazaar branch to a bug allows you to notify others about
+    where work is going on to fix this bug.
+    ...
+
+In the form of this page we can specify in a branch name that will be
+linked to the bug.
+
+    >>> branch_field = user_browser.getControl(name='field.branch')
+    >>> branch_field.value = '~name12/firefox/main'
+    >>> user_browser.getControl('Continue').click()
+
+This takes us back to the main page where this branch is now listed as
+a related branch.
+
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+bug/1
+    >>> print extract_text(find_tag_by_id(
+    ...    user_browser.contents, 'mainarea'))
+    Successfully registered branch main for this bug.
+    ...
+    Related branches
+    lp://dev/~name12/firefox/main (Development)
+    ...
+
+The text "Link a related brnach" has now changed to "Link another branch".
+
+    >>> user_browser.getLink('Link a related branch')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.getLink('Link another branch')
+    <Link text='Link another branch'
+        url='http://bugs.launchpad.dev/firefox/+bug/1/+addbranch'>
