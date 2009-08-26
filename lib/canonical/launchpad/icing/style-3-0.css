@@ -177,6 +177,9 @@ div.columns div.right div.portlet {
     border: none;
     padding: 0;
     }
+div.nolink {
+    font-weight: bold;
+    }
 #colophon {
     float: none;
     }
