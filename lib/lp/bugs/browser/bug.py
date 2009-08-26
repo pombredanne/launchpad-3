@@ -130,9 +130,11 @@ class BugNavigation(Navigation):
     @stepthrough('nominations')
     def traverse_nominations(self, nomination_id):
         """Traverse to a nomination by id."""
-        if not nomination_id.isdigit():
-            return None
-        return getUtility(IBugNominationSet).get(nomination_id)
+        if nomination_id.isdigit():
+            try:
+                return getUtility(IBugNominationSet).get(nomination_id)
+            except NotFoundError:
+                return None
 
 
 class BugFacets(StandardLaunchpadFacets):
