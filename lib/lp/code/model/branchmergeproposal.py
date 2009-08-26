@@ -34,7 +34,7 @@ from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
-from lp.code.model.diff import Diff, PreviewDiff
+from lp.code.model.diff import PreviewDiff
 from lp.registry.model.person import Person
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
