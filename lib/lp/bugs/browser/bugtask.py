@@ -163,7 +163,10 @@ from lp.registry.vocabularies import MilestoneVocabulary
 def assignee_renderer(context, field, request):
     """Render a bugtask assignee as a link."""
     def render(value):
-        return PersonFormatterAPI(context.assignee).link(None)
+        if context.assignee is None:
+            return ''
+        else:
+            return PersonFormatterAPI(context.assignee).link(None)
     return render
 
 @component.adapter(IBugTask, IReference, IWebServiceClientRequest)
