@@ -79,11 +79,18 @@ class ReviewLinksAggregator(WorkListLinksAggregator):
         return pofile.unreviewedCount()
 
 
+def person_is_reviewer(person):
+    """Is `person` a translations reviewer?"""
+    groups = ITranslationsPerson(person).translation_groups
+    return groups.any() is not None
+
+
 class PersonTranslationsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'translations'
-    links = ('overview', 'licensing', 'imports')
+    links = ('overview', 'licensing', 'imports', 'translations_to_review')
+    title = "Related pages"
 
     def overview(self):
         text = 'Overview'
@@ -97,6 +104,11 @@ class PersonTranslationsMenu(NavigationMenu):
         text = 'Translations licensing'
         enabled = (self.context == self.user)
         return Link('+licensing', text, enabled=enabled)
+
+    def translations_to_review(self):
+        text = 'Translations to review'
+        enabled = person_is_reviewer(self.context)
+        return Link('+translations-to-review', text, enabled=enabled)
 
 
 class PersonTranslationView(LaunchpadView):
@@ -139,7 +151,7 @@ class PersonTranslationView(LaunchpadView):
     @property
     def person_is_reviewer(self):
         """Is this person in a translation group?"""
-        return len(self.translation_groups) != 0
+        return person_is_reviewer(self.context)
 
     @property
     def person_is_translator(self):
