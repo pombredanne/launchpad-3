@@ -34,7 +34,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.cachedproperty import cachedproperty

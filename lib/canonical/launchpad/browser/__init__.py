@@ -21,7 +21,6 @@ from lp.code.browser.branchmergeproposal import *
 from lp.code.browser.branchref import *
 from lp.code.browser.branchsubscription import *
 from lp.code.browser.branchvisibilitypolicy import *
-from canonical.launchpad.browser.branding import *
 from lp.soyuz.browser.build import *
 from lp.soyuz.browser.builder import *
 from lp.code.browser.codeimport import *

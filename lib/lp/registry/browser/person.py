@@ -199,7 +199,7 @@ from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from lp.registry.browser.menu import (

@@ -34,7 +34,7 @@ from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 from lp.blueprints.interfaces.specification import (

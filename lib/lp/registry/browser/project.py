@@ -54,7 +54,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.registry.browser.product import (
     ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
