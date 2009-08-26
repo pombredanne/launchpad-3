@@ -343,6 +343,10 @@ class ArchiveMenuMixin:
         text = 'View all builds'
         return Link('+builds', text, icon='info')
 
+    def builds_successful(self):
+        text = 'View successful builds'
+        return Link('+builds?build_state=built', text, icon='info')
+
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         """Display a delete menu option for non-copy archives."""
@@ -375,8 +379,8 @@ class ArchiveContextMenu(ContextMenu, ArchiveMenuMixin):
     """Overview Menu for IArchive."""
 
     usedfor = IArchive
-    links = ['ppa', 'admin', 'edit', 'builds', 'delete', 'copy',
-             'edit_dependencies', 'manage_subscribers']
+    links = ['ppa', 'admin', 'edit', 'builds', 'builds_successful', 'delete',
+             'copy', 'edit_dependencies', 'manage_subscribers']
 
 
 class ArchiveNavigationMenu(NavigationMenu):

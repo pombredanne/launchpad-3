@@ -1886,7 +1886,8 @@ div.builds_list form {
     padding: 1em 1em 2em 0em;
 }
 
-/* Temporary style for actions on the ppa/+packages page until we move
+/* XXX
+ * Temporary style for actions on the ppa/+packages page until we move
  * the copy/delete packages functionality into the page itself. */
 div.ppa-packaging-tmp-actions {
     float:right;
