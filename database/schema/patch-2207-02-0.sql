@@ -15,8 +15,10 @@ ALTER TABLE BugNotificationAttachment
 -- Backup historical data until we can deal with it per Bug #407288.
 -- We keep the person foreign key constraint so this data is modified
 -- by Person merges.
+-- These two tables need to be populated manually after rollout and before
+-- garbo-daily.py is run.
 CREATE TABLE BugNotificationArchive AS
-    SELECT * FROM BugNotification;
+    SELECT * FROM BugNotification WHERE FALSE;
 ALTER TABLE BugNotificationArchive
     ADD CONSTRAINT bugnotificationarchive__bug__message__key
         UNIQUE (bug, message);
@@ -27,7 +29,7 @@ ALTER TABLE BugNotificationArchive
     ADD CONSTRAINT bugnotificationarchive__bug__fk
         FOREIGN KEY (bug) REFERENCES Bug;
 CREATE TABLE BugNotificationRecipientArchive AS
-    SELECT * FROM BugNotificationRecipient;
+    SELECT * FROM BugNotificationRecipient WHERE FALSE;
 CREATE INDEX bugnotificationrecipientarchive__person__idx
     ON bugnotificationrecipientarchive(person);
 CREATE INDEX bugnotificationrecipientarchive__bug_notification__idx
