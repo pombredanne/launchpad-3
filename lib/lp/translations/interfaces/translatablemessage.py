@@ -28,20 +28,24 @@ class ITranslatableMessage(Interface):
         title=_("Flag indicating that this TranslatableMessage is obsolete"),
         required=True)
 
-    is_current_diverged = Bool(
-        title=_("Flag indicating that the current translation is diverged"),
+    is_untranslated = Bool(
+        title=_("Flag indicating that the current translation is empty"),
         required=True)
 
-    is_current_empty = Bool(
-        title=_("Flag indicating that the current translation is empty"),
+    is_current_diverged = Bool(
+        title=_("Flag indicating that the current translation is diverged"),
         required=True)
 
     is_current_imported = Bool(
         title=_("Flag indicating that the current translation is imported"),
         required=True)
 
-    has_plural = Bool(
+    has_plural_forms = Bool(
         title=_("Flag indicating that there is an English plural string"),
+        required=True)
+
+    number_of_plural_forms = Int(
+        title=_("The number of plural forms in the target language"),
         required=True)
 
     def getCurrentTranslation():
@@ -61,31 +65,31 @@ class ITranslatableMessage(Interface):
         to the current translation if the current translation is shared.
         """
 
-    def getAllSuggestedTranslations():
+    def getAllSuggestions():
         """Return an iterator over all suggested translations."""
 
-    def getUnreviewedSuggestedTranslations():
+    def getUnreviewedSuggestions():
         """Return an iterator over unreviewed suggested translations.
 
         Return those translation messages that have a creation date newer
         than the review date of the current message (have not been reviewed).
         """
 
-    def getDismissedSuggestedTranslations(include_dismissed=True):
+    def getDismissedSuggestions(include_dismissed=True):
         """Return an iterator over dismissed suggested translations.
 
         Return those translation messages that have a creation date older
         than the review date of the current message (have been dismissed).
         """
 
-    def getExternalCurrentTranslations():
+    def getExternalTranslations():
         """Return an iterator over external translations.
 
         External translations are translations for the same English string
         in other products and source packages.
         """
 
-    def getExternalSuggestedTranslations():
+    def getExternalSuggestions():
         """Return an iterator over externally suggested translations.
 
         External suggested translations are suggestions for the same English

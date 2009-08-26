@@ -69,22 +69,40 @@ class TestTranslatableMessage(TestTranslatableMessageBase):
         message = TranslatableMessage(self.potmsgset, self.pofile)
         self.assertTrue(message.is_obsolete)
 
+    def test_is_untranslated(self):
+        translation = self._createTranslation('', is_current=True)
+        message = TranslatableMessage(self.potmsgset, self.pofile)
+        self.assertTrue(message.is_untranslated)
+
     def test_is_current_diverged(self):
         translation = self._createTranslation(is_current=True,
                                               is_diverged=True)
         message = TranslatableMessage(self.potmsgset, self.pofile)
         self.assertTrue(message.is_current_diverged)
 
-    def test_is_current_empty(self):
-        translation = self._createTranslation('', is_current=True)
-        message = TranslatableMessage(self.potmsgset, self.pofile)
-        self.assertTrue(message.is_current_empty)
-
     def test_is_current_imported(self):
         translation = self._createTranslation(is_current=True,
                                               is_imported=True)
         message = TranslatableMessage(self.potmsgset, self.pofile)
         self.assertTrue(message.is_current_imported)
+
+    def test_has_plural_forms(self):
+        message = TranslatableMessage(self.potmsgset, self.pofile)
+        self.assertFalse(message.has_plural_forms)
+
+        self.potmsgset.updatePluralForm(u"fooplural")
+        self.assertTrue(message.has_plural_forms)
+
+    def test_number_of_plural_forms(self):
+        # eo has 2 plural forms, sr has 3
+        self.potmsgset.updatePluralForm(u"fooplural")
+        message = TranslatableMessage(self.potmsgset, self.pofile)
+        self.assertEqual(2, message.number_of_plural_forms)
+
+        sr_pofile = self.factory.makePOFile(
+            potemplate=self.potemplate, language_code='sr')
+        message = TranslatableMessage(self.potmsgset, sr_pofile)
+        self.assertEqual(3, message.number_of_plural_forms)
 
     def test_getCurrentTranslation(self):
         translation = self._createTranslation(is_current=True)
@@ -128,12 +146,12 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase):
 
         self.message = TranslatableMessage(self.potmsgset, self.pofile)
 
-    def test_getExternalCurrentTranslations(self):
-        externals = self.message.getExternalCurrentTranslations()
+    def test_getExternalTranslations(self):
+        externals = self.message.getExternalTranslations()
         self.assertContentEqual([self.external_current], externals)
 
-    def test_getExternalSuggestedTranslations(self):
-        externals = self.message.getExternalSuggestedTranslations()
+    def test_getExternalSuggestions(self):
+        externals = self.message.getExternalSuggestions()
         self.assertContentEqual([self.external_suggestion], externals)
 
 
@@ -155,20 +173,20 @@ class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
         self.suggestion2 = self._createTranslation(date_updated=self.now())
         self.message = TranslatableMessage(self.potmsgset, self.pofile)
 
-    def test_getAllSuggestedTranslations(self):
+    def test_getAllSuggestions(self):
         # There are three different methods to return 
-        suggestions = self.message.getAllSuggestedTranslations()
+        suggestions = self.message.getAllSuggestions()
         self.assertContentEqual([self.suggestion1, self.suggestion2],
                                 suggestions)
 
-    def test_getDismissedSuggestedTranslations(self):
+    def test_getDismissedSuggestions(self):
         # There are three different methods to return 
-        suggestions = self.message.getDismissedSuggestedTranslations()
+        suggestions = self.message.getDismissedSuggestions()
         self.assertContentEqual([self.suggestion1], suggestions)
 
-    def test_getUnreviewedSuggestedTranslations(self):
+    def test_getUnreviewedSuggestions(self):
         # There are three different methods to return 
-        suggestions = self.message.getUnreviewedSuggestedTranslations()
+        suggestions = self.message.getUnreviewedSuggestions()
         self.assertContentEqual([self.suggestion2], suggestions)
 
     def test_dismissAllSuggestions(self):
@@ -177,7 +195,7 @@ class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
         # that are newer than the current one unless only_new is set to False.
 
         self.message.dismissAllSuggestions(self.potemplate.owner, self.now())
-        suggestions = self.message.getUnreviewedSuggestedTranslations()
+        suggestions = self.message.getUnreviewedSuggestions()
         self.assertContentEqual([], suggestions)
 
 

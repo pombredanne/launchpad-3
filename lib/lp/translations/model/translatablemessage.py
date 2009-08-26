@@ -54,18 +54,18 @@ class TranslatableMessage(object):
         return self.sequence == 0
 
     @property
+    def is_untranslated(self):
+        """See `ITranslatableMessage`"""
+        if self._current_translation is None:
+            return True
+        return self._current_translation.is_empty
+
+    @property
     def is_current_diverged(self):
         """See `ITranslatableMessage`"""
         if self._current_translation is None:
             return False
         return self._current_translation.potemplate == self.potemplate
-
-    @property
-    def is_current_empty(self):
-        """See `ITranslatableMessage`"""
-        if self._current_translation is None:
-            return True
-        return self._current_translation.is_empty
 
     @property
     def is_current_imported(self):
@@ -75,9 +75,17 @@ class TranslatableMessage(object):
         return self._current_translation.is_imported
 
     @property
-    def has_plural(self):
+    def has_plural_forms(self):
         """See `ITranslatableMessage`"""
-        return self.potmsgset.plural_text is not None
+        return self.potmsgset.msgid_plural is not None
+
+    @property
+    def number_of_plural_forms(self):
+        """See `ITranslatableMessage`"""
+        if self.has_plural_forms:
+            return self.pofile.plural_forms
+        else:
+            return 1
 
     def getCurrentTranslation(self):
         """See `ITranslatableMessage`"""
@@ -94,30 +102,30 @@ class TranslatableMessage(object):
         return self.potmsgset.getSharedTranslationMessage(self.language,
                                                           self.variant)
 
-    def getAllSuggestedTranslations(self):
+    def getAllSuggestions(self):
         """See `ITranslatableMessage`"""
         return self.potmsgset.getLocalTranslationMessages(
                    self.potemplate, self.language,
                    include_dismissed=True, include_unreviewed=True)
 
-    def getUnreviewedSuggestedTranslations(self):
+    def getUnreviewedSuggestions(self):
         """See `ITranslatableMessage`"""
         return self.potmsgset.getLocalTranslationMessages(
                    self.potemplate, self.language,
                    include_dismissed=False, include_unreviewed=True)
 
-    def getDismissedSuggestedTranslations(self):
+    def getDismissedSuggestions(self):
         """See `ITranslatableMessage`"""
         return self.potmsgset.getLocalTranslationMessages(
                    self.potemplate, self.language,
                    include_dismissed=True, include_unreviewed=False)
 
-    def getExternalCurrentTranslations(self):
+    def getExternalTranslations(self):
         """See `ITranslatableMessage`"""
         lang = self.language
         return self.potmsgset.getExternallyUsedTranslationMessages(lang)
 
-    def getExternalSuggestedTranslations(self):
+    def getExternalSuggestions(self):
         """See `ITranslatableMessage`"""
         lang = self.language
         return self.potmsgset.getExternallySuggestedTranslationMessages(lang)

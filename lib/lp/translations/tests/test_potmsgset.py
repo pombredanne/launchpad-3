@@ -300,48 +300,6 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 self.devel_potemplate, serbian)),
             set([]))
 
-    def test_getLocalTranslationMessages_selection(self):
-        # Suggestions that are older than the current translation are
-        # considered "dismissed" (or "reviewed"). To retrieve them, the
-        # include_dismissed parameter must be set to true. The parameter
-        # include_unreviewed defaults to True, but it is always shown here
-        # to be more explicit.
-        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
-        serbian = sr_pofile.language
-        old_suggestion = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=True)
-        current_translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=False)
-        new_suggestion = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=True)
-
-        # Setting both parameters to True retrieves all suggestions.
-        self.assertEquals(
-            set(self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, serbian,
-                include_dismissed=True, include_unreviewed=True)),
-            set([old_suggestion, new_suggestion]))
-
-        # Setting one of the two parameters to False retrieves only the
-        # requested suggestions.
-        self.assertEquals(
-            set(self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, serbian,
-                include_dismissed=False, include_unreviewed=True)),
-            set([new_suggestion]))
-        self.assertEquals(
-            set(self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, serbian,
-                include_dismissed=True, include_unreviewed=False)),
-            set([old_suggestion]))
-
-        # Setting both parameters to False retrieves nothing.
-        self.assertEquals(
-            set(self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, serbian,
-                include_dismissed=False, include_unreviewed=False)),
-            set([]))
-
     def test_getLocalTranslationMessages_empty_message(self):
         # An empty suggestion is never returned.
         self.potmsgset.setSequence(self.stable_potemplate, 1)
@@ -677,8 +635,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.devel_potemplate, serbian)
         self.assertEquals(current_translation, shared_translation)
 
-class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
-    """Test dimissal of translation suggestions."""
+class TestPOTMsgSetSuggestions(TestCaseWithFactory):
+    """Test retrieval and dismissal of translation suggestions."""
 
     layer = ZopelessDatabaseLayer
 
@@ -697,7 +655,7 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
     def setUp(self):
         # Create a product with all the boilerplate objects to be able to
         # create TranslationMessage objects.
-        super(TestPOTMsgSetSuggestionsDismissal, self).setUp()
+        super(TestPOTMsgSetSuggestions, self).setUp()
         self.now = self.gen_now().next
         self.foo = self.factory.makeProduct()
         self.foo_main = self.factory.makeProductSeries(
@@ -727,16 +685,16 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         self._setDateCreated(self.suggestion1)
         self._setDateCreated(self.suggestion2)
         # There are two local suggestions now.
-        self.assertEqual(set([self.suggestion1, self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion1, self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
         # There is no local suggestion now.
-        self.assertEqual(set(), set(
+        self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
 
     def test_dismiss_nochange(self):
         # Set order of creation and review.
@@ -744,17 +702,17 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         self._setDateCreated(self.suggestion2)
         self._setDateReviewed(self.translation)
         # There is no local suggestion.
-        self.assertEqual(set(), set(
+        self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
                 self.potemplate, self.pofile.language)
-            ))
+            )
         # Dismiss suggestions.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
         # There is still no local suggestion.
-        self.assertEqual(set(), set(
+        self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
 
     def test_dismiss_conflicting_suggestion(self):
         # Set order of creation and review.
@@ -763,16 +721,16 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         old_now = self.now()
         self._setDateCreated(self.suggestion2)
         # There are two local suggestions now.
-        self.assertEqual(set([self.suggestion1, self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion1, self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions using an older timestamp only dismisses those
         # that were filed before that timestamp.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), old_now)
-        self.assertEqual(set([self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
 
     def test_dismiss_conflicting_translation(self):
         # Set order of creation and review.
@@ -781,18 +739,18 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         self._setDateReviewed(self.translation)
         self._setDateCreated(self.suggestion2)
         # Only the 2nd suggestion is visible.
-        self.assertEqual(set([self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions using an older timestamp fails if there is
         # a newer curent translation.
         self.assertRaises(TranslationConflict, 
             self.potmsgset.dismissAllSuggestions,
             self.pofile, self.factory.makePerson(), old_now)
         # Still only the 2nd suggestion is visible.
-        self.assertEqual(set([self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
 
     def test_dismiss_empty_translation(self):
         # Set order of creation and review.
@@ -803,10 +761,10 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         suggestion3.is_current = False
         self._setDateCreated(suggestion3)
         # All suggestions are visible.
-        self.assertEqual(
-            set([self.suggestion1, self.suggestion2, suggestion3]),
-            set(self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+        self.assertContentEqual(
+            [self.suggestion1, self.suggestion2, suggestion3],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions, leaving the translation empty.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
@@ -815,9 +773,56 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         self.assertNotEqual(None, current)
         self.assertEqual([None], current.translations)
         # All suggestions are gone.
-        self.assertEqual(set(), set(
+        self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
+
+    def _setUp_for_getLocalTranslationMessages(self):
+        # Suggestions are retrieved using getLocalTranslationMessages.
+        # For these tests we need one suggestion that is dismissed (older)
+        # and one that is unreviewed (newer).
+        self._setDateCreated(self.suggestion1)
+        self._setDateReviewed(self.translation)
+        self._setDateCreated(self.suggestion2)
+
+    def test_getLocalTranslationMessages_include_unreviewed(self):
+        # Setting include_unreviewed to True and include_dismissed to False
+        # will only return those that have not been dismissed. This is
+        # the default behavior but is made explicit here.
+        self._setUp_for_getLocalTranslationMessages()
+        self.assertContentEqual(
+            [self.suggestion2],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language,
+                include_dismissed=False, include_unreviewed=True))
+
+    def test_getLocalTranslationMessages_include_dismissed(self):
+        # Setting include_unreviewed to False and include_dismissed to True
+        # will only return those that have been dismissed.
+        self._setUp_for_getLocalTranslationMessages()
+        self.assertContentEqual(
+            [self.suggestion1],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language,
+                include_dismissed=True, include_unreviewed=False))
+
+    def test_getLocalTranslationMessages_include_all(self):
+        # Setting both parameters to True retrieves all suggestions.
+        self._setUp_for_getLocalTranslationMessages()
+        self.assertContentEqual(
+            [self.suggestion1, self.suggestion2],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language,
+                include_dismissed=True, include_unreviewed=True))
+
+    def test_getLocalTranslationMessages_include_none(self):
+        # Setting both parameters to False retrieves nothing.
+        self._setUp_for_getLocalTranslationMessages()
+        self.assertContentEqual(
+            [],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language,
+                include_dismissed=False, include_unreviewed=False))
 
 
 class TestPOTMsgSetCornerCases(TestCaseWithFactory):
