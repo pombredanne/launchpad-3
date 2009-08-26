@@ -10,6 +10,7 @@
     is_demo modules/canonical.config/config/launchpad/is_demo;
     is_edge modules/canonical.config/config/launchpad/is_edge;
     is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+    site_message modules/canonical.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
     icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
     CONTEXTS python:{'template':template, 'context': context, 'view':view};
@@ -79,6 +80,12 @@
       ${view/context/fmt:public-private-css}
       yui-skin-sam">
     <div class="yui-d0">
+      <div id="globalheader" xml:lang="en" lang="en" dir="ltr"
+           tal:condition="site_message">
+        <div class="sitemessage" tal:content="site_message">
+          This site is running pre-release code.
+        </div>
+      </div>
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
