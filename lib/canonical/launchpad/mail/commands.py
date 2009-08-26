@@ -604,6 +604,10 @@ class AffectsEmailCommand(EmailCommand):
             # A series task has to have a corresponding
             # distribution/product task.
             general_task = bug.addTask(user, general_target)
+
+        # We know the target is of the right type, and we just created
+        # a pillar task, so if canBeNominatedFor == False then a task or
+        # nomination must already exist.
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
