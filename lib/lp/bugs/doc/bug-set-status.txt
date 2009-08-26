@@ -224,11 +224,7 @@ targeted to the non-current series of course.
     >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> nomination = bug.addNomination(
     ...     getUtility(ILaunchBag).user, ubuntu_hoary)
-    >>> nomination.isApproved()
-    False
     >>> nomination.approve(getUtility(ILaunchBag).user)
-    >>> nomination.isApproved()
-    True
     >>> login('no-priv@canonical.com')
 
     >>> commit()
@@ -249,11 +245,7 @@ targeted to the non-current series of course.
     >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> nomination = bug.addNomination(
     ...     getUtility(ILaunchBag).user, ubuntu_warty)
-    >>> nomination.isApproved()
-    False
     >>> nomination.approve(getUtility(ILaunchBag).user)
-    >>> nomination.isApproved()
-    True
     >>> login('no-priv@canonical.com')
 
     >>> commit()
