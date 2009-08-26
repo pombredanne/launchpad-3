@@ -375,6 +375,8 @@ def needs_authentication(func):
 class BugzillaAPI(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
+    implements(ISupportsCommentImport)
+
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
         super(BugzillaAPI, self).__init__(baseurl)
@@ -560,6 +562,124 @@ class BugzillaAPI(Bugzilla):
 
         return bug_ids
 
+    def getRemoteProduct(self, remote_bug):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(remote_bug)
+        return self._bugs[actual_bug_id]['product']
+
+    def getProductsForRemoteBugs(self, bug_ids):
+        """Return the products to which a set of remote bugs belong.
+
+        :param bug_ids: A list of bug IDs or aliases.
+        :returns: A dict of (bug_id_or_alias, product) mappings. If a
+            bug ID specified in `bug_ids` is invalid, it will be ignored.
+        """
+        # Fetch from the server those bugs that we haven't already
+        # fetched.
+        self.initializeRemoteBugDB(bug_ids)
+
+        bug_products = {}
+        for bug_id in bug_ids:
+            # If one of the bugs we're trying to get the product for
+            # doesn't exist, just skip it.
+            try:
+                actual_bug_id = self._getActualBugId(bug_id)
+            except BugNotFound:
+                continue
+
+            bug_dict = self._bugs[actual_bug_id]
+            bug_products[bug_id] = bug_dict['product']
+
+        return bug_products
+
+    def getCommentIds(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # Check that the bug exists, first.
+        if actual_bug_id not in self._bugs:
+            raise BugNotFound(bug_watch.remotebug)
+
+        # Get only the remote comment IDs and store them in the
+        # 'comments' field of the bug.
+        bug_comments_dict = self.xmlrpc_proxy.Bug.comments({
+            'ids': [actual_bug_id],
+            'include_fields': ['id'],
+            })
+
+        # We need to convert bug and comment ids to strings (see bugs
+        # 248662 amd 248938).
+        bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
+        return [str(comment['id']) for comment in bug_comments]
+
+    def fetchComments(self, bug_watch, comment_ids):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # We need to cast comment_ids to integers, since
+        # BugWatchUpdater.importBugComments() will pass us a list of
+        # strings (see bug 248938).
+        comment_ids = [int(comment_id) for comment_id in comment_ids]
+
+        # Fetch the comments we want.
+        return_dict = self.xmlrpc_proxy.Bug.comments({
+            'comment_ids': comment_ids,
+            })
+        comments = return_dict['comments']
+
+        # As a sanity check, drop any comments that don't belong to the
+        # bug in bug_watch.
+        for comment_id, comment in comments.items():
+            if int(comment['bug_id']) != actual_bug_id:
+                del comments[comment_id]
+
+        self._bugs[actual_bug_id]['comments'] = return_dict['comments']
+
+    def getPosterForComment(self, bug_watch, comment_id):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # We need to cast comment_id to integers, since
+        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # bug 248938).
+        comment_id = int(comment_id)
+
+        comment = self._bugs[actual_bug_id]['comments'][comment_id]
+        display_name, email = parseaddr(comment['author'])
+
+        # If the name is empty then we return None so that
+        # IPersonSet.ensurePerson() can actually do something with it.
+        if not display_name:
+            display_name = None
+
+        return (display_name, email)
+
+    def getMessageForComment(self, bug_watch, comment_id, poster):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # We need to cast comment_id to integers, since
+        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # bug 248938).
+        comment_id = int(comment_id)
+        comment = self._bugs[actual_bug_id]['comments'][comment_id]
+
+        # Turn the time in the comment, which is an XML-RPC datetime
+        # into something more useful to us.
+        # XXX 2008-08-05 gmb (bug 254999):
+        #     We can remove these lines once we upgrade to python 2.5.
+        comment_timestamp = time.mktime(
+            time.strptime(str(comment['time']), '%Y%m%dT%H:%M:%S'))
+        comment_datetime = datetime.fromtimestamp(comment_timestamp)
+        comment_datetime = comment_datetime.replace(
+            tzinfo=pytz.timezone('UTC'))
+
+        message = getUtility(IMessageSet).fromText(
+            owner=poster, subject='', content=comment['text'],
+            datecreated=comment_datetime)
+
+        return message
+
 
 class BugzillaLPPlugin(BugzillaAPI):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
@@ -627,31 +747,6 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         return bug_ids
 
-    def getProductsForRemoteBugs(self, bug_ids):
-        """Return the products to which a set of remote bugs belong.
-
-        :param bug_ids: A list of bug IDs or aliases.
-        :returns: A dict of (bug_id_or_alias, product) mappings. If a
-            bug ID specified in `bug_ids` is invalid, it will be ignored.
-        """
-        # Fetch from the server those bugs that we haven't already
-        # fetched.
-        self.initializeRemoteBugDB(bug_ids)
-
-        bug_products = {}
-        for bug_id in bug_ids:
-            # If one of the bugs we're trying to get the product for
-            # doesn't exist, just skip it.
-            try:
-                actual_bug_id = self._getActualBugId(bug_id)
-            except BugNotFound:
-                continue
-
-            bug_dict = self._bugs[actual_bug_id]
-            bug_products[bug_id] = bug_dict['product']
-
-        return bug_products
-
     def initializeRemoteBugDB(self, bug_ids, products=None):
         """See `IExternalBugTracker`."""
         # First, discard all those bug IDs about which we already have
@@ -685,11 +780,6 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         server_utc_time = datetime(*server_timetuple[:6])
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
-
-    def getRemoteProduct(self, remote_bug):
-        """See `IExternalBugTracker`."""
-        actual_bug_id = self._getActualBugId(remote_bug)
-        return self._bugs[actual_bug_id]['product']
 
     def getCommentIds(self, bug_watch):
         """See `ISupportsCommentImport`."""
@@ -743,51 +833,6 @@ class BugzillaLPPlugin(BugzillaAPI):
             (comment['id'], comment) for comment in comment_list)
 
         self._bugs[actual_bug_id]['comments'] = bug_comments
-
-    def getPosterForComment(self, bug_watch, comment_id):
-        """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
-
-        # We need to cast comment_id to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a string (see
-        # bug 248938).
-        comment_id = int(comment_id)
-
-        comment = self._bugs[actual_bug_id]['comments'][comment_id]
-        display_name, email = parseaddr(comment['author'])
-
-        # If the name is empty then we return None so that
-        # IPersonSet.ensurePerson() can actually do something with it.
-        if not display_name:
-            display_name = None
-
-        return (display_name, email)
-
-    def getMessageForComment(self, bug_watch, comment_id, poster):
-        """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
-
-        # We need to cast comment_id to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a string (see
-        # bug 248938).
-        comment_id = int(comment_id)
-        comment = self._bugs[actual_bug_id]['comments'][comment_id]
-
-        # Turn the time in the comment, which is an XML-RPC datetime
-        # into something more useful to us.
-        # XXX 2008-08-05 gmb (bug 254999):
-        #     We can remove these lines once we upgrade to python 2.5.
-        comment_timestamp = time.mktime(
-            time.strptime(str(comment['time']), '%Y%m%dT%H:%M:%S'))
-        comment_datetime = datetime.fromtimestamp(comment_timestamp)
-        comment_datetime = comment_datetime.replace(
-            tzinfo=pytz.timezone('UTC'))
-
-        message = getUtility(IMessageSet).fromText(
-            owner=poster, subject='', content=comment['text'],
-            datecreated=comment_datetime)
-
-        return message
 
     @needs_authentication
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):

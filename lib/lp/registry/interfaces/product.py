@@ -24,7 +24,6 @@ __all__ = [
 
 
 import re
-import sets
 
 from textwrap import dedent
 
@@ -959,8 +958,7 @@ class IProductReviewSearch(Interface):
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
-        # Zope requires sets.Set() instead of the builtin set().
-        default=sets.Set(
+        default=set(
             [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
 
     has_zero_licenses = Choice(
