@@ -10,6 +10,7 @@ __all__ = [
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     'PersonActiveReviewsView',
+    'PersonProductActiveReviewsView',
     ]
 
 from zope.component import getUtility
@@ -326,9 +327,12 @@ class PersonActiveReviewsView(ActiveReviewsView):
     def _getReviewer(self):
         return self.context
 
+    def _getCollection(self):
+        return getUtility(IAllBranches)
+
     def getProposals(self):
         """See `ActiveReviewsView`."""
-        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        collection = self.getCollection().visibleByUser(self.user)
         proposals = collection.getMergeProposalsForPerson(
             self.context,
             [BranchMergeProposalStatus.CODE_APPROVED,
@@ -336,3 +340,13 @@ class PersonActiveReviewsView(ActiveReviewsView):
              BranchMergeProposalStatus.WORK_IN_PROGRESS])
 
         return proposals
+
+
+class PersonProductActiveReviewsView(PersonActiveReviewsView):
+    """Active reviews for a person in a product."""
+
+    def _getReviewer(self):
+        return self.context.person
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).inProduct(self.context.product)
