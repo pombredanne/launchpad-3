@@ -745,6 +745,34 @@ While he can approve it again, it's a no-op.
     2
     >>> logout()
 
+A bug cannot be nominated for a non-series.
+
+    >>> print john_webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'canBeNominatedFor',
+    ...     target=john_webservice.getAbsoluteUrl('/fooix')).jsonBody()
+    False
+
+    >>> print john_webservice.named_post(
+    ...     '/bugs/%d' % bug.id, 'addNomination',
+    ...     target=john_webservice.getAbsoluteUrl('/fooix'))
+    HTTP/1.1 400 Bad Request
+    ...
+    NominationError: This bug cannot be nominated for Fooix.
+
+The bug also can't be nominated for Debuntu 5.0, as it has no
+Debuntu tasks.
+
+    >>> print john_webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'canBeNominatedFor',
+    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0')).jsonBody()
+    False
+
+    >>> print john_webservice.named_post(
+    ...     '/bugs/%d' % bug.id, 'addNomination',
+    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0'))
+    HTTP/1.1 400 Bad Request
+    ...
+    NominationError: This bug cannot be nominated for Debuntu 5.0.
 
 Bug subscriptions
 -----------------
