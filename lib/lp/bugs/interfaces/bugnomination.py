@@ -160,7 +160,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     def isApproved():
         """Is this nomination in Approved state?"""
 
-    @operation_parameters(person=Reference(schema=IPerson))
+    @call_with(person=REQUEST_USER)
     @export_read_operation()
     def canApprove(person):
         """Is this person allowed to approve the nomination?"""

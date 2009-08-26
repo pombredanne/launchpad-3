@@ -633,9 +633,7 @@ John cannot approve or decline the nomination.
 
     >>> nom_url = nominations['entries'][0]['self_link']
     
-    >>> print john_webservice.named_get(
-    ...     nom_url, 'canApprove',
-    ...     person=john_webservice.getAbsoluteUrl('/~john')).jsonBody()
+    >>> print john_webservice.named_get(nom_url, 'canApprove').jsonBody()
     False
 
     >>> print john_webservice.named_post(nom_url, 'approve')
@@ -651,15 +649,13 @@ John cannot approve or decline the nomination.
 
 The owner, however, can decline the nomination.
     
-    >>> print john_webservice.named_get(
-    ...     nom_url, 'canApprove',
-    ...     person=john_webservice.getAbsoluteUrl('/~eric')).jsonBody()
-    True
-
     >>> eric_webservice = webservice_for_person(
     ...     eric, permission=OAuthPermission.WRITE_PRIVATE)    
     >>> print eric_webservice.named_post(nom_url, 'decline')
     HTTP/1.1 200 Ok...
+
+    >>> print eric_webservice.named_get(nom_url, 'canApprove').jsonBody()
+    True
 
     >>> login('foo.bar@canonical.com')
     >>> len(bug.bugtasks)
