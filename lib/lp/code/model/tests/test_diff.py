@@ -118,6 +118,37 @@ class TestDiff(DiffTestCase):
         transaction.commit()
         self.checkExampleMerge(diff.text)
 
+    diff_bytes = """--- bar	2009-08-26 15:53:34.000000000 -0400
++++ bar	1969-12-31 19:00:00.000000000 -0500
+@@ -1,3 +0,0 @@
+-a
+-b
+-c
+--- baz	1969-12-31 19:00:00.000000000 -0500
++++ baz	2009-08-26 15:53:57.000000000 -0400
+@@ -0,0 +1,2 @@
++a
++b
+--- foo	2009-08-26 15:53:23.000000000 -0400
++++ foo	2009-08-26 15:56:43.000000000 -0400
+@@ -1,3 +1,4 @@
+ a
+-b
+ c
++d
++e
+"""
+
+    def test_generateDiffstat(self):
+        self.assertEqual(
+            {'foo': (2, 1), 'bar': (0, 3), 'baz': (2, 0)},
+            Diff.generateDiffstat(self.diff_bytes))
+
+    def test_stringifyDiffstat(self):
+        self.assertEqual(
+            'bar: -3 +0\nbaz: -0 +2\nfoo: -1 +2\n',
+            Diff.stringifyDiffstat(Diff.generateDiffstat(self.diff_bytes)))
+
 
 class TestStaticDiff(TestCaseWithFactory):
     """Test that StaticDiff objects work."""

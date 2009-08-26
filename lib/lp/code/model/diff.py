@@ -10,6 +10,7 @@ from cStringIO import StringIO
 
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
+from bzrlib.patches import parse_patches
 from bzrlib.merge import Merger, Merge3Merger
 from lazr.delegates import delegates
 from sqlobject import ForeignKey, IntCol, StringCol
@@ -125,6 +126,27 @@ class Diff(SQLBase):
             diff_content_bytes = diff_content.read(size)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
         return klass(diff_text=diff_text, diff_lines_count=diff_lines_count)
+
+    @staticmethod
+    def generateDiffstat(diff_bytes):
+        """Generate statistics about the provided diff.
+
+        :param diff_bytes: A unified diff, as bytes.
+        :return: A map of {filename: (added_line_count, removed_line_count)}
+        """
+        file_stats = {}
+        for patch in parse_patches(diff_bytes.splitlines(True)):
+            path = patch.newname.split('\t')[0]
+            file_stats[path] = tuple(patch.stats_values()[:2])
+        return file_stats
+
+    @staticmethod
+    def stringifyDiffstat(diffstat):
+        """Return a string representing the supplied diffstat."""
+        lines = []
+        for path, (added, removed) in sorted(diffstat.items()):
+            lines.append('%s: -%i +%i\n' % (path, removed, added))
+        return ''.join(lines)
 
 
 class StaticDiff(SQLBase):
