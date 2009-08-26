@@ -404,7 +404,9 @@ class DistributionSourcePackageView(LaunchpadFormView):
                     packaging)
             package = packages_by_series[distroseries]
             title_row = {
+                'blank_row': False,
                 'title_row': True,
+                'data_row': False,
                 'distroseries': distroseries,
                 'series_package': package,
                 'packaging': packaging,
@@ -419,16 +421,26 @@ class DistributionSourcePackageView(LaunchpadFormView):
             for version in pocket_dict.iterkeys():
                 most_recent_publication = pocket_dict[version][0]
                 row = {
+                    'blank_row': False,
                     'title_row': False,
+                    'data_row': True,
                     'version': version,
                     'publication': most_recent_publication,
-                    'pockets': ",".join(
+                    'pockets': ", ".join(
                         [pub.pocket.name for pub in pocket_dict[version]]),
                     'component': most_recent_publication.component_name,
                     'published_since': datetime.now(
                         tz=pytz.UTC) - most_recent_publication.datepublished,
                     }
                 rows.append(row)
+            # We need a blank row after each section, so the series
+            # header row doesn't appear too close to the previous
+            # section.
+            rows.append({
+                'blank_row': True,
+                'title_row': False,
+                'data_row': False,
+                })
 
         return rows
 

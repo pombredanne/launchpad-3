@@ -140,12 +140,13 @@
       <tal:rows repeat="row view/version_table">
 
       <tal:title_row condition="row/title_row">
-      <tr class="section-heading shaded">
+      <tr class="section-heading shaded" style="vertical-align: middle">
         <td colspan=3>
           <div style="float:right;">
             <a tal:condition="not: row/packaging"
                tal:replace="structure row/series_package/menu:overview/set_upstream/fmt:link"/>
             <tal:has_packaging condition="row/packaging">
+              <img tal:replace="structure row/packaging/productseries/image:icon"/>
               <tal:title replace="row/packaging/productseries/title"/>
               <a tal:attributes="
                 href row/series_package/menu:overview/edit_packaging/url">
@@ -161,6 +162,7 @@
               </form>
             </tal:has_packaging>
           </div><!--float right-->
+          <img tal:replace="structure context/distribution/image:icon"/>
           <a tal:attributes="href row/series_package/fmt:url"
              tal:content="row/distroseries/title"/>
           (<span tal:content="row/distroseries/status/title/lower"/>)
@@ -168,7 +170,7 @@
       </tr>
       </tal:title_row>
 
-      <tal:package_row condition="not: row/title_row">
+      <tal:package_row condition="row/data_row">
       <tal:define define="pubid row/publication/id">
 
       <tr class="archive_package_row">
@@ -179,6 +181,7 @@
             <img style="padding-right:0.5em;" src="/@@/treeCollapsed"
                  alt="Show details" title="Show details"
                  tal:attributes="id string:pub${pubid}-arrow"/>
+            <img src="/@@/package-source" />
             <tal:version content="row/version"/>
           </a>
         </td>
@@ -200,6 +203,10 @@
 
       </tal:define>
       </tal:package_row>
+
+      <tal:blank_row condition="row/blank_row">
+        <tr><td colspan=3 style="padding-bottom: 1em; border-top: 0" /></tr>
+      </tal:blank_row>
 
       </tal:rows>
     </table>
