@@ -67,7 +67,8 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
 
 from lp.code.browser.branchmergeproposallisting import (
-    PersonActiveReviewsView, ActiveReviewsView)
+    ActiveReviewsView, PersonActiveReviewsView,
+    PersonProductActiveReviewsView)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
     BranchMergeProposalStatus, BranchType)
@@ -923,6 +924,20 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         text = 'Register a branch'
         summary = 'Register a new Bazaar branch'
         return Link('+addbranch', text, summary, icon='add', enabled=enabled)
+
+
+class PersonProductBranchesMenu(PersonBranchesMenu):
+
+    usedfor = IPersonProduct
+    facet = 'branches'
+    links = ['registered', 'owned', 'subscribed', 'active_reviews']
+
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for self.person's branches."""
+        active_reviews = PersonProductActiveReviewsView(
+            self.context, self.request)
+        return active_reviews.getProposals().count()
 
 
 class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
