@@ -607,12 +607,12 @@ class AffectsEmailCommand(EmailCommand):
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
-            # Automatically approve an existing nomination if a series
-            # manager targets it.
-            if not nomination.isApproved() and nomination.canApprove(user):
-                nomination.approve(user)
         else:
             nomination = bug.addNomination(target=series, owner=user)
+
+        # Automatically approve an existing or new nomination if possible.
+        if not nomination.isApproved() and nomination.canApprove(user):
+            nomination.approve(user)
 
         if nomination.isApproved():
             if sourcepackagename:
