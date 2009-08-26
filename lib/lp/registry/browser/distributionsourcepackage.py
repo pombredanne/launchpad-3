@@ -359,11 +359,14 @@ class DistributionSourcePackageView(LaunchpadFormView):
         """Return active distroseries where this package is published.
 
         Used in the template code that shows the table of versions.
+        The returned series are sorted in reverse order of creation.
         """
         series = set()
         for package in self.active_distroseries_packages:
             series.add(package.distroseries)
-        return list(series)
+        result = list(series)
+        result.sort(key=operator.attrgetter("version"), reverse=True)
+        return result
 
     def published_by_version(self, sourcepackage):
         """Return a dict of publications keyed by version.
