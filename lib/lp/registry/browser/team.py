@@ -318,9 +318,15 @@ class TeamContactAddressView(MailingListTeamBaseView):
     """A view for manipulating the team's contact address."""
 
     schema = ITeamContactAddressForm
-    label = "Contact address"
+
     custom_widget(
         'contact_method', LaunchpadRadioWidget, orientation='vertical')
+
+    @property
+    def label(self):
+        return "%s contact address" % self.context.displayname
+
+    page_title = label
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
@@ -455,7 +461,11 @@ class TeamContactAddressView(MailingListTeamBaseView):
             raise UnexpectedFormData(
                 "Unknown contact_method: %s" % contact_method)
 
-        self.next_url = canonical_url(self.context)
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class TeamMailingListConfigurationView(MailingListTeamBaseView):
