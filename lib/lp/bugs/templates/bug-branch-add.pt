@@ -14,13 +14,17 @@
 
   <tal:main metal:fill-slot="main">
     <div class="top-portlet">
-      <p tal:content="structure context/bug/fmt:link" />
+      <div class="summary"></div>
+      <div class="description">
+        <p tal:content="structure context/bug/fmt:link" />
 
-      <div metal:use-macro="context/@@launchpad_form/form">
-        <div metal:fill-slot="extra_info" class="documentDescription">
-          <a href="https://help.launchpad.net/Bugs/BugBranchLinks">Adding
-          a Bazaar branch to a bug</a> allows you to notify others
-          about where work is going on to fix this bug.
+        <div metal:use-macro="context/@@launchpad_form/form">
+          <div metal:fill-slot="extra_info" class="documentDescription">
+            Linking a Bazaar branch to a bug allows you to notify others of
+            work to fix this bug.
+            (<a href="https://help.launchpad.net/Bugs/BugBranchLinks">More
+            about bug branch links</a>)
+          </div>
         </div>
       </div>
     </div>
@@ -29,8 +33,7 @@
   </tal:main>
 
   <tal:side metal:fill-slot="side">
-    <div id="portlets"
-         tal:content="structure context/bug/@@+portlet-notified" />
+    <div tal:content="structure context/bug/@@+portlet-notified" />
   </tal:side>
 
 </body>
