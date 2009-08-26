@@ -21,7 +21,6 @@ class TestBugCanBeNominatedForProductSeries(TestCaseWithFactory):
         super(TestBugCanBeNominatedForProductSeries, self).setUp()
         login('foo.bar@canonical.com')
         self.eric = self.factory.makePerson(name='eric')
-        self.michael = self.factory.makePerson(name='michael')
         self.setUpTarget()
 
 
@@ -84,6 +83,17 @@ class TestBugCanBeNominatedForDistroSeries(
         spn = self.factory.makeSourcePackageName()
         source_package = self.series.getSourcePackage(spn)
         self.assertFalse(self.bug.canBeNominatedFor(source_package))
+
+    def test_canBeNominatedFor_with_only_distributionsourcepackage(self):
+        # A distribution source package task is sufficient to allow nomination
+        # to a series of that distribution.
+        sp_bug = self.factory.makeBug()
+        spn = self.factory.makeSourcePackageName()
+
+        self.assertFalse(sp_bug.canBeNominatedFor(self.series))
+        sp_bug.addTask(
+            self.eric, self.series.distribution.getSourcePackage(spn))
+        self.assertTrue(sp_bug.canBeNominatedFor(self.series))
 
 
 def test_suite():
