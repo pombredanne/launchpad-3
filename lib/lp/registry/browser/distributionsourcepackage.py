@@ -1,3 +1,4 @@
+import pdb
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -125,6 +126,10 @@ class DecoratedDistributionSourcePackageRelease:
 
 
 class DistributionSourcePackageView(LaunchpadFormView):
+
+    @property
+    def page_title(self):
+        return self.context.title
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
