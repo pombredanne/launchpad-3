@@ -569,7 +569,7 @@ A bug may be nominated for any number of distro or product series.
 Nominations can be inspected, created, approved and declined through
 the webservice.
 
-First we'll create Fooix 0.1 and 0.2. Eric is the owner.
+Eric creates Fooix 0.1 and 0.2.
 
     >>> login('foo.bar@canonical.com')
     >>> eric = factory.makePerson(name='eric')
@@ -647,7 +647,7 @@ John cannot approve or decline the nomination.
     1
     >>> logout()
 
-The owner, however, can decline the nomination.
+Eric, however, can and does decline the nomination.
     
     >>> eric_webservice = webservice_for_person(
     ...     eric, permission=OAuthPermission.WRITE_PRIVATE)    
@@ -662,9 +662,9 @@ The owner, however, can decline the nomination.
     1
     >>> logout()
 
-We can see that the nomination was declined.
+John is disappointed to see that the nomination was declined.
 
-    >>> nominations = webservice.named_get(
+    >>> nominations = john_webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
     >>> pprint_collection(nominations)
     start: 0
@@ -683,7 +683,7 @@ We can see that the nomination was declined.
     target_link: u'http://.../fooix/0.1'
     ---
 
-The owner can approve a previously declined nomination.
+Eric changes his mind, and approves the nomination.
 
     >>> print eric_webservice.named_post(nom_url, 'approve')
     HTTP/1.1 200 Ok...
@@ -714,7 +714,7 @@ This marks the nomination as Approved, and creates a new task.
     2
     >>> logout()
 
-The owner cannot change his mind and decline an approved task.
+Eric cannot change his mind and decline the approved task.
 
     >>> print eric_webservice.named_post(nom_url, 'decline')
     HTTP/1.1 400 Bad Request
