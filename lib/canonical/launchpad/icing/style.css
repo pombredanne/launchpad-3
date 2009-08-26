@@ -727,7 +727,30 @@ hierarchy, and the application tabs. */
 }
 
 /* === Location hierarchy === */
-
+/* Breadcrumb styling - this should be moved into style-3.0.css. It is
+ * only here while we have existing non-3-0 templates, so that the
+ * breadcrumbs on non-3-0 pages don't appear as a simple ordered list.
+ */
+ol.breadcrumbs {
+    margin-left: 0;
+    clear: both;
+}
+ol.breadcrumbs li {
+    display:inline;
+    list-style-type: none;
+    padding: 0;
+}
+ol.breadcrumbs li a {
+    color: #494949;
+}
+ol.breadcrumbs li:before { content: "»" }
+/* The following leaves a small margin in chrome/webkit, but using none
+ * doesn't hide the » in webkit either (both work for FF3.5).
+ */
+ol.breadcrumbs li:first-child:before { content: ''; }
+ol.breadcrumbs li:last-child {
+    font-weight: bold;
+}
 
 /* === Location application tabs === */
 /* NOTE: This whole section (everything for #lp-apps) can be removed once

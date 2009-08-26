@@ -459,27 +459,7 @@ p.search-results {
     padding-left: 1em;
     }
 
-/* Breadcrumb styling */
-ol.breadcrumbs {
-    margin-left: 0;
-    clear: both;
-}
-ol.breadcrumbs li {
-    display:inline;
-    list-style-type: none;
-    padding: 0;
-}
-ol.breadcrumbs li a {
-    color: #494949;
-}
-ol.breadcrumbs li:before { content: "»" }
-/* The following leaves a small margin in chrome/webkit, but using none
- * doesn't hide the » in webkit either (both work for FF3.5).
- */
-ol.breadcrumbs li:first-child:before { content: ''; }
-ol.breadcrumbs li:last-child {
-    font-weight: bold;
-}
+
 /* == Watermark heading styles */
 div.watermark-apps-portlet {
     padding-bottom:1em;
