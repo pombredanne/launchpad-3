@@ -3514,8 +3514,6 @@ class BugActivityItem:
 class BugTaskBreadcrumb(Breadcrumb):
     """Breadcrumb for an `IBugTask`."""
 
-    rootsite = 'bugs'
-
     def __init__(self, context):
         super(BugTaskBreadcrumb, self).__init__(context)
         # If the user does not have permission to view the bug for

@@ -202,7 +202,7 @@ they are private.
 Administrators can retry failed builds using the 'retry' icon in the
 'Build Status' section.
 
-    >>> admin_browser.reload()
+    >>> admin_browser.open(admin_browser.url)
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'status'))
     Build status
@@ -339,7 +339,7 @@ corresponding page.
     >>> unused = upload.realiseUpload()
     >>> logout()
 
-    >>> anon_browser.reload()
+    >>> anon_browser.open(anon_browser.url)
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'binaries'))
@@ -447,4 +447,3 @@ Finally, the 'Build files' section is identical for PPA builds.
 
     >>> print anon_browser.getLink('ppa-test-bin_1.0_all.deb').url
     http://.../+build/32/+files/ppa-test-bin_1.0_all.deb
-

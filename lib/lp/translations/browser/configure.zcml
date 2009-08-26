@@ -497,7 +497,8 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             path_expression="string:+groups"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            rootsite="translations" />
         <browser:defaultView
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             name="+index"
@@ -507,7 +508,7 @@
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             class="lp.translations.browser.translationgroup.TranslationGroupAddView"
             permission="launchpad.Admin"
-            template="../templates/translationgroup-add.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
