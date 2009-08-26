@@ -217,8 +217,9 @@ class TestDirectBranchCommitMirror(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_direct_branch_commit_uses_mirror(self):
-        # Using a mirror correctly updates the mirrored copy.
+    def test_direct_branch_commit_respects_mirrored(self):
+        # The "mirrored" argument causes the commit to apply to the mirrored
+        # copy of the branch.
         self.useBzrBranches()
         branch = self.factory.makeBranch()
         bzr_branch = self.createBzrBranch(branch)

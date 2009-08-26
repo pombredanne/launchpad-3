@@ -48,7 +48,7 @@ class DirectBranchCommit:
     is_locked = False
     commit_builder = None
 
-    def __init__(self, db_branch, committer=None, mirror=False):
+    def __init__(self, db_branch, committer=None, mirrored=False):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
@@ -67,10 +67,11 @@ class DirectBranchCommit:
 
         :param db_branch: a Launchpad `Branch` object.
         :param committer: the `Person` writing to the branch.
-        :param mirror: If True, update the mirrored copy of the branch.
+        :param mirrored: If True, write to the mirrored copy of the branch
+            instead of the hosted copy.  (Mainly useful for tests)
         """
         self.db_branch = db_branch
-        self.mirror = mirror
+        self.mirrored = mirrored
 
         if committer is None:
             committer = db_branch.owner
@@ -79,7 +80,7 @@ class DirectBranchCommit:
         # Directories we create on the branch, and their ids.
         self.path_ids = {}
 
-        if mirror:
+        if mirrored:
             url = self.db_branch.warehouse_url
         else:
             url = self.db_branch.getPullURL()
@@ -158,7 +159,7 @@ class DirectBranchCommit:
 
         If it does, raise `ConcurrentUpdateError`.
         """
-        if self.mirror:
+        if self.mirrored:
             return
         assert self.is_locked, "Getting revision on un-locked branch."
         last_revision = None

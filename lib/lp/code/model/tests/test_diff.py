@@ -24,32 +24,42 @@ from lp.testing import login, login_person, TestCaseWithFactory
 
 class DiffTestCase(TestCaseWithFactory):
 
+    @staticmethod
+    def commitFile(branch, path, contents):
+        """Create a commit that updates a file to specified contents.
+
+        This will create or modify the file, as needed.
+        """
+        committer = DirectBranchCommit(branch, mirrored=True)
+        committer.writeFile(path, contents)
+        try:
+            return committer.commit('committing')
+        finally:
+            committer.unlock()
+
     def createExampleMerge(self):
         """Create a merge proposal with conflicts and updates."""
         self.useBzrBranches()
         bmp = self.factory.makeBranchMergeProposal()
         bzr_target = self.createBzrBranch(bmp.target_branch)
-        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
-        target_commit.writeFile('foo', 'a\n')
-        target_commit.commit('committing')
-        bzr_source = self.createBzrBranch(bmp.source_branch, bzr_target)
-        source_commit = DirectBranchCommit(bmp.source_branch, mirror=True)
-        source_commit.writeFile('foo', 'd\na\nb\n')
-        source_rev_id = source_commit.commit('committing')
-        target_commit = DirectBranchCommit(bmp.target_branch, mirror=True)
-        target_commit.writeFile('foo', 'c\na\n')
-        target_rev_id = target_commit.commit('committing')
+        self.commitFile(bmp.target_branch, 'foo', 'a\n')
+        self.createBzrBranch(bmp.source_branch, bzr_target)
+        source_rev_id = self.commitFile(bmp.source_branch, 'foo', 'd\na\nb\n')
+        target_rev_id = self.commitFile(bmp.target_branch, 'foo', 'c\na\n')
         return bmp, source_rev_id, target_rev_id
 
-    def checkExampleMerge(self, text):
+    def checkExampleMerge(self, diff_text):
         """Ensure the diff text matches the values for ExampleMerge."""
-        # b is added (by source)
-        self.assertIn('+b\n', text)
-        # a is common to source and target
-        self.assertNotIn('+a\n', text)
-        # A conflict was detected because source adds 'd' and target adds 'c'.
+        # The source branch added a line "b".
+        self.assertIn('+b\n', diff_text)
+        # The line "a" was present before any changes were made, so it's not
+        # considered added.
+        self.assertNotIn('+a\n', diff_text)
+        # There's a conflict because the source branch added a line "d", but
+        # the target branch added the line "c" in the same place.
         self.assertIn(
-            '+<<<<<<< TREE\n c\n+=======\n+d\n+>>>>>>> MERGE-SOURCE\n', text)
+            '+<<<<<<< TREE\n c\n+=======\n+d\n+>>>>>>> MERGE-SOURCE\n',
+            diff_text)
 
 
 class TestDiff(DiffTestCase):
