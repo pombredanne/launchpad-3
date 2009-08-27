@@ -71,27 +71,6 @@ class TestPermission(TestCaseWithFactory):
             active=True,
             can_encrypt=False)
 
-    def setComponent(self, archive, suite_sourcepackage, component):
-        """Set the component of `suite_sourcepackage` to `component`.
-
-        :param archive: The `IArchive` that the package is being uploaded to.
-        :param suite_sourcepackage: An `ISuiteSourcePackage` that the
-            component is being set on.
-        :param component: An `IComponent` to upload the package to, thus
-            setting the latest component.
-        """
-        stp = SoyuzTestPublisher()
-        stp.factory = self.factory
-        stp.person = self.factory.makePerson()
-        self.makeGPGKey(stp.person)
-        return stp.getPubSource(
-            sourcename=suite_sourcepackage.sourcepackagename.name,
-            component=component.name,
-            distroseries=suite_sourcepackage.distroseries,
-            archive=archive,
-            status=PackagePublishingStatus.PUBLISHED,
-            do_upload=False)
-
     def test_random_person_cannot_upload_to_ppa(self):
         # Arbitrary people cannot upload to a PPA.
         person = self.factory.makePerson()
@@ -160,7 +139,6 @@ class TestPermission(TestCaseWithFactory):
         spn = self.factory.makeSourcePackageName()
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         component = self.factory.makeComponent()
-        #self.setComponent(archive, ssp, component)
         self.permission_set.newComponentUploader(archive, person, component)
         self.assertCanUpload(person, spn, archive, component)
 
@@ -171,7 +149,6 @@ class TestPermission(TestCaseWithFactory):
         spn = self.factory.makeSourcePackageName()
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         component_a = self.factory.makeComponent()
-        #self.setComponent(archive, ssp, component_a)
         component_b = self.factory.makeComponent()
         self.permission_set.newComponentUploader(archive, person, component_b)
         self.assertCanUpload(
