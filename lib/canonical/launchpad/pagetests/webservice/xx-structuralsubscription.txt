@@ -4,8 +4,6 @@ Structural subscriptions can be obtained from any target: a project,
 project series, project group, distribution, distribution series or
 distribution source package.
 
-First let's create some objects.
-
     >>> login('admin@canonical.com')
     >>> eric_db = factory.makePerson(name='eric')
     >>> michael_db = factory.makePerson(name='michael')
@@ -17,7 +15,7 @@ First let's create some objects.
     >>> logout()
 
 We can list the structural subscriptions on a target using the
-getSubscriptions named operation.
+getSubscriptions named operation. There are none just yet.
 
     >>> from lazr.restful.testing.webservice import (
     ...     pprint_collection, pprint_entry)
@@ -28,8 +26,7 @@ getSubscriptions named operation.
     total_size: 0
     ---
 
-Of course, there are none on our shiny new project. Let's subscribe
-Eric to Fooix's bug notifications.
+Now Eric subscribes to Fooix's bug notifications.
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
@@ -58,9 +55,9 @@ Eric to Fooix's bug notifications.
     target_link: u'http://.../fooix'
     ---
 
-We can request a user's subscription directly.
+He can examine his subscription directly.
 
-    >>> pprint_entry(webservice.named_get(
+    >>> pprint_entry(eric_webservice.named_get(
     ...     '/fooix', 'getSubscription',
     ...     person=webservice.getAbsoluteUrl('/~eric')).jsonBody())
     date_created: u'...'
@@ -78,7 +75,7 @@ If the subscription doesn't exist, None will be returned.
     ...     person=webservice.getAbsoluteUrl('/~michael')).jsonBody()
     None
 
-Subscriptions are also removable through the webservice.
+Eric can remove his subscription through the webservice.
 
     >>> print eric_webservice.named_post(
     ...     '/fooix', 'removeBugSubscription')
@@ -89,7 +86,8 @@ Subscriptions are also removable through the webservice.
     ...     person=webservice.getAbsoluteUrl('/~eric')).jsonBody()
     None
 
-Teams can be subscribed by passing in the team as an argument.
+Teams can be subscribed by passing in the team as an argument. Eric
+tries this.
 
     >>> print eric_webservice.named_post(
     ...     '/fooix', 'addBugSubscription',
@@ -99,8 +97,8 @@ Teams can be subscribed by passing in the team as an argument.
     UserCannotSubscribePerson: eric does not have permission to subscribe pythons.
     <BLANKLINE>
 
-Oops, Eric isn't a team admin. Let's try with Michael, who is an admin
-by virtue of his ownership.
+Oops, Eric isn't a team admin. Eric gets Michael to try, since he is an
+admin by virtue of his ownership.
 
     >>> michael_webservice = webservice_for_person(
     ...     michael_db, permission=OAuthPermission.WRITE_PRIVATE)
@@ -128,7 +126,7 @@ by virtue of his ownership.
     target_link: u'http://.../fooix'
     ---
 
-Let's now unsubscribe the team.
+Eric can't unsubscribe the team either.
 
     >>> print eric_webservice.named_post(
     ...     '/fooix', 'removeBugSubscription',
@@ -138,7 +136,7 @@ Let's now unsubscribe the team.
     UserCannotSubscribePerson: eric does not have permission to unsubscribe pythons.
     <BLANKLINE>
 
-How forgetful I am.
+Michael can, though.
 
     >>> print michael_webservice.named_post(
     ...     '/fooix', 'removeBugSubscription',
