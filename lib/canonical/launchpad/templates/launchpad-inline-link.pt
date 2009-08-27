@@ -23,18 +23,18 @@
       tal:content="structure context/escapedtext"
     /></tal:link-linked>
   <tal:link-not-linked
-    condition="not: context/linked"><div
+    condition="not: context/linked"><span
       tal:condition="context/icon"
       tal:attributes="
         class string:menu-link-${context/name} nolink
               ${view/sprite_class} ${context/icon};
         "
       tal:content="structure context/escapedtext"
-    >link text</div><div
+    >link text</span><span
       tal:condition="not: context/icon"
       tal:attributes="
         class string:menu-link-${context/name} nolink
         "
       tal:content="structure context/escapedtext"
-    >link text</div></tal:link-not-linked>
+    >link text</span></tal:link-not-linked>
 </tal:link-enabled>
