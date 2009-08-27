@@ -21,4 +21,19 @@
         template="../templates/navigationmenu-related-pages.pt"
         permission="zope.Public"
         />
+    <browser:page
+        for="*"
+        name="+global-actions"
+        class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+        template="../templates/navigationmenu-actions.pt"
+        permission="zope.Public"
+        />
+
+    <!-- TALES watermark: namespace -->
+    <adapter
+        for="*"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.app.browser.watermark.WatermarkTalesAdapter"
+        name="watermark"
+        />
 </configure>

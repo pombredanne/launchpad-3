@@ -38,7 +38,7 @@ Found page is generated:
   >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/99999')
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 404: Not Found
+  httperror_seek_wrapper: HTTP Error 404: Not Found
   >>> browser.handleErrors = False
 
 
@@ -51,7 +51,7 @@ particular remote bug, we do not expose the title of the remote bug.
 Mark bug 1 as private:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/firefox/+bug/1')
+  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
   >>> browser.getLink('This report is public').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'

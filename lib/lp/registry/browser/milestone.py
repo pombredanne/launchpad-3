@@ -29,6 +29,8 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, ContextMenu, Link,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
@@ -45,7 +47,8 @@ class MilestoneSetNavigation(GetitemNavigation):
     usedfor = IMilestoneSet
 
 
-class MilestoneNavigation(Navigation):
+class MilestoneNavigation(Navigation,
+    StructuralSubscriptionTargetTraversalMixin):
     """The navigation to traverse to a milestone."""
     usedfor = IMilestone
 

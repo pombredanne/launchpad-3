@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 import errno
+import re
 import sys
 from time import time
 import os
@@ -210,29 +211,15 @@ class UnreferencedLibraryFileContentPruner:
 
         cur = con.cursor()
 
-        # Start with a list of all unexpired and recently accessed
-        # content - we don't remove them even if they are unlinked. We
-        # currently don't remove stuff until it has been expired for
-        # more than one week, but we will change this if disk space
-        # becomes short and it actually will make a noticeable
-        # difference. Note that ReferencedLibraryFileContent will
+        # Note that ReferencedLibraryFileContent will
         # contain duplicates - duplicates are unusual so we are better
         # off filtering them once at the end rather than when we load
         # the data into the temporary file.
         cur.execute("DROP TABLE IF EXISTS ReferencedLibraryFileContent")
         cur.execute("""
-            SELECT LibraryFileAlias.content
-            INTO TEMPORARY TABLE ReferencedLibraryFileContent
-            FROM LibraryFileAlias
-            WHERE
-                expires >
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
-                OR last_accessed >
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
-                OR date_created >
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+            CREATE TEMPORARY TABLE ReferencedLibraryFileContent (
+                content integer)
             """)
-        con.commit()
 
         # Determine what columns link to LibraryFileAlias
         # references = [(table, column), ...]
@@ -249,7 +236,6 @@ class UnreferencedLibraryFileContentPruner:
         # Find all relevant LibraryFileAlias references and fill in
         # ReferencedLibraryFileContent
         for table, column in references:
-            log.debug("Getting references from %s.%s." % (table, column))
             cur.execute("""
                 INSERT INTO ReferencedLibraryFileContent
                 SELECT LibraryFileAlias.content
@@ -258,26 +244,52 @@ class UnreferencedLibraryFileContentPruner:
                 """ % {
                     'table': quoteIdentifier(table),
                     'column': quoteIdentifier(column)})
+            log.debug("%s.%s references %d LibraryFileContent rows." % (
+                table, column, cur.rowcount))
             con.commit()
 
-        log.debug("Calculating expired unreferenced LibraryFileContent set.")
+        log.debug("Calculating unreferenced LibraryFileContent set.")
         cur.execute("DROP TABLE IF EXISTS UnreferencedLibraryFileContent")
         cur.execute("""
             CREATE TEMPORARY TABLE UnreferencedLibraryFileContent (
                 id serial PRIMARY KEY,
                 content integer UNIQUE)
             """)
+        # Calculate the set of unreferenced LibraryFileContent.
+        # We also exclude all unexpired and recently accessed
+        # content - we don't remove them even if they are unlinked. We
+        # currently don't remove stuff until it has been expired for
+        # more than one week, but we will change this if disk space
+        # becomes short and it actually will make a noticeable
+        # difference. We handle excluding recently created content
+        # here rather than earlier when creating the
+        # ReferencedLibraryFileContent table to handle uploads going on
+        # while this script is running.
         cur.execute("""
             INSERT INTO UnreferencedLibraryFileContent (content)
             SELECT id AS content FROM LibraryFileContent
+            WHERE datecreated <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+            EXCEPT
+            SELECT content
+            FROM LibraryFileAlias
+            WHERE
+                expires >
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+                OR last_accessed >
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+                OR date_created >
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
             EXCEPT
             SELECT content FROM ReferencedLibraryFileContent
             """)
+        con.commit()
         cur.execute("DROP TABLE ReferencedLibraryFileContent")
         cur.execute(
             "SELECT COALESCE(max(id),0) FROM UnreferencedLibraryFileContent")
         self.max_id = cur.fetchone()[0]
-        log.debug("%d unferenced LibraryFileContent to remove." % self.max_id)
+        log.debug(
+            "%d unreferenced LibraryFileContent to remove." % self.max_id)
         con.commit()
 
     def isDone(self):
@@ -347,7 +359,9 @@ class UnreferencedContentPruner:
             SELECT COALESCE(max(id), 0) FROM UnreferencedLibraryFileContent
             """)
         self.max_id = cur.fetchone()[0]
-        log.debug("%d unreferenced LibraryFileContent rows to remove.")
+        log.debug(
+            "%d unreferenced LibraryFileContent rows to remove."
+            % self.max_id)
 
     def isDone(self):
         if self.index > self.max_id:
@@ -397,6 +411,7 @@ class UnreferencedContentPruner:
                     log.info("%s already deleted", path)
             else:
                 log.debug("Deleted %s", path)
+        self.con.rollback()
 
         self.index += chunksize
 
@@ -508,35 +523,71 @@ def delete_unwanted_files(con):
         else:
             return result[0]
 
-    count = 0
-    next_wanted_content_id = get_next_wanted_content_id()
+    removed_count = 0
+    next_wanted_content_id = -1
 
-    for content_id in range(1, max_id+1):
-        while (next_wanted_content_id is not None
-                and content_id > next_wanted_content_id):
-            next_wanted_content_id = get_next_wanted_content_id()
+    hex_content_id_re = re.compile('^[0-9a-f]{8}$')
+    ONE_DAY = 24 * 60 * 60
 
-        file_wanted = (
-                next_wanted_content_id is not None
-                and next_wanted_content_id == content_id)
+    for dirpath, dirnames, filenames in os.walk(get_storage_root()):
 
-        path = get_file_path(content_id)
+        # Ignore known and harmless noise in the Librarian storage area.
+        if 'incoming' in dirnames:
+            dirnames.remove('incoming')
+        if 'librarian.pid' in filenames:
+            filenames.remove('librarian.pid')
 
-        if file_wanted:
-            if (config.librarian_server.upstream_host is None
-                and not os.path.exists(path)):
-                # It is normal to have files in the database that are
-                # not on disk if the Librarian has an upstream
-                # Librarian, such as on staging. Don't spam in this
-                # case.
+        for dirname in dirnames[:]:
+            if len(dirname) != 2:
+                dirnames.remove(dirname)
                 log.error(
-                    "LibraryFileContent %d exists in the db but not at %s"
-                    % (content_id, path))
-
-        else:
+                    "Ignoring directory %s that shouldn't be here" % dirname)
             try:
-                one_day = 24 * 60 * 60
-                if time() - os.path.getctime(path) < one_day:
+                int(dirname, 16)
+            except ValueError:
+                dirnames.remove(dirname)
+                log.error("Ignoring invalid directory %s" % dirname)
+
+        # We need everything in order to ensure we visit files in the
+        # same order we retrieve wanted files from the database.
+        dirnames.sort()
+        filenames.sort()
+
+        # Noise in the storage area, or maybe we are looking at the wrong
+        # path?
+        if dirnames and filenames:
+            log.error(
+                "%s contains both files %r and subdirectories %r. Skipping."
+                % (dirpath, filenames, dirnames))
+            continue
+
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            hex_content_id = ''.join(path.split(os.sep)[-4:])
+            if hex_content_id_re.search(hex_content_id) is None:
+                log.error(
+                    "Ignoring invalid path %s" % path)
+                continue
+
+            content_id = int(hex_content_id, 16)
+
+            while (next_wanted_content_id is not None
+                    and content_id > next_wanted_content_id):
+
+                next_wanted_content_id = get_next_wanted_content_id()
+
+                if (config.librarian_server.upstream_host is None
+                        and next_wanted_content_id < content_id):
+                    log.error(
+                        "LibraryFileContent %d exists in the database but "
+                        "was not found on disk." % next_wanted_content_id)
+
+            file_wanted = (
+                    next_wanted_content_id is not None
+                    and next_wanted_content_id == content_id)
+
+            if not file_wanted:
+                if time() - os.path.getctime(path) < ONE_DAY:
                     log.debug(
                         "File %d not removed - created too recently"
                         % content_id)
@@ -544,37 +595,39 @@ def delete_unwanted_files(con):
                     # File uploaded a while ago but no longer wanted.
                     os.unlink(path)
                     log.debug("Deleted %s" % path)
-                    count += 1
-            except OSError, e:
-                if e.errno != errno.ENOENT:
-                    raise
-                if config.librarian_server.upstream_host is None:
-                    # It is normal to have files in the database that
-                    # are not on disk if the Librarian has an upstream
-                    # Librarian, such as on staging. Don't annoy the
-                    # operator with noise in this case.
-                    log.info("%s already deleted", path)
+                    removed_count += 1
+
+    # Report any remaining LibraryFileContent that the database says
+    # should exist but we didn't find on disk.
+    if next_wanted_content_id == content_id:
+        next_wanted_content_id = get_next_wanted_content_id()
+    while next_wanted_content_id is not None:
+        log.error(
+            "LibraryFileContent %d exists in the database but "
+            "was not found on disk." % next_wanted_content_id)
+        next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
             "Deleted %d files from disk that where no longer referenced "
-            "in the db" % count
+            "in the db" % removed_count
             )
 
 
 def get_file_path(content_id):
     """Return the physical file path to the matching LibraryFileContent id.
     """
-    assert isinstance(content_id, (int, long)), 'Invalid content_id %r' % (
-            content_id,
-            )
+    assert isinstance(content_id, (int, long)), (
+        'Invalid content_id %s' % repr(content_id))
+    return os.path.join(get_storage_root(), relative_file_path(content_id))
+
+
+def get_storage_root():
+    """Return the path to the root of the Librarian storage area.
+
+    Performs some basic sanity checking to avoid accidents.
+    """
     storage_root = config.librarian_server.root
     # Do a basic sanity check.
-    if not os.path.isdir(os.path.join(storage_root, 'incoming')):
-        raise RuntimeError(
-                "Librarian file storage not found at %s" % storage_root
-                )
-    path = os.path.join(
-            storage_root, relative_file_path(content_id)
-            )
-    return path
-
+    assert os.path.isdir(os.path.join(storage_root, 'incoming')), (
+        '%s is not a Librarian storage area' % storage_root)
+    return storage_root

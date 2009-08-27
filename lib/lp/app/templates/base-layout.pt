@@ -4,7 +4,7 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.2.6 (r${revno});
+    version string:Launchpad 2.2.7 (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
@@ -68,8 +68,8 @@
       </style>
     </noscript>
 
-    <metal:load-javascript
-      use-macro="context/@@+base-layout-macros/load-javascript" />
+    <metal:page-javascript
+        use-macro="context/@@+base-layout-macros/page-javascript" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
 
@@ -81,36 +81,32 @@
     <div class="yui-d0">
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
-        <form id="globalsearch" method="get" accept-charset="UTF-8"
-          class="sprite search-icon"
-          tal:condition="view/macro:pagehas/globalsearch"
-          tal:attributes="action string:${rooturl}+search">
-          <input type="search" id="search-text" name="field.text" />
-        </form>
         <tal:hierarchy replace="structure context/@@+hierarchy" />
       </div><!--id="locationbar"-->
 
-      <div class="location-portlet top-portlet"
+      <div class="watermark-apps-portlet top-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
-        <span tal:replace="structure context/image:logo"></span>
-        <h2 tal:replace="structure context/fmt:location_heading">
+        <span tal:replace="structure context/watermark:logo"></span>
+        <h2 tal:replace="structure context/watermark:heading">
           Celso Providelo
         </h2>
         <metal:heading_nav
-          use-macro="context/@@+base-layout-macros/location-tabs"/>
+          use-macro="context/@@+base-layout-macros/application-buttons"/>
       </div>
-
-      <tal:maintenance replace="structure context/@@+maintenancemessage" />
-      <tal:notifications
-        define="notifications request/notifications"
-        condition="notifications">
-        <metal:notifications
-          use-macro="context/@@+base-layout-macros/notifications"/>
-      </tal:notifications>
 
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
         <div id="maincontent" class="yui-main">
+
+          <tal:maintenance
+            replace="structure context/@@+maintenancemessage" />
+          <tal:notifications
+            define="notifications request/notifications"
+            condition="notifications">
+            <metal:notifications
+              use-macro="context/@@+base-layout-macros/notifications"/>
+          </tal:notifications>
+
           <div class="yui-b"
             tal:attributes="
               lang view/lang|default_language|default;
@@ -135,36 +131,33 @@
         </div><!-- yui-b side -->
       </div><!-- yui-t4 -->
 
-      <div id="footer" class="footer">
-        <div id="lp-arcana">
-          &copy;&nbsp;2004-2009&nbsp;<a
-            href="http://canonical.com/">Canonical&nbsp;Ltd.</a> |
-          <a href="/legal">Terms of use</a>
-          <span id="lp-version" tal:condition="not:is_lpnet"> |
-            <a href="https://help.launchpad.net/LaunchpadReleases"
-              tal:content="version"/>
-            <tal:devmode condition="devmode">devmode</tal:devmode>
-            <tal:demo condition="is_demo">demo site</tal:demo>
-            <tal:edge condition="is_edge">beta site</tal:edge>
-          </span>
-        </div>
-
-        <div id="colophon">
-          <a href="/+tour"
-            tal:condition="not:request/lp:person">What is Launchpad?</a>
-          <a href="/feedback"
-            tal:condition="request/lp:person">Contact us</a> |
-          <a href="https://help.launchpad.net/">Get help with Launchpad</a>
-        </div>
-      </div><!-- footer-->
+      <metal:footer
+        use-macro="context/@@+base-layout-macros/footer"/>
     </div><!-- yui-d0-->
+
+    <div id="help-pane" class="invisible">
+      <div id="help-body">
+        <tal:XXX condition="nothing">
+          # XXX mars 2008-11-07 bug=295254:
+          # We use this ugly src="" hack to get rid of an IE6 security
+          # warning.  See bug #295234.
+        </tal:XXX>
+        <iframe
+          id="help-pane-content"
+          class="invisible"
+          src="javascript:void(0);"></iframe>
+      </div>
+      <div id="help-footer">
+        <span id="help-close"></span>
+      </div>
+    </div>
 
     <metal:lp-client-cache
       use-macro="context/@@+base-layout-macros/lp-client-cache" />
   </body>
 </html>
 
-<tal:template tal:condition="devmode">
+<tal:template>
   <tal:comment
     define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
     replace="structure string:&lt;!--

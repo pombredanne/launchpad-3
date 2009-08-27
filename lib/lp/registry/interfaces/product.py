@@ -24,7 +24,6 @@ __all__ = [
 
 
 import re
-import sets
 
 from textwrap import dedent
 
@@ -37,8 +36,11 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ProductBugTracker, ProductNameField, PublicPersonChoice,
-    Summary, Title, URIField)
+    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PublicPersonChoice, Summary, Title, URIField)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -353,7 +355,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -370,7 +372,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "
@@ -701,7 +703,8 @@ class IProductPublic(
 
 
 class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
-               IProductDriverRestricted, IProductPublic):
+               IProductDriverRestricted, IProductPublic, IRootContext,
+               IStructuralSubscriptionTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -955,8 +958,7 @@ class IProductReviewSearch(Interface):
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
-        # Zope requires sets.Set() instead of the builtin set().
-        default=sets.Set(
+        default=set(
             [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
 
     has_zero_licenses = Choice(

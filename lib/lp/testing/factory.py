@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtracker import (
@@ -447,8 +448,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             poll_type=PollAlgorithm.SIMPLE)
 
     def makeTranslationGroup(
-        self, owner, name=None, title=None, summary=None, url=None):
+        self, owner=None, name=None, title=None, summary=None, url=None):
         """Create a new, arbitrary `TranslationGroup`."""
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString("translationgroup")
         if title is None:
@@ -576,10 +579,24 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=description,
             owner=owner)
 
+    def makeSprint(self, title=None):
+        """Make a sprint."""
+        if title is None:
+            title = self.getUniqueString('title')
+        owner = self.makePerson()
+        name = self.getUniqueString('name')
+        time_starts = datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        time_ends = datetime(2009, 1, 2, tzinfo=pytz.UTC)
+        time_zone = 'UTC'
+        summary = self.getUniqueString('summary')
+        return getUtility(ISprintSet).new(
+            owner=owner, name=name, title=title, time_zone=time_zone,
+            time_starts=time_starts, time_ends=time_ends, summary=summary)
+
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
                    private=False, stacked_on=None, sourcepackage=None,
-                   **optional_branch_args):
+                   reviewer=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for `IBranchNamespace.createBranch` can be specified to
@@ -629,6 +646,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
+        if reviewer is not None:
+            removeSecurityProxy(branch).reviewer = reviewer
         return branch
 
     def makePackageBranch(self, sourcepackage=None, distroseries=None,
@@ -1280,13 +1299,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None):
+                         members=None, title=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString()
         if displayname is None:
             displayname = self.getUniqueString()
-        title = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
         description = self.getUniqueString()
         summary = self.getUniqueString()
         domainname = self.getUniqueString()

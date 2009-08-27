@@ -8,7 +8,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'IBaseDistribution',
+    'IDerivativeDistribution',
     'IDistribution',
+    'IDistributionDriverRestricted',
     'IDistributionEditRestricted',
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
@@ -31,6 +34,9 @@ from lazr.restful.declarations import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
@@ -69,6 +75,10 @@ class DistributionNameField(PillarNameField):
 
 class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
     """IDistribution properties requiring launchpad.Edit permission."""
+
+
+class IDistributionDriverRestricted(Interface):
+    """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
                   version, parent_series, owner):
@@ -175,8 +185,8 @@ class IDistributionPublic(
         vocabulary='ValidPersonOrTeam')
     mirror_admin = PublicPersonChoice(
         title=_("Mirror Administrator"),
-        description=_("The person or team that has the rights to administer "
-                      "this distribution's mirrors"),
+        description=_("The person or team that has the rights to review and "
+                      "mark this distribution's mirrors as official."),
         required=True, vocabulary='ValidPersonOrTeam')
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
@@ -521,7 +531,8 @@ class IDistributionPublic(
         """Can the user edit this distribution?"""
 
 
-class IDistribution(IDistributionEditRestricted, IDistributionPublic):
+class IDistribution(IDistributionEditRestricted, IDistributionPublic,
+                    IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution."""
     export_as_webservice_entry()
 
@@ -531,6 +542,14 @@ class IDistribution(IDistributionEditRestricted, IDistributionPublic):
 writable_obt_field = copy_field(IDistribution['official_bug_tags'])
 writable_obt_field.readonly = False
 IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
+
+
+class IBaseDistribution(IDistribution):
+    """A Distribution that is the base for other Distributions."""
+
+
+class IDerivativeDistribution(IDistribution):
+    """A Distribution that derives from another Distribution."""
 
 
 class IDistributionSet(Interface):

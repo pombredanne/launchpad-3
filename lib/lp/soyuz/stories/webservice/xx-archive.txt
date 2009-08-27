@@ -15,6 +15,7 @@ We publish a subset of their attributes.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
+    dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
@@ -77,6 +78,7 @@ The archive has the following attributes:
     >>> main_archive = webservice.get(
     ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(main_archive)
+    dependencies_collection_link: u'http://.../ubuntutest/+archive/primary/dependencies'
     description: None
     displayname: u'Primary Archive for Ubuntu Test'
     distribution_link: u'http://.../ubuntutest'
@@ -704,6 +706,7 @@ attributes are only exposed when the requestor has View permission in
 the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/ppa").jsonBody())
+    dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
@@ -715,6 +718,7 @@ the IArchive context, in this case only Celso has it.
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/ppa").jsonBody())
+    dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
@@ -731,19 +735,19 @@ IArchive exposes the newSubscription() method, enabling new subscriptions
 to be created via AJAX.
 
 Archive subscriptions can only be created for private archives. If we
-try creating a subscription for sabdfl's archive (which is public), a
+try creating a subscription for mark's archive (which is public), a
 bad request will result:
 
     >>> login('foo.bar@canonical.com')
-    >>> sabdfl_db = getUtility(IPersonSet).getByName('sabdfl')
-    >>> sabdfl_webservice = webservice_for_person(
-    ...     sabdfl_db, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> mark_db = getUtility(IPersonSet).getByName('mark')
+    >>> mark_webservice = webservice_for_person(
+    ...     mark_db, permission=OAuthPermission.WRITE_PUBLIC)
     >>> logout()
-    >>> sabdfl = sabdfl_webservice.get("/~sabdfl").jsonBody()
-    >>> sabdfl_archive = sabdfl_webservice.get(
-    ...     "/~sabdfl/+archive/ppa").jsonBody()
-    >>> response = sabdfl_webservice.named_post(
-    ...     sabdfl_archive['self_link'], 'newSubscription',
+    >>> mark = mark_webservice.get("/~mark").jsonBody()
+    >>> mark_archive = mark_webservice.get(
+    ...     "/~mark/+archive/ppa").jsonBody()
+    >>> response = mark_webservice.named_post(
+    ...     mark_archive['self_link'], 'newSubscription',
     ...     subscriber=cprov_archive['owner_link'])
     >>> print response.getOutput()
     HTTP/1.1 400 Bad Request
@@ -751,20 +755,20 @@ bad request will result:
     ArchiveNotPrivate: Only private archives can have subscriptions.
     <BLANKLINE>
 
-First we'll subscribe sabdfl to cprov's archive:
+First we'll subscribe mark to cprov's archive:
 
-    >>> sabdfl = webservice.get("/~sabdfl").jsonBody()
+    >>> mark = webservice.get("/~mark").jsonBody()
     >>> cprov_archive = cprov_webservice.get("/~cprov/+archive/ppa").jsonBody()
     >>> response = cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'newSubscription',
-    ...     subscriber=sabdfl['self_link'])
+    ...     subscriber=mark['self_link'])
 
     >>> print response.getOutput()
     HTTP/1.1 201 Created
     ...
 
     >>> print response.getHeader('Location')
-    http://.../~cprov/+archive/ppa/+subscriptions/sabdfl
+    http://.../~cprov/+archive/ppa/+subscriptions/mark
 
 We publish a subset of the IArchiveSubscriber attributes.
 
@@ -777,9 +781,9 @@ We publish a subset of the IArchiveSubscriber attributes.
     description: None
     registrant_link: u'http://api.launchpad.dev/beta/~cprov'
     resource_type_link: u'http://api.launchpad.dev/beta/#archive_subscriber'
-    self_link: u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+subscriptions/sabdfl'
+    self_link: u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+subscriptions/mark'
     status: u'Active'
-    subscriber_link: u'http://api.launchpad.dev/beta/~sabdfl'
+    subscriber_link: u'http://api.launchpad.dev/beta/~mark'
 
 Other webservice users cannot view the subscription.
 
@@ -805,7 +809,7 @@ is already a current subscription:
 
     >>> response = cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'newSubscription',
-    ...     subscriber=sabdfl['self_link'])
+    ...     subscriber=mark['self_link'])
     >>> print response.getOutput()
     HTTP/1.1 400 Bad Request
     ...
@@ -825,9 +829,9 @@ admins and commercial admins.
     ...         archive['self_link'], 'PUT', simplejson.dumps(archive),
     ...         headers)
 
-    >>> sabdfl_archive = webservice.get("/~sabdfl/+archive/ppa").jsonBody()
-    >>> sabdfl_archive['private'] = True
-    >>> print modify_archive(user_webservice, sabdfl_archive)
+    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> mark_archive['private'] = True
+    >>> print modify_archive(user_webservice, mark_archive)
     HTTP/1.1 401 Unauthorized
     ...
     Unauthorized: (<Archive at ...>, 'private', 'launchpad.Commercial')
@@ -878,3 +882,73 @@ error is returned.
     ...
     CannotCopy: private 1.1 in hoary
     (same version already uploaded and waiting in ACCEPTED queue)
+
+
+= Archive dependencies =
+
+Archives can specify dependencies on pockets and components of other
+archives. Found at <dependentarchive.id>/+dependency/<dependencyarchive.id>,
+these IArchiveDependency records can be retrieved through the API.
+
+First we'll add an explicit dependency on the primary archive to
+cprov's PPA. We can't do this through the webservice yet.
+
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_ppa_db = getUtility(IPersonSet).getByName('cprov').archive
+    >>> dep = cprov_ppa_db.addArchiveDependency(
+    ...     cprov_ppa_db.distribution.main_archive,
+    ...     PackagePublishingPocket.RELEASE,
+    ...     component=getUtility(IComponentSet)['universe'])
+    >>> logout()
+
+We can then request that dependency, and see that we get all of its
+attributes.
+
+    >>> cprov_main_dependency = webservice.named_get(
+    ...     '/~cprov/+archive/ppa', 'getArchiveDependency',
+    ...     dependency=ubuntu['main_archive_link']).jsonBody()
+    >>> pprint_entry(cprov_main_dependency)
+    archive_link: u'http://.../~cprov/+archive/ppa'
+    component_name: u'universe'
+    date_created: ...
+    dependency_link: u'http://.../ubuntu/+archive/primary'
+    pocket: u'Release'
+    resource_type_link: u'http://.../#archive_dependency'
+    self_link: u'http://.../~cprov/+archive/ppa/+dependency/1'
+    title: u'Primary Archive for Ubuntu Linux - RELEASE (main, universe)'
+
+Asking for an archive on which there is no dependency returns None.
+
+    >>> debian = webservice.get('/debian').jsonBody()
+    >>> webservice.named_get(
+    ...     '/~cprov/+archive/ppa', 'getArchiveDependency',
+    ...     dependency=debian['main_archive_link']).jsonBody()
+
+Archives will also give us a list of their custom dependencies.
+
+    >>> print_self_link_of_entries(
+    ...     webservice.get('/~cprov/+archive/ppa/dependencies').jsonBody())
+    http://.../~cprov/+archive/ppa/+dependency/1
+
+Crafting a URL to a non-dependency 404s:
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+dependency/2')
+    HTTP/1.1 404 Not Found
+    ...
+
+A 404 also occurs if we ask for an archive that doesn't exist.
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+dependency/123456')
+    HTTP/1.1 404 Not Found
+    ...
+
+And even if we ask for a non-integral archive ID.
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+dependency/foo')
+    HTTP/1.1 404 Not Found
+    ...

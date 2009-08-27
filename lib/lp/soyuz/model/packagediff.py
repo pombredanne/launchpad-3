@@ -183,8 +183,9 @@ class PackageDiff(SQLBase):
                 downloaded['to'])
 
             # `debdiff` failed, mark the package diff request accordingly
-            # and return.
-            if return_code != 0:
+            # and return. 0 means no differences, 1 means they differ.
+            # Note that pre-Karmic debdiff will return 0 even if they differ.
+            if return_code not in (0, 1):
                 self.status = PackageDiffStatus.FAILED
                 return
 

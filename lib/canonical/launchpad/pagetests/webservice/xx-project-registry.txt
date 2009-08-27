@@ -169,6 +169,18 @@ Projects are available at their canonical URL on the API virtual host.
     title: u'Mozilla Firefox'
     wiki_url: None
 
+In Launchpad project names may not have uppercase letters in their
+name.  As a convenience, requests for projects using the wrong case
+are redirected to the correct location.
+
+    >>> firefox = webservice.get('/FireFox').jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/firefox
+    ...
+
 Some entries for projects are only available to admins.  Here we see
 several that are not available to non-privileged users marked as
 'redacted'.
@@ -301,7 +313,7 @@ Attributes can be edited via the webservice.patch() method.
 
     >>> from simplejson import dumps
     >>> patch = {
-    ...     u'driver_link': webservice.getAbsoluteUrl('/~sabdfl'),
+    ...     u'driver_link': webservice.getAbsoluteUrl('/~mark'),
     ...     u'homepage_url': u'http://sf.net/firefox',
     ...     u'licenses': [u'Python License', u'GNU GPL v2'],
     ...     u'bug_tracker_link':
@@ -314,13 +326,13 @@ Attributes can be edited via the webservice.patch() method.
 
     >>> firefox = webservice.get('/firefox').jsonBody()
     >>> firefox['driver_link']
-    u'http://.../~sabdfl'
+    u'http://.../~mark'
 
     >>> firefox['homepage_url']
     u'http://sf.net/firefox'
 
     >>> webservice.get(firefox['driver_link']).jsonBody()['self_link']
-    u'http://.../~sabdfl'
+    u'http://.../~mark'
 
     >>> webservice.get(firefox['owner_link']).jsonBody()['self_link']
     u'http://.../~name12'
@@ -332,7 +344,7 @@ Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 
     >>> patch = {
-    ...     u'registrant_link': webservice.getAbsoluteUrl('/~sabdfl'),
+    ...     u'registrant_link': webservice.getAbsoluteUrl('/~mark'),
     ...     }
     >>> print webservice.patch(
     ...     '/firefox', 'application/json', dumps(patch))

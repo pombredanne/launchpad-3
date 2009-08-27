@@ -10,11 +10,14 @@ __all__ = [
     'PersonTranslationRelicensingView',
 ]
 
+from datetime import datetime, timedelta
+import pytz
 import urllib
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     LaunchpadFormView, Link, action, canonical_url, custom_widget)
@@ -23,6 +26,9 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadRadioWidget
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.translations.browser.translationlinksaggregator import (
+    TranslationLinksAggregator)
 from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
 from lp.translations.interfaces.translationrelicensingagreement import (
@@ -32,11 +38,59 @@ from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 
 
+class WorkListLinksAggregator(TranslationLinksAggregator):
+    """Aggregate translation links for translation or review.
+
+    Here, all files are actually `POFile`s, never `POTemplate`s.
+    """
+
+    def countStrings(self, pofile):
+        """Count number of strings that need work."""
+        raise NotImplementedError()
+
+    def describe(self, target, link, covered_files):
+        """See `TranslationLinksAggregator.describe`."""
+        strings_count = sum(
+            [self.countStrings(pofile) for pofile in covered_files])
+
+        if strings_count == 1:
+            strings_wording = "%d string"
+        else:
+            strings_wording = "%d strings"
+
+        return {
+            'target': target,
+            'count': strings_count,
+            'count_wording': strings_wording % strings_count,
+            'is_product': not ISourcePackage.providedBy(target),
+            'link': link,
+        }
+
+
+class ReviewLinksAggregator(WorkListLinksAggregator):
+    """A `TranslationLinksAggregator` for translations to review."""
+
+    # Link to unreviewed suggestions.
+    pofile_link_suffix = '/+translate?show=new_suggestions'
+
+    # Strings that need work are ones with unreviewed suggestions.
+    def countStrings(self, pofile):
+        """See `WorkListLinksAggregator.countStrings`."""
+        return pofile.unreviewedCount()
+
+
+def person_is_reviewer(person):
+    """Is `person` a translations reviewer?"""
+    groups = ITranslationsPerson(person).translation_groups
+    return groups.any() is not None
+
+
 class PersonTranslationsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'translations'
-    links = ('overview', 'licensing', 'imports')
+    links = ('overview', 'licensing', 'imports', 'translations_to_review')
+    title = "Related pages"
 
     def overview(self):
         text = 'Overview'
@@ -51,11 +105,18 @@ class PersonTranslationsMenu(NavigationMenu):
         enabled = (self.context == self.user)
         return Link('+licensing', text, enabled=enabled)
 
+    def translations_to_review(self):
+        text = 'Translations to review'
+        enabled = person_is_reviewer(self.context)
+        return Link('+translations-to-review', text, enabled=enabled)
+
 
 class PersonTranslationView(LaunchpadView):
     """View for translation-related Person pages."""
 
     _pofiletranslator_cache = None
+
+    history_horizon = None
 
     @cachedproperty
     def batchnav(self):
@@ -87,6 +148,25 @@ class PersonTranslationView(LaunchpadView):
         """Return person's name appropriate for including in links."""
         return urllib.urlencode({'person': self.context.name})
 
+    @property
+    def person_is_reviewer(self):
+        """Is this person in a translation group?"""
+        return person_is_reviewer(self.context)
+
+    @property
+    def person_is_translator(self):
+        """Is this person active in translations?"""
+        return self.context.hasKarma('translations')
+
+    @property
+    def person_includes_me(self):
+        """Is the current user (a member of) this person?"""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+        else:
+            return user.inTeam(self.context)
+
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
 
@@ -99,6 +179,83 @@ class PersonTranslationView(LaunchpadView):
             return True
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
+
+    def _setHistoryHorizon(self):
+        """If not already set, set `self.history_horizon`."""
+        if self.history_horizon is None:
+            now = datetime.now(pytz.timezone('UTC'))
+            self.history_horizon = now - timedelta(90, 0, 0)
+
+    def _getTargetsForReview(self, max_fetch=None):
+        """Query and aggregate the top targets for review.
+
+        :param max_fetch: Maximum number of `POFile`s to fetch while
+            looking for these.
+        :return: a list of at most `max_fetch` translation targets.
+            Multiple `POFile`s may be aggregated together into a single
+            target.
+        """
+        self._setHistoryHorizon()
+        person = ITranslationsPerson(self.context)
+        pofiles = person.getReviewableTranslationFiles(
+            no_older_than=self.history_horizon)
+
+        if max_fetch is not None:
+            pofiles = pofiles[:max_fetch]
+
+        return ReviewLinksAggregator().aggregate(pofiles)
+
+    def _suggestTargetsForReview(self, max_fetch):
+        """Find random translation targets for review.
+
+        :param max_fetch: Maximum number of `POFile`s to fetch while
+            looking for these.
+        :return: a list of at most `max_fetch` translation targets.
+            Multiple `POFile`s may be aggregated together into a single
+            target.
+        """
+        self._setHistoryHorizon()
+        person = ITranslationsPerson(self.context)
+        pofiles = person.suggestReviewableTranslationFiles(
+            no_older_than=self.history_horizon)[:max_fetch]
+
+        return ReviewLinksAggregator().aggregate(pofiles)
+
+    @cachedproperty
+    def all_projects_and_packages_to_review(self):
+        """Top projects and packages for this person to review."""
+        return self._getTargetsForReview()
+
+    @property
+    def top_projects_and_packages_to_review(self):
+        """Suggest translations for this person to review."""
+        self._setHistoryHorizon()
+
+        # Maximum number of projects/packages to list that this person
+        # has recently worked on.
+        max_known_targets = 9
+        # Length of overall list to display.
+        list_length = 10
+
+        # Start out with the translations that the person has recently
+        # worked on.  Aggregation may reduce the number we get, so ask
+        # the database for a few extra.
+        fetch = 5 * max_known_targets
+        recent = self._getTargetsForReview(fetch)[:max_known_targets]
+
+        # Fill out the list with other translations that the person
+        # could also be reviewing.
+        empty_slots = list_length - len(recent)
+        fetch = 5 * empty_slots
+        random_suggestions = self._suggestTargetsForReview(fetch)
+        random_suggestions = random_suggestions[:empty_slots]
+
+        return recent + random_suggestions
+
+    @cachedproperty
+    def num_projects_and_packages_to_review(self):
+        """How many translations do we suggest for reviewing?"""
+        return len(self.all_projects_and_packages_to_review)
 
 
 class PersonTranslationRelicensingView(LaunchpadFormView):

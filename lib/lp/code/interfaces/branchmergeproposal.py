@@ -24,12 +24,15 @@ __all__ = [
     'WrongBranchMergeProposal',
     ]
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from zope.event import notify
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bytes, Choice, Datetime, Int, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.interfaces import IBug
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
@@ -241,6 +244,10 @@ class IBranchMergeProposal(Interface):
             value_type=Reference(schema=Interface), # ICodeReviewComment
             readonly=True))
 
+    related_bugs = CollectionField(
+        title=_("Bugs related to this merge proposal."),
+        value_type=Reference(schema=IBug), readonly=True)
+
     address = exported(
         TextLine(
             title=_('The email address for this proposal.'),
@@ -393,21 +400,6 @@ class IBranchMergeProposal(Interface):
 
         The new proposal is created as work-in-progress, and copies across
         user-entered data like the whiteboard.
-        """
-
-    @operation_parameters(
-        reviewer=Reference(
-            title=_("A person for which the reviewer status is in question."),
-            schema=IPerson))
-    @export_read_operation()
-    def isPersonValidReviewer(reviewer):
-        """Return true if the `reviewer` is able to review the proposal.
-
-        There is an attribute on branches called `reviewer` which allows
-        a specific person or team to be set for a branch as an authorised
-        person to approve merges for a branch.  If a reviewer is not set
-        on the target branch, then the owner of the target branch is used
-        as the authorised user.
         """
 
     def isMergable():
@@ -610,3 +602,19 @@ class IMergeProposalCreatedJobSource(Interface):
 
     def iterReady():
         """Iterate through all ready MergeProposalCreatedJobs."""
+
+
+def notify_modified(proposal, func, *args, **kwargs):
+    """Call func, then notify about the changes it made.
+
+    :param proposal: the merge proposal to notify about.
+    :param func: The callable that will modify the merge proposal.
+    :param args: Additional arguments for the method.
+    :param kwargs: Keyword arguments for the method.
+    :return: The return value of the method.
+    """
+    from lp.code.adapters.branch import BranchMergeProposalDelta
+    snapshot = BranchMergeProposalDelta.snapshot(proposal)
+    result = func(*args, **kwargs)
+    notify(ObjectModifiedEvent(proposal, snapshot, []))
+    return result
