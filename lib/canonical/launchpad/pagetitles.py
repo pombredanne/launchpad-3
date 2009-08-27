@@ -1054,10 +1054,6 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Project and group registration in Launchpad'
 
-products_all = 'Upstream projects registered in Launchpad'
-
-projects_all = 'Project groups registered in Launchpad'
-
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
@@ -1245,8 +1241,6 @@ sprint_specs = ContextTitle('Blueprints for %s')
 sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
-
-sprints_all = 'All sprints and meetings registered in Launchpad'
 
 sprintspecification_decide = 'Consider spec for sprint agenda'
 
