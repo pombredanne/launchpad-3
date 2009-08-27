@@ -5,8 +5,6 @@ from datetime import datetime
 import gzip
 import os
 import pytz
-import re
-
 from zope.component import getUtility
 
 from lazr.uri import URI
@@ -18,7 +16,7 @@ from canonical.launchpad.interfaces.geoip import IGeoIP
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
-DBUSER = 'librarianlogparser'
+
 parser = apachelog.parser(apachelog.formats['extended'])
 
 
@@ -157,15 +155,6 @@ def get_host_date_status_and_request(line):
     return data['%h'], data['%t'], data['%>s'], data['%r']
 
 
-class NotALibraryFileAliasRequest(Exception):
-    """The path of the request doesn't map to a LibraryFileAlias."""
-
-
-# Regexp used to match paths to LibraryFileAliases.
-lfa_path_re = re.compile('^/[0-9]+/')
-multi_slashes_re = re.compile('/+')
-
-
 def get_method_and_path(request):
     """Extract the method of the request and the path of the requested file."""
     L = request.split(' ')
@@ -180,17 +169,3 @@ def get_method_and_path(request):
         path = uri.path
 
     return method, path
-
-
-def get_lfa_download_key(path):
-    path = multi_slashes_re.sub('/', path)
-    if not lfa_path_re.match(path):
-        # We only count downloads of LibraryFileAliases, and this is
-        # not one of them.
-        return None
-
-    file_id = path.split('/')[1]
-
-    assert file_id.isdigit(), ('File ID is not a digit: %s' % path)
-
-    return file_id

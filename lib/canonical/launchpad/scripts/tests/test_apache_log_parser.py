@@ -14,10 +14,10 @@ from zope.component import getUtility
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.services.apachelogparser.base import (
-    create_or_update_parsedlog_entry, DBUSER,
-    get_host_date_status_and_request, get_day, get_files_to_parse,
-    get_lfa_download_key, get_method_and_path, NotALibraryFileAliasRequest,
-    parse_file)
+    create_or_update_parsedlog_entry, get_host_date_status_and_request,
+    get_day, get_files_to_parse, get_method_and_path, parse_file)
+from canonical.launchpad.scripts.librarian_apache_log_parser import (
+    DBUSER, get_lfa_download_key)
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.testing import TestCase
