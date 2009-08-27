@@ -100,7 +100,7 @@ Edit page:
     ''
 
     >>> cprov_browser.getControl(name="field.builderok").value
-    False
+    True
 
     >>> cprov_browser.getControl(name="field.failnotes").value
     ''

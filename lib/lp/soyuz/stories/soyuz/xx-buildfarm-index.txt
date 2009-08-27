@@ -14,14 +14,14 @@ containing the build queue status summary for each build domain.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     The Launchpad build farm
-    2 build machines registered, 0 available, 2 disabled and 1 building.
+    2 build machines registered, 1 available, 1 disabled and 1 building.
     Builders
     Name  Processor  Status
-    bob   386        Disabled
+    bob   386        Building i386 build of mozilla-firefox 0.9 ...
     frog  386        Disabled
     Official distributions build status
     Processor  Builders  Queue
-    386        0         1 job ()
+    386        1         1 job (a minute)
     PPA build status
     Processor  Builders  Queue
     386        0         empty
@@ -31,28 +31,12 @@ in queue and the sum of their 'estimated_build_duration' for each
 supported processor on each separated build domain, 'official'
 (PRIMARY and PARTNER) and 'ppa'.
 
-    # Set the 'estimated_build_duration' of the pending build in the
-    # official queue.
-    >>> import datetime
-    >>> from zope.component import getUtility
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> login('foo.bar@canonical.com')
-    >>> one_minute = datetime.timedelta(seconds=60)
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> pending_build = ubuntu.getBuildRecords(
-    ...     build_state=BuildStatus.NEEDSBUILD)[0]
-    >>> removeSecurityProxy(
-    ...     pending_build).estimated_build_duration = one_minute
-    >>> logout()
-
     >>> anon_browser.reload()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
     Processor  Builders  Queue
-    386        0         1 job (a minute)
+    386        1         1 job (a minute)
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status',))
@@ -65,11 +49,16 @@ the corresponding portlet with their estimated duration as well.
 
     # Retry a failed build in the PPA domain and set its
     # 'estimated_build_duration' to a known value.
+    >>> import datetime
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> failed_build = cprov.archive.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
+    >>> one_minute = datetime.timedelta(seconds=60)
     >>> removeSecurityProxy(
     ...     failed_build).estimated_build_duration = one_minute
     >>> unused = failed_build.retry()
@@ -100,7 +89,7 @@ the pending job will appear in the 'official' queue:
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
     Processor  Builders  Queue
-    386        0         2 jobs (two minutes)
+    386        1         2 jobs (two minutes)
 
 From this page, users with the appropriate permission can register new
 builders.

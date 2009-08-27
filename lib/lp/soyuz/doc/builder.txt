@@ -20,22 +20,25 @@ Get an instance of Builder from the current sampledata:
 
 Test some attributes:
 
-    >>> builder.id, builder.name
-    (1, u'bob')
+    >>> print builder.name
+    bob
 
 Test 'status' property:
 
-    >>> builder.failnotes = 'Could not open Socket'
-    >>> print builder.status
-    Could not open Socket
-
-    >>> builder.builderok = True
     >>> print builder.status
     Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
 
     >>> builder.manual = True
     >>> print builder.status
     Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+
+    >>> builder.builderok = False
+    >>> builder.failnotes = 'Could not open Socket'
+    >>> print builder.status
+    Could not open Socket
+
+    >>> builder.builderok = True
+    >>> builder.failnotes = None
 
 In case of copy archives the status string will show both the copy
 archive owner as well as the copy archive name.
@@ -172,19 +175,6 @@ they are interested via the 'virtualized' argument.
     >>> p386 = Processor.selectOneBy(name='386')
     >>> amd64 = Processor.selectOneBy(name='amd64')
 
-We will also set the 'estimated_build_duration' for the only i386
-NEEDSBUILD build record we have in the sampledata.
-
-    >>> import datetime
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> pending_build = ubuntu.getBuildRecords(
-    ...     build_state=BuildStatus.NEEDSBUILD)[0]
-    >>> one_minute = datetime.timedelta(seconds=60)
-    >>> removeSecurityProxy(
-    ...     pending_build).estimated_build_duration = one_minute
-
 'virtualized' defaults to False, so if not passed, it will return the
 size and estimated duration of the non-virtualized (trusted) build queue.
 
@@ -208,6 +198,8 @@ is an effective manner to hold activity in a specific archive.
 We will temporarily disable the ubuntu primary archive.
 
     >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu.main_archive.enabled = False
     >>> login(ANONYMOUS)
 

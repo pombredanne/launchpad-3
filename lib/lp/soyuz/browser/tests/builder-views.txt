@@ -369,7 +369,7 @@ grouped builders within a category in a easy manner.
     ...               group.duration
 
     >>> print_category(builder_category)
-    386    1  1  None
+    386    2  1  0:00:30
     amd64  1  0  None
     hppa   1  0  None
 
@@ -392,13 +392,13 @@ Each `BuilderGroup` contains the following attributes:
     386
 
     >>> print i386_group.number_of_available_builders
-    1
+    2
 
     >>> print i386_group.queue_size
     1
 
     >>> print i386_group.duration
-    None
+    0:00:30
 
 The 'PPA' builder category is also available in BuilderSetView as a
 `BuilderCategory`.
