@@ -2221,7 +2221,7 @@
     <browser:page
         name="+prober-logs"
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
-        class="lp.registry.browser.distributionmirror.DistributionMirrorView"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorProberLogView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/distributionmirror-prober-logs.pt">
