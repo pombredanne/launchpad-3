@@ -23,6 +23,7 @@ to allow binary package searching.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Ubuntu Warty for i386
+    ...
     Search binary packages
     This archive contains 5 software packages.
     Details for Ubuntu Warty i386
