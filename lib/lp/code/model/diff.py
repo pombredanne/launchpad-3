@@ -108,16 +108,20 @@ class Diff(SQLBase):
         return klass.fromFile(diff_content, size, filename)
 
     @classmethod
-    def fromFile(klass, diff_content, size, filename=None):
+    def fromFile(klass, diff_content, size, filename=None, diffstat=None):
         """Create a Diff from a textual diff.
 
         :diff_content: The diff text
         :size: The number of bytes in the diff text.
+        :filename: The filename to store the content with.  Randomly generated
+            if not supplied.
+        :diffstat: The diffstat for this diff.  Generated if not supplied.
         """
         if size == 0:
             diff_text = None
             diff_lines_count = 0
-            diffstat_string = ''
+            if diffstat is None:
+                diffstat = ''
         else:
             if filename is None:
                 filename = generate_uuid() + '.txt'
@@ -125,11 +129,12 @@ class Diff(SQLBase):
                 filename, size, diff_content, 'text/x-diff')
             diff_content.seek(0)
             diff_content_bytes = diff_content.read(size)
-            diffstat = klass.generateDiffstat(diff_content_bytes)
-            diffstat_string = klass.stringifyDiffstat(diffstat)
+            if diffstat is None:
+                diffstat_vals = klass.generateDiffstat(diff_content_bytes)
+                diffstat = klass.stringifyDiffstat(diffstat_vals)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
         return klass(diff_text=diff_text, diff_lines_count=diff_lines_count,
-                     diffstat=diffstat_string)
+                     diffstat=diffstat)
 
     @staticmethod
     def generateDiffstat(diff_bytes):
@@ -183,13 +188,13 @@ class StaticDiff(SQLBase):
 
     @classmethod
     def acquireFromText(klass, from_revision_id, to_revision_id, text,
-                        filename=None):
+                        filename=None, diffstat=None):
         """See `IStaticDiffSource`."""
         existing_diff = klass.selectOneBy(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id)
         if existing_diff is not None:
             return existing_diff
-        diff = Diff.fromFile(StringIO(text), len(text), filename)
+        diff = Diff.fromFile(StringIO(text), len(text), filename, diffstat)
         return klass(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id,
             diff=diff)
@@ -255,6 +260,7 @@ class PreviewDiff(Storm):
         :param target_revision_id: The revision_id of the target branch.
         :param dependent_revision_id: The revision_id of the dependent branch.
         :param conflicts: The conflicts, as text.
+        ::
         :return: A `PreviewDiff` with specified values.
         """
         preview = cls()
@@ -265,8 +271,8 @@ class PreviewDiff(Storm):
 
         filename = generate_uuid() + '.txt'
         size = len(diff_content)
-        preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
-        preview.diffstat = diffstat
+        preview.diff = Diff.fromFile(StringIO(diff_content), size, filename,
+                                     diffstat)
         return preview
 
     @property
