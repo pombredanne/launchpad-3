@@ -217,13 +217,13 @@ class TestDirectBranchCommitMirror(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_direct_branch_commit_respects_mirrored(self):
-        # The "mirrored" argument causes the commit to apply to the mirrored
+    def test_direct_branch_commit_respects_to_mirror(self):
+        # The "to_mirror" argument causes the commit to apply to the mirrored
         # copy of the branch.
         self.useBzrBranches()
         branch = self.factory.makeBranch()
         bzr_branch = self.createBzrBranch(branch)
-        dbc = DirectBranchCommit(branch, mirror=True)
+        dbc = DirectBranchCommit(branch, to_mirror=True)
         try:
             dbc.writeFile('path', 'contents')
             dbc.commit('making commit to mirrored area.')

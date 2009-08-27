@@ -18,6 +18,7 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview
 
 from canonical.launchpad.interfaces import IMasterObject
+from lp.codehosting.vfs import make_branch_mirrorer
 
 
 class ConcurrentUpdateError(Exception):
@@ -48,7 +49,7 @@ class DirectBranchCommit:
     is_locked = False
     commit_builder = None
 
-    def __init__(self, db_branch, committer=None, mirrored=False):
+    def __init__(self, db_branch, committer=None, to_mirror=False):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
@@ -67,11 +68,11 @@ class DirectBranchCommit:
 
         :param db_branch: a Launchpad `Branch` object.
         :param committer: the `Person` writing to the branch.
-        :param mirrored: If True, write to the mirrored copy of the branch
+        :param to_mirror: If True, write to the mirrored copy of the branch
             instead of the hosted copy.  (Mainly useful for tests)
         """
         self.db_branch = db_branch
-        self.mirrored = mirrored
+        self.to_mirror = to_mirror
 
         if committer is None:
             committer = db_branch.owner
@@ -80,11 +81,11 @@ class DirectBranchCommit:
         # Directories we create on the branch, and their ids.
         self.path_ids = {}
 
-        if mirrored:
-            url = self.db_branch.warehouse_url
+        if to_mirror:
+            self.bzrbranch = Branch.open(self.db_branch.warehouse_url)
         else:
-            url = self.db_branch.getPullURL()
-        self.bzrbranch = Branch.open(url)
+            mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
+            self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
         self.bzrbranch.lock_write()
         self.is_locked = True
 
@@ -159,7 +160,9 @@ class DirectBranchCommit:
 
         If it does, raise `ConcurrentUpdateError`.
         """
-        if self.mirrored:
+        # A different last_scanned_id does not indicate a race for mirrored
+        # branches -- last_scanned_id is a proxy for the mirrored branch.
+        if self.to_mirror:
             return
         assert self.is_locked, "Getting revision on un-locked branch."
         last_revision = None

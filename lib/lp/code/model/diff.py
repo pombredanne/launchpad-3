@@ -210,7 +210,7 @@ class PreviewDiff(Storm):
         on_remote=True)
 
     @classmethod
-    def fromBMP(cls, bmp):
+    def fromBranchMergeProposal(cls, bmp):
         """Create a `PreviewDiff` from a `BranchMergeProposal`.
 
         Includes a diff from the source to the target.
