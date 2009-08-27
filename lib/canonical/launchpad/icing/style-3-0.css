@@ -392,6 +392,7 @@ span.see-all {
 .description {
     clear: both;
     font-size: 100%;
+    margin-top: 1em;
     }
 .top-portlet .summary {
     margin: 0 0 1em 0;
