@@ -4,12 +4,23 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only"
-  i18n:domain="launchpad">
-  <body>
-    <div metal:fill-slot="main">
+  i18n:domain="launchpad"
+>
 
-      <div metal:use-macro="
-             context/@@+object-reassignment/object-reassignment" />
-    </div>
-  </body>
+<body>
+<div metal:fill-slot="main">
+
+<div class="top-portlet">
+  <h1>
+    Version history
+  </h1>
+
+  <tal:block
+    repeat="dspr view/releases"
+    replace="structure dspr/@@+changes">
+  </tal:block>
+</div>
+
+</div>
+</body>
 </html>

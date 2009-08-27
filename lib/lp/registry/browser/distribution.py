@@ -70,6 +70,8 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation,
@@ -121,7 +123,7 @@ class UsesLaunchpadMixin:
 
 class DistributionNavigation(
     GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
-    FAQTargetNavigationMixin):
+    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistribution
 
@@ -226,7 +228,6 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
     facet = 'overview'
     links = ('cdimage_mirrors',
              'archive_mirrors',
-             'newmirror',
              'disabled_mirrors',
              'pending_review_mirrors',
              'unofficial_mirrors',
@@ -241,19 +242,16 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return self.context.context
 
     def cdimage_mirrors(self):
-        text = 'CD Mirrors'
-        enabled = self.distribution.full_functionality
-        return Link('+cdmirrors', text, enabled=enabled, icon='info')
+        text = 'CD mirrors'
+        return Link('+cdmirrors', text, icon='info')
 
     def archive_mirrors(self):
-        text = 'Archive Mirrors'
-        enabled = self.distribution.full_functionality
-        return Link('+archivemirrors', text, enabled=enabled, icon='info')
+        text = 'Archive mirrors'
+        return Link('+archivemirrors', text, icon='info')
 
     def newmirror(self):
-        text = 'Register Mirror'
-        enabled = self.distribution.full_functionality
-        return Link('+newmirror', text, enabled=enabled, icon='add')
+        text = 'Register mirror'
+        return Link('+newmirror', text, icon='add')
 
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""
@@ -263,18 +261,18 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
                 and user.inTeam(self.distribution.mirror_admin))
 
     def disabled_mirrors(self):
-        text = 'Disabled Mirrors'
+        text = 'Disabled mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
     def pending_review_mirrors(self):
-        text = 'Pending-Review Mirrors'
+        text = 'Pending-review mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link(
             '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
-        text = 'Unofficial Mirrors'
+        text = 'Unofficial mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
@@ -338,13 +336,11 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     def cdimage_mirrors(self):
         text = 'CD mirrors'
-        enabled = self.context.full_functionality
-        return Link('+cdmirrors', text, enabled=enabled, icon='info')
+        return Link('+cdmirrors', text, icon='info')
 
     def archive_mirrors(self):
         text = 'Archive mirrors'
-        enabled = self.context.full_functionality
-        return Link('+archivemirrors', text, enabled=enabled, icon='info')
+        return Link('+archivemirrors', text, icon='info')
 
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""
@@ -354,18 +350,18 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
                 and user.inTeam(self.context.mirror_admin))
 
     def disabled_mirrors(self):
-        text = 'Show disabled mirrors'
+        text = 'Disabled mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
     def pending_review_mirrors(self):
-        text = 'Show pending-review mirrors'
+        text = 'Pending-review mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link(
             '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
-        text = 'Show unofficial mirrors'
+        text = 'Unofficial mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
@@ -889,6 +885,9 @@ class DistributionMirrorsView(LaunchpadView):
 
     implements(IDistributionMirrorMenuMarker)
     show_freshness = True
+    show_archive_mirror = True
+    show_cd_mirror = True
+    description = None
 
     @cachedproperty
     def mirror_count(self):
@@ -962,6 +961,9 @@ class DistributionMirrorsView(LaunchpadView):
 class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     heading = 'Official Archive Mirrors'
+    description = ('These mirrors provide repositories and archives of all '
+                   'software for the distribution.')
+    show_archive_mirror = False
 
     @cachedproperty
     def mirrors(self):
@@ -971,6 +973,9 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     heading = 'Official CD Mirrors'
+    description = ('These mirrors offer ISO images which you can download '
+                   'and burn to CD to make installation disks.')
+    show_cd_mirror = False
     show_freshness = False
 
     @cachedproperty
