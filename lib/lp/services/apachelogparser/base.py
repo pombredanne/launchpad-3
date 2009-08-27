@@ -18,7 +18,6 @@ from canonical.launchpad.interfaces.geoip import IGeoIP
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
-
 DBUSER = 'librarianlogparser'
 parser = apachelog.parser(apachelog.formats['extended'])
 
@@ -89,22 +88,16 @@ def parse_file(fd, start_position, logger):
             if status != '200':
                 continue
 
-            try:
-                method, file_id = get_method_and_file_id(request)
-            except NotALibraryFileAliasRequest:
-                # We only count downloads of LibraryFileAliases, and this is
-                # not one of them.
+            download_key = get_lfa_download_key(request)
+
+            if download_key is None:
+                # Not a file or request that we care about.
                 continue
 
-            if method != 'GET':
-                # We're only interested in counting downloads.
-                continue
-
-            assert file_id.isdigit(), ('File ID is not a digit: %s' % request)
-            # Get the dict containing these file's downloads.
-            if file_id not in downloads:
-                downloads[file_id] = {}
-            file_downloads = downloads[file_id]
+            # Get the dict containing this file's downloads.
+            if download_key not in downloads:
+                downloads[download_key] = {}
+            file_downloads = downloads[download_key]
 
             # Get the dict containing these day's downloads for this file.
             day = get_day(date)
@@ -185,3 +178,20 @@ def get_method_and_file_id(request):
         raise NotALibraryFileAliasRequest(request)
     file_id = path.split('/')[1]
     return method, file_id
+
+
+def get_lfa_download_key(request):
+    try:
+        method, file_id = get_method_and_file_id(request)
+    except NotALibraryFileAliasRequest:
+        # We only count downloads of LibraryFileAliases, and this is
+        # not one of them.
+        return None
+
+    if method != 'GET':
+        # We're only interested in counting downloads.
+        return None
+
+    assert file_id.isdigit(), ('File ID is not a digit: %s' % request)
+
+    return file_id
