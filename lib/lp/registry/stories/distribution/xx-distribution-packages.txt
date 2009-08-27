@@ -237,6 +237,9 @@ distroseries.  The distroseries are presented in order, most recent first.
     Breezy Badger Autotest  (active development)      Set upstream link
       1.3.1   release  (main)  (not published)
 
+(See more about packaging in:
+registry/stories/distribution/xx-distributionsourcepackage-packaging.txt)
+
 At the bottom of the page, the three latest PPA uploads of this source package
 are displayed.
 
