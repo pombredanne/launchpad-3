@@ -629,8 +629,8 @@ exception therefore results in an OOPS. But within the web service,
 syncSources is invoked directly by the client, and any problems are
 the client's fault. Therefore, there's no need to record an OOPS.
 
-    >>> 'X-Lazr-Oopsid' in str(already_copied)
-    False
+    >>> print already_copied.getheader('X-Lazr-Oopsid')
+    None
 
 'syncSources' behaves trasactionally, i.e. it will only synchronise
 all packages or none of them if there was a problem.

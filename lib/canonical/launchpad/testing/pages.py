@@ -25,7 +25,7 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urlparse import urljoin, urlparse
+from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
@@ -58,13 +58,13 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
             del kw['debug']
         else:
             self._debug = False
-        super(UnstickyCookieHTTPCaller, self).__init__(*args, **kw)
+        HTTPCaller.__init__(self, *args, **kw)
 
     def __call__(self, *args, **kw):
         if self._debug:
             pdb.set_trace()
         try:
-            return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
+            return HTTPCaller.__call__(self, *args, **kw)
         finally:
             self.resetCookies()
 
@@ -77,8 +77,7 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         if 'PATH_INFO' not in environment:
             environment = dict(environment)
             environment['PATH_INFO'] = path
-        return super(UnstickyCookieHTTPCaller, self).chooseRequestClass(
-            method, path, environment)
+        return HTTPCaller.chooseRequestClass(self, method, path, environment)
 
     def resetCookies(self):
         self.cookies = SimpleCookie()
@@ -617,8 +616,7 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     request_token.review(person, permission, context)
     access_token = request_token.createAccessToken()
     logout()
-    return LaunchpadWebServiceCaller(
-        consumer_key, access_token.key) # "port=9000" was ignored, now not sent
+    return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
 def stop():

@@ -101,7 +101,8 @@ method to do it, but it can be changed via a patch.
     ...                    simplejson.dumps(representation),
     ...                    headers)
 
-    >>> print modify_team('/~my-new-team', {'visibility' : 'Private Membership'},
+    >>> print modify_team(
+    ...     '/~my-new-team', {'visibility' : 'Private Membership'},
     ...     'PATCH', comm_webservice)
     HTTP/1.1 209 Content Returned
     ...
@@ -116,7 +117,8 @@ method to do it, but it can be changed via a patch.
 
 As an admin, Salgado can also change the team's visibility.
 
-    >>> print modify_team('/~my-new-team', {'visibility' : 'Public'},
+    >>> print modify_team(
+    ...     '/~my-new-team', {'visibility' : 'Public'},
     ...     'PATCH', webservice)
     HTTP/1.1 209 Content Returned
     ...

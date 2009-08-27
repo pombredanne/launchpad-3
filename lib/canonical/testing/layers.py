@@ -72,7 +72,6 @@ import transaction
 import wsgi_intercept
 
 from zope.app.publication.httpfactory import chooseClasses
-from zope.app.publication.http import HTTPPublication
 import zope.app.testing.functional
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
@@ -766,10 +765,8 @@ def wsgi_application(environ, start_response):
     # so it is easiest to follow that lead, even if it feels a little loose.
     transaction.commit()
     # Let's support post-mortem debugging.
-    if environ.get('HTTP_X_ZOPE_HANDLE_ERRORS') == 'False':
+    if environ.pop('HTTP_X_ZOPE_HANDLE_ERRORS', 'True') == 'False':
         environ['wsgi.handleErrors'] = False
-    if 'HTTP_X_ZOPE_HANDLE_ERRORS' in environ:
-        del environ['HTTP_X_ZOPE_HANDLE_ERRORS']
     handle_errors = environ.get('wsgi.handleErrors', True)
     # Now we do the proper dance to get the desired request.  This is an
     # almalgam of code from zope.app.testing.functional.HTTPCaller and
@@ -1326,8 +1323,9 @@ class PageTestLayer(LaunchpadFunctionalLayer):
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
 
-        # Setting STAGGER_RETRIES makes tests like notfound-traversals.txt go
-        # much, much faster by avoiding calls to time.sleep()
+        # Setting STAGGER_RETRIES to False makes tests like
+        # notfound-traversals.txt go much, much faster by avoiding calls to
+        # time.sleep()
         cls._original_stagger_retries = zope.publisher.http.STAGGER_RETRIES
         zope.publisher.http.STAGGER_RETRIES = False
 
