@@ -1191,7 +1191,8 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         job = MergeProposalCreatedJob.create(bmp)
         self.assertRaises(bzr_errors.NotBranchError, job.run)
-        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo',
+                                                 diffstat='')
         transaction.commit()
         removeSecurityProxy(bmp).review_diff = review_diff
         # If job.run were trying to use the bzr branch, it would error.
@@ -1199,7 +1200,8 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_run_sends_email(self):
         """MergeProposalCreationJob.run sends an email."""
-        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo',
+                                                 diffstat='')
         transaction.commit()
         bmp = self.factory.makeBranchMergeProposal(review_diff=review_diff)
         job = MergeProposalCreatedJob.create(bmp)
