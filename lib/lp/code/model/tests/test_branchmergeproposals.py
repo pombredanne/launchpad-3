@@ -18,6 +18,7 @@ from zope.component import getUtility
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
@@ -1598,8 +1599,11 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
     layer = LaunchpadZopelessLayer
 
     def test_run(self):
+        self.useBzrBranches()
         bmp = self.createExampleMerge()[0]
         job = UpdatePreviewDiffJob.create(bmp)
+        transaction.commit()
+        self.layer.switchDbUser(config.update_preview_diffs.dbuser)
         job.run()
         transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
