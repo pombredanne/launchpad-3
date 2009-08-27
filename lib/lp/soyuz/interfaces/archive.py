@@ -134,6 +134,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Displayname"), required=True,
             description=_("Displayname for this archive.")))
 
+    title = TextLine(title=_("Name"), required=False, readonly=True)
+
     enabled = Bool(
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))
