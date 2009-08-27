@@ -1007,6 +1007,10 @@ class ProductDownloadFilesView(LaunchpadView,
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
 
+    @property
+    def page_title(self):
+        return "%s project files" % self.context.displayname
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         self.form = self.request.form

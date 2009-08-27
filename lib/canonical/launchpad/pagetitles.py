@@ -966,8 +966,6 @@ product_packages = ContextDisplayName('%s packages in Launchpad')
 product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 
-product_files = ContextDisplayName('%s project files')
-
 product_review_license = ContextTitle('Review %s')
 
 product_series = ContextDisplayName('%s timeline')
