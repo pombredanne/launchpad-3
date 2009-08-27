@@ -16,19 +16,7 @@
 <div metal:fill-slot="main"
      tal:define="has_edit context/required:launchpad.Edit">
 
-  <div tal:condition="not: view/has_download_files">
-    <p>No download files exist for this project.</p>
-    <p>You might want to check
-      <a tal:attributes="href context/fmt:url:code">this project's Bazzar
-        branches</a>
-      <span tal:condition="context/homepageurl">or its
-        <a tal:attributes="href context/homepageurl">home page</a>
-      </span>.
-    </p>
-  </div>
-
-  <div tal:condition="view/has_download_files">
-    <div>
+  <p tal:condition="view/has_download_files">
     After you've downloaded a file, you can verify its authenticity using
     <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
     either </tal:hasdownloadfiles>its MD5 sum
@@ -36,11 +24,22 @@
     or signature</tal:hasdownloadfiles>. (<a
     href="/+help/verify-downloads.html" target="help">How do I verify a
     download?</a>)
-    </div>
-    <br />
+  </p>
+  <br />
 
-    <form id="project-downloads" method="POST"
-          tal:attributes="action request/URL">
+  <form id="project-downloads" method="POST"
+        tal:attributes="action request/URL">
+
+    <div tal:condition="not: view/has_download_files" id="no-downloads">
+      <p>No download files exist for this project.</p>
+      <p>You might want to check
+        <a tal:attributes="href context/fmt:url:code">this project's Bazzar
+          branches</a>
+        <span tal:condition="context/homepageurl">or its
+          <a tal:attributes="href context/homepageurl">home page</a>
+        </span>.
+      </p>
+    </div>
 
     <div
       tal:repeat="series view/sorted_series_list"
@@ -111,7 +110,7 @@
 
       </tal:seriesfilesexist>
 
-      <p tal:condition="has_edit">
+      <p tal:condition="has_edit" class="add-files">
         <tal:releases condition="series/releases">
           Add download file for release:
           <tal:release repeat="release series/releases">
@@ -123,11 +122,12 @@
       </p>
 
     </div>
-    <input tal:condition="has_edit" type="submit" name="delete_files"
-           value="Delete Files" />
+    <input tal:condition="python: has_edit and view.has_download_files"
+        type="submit"
+        name="delete_files"
+        value="Delete Files" />
 
-    </form>
-  </div>
+  </form>
 </div>
 </body>
 </html>
