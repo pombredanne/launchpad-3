@@ -4,11 +4,13 @@
 __metaclass__ = type
 
 __all__ = [
+    'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
     ]
 
 from operator import attrgetter
 
+from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
@@ -17,8 +19,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BugNotificationLevel, IDistributionSourcePackage,
     IStructuralSubscriptionForm)
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, action, canonical_url, custom_widget)
+    LaunchpadFormView, action, canonical_url, custom_widget, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -254,3 +257,13 @@ class StructuralSubscriptionView(LaunchpadFormView):
         and should be shown for the context.
         """
         return IDistributionSourcePackage.providedBy(self.context)
+
+
+class StructuralSubscriptionTargetTraversalMixin:
+    """Mix-in class that provides +subscription/<SUBSCRIBER> traversal."""
+
+    @stepthrough('+subscription')
+    def traverse_structuralsubscription(self, name):
+        """Traverses +subscription portions of URLs."""
+        person = getUtility(IPersonSet).getByName(name)
+        return self.context.getSubscription(person)

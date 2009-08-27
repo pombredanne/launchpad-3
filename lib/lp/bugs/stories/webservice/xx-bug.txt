@@ -591,6 +591,209 @@ will return something more useful.
     "id": ...  "title": "Test bug"...
 
 
+Bug nominations
+---------------
+
+A bug may be nominated for any number of distro or product series.
+Nominations can be inspected, created, approved and declined through
+the webservice.
+
+Eric creates Fooix 0.1 and 0.2.
+
+    >>> login('foo.bar@canonical.com')
+    >>> eric = factory.makePerson(name='eric')
+    >>> fooix = factory.makeProduct(name='fooix', owner=eric)
+    >>> fx01 = fooix.newSeries(eric, '0.1', 'The 0.1.x series')
+    >>> fx02 = fooix.newSeries(eric, '0.2', 'The 0.2.x series')
+    >>> debuntu = factory.makeDistribution(name='debuntu', owner=eric)
+    >>> debuntu50 = debuntu.newSeries(
+    ...     '5.0', '5.0', '5.0', '5.0', '5.0', '5.0', None, eric)
+    >>> bug = factory.makeBug(product=fooix)
+    >>> logout()
+
+Initially there are no nominations.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody())
+    start: None
+    total_size: 0
+    ---
+
+    >>> login('foo.bar@canonical.com')
+    >>> john = factory.makePerson(name='john')
+    >>> logout()
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+
+    >>> john_webservice = webservice_for_person(
+    ...     john, permission=OAuthPermission.WRITE_PRIVATE)
+
+But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
+
+    >>> print john_webservice.named_post(
+    ...     '/bugs/%d' % bug.id, 'addNomination',
+    ...     target=john_webservice.getAbsoluteUrl('/fooix/0.1'))
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../bugs/.../nominations/...
+    ...
+  
+    >>> nominations = webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
+    >>> pprint_collection(nominations)
+    start: 0
+    total_size: 1
+    ---
+    bug_link: u'http://.../bugs/...'
+    date_created: u'...'
+    date_decided: None
+    decider_link: None
+    distroseries_link: None
+    owner_link: u'http://.../~john'
+    productseries_link: u'http://.../fooix/0.1'
+    resource_type_link: u'http://.../#bug_nomination'
+    self_link: u'http://.../bugs/.../nominations/...'
+    status: u'Nominated'
+    target_link: u'http://.../fooix/0.1'
+    ---
+
+John cannot approve or decline the nomination.
+
+    >>> nom_url = nominations['entries'][0]['self_link']
+    
+    >>> print john_webservice.named_get(nom_url, 'canApprove').jsonBody()
+    False
+
+    >>> print john_webservice.named_post(nom_url, 'approve')
+    HTTP/1.1 401 Unauthorized...
+
+    >>> print john_webservice.named_post(nom_url, 'decline')
+    HTTP/1.1 401 Unauthorized...
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    1
+    >>> logout()
+
+Eric, however, can and does decline the nomination.
+    
+    >>> eric_webservice = webservice_for_person(
+    ...     eric, permission=OAuthPermission.WRITE_PRIVATE)    
+    >>> print eric_webservice.named_post(nom_url, 'decline')
+    HTTP/1.1 200 Ok...
+
+    >>> print eric_webservice.named_get(nom_url, 'canApprove').jsonBody()
+    True
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    1
+    >>> logout()
+
+John is disappointed to see that the nomination was declined.
+
+    >>> nominations = john_webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
+    >>> pprint_collection(nominations)
+    start: 0
+    total_size: 1
+    ---
+    bug_link: u'http://.../bugs/...'
+    date_created: u'...'
+    date_decided: u'...'
+    decider_link: u'http://.../~eric'
+    distroseries_link: None
+    owner_link: u'http://.../~john'
+    productseries_link: u'http://.../fooix/0.1'
+    resource_type_link: u'http://.../#bug_nomination'
+    self_link: u'http://.../bugs/.../nominations/...'
+    status: u'Declined'
+    target_link: u'http://.../fooix/0.1'
+    ---
+
+Eric changes his mind, and approves the nomination.
+
+    >>> print eric_webservice.named_post(nom_url, 'approve')
+    HTTP/1.1 200 Ok...
+
+This marks the nomination as Approved, and creates a new task.
+
+    >>> nominations = webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
+    >>> pprint_collection(nominations)
+    start: 0
+    total_size: 1
+    ---
+    bug_link: u'http://.../bugs/...'
+    date_created: u'...'
+    date_decided: u'...'
+    decider_link: u'http://.../~eric'
+    distroseries_link: None
+    owner_link: u'http://.../~john'
+    productseries_link: u'http://.../fooix/0.1'
+    resource_type_link: u'http://.../#bug_nomination'
+    self_link: u'http://.../bugs/.../nominations/...'
+    status: u'Approved'
+    target_link: u'http://.../fooix/0.1'
+    ---
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    2
+    >>> logout()
+
+Eric cannot change his mind and decline the approved task.
+
+    >>> print eric_webservice.named_post(nom_url, 'decline')
+    HTTP/1.1 400 Bad Request
+    ...
+    Cannot decline an approved nomination.
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    2
+    >>> logout()
+
+While he can approve it again, it's a no-op.
+
+    >>> print eric_webservice.named_post(nom_url, 'approve')
+    HTTP/1.1 200 Ok...
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    2
+    >>> logout()
+
+A bug cannot be nominated for a non-series.
+
+    >>> print john_webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'canBeNominatedFor',
+    ...     target=john_webservice.getAbsoluteUrl('/fooix')).jsonBody()
+    False
+
+    >>> print john_webservice.named_post(
+    ...     '/bugs/%d' % bug.id, 'addNomination',
+    ...     target=john_webservice.getAbsoluteUrl('/fooix'))
+    HTTP/1.1 400 Bad Request
+    ...
+    NominationError: This bug cannot be nominated for Fooix.
+
+The bug also can't be nominated for Debuntu 5.0, as it has no
+Debuntu tasks.
+
+    >>> print john_webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'canBeNominatedFor',
+    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0')).jsonBody()
+    False
+
+    >>> print john_webservice.named_post(
+    ...     '/bugs/%d' % bug.id, 'addNomination',
+    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0'))
+    HTTP/1.1 400 Bad Request
+    ...
+    NominationError: This bug cannot be nominated for Debuntu 5.0.
+
 Bug subscriptions
 -----------------
 
@@ -667,9 +870,6 @@ any member will do.
 
 Once we have a member, a web service must be created for that user.
 Then, the user can unsubsribe the group from the bug.
-
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
 
     >>> member_webservice = webservice_for_person(
     ...     ubuntu_team_member, permission=OAuthPermission.WRITE_PRIVATE)
