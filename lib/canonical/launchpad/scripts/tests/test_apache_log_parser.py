@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts.librarian_apache_log_parser import (
+from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry, DBUSER,
     get_host_date_status_and_request, get_day, get_files_to_parse,
     get_method_and_file_id, NotALibraryFileAliasRequest, parse_file)

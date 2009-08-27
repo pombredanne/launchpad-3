@@ -29,7 +29,7 @@ from canonical.config import config
 from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.librarian_apache_log_parser import (
+from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry, DBUSER, get_files_to_parse, parse_file)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
