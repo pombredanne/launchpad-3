@@ -182,7 +182,8 @@ NEEDSBUILD build record we have in the sampledata.
     >>> pending_build = ubuntu.getBuildRecords(
     ...     build_state=BuildStatus.NEEDSBUILD)[0]
     >>> one_minute = datetime.timedelta(seconds=60)
-    >>> removeSecurityProxy(pending_build).estimated_build_duration = one_minute
+    >>> removeSecurityProxy(
+    ...     pending_build).estimated_build_duration = one_minute
 
 'virtualized' defaults to False, so if not passed, it will return the
 size and estimated duration of the non-virtualized (trusted) build queue.

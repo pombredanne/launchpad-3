@@ -229,45 +229,45 @@ An admin user can see builds even if they are private:
 
     >>> admin_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Launchpad build machines
+    The Launchpad build farm
     ...
-    frog   AUTO    Building i386 build of privacy-test ... [cprov/ppa]
+    Name  Processor  Status
+    bob   386        Disabled
+    frog  386        Building i386 build of privacy-test ... [cprov/ppa]
     ...
-    bob    AUTO    Disabled
-    Generated at ...
 
 Launchpad Buildd admins cannot see private builds.
 
     >>> name12_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(name12_browser.contents))
-    Launchpad build machines
+    The Launchpad build farm
     ...
-    frog   AUTO    Building private build
+    Name  Processor  Status
+    bob   386        Disabled
+    frog  386        Building private build
     ...
-    bob    AUTO    Disabled
-    Generated at ...
 
 cprov can see his own private build:
 
     >>> cprov_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(cprov_browser.contents))
-    Launchpad build machines
+    The Launchpad build farm
     ...
-    frog   AUTO    Building i386 build of privacy-test ... [cprov/ppa]
-    ...
-    bob    AUTO    Disabled
-    Generated at ...
+    Name  Processor  Status
+    bob   386        Disabled
+    frog  386        Building i386 build of privacy-test ... [cprov/ppa]
+    Updated on ...
 
 Anonymous users cannot see the private build:
 
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Launchpad build machines
+    The Launchpad build farm
     ...
-    frog   AUTO    Building private build
+    Name  Processor  Status
+    bob   386        Disabled
+    frog  386        Building private build
     ...
-    bob    AUTO    Disabled
-    Generated at ...
 
 
 == Unembargoed builds ==
@@ -300,7 +300,7 @@ users:
     ...     print "Did not get expected exception"
     Got expected exception
 
-Let's make the iceweasel package available in breezy-autotest. 
+Let's make the iceweasel package available in breezy-autotest.
 First log in as an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
@@ -326,23 +326,23 @@ Now the anonymous user can see the build:
     >>> anon_browser = setupBrowser()
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Launchpad build machines
+    The Launchpad build farm
     ...
-    frog  AUTO    Building i386 build of privacy-test ... [cprov/ppa]
+    Name  Processor Status
+    bob   386       Disabled
+    frog  386       Building i386 build of privacy-test 666 ... [cprov/ppa]
     ...
-    bob   AUTO    Disabled
-    Generated at ...
 
 Any other logged-in user will also see the build:
 
     >>> browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(browser.contents))
-    Launchpad build machines
+    The Launchpad build farm
     ...
-    frog   AUTO   Building i386 build of privacy-test ... [cprov/ppa]
+    Name  Processor Status
+    bob   386       Disabled
+    frog  386       Building i386 build of privacy-test 666 ... [cprov/ppa]
     ...
-    bob    AUTO   Disabled
-    Generated at ...
 
 Accessing the build page will now also work:
 
