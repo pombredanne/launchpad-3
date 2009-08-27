@@ -54,6 +54,7 @@ def verify_upload(person, sourcepackagename, archive, component,
                   strict_component=True):
     """Can 'person' upload 'suite_sourcepackage' to 'archive'?
 
+    XXX out of date
     :param person: The `IPerson` trying to upload to the package.
     :param archive: The `IArchive` being uploaded to.
     :param strict_component: True if access to the specific component for the
