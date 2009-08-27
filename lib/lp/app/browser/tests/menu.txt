@@ -118,8 +118,8 @@ be clickable.
       <h2>Related pages</h2>
     ...
           <li>
-            <div class="menu-link-edit_thing nolink
-                  sprite modify edit">Edit thing</div>
+            <span class="menu-link-edit_thing nolink
+                  sprite modify edit">Edit thing</span>
           </li>
     ...
 
@@ -144,8 +144,8 @@ The generated markup is for a portlet with the global-actions id.
     <div id="global-actions" class="portlet">
       <ul>
         <li>
-          <div class="menu-link-edit_thing nolink
-                      sprite modify edit">Edit thing</div>
+          <span class="menu-link-edit_thing nolink
+                      sprite modify edit">Edit thing</span>
         </li>
         <li>
           <a style="..."
