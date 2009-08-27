@@ -383,18 +383,6 @@ class Person(
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
-    ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
-        orderBy='id')
-    reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
-        orderBy='id')
-    # XXX: matsubara 2006-03-06 bug=33935:
-    # Is this really needed? There's no attribute 'claimant' in the Bounty
-    # database class or interface, but the column exists in the database.
-    claimedBounties = SQLMultipleJoin('Bounty', joinColumn='claimant',
-        orderBy='id')
-    subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
-        otherColumn='bounty', intermediateTable='BountySubscription',
-        orderBy='id')
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -1736,7 +1724,6 @@ class Person(
 
         # Nuke all subscriptions of this person.
         removals = [
-            ('BountySubscription', 'person'),
             ('BranchSubscription', 'person'),
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
@@ -2871,23 +2858,6 @@ class PersonSet:
             DELETE FROM BranchSubscription WHERE person=%(from_id)d
             ''' % vars())
 
-    def _mergeBountySubscriptions(self, cur, from_id, to_id):
-        # Update only the BountySubscriptions that will not conflict.
-        cur.execute('''
-            UPDATE BountySubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND bounty NOT IN
-                (
-                SELECT bounty
-                FROM BountySubscription
-                WHERE person = %(to_id)d
-                )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM BountySubscription WHERE person=%(from_id)d
-            ''' % vars())
-
     def _mergeBugAffectsPerson(self, cur, from_id, to_id):
         # Update only the BugAffectsPerson that will not conflict
         cur.execute('''
@@ -3303,7 +3273,7 @@ class PersonSet:
 
         # These rows are in a UNIQUE index, and we can only move them
         # to the new Person if there is not already an entry. eg. if
-        # the destination and source persons are both subscribed to a bounty,
+        # the destination and source persons are both subscribed to a bug,
         # we cannot change the source persons subscription. We just leave them
         # as noise for the time being.
 
@@ -3332,9 +3302,6 @@ class PersonSet:
 
         self._mergeBranchSubscription(cur, from_id, to_id)
         skip.append(('branchsubscription', 'person'))
-
-        self._mergeBountySubscriptions(cur, from_id, to_id)
-        skip.append(('bountysubscription', 'person'))
 
         self._mergeBugAffectsPerson(cur, from_id, to_id)
         skip.append(('bugaffectsperson', 'person'))

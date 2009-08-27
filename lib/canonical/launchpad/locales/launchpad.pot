@@ -173,7 +173,6 @@ msgid "Database ID"
 msgstr ""
 
 #: d/interfaces/archuser.py:22
-#: d/interfaces/bounty.py:82
 #: d/interfaces/bug.py:60
 #: d/interfaces/bug.py:219
 #: d/interfaces/bugextref.py:48
@@ -205,7 +204,6 @@ msgstr ""
 
 #: d/interfaces/binarypackage.py:22
 #: d/interfaces/binarypackagename.py:21
-#: d/interfaces/bountysubscription.py:21
 #: d/interfaces/bugattachment.py:24
 #: d/interfaces/bugextref.py:29
 #: d/interfaces/bugsubscription.py:21
@@ -242,12 +240,6 @@ msgstr ""
 msgid "Valid Binary package name"
 msgstr ""
 
-#: d/interfaces/bounty.py:29
-#: d/interfaces/bountysubscription.py:26
-msgid "Bounty ID"
-msgstr ""
-
-#: d/interfaces/bounty.py:32
 #: d/interfaces/bugattachment.py:31
 #: d/interfaces/bugtracker.py:23
 #: d/interfaces/cal.py:102
@@ -268,14 +260,6 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: d/interfaces/bounty.py:33
-msgid ""
-"Keep this name very short, unique, and\n"
-"            descriptive, because it will be used in URLs. Examples:\n"
-"            mozilla-type-ahead-find, postgres-smart-serial."
-msgstr ""
-
-#: d/interfaces/bounty.py:39
 #: d/interfaces/bug.py:49
 #: d/interfaces/bugextref.py:40
 #: d/interfaces/bugtracker.py:24
@@ -291,14 +275,6 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
-#: d/interfaces/bounty.py:40
-msgid ""
-"Describe the task as clearly as\n"
-"            possible in up to 70 characters. This title is\n"
-"            displayed in every bounty list or report."
-msgstr ""
-
-#: d/interfaces/bounty.py:45
 #: d/interfaces/bug.py:52
 #: d/interfaces/bugtracker.py:25
 #: d/interfaces/distribution.py:36
@@ -310,14 +286,6 @@ msgstr ""
 msgid "Summary"
 msgstr ""
 
-#: d/interfaces/bounty.py:46
-msgid ""
-"A single-paragraph description of the\n"
-"            bounty. This will also be displayed in most\n"
-"            bounty listings."
-msgstr ""
-
-#: d/interfaces/bounty.py:51
 #: d/interfaces/bug.py:57
 #: d/interfaces/bug.py:220
 #: d/interfaces/bugattachment.py:34
@@ -334,54 +302,6 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
-#: d/interfaces/bounty.py:52
-msgid ""
-"A detailed description. Include exact\n"
-"            results that will be acceptable to the bounty owner and\n"
-"            reviewer."
-msgstr ""
-
-#: d/interfaces/bounty.py:57
-msgid "Estimated value (US dollars)"
-msgstr ""
-
-#: d/interfaces/bounty.py:58
-msgid ""
-"In some cases the\n"
-"            bounty may have been offered in a variety of\n"
-"            currencies, so this USD value is an estimate based\n"
-"            on recent currency rates."
-msgstr ""
-
-#: d/interfaces/bounty.py:64
-msgid "Difficulty"
-msgstr ""
-
-#: d/interfaces/bounty.py:65
-msgid ""
-"From 1 (easiest) to 100\n"
-"            (most difficult). An example of\n"
-"            an extremely difficult bounty would be something that requires\n"
-"            extensive and rare knowledge, such as a kernel memory management\n"
-"            subsystem."
-msgstr ""
-
-#: d/interfaces/bounty.py:72
-msgid "Duration"
-msgstr ""
-
-#: d/interfaces/bounty.py:73
-msgid ""
-"The expected time required to\n"
-"            complete this bounty work, given the necessary skills."
-msgstr ""
-
-#: d/interfaces/bounty.py:77
-#: d/interfaces/person.py:566
-msgid "Reviewer"
-msgstr ""
-
-#: d/interfaces/bounty.py:79
 #: d/interfaces/bug.py:41
 #: d/interfaces/bugextref.py:45
 #: d/interfaces/bugwatch.py:34
@@ -403,24 +323,12 @@ msgstr ""
 msgid "Date Created"
 msgstr ""
 
-#: d/interfaces/bountysubscription.py:23
 #: d/interfaces/bugsubscription.py:23
 msgid "Person ID"
 msgstr ""
 
-#: d/interfaces/bountysubscription.py:28
 #: d/interfaces/bugsubscription.py:28
 msgid "Subscription"
-msgstr ""
-
-#: d/interfaces/bountysubscription.py:29
-msgid ""
-"Your subscription to a bounty can be one of\n"
-"            \"watch\", \"cc\" or \"none\". If you \"watch\" a bounty then it will\n"
-"            show up on your reports, but you won't normally receive bounty\n"
-"            mail. If you \"cc\" yourself on a bounty you will receive a copy of\n"
-"            all bounty update notifications by email.\n"
-"            "
 msgstr ""
 
 #: d/interfaces/bug.py:199
@@ -1070,10 +978,6 @@ msgstr ""
 
 #: d/interfaces/distribution.py:77
 msgid "The Lucille Config."
-msgstr ""
-
-#: d/interfaces/distribution.py:80
-msgid "The bounties that are related to this distro."
 msgstr ""
 
 #: d/interfaces/distroseries.py:27
@@ -2052,10 +1956,6 @@ msgid ""
 "        when."
 msgstr ""
 
-#: d/interfaces/product.py:174
-msgid "The bounties that are related to this product."
-msgstr ""
-
 #: d/interfaces/product.py:200
 msgid "The URL of the root directory for the product used when the series doesn't supply one."
 msgstr ""
@@ -2279,10 +2179,6 @@ msgstr ""
 
 #: d/interfaces/project.py:132
 msgid "Whether or not this project has been reviewed."
-msgstr ""
-
-#: d/interfaces/project.py:134
-msgid "The bounties that are related to this project."
 msgstr ""
 
 #: d/interfaces/project.py:197
@@ -2856,14 +2752,6 @@ msgstr ""
 
 #: d/zcml/binarypackagename.zcml:39
 msgid "Create a new Binary Package Name"
-msgstr ""
-
-#: d/zcml/bounty.zcml:102
-msgid "Create A New Bounty"
-msgstr ""
-
-#: d/zcml/bounty.zcml:62
-msgid "Modify Bounty:"
 msgstr ""
 
 #: d/zcml/bug.zcml:150

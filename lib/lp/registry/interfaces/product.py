@@ -576,8 +576,6 @@ class IProductPublic(
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
-    bounties = Attribute(_("The bounties that are related to this product."))
-
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
         "translated sorted by distroseries.name and sourcepackage.name.")
@@ -669,10 +667,6 @@ class IProductPublic(
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
-
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this product. Return None.
-        """
 
     def getCustomLanguageCode(language_code):
         """Look up `ICustomLanguageCode` for `language_code`, if any.
@@ -883,10 +877,6 @@ class IProductSet(Interface):
     def count_translatable():
         """Return a count of the number of products that have
         upstream-oriented translations configured in Rosetta."""
-
-    def count_bounties():
-        """Return a number of products that have bounties registered in the
-        Launchpad for them."""
 
     def count_buggy():
         """Return the number of products that have bugs associated with them

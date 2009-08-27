@@ -158,18 +158,6 @@ def binarypackagerelease_index(context, view):
 
 binarypackagenames_index = 'Binary package name set'
 
-bounties_index = 'Bounties registered in Launchpad'
-
-bounty_add = 'Register a bounty'
-
-bounty_edit = ContextTitle(smartquote('Edit bounty "%s"'))
-
-bounty_link = ContextTitle('Link a bounty to %s')
-
-bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
-
-bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
-
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_index = ContextDisplayName(smartquote(
@@ -791,8 +779,6 @@ person_archive_subscriptions = 'Private PPA access'
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
-person_bounties = ContextDisplayName('Bounties for %s')
-
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
@@ -1057,8 +1043,6 @@ registry_index = 'Project and group registration in Launchpad'
 products_all = 'Upstream projects registered in Launchpad'
 
 projects_all = 'Project groups registered in Launchpad'
-
-related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
 

@@ -38,7 +38,6 @@ from lp.bugs.model.bugtarget import (
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
 from lp.translations.model.customlanguagecode import CustomLanguageCode
-from canonical.launchpad.database.distributionbounty import DistributionBounty
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -175,9 +174,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(
         dbName='lucilleconfig', notNull=False, default=None)
-    bounties = SQLRelatedJoin(
-        'Bounty', joinColumn='distribution', otherColumn='bounty',
-        intermediateTable='DistributionBounty')
     official_answers = BoolCol(dbName='official_answers', notNull=True,
         default=False)
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
@@ -738,13 +734,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return FAQSearch(
             search_text=search_text, owner=owner, sort=sort,
             distribution=self).getResults()
-
-    def ensureRelatedBounty(self, bounty):
-        """See `IDistribution`."""
-        for curr_bounty in self.bounties:
-            if bounty.id == curr_bounty.id:
-                return None
-        DistributionBounty(distribution=self, bounty=bounty)
 
     def getDistroSeriesAndPocket(self, distroseries_name):
         """See `IDistribution`."""

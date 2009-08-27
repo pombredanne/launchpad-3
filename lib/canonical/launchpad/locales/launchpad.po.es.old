@@ -35,14 +35,6 @@ msgstr ""
 msgid "Administer something"
 msgstr ""
 
-#: /home/carlos/Work/dists/launchpad/lib/canonical/launchpad/zcml/bounty.zcml:36
-msgid "Modify Bounty:"
-msgstr ""
-
-#: /home/carlos/Work/dists/launchpad/lib/canonical/launchpad/zcml/bounty.zcml:65
-msgid "Create A New Bounty"
-msgstr ""
-
 #: /home/carlos/Work/dists/launchpad/lib/canonical/launchpad/zcml/bug.zcml:36
 msgid "Change Bug Information"
 msgstr ""
@@ -207,116 +199,6 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: l/launchpad/interfaces/bounty.py:19
-msgid "Bounty ID"
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:22
-msgid "Bounty name"
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:23
-msgid ""
-"A short and unique name for this bounty. \n"
-"                This allows us to refer to the bounty directly in a url,\n"
-"                so it needs to be destinct and descriptive. For example:\n"
-"                mozilla-type-ahead-find and\n"
-"                postgres-smart-serial."
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:31
-msgid "Bounty title"
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:32
-msgid ""
-"The title of the bounty should be no more than 70\n"
-"            characters long, and is displayed in every list or report of "
-"bounties. It\n"
-"            should be as clear as possible in the space allotted what the\n"
-"            bounty is for."
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:38 l/launchpad/interfaces/bug.py:41
-#: l/launchpad/interfaces/distribution.py:19
-#: l/launchpad/interfaces/distroseries.py:21
-#: l/launchpad/interfaces/product.py:37
-msgid "Summary"
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:39
-msgid ""
-"The bounty summary is a single paragraph\n"
-"            description of the bounty. This will also be desplayed in most\n"
-"            bounty listings."
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:44 l/launchpad/interfaces/bug.py:47
-#: l/launchpad/interfaces/bugattachment.py:23
-#: l/launchpad/interfaces/bugtracker.py:14
-#: l/launchpad/interfaces/country.py:32
-#: l/launchpad/interfaces/distribution.py:22
-#: l/launchpad/interfaces/distroseries.py:25
-#: l/launchpad/interfaces/product.py:40
-#: l/launchpad/interfaces/productrelease.py:20
-#: l/launchpad/interfaces/project.py:35
-#: l/launchpad/interfaces/sourcepackage.py:33
-#: l/launchpad/interfaces/sourcepackage.py:34
-#: l/launchpad/interfaces/sourcepackage.py:52
-#: l/launchpad/interfaces/sourcepackage.py:53
-msgid "Description"
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:45
-msgid ""
-"The bounty description should be a detailed\n"
-"            description of the bounty, aimed ad specifying the exact "
-"results\n"
-"            that will be acceptable to the bounty owner and reviewer."
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:50
-msgid "Estimated USD Value"
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:51
-msgid ""
-"The value of this bounty, in\n"
-"            USD. Note that in some cases the bounty may have been offered "
-"in\n"
-"            a variety of currencies, so this USD value is an estimate based\n"
-"            on recent currency rates."
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:57
-msgid "Difficulty"
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:58
-msgid ""
-"The difficulty of this bounty,\n"
-"            rated from 1 to 100 where 100 is most difficult. An example of\n"
-"            an extremely difficult bounty would be something that requires\n"
-"            extensive and rare knowledge, such as a kernel memory "
-"management\n"
-"            subsystem."
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:65
-msgid "Duration"
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:66
-msgid ""
-"The expected time required to\n"
-"            complete this bounty work, given the necessary skills."
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:70
-msgid "Reviewer"
-msgstr ""
-
-#: l/launchpad/interfaces/bounty.py:72 l/launchpad/interfaces/bug.py:22
 #: l/launchpad/interfaces/bugassignment.py:28
 #: l/launchpad/interfaces/bugassignment.py:81
 #: l/launchpad/interfaces/bugextref.py:33
@@ -327,7 +209,6 @@ msgstr ""
 msgid "Date Created"
 msgstr ""
 
-#: l/launchpad/interfaces/bounty.py:75 l/launchpad/interfaces/bug.py:54
 #: l/launchpad/interfaces/bug.py:117
 #: l/launchpad/interfaces/bugassignment.py:31
 #: l/launchpad/interfaces/bugassignment.py:35

@@ -592,12 +592,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     # which contains valid people but not teams, and we don't really need one
     # apart from here.
     registrant = Attribute('The user who created this profile.')
-    # bounty relations
-    ownedBounties = Attribute('Bounties issued by this person.')
-    reviewerBounties = Attribute('Bounties reviewed by this person.')
-    claimedBounties = Attribute('Bounties claimed by this person.')
-    subscribedBounties = Attribute(
-        'Bounties to which this person subscribes.')
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 

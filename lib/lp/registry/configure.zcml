@@ -321,9 +321,6 @@
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
 
-    <!-- The bounty system is kept maintained but not available for users.
-                This is achieved by putting it on the PageTestLayer. -->
-
     <facet
         facet="answers"/>
 
@@ -824,10 +821,6 @@
                 set_schema="lp.registry.interfaces.person.IHasStanding"/>
         </class>
 
-        <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
-
-
         <!-- Adding SSH keys is the only possibly harmful thing that can be done
         without the user's password, so we use a special permission here to make
         sure only the user (and not launchpad admins) will be able to edit her own
@@ -1205,10 +1198,6 @@
                                                 ProductBugsMenu undeclared until layout bug is fixed -->
 
 
-    <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
-
-
     <!-- ProductSet-->
 
     <class
@@ -1228,7 +1217,6 @@
                 featuredTranslatables
                 count_all
                 count_translatables
-                count_bounties
                 count_buggy
                 count_featureful
                 count_reviewed
@@ -1451,10 +1439,6 @@
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
-
 
     <!-- DistributionSet -->
 

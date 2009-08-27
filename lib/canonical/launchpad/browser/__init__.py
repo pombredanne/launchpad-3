@@ -15,8 +15,6 @@ files in this directory.
 from lp.soyuz.browser.archive import *
 from lp.code.browser.bazaar import *
 from lp.soyuz.browser.binarypackagerelease import *
-from canonical.launchpad.browser.bounty import *
-from canonical.launchpad.browser.bountysubscription import *
 from lp.code.browser.branchmergeproposal import *
 from lp.code.browser.branchref import *
 from lp.code.browser.branchsubscription import *

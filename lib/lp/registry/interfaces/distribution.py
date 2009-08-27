@@ -207,7 +207,6 @@ class IDistributionPublic(
         exported_as="series")
     architectures = List(
         title=_("DistroArchSeries inside this Distribution"))
-    bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
     is_read_only = Attribute(
         "True if this distro is just monitored by Launchpad, rather than "
@@ -344,11 +343,6 @@ class IDistributionPublic(
 
         :return: a dict where the key is a `IDistributionSourcePackage`
             and the value is a `IDistributionSourcePackageRelease`.
-        """
-
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this distribution. Return
-        None.
         """
 
     def getDistroSeriesAndPocket(distroseriesname):
