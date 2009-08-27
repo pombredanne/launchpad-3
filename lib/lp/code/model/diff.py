@@ -117,6 +117,7 @@ class Diff(SQLBase):
         if size == 0:
             diff_text = None
             diff_lines_count = 0
+            diffstat_string = ''
         else:
             if filename is None:
                 filename = generate_uuid() + '.txt'
@@ -127,7 +128,8 @@ class Diff(SQLBase):
             diffstat = klass.generateDiffstat(diff_content_bytes)
             diffstat_string = klass.stringifyDiffstat(diffstat)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
-        return klass(diff_text=diff_text, diff_lines_count=diff_lines_count)
+        return klass(diff_text=diff_text, diff_lines_count=diff_lines_count,
+                     diffstat=diffstat_string)
 
     @staticmethod
     def generateDiffstat(diff_bytes):

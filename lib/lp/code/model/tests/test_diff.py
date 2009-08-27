@@ -150,9 +150,9 @@ class TestDiff(DiffTestCase):
             Diff.stringifyDiffstat(Diff.generateDiffstat(self.diff_bytes)))
 
     def test_fromFileSetsDiffstat(self):
-        Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
+        diff = Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
         self.assertEqual(
-            'bar: -3 +0\nbaz: -0 +2\nfoo: -1 +2\n', Diff.diffstat)
+            'bar: -3 +0\nbaz: -0 +2\nfoo: -1 +2\n', diff.diffstat)
 
 
 class TestStaticDiff(TestCaseWithFactory):
@@ -315,6 +315,7 @@ class TestPreviewDiff(DiffTestCase):
         self.assertEqual(target_rev_id, preview.target_revision_id)
         transaction.commit()
         self.checkExampleMerge(preview.text)
+        self.assertEqual('foo: -0 +5\n', preview.diffstat)
 
 
 def test_suite():
