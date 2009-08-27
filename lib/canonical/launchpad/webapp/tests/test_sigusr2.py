@@ -33,52 +33,40 @@ class SIGUSR2TestCase(unittest.TestCase):
 
         proc = subprocess.Popen(
             helper_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        try:
+            # Wait until things have started up.
+            self.sync('ready')
 
-        # Wait until things have started up.
-        while True:
-            if os.path.exists(main_log):
-                break
-            self.assert_(
-                proc.returncode is None,
-                "Subprocess failed (%s): %s" % (proc.returncode, proc.stdout))
+            # Make the helper emit a log message
+            os.kill(proc.pid, signal.SIGUSR1)
+            self.sync('emit_1')
 
-        # Make the helper emit a log message
-        time.sleep(0.5)
-        os.kill(proc.pid, signal.SIGUSR1)
+            # Move the log file under the helper's feed
+            os.rename(main_log, cycled_log)
 
-        # The main logfile should no longer be empty
-        content = self.getNewContent(main_log)
-        self.failIfEqual(content, '')
+            # Invoke the sigusr2 handler in the helper
+            os.kill(proc.pid, signal.SIGUSR2)
+            self.sync('sigusr2')
 
-        # Move the log file under the helper's feed
-        os.rename(main_log, cycled_log)
-
-        # Invoke the sigusr2 handler in the helper
-        time.sleep(0.5)
-        os.kill(proc.pid, signal.SIGUSR2)
-
-        # Make the helper emit a log message
-        time.sleep(0.5)
-        os.kill(proc.pid, signal.SIGUSR1)
-
-        # Wait for it to terminate.
-        proc.wait()
+            # Make the helper emit a log message
+            os.kill(proc.pid, signal.SIGUSR1)
+            self.sync('emit_2')
+        finally:
+            os.kill(proc.pid, signal.SIGKILL)
 
         # Confirm content in the main log and the cycled log are what we
-        # expect. We wait until the process has terminated to do this,
-        # as before we might have made partial reads before the helper
-        # had finished emitting its messages.
+        # expect.
         self.assertEqual(open(cycled_log, 'r').read().strip(), 'Message 1')
         self.assertEqual(open(main_log, 'r').read().strip(), 'Message 2')
 
-
-    def getNewContent(self, filename, previous_content=''):
+    def sync(self, step):
         timeout = 10
+        event_filename = os.path.join(self.logdir, step)
         start_time = time.time()
         while time.time() < start_time + timeout:
-            new_content = open(filename, 'r').read()
-            if new_content != previous_content:
-                return new_content
-            time.sleep(0.05)
-        self.fail("No new content in %s after 20 seconds." % filename)
+            if os.path.exists(event_filename):
+                os.unlink(event_filename)
+                return
+        self.fail("sync step %s didn't happen in %d seconds." % (
+            step, timeout))
 
