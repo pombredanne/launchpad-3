@@ -112,6 +112,15 @@ class TestPermission(TestCaseWithFactory):
         spn = self.factory.makeSourcePackageName()
         self.assertCanUpload(person, spn, ppa, None)
 
+    def test_owner_can_upload_to_ppa_no_sourcepackage(self):
+        # The owner can upload to PPAs even if the source package doesn't
+        # exist yet.
+        team = self.factory.makeTeam()
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA, owner=team)
+        person = self.factory.makePerson()
+        removeSecurityProxy(team).addMember(person, team.teamowner)
+        self.assertCanUpload(person, None, ppa, None)
+
     def test_arbitrary_person_cannot_upload_to_primary_archive(self):
         # By default, you can't upload to the primary archive.
         person = self.factory.makePerson()
