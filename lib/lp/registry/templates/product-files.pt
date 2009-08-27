@@ -19,7 +19,7 @@
   <div tal:condition="not: view/has_download_files">
     <p>No download files exist for this project.</p>
     <p>You might want to check
-      <a tal:attributes="href context/fmt:url/code">this project's Bazzar
+      <a tal:attributes="href context/fmt:url:code">this project's Bazzar
         branches</a>
       <span tal:condition="context/homepageurl">or its
         <a tal:attributes="href context/homepageurl">home page</a>
@@ -27,7 +27,7 @@
   </div>
 
   <div tal:condition="view/has_download_files">
-    <p>
+    <div>
     After you've downloaded a file, you can verify its authenticity using
     <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
     either </tal:hasdownloadfiles>its MD5 sum
@@ -35,7 +35,8 @@
     or signature</tal:hasdownloadfiles>. (<a
     href="/+help/verify-downloads.html" target="help">How do I verify a
     download?</a>)
-    </p>
+    </div>
+    <br />
 
     <form id="project-downloads" method="POST"
           tal:attributes="action request/URL">
@@ -44,22 +45,31 @@
       tal:repeat="series view/sorted_series_list"
       tal:attributes="id string:series_${series/name}">
 
-      <h2 tal:condition="python: has_edit or series.has_release_files">
-        &#8220;<tal:name replace="series/name">main</tal:name>&#8221; series
-      </h2>
-
       <tal:seriesfilesexist condition="series/has_release_files">
-        <div
-          tal:condition="series/summary"
-          tal:content="series/summary/fmt:shorten/80" />
-
         <tal:releases repeat="release series/releases">
           <div tal:condition="release/files">
-            <h3 style="font-size: 1.2em">
+            <h2 style="font-size: 1.2em">
               <a tal:attributes="href release/fmt:url">
-                <span tal:replace="release/version" /> release
-              </a>
-            </h3>
+                <span tal:replace="release/milestone/name" />
+                (<span tal:replace="release/milestone/code_name" />)
+                  release</a>, from the
+              <a tal:attributes="href series/fmt:url"
+                 tal:content="series/name">name</a> series.
+            </h2>
+
+            <div id="release_notes">
+              <h3>Release notes:</h3>
+              <span 
+                tal:content="structure release/release_notes/fmt:text-to-html"
+                tal:condition="release/release_notes">
+                Release notes
+              </span>
+              <strong>Released:</strong>
+              <span
+                tal:attributes="title release/datereleased/fmt:datetime"
+                tal:content="release/datereleased/fmt:approximatedate" />
+            </div>
+
             <table class="listing">
               <thead>
                 <tr>
