@@ -834,6 +834,10 @@
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
 
+    <browser:menus
+        module="lp.code.browser.branchlisting"
+        classes="PersonProductBranchesMenu"/>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
         layer="canonical.launchpad.layers.CodeLayer"
@@ -847,6 +851,29 @@
         name="+branches"
         template="../templates/personproduct-branches.pt"
         />
+    <browser:page
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.branchlisting.PersonProductSubscribedBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+subscribedbranches"
+        template="../templates/personproduct-branches.pt"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.branchlisting.PersonProductRegisteredBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+registeredbranches"
+        template="../templates/personproduct-branches.pt"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.branchmergeproposallisting.PersonProductActiveReviewsView"
+        permission="zope.Public"
+        facet="branches"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
 
     <browser:page
         for="canonical.launchpad.interfaces.personproduct.IPersonProduct"

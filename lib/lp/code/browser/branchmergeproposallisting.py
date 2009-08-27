@@ -332,9 +332,9 @@ class PersonActiveReviewsView(ActiveReviewsView):
 
     def getProposals(self):
         """See `ActiveReviewsView`."""
-        collection = self.getCollection().visibleByUser(self.user)
+        collection = self._getCollection().visibleByUser(self.user)
         proposals = collection.getMergeProposalsForPerson(
-            self.context,
+            self._getReviewer(),
             [BranchMergeProposalStatus.CODE_APPROVED,
              BranchMergeProposalStatus.NEEDS_REVIEW,
              BranchMergeProposalStatus.WORK_IN_PROGRESS])
@@ -350,3 +350,16 @@ class PersonProductActiveReviewsView(PersonActiveReviewsView):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context.product)
+
+    @property
+    def heading(self):
+        return "Active code reviews of %s for %s" % (
+            self.context.product.displayname, self.context.person.displayname)
+
+    page_title = heading
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews for %s." % (
+            self.context.person.displayname, self.context.product.displayname)
