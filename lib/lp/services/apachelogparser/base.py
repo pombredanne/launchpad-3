@@ -88,7 +88,12 @@ def parse_file(fd, start_position, logger, get_download_key):
             if status != '200':
                 continue
 
-            download_key = get_download_key(request)
+            method, path = get_method_and_path(request)
+
+            if method != 'GET':
+                continue
+
+            download_key = get_download_key(path)
 
             if download_key is None:
                 # Not a file or request that we care about.
@@ -161,8 +166,8 @@ lfa_path_re = re.compile('^/[0-9]+/')
 multi_slashes_re = re.compile('/+')
 
 
-def get_method_and_file_id(request):
-    """Extract the method of the request and the ID of the requested file."""
+def get_method_and_path(request):
+    """Extract the method of the request and the path of the requested file."""
     L = request.split(' ')
     # HTTP 1.0 requests might omit the HTTP version so we must cope with them.
     if len(L) == 2:
@@ -173,25 +178,19 @@ def get_method_and_file_id(request):
     if path.startswith('http://') or path.startswith('https://'):
         uri = URI(path)
         path = uri.path
+
+    return method, path
+
+
+def get_lfa_download_key(path):
     path = multi_slashes_re.sub('/', path)
     if not lfa_path_re.match(path):
-        raise NotALibraryFileAliasRequest(request)
-    file_id = path.split('/')[1]
-    return method, file_id
-
-
-def get_lfa_download_key(request):
-    try:
-        method, file_id = get_method_and_file_id(request)
-    except NotALibraryFileAliasRequest:
         # We only count downloads of LibraryFileAliases, and this is
         # not one of them.
         return None
 
-    if method != 'GET':
-        # We're only interested in counting downloads.
-        return None
+    file_id = path.split('/')[1]
 
-    assert file_id.isdigit(), ('File ID is not a digit: %s' % request)
+    assert file_id.isdigit(), ('File ID is not a digit: %s' % path)
 
     return file_id

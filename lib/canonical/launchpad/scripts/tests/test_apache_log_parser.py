@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry, DBUSER,
     get_host_date_status_and_request, get_day, get_files_to_parse,
-    get_lfa_download_key, get_method_and_file_id, NotALibraryFileAliasRequest,
+    get_lfa_download_key, get_method_and_path, NotALibraryFileAliasRequest,
     parse_file)
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.ftests import ANONYMOUS, login
@@ -68,7 +68,8 @@ class TestRequestParsing(TestCase):
     """Test parsing the request part of an apache log line."""
 
     def assertMethodAndFileIDAreCorrect(self, request):
-        method, file_id = get_method_and_file_id(request)
+        method, path = get_method_and_path(request)
+        file_id = get_lfa_download_key(path)
         self.assertEqual(method, 'GET')
         self.assertEqual(file_id, '8196569')
 
@@ -99,18 +100,18 @@ class TestRequestParsing(TestCase):
         request = 'GET https://launchpadlibrarian.net/8196569/foo.png'
         self.assertMethodAndFileIDAreCorrect(request)
 
-    def test_requests_for_paths_that_are_not_of_an_lfa_raise_error(self):
+    def test_requests_for_paths_that_are_not_of_an_lfa_return_none(self):
         request = 'GET https://launchpadlibrarian.net/ HTTP/1.1'
-        self.assertRaises(
-            NotALibraryFileAliasRequest, get_method_and_file_id, request)
+        self.assertEqual(
+            get_lfa_download_key(get_method_and_path(request)[1]), None)
 
         request = 'GET /robots.txt HTTP/1.1'
-        self.assertRaises(
-            NotALibraryFileAliasRequest, get_method_and_file_id, request)
+        self.assertEqual(
+            get_lfa_download_key(get_method_and_path(request)[1]), None)
 
         request = 'GET /@@person HTTP/1.1'
-        self.assertRaises(
-            NotALibraryFileAliasRequest, get_method_and_file_id, request)
+        self.assertEqual(
+            get_lfa_download_key(get_method_and_path(request)[1]), None)
 
 
 class TestLogFileParsing(TestCase):
