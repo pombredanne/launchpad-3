@@ -10,15 +10,12 @@
 
   <tal:main metal:fill-slot="main">
     <div class="top-portlet">
-      <h1>Add a branch to bug #<span tal:replace="context/bug/id" /></h1>
-      <div class="description">
-        <div metal:use-macro="context/@@launchpad_form/form">
-          <div metal:fill-slot="extra_info" class="documentDescription">
-            Linking a Bazaar branch to a bug allows you to notify others of
-            work to fix this bug.
-            (<a href="https://help.launchpad.net/Bugs/BugBranchLinks">More
-            about bug branch links</a>)
-          </div>
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <div metal:fill-slot="extra_info" class="documentDescription">
+          Linking a Bazaar branch to a bug allows you to notify others of
+          work to fix this bug.
+          (<a href="https://help.launchpad.net/Bugs/BugBranchLinks">More
+          about bug branch links</a>)
         </div>
       </div>
     </div>

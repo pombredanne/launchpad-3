@@ -346,6 +346,11 @@ thead th, tr.thead th {
     text-align: center;
     vertical-align: bottom;
     }
+
+form h1 {
+    margin-bottom: 1em;
+    }
+
 form table th, form table td {
     padding: 2px;
     }
@@ -392,7 +397,6 @@ span.see-all {
 .description {
     clear: both;
     font-size: 100%;
-    margin-top: 1em;
     }
 .top-portlet .summary {
     margin: 0 0 1em 0;
