@@ -701,7 +701,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         assert 'id' in arguments, (
             "Bug.add_comment() must always be called with an id parameter.")
         assert 'comment' in arguments, (
-            "Bug.add_comment() must always be called with an comment "
+            "Bug.add_comment() must always be called with a comment "
             "parameter.")
 
         bug_id = arguments['id']
