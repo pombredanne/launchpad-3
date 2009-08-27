@@ -3,7 +3,7 @@
 
 """A SIGUSR2 handler for the Launchpad Web App.
 
-Sending a SIGUSER2 signal to Launchpad will cause logfiles to be
+Sending a SIGUSR2 signal to Launchpad will cause logfiles to be
 reopened, allowing a tool like logrotate to rotate them.
 """
 
@@ -14,10 +14,10 @@ import signal
 
 from ZConfig.components.logger.loghandler import reopenFiles
 
-def siguser2_handler(signum, frame):
+def sigusr2_handler(signum, frame):
     "Rotate logfiles in response to SIGUSR2."""
     reopenFiles()
 
 def setup_sigusr2(event):
-    """Configure the SIGUSER2 handler. Called at startup."""
-    signal.signal(signal.SIGUSR2, siguser2_handler)
+    """Configure the SIGUSR2 handler. Called at startup."""
+    signal.signal(signal.SIGUSR2, sigusr2_handler)
