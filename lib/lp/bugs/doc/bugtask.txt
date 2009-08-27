@@ -1137,8 +1137,7 @@ targetnamecache updated.
     ...         sourcepackagenameset.queryByName('mozilla-firefox')))
     <BugTask at ...>
 
-    >>> new_bug.addNomination(mark, ubuntu.currentseries)
-    <BugNomination at ...>
+    >>> new_bug.addNomination(mark, ubuntu.currentseries).approve(mark)
 
 The first task has been created and successfully nominated to Hoary.
 
