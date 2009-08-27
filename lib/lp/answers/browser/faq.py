@@ -17,6 +17,7 @@ from canonical.launchpad.webapp import (
 
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqcollection import IFAQCollection
 
 
 class FAQNavigationMenu(NavigationMenu):

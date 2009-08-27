@@ -278,7 +278,7 @@ FAQ title to display the FAQ content.
 The FAQ's title appears as the prime heading:
 
     >>> main_content = find_main_content(owner_browser.contents)
-    >>> print main_content.find('h1').renderContents()
+    >>> print main_content.find('h2').renderContents()
     Displaying SVG in Firefox
 
 The FAQ keywords and content appears just below:
@@ -294,10 +294,9 @@ The FAQ keywords and content appears just below:
 The FAQ's original author and creation date appears in the the
 'Lifecycle' portlet:
 
-    >>> print extract_text(find_portlet(owner_browser.contents, 'Lifecycle'))
-    Lifecycle
-    Created by: Sample Person
-    When: ...
+    >>> print extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'faq-details'))
+    Created by Sample Person on ...
 
 A 'Related questions' portlet contains links to the question answered by
 the FAQ:
