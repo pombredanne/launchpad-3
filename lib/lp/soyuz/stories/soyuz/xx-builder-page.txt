@@ -9,6 +9,7 @@ builder state. In the sampledata, the builder 'bob' is building
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Bob The Builder
+    ...
     Bob The Builder builds Intel 386 binaries and is owned by
     Launchpad Buildd Admins.
     ...

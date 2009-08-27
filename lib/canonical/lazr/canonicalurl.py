@@ -18,6 +18,7 @@ from zope.component import queryAdapter
 # This function should be moved into lazr.canonicalurl.
 # See bug #185958.
 from canonical.launchpad.webapp.publisher import canonical_url_iterator
+from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 
 
 def nearest_context_with_adapter(obj, interface, name=u''):
@@ -58,10 +59,13 @@ def nearest_provides_or_adapted(obj, interface):
     :return None: if there is no object that provides or can be adapted in
         the url chain.
     """
-    for curr_obj in canonical_url_iterator(obj):
-        # If the curr_obj implements the interface, it is returned.
-        impl = interface(curr_obj, None)
-        if impl is not None:
-            return impl
-
+    try:
+        for curr_obj in canonical_url_iterator(obj):
+            # If the curr_obj implements the interface, it is returned.
+            impl = interface(curr_obj, None)
+            if impl is not None:
+                return impl
+    except NoCanonicalUrl:
+        # Do not break when canonical URL is not defined for an object.
+        pass
     return None

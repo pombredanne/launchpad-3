@@ -89,21 +89,21 @@
             for="lp.translations.interfaces.translator.ITranslator"
             permission="launchpad.Admin"
             class="lp.translations.browser.translator.TranslatorAdminView"
-            template="../templates/translator-admin.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+edit"
             for="lp.translations.interfaces.translator.IEditTranslator"
             permission="launchpad.Edit"
             class="lp.translations.browser.translator.TranslatorEditView"
-            template="../templates/translator-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+remove"
             for="lp.translations.interfaces.translator.ITranslator"
             permission="launchpad.Edit"
             class="lp.translations.browser.translator.TranslatorRemoveView"
-            template="../templates/translator-remove.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
     </facet>
     <facet
@@ -311,7 +311,7 @@
             for="canonical.launchpad.interfaces.ILanguage"
             class="lp.translations.browser.language.LanguageAdminView"
             permission="launchpad.Admin"
-            template="../templates/language-admin.pt"
+            template="../../app/templates/generic-edit.pt"
             name="+admin"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:pages
@@ -345,7 +345,7 @@
             for="canonical.launchpad.interfaces.ILanguageSet"
             class="lp.translations.browser.language.LanguageAddView"
             permission="launchpad.Admin"
-            template="../templates/language-add.pt"
+            template="../../app/templates/generic-edit.pt"
             name="+add"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:navigation
@@ -448,6 +448,7 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
             path_expression="name"
+            rootsite="translations"
             parent_utility="lp.translations.interfaces.translationgroup.ITranslationGroupSet"/>
         <browser:pages
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
@@ -457,29 +458,26 @@
             <browser:page
                 template="../templates/translationgroup-index.pt"
                 name="+index"/>
-            
+
             <!-- TranslationGroup portlets -->
-            
+
             <browser:page
-                name="+portlet-relateds"
-                template="../templates/translationgroup-portlet-relateds.pt"/>
-            <browser:page
-                name="+portlet-details"
-                template="../templates/translationgroup-portlet-details.pt"/>
+                name="+portlet-projects"
+                template="../templates/translationgroup-portlet-projects.pt"/>
         </browser:pages>
         <browser:page
             name="+edit"
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
             permission="launchpad.Edit"
             class="lp.translations.browser.translationgroup.TranslationGroupEditView"
-            template="../templates/translationgroup-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+appoint"
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
             permission="launchpad.Edit"
             class="lp.translations.browser.translationgroup.TranslationGroupAddTranslatorView"
-            template="../templates/translationgroup-appoint.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+reassign"
@@ -497,7 +495,8 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             path_expression="string:+groups"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            rootsite="translations" />
         <browser:defaultView
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             name="+index"
@@ -507,7 +506,7 @@
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             class="lp.translations.browser.translationgroup.TranslationGroupAddView"
             permission="launchpad.Admin"
-            template="../templates/translationgroup-add.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"

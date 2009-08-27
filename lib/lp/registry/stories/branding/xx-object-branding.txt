@@ -82,7 +82,7 @@ Distribution branding
     >>> browser.open('http://launchpad.dev/kubuntu')
     >>> browser.url
     'http://launchpad.dev/kubuntu'
-    >>> browser.getLink('Change distribution details').click()
+    >>> browser.getLink('Change details').click()
     >>> browser.url
     'http://launchpad.dev/kubuntu/+edit'
 
@@ -109,7 +109,7 @@ Here we see the updated values.
 
     >>> browser.url
     'http://launchpad.dev/kubuntu'
-    >>> browser.getLink('Change distribution details').click()
+    >>> browser.getLink('Change details').click()
 
     >>> browser.getControl(name='field.icon.action').value
     ['keep']
