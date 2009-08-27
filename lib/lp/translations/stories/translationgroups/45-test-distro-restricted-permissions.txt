@@ -88,7 +88,7 @@ team, of which No Privileges however is not a member.
     ...     'http://translations.launchpad.dev/+groups/polyglot/+appoint')
     >>> admin_browser.getControl('Language').value=['st']
     >>> admin_browser.getControl('Translator').value='name21'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Appoint').click()
 
 No Privileges Person can now enter text, but the page does warn that it
 will only accept suggestions.
