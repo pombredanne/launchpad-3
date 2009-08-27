@@ -24,6 +24,7 @@
       <span tal:condition="context/homepageurl">or its
         <a tal:attributes="href context/homepageurl">home page</a>
       </span>.
+    </p>
   </div>
 
   <div tal:condition="view/has_download_files">
