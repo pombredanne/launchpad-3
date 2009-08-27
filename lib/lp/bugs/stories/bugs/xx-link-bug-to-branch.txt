@@ -13,8 +13,8 @@ link a branch to a bug.
     ...    user_browser.contents, 'maincontent'))
     Add a branch to bug #1
     Bug #1: Firefox does not support SVG
-    Adding a Bazaar branch to a bug allows you to notify others about
-    where work is going on to fix this bug.
+    Linking a Bazaar branch to a bug allows you to notify others of
+    work to fix this bug.
     ...
 
 In the form of this page we can specify in a branch name that will be
