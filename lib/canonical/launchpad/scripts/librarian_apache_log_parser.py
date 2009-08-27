@@ -13,7 +13,7 @@ from lazr.uri import URI
 
 from contrib import apachelog
 
-from canonical.launchpad.database.librarian import ParsedApacheLog
+from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from canonical.launchpad.interfaces.geoip import IGeoIP
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)

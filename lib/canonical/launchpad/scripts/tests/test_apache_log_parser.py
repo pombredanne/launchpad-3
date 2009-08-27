@@ -11,7 +11,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.database.librarian import ParsedApacheLog
+from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
     create_or_update_parsedlog_entry, DBUSER,
