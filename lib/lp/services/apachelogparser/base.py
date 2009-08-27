@@ -156,7 +156,7 @@ def get_host_date_status_and_request(line):
 
 
 def get_method_and_path(request):
-    """Extract the method of the request and the path of the requested file."""
+    """Extract the method of the request and path of the requested file."""
     L = request.split(' ')
     # HTTP 1.0 requests might omit the HTTP version so we must cope with them.
     if len(L) == 2:
