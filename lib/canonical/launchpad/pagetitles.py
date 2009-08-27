@@ -231,10 +231,6 @@ bugbranch_delete = 'Delete bug branch link'
 
 bugbranch_edit = "Edit branch fix status"
 
-def bugcomment_index(context, view):
-    """Return the page title for a bug comment."""
-    return "Bug #%d - Comment #%d" % (context.bug.id, view.comment.index)
-
 buglinktarget_linkbug = 'Link to bug report'
 
 buglinktarget_unlinkbugs = 'Remove links to bug reports'
