@@ -33,6 +33,19 @@
       </div>
     </tal:is-admin>
 
+    <h2>Details</h2>
+    <ul class="horizontal">
+      <li><strong>Speed:</strong>
+        <tal:speed content="context/speed/title" />
+      </li>
+      <li><strong>Country:</strong>
+        <tal:country content="context/country/name" />
+      </li>
+      <li><strong>Type:</strong>
+        <tal:type content="context/content/title" />
+      </li>
+    </ul>
+    <!--
     <table id="mirror-details" class="summary" style="float: right">
       <tr>
         <th>Speed:</th>
@@ -47,12 +60,15 @@
         <td tal:content="context/content/title">Archive</td>
       </tr>
     </table>
-
-    <div class="highlighted" style="font-size: 80%;"
+    -->
+    <div tal:condition="context/description">
+    <h2>Description</h2>
+    <div class="description"
          tal:condition="context/description">
       <p tal:replace="structure context/description/fmt:text-to-html">
           Distribution Mirror Description
       </p>
+    </div>
     </div>
 
     <h2>Mirror URLs</h2>
