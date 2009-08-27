@@ -13,7 +13,7 @@ to be fixed, and so forth.
 The breadcrumbs and other navigation include a link to the bug itself.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Debian > ?mozilla-firefox? package > Bug #2 (blackhole)
+    Hierarchy: Debian > ?mozilla-firefox? package > Bug #2 (blackhole)
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
     * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
