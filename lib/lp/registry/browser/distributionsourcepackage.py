@@ -421,6 +421,11 @@ class DistributionSourcePackageView(LaunchpadFormView):
             pocket_dict = self.published_by_version(package)
             for version in pocket_dict.iterkeys():
                 most_recent_publication = pocket_dict[version][0]
+                if most_recent_publication.datepublished is None:
+                    published_since = None
+                else:
+                    published_since = datetime.now(
+                        tz=pytz.UTC) - most_recent_publication.datepublished
                 row = {
                     'blank_row': False,
                     'title_row': False,
@@ -430,8 +435,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
                     'pockets': ", ".join(
                         [pub.pocket.name for pub in pocket_dict[version]]),
                     'component': most_recent_publication.component_name,
-                    'published_since': datetime.now(
-                        tz=pytz.UTC) - most_recent_publication.datepublished,
+                    'published_since': published_since,
                     }
                 rows.append(row)
             # We need a blank row after each section, so the series

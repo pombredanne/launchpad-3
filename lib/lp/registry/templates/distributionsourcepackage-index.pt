@@ -82,7 +82,7 @@
   <div class="yui-g">
 
     <div class="yui-u first" tal:define="current context/currentrelease">
-      <div class="portlet" tal:condition="current">
+      <div class="portlet" tal:condition="current" id="current">
         <h2>Package information</h2>
         <div class="two-column-list">
           <dl>
@@ -108,14 +108,14 @@
           <sup>*</sup>actual publishing details may vary in this distribution, these are just the package defaults.
         </p>
       </div><!--portlet-->
-      <div class="portlet" tal:condition="not: current">
+      <div class="portlet" tal:condition="not: current" id="current">
         There is no current release for this source package in
         <span tal:replace="context/distribution/displayname">ubuntu</span>.
       </div>
     </div><!--yui-u-->
 
     <div class="yui-u">
-      <div class="portlet">
+      <div class="portlet" id="upstream">
         <tal:project define="project context/upstream_product">
           <div tal:condition="project">
             <h2>Upstream</h2>
@@ -134,7 +134,7 @@
 
 
   <div class="yui-u"
-       tal:define="archive context/latest_overall_publication/archive">
+       tal:define="archive context/latest_overall_publication/archive|nothing">
 
     <table class="listing" id="packages_list">
       <tal:rows repeat="row view/version_table">
@@ -181,6 +181,8 @@
             <img style="padding-right:0.5em;" src="/@@/treeCollapsed"
                  alt="Show details" title="Show details"
                  tal:attributes="id string:pub${pubid}-arrow"/>
+          </a>
+          <a tal:attributes="href row/version">
             <img src="/@@/package-source" />
             <tal:version content="row/version"/>
           </a>
@@ -190,8 +192,13 @@
           (<tal:component content="row/component"/>)
         </td>
         <td>
-          <tal:last_published
-               content="row/published_since/fmt:approximateduration"/> ago
+          <tal:last_published condition="row/published_since">
+            <span tal:replace="row/published_since/fmt:approximateduration"/>
+            ago
+          </tal:last_published>
+          <tal:not_published
+               condition="not: row/published_since"
+               content="string:(not published)"/>
         </td>
       </tr>
       <tr tal:attributes="id string:pub${pubid}" style="display: none">
