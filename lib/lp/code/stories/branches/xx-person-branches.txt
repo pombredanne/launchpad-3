@@ -35,11 +35,9 @@ message.
 
 == Owned Branches ==
 
-There is a link in the branch context menu for person which points to
-the owned branches page.
+A person's owned branches are shown on their code application overview page.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('owned').click()
     >>> print browser.title
     Bazaar branches owned by Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')

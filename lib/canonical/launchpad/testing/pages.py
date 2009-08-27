@@ -510,22 +510,23 @@ def print_location(contents):
     """Print the hierarchy, application tabs, and main heading of the page.
 
     The hierarchy shows your position in the Launchpad structure:
-    for example, Launchpad > Ubuntu > 8.04.
+    for example, Ubuntu > 8.04.
     The application tabs represent the major facets of an object:
     for example, Overview, Bugs, and Translations.
     The main heading is the first <h1> element in the page.
     """
     doc = find_tag_by_id(contents, 'document')
-    hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(
+    hierarchy = doc.find(attrs={'class': 'breadcrumbs'}).findAll(
         recursive=False)
     segments = [extract_text(step).encode('us-ascii', 'replace')
-                for step in hierarchy
-                if step.name != 'small']
-    # The first segment is spurious (used for styling), and the second
-    # contains only <img alt="Launchpad"> that extract_text() doesn't
-    # pick up. So we replace the first two elements with 'Launchpad':
-    segments = ['Launchpad'] + segments[2:]
-    print 'Hierarchy:', ' > '.join(segments)
+                for step in hierarchy]
+
+    if len(segments) == 0:
+        breadcrumbs = 'None displayed'
+    else:
+        breadcrumbs = ' > '.join(segments)
+
+    print 'Hierarchy:', breadcrumbs
     print 'Tabs:'
     print_location_apps(contents)
     main_heading = doc.h1

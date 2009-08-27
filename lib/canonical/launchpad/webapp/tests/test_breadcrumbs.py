@@ -5,10 +5,36 @@ __metaclass__ = type
 
 import unittest
 
+from zope.interface import implements
+
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
-from lp.testing import login
+from lp.testing import login, TestCase
+
+
+class Cookbook:
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+
+class TestBreadcrumb(TestCase):
+
+    def test_rootsite_defaults_to_mainsite(self):
+        # When a class' ICanonicalUrlData doesn't define a rootsite, our
+        # Breadcrumb adapter will use 'mainsite' as the rootsite.
+        cookbook = Cookbook()
+        self.assertIs(cookbook.rootsite, None)
+        self.assertEquals(Breadcrumb(cookbook).rootsite, 'mainsite')
+
+    def test_urldata_rootsite_is_honored(self):
+        # When a class' ICanonicalUrlData defines a rootsite, our Breadcrumb
+        # adapter will use it.
+        cookbook = Cookbook()
+        cookbook.rootsite = 'cooking'
+        self.assertEquals(Breadcrumb(cookbook).rootsite, 'cooking')
 
 
 class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
