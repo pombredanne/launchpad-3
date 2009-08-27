@@ -33,6 +33,15 @@
 
   <tal:menu replace="structure view/@@+global-actions" />
 
+  <ul id="join-team" class="super-add-action">
+    <li tal:define="link context/menu:overview/join"
+        tal:condition="link/enabled"
+        >
+      <a tal:attributes="href link/fmt:url"
+        tal:content="link/text" />
+    </li>
+  </ul>
+
   <div id="polls" class="portlet">
     <h2>Polls</h2>
     <p tal:condition="not: view/hasCurrentPolls">

@@ -1256,23 +1256,28 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Set preferred languages'
         return Link(target, text, icon='edit')
 
-    def joinleave(self):
+    def leave(self):
+        enabled = True
+        if not userIsActiveTeamMember(self.team):
+            enabled = False
+        if self.team.teamowner == self.user:
+            # The owner cannot leave his team.
+            enabled = False
+        target = '+leave'
+        text = 'Leave the Team'
+        icon = 'remove'
+        return Link(target, text, icon=icon, enabled=enabled)
+
+    def join(self):
         enabled = True
         if userIsActiveTeamMember(self.team):
-            if self.team.teamowner == self.user:
-                # The owner cannot leave his team
-                enabled = False
-            target = '+leave'
-            text = 'Leave the Team' # &#8230;
-            icon = 'remove'
-        else:
-            if (self.team.subscriptionpolicy
-                == TeamSubscriptionPolicy.RESTRICTED):
-                # This is a restricted team; users can't join.
-                enabled = False
-            target = '+join'
-            text = 'Join the team' # &#8230;
-            icon = 'add'
+            enabled = False
+        if self.team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            # This is a restricted team; users can't join.
+            enabled = False
+        target = '+join'
+        text = 'Join the team'
+        icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
 
 
@@ -1285,7 +1290,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'memberships', 'received_invitations',
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
-             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
+             'add_poll', 'join', 'leave', 'add_my_teams', 'mentorships',
              'reassign', 'related_projects',
              'activate_ppa', 'maintained']
 
@@ -5531,7 +5536,7 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'joinleave', 'add_member', 'add_my_teams')
+    links = ('edit', 'add_member', 'add_my_teams', 'leave')
 
 
 class TeamEditMenu(TeamNavigationMenuBase):

@@ -574,6 +574,30 @@ div.watermark-apps-portlet h1 {
     text-align: right;
     }
 
+ul.super-add-action {
+    margin: 0 auto 1em;
+}
+
+ul.super-add-action li {
+    padding: 0;
+}
+
+ul.super-add-action li a {
+    display: block;
+    border: 1px solid black;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -khtml-border-radius: 3px;
+    background: #4f843c url(/@@/bg-action-add) center left no-repeat;
+    border-radius: 3px;
+    padding: 6%;
+    padding-left: 45px;
+    color: #fff;
+    font-size: 108%;
+    font-weight: bold;
+    text-decoration: underline;
+    }
+
 .involvement ul {
     border-top: 1px solid #d0d0d0;
     }
