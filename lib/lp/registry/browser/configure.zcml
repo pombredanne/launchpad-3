@@ -523,6 +523,7 @@
         classes="
             DistributionSourcePackageFacets
             DistributionSourcePackageOverviewMenu
+            DistributionSourcePackageActionMenu
             DistributionSourcePackageBugsMenu"
         module="lp.registry.browser.distributionsourcepackage"/>
     <browser:url

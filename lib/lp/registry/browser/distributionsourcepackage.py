@@ -65,14 +65,7 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
     enable_only = ['overview', 'bugs', 'answers', 'branches']
 
 
-class DistributionSourcePackageOverviewMenu(ApplicationMenu):
-
-    usedfor = IDistributionSourcePackage
-    facet = 'overview'
-    links = [
-        'subscribe', 'publishinghistory', 'edit', 'new_bugs',
-        'open_questions']
-
+class DistributionSourcePackageLinksMixin:
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
@@ -95,6 +88,16 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
         base_path = "+questions"
         get_data = "?field.status=OPEN"
         return Link(base_path + get_data, "Open Questions", site="answers")
+
+
+class DistributionSourcePackageOverviewMenu(
+    ApplicationMenu, DistributionSourcePackageLinksMixin):
+
+    usedfor = IDistributionSourcePackage
+    facet = 'overview'
+    links = [
+        'subscribe', 'publishinghistory', 'edit', 'new_bugs',
+        'open_questions']
 
 
 class DistributionSourcePackageBugsMenu(
@@ -150,8 +153,8 @@ class IDistributionSourcePackageActionMenu(Interface):
     """Marker interface for the action menu."""
 
 
-class DistributionSourcePackageActionMenu(NavigationMenu,
-                                          DistributionSourcePackageOverviewMenu):
+class DistributionSourcePackageActionMenu(
+    NavigationMenu, DistributionSourcePackageLinksMixin):
     """Action menu for distro source packages."""
     usedfor = IDistributionSourcePackageActionMenu
     facet = 'overview'
@@ -161,11 +164,6 @@ class DistributionSourcePackageActionMenu(NavigationMenu,
     def change_log(self):
         text = 'View full change log'
         return Link('+changelog', text, icon="info")
-
-
-provideAdapter(
-    DistributionSourcePackageActionMenu, [IDistributionSourcePackageActionMenu],
-    INavigationMenu, name="overview")
 
 
 class DistributionSourcePackageView(LaunchpadFormView):
