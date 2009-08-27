@@ -142,6 +142,17 @@ class TestPermission(TestCaseWithFactory):
         self.permission_set.newComponentUploader(archive, person, component)
         self.assertCanUpload(person, spn, archive, component)
 
+    def test_component_rights_no_package(self):
+        # A person allowed to upload to a particular component of an archive
+        # can upload basically whatever they want to that component, even if
+        # the package doesn't exist yet.
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        component = self.factory.makeComponent()
+        #self.setComponent(archive, ssp, component)
+        self.permission_set.newComponentUploader(archive, person, component)
+        self.assertCanUpload(person, None, archive, component)
+
     def test_non_strict_component_rights(self):
         # If we aren't testing strict component access, then we only need to
         # have access to an arbitrary component.

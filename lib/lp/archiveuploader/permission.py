@@ -71,7 +71,8 @@ def verify_upload(person, sourcepackagename, archive, component,
 
     # For any other archive...
     ap_set = getUtility(IArchivePermissionSet)
-    if (archive.canUpload(person, sourcepackagename)
+    if sourcepackagename is not None and (
+        archive.canUpload(person, sourcepackagename)
         or ap_set.isSourceUploadAllowed(archive, sourcepackagename, person)):
         return
 
