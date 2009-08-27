@@ -1,4 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,10 +8,11 @@ from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
     ConversionError, IInputWidget, InputErrors, MissingInputError)
 from zope.app.form.utility import setUpWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, ILaunchpadCelebrities,

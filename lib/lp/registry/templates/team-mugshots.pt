@@ -22,11 +22,11 @@
   <a tal:condition="member/mugshot"
      tal:attributes="
        href member/fmt:url;
-       title member/browsername">
+       title member/displayname">
     <img tal:attributes="src member/mugshot/http_url"/>
   </a>
   <span style="white-space: nowrap;" tal:condition="not: member/mugshot">
-    [<a tal:content="member/browsername"
+    [<a tal:content="member/displayname"
         tal:attributes="href member/fmt:url">Foo Bar</a>]</span>
 </tal:per_member>
 

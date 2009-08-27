@@ -577,7 +577,7 @@ Now let's do the same with a bug.
 First we show that 'One Membership' is not initially a subscriber to the
 bug:
 
-    >>> from canonical.launchpad.ftests.bug import print_direct_subscribers
+    >>> from lp.bugs.tests.bug import print_direct_subscribers
 
     >>> browser.open('http://launchpad.dev/bugs/10/+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(browser.contents)

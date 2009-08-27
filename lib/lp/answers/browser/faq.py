@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`IFAQ` browser views."""
 
@@ -36,6 +37,10 @@ class FAQEditView(LaunchpadEditFormView):
     schema = IFAQ
     label = _('Edit FAQ')
     field_names = ["title", "keywords", "content"]
+
+    @property
+    def page_title(self):
+        return 'Edit FAQ #%s details' % self.context.id
 
     @action(_('Save'), name="save")
     def save_action(self, action, data):

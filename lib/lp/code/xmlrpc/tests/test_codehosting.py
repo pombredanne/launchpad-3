@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
 
@@ -14,22 +15,22 @@ from bzrlib.urlutils import escape
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.inmemory import InMemoryFrontend
+from lp.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces.scriptactivity import (
+from lp.services.scripts.interfaces.scriptactivity import (
     IScriptActivitySet)
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
+from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
-from lp.code.interfaces.branch import (
-    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
@@ -514,8 +515,9 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
 
     def assertBranchIsAquired(self, branch):
         """See `AcquireBranchToPullTests`."""
+        branch = removeSecurityProxy(branch)
         pull_info = self.storage.acquireBranchToPull()
-        default_branch= branch.target.default_stacked_on_branch
+        default_branch = branch.target.default_stacked_on_branch
         if default_branch:
             default_branch_name = default_branch
         else:
@@ -560,7 +562,22 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         _, _, _, default_stacked_on_branch, _ = pull_info
         self.assertEqual(
             default_stacked_on_branch,
-            branch.target.default_stacked_on_branch.unique_name)
+            '/' + branch.target.default_stacked_on_branch.unique_name)
+
+    def test_private_default_stacked_not_returned_for_mirrored_branch(self):
+        # We don't stack mirrored branches on a private default stacked on
+        # branch.
+        product = self.factory.makeProduct()
+        default_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        self.factory.enableDefaultStackingForProduct(product, default_branch)
+        mirrored_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED, product=product)
+        mirrored_branch.requestMirror()
+        pull_info = self.storage.acquireBranchToPull()
+        _, _, _, default_stacked_on_branch, _ = pull_info
+        self.assertEqual(
+            '', default_stacked_on_branch)
 
 
 class BranchFileSystemTest(TestCaseWithFactory):

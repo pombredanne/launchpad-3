@@ -12,18 +12,16 @@
   <table tal:define="pillarnames view/first_five_related_projects">
     <tbody>
       <tr tal:repeat="pillarname pillarnames">
-        <td class="icon left" style="padding-right: 3px">
-          <img alt="" tal:replace="structure pillarname/pillar/image:icon" />
-        </td>
         <td>
-          <a tal:attributes="href string:/${pillarname/pillar/name}"
+          <a tal:attributes="href string:/${pillarname/pillar/name};
+                             class pillarname/pillar/image:sprite_css"
           tal:content="pillarname/pillar/title">Pillar title</a>
         </td>
       </tr>
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="2"  style="padding-top: .5em;">
+        <td style="padding-top: .5em;">
           <a href="+projects"
           tal:condition="view/has_more_related_projects">
             &raquo; Show all

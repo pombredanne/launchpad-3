@@ -1,5 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
-# -*- encoding: utf-8 -*-
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for Windmill tests written in Python."""
 
@@ -44,11 +44,13 @@ class AnonymousUser:
 
     def ensure_login(self, client):
         """Ensure that the user is surfing anonymously."""
-        if client.asserts.assertNode(
-            link=u'Log in / Register', assertion=False):
+        result = client.asserts.assertNode(
+            link=u'Log in / Register', assertion=False)
+        if result['result']:
             return
+        client.waits.forElement(name="logout", timeout=u"100000")
         client.click(name="logout")
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=u'100000')
 
 
 # Well Known Users
@@ -64,4 +66,4 @@ NO_PRIV = LaunchpadUser(
     'No Privileges User', 'no-priv@canonical.com', 'test')
 
 TRANSLATIONS_ADMIN = LaunchpadUser(
-    u'Carlos Perelló Marín', 'carlos@canonical.com', 'test')
+    u'Carlos Perell\xf3 Mar\xedn', 'carlos@canonical.com', 'test')

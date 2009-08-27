@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the Person/Product non-database class."""
 
@@ -7,7 +8,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.database.personproduct import PersonProduct
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing import DatabaseFunctionalLayer

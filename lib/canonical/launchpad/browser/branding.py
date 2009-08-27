@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for items that can be displayed as images."""
 
@@ -7,8 +8,6 @@ __metaclass__ = type
 __all__ = [
     'BrandingChangeView',
     ]
-
-from canonical.launchpad.interfaces import IHasIcon, IHasLogo, IHasMugshot
 
 from canonical.widgets.image import ImageChangeWidget
 from canonical.launchpad.webapp import (
@@ -38,3 +37,4 @@ class BrandingChangeView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    cancel_url = next_url

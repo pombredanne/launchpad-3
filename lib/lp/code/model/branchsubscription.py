@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -12,9 +14,10 @@ from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, IBranchSubscription)
+    CodeReviewNotificationLevel)
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import (

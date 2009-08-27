@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0603
 
 __metaclass__ = type
@@ -17,11 +19,12 @@ from zope.app.server.main import main
 from canonical.launchpad.mailman import runmailman
 from canonical.launchpad.testing import googletestservice
 
-TWISTD_SCRIPT = None
-
 
 def make_abspath(path):
     return os.path.abspath(os.path.join(config.root, *path.split('/')))
+
+
+TWISTD_SCRIPT = make_abspath('bin/twistd')
 
 
 class Service(object):
@@ -82,7 +85,6 @@ class TacFile(Service):
         tacfile = make_abspath(self.tac_filename)
 
         args = [
-            sys.executable,
             TWISTD_SCRIPT,
             "--no_save",
             "--nodaemon",
@@ -222,13 +224,34 @@ def split_out_runlaunchpad_arguments(args):
     return [], args
 
 
-def start_launchpad(argv=list(sys.argv)):
-    global TWISTD_SCRIPT
-    TWISTD_SCRIPT = make_abspath('sourcecode/twisted/bin/twistd')
+def process_config_arguments(args):
+    """Process the arguments related to the config.
 
+    -i  Will set the instance name aka LPCONFIG env.
+
+    If there is no ZConfig file passed, one will add to the argument
+    based on the selected instance.
+    """
+    if '-i' in args:
+        index = args.index('-i')
+        config.setInstance(args[index+1])
+        del args[index:index+2]
+
+    if '-C' not in args:
+        zope_config_file = config.zope_config_file
+        if not os.path.isfile(zope_config_file):
+            raise ValueError(
+                "Cannot find ZConfig file for instance %s: %s" % (
+                    config.instance_name, zope_config_file))
+        args.extend(['-C', zope_config_file])
+    return args
+
+
+def start_launchpad(argv=list(sys.argv)):
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
+    argv = process_config_arguments(argv)
     services = get_services_to_run(services)
     for service in services:
         service.launch()
@@ -238,4 +261,35 @@ def start_launchpad(argv=list(sys.argv)):
 
     # Create a new compressed +style-slimmer.css from style.css in +icing.
     make_css_slimmer()
-    main(argv)
+
+    # Create the ZCML override file based on the instance.
+    config.generate_overrides()
+
+    if config.launchpad.launch:
+        main(argv)
+    else:
+        # We just need the foreground process to sit around forever waiting
+        # for the signal to shut everything down.  Normally, Zope itself would
+        # be this master process, but we're not starting that up, so we need
+        # to do something else.
+        try:
+            signal.pause()
+        except KeyboardInterrupt:
+            pass
+
+
+def start_librarian():
+    """Start the Librarian in the background."""
+    # Create the ZCML override file based on the instance.
+    config.generate_overrides()
+    # Create the Librarian storage directory if it doesn't already exist.
+    prepare_for_librarian()
+    pidfile = pidfile_path('librarian')
+    cmd = [
+        TWISTD_SCRIPT,
+        "--python", 'daemons/librarian.tac',
+        "--pidfile", pidfile,
+        "--prefix", 'Librarian',
+        "--logfile", config.librarian_server.logfile,
+        ]
+    return subprocess.call(cmd)

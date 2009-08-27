@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Define the layers used in Launchpad.
 
@@ -45,16 +46,6 @@ BlueprintsLayer = BlueprintLayer
 
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
-
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove this layer.
-class OpenIDLayer(LaunchpadLayer):
-    """The `OpenID` layer."""
-
-
-class IdLayer(LaunchpadLayer):
-    """The new OpenID `Id` layer."""
-
 
 class DebugLayer(Interface):
     """The `DebugLayer` layer.

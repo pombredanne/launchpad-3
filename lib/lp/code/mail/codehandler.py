@@ -1,4 +1,5 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -18,9 +19,9 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.bzrutils import is_branch_stackable
-from canonical.codehosting.vfs import get_lp_server
-from canonical.launchpad.interfaces.diff import IStaticDiffSource
+from lp.codehosting.bzrutils import is_branch_stackable
+from lp.codehosting.vfs import get_lp_server
+from lp.code.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
     IMailHandler, EmailProcessingError)
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -29,13 +30,13 @@ from canonical.launchpad.mail.commands import (
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_error_message, get_main_body,
     get_person_or_team, IncomingEmailError, parse_commands)
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType, CodeReviewVote
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalExists, IBranchMergeProposalGetter,
@@ -43,7 +44,6 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces.branchtarget import check_default_stacked_on
-from lp.code.interfaces.codereviewcomment import CodeReviewVote
 
 
 class BadBranchMergeProposalAddress(Exception):
@@ -109,6 +109,11 @@ class VoteEmailCommand(CodeReviewEmailCommand):
         '-1': CodeReviewVote.DISAPPROVE,
         'needsfixing': CodeReviewVote.NEEDS_FIXING,
         'needs-fixing': CodeReviewVote.NEEDS_FIXING,
+        'needsinfo': CodeReviewVote.NEEDS_INFO,
+        'needs-info': CodeReviewVote.NEEDS_INFO,
+        'needsinformation': CodeReviewVote.NEEDS_INFO,
+        'needs_information': CodeReviewVote.NEEDS_INFO,
+        'needs-information': CodeReviewVote.NEEDS_INFO,
         }
 
     def execute(self, context):
@@ -129,14 +134,17 @@ class VoteEmailCommand(CodeReviewEmailCommand):
             # If the word doesn't match, check aliases that we allow.
             context.vote = self._vote_alias.get(vote_string)
             if context.vote is None:
+                # Replace the _ with - in the names of the items.
+                # Slightly easier to type and read.
                 valid_votes = ', '.join(sorted(
-                    v.name.lower() for v in CodeReviewVote.items.items))
+                    v.name.lower().replace('_', '-')
+                    for v in CodeReviewVote.items.items))
                 raise EmailProcessingError(
                     get_error_message(
                         'dbschema-command-wrong-argument.txt',
                         command_name='review',
                         arguments=valid_votes,
-                        example_argument='needs_fixing'))
+                        example_argument='needs-fixing'))
 
         if len(vote_tag_list) > 0:
             context.vote_tags = ' '.join(vote_tag_list)
@@ -210,6 +218,7 @@ class CodeEmailCommands(EmailCommandCollection):
         'vote': VoteEmailCommand,
         'review': VoteEmailCommand,
         'status': UpdateStatusEmailCommand,
+        'merge': UpdateStatusEmailCommand,
         'reviewer': AddReviewerEmailCommand,
         }
 
@@ -520,7 +529,8 @@ class CodeHandler:
         # access to any needed but not supplied revisions.
         md.target_branch = target_url
         md.install_revisions(bzr_branch.repository)
-        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id)
+        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id,
+                        overwrite=True)
 
     def findMergeDirectiveAndComment(self, message):
         """Extract the comment and Merge Directive from a SignedMessage."""
@@ -532,6 +542,9 @@ class CodeHandler:
             payload = part.get_payload(decode=True)
             if part['Content-type'].startswith('text/plain'):
                 body = payload
+                charset = part.get_param('charset')
+                if charset is not None:
+                    body = body.decode(charset)
             try:
                 md = MergeDirective.from_lines(payload.splitlines(True))
             except NotAMergeDirective:

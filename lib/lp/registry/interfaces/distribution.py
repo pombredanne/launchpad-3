@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistribution."""
@@ -6,7 +8,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'IBaseDistribution',
+    'IDerivativeDistribution',
     'IDistribution',
+    'IDistributionDriverRestricted',
     'IDistributionEditRestricted',
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
@@ -14,7 +19,7 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, List, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
@@ -29,24 +34,25 @@ from lazr.restful.declarations import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
-from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.bugtarget import (
+from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
-    ILaunchpadUsage)
+    IHasAppointedDriver, IHasDrivers, IHasSecurityContact, ILaunchpadUsage)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces.message import IMessage
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from lp.registry.interfaces.pillar import IPillar
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
-from canonical.launchpad.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.blueprints.interfaces.sprint import IHasSprints
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
@@ -69,6 +75,10 @@ class DistributionNameField(PillarNameField):
 
 class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
     """IDistribution properties requiring launchpad.Edit permission."""
+
+
+class IDistributionDriverRestricted(Interface):
+    """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
                   version, parent_series, owner):
@@ -175,8 +185,8 @@ class IDistributionPublic(
         vocabulary='ValidPersonOrTeam')
     mirror_admin = PublicPersonChoice(
         title=_("Mirror Administrator"),
-        description=_("The person or team that has the rights to administer "
-                      "this distribution's mirrors"),
+        description=_("The person or team that has the rights to review and "
+                      "mark this distribution's mirrors as official."),
         required=True, vocabulary='ValidPersonOrTeam')
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
@@ -197,6 +207,8 @@ class IDistributionPublic(
             # Really IDistroSeries, see below.
             value_type=Reference(schema=Interface)),
         exported_as="series")
+    architectures = List(
+        title=_("DistroArchSeries inside this Distribution"))
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
     is_read_only = Attribute(
@@ -239,13 +251,14 @@ class IDistributionPublic(
     main_archive = exported(
         Reference(
             title=_('Distribution Main Archive.'), readonly=True,
-            schema=IArchive))
+            schema=Interface)) # Really IArchive, circular import fix below.
 
     all_distro_archives = exported(
         CollectionField(
             title=_("A sequence of the distribution's non-PPA Archives."),
             readonly=True, required=False,
-            value_type=Reference(schema=IArchive)),
+            value_type=Reference(schema=Interface)),
+                # Really Iarchive, circular import fix below.
         exported_as='archives')
 
     all_distro_archive_ids = Attribute(
@@ -288,7 +301,11 @@ class IDistributionPublic(
     @operation_returns_entry(Interface) # Really IDistroSeries, see below
     @export_read_operation()
     def getSeries(name_or_version):
-        """Return the series with the name or version given."""
+        """Return the series with the name or version given.
+
+        :param name_or_version: The `IDistroSeries.name` or
+            `IDistroSeries.version`.
+        """
 
     def getMirrorByName(name):
         """Return the mirror with the given name for this distribution or None
@@ -348,12 +365,20 @@ class IDistributionPublic(
         """
 
     def removeOldCacheItems(archive, log):
-        """Delete any cache records for removed packages."""
+        """Delete any cache records for removed packages.
+
+        Also purges all existing cache records for disabled archives.
+
+        :param archive: target `IArchive`.
+        :param log: the context logger object able to print DEBUG level
+            messages.
+        """
 
     def updateCompleteSourcePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the source package cache.
 
-        Consider every non-REMOVED sourcepackage.
+        Consider every non-REMOVED sourcepackage and entirely skips updates
+        for disabled archives.
 
         :param archive: target `IArchive`;
         :param log: logger object for printing debug level information;
@@ -381,8 +406,18 @@ class IDistributionPublic(
     @export_read_operation()
     def searchSourcePackages(text):
         """Search for source packages that correspond to the given text.
-        Returns a list of DistributionSourcePackage objects, in order of
-        matching.
+ 
+        This method just decorates the result of searchSourcePackageCaches()
+        to return DistributionSourcePackages.
+        """
+
+    def searchSourcePackageCaches(text):
+        """Search for source packages that correspond to the given text.
+
+        :param text: The text that will be matched.
+        :return: A result set containing
+            (DistributionSourcePackageCache, SourcePackageName, rank) tuples
+            ordered by rank.
         """
 
     def searchBinaryPackages(package_name, exact_match=False):
@@ -496,12 +531,10 @@ class IDistributionPublic(
         """Can the user edit this distribution?"""
 
 
-class IDistribution(IDistributionEditRestricted, IDistributionPublic):
+class IDistribution(IDistributionEditRestricted, IDistributionPublic,
+                    IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution."""
     export_as_webservice_entry()
-
-# We are forced to define this now to avoid circular import problems.
-IMessage['distribution'].schema = IDistribution
 
 # Patch the official_bug_tags field to make sure that it's
 # writable from the API, and not readonly like its definition
@@ -509,6 +542,14 @@ IMessage['distribution'].schema = IDistribution
 writable_obt_field = copy_field(IDistribution['official_bug_tags'])
 writable_obt_field.readonly = False
 IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
+
+
+class IBaseDistribution(IDistribution):
+    """A Distribution that is the base for other Distributions."""
+
+
+class IDerivativeDistribution(IDistribution):
+    """A Distribution that derives from another Distribution."""
 
 
 class IDistributionSet(Interface):
@@ -555,23 +596,5 @@ class NoSuchDistribution(NameLookupFailed):
     _message_prefix = "No such distribution"
 
 
-# Monkey patching to fix circular imports.
-from canonical.launchpad.components.apihelpers import (
-    patch_entry_return_type, patch_collection_return_type,
-    patch_reference_property)
-
-from lp.registry.interfaces.distroseries import IDistroSeries
-IDistribution['serieses'].value_type.schema = IDistroSeries
-patch_reference_property(
-    IDistribution, 'currentseries', IDistroSeries)
-patch_entry_return_type(
-    IDistribution, 'getSeries', IDistroSeries)
-patch_collection_return_type(
-    IDistribution, 'getDevelopmentSerieses', IDistroSeries)
-
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-patch_entry_return_type(
-    IDistribution, 'getSourcePackage', IDistributionSourcePackage)
-patch_collection_return_type(
-    IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
+# Monkey patching to fix circular imports done in
+# _schema_circular_imports.py

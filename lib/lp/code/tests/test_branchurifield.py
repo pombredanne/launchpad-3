@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchURIField."""
 
@@ -11,7 +12,7 @@ import unittest
 from canonical.config import config
 from lp.code.interfaces.branch import (
     BranchURIField, get_blacklisted_hostnames)
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.testing import LaunchpadZopelessLayer

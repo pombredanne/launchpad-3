@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ProductSeries."""
 
@@ -11,9 +12,9 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, logout, syncUpdate
 from lp.registry.model.productseries import ProductSeriesSet
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 

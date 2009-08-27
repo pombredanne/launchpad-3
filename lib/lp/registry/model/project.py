@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """Launchpad Project-related Database Table Objects."""
 
@@ -22,12 +24,14 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.interfaces.launchpad import IHasIcon, IHasLogo, IHasMugshot
-from canonical.launchpad.interfaces.specification import (
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot)
+from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.sprintspecification import SprintSpecificationStatus
-from canonical.launchpad.interfaces.structuralsubscription import IStructuralSubscriptionTarget
-from canonical.launchpad.interfaces.translationgroup import TranslationPermission
+from lp.blueprints.interfaces.sprintspecification import (
+    SprintSpecificationStatus)
+from lp.translations.interfaces.translationgroup import (
+    TranslationPermission)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
@@ -36,16 +40,16 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
-
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from canonical.launchpad.database.bug import (
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
 from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.karma import KarmaContextMixin
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     Milestone, ProjectMilestone, milestone_sort_key)
@@ -54,9 +58,9 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
-from canonical.launchpad.database.specification import (
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import HasSprintsMixin
+from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.answers.model.question import QuestionTargetSearch
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -67,12 +71,12 @@ from lp.registry.interfaces.person import validate_public_person
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
-              StructuralSubscriptionTargetMixin):
+              StructuralSubscriptionTargetMixin,
+              HasBranchesMixin, HasMergeProposalsMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner,
-               IStructuralSubscriptionTarget)
+               IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 

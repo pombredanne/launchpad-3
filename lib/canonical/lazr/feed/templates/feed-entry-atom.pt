@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<metal:block
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:lp="http://api.launchpad.net/schema"
+    xmlns:metal="http://xml.zope.org/namespaces/metal">
 <metal:entry metal:define-macro="feed-entry"
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:lp="http://api.launchpad.net/schema"
@@ -32,3 +36,4 @@
              tal:content="structure entry/content/content"
              tal:attributes="type entry/content/content_type" />
 </metal:entry>
+</metal:block>

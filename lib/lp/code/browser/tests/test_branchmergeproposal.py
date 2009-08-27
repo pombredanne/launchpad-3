@@ -1,4 +1,7 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=F0401
 
 """Unit tests for BranchMergeProposals."""
 
@@ -7,20 +10,23 @@ __metaclass__ = type
 from datetime import timedelta
 import unittest
 
+import transaction
+from zope.component import getMultiAdapter
+from zope.security.interfaces import Unauthorized
 
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
-    BranchMergeProposalChangeStatusView,
-    BranchMergeProposalMergedView, BranchMergeProposalVoteView)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote)
-from canonical.launchpad.testing import (
+    BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
+    BranchMergeProposalMergedView, BranchMergeProposalView,
+    BranchMergeProposalVoteView)
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
+from lp.code.model.diff import StaticDiff
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):
@@ -62,6 +68,32 @@ class TestBranchMergeProposalMergedView(TestCaseWithFactory):
         self.assertEqual(
             {'merged_revno': self.bmp.target_branch.revision_count},
             view.initial_values)
+
+
+class TestBranchMergeProposalAddVoteView(TestCaseWithFactory):
+    """Test the AddVote view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.bmp = self.factory.makeBranchMergeProposal()
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = BranchMergeProposalAddVoteView(
+            self.bmp, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def test_init_with_random_person(self):
+        """Any random person ought to be able to vote."""
+        login_person(self.factory.makePerson())
+        self._createView()
+
+    def test_init_with_anonymous(self):
+        """Anonymous people cannot vote."""
+        self.assertRaises(AssertionError, self._createView)
 
 
 class TestBranchMergeProposalVoteView(TestCaseWithFactory):
@@ -118,6 +150,64 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             [charles, bob, albert],
             [review.reviewer for review in requested_reviews])
 
+    def test_user_can_claim_self(self):
+        """Someone cannot claim a review already assigned to them."""
+        albert = self.factory.makePerson()
+        owner = self.bmp.source_branch.owner
+        self._nominateReviewer(albert, owner)
+        login_person(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.requested_reviews[0].user_can_claim)
+
+    def test_user_can_claim_member(self):
+        """Someone can claim a review already assigned to their team."""
+        albert = self.factory.makePerson()
+        review_team = self.factory.makeTeam()
+        albert.join(review_team)
+        owner = self.bmp.source_branch.owner
+        self._nominateReviewer(review_team, owner)
+        login_person(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertTrue(view.requested_reviews[0].user_can_claim)
+
+    def test_user_can_claim_nonmember(self):
+        """A non-member cannot claim a team's review."""
+        albert = self.factory.makePerson()
+        review_team = self.factory.makeTeam()
+        owner = self.bmp.source_branch.owner
+        self._nominateReviewer(review_team, owner)
+        login_person(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.requested_reviews[0].user_can_claim)
+
+    def makeReviewRequest(self, viewer=None, registrant=None):
+        albert = self.factory.makePerson()
+        if registrant is None:
+            registrant = self.bmp.source_branch.owner
+        self._nominateReviewer(albert, registrant)
+        if viewer is None:
+            viewer = albert
+        login_person(viewer)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        return view.requested_reviews[0]
+
+    def test_user_can_reassign_assignee(self):
+        """The user can reassign if they are the assignee."""
+        review_request = self.makeReviewRequest()
+        self.assertTrue(review_request.user_can_reassign)
+
+    def test_user_can_reassign_registrant(self):
+        """The user can reassign if they are the registrant."""
+        registrant = self.factory.makePerson()
+        review_request = self.makeReviewRequest(registrant, registrant)
+        self.assertTrue(review_request.user_can_reassign)
+
+    def test_user_cannot_reassign_random_person(self):
+        """Random people cannot reassign reviews."""
+        viewer = self.factory.makePerson()
+        review_request = self.makeReviewRequest(viewer)
+        self.assertFalse(review_request.user_can_reassign)
+
     def testCurrentReviewOrdering(self):
         # Most recent first.
         # Request three reviews.
@@ -154,6 +244,50 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertEqual(
             [albert, bob],
             [review.reviewer for review in view.current_reviews])
+
+    def addReviewTeam(self):
+        review_team = self.factory.makeTeam(name='reviewteam')
+        target_branch = self.factory.makeAnyBranch()
+        self.bmp.target_branch.reviewer = review_team
+
+    def test_review_team_members_trusted(self):
+        """Members of the target branch's review team are trusted."""
+        self.addReviewTeam()
+        albert = self.factory.makePerson(name='albert')
+        albert.join(self.bmp.target_branch.reviewer)
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertTrue(view.reviews[0].trusted)
+
+    def test_review_team_nonmembers_untrusted(self):
+        """Non-members of the target branch's review team are untrusted."""
+        self.addReviewTeam()
+        albert = self.factory.makePerson(name='albert')
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.reviews[0].trusted)
+
+    def test_no_review_team_untrusted(self):
+        """If the target branch has no review team, everyone is untrusted."""
+        albert = self.factory.makePerson(name='albert')
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.reviews[0].trusted)
+
+    def test_render_all_vote_types(self):
+        # A smoke test that the view knows how to render all types of vote.
+        for vote in CodeReviewVote.items:
+            self._createComment(
+                self.factory.makePerson(), vote)
+
+        view = getMultiAdapter(
+            (self.bmp, LaunchpadTestRequest()), name='+votes')
+        self.failUnless(
+            isinstance(view, BranchMergeProposalVoteView),
+            "The +votes page for a BranchMergeProposal is expected to be a "
+            "BranchMergeProposalVoteView")
+        # We just test that rendering does not raise.
+        view.render()
 
 
 class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
@@ -279,6 +413,77 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         self.assertOneComment(proposal, "This is the first comment.")
 
 
+class TestBranchMergeProposalView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        self.bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
+        login_person(self.user)
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = BranchMergeProposalView(
+            self.bmp, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def makeTeamReview(self):
+        owner = self.bmp.source_branch.owner
+        review_team = self.factory.makeTeam()
+        return self.bmp.nominateReviewer(review_team, owner)
+
+    def test_claim_action_team_member(self):
+        """Claiming a review works for members of the requested team."""
+        review = self.makeTeamReview()
+        albert = self.factory.makePerson()
+        albert.join(review.reviewer)
+        login_person(albert)
+        view = self._createView()
+        view.claim_action.success({'review_id': review.id})
+        self.assertEqual(albert, review.reviewer)
+
+    def test_claim_action_non_member(self):
+        """Claiming a review does not work for non-members."""
+        review = self.makeTeamReview()
+        albert = self.factory.makePerson()
+        login_person(albert)
+        view = self._createView()
+        self.assertRaises(Unauthorized, view.claim_action.success,
+                          {'review_id': review.id})
+
+    def test_review_diff_with_no_diff(self):
+        """review_diff should be None when there is no context.review_diff."""
+        view = self._createView()
+        self.assertIs(None, view.review_diff)
+
+    def test_review_diff_utf8(self):
+        """A review_diff in utf-8 should be converted to utf-8."""
+        text = ''.join(unichr(x) for x in range(255))
+        diff = StaticDiff.acquireFromText('x', 'y', text.encode('utf-8'))
+        transaction.commit()
+        self.bmp.review_diff = diff
+        self.assertEqual(text, self._createView().review_diff)
+
+    def test_review_diff_all_chars(self):
+        """review_diff should work on diffs containing all possible bytes."""
+        text = ''.join(chr(x) for x in range(255))
+        diff = StaticDiff.acquireFromText('x', 'y', text)
+        transaction.commit()
+        self.bmp.review_diff = diff
+        self.assertEqual(text.decode('windows-1252', 'replace'),
+                         self._createView().review_diff)
+
+    def test_linked_bugs_excludes_mutual_bugs(self):
+        """List bugs that are linked to the source only."""
+        bug = self.factory.makeBug()
+        self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
+        self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
+        self.assertEqual([], self._createView().linked_bugs)
+
+
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
     """Test the status vocabulary generated for then +edit-status view."""
 
@@ -307,11 +512,14 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.assertEqual(
             sorted(tokens), vocab_tokens)
 
-    def assertAllStatusesAvailable(self, user):
+    def assertAllStatusesAvailable(self, user, except_for=None):
         # All options should be available to the user.
-        self.assertStatusVocabTokens(
-            ['WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
-             'REJECTED', 'SUPERSEDED'], user)
+        desired_statuses = set([
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
+            'REJECTED', 'SUPERSEDED'])
+        if except_for is not None:
+            desired_statuses -= set(except_for)
+        self.assertStatusVocabTokens(desired_statuses, user)
 
     def test_createStatusVocabulary_non_reviewer(self):
         # Neither the source branch owner nor the registrant should be
@@ -348,35 +556,34 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         # the proposal is currently approved.
         self.proposal.approveBranch(
             self.proposal.target_branch.owner, 'some-revision')
-        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+        self.assertAllStatusesAvailable(
+            user=self.proposal.target_branch.owner)
 
     def test_createStatusVocabulary_rejected(self):
-        # Options for rejected proposals are the same regardless of user.
+        # Only reviewers can change rejected proposals to approved.  All other
+        # options for rejected proposals are the same regardless of user.
         self.proposal.rejectBranch(
             self.proposal.target_branch.owner, 'some-revision')
-        status_options = ['REJECTED', 'SUPERSEDED']
-
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.source_branch.owner)
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.registrant)
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.target_branch.owner)
+        self.assertAllStatusesAvailable(
+            user=self.proposal.source_branch.owner,
+            except_for=['CODE_APPROVED', 'QUEUED'])
+        self.assertAllStatusesAvailable(user=self.proposal.registrant,
+            except_for=['CODE_APPROVED', 'QUEUED'])
+        self.assertAllStatusesAvailable(
+            user=self.proposal.target_branch.owner)
 
     def test_createStatusVocabulary_queued(self):
-        # Queued proposals can either be marked as merged, or set back to code
-        # approved.
+        # Queued proposals can go to any status, but only reviewers can set
+        # them to REJECTED.
         self.proposal.enqueue(
             self.proposal.target_branch.owner, 'some-revision')
-        status_options = ['CODE_APPROVED', 'MERGED']
 
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.source_branch.owner)
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.registrant)
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.target_branch.owner)
-
+        self.assertAllStatusesAvailable(
+            user=self.proposal.source_branch.owner, except_for=['REJECTED'])
+        self.assertAllStatusesAvailable(user=self.proposal.registrant,
+                                        except_for=['REJECTED'])
+        self.assertAllStatusesAvailable(
+            user=self.proposal.target_branch.owner)
 
 
 def test_suite():

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -17,7 +19,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
-from storm.locals import Date, Int, Reference, Storm, Store, Unicode
+from storm.locals import Date, Desc, Int, Reference, Store, Storm, Unicode
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -151,6 +153,18 @@ class LibraryFileAlias(SQLBase):
         now = datetime.now(UTC)
         if self.last_accessed + precision < now:
             self.last_accessed = UTC_NOW
+
+    @property
+    def last_downloaded(self):
+        """See `ILibraryFileAlias`."""
+        store = Store.of(self)
+        results = store.find(LibraryFileDownloadCount, libraryfilealias=self)
+        results.order_by(Desc(LibraryFileDownloadCount.day))
+        entry = results.first()
+        if entry is None:
+            return None
+        else:
+            return datetime.now(pytz.utc).date() - entry.day
 
     def updateDownloadCount(self, day, country, count):
         """See ILibraryFileAlias."""

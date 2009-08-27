@@ -1,4 +1,5 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchNamespace`."""
 
@@ -15,27 +16,26 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import Branch
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchVisibilityRule, CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus,
-    BranchMergeControlStatus, IBranch, NoSuchBranch)
+    BranchCreatorNotOwner, BranchExists,
+    IBranch, NoSuchBranch,
+    user_has_special_branch_access)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.branchvisibilitypolicy import (
-    BranchVisibilityRule)
+from lp.code.model.branch import Branch
 from lp.registry.interfaces.distribution import (
     IDistributionSet, NoSuchDistribution)
 from lp.registry.interfaces.distroseries import (
@@ -124,6 +124,8 @@ class _BaseNamespace:
 
     def validateRegistrant(self, registrant):
         """See `IBranchNamespace`."""
+        if user_has_special_branch_access(registrant):
+            return
         owner = self.owner
         if not registrant.inTeam(owner):
             if owner.isTeam():
@@ -151,6 +153,32 @@ class _BaseNamespace:
         # here to give a nicer error message than 'ERROR: new row for relation
         # "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
+
+    def validateMove(self, branch, mover, name=None):
+        """See `IBranchNamespace`."""
+        if name is None:
+            name = branch.name
+        self.validateBranchName(name)
+        self.validateRegistrant(mover)
+
+    def moveBranch(self, branch, mover, new_name=None,
+                   rename_if_necessary=False):
+        """See `IBranchNamespace`."""
+        # Check to see if the branch is already in this namespace.
+        old_namespace = branch.namespace
+        if self.name == old_namespace.name:
+            return
+        if new_name is None:
+            new_name = branch.name
+        if rename_if_necessary:
+            new_name = self.findUnusedName(new_name)
+        self.validateMove(branch, mover, new_name)
+        # Remove the security proxy of the branch as the owner and target
+        # attributes are readonly through the interface.
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.owner = self.owner
+        self.target._retargetBranch(naked_branch)
+        naked_branch.name = new_name
 
     def createBranchWithPrefix(self, branch_type, prefix, registrant,
                                url=None):
@@ -371,8 +399,6 @@ class PackageNamespace(_BaseNamespace):
     implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, sourcepackage):
-        if not config.codehosting.package_branches_enabled:
-            raise Unauthorized("Package branches are disabled.")
         self.owner = person
         self.sourcepackage = sourcepackage
 

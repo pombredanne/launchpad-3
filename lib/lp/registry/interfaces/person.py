@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
@@ -42,8 +44,7 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import (Bool, Choice, Datetime, Int, List, Object, Text,
-    TextLine)
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -70,17 +71,19 @@ from canonical.launchpad.fields import (
     is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.app.interfaces.rootcontext import IRootContext
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
-from canonical.launchpad.interfaces.language import ILanguage
+from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.location import (
     IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
 from lp.registry.interfaces.teammembership import (
     ITeamMembership, ITeamParticipation, TeamMembershipStatus)
@@ -470,8 +473,9 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
-                    IHasMugshot, IHasIcon, IHasLocation, IObjectWithLocation):
+class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
+                    IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
+                    IHasLocation, IObjectWithLocation, IPrivacy):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -619,7 +623,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
+    is_ubuntu_coc_signer = Bool(
+        title=_("Signed Ubuntu Code of Conduct"),
+        readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
@@ -779,7 +785,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
 
-    visibility_consistency_warning = Attribute(
+    visibilityConsistencyWarning = Attribute(
         "Warning that a private team may leak membership info.")
 
     sub_teams = exported(
@@ -825,6 +831,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             readonly=True, required=False,
             value_type=Reference(schema=Interface))) # HWSubmission
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. It is a summary of the team's visibility.
     private = exported(Bool(
             title=_("This team is private"),
             readonly=True, required=False,
@@ -921,21 +929,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
         """Deprecated.  Use IPerson.is_team instead.
 
         True if this Person is actually a Team, otherwise False.
-        """
-
-    @operation_parameters(
-        status=List(
-            title=_("A list of merge proposal statuses to filter by."),
-            value_type=Choice(vocabulary='BranchMergeProposalStatus')))
-    @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal
-    @export_read_operation()
-    def getMergeProposals(status=None, visible_by_user=None):
-        """Returns all merge proposals of a given status.
-
-        :param status: A list of statuses to filter with.
-        :param visible_by_user: Normally the user who is asking.
-        :returns: A list of `IBranchMergeProposal`.
         """
 
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
@@ -1177,12 +1170,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     @operation_returns_entry(Interface) # Really IArchive.
     @export_read_operation()
     def getPPAByName(name):
-        """Return a PPA with the given name if it exists or None.
+        """Return a PPA with the given name if it exists.
 
         :param name: A string with the exact name of the ppa being looked up.
+        :raises: `NoSuchPPA` if a suitable PPA could not be found.
 
-        :return: an `IArchive` record corresponding to the PPA or None if it
-            was not found.
+        :return: a PPA `IArchive` record corresponding to the name.
         """
 
 
@@ -1204,8 +1197,6 @@ class IPersonViewRestricted(Interface):
                 "Your name as you would like it displayed throughout "
                 "Launchpad. Most people use their full name here.")),
         exported_as='display_name')
-    browsername = Attribute(
-        'Return a textual name suitable for display in a browser.')
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     active_member_count = Attribute(
@@ -1465,8 +1456,8 @@ class IPersonCommAdminWriteRestricted(Interface):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard.  Private Membership"
-                   " means that a team's members are hidden."
+                   "Public visibility is standard.  Private Membership "
+                   "means that a team's members are hidden.  "
                    "Private means the team is completely "
                    "hidden [experimental]."
                    ),
@@ -1509,7 +1500,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IHasStanding, ISetLocation):
+              IHasStanding, ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -1560,7 +1551,9 @@ class ITeamPublic(Interface):
 
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
-             description=_('Use plain text; URLs will be linkified')),
+             description=_(
+                "Include information on how to get involved with "
+                "development. Use plain text; URLs will be linkified.")),
         exported_as='team_description')
 
     subscriptionpolicy = exported(
@@ -1909,10 +1902,12 @@ class IPersonSet(Interface):
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
-    dupeaccount = Choice(
+    dupe_person = Choice(
         title=_('Duplicated Account'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The duplicated account you found in Launchpad"))
+        description=_(
+            "The e-mail address or Launchpad ID of the account you want to "
+            "merge into yours."))
 
 
 class IAdminPeopleMergeSchema(Interface):
@@ -1920,12 +1915,12 @@ class IAdminPeopleMergeSchema(Interface):
 
     dupe_person = Choice(
         title=_('Duplicated Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The duplicated person found in Launchpad."))
 
     target_person = Choice(
         title=_('Target Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The person to be merged on."))
 
 
@@ -1944,7 +1939,7 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner',
+    owner = PublicPersonChoice(title=_('New'), vocabulary='ValidOwner',
                                required=True)
 
 
@@ -1952,7 +1947,7 @@ class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
     owner = PublicPersonChoice(
-        title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+        title=_('New'), vocabulary='ValidTeamOwner', required=True)
 
 
 class ITeamCreation(ITeam):

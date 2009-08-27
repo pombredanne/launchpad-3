@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import httplib
 import itertools
@@ -15,7 +16,7 @@ from twisted.web.http import HTTPClient
 from twisted.python.failure import Failure
 
 from canonical.config import config
-from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distributionmirror import (
     MirrorFreshness, UnableToFetchCDImageFileList)

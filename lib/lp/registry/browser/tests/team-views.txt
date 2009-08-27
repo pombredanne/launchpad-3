@@ -7,17 +7,12 @@
     >>> from zope.component import getMultiAdapter
     >>> from zope.publisher.browser import TestRequest
     >>> person_set = getUtility(IPersonSet)
-    >>> def create_view(context, name, form=None):
-    ...     view = getMultiAdapter(
-    ...         (context, TestRequest(form=form)), name=name)
-    ...     view.initialize()
-    ...     return view
 
 On a team home page, we show up to the latest five members who were approved
 as well as the up to five latest members who proposed themselves.
 
     >>> ubuntu_team = person_set.getByName('name18')
-    >>> team_home = create_view(ubuntu_team, '+index')
+    >>> team_home = create_initialized_view(ubuntu_team, '+index')
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> for member in team_home.recently_approved_members:
     ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
@@ -37,11 +32,11 @@ If new members are added/proposed, they'll show up at the top of the lists.
     >>> login_person(sample_person)
     >>> sample_person.join(ubuntu_team)
     >>> salgado = person_set.getByName('salgado')
-    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> mark = person_set.getByName('mark')
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu_team.addMember(salgado, reviewer=sabdfl)
+    >>> ubuntu_team.addMember(salgado, reviewer=mark)
 
-    >>> team_home = create_view(ubuntu_team, '+index')
+    >>> team_home = create_initialized_view(ubuntu_team, '+index')
     >>> for member in team_home.recently_approved_members:
     ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
     ...     print "%s: %s" % (member.name, membership.status.title)
@@ -131,7 +126,7 @@ views number of times is incremented for each timezone the members reside in.
 
     >>> london_member = factory.makePerson(
     ...     latitude=51.49, longitude=-0.13, time_zone='Europe/London')
-    >>> context.addMember(london_member, sabdfl)
+    >>> context.addMember(london_member, mark)
     >>> context.mapped_participants_count
     1
     >>> view = create_initialized_view(context, '+map')
@@ -145,7 +140,7 @@ views number of times is incremented for each timezone the members reside in.
 
     >>> brazil_member = factory.makePerson(
     ...     latitude=-23.60, longitude=-46.64, time_zone='America/Sao_Paulo')
-    >>> context.addMember(brazil_member, sabdfl)
+    >>> context.addMember(brazil_member, mark)
     >>> context.mapped_participants_count
     2
     >>> view = create_initialized_view(context, '+map')
@@ -159,10 +154,10 @@ twice, for obvious reasons.
 
     >>> london_member2 = factory.makePerson(
     ...     latitude=51.49, longitude=-0.13, time_zone='Europe/London')
-    >>> context.addMember(london_member2, sabdfl)
+    >>> context.addMember(london_member2, mark)
     >>> context.mapped_participants_count
     3
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> len(view.times)
     2
 
@@ -178,7 +173,7 @@ limit.
 When the preview parameter is sent to the view, the number of
 mapped_participants is limited to 24.
 
-    >>> view = create_view(context, '+map', form={'preview': 'anything'})
+    >>> view = create_initialized_view(context, '+map', form={'preview': 'anything'})
     >>> view.limit
     24
 
@@ -190,7 +185,7 @@ mapped_participants is limited to 24.
 The view provides the count of mapped and unmapped members. The counts
 are cached to improve performance.
 
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> view.mapped_participants_count
     3
     >>> view.unmapped_participants_count

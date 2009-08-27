@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for ISourcePackage implementations."""
 
@@ -13,10 +14,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.ftests import login_person, logout
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -105,6 +106,15 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertEqual(
             [(pocket, branch)], list(sourcepackage.linked_branches))
 
+    def test_getSuiteSourcePackage(self):
+        # ISourcePackage.getSuiteSourcePackage returns the suite source
+        # package object for the given pocket.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        ssp = sourcepackage.getSuiteSourcePackage(pocket)
+        self.assertEqual(sourcepackage, ssp.sourcepackage)
+        self.assertEqual(pocket, ssp.pocket)
+
     def test_path_to_release_pocket(self):
         # ISourcePackage.getPocketPath returns the path to a pocket. For the
         # RELEASE pocket, it's the same as the package path.
@@ -144,6 +154,17 @@ class TestSourcePackage(TestCaseWithFactory):
             dev_sourcepackage, other_sourcepackage.development_version)
         self.assertEqual(
             dev_sourcepackage, dev_sourcepackage.development_version)
+
+    def test_distribution_sourcepackage(self):
+        # ISourcePackage.distribution_sourcepackage is the distribution source
+        # package for the ISourcePackage.
+        sourcepackage = self.factory.makeSourcePackage()
+        distribution = sourcepackage.distribution
+        distribution_sourcepackage = distribution.getSourcePackage(
+            sourcepackage.sourcepackagename)
+        self.assertEqual(
+            distribution_sourcepackage,
+            sourcepackage.distribution_sourcepackage)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):

@@ -15,7 +15,7 @@ Launchpad to be eventually displayed in Launchpad's u/i.
     # We don't care about the email notifications sent when the mailing
     # list was created, and we don't want the notification to confuse
     # things later on in this test, so clear the queue.
-    >>> from canonical.launchpad.tests import mail_helpers
+    >>> from lp.testing import mail_helpers
     >>> ignore = mail_helpers.pop_notifications()
 
 Anne posts a message to the Team One list, but because she is not a member of

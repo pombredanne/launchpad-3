@@ -69,8 +69,8 @@ The IPersonSet.
 
 An IPerson.
 
-    >>> canonical_url(getUtility(IPersonSet).getByName('sabdfl'))
-    u'http://launchpad.dev/~sabdfl'
+    >>> canonical_url(getUtility(IPersonSet).getByName('mark'))
+    u'http://launchpad.dev/~mark'
 
 An ITeam.
 
@@ -276,7 +276,7 @@ An IBugWatchSet.
 
 An IBugComment.
 
-    >>> from canonical.launchpad.browser import BugComment
+    >>> from lp.bugs.browser.bugcomment import BugComment
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugtask_one = bug_one.bugtasks[0]
     >>> bug_comment = BugComment(
@@ -295,7 +295,7 @@ An IBugNomination.
 == Remote Bug Trackers and Remote Bugs ==
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> from canonical.launchpad.browser.bugtracker import RemoteBug
+    >>> from lp.bugs.browser.bugtracker import RemoteBug
 
 An IBugTrackerSet.
 
@@ -325,16 +325,16 @@ An IBranch.
     >>> branch = getUtility(IBranchLookup).get(10)
 
     >>> canonical_url(branch)
-    u'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2'
+    u'http://code.launchpad.dev/~mark/firefox/release-0.9.2'
 
 An IBugBranch.
 
     >>> bug = getUtility(IBugSet).get(1)
-    >>> bug_branch = bug.addBranch(
-    ...     branch, getUtility(IPersonSet).getByName('sabdfl'))
+    >>> bug_branch = bug.linkBranch(
+    ...     branch, getUtility(IPersonSet).getByName('mark'))
 
     >>> canonical_url(bug_branch)
-    u'http://launchpad.dev/~sabdfl/firefox/release-0.9.2/+bug/1'
+    u'http://launchpad.dev/~mark/firefox/release-0.9.2/+bug/1'
 
 
 == BranchMergeProposals ==
@@ -365,8 +365,9 @@ the merge proposal)
 
 == POTemplates and so on ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPOTemplateSet, ITranslationGroupSet)
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> from lp.translations.interfaces.translationgroup import (
+    ...     ITranslationGroupSet)
 
 Most Rosetta pages hang off IPOTemplateSubset objects, of which there are two
 varieties: distribution and upstream.
@@ -450,7 +451,7 @@ Even for a dummy PO msgset
 Rosetta also has translation groups.
 
     >>> canonical_url(getUtility(ITranslationGroupSet))
-    u'http://launchpad.dev/+groups'
+    u'http://translations.launchpad.dev/+groups'
 
 
 == Specifications ==

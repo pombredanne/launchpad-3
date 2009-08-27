@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -14,11 +16,13 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from lp.registry.interfaces.mentoringoffer import IMentoringOffer, IMentoringOfferSet
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.mentoringoffer import (
+    IMentoringOffer, IMentoringOfferSet)
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from lp.registry.interfaces.person import validate_public_person
 
 
 class MentoringOffer(SQLBase):
@@ -71,8 +75,8 @@ class MentoringOfferSet:
     def mentoring_offers(self):
         """See IHasMentoringOffers."""
         # import here to avoid circular imports
-        from canonical.launchpad.database.specification import Specification
-        from canonical.launchpad.database.bugtask import BugTask
+        from lp.blueprints.model.specification import Specification
+        from lp.bugs.model.bugtask import BugTask
         via_specs = MentoringOffer.select("""
             Specification.id = MentoringOffer.specification AND NOT
             (""" + Specification.completeness_clause +")",
@@ -91,8 +95,8 @@ class MentoringOfferSet:
     def recent_completed_mentorships(self):
         """See IHasMentoringOffers."""
         # import here to avoid circular imports
-        from canonical.launchpad.database.specification import Specification
-        from canonical.launchpad.database.bugtask import BugTask
+        from lp.blueprints.model.specification import Specification
+        from lp.bugs.model.bugtask import BugTask
         now = datetime.now(pytz.timezone('UTC'))
         yearago = now - timedelta(365)
         via_specs = MentoringOffer.select("""

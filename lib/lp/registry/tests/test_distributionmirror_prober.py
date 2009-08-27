@@ -1,4 +1,6 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0703
 
 """distributionmirror-prober tests."""
@@ -21,10 +23,11 @@ from sqlobject import SQLObjectNotFound
 
 import canonical
 from canonical.config import config
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lazr.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.database import DistributionMirror, DistroSeries
+from lp.registry.model.distributionmirror import DistributionMirror
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.scripts import distributionmirror_prober
 from lp.registry.scripts.distributionmirror_prober import (
     ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,

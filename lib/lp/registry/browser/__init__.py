@@ -1,18 +1,68 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Common registry browser helpers and mixins."""
 
 __metaclass__ = type
 
 __all__ = [
+    'get_status_count',
+    'MilestoneOverlayMixin',
+    'RegistryEditFormView',
     'RegistryDeleteViewMixin',
+    'StatusCount',
     ]
 
 
+from operator import attrgetter
+
 from zope.component import getUtility
-from canonical.launchpad.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.launchpadform import (
+    action, LaunchpadEditFormView)
+from canonical.launchpad.webapp.publisher import canonical_url
+
+
+class StatusCount:
+    """A helper that stores the count of status for a list of items.
+
+    Items such as `IBugTask` and `ISpecification` can be summarised by
+    their status.
+    """
+
+    def __init__(self, status, count):
+        """Set the status and count."""
+        self.status = status
+        self.count = count
+
+
+def get_status_counts(workitems, status_attr):
+    """Return a list StatusCounts summarising the workitem."""
+    statuses = {}
+    for workitem in workitems:
+        status = getattr(workitem, status_attr)
+        if status not in statuses:
+            statuses[status] = 0
+        statuses[status] += 1
+    return [
+        StatusCount(status, statuses[status])
+        for status in sorted(statuses, key=attrgetter('sortkey'))]
+
+
+class MilestoneOverlayMixin:
+    """A mixin that provides the data for the milestoneoverlay script."""
+
+    @property
+    def milestone_form_uri(self):
+        """URI for form displayed by the formoverlay widget."""
+        return canonical_url(self.context) + '/+addmilestone/++form++'
+
+    @property
+    def series_api_uri(self):
+        """The series URL for API access."""
+        return canonical_url(self.context, path_only_if_possible=True)
 
 
 class RegistryDeleteViewMixin:
@@ -74,3 +124,22 @@ class RegistryDeleteViewMixin:
             for release_file in release.files:
                 release_file.destroySelf()
             release.destroySelf()
+
+
+class RegistryEditFormView(LaunchpadEditFormView):
+    """A base class that provides consistent edit form behaviour."""
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    next_url = cancel_url
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)

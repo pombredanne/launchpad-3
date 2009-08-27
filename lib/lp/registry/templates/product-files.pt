@@ -12,74 +12,79 @@
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-top-contributors" />
-</metal:portlets>
-
 <div metal:fill-slot="main"
      tal:define="has_edit context/required:launchpad.Edit">
   <h1>Download project files</h1>
 
-  <form method="POST"
+  <p tal:condition="view/has_download_files">
+    After you've downloaded a file, you can verify its authenticity using
+    <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
+    either </tal:hasdownloadfiles>its MD5 sum
+    <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
+    or signature</tal:hasdownloadfiles>. (<a
+    href="/+help/verify-downloads.html" target="help">How do I verify a
+    download?</a>)
+  </p>
+
+  <form id="project-downloads" method="POST"
         tal:attributes="action request/URL">
 
     <p tal:condition="not: view/has_download_files">
        No download files exist for this project.
     </p>
 
-    <tal:series repeat="series view/sorted_series_list">
+    <div
+      tal:repeat="series view/sorted_series_list"
+      tal:attributes="id string:series_${series/name}">
 
-      <h2 tal:condition="python: has_edit and series.releases">
-        Release series &#8220;<tal:name
-                               replace="series/name">main</tal:name>&#8221;
+      <h2 tal:condition="python: has_edit or series.has_release_files">
+        &#8220;<tal:name replace="series/name">main</tal:name>&#8221; series
       </h2>
 
-      <tal:seriesfilesexist
-          condition="series/has_release_files">
-        <h2 tal:condition="not: has_edit">
-          Release series &#8220;<tal:name
-                                 replace="series/name">main</tal:name>&#8221;
-        </h2>
+      <tal:seriesfilesexist condition="series/has_release_files">
+        <div
+          tal:condition="series/summary"
+          tal:content="series/summary/fmt:shorten/80" />
 
-        <table class="listing">
-          <thead>
-            <tr>
-              <th tal:condition="has_edit" width="10%">Delete</th>
-              <th>Download</th>
-              <th>Release</th>
-              <th width="50%">Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tal:seriesfiles repeat="release series/releases">
-              <tr tal:repeat="file release/files">
-                <td tal:condition="has_edit"
-                    align="center">
-                  <input type="checkbox"
-                         tal:define="cbnum string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}"
-                         tal:attributes="value file/libraryfile/id;
-                         name string:checkbox_${cbnum}" />
-                </td>
-                <td>
-                  <img alt="download icon" src="/@@/download" />
-                  <a tal:attributes="href
-                     python:view.fileURL(file.libraryfile, release)"
-                     tal:content="file/libraryfile/filename">filename</a>
-                     (<a tal:attributes="href
-                     python:view.md5URL(file.libraryfile, release)"
-                     >md5</a><tal:signature condition="file/signature">
-                     , <a tal:attributes="href
-                     python:view.fileURL(file.signature,release)">
-                     sig</a></tal:signature>)
-                </td>
-                <td>
-                   <tal:version content="release/version">version</tal:version>
-                </td>
-                <td tal:content="file/description">Installer for i386</td>
-              </tr>
-            </tal:seriesfiles>
-          </tbody>
-        </table>
+        <tal:releases repeat="release series/releases">
+          <div tal:condition="release/files">
+            <h3 style="font-size: 1.2em">
+              <a tal:attributes="href release/fmt:url">
+                <span tal:replace="release/version" /> release
+              </a>
+            </h3>
+            <table class="listing">
+              <thead>
+                <tr>
+                  <th width="35%">File</th>
+                  <th width="45%">Description</th>
+                  <th>Downloads</th>
+                  <th tal:condition="has_edit">Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr tal:repeat="file release/files">
+                  <tal:define-vars
+                    tal:define="checkbox_index string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}">
+                    <tal:release-file
+                      metal:use-macro="file/@@+macros/detailed_display" />
+                  </tal:define-vars>
+                </tr>
+              </tbody>
+              <tfoot tal:condition="release/total_downloads">
+                <tr>
+                  <th colspan="2" style="padding-top: 1em; text-align: right;">
+                    Total downloads:
+                  </th>
+                  <td style="border: none; text-align: center;">
+                    <span tal:replace="release/total_downloads/fmt:intcomma" />
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </tal:releases>
+        <br />
 
       </tal:seriesfilesexist>
 
@@ -94,23 +99,13 @@
         </tal:releases>
       </p>
 
-    </tal:series>
+    </div>
     <input tal:condition="python: has_edit and view.has_download_files"
         type="submit"
         name="delete_files"
         value="Delete Files" />
 
   </form>
-  <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
-  <p>
-    If a file has a signature associated with it, download both the file and
-    the signature file.  You can then verify the file by
-    doing the following:
-  </p>
-  <p>
-    <code> % gpg --verify &lt;filename.asc&gt;</code>
-  </p>
-  </tal:hasdownloadfiles>
 </div>
 </body>
 </html>

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
 
@@ -19,11 +20,10 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codereviewcomment import CodeReviewComment
-from lp.code.model.codereviewvote import (
-    CodeReviewVoteReference)
+from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.person import Owner
+from lp.registry.model.person import Owner, Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
@@ -70,7 +70,7 @@ class GenericBranchCollection:
 
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches(False, False).count()
+        return self.getBranches().count()
 
     @property
     def store(self):
@@ -110,7 +110,7 @@ class GenericBranchCollection:
         # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
         # decorated set, so we get at the underlying set so we can get at the
         # private and juicy _get_select.
-        select = self.getBranches(False, False).result_set._get_select()
+        select = self.getBranches().result_set._get_select()
         select.columns = (Branch.id,)
         return select
 
@@ -118,18 +118,11 @@ class GenericBranchCollection:
         """Return the where expressions for this collection."""
         return self._branch_filter_expressions
 
-    def getBranches(self, join_owner=True, join_product=True):
+    def getBranches(self):
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
-        if join_owner and Owner not in self._tables:
-            tables.append(Join(Owner, Branch.owner == Owner.id))
-        if join_product and Product not in self._tables:
-            tables.append(LeftJoin(Product, Branch.product == Product.id))
         expressions = self._getBranchExpressions()
         results = self.store.using(*tables).find(Branch, *expressions)
-        # XXX TimPenhey 2008-03-16 bug 343313
-        # Remove the default ordering on the Branch table.
-        results = results.order_by()
         def identity(x):
             return x
         # Decorate the result set to work around bug 217644.
@@ -184,6 +177,21 @@ class GenericBranchCollection:
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
 
+    def getTeamsWithBranches(self, person):
+        """See `IBranchCollection`."""
+        # This method doesn't entirely fit with the intent of the
+        # BranchCollection conceptual model, but we're not quite sure how to
+        # fix it just yet.  Perhaps when bug 337494 is fixed, we'd be able to
+        # sensibly be able to move this method to another utility class.
+        branch_query = self._getBranchIdQuery()
+        branch_query.columns = (Branch.ownerID,)
+        return self.store.find(
+            Person,
+            Person.id == TeamParticipation.teamID,
+            TeamParticipation.person == person,
+            TeamParticipation.team != person,
+            Person.id.is_in(branch_query))
+
     def inProduct(self, product):
         """See `IBranchCollection`."""
         return self._filterBy(
@@ -195,6 +203,27 @@ class GenericBranchCollection:
             [Product.project == project.id],
             table=Product,
             join=Join(Product, Branch.product == Product.id))
+
+    def inDistribution(self, distribution):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [DistroSeries.distribution == distribution],
+            table=Distribution,
+            join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
+
+    def inDistroSeries(self, distro_series):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.distroseries == distro_series])
+
+    def inDistributionSourcePackage(self, distro_source_package):
+        """See `IBranchCollection`."""
+        distribution = distro_source_package.distribution
+        sourcepackagename = distro_source_package.sourcepackagename
+        return self._filterBy(
+            [DistroSeries.distribution == distribution,
+             Branch.sourcepackagename == sourcepackagename],
+            table=Distribution,
+            join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
 
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""
@@ -238,13 +267,13 @@ class GenericBranchCollection:
 
     def search(self, search_term):
         """See `IBranchCollection`."""
-        # XXX: JonathanLange 2009-02-23: This matches the old search algorithm
-        # that used to live in vocabularies/dbojects.py. It's not actually
-        # very good -- really it should match based on substrings of the
-        # unique name and sort based on relevance.
+        # XXX: JonathanLange 2009-02-23 bug 372591: This matches the old
+        # search algorithm that used to live in vocabularies/dbojects.py. It's
+        # not actually very good -- really it should match based on substrings
+        # of the unique name and sort based on relevance.
         branch = self._getExactMatch(search_term)
         if branch is not None:
-            if branch in self.getBranches(False, False):
+            if branch in self.getBranches():
                 return CountableIterator(1, [branch])
             else:
                 return CountableIterator(0, [])
@@ -291,6 +320,14 @@ class GenericBranchCollection:
             table=BranchSubscription,
             join=Join(BranchSubscription,
                       BranchSubscription.branch == Branch.id))
+
+    def targetedBy(self, person):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [BranchMergeProposal.registrant == person],
+            table=BranchMergeProposal,
+            join=Join(BranchMergeProposal,
+                      BranchMergeProposal.target_branch == Branch.id))
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
@@ -351,7 +388,7 @@ class VisibleBranchCollection(GenericBranchCollection):
             store=store, branch_filter_expressions=branch_filter_expressions,
             tables=tables, exclude_from_search=exclude_from_search)
         self._user = user
-        self._user_visibility_expression = self._getVisibilityExpression()
+        self._private_branch_ids = self._getPrivateBranchSubQuery()
 
     def _filterBy(self, expressions, table=None, join=None,
                   exclude_from_search=None):
@@ -375,40 +412,50 @@ class VisibleBranchCollection(GenericBranchCollection):
             tables,
             self._exclude_from_search + exclude_from_search)
 
-    def _getVisibilityExpression(self):
+    def _getPrivateBranchSubQuery(self):
+        """Return a subquery to get the private branches the user can see.
+
+        If the user is None (which is used for anonymous access), then there
+        is no subquery.  Otherwise return the branch ids for the private
+        branches that the user owns or is subscribed to.
+        """
         # Everyone can see public branches.
         person = self._user
-        public_branches = Select(Branch.id, Branch.private == False)
-
         if person is None:
             # Anonymous users can only see the public branches.
-            visible_branches = public_branches
-        else:
-            # A union is used here rather than the more simplistic simple
-            # joins due to the query plans generated.  If we just have a
-            # simple query then we are joining across TeamParticipation and
-            # BranchSubscription.  This creates a bad plan, hence the use of a
-            # union.
-            visible_branches = Union(
-                public_branches,
-                # Branches the person owns (or a team the person is in).
-                Select(Branch.id,
-                       And(Branch.owner == TeamParticipation.teamID,
-                           TeamParticipation.person == person)),
-                # Private branches the person is subscribed to, either
-                # directly or indirectly.
-                Select(Branch.id,
-                       And(BranchSubscription.branch == Branch.id,
-                           BranchSubscription.person ==
-                               TeamParticipation.teamID,
-                           TeamParticipation.person == person,
-                           Branch.private == True)))
-        return visible_branches
+            return None
+
+        # A union is used here rather than the more simplistic simple joins
+        # due to the query plans generated.  If we just have a simple query
+        # then we are joining across TeamParticipation and BranchSubscription.
+        # This creates a bad plan, hence the use of a union.
+        private_branches = Union(
+            # Private branches the person owns (or a team the person is in).
+            Select(Branch.id,
+                   And(Branch.owner == TeamParticipation.teamID,
+                       TeamParticipation.person == person,
+                       Branch.private == True)),
+            # Private branches the person is subscribed to, either directly or
+            # indirectly.
+            Select(Branch.id,
+                   And(BranchSubscription.branch == Branch.id,
+                       BranchSubscription.person ==
+                       TeamParticipation.teamID,
+                       TeamParticipation.person == person,
+                       Branch.private == True)))
+        return private_branches
 
     def _getBranchExpressions(self):
         """Return the where expressions for this collection."""
-        return self._branch_filter_expressions + [
-            Branch.id.is_in(self._user_visibility_expression)]
+        public_branches = Branch.private == False
+        if self._private_branch_ids is None:
+            # Public only.
+            return self._branch_filter_expressions + [public_branches]
+        else:
+            public_or_private = Or(
+                public_branches,
+                Branch.id.is_in(self._private_branch_ids))
+            return self._branch_filter_expressions + [public_or_private]
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
@@ -423,6 +470,13 @@ class VisibleBranchCollection(GenericBranchCollection):
 
         Used primarily by the visibility check for target branches.
         """
+        if self._private_branch_ids is None:
+            # Public only.
+            visible_branches = Select(Branch.id, Branch.private == False)
+        else:
+            visible_branches = Select(
+                Branch.id,
+                Or(Branch.private == False,
+                   Branch.id.is_in(self._private_branch_ids)))
         return [
-            BranchMergeProposal.target_branchID.is_in(
-                self._user_visibility_expression)]
+            BranchMergeProposal.target_branchID.is_in(visible_branches)]

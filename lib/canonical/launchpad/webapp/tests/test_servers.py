@@ -1,4 +1,5 @@
-# Copyright Canonical Limited, 2005, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -339,27 +340,34 @@ class TestTranslationsBrowserRequest(unittest.TestCase):
 
 class TestLaunchpadBrowserRequest(unittest.TestCase):
 
+    def prepareRequest(self, form):
+        """Return a `LaunchpadBrowserRequest` with the given form.
+
+        Also set the accepted charset to 'utf-8'.
+        """
+        request = LaunchpadBrowserRequest('', form)
+        request.charsets = ['utf-8']
+        return request
+
     def test_query_string_params_on_get(self):
         """query_string_params is populated from the QUERY_STRING during
         GET requests."""
-        request = LaunchpadBrowserRequest('', {
-            'QUERY_STRING': "a=1&b=2&c=3"})
+        request = self.prepareRequest({'QUERY_STRING': "a=1&b=2&c=3"})
         self.assertEqual(
-            request.query_string_params,
             {'a': ['1'], 'b': ['2'], 'c': ['3']},
+            request.query_string_params,
             "The query_string_params dict is populated from the "
             "QUERY_STRING during GET requests.")
 
     def test_query_string_params_on_post(self):
         """query_string_params is populated from the QUERY_STRING during
         POST requests."""
-        request = LaunchpadBrowserRequest('',
+        request = self.prepareRequest(
             {'QUERY_STRING': "a=1&b=2&c=3", 'REQUEST_METHOD': 'POST'})
-
         self.assertEqual(request.method, 'POST')
         self.assertEqual(
-            request.query_string_params,
             {'a':['1'], 'b': ['2'], 'c': ['3']},
+            request.query_string_params,
             "The query_string_params dict is populated from the "
             "QUERY_STRING during POST requests.")
 
@@ -367,23 +375,32 @@ class TestLaunchpadBrowserRequest(unittest.TestCase):
         """The query_string_params dict is always empty when QUERY_STRING
         is empty, None or undefined.
         """
-        request = LaunchpadBrowserRequest('', {'QUERY_STRING': ''})
-        self.assertEqual(request.query_string_params, {})
-        request = LaunchpadBrowserRequest('', {'QUERY_STRING': None})
-        self.assertEqual(request.query_string_params, {})
-        request = LaunchpadBrowserRequest('', {})
-        self.assertEqual(request.query_string_params, {})
+        request = self.prepareRequest({'QUERY_STRING': ''})
+        self.assertEqual({}, request.query_string_params)
+        request = self.prepareRequest({'QUERY_STRING': None})
+        self.assertEqual({}, request.query_string_params)
+        request = self.prepareRequest({})
+        self.assertEqual({}, request.query_string_params)
 
     def test_query_string_params_multi_value(self):
         """The query_string_params dict can include multiple values
         for a parameter."""
-        request = LaunchpadBrowserRequest('', {
-            'QUERY_STRING': "a=1&a=2&b=3"})
+        request = self.prepareRequest({'QUERY_STRING': "a=1&a=2&b=3"})
         self.assertEqual(
-            request.query_string_params,
             {'a': ['1', '2'], 'b': ['3']},
+            request.query_string_params,
             "The query_string_params dict correctly interprets multiple "
             "values for the same key in a query string.")
+
+    def test_query_string_params_unicode(self):
+        # Encoded query string parameters are properly decoded.
+        request = self.prepareRequest({'QUERY_STRING': "a=%C3%A7"})
+        self.assertEqual(
+            {'a': [u'\xe7']},
+            request.query_string_params,
+            "The query_string_params dict correctly interprets encoded "
+            "parameters.")
+
 
 def test_suite():
     suite = unittest.TestSuite()

@@ -36,7 +36,7 @@ put the person we will merge into some of those.
 
     # To assign marilize as the ubuntu team owner, we must log on as the
     # previous owner.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> ubuntu_team.teamowner = marilize
@@ -93,7 +93,7 @@ active member of that team.
 Marilize has used OpenID to Login. The OpenIDRPSummaries will be
 transferred to Sample Person.
 
-    >>> from canonical.launchpad.interfaces.openidserver import (
+    >>> from lp.services.openid.interfaces.openidrpsummary import (
     ...     IOpenIDRPSummarySet)
     >>> openidrpsummaryset = getUtility(IOpenIDRPSummarySet)
     >>> summaries = openidrpsummaryset.getByIdentifier(

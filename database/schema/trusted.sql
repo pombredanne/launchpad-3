@@ -1,4 +1,5 @@
--- Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
 
 CREATE OR REPLACE FUNCTION assert_patch_applied(
     major integer, minor integer, patch integer) RETURNS boolean
@@ -48,10 +49,53 @@ $$;
 
 COMMENT ON FUNCTION null_count(anyarray) IS 'Return the number of NULLs in the first row of the given array.';
 
+
+CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag() IS
+'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
+
+
+CREATE OR REPLACE FUNCTION activity()
+RETURNS SETOF pg_catalog.pg_stat_activity
+LANGUAGE SQL VOLATILE SECURITY DEFINER AS
+$$
+    SELECT
+        datid, datname, procpid, usesysid, usename,
+        CASE
+            WHEN current_query LIKE '<IDLE>%'
+                OR current_query LIKE 'autovacuum:%'
+                THEN current_query
+            ELSE
+                '<HIDDEN>'
+        END AS current_query,
+        waiting, xact_start, query_start,
+        backend_start, client_addr, client_port
+    FROM pg_catalog.pg_stat_activity;
+$$;
+
+COMMENT ON FUNCTION activity() IS
+'SECURITY DEFINER wrapper around pg_stat_activity allowing unprivileged users to access most of its information.';
+
+
 /* This is created as a function so the same definition can be used with
     many tables
 */
-
 CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
@@ -346,7 +390,6 @@ CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
 RETURNS TRIGGER
 VOLATILE SECURITY DEFINER AS $$
 DECLARE
-    v_old_entry INTEGER;
     v_trash_old BOOLEAN;
 BEGIN
     -- If we are deleting a row, we need to remove the existing
@@ -366,15 +409,13 @@ BEGIN
 
     IF v_trash_old THEN
         -- Was this somebody's most-recently-changed message?
-        SELECT INTO v_old_entry id FROM POFileTranslator
+        -- If so, delete the entry for that change.
+        DELETE FROM POFileTranslator
         WHERE latest_message = OLD.id;
-
-        IF v_old_entry IS NOT NULL THEN
-            -- Delete the old record.
-            DELETE FROM POFileTranslator
-            WHERE POFileTranslator.id = v_old_entry;
-
-            -- Insert a past record if there is one.
+        IF FOUND THEN
+            -- We deleted the entry for somebody's latest contribution.
+            -- Find that person's latest remaining contribution and
+            -- create a new record for that.
             INSERT INTO POFileTranslator (
                 person, pofile, latest_message, date_last_touched
                 )
@@ -386,25 +427,24 @@ BEGIN
                          new_latest_message.date_reviewed)
               FROM POFile
               JOIN TranslationTemplateItem AS old_template_item
-                ON (OLD.potmsgset =
-                     old_template_item.potmsgset) AND
-                   (old_template_item.potemplate = pofile.potemplate) AND
-                   (pofile.language
-                     IS NOT DISTINCT FROM OLD.language) AND
-                   (pofile.variant
-                     IS NOT DISTINCT FROM OLD.variant)
+                ON OLD.potmsgset = old_template_item.potmsgset AND
+                   old_template_item.potemplate = pofile.potemplate AND
+                   pofile.language = OLD.language AND
+                   pofile.variant IS NOT DISTINCT FROM OLD.variant
               JOIN TranslationTemplateItem AS new_template_item
                 ON (old_template_item.potemplate =
                      new_template_item.potemplate)
               JOIN TranslationMessage AS new_latest_message
-                ON (new_latest_message.potmsgset =
-                     new_template_item.potmsgset) AND
-                   (new_latest_message.language
-                     IS NOT DISTINCT FROM OLD.language AND
-                   (new_latest_message.variant)
-                     IS NOT DISTINCT FROM OLD.variant)
+                ON new_latest_message.potmsgset =
+                       new_template_item.potmsgset AND
+                   new_latest_message.language = OLD.language AND
+                   new_latest_message.variant IS NOT DISTINCT FROM OLD.variant
+              LEFT OUTER JOIN POfileTranslator AS ExistingEntry
+                ON ExistingEntry.person = OLD.submitter AND
+                   ExistingEntry.pofile = POFile.id
               WHERE
-                new_latest_message.submitter=OLD.submitter
+                new_latest_message.submitter = OLD.submitter AND
+                ExistingEntry IS NULL
               ORDER BY new_latest_message.submitter, pofile.id,
                        new_latest_message.date_created DESC,
                        new_latest_message.id DESC;
@@ -856,27 +896,6 @@ $$;
 
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugAffectsPerson maintaining the Bug.users_affected_count column';
-
-
-CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
-$$
-    DECLARE
-        v_lag interval;
-    BEGIN
-        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
-        RETURN v_lag;
-    -- Slony-I not installed here - non-replicated setup.
-    EXCEPTION
-        WHEN invalid_schema_name THEN
-            RETURN NULL;
-        WHEN undefined_table THEN
-            RETURN NULL;
-    END;
-$$;
-
-COMMENT ON FUNCTION replication_lag() IS
-'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
 
 
 CREATE OR REPLACE FUNCTION set_bugtask_date_milestone_set() RETURNS TRIGGER

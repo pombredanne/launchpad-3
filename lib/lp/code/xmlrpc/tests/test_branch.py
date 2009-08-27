@@ -1,5 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0706
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the public codehosting API."""
 
@@ -11,15 +11,12 @@ import os
 import unittest
 import xmlrpclib
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.ftests import login, logout
-from lp.code.interfaces.branch import BranchType
-from lp.code.interfaces.branchlookup import (
-    ISourcePackagePocketFactory)
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.code.enums import BranchType
+from lp.testing import TestCaseWithFactory
 from lazr.uri import URI
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
 from canonical.launchpad.xmlrpc import faults
@@ -89,6 +86,18 @@ class TestExpandURL(TestCaseWithFactory):
             'bzr+ssh://bazaar.launchpad.dev/%s' % trunk.unique_name,
             'http://bazaar.launchpad.dev/%s' % trunk.unique_name]
         self.assertEqual(dict(urls=urls), results)
+
+    def test_resultDictForHotProduct(self):
+        # If 'project-name' is in the config.codehosting.hot_products list,
+        # lp:project-name will only resolve to the http url.
+        config.push(
+            'hot_product',
+            '[codehosting]\nhot_products: %s '% self.product.name)
+        self.addCleanup(config.pop, 'hot_product')
+        trunk = self.product.development_focus.branch
+        results = self.api.resolve_lp_path(self.product.name)
+        http_url = 'http://bazaar.launchpad.dev/%s' % trunk.unique_name
+        self.assertEqual(dict(urls=[http_url]), results)
 
     def test_product_only(self):
         # lp:product expands to the branch associated with development focus
@@ -187,12 +196,10 @@ class TestExpandURL(TestCaseWithFactory):
     def test_no_linked_branch_for_source_package(self):
         # Return a NoLinkedBranch fault if there's no linked branch for the
         # sourcepackage.
-        package = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.RELEASE
-        sourcepackagepocket = getUtility(ISourcePackagePocketFactory).new(
-            package, pocket)
+        suite_sourcepackage = self.factory.makeSuiteSourcePackage()
         self.assertFault(
-            package.path, faults.NoLinkedBranch(sourcepackagepocket))
+            suite_sourcepackage.path,
+            faults.NoLinkedBranch(suite_sourcepackage))
 
     def test_branch(self):
         # The unique name of a branch resolves to the unique name of the

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of CodeImport and CodeImportSet."""
 
@@ -10,22 +11,22 @@ from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.codehosting.codeimport.tests.test_workermonitor import (
+from lp.codehosting.codeimport.tests.test_workermonitor import (
     nuke_codeimport_sample_data)
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
-from lp.code.model.codeimportjob import (
-    CodeImportJob, CodeImportJobSet)
+from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.interfaces.codeimport import (
-    CodeImportReviewStatus, ICodeImportSet)
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.code.interfaces.codeimport import RevisionControlSystems
+from lp.code.enums import (
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+from lp.testing import (
+    login, login_person, logout, TestCaseWithFactory, time_counter)
+from lp.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer)
@@ -394,8 +395,8 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         self.assertEqual(0, code_import.consecutive_failure_count)
 
     def test_consecutive_failure_count_succeed(self):
-        # A code import that has succeeded once has a consecutive_failure_count
-        # of 1.
+        # A code import that has succeeded once has a
+        # consecutive_failure_count of 1.
         code_import = self.factory.makeCodeImport()
         self.succeedImport(code_import)
         self.assertEqual(0, code_import.consecutive_failure_count)
@@ -459,6 +460,61 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         self.assertEqual(1, code_import.consecutive_failure_count)
         self.failImport(other_import)
         self.assertEqual(1, code_import.consecutive_failure_count)
+
+
+class TestTryFailingImportAgain(TestCaseWithFactory):
+    """Tests for `ICodeImport.tryFailingImportAgain`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Log in a VCS Imports member.
+        TestCaseWithFactory.setUp(self)
+        login_person(getUtility(ILaunchpadCelebrities).vcs_imports.teamowner)
+
+    def test_mustBeFailing(self):
+        # tryFailingImportAgain only succeeds for imports that are FAILING.
+        outcomes = {}
+        for status in CodeImportReviewStatus.items:
+            code_import = self.factory.makeCodeImport()
+            code_import.updateFromData(
+                {'review_status': status}, self.factory.makePerson())
+            try:
+                code_import.tryFailingImportAgain(self.factory.makePerson())
+            except AssertionError:
+                outcomes[status] = 'failed'
+            else:
+                outcomes[status] = 'succeeded'
+        self.assertEqual(
+            {CodeImportReviewStatus.NEW: 'failed',
+             CodeImportReviewStatus.REVIEWED: 'failed',
+             CodeImportReviewStatus.SUSPENDED: 'failed',
+             CodeImportReviewStatus.INVALID: 'failed',
+             CodeImportReviewStatus.FAILING: 'succeeded'},
+            outcomes)
+
+    def test_resetsStatus(self):
+        # tryFailingImportAgain sets the review_status of the import back to
+        # REVIEWED.
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.FAILING},
+            self.factory.makePerson())
+        code_import.tryFailingImportAgain(self.factory.makePerson())
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+
+    def test_requestsImport(self):
+        # tryFailingImportAgain requests an import.
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.FAILING},
+            self.factory.makePerson())
+        requester = self.factory.makePerson()
+        code_import.tryFailingImportAgain(requester)
+        self.assertEqual(
+            requester, code_import.import_job.requesting_user)
 
 
 def make_active_import(factory, project_name=None, product_name=None,

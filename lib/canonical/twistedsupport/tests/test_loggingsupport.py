@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the integration between Twisted's logging and Launchpad's."""
 
@@ -20,7 +21,7 @@ from twisted.trial.unittest import TestCase
 
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.launchpad.testing import TestCase as LaunchpadTestCase
+from lp.testing import TestCase as LaunchpadTestCase
 from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport.loggingsupport import (
     LaunchpadLogFile, OOPSLoggingObserver)

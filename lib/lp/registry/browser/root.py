@@ -1,4 +1,6 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser code for the Launchpad root page."""
 
 __metaclass__ = type
@@ -19,17 +21,17 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.interfaces.launchpadstatistic import ILaunchpadStatisticSet
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet)
 from lp.code.interfaces.branchcollection import IAllBranches
-from canonical.launchpad.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.searchservice import (
     GoogleResponseError, ISearchService)
-from canonical.launchpad.interfaces.specification import ISpecificationSet
-from canonical.shipit.interfaces.shipit import ShipItConstants
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView, safe_action)
@@ -40,6 +42,9 @@ from lazr.batchnavigator.z3batching import batch
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
+
+
+shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
 
 
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
@@ -302,7 +307,7 @@ class LaunchpadSearchView(LaunchpadFormView):
     @property
     def shipit_faq_url(self):
         """The shipit FAQ URL."""
-        return ShipItConstants.faq_url
+        return shipit_faq_url
 
     @property
     def has_matches(self):
@@ -391,7 +396,8 @@ class LaunchpadSearchView(LaunchpadFormView):
         """Return the matching active person or team."""
         person_or_team = getUtility(IPersonSet).getByName(name)
         if (person_or_team is not None
-            and person_or_team.is_valid_person_or_team):
+            and person_or_team.is_valid_person_or_team
+            and check_permission('launchpad.View', person_or_team)):
             return person_or_team
         return None
 
@@ -532,4 +538,3 @@ class GoogleBatchNavigator(BatchNavigator):
             results, start=self.start, size=self.default_size)
         self.setHeadings(
             self.default_singular_heading, self.default_plural_heading)
-

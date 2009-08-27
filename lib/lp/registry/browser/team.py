@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -11,6 +12,7 @@ __all__ = [
     'TeamEditView',
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
+    'TeamMailingListSubscribersView',
     'TeamMapView',
     'TeamMapData',
     'TeamMemberAddView',
@@ -19,6 +21,7 @@ __all__ = [
 
 from urllib import quote
 from datetime import datetime
+import math
 import pytz
 
 from zope.app.form.browser import TextAreaWidget
@@ -28,8 +31,7 @@ from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from canonical.widgets import (
-    HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
+from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -41,9 +43,11 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -121,14 +125,13 @@ class TeamFormMixin:
         ]
     private_prefix = PRIVATE_TEAM_PREFIX
 
-    @property
-    def _validate_visibility_consistency(self):
+    def _validateVisibilityConsistency(self, value):
         """Perform a consistency check regarding visibility.
 
         This property must be overridden if the current context is not an
         IPerson.
         """
-        return self.context.visibility_consistency_warning
+        return self.context.visibilityConsistencyWarning(value)
 
     @property
     def _visibility(self):
@@ -140,13 +143,12 @@ class TeamFormMixin:
         return self.context.name
 
     def validate(self, data):
-        if 'visibility' in data:
-            visibility = data['visibility']
-        else:
-            visibility = self._visibility
+        visibility = data.get('visibility', self._visibility)
         if visibility != PersonVisibility.PUBLIC:
-            if 'visibility' in data:
-                warning = self._validate_visibility_consistency
+            if visibility != self._visibility:
+                # If the user is attempting to change the team visibility
+                # ensure that there are no constraints being violated.
+                warning = self._validateVisibilityConsistency(visibility)
                 if warning is not None:
                     self.setFieldError('visibility', warning)
             if (data['subscriptionpolicy']
@@ -167,9 +169,13 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     """View for editing team details."""
     schema = ITeam
 
-    # teamowner cannot be a HiddenUserWidget or the edit form would change the
-    # owner to the person doing the editing.
-    custom_widget('teamowner', SinglePopupWidget, visible=False)
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit "%s" team' % self.context.displayname
+
+    page_title = label
+
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
@@ -185,6 +191,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         # class list.
         self.field_names = list(self.field_names)
         self.field_names.remove('contactemail')
+        self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
 
@@ -200,35 +207,54 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
             # XXX: BradCrittenden 2009-04-13 bug=360540: Remove the call to
             # abort if it is moved up to updateContextFromData.
             self._abort()
-        else:
-            self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
-        When a team has a mailing list, renames are prohibited.
-        Also when a team is private renames are prohibited.
+        When a team has a mailing list, a PPA or is private, renames
+        are prohibited.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        writable = ((mailing_list is None or
-                     mailing_list.status == MailingListStatus.PURGED) and
-                    self.context.visibility != PersonVisibility.PRIVATE
-                    )
+        has_mailing_list = (
+            mailing_list is not None and
+            mailing_list.status != MailingListStatus.PURGED)
+        is_private = self.context.visibility == PersonVisibility.PRIVATE
+        has_ppa = self.context.archive is not None
 
-        if not writable:
+        block_renaming = (has_mailing_list or is_private or has_ppa)
+        if block_renaming:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
+
         super(TeamEditView, self).setUpWidgets()
-        if not writable:
-            if self.context.visibility == PersonVisibility.PRIVATE:
-                message = _('You cannot change the name of a private team.')
+
+        # Tweak the field form-help including an explanation for the
+        # read-only mode if necessary.
+        if block_renaming:
+            # Group the read-only mode reasons in textual form.
+            # Private teams can't be associated with mailing lists
+            # or PPAs yet, so it's a dominant condition.
+            if is_private:
+                reason = 'is private'
             else:
-                message = _(
-                    'This team has a mailing list and may not be renamed.')
+                if not has_mailing_list:
+                    reason = 'has a PPA'
+                elif not has_ppa:
+                    reason = 'has a mailing list'
+                else:
+                    reason = 'has a mailing list and a PPA'
+
             # We can't change the widget's .hint directly because that's a
             # read-only property.  But that property just delegates to the
             # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = message
+            self.widgets['name'].context.description = _(
+                'This team cannot be renamed because it %s.' % reason)
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -584,6 +610,10 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         processes that would otherwise manifest only as mysterious
         failures and inconsistencies.
         """
+        contact_admin = (
+            'Please '
+            '<a href="https://answers.launchpad.net/launchpad/+faq/197">'
+            'contact a Launchpad administrator</a> for further assistance.')
 
         if (self.mailing_list is None or
             self.mailing_list.status == MailingListStatus.PURGED):
@@ -597,10 +627,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
                      "a few minutes.")
         elif self.mailing_list.status == MailingListStatus.DECLINED:
             return _("The application for this team's mailing list has been "
-                     'declined. Please '
-                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
-                     'contact a Launchpad administrator</a> for further '
-                     'assistance.')
+                     'declined. ' + contact_admin)
         elif self.mailing_list.status == MailingListStatus.ACTIVE:
             return None
         elif self.mailing_list.status == MailingListStatus.DEACTIVATING:
@@ -608,10 +635,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         elif self.mailing_list.status == MailingListStatus.INACTIVE:
             return _("This team's mailing list has been deactivated.")
         elif self.mailing_list.status == MailingListStatus.FAILED:
-            return _("This team's mailing list could not be created. Please "
-                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
-                     'contact a Launchpad administrator</a> for further '
-                     'assistance.')
+            return _("This team's mailing list could not be created. " +
+                     contact_admin)
         elif self.mailing_list.status == MailingListStatus.MODIFIED:
             return _("An update to this team's mailing list is pending "
                      "and has not yet taken effect.")
@@ -620,11 +645,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
                      "being applied.")
         elif self.mailing_list.status == MailingListStatus.MOD_FAILED:
             return _("This team's mailing list is in an inconsistent state "
-                     'because a change to its configuration was not applied. '
-                     'Please '
-                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
-                     'contact a Launchpad administrator</a> for further '
-                     'assistance.')
+                     'because a change to its configuration was not '
+                     'applied. ' + contact_admin)
         else:
             raise AssertionError(
                 "Unknown mailing list status: %s" % self.mailing_list.status)
@@ -691,6 +713,40 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
              not requester.inTeam(celebrities.mailing_list_experts))):
             return False
         return self.getListInState(*PURGE_STATES) is not None
+
+
+class TeamMailingListSubscribersView(LaunchpadView):
+    """The list of people subscribed to a team's mailing list."""
+
+    max_columns = 4
+
+    @cachedproperty
+    def subscribers(self):
+        return BatchNavigator(
+            self.context.mailing_list.getSubscribers(), self.request)
+
+    def renderTable(self):
+        html = ['<table style="max-width: 80em">']
+        items = self.subscribers.currentBatch()
+        assert len(items) > 0, (
+            "Don't call this method if there are no subscribers to show.")
+        # When there are more than 10 items, we use multiple columns, but
+        # never more columns than self.max_columns.
+        columns = int(math.ceil(len(items) / 10.0))
+        columns = min(columns, self.max_columns)
+        rows = int(math.ceil(len(items) / float(columns)))
+        for i in range(0, rows):
+            html.append('<tr>')
+            for j in range(0, columns):
+                index = i + (j * rows)
+                if index >= len(items):
+                    break
+                subscriber_link = PersonFormatterAPI(items[index]).link(None)
+                html.append(
+                    '<td style="width: 20em">%s</td>' % subscriber_link)
+            html.append('</tr>')
+        html.append('</table>')
+        return '\n'.join(html)
 
 
 class TeamMailingListModerationView(MailingListTeamBaseView):
@@ -811,8 +867,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
 
         self.next_url = canonical_url(team)
 
-    @property
-    def _validate_visibility_consistency(self):
+    def _validateVisibilityConsistency(self, value):
         """See `TeamFormMixin`."""
         return None
 
@@ -890,8 +945,8 @@ class TeamMemberAddView(LaunchpadFormView):
                           " members.")
             elif newmember in self.context.activemembers:
                 error = _("%s (%s) is already a member of %s." % (
-                    newmember.browsername, newmember.name,
-                    self.context.browsername))
+                    newmember.displayname, newmember.name,
+                    self.context.displayname))
 
         if error:
             self.setFieldError("newmember", error)

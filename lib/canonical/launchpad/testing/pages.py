@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for page tests."""
 
@@ -31,9 +32,7 @@ from zope.component import getUtility
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
-from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
@@ -41,6 +40,9 @@ from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 from lazr.restful.testing.webservice import WebServiceCaller
+from lp.testing import ANONYMOUS, login, login_person, logout
+from lp.testing.factory import LaunchpadObjectFactory
+
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
@@ -164,6 +166,21 @@ def first_tag_by_class(content, class_):
     return find_tags_by_class(content, class_, True)
 
 
+def extract_all_script_and_style_links(content):
+    """Find and return all thetags with the given name."""
+    strainer = SoupStrainer(['script', 'link'])
+    soup = BeautifulSoup(content, parseOnlyThese=strainer)
+    links = []
+    link_attr = {u'link': 'href', u'script': 'src'}
+    for script_or_style in BeautifulSoup.findAll(soup):
+        attrs = dict(script_or_style.attrs)
+        link = attrs.get(link_attr[script_or_style.name], None)
+        if link:
+            links.append(link)
+
+    return "\n".join(links)
+
+
 def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
     match_classes = set(class_.split())
@@ -226,6 +243,24 @@ def print_feedback_messages(content):
     for message in get_feedback_messages(content):
         print message
 
+def print_table(content, columns=None, skip_rows=None, sep="\t"):
+    """Given a <table> print the content of each row.
+
+    The table is printed using `sep` as the separator.
+    :param columns   a list of the column numbers (zero-based) to be included
+                     in the output.  If None all columns are printed.
+    :param skip_rows a list of row numbers (zero-based) to be skipped.  If
+                     None no rows are skipped.
+    :param sep       the separator to be used between output items.
+    """
+    for row_num, row in enumerate(content.findAll('tr')):
+        if skip_rows is not None and row_num in skip_rows:
+            continue
+        row_content = []
+        for col_num, item in enumerate(row.findAll('td')):
+            if columns is None or col_num in columns:
+                row_content.append(extract_text(item))
+        print sep.join(row_content)
 
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
@@ -507,15 +542,26 @@ def print_location(contents):
 def print_location_apps(contents):
     """Print the application tabs' text and URL."""
     location_apps = find_tag_by_id(contents, 'lp-apps')
-    for tab in location_apps.findAll('span'):
-        tab_text = extract_text(tab)
-        if tab['class'].find('active') != -1:
-            tab_text += ' (selected)'
-        if tab.a:
-            link = tab.a['href']
-        else:
-            link = 'not linked'
-        print "* %s - %s" % (tab_text, link)
+    if location_apps is None:
+        location_apps = first_tag_by_class(contents, 'watermark-apps-portlet')
+        if location_apps is not None:
+            location_apps = location_apps.ul.findAll('li')
+    else:
+        location_apps = location_apps.findAll('span')
+    if location_apps is None:
+        print "(Application tabs omitted)"
+    elif len(location_apps) == 0:
+        print "(No application tabs)"
+    else:
+        for tab in location_apps:
+            tab_text = extract_text(tab)
+            if tab['class'].find('active') != -1:
+                tab_text += ' (selected)'
+            if tab.a:
+                link = tab.a['href']
+            else:
+                link = 'not linked'
+            print "* %s - %s" % (tab_text, link)
 
 
 def print_tag_with_id(contents, id):
@@ -608,6 +654,8 @@ def setUpGlobs(test):
     # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
     test.globs['canonical_url'] = safe_canonical_url
     test.globs['factory'] = LaunchpadObjectFactory()
+    test.globs['extract_all_script_and_style_links'] = (
+        extract_all_script_and_style_links)
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
@@ -615,6 +663,7 @@ def setUpGlobs(test):
     test.globs['find_main_content'] = find_main_content
     test.globs['get_feedback_messages'] = get_feedback_messages
     test.globs['print_feedback_messages'] = print_feedback_messages
+    test.globs['print_table'] = print_table
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login

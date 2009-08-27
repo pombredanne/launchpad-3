@@ -40,16 +40,13 @@
     No FAQs.
   </p>
 
-  <p i18n:translate=""
-     tal:condition="view/matching_questions_count">
+  <p tal:condition="view/matching_questions_count">
     You can also consult the list of
     <a href="#" tal:attributes="href view/matching_questions_url"
-       ><tal:count i18n:name="count"
-                   replace="view/matching_questions_count" /> question(s)</a>
+       ><tal:count replace="view/matching_questions_count" /> question(s)</a>
     matching
-    &ldquo;<tal:keywords i18n:name="search_text"
-                          replace="view/search_text"
-                          >Keywords</tal:keywords>&rdquo;.
+    &ldquo;<tal:keywords replace="view/search_text"
+                         >Keywords</tal:keywords>&rdquo;.
   </p>
 
   <tal:results condition="faqs">
@@ -57,8 +54,10 @@
         class="faq">
       <li tal:repeat="faq faqs/batch"
           tal:attributes="title faq/content/fmt:shorten/320"
-          ><a href="#" tal:attributes="href faq/fmt:url"
-              tal:content="faq/title">How do I do this?</a></li>
+          ><a href="#" 
+              tal:attributes="href faq/fmt:url"
+              tal:content="faq/title"
+              class="sprite question">How do I do this?</a></li>
     </ul>
     <tal:navigation replace="structure faqs/@@+navigation-links-lower" />
   </tal:results>

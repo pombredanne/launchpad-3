@@ -1,4 +1,7 @@
 #!/usr/bin/python2.4
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This script runs through the set of Debbugs watches, and tries to
 # syncronise each of those to the malone bug which is watching it.
@@ -12,8 +15,8 @@ import _pythonpath
 # zope bits
 from zope.component import getUtility
 
-from canonical.launchpad.scripts import debbugs
-from canonical.launchpad.scripts.base import (LaunchpadCronScript,
+from lp.bugs.scripts import debbugs
+from lp.services.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (IBugSet,
     ILaunchpadCelebrities, InvalidEmailMessage, IBugTaskSet,

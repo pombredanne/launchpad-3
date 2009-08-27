@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta name="generator" content=
-"HTML Tidy for Linux/x86 (vers 6 November 2007), see www.w3.org" />
+"HTML Tidy for Linux/x86 (vers 7 December 2008), see www.w3.org" />
 <title>Index for launchpad_dev</title>
 <meta http-equiv="Content-Type" content=
 "text/html; charset=us-ascii" />
@@ -121,7 +121,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2009-03-04</p>
+Dumped on 2009-05-19</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -131,6 +131,7 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.account">account</a></li>
 <li><a href=
 "#public.table.accountpassword">accountpassword</a></li>
+<li><a href="#public.view.alllocks">alllocks</a></li>
 <li><a href="#public.table.announcement">announcement</a></li>
 <li><a href="#public.table.answercontact">answercontact</a></li>
 <li><a href="#public.table.archive">archive</a></li>
@@ -252,9 +253,12 @@ launchpad_dev</a></h1>
 "#public.table.distroseriespackagecache">distroseriespackagecache</a></li>
 <li><a href="#public.table.emailaddress">emailaddress</a></li>
 <li><a href="#public.table.entitlement">entitlement</a></li>
+<li><a href="#public.view.exclusivelocks">exclusivelocks</a></li>
 <li><a href="#public.table.faq">faq</a></li>
 <li><a href=
 "#public.table.featuredproject">featuredproject</a></li>
+<li><a href=
+"#public.table.flatpackagesetinclusion">flatpackagesetinclusion</a></li>
 <li><a href="#public.table.fticache">fticache</a></li>
 <li><a href="#public.table.gpgkey">gpgkey</a></li>
 <li><a href="#public.table.hwdevice">hwdevice</a></li>
@@ -263,7 +267,12 @@ launchpad_dev</a></h1>
 "#public.table.hwdevicedriverlink">hwdevicedriverlink</a></li>
 <li><a href=
 "#public.table.hwdevicenamevariant">hwdevicenamevariant</a></li>
+<li><a href="#public.table.hwdmihandle">hwdmihandle</a></li>
+<li><a href="#public.table.hwdmivalue">hwdmivalue</a></li>
 <li><a href="#public.table.hwdriver">hwdriver</a></li>
+<li><a href="#public.view.hwdrivernames">hwdrivernames</a></li>
+<li><a href=
+"#public.view.hwdriverpackagenames">hwdriverpackagenames</a></li>
 <li><a href="#public.table.hwsubmission">hwsubmission</a></li>
 <li><a href=
 "#public.table.hwsubmissionbug">hwsubmissionbug</a></li>
@@ -338,9 +347,14 @@ launchpad_dev</a></h1>
 "#public.table.oauthrequesttoken">oauthrequesttoken</a></li>
 <li><a href="#public.table.officialbugtag">officialbugtag</a></li>
 <li><a href=
-"#public.table.openidassociations">openidassociations</a></li>
+"#public.table.openidassociation">openidassociation</a></li>
 <li><a href=
 "#public.table.openidauthorization">openidauthorization</a></li>
+<li><a href=
+"#public.table.openidconsumerassociation">openidconsumerassociation</a></li>
+<li><a href=
+"#public.table.openidconsumernonce">openidconsumernonce</a></li>
+<li><a href="#public.table.openidnonce">openidnonce</a></li>
 <li><a href="#public.table.openidrpconfig">openidrpconfig</a></li>
 <li><a href=
 "#public.table.openidrpsummary">openidrpsummary</a></li>
@@ -351,6 +365,11 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.packagediff">packagediff</a></li>
 <li><a href=
 "#public.table.packageselection">packageselection</a></li>
+<li><a href="#public.table.packageset">packageset</a></li>
+<li><a href=
+"#public.table.packagesetinclusion">packagesetinclusion</a></li>
+<li><a href=
+"#public.table.packagesetsources">packagesetsources</a></li>
 <li><a href="#public.table.packageupload">packageupload</a></li>
 <li><a href=
 "#public.table.packageuploadbuild">packageuploadbuild</a></li>
@@ -419,6 +438,7 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.requestedcds">requestedcds</a></li>
 <li><a href="#public.table.revision">revision</a></li>
 <li><a href="#public.table.revisionauthor">revisionauthor</a></li>
+<li><a href="#public.table.revisioncache">revisioncache</a></li>
 <li><a href="#public.view.revisionnumber">revisionnumber</a></li>
 <li><a href="#public.table.revisionparent">revisionparent</a></li>
 <li><a href=
@@ -511,13 +531,14 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.function.-killall-backends-text">_killall_backends( text
 )</a></li>
+<li><a href="#public.function.activity">activity( )</a></li>
 <li><a href=
-"#public.function.assert-patch-applied-ARRAY-0x91beb80-integer-integer-integer">
-assert_patch_applied( ARRAY(0x91beb80) integer, integer, integer
+"#public.function.assert-patch-applied-ARRAY-0x9c64070-integer-integer-integer">
+assert_patch_applied( ARRAY(0x9c64070) integer, integer, integer
 )</a></li>
 <li><a href=
-"#public.function.debversion-sort-key-ARRAY-0x91bebd0-text">debversion_sort_key(
-ARRAY(0x91bebd0) text )</a></li>
+"#public.function.debversion-sort-key-ARRAY-0x9c640c0-text">debversion_sort_key(
+ARRAY(0x9c640c0) text )</a></li>
 <li><a href=
 "#public.function.generate-openid-identifier">generate_openid_identifier(
 )</a></li>
@@ -532,6 +553,18 @@ text )</a></li>
 <li><a href="#public.function.is-team-integer">is_team( integer
 )</a></li>
 <li><a href="#public.function.is-team-text">is_team( text
+)</a></li>
+<li><a href=
+"#public.function.mv-branch-distribution-update">mv_branch_distribution_update(
+)</a></li>
+<li><a href=
+"#public.function.mv-branch-distroseries-update">mv_branch_distroseries_update(
+)</a></li>
+<li><a href=
+"#public.function.mv-branch-person-update">mv_branch_person_update(
+)</a></li>
+<li><a href=
+"#public.function.mv-branch-product-update">mv_branch_product_update(
 )</a></li>
 <li><a href=
 "#public.function.mv-pillarname-distribution">mv_pillarname_distribution(
@@ -549,11 +582,23 @@ text )</a></li>
 "#public.function.name-blacklist-match-text">name_blacklist_match(
 text )</a></li>
 <li><a href=
-"#public.function.null-count-ARRAY-0x91bee60-anyarray">null_count(
-ARRAY(0x91bee60) anyarray )</a></li>
+"#public.function.null-count-ARRAY-0x9c646d0-anyarray">null_count(
+ARRAY(0x9c646d0) anyarray )</a></li>
 <li><a href=
-"#public.function.person-sort-key-ARRAY-0x91bee00-text-text">person_sort_key(
-ARRAY(0x91bee00) text, text )</a></li>
+"#public.function.packageset-deleted-trig">packageset_deleted_trig(
+)</a></li>
+<li><a href=
+"#public.function.packageset-inserted-trig">packageset_inserted_trig(
+)</a></li>
+<li><a href=
+"#public.function.packagesetinclusion-deleted-trig">packagesetinclusion_deleted_trig(
+)</a></li>
+<li><a href=
+"#public.function.packagesetinclusion-inserted-trig">packagesetinclusion_inserted_trig(
+)</a></li>
+<li><a href=
+"#public.function.person-sort-key-ARRAY-0x9c642f0-text-text">person_sort_key(
+ARRAY(0x9c642f0) text, text )</a></li>
 <li><a href=
 "#public.function.plpython-call-handler">plpython_call_handler(
 )</a></li>
@@ -588,6 +633,9 @@ ARRAY(0x91bee00) text, text )</a></li>
 <li><a href="#public.function.sha1-text">sha1( text )</a></li>
 <li><a href="#public.function.ulower-text">ulower( text )</a></li>
 <li><a href=
+"#public.function.update-branch-name-cache">update_branch_name_cache(
+)</a></li>
+<li><a href=
 "#public.function.valid-absolute-url-text">valid_absolute_url( text
 )</a></li>
 <li><a href=
@@ -615,6 +663,12 @@ text )</a></li>
 </ul>
 </li>
 <li><a name="todrop.schema" id="todrop.schema">todrop</a></li>
+<li style="list-style: none; display: inline">
+<ul>
+<li><a href=
+"#todrop.table.openidassociations">openidassociations</a></li>
+</ul>
+</li>
 <li><a name="ts2.schema" id="ts2.schema">ts2</a></li>
 <li style="list-style: none; display: inline">
 <ul>
@@ -959,6 +1013,91 @@ SSHA digest encrypted password.</td>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
+<h2>View: <a href="#public.schema">public</a>.<a name=
+"public.view.alllocks" id="public.view.alllocks">alllocks</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.alllocks Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>procpid</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>usename</td>
+<td>name</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>age</td>
+<td>interval</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>relname</td>
+<td>name</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>mode</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>granted</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>current_query</td>
+<td>text</td>
+<td></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+<!-- View Definition -->
+<pre>
+SELECT a.procpid
+, a.usename
+, (now
+     () - a.query_start
+) AS age
+, c.relname
+, l.mode
+, l.granted
+, a.current_query 
+FROM (
+     (pg_locks l 
+        JOIN pg_class c 
+          ON (
+                 (l.relation = c.oid)
+           )
+     )
+LEFT JOIN pg_stat_activity a 
+    ON (
+           (a.procpid = l.pid)
+     )
+);
+</pre>
+<!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.announcement" id=
 "public.table.announcement">announcement</a></h2>
@@ -1225,15 +1364,6 @@ Whether or not the PPA is enabled for accepting uploads.</td>
 Size, in MiB, allowed for this PPA.</td>
 </tr>
 <tr class="tr1">
-<td></td>
-<td>whiteboard</td>
-<td>text</td>
-<td><br />
-<br />
-Administrator comments about interventions made in the PPA
-configuration.</td>
-</tr>
-<tr class="tr0">
 <td><a href=
 "#public.table.distribution">public.distribution.id</a></td>
 <td>distribution</td>
@@ -1242,7 +1372,7 @@ configuration.</td>
 <br />
 The distribution that uses this archive.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>purpose</td>
 <td>integer</td>
@@ -1251,7 +1381,7 @@ The distribution that uses this archive.</td>
 The purpose of this archive, e.g. COMMERCIAL. See the
 ArchivePurpose DBSchema item.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>private</td>
 <td>boolean</td>
@@ -1260,7 +1390,7 @@ ArchivePurpose DBSchema item.</td>
 Whether or not the archive is private. This affects the global
 visibility of the archive.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>sources_cached</td>
 <td>integer</td>
@@ -1268,7 +1398,7 @@ visibility of the archive.</td>
 <br />
 Number of sources already cached for this archive.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>binaries_cached</td>
 <td>integer</td>
@@ -1276,7 +1406,7 @@ Number of sources already cached for this archive.</td>
 <br />
 Number of binaries already cached for this archive.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>package_description_cache</td>
 <td>text</td>
@@ -1286,19 +1416,19 @@ Text blob containing all source and binary names and descriptions
 concatenated. Used to to build the tsearch indexes on this
 table.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>fti</td>
 <td>ts2.tsvector</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>buildd_secret</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>require_virtualized</td>
 <td>boolean</td>
@@ -1307,21 +1437,23 @@ table.</td>
 Whether this archive has binaries that should be built on a virtual
 machine, e.g. PPAs</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>name</td>
 <td>text</td>
 <td><i>NOT NULL DEFAULT 'default'::text</i><br />
 <br />
-Whether this archive should be published.</td>
+The name of the archive.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>publish</td>
 <td>boolean</td>
-<td><i>NOT NULL DEFAULT true</i></td>
+<td><i>NOT NULL DEFAULT true</i><br />
+<br />
+Whether this archive should be published.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>date_updated</td>
 <td>timestamp without time zone</td>
@@ -1330,7 +1462,7 @@ Whether this archive should be published.</td>
 <br />
 When were the rebuild statistics last updated?</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>total_count</td>
 <td>integer</td>
@@ -1339,7 +1471,7 @@ When were the rebuild statistics last updated?</td>
 How many source packages are in the rebuild archive
 altogether?</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>pending_count</td>
 <td>integer</td>
@@ -1347,7 +1479,7 @@ altogether?</td>
 <br />
 How many packages still need building?</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>succeeded_count</td>
 <td>integer</td>
@@ -1355,7 +1487,7 @@ How many packages still need building?</td>
 <br />
 How many source packages were built sucessfully?</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>failed_count</td>
 <td>integer</td>
@@ -1363,7 +1495,7 @@ How many source packages were built sucessfully?</td>
 <br />
 How many packages failed to build?</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>building_count</td>
 <td>integer</td>
@@ -1371,13 +1503,13 @@ How many packages failed to build?</td>
 <br />
 How many packages are building at present?</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>date_created</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.gpgkey">public.gpgkey.id</a></td>
 <td>signing_key</td>
 <td>integer</td>
@@ -1385,7 +1517,7 @@ How many packages are building at present?</td>
 <br />
 The GpgKey used for signing this archive.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>removed_binary_retention_days</td>
 <td>integer</td>
@@ -1394,7 +1526,7 @@ The GpgKey used for signing this archive.</td>
 The number of days before superseded or deleted binary files are
 expired in the librarian, or zero for never.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>num_old_versions_published</td>
 <td>integer</td>
@@ -1402,6 +1534,14 @@ expired in the librarian, or zero for never.</td>
 <br />
 The number of versions of a package to keep published before older
 versions are superseded.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>displayname</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+User defined displayname for this archive.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -1749,6 +1889,25 @@ The component to which this upload permission applies.</td>
 The source package name to which this permission applies. This can
 be used to provide package-level permissions to single users.</td>
 </tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.packageset">public.packageset.id</a></td>
+<td>packageset</td>
+<td>integer</td>
+<td><br />
+<br />
+The package set to which this permission applies.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>explicit</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+This flag is set for package sets containing high-profile packages
+that must not break and/or require specialist skills for proper
+handling e.g. the kernel.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -1760,9 +1919,9 @@ be used to provide package-level permissions to single users.</td>
 <th>Constraint</th>
 </tr>
 <tr class="tr0">
-<td>component_or_sourcepackagename</td>
-<td>CHECK (((component IS NULL) OR (sourcepackagename IS
-NULL)))</td>
+<td>one_target</td>
+<td>CHECK ((null_count(ARRAY[packageset, component,
+sourcepackagename]) = 2))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -1771,7 +1930,8 @@ archivepermission__archive__component__permission__idx archive,
 component, permission
 archivepermission__archive__sourcepackagename__permission__idx
 archive, sourcepackagename, permission
-archivepermission__person__archive__idx person, archive 
+archivepermission__packageset__idx packageset) WHERE (packageset IS
+NOT NULL archivepermission__person__archive__idx person, archive 
 <!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -3263,6 +3423,24 @@ The distribution series that the branch belongs to.</td>
 <br />
 The source package this is a branch of.</td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>owner_name</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>target_suffix</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>unique_name</td>
+<td>text</td>
+<td><i>UNIQUE</i></td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -3353,11 +3531,12 @@ branch__date_created__idx date_created
 branch__last_scanned__owner__idx last_scanned, owner) WHERE
 (last_scanned IS NOT NULL branch__next_mirror_time__idx
 next_mirror_time) WHERE (next_mirror_time IS NOT NULL
-branch__private__idx private branch__product__id__idx product, id
-branch__registrant__idx registrant branch__reviewer__idx reviewer
-branch__stacked_on__idx stacked_on) WHERE (stacked_on IS NOT NULL
-branch_author_idx author branch_owner_idx owner 
-<!-- View Definition -->
+branch__owner_name__idx owner_name branch__private__idx private
+branch__product__id__idx product, id branch__registrant__idx
+registrant branch__reviewer__idx reviewer branch__stacked_on__idx
+stacked_on) WHERE (stacked_on IS NOT NULL
+branch__target_suffix__idx target_suffix branch_author_idx author
+branch_owner_idx owner <!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -3902,25 +4081,25 @@ public</a></p>
 <td></td>
 <td>id</td>
 <td>serial</td>
-<td><i>UNIQUE#3 PRIMARY KEY</i></td>
+<td><i>UNIQUE#1 PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>sequence</td>
 <td>integer</td>
-<td><i>UNIQUE#4</i></td>
+<td><i>UNIQUE#2</i></td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.branch">public.branch.id</a></td>
 <td>branch</td>
 <td>integer</td>
-<td><i>UNIQUE#1 UNIQUE#2 UNIQUE#3 UNIQUE#4 NOT NULL</i></td>
+<td><i>UNIQUE#3 UNIQUE#4 UNIQUE#1 UNIQUE#2 NOT NULL</i></td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.revision">public.revision.id</a></td>
 <td>revision</td>
 <td>integer</td>
-<td><i>UNIQUE#1 UNIQUE#2 NOT NULL</i></td>
+<td><i>UNIQUE#3 UNIQUE#4 NOT NULL</i></td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -7033,6 +7212,12 @@ with the owner.</td>
 How often should this import be updated. If NULL, defaults to a
 system-wide value set by the Launchpad administrators.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>git_repo_url</td>
+<td>text</td>
+<td></td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -7045,12 +7230,16 @@ system-wide value set by the Launchpad administrators.</td>
 </tr>
 <tr class="tr0">
 <td>valid_vcs_details</td>
-<td>CHECK (CASE WHEN (rcs_type = 1) THEN (((((cvs_root IS NOT NULL)
-AND (cvs_root &lt;&gt; ''::text)) AND (cvs_module IS NOT NULL)) AND
-(cvs_module &lt;&gt; ''::text)) AND (svn_branch_url IS NULL)) WHEN
-(rcs_type = 2) THEN ((((cvs_root IS NULL) AND (cvs_module IS NULL))
-AND (svn_branch_url IS NOT NULL)) AND
-valid_absolute_url(svn_branch_url)) ELSE false END)</td>
+<td>CHECK (CASE WHEN (rcs_type = 1) THEN ((((((cvs_root IS NOT
+NULL) AND (cvs_root &lt;&gt; ''::text)) AND (cvs_module IS NOT
+NULL)) AND (cvs_module &lt;&gt; ''::text)) AND (svn_branch_url IS
+NULL)) AND (git_repo_url IS NULL)) WHEN ((rcs_type = 2) OR
+(rcs_type = 3)) THEN (((((cvs_root IS NULL) AND (cvs_module IS
+NULL)) AND (svn_branch_url IS NOT NULL)) AND
+valid_absolute_url(svn_branch_url)) AND (git_repo_url IS NULL))
+WHEN (rcs_type = 4) THEN ((((cvs_root IS NULL) AND (cvs_module IS
+NULL)) AND (svn_branch_url IS NULL)) AND (git_repo_url IS NOT
+NULL)) ELSE false END)</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -9859,6 +10048,10 @@ update.</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.revisioncache">public.revisioncache</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.sectionselection">public.sectionselection</a></li>
 </ul>
 <ul>
@@ -10353,6 +10546,80 @@ date_expires, person, state <!-- View Definition -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
+<h2>View: <a href="#public.schema">public</a>.<a name=
+"public.view.exclusivelocks" id=
+"public.view.exclusivelocks">exclusivelocks</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.exclusivelocks Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>procpid</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>usename</td>
+<td>name</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>age</td>
+<td>interval</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>relname</td>
+<td>name</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>mode</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>granted</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>current_query</td>
+<td>text</td>
+<td></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+<!-- View Definition -->
+<pre>
+SELECT alllocks.procpid
+, alllocks.usename
+, alllocks.age
+, alllocks.relname
+, alllocks.mode
+, alllocks.granted
+, alllocks.current_query 
+FROM alllocks 
+WHERE (alllocks.mode !~~ '%Share%'::text);
+</pre>
+<!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.faq" id="public.table.faq">faq</a></h2>
 <p>A technical document containing the answer to a common
@@ -10521,6 +10788,55 @@ A reference to PillarName.id</td>
 <!-- Indexes -->
 featuredproject__pillar_name__idx pillar_name 
 <!-- View Definition -->
+ <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.flatpackagesetinclusion" id=
+"public.table.flatpackagesetinclusion">flatpackagesetinclusion</a></h2>
+<p>In order to facilitate the querying of set-subset relationships
+an expanded or flattened representation of the set-subset hierarchy
+is provided by this table.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.flatpackagesetinclusion Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.packageset">public.packageset.id</a></td>
+<td>parent</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The package set that is (directly or indirectly) including a
+subset.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.packageset">public.packageset.id</a></td>
+<td>child</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The package set that is being included as a subset.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+flatpackagesetinclusion__child__idx child <!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -10955,6 +11271,114 @@ hwdevicenamevariant__product_name__idx product_name
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwdmihandle" id=
+"public.table.hwdmihandle">hwdmihandle</a></h2>
+<p>A DMI Handle appearing in the DMI data of a submission.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwdmihandle Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>handle</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The ID of the handle.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>type</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The type of the handle.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwsubmission">public.hwsubmission.id</a></td>
+<td>submission</td>
+<td>integer</td>
+<td></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.hwdmivalue">public.hwdmivalue</a></li>
+</ul>
+<!-- Indexes -->
+hwdmihandle__submission__idx submission <!-- View Definition -->
+ <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwdmivalue" id=
+"public.table.hwdmivalue">hwdmivalue</a></h2>
+<p>Key/value pairs of DMI data of a handle.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwdmivalue Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>key</td>
+<td>text</td>
+<td><br />
+<br />
+The key.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>value</td>
+<td>text</td>
+<td><br />
+<br />
+The value</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwdmihandle">public.hwdmihandle.id</a></td>
+<td>handle</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The handle to which this key/value pair belongs.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+hwdmivalue__hanlde__idx handle <!-- View Definition -->
+ <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.hwdriver" id=
 "public.table.hwdriver">hwdriver</a></h2>
 <p>Information about a driver for a device</p>
@@ -11007,6 +11431,96 @@ The name of a driver.</td>
 hwdriver__name__idx name hwvendorname__name__idx name 
 <!-- View Definition -->
  <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>View: <a href="#public.schema">public</a>.<a name=
+"public.view.hwdrivernames" id=
+"public.view.hwdrivernames">hwdrivernames</a></h2>
+<p>A view returning the distinct driver names stored in
+HWDriver.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwdrivernames Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><br />
+<br />
+The name of a driver.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+<!-- View Definition -->
+<pre>
+SELECT DISTINCT 
+ON (hwdriver.name) hwdriver.id
+, hwdriver.name 
+FROM hwdriver 
+ORDER BY hwdriver.name
+, hwdriver.id;
+</pre>
+<!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>View: <a href="#public.schema">public</a>.<a name=
+"public.view.hwdriverpackagenames" id=
+"public.view.hwdriverpackagenames">hwdriverpackagenames</a></h2>
+<p>A view returning the distinct Debian package names stored in
+HWDriver.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwdriverpackagenames Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>package_name</td>
+<td>text</td>
+<td><br />
+<br />
+The Debian package name a driver is a part of.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+<!-- View Definition -->
+<pre>
+SELECT DISTINCT 
+ON (hwdriver.package_name) hwdriver.id
+, hwdriver.package_name 
+FROM hwdriver 
+ORDER BY hwdriver.package_name
+, hwdriver.id;
+</pre>
+<!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
@@ -11143,6 +11657,9 @@ The email address of the submitter.</td>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.hwdmihandle">public.hwdmihandle</a></li>
+</ul>
 <ul>
 <li><a href=
 "#public.table.hwsubmissionbug">public.hwsubmissionbug</a></li>
@@ -13204,7 +13721,7 @@ The number of downloads.</td>
 <td><a href="#public.table.country">public.country.id</a></td>
 <td>country</td>
 <td>integer</td>
-<td><br />
+<td><i>UNIQUE#1</i><br />
 <br />
 The country from where the download requests came from.</td>
 </tr>
@@ -14126,7 +14643,7 @@ This allows for optional sorting by date.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>visible</td>
+<td>active</td>
 <td>boolean</td>
 <td><i>NOT NULL DEFAULT true</i><br />
 <br />
@@ -14170,13 +14687,20 @@ but are moving to being on series/distroseries.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>description</td>
+<td>summary</td>
 <td>text</td>
 <td><br />
 <br />
-A description of the milestone. This can be used to summarize the
-changes included in past milestones and to document the status of
-current milestones.</td>
+This can be used to summarize the changes included in past
+milestones and to document the status of current milestones.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>codename</td>
+<td>text</td>
+<td><br />
+<br />
+A fun or easier to remember name for the milestone/release.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -14908,6 +15432,9 @@ NULL)))</td>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
+<li><a href="#public.table.oauthnonce">public.oauthnonce</a></li>
+</ul>
+<ul>
 <li><a href=
 "#public.table.webserviceban">public.webserviceban</a></li>
 </ul>
@@ -15037,7 +15564,8 @@ made.</td>
 The nonce itself.</td>
 </tr>
 <tr class="tr1">
-<td></td>
+<td><a href=
+"#public.table.oauthaccesstoken">public.oauthaccesstoken.id</a></td>
 <td>access_token</td>
 <td>integer</td>
 <td><i>UNIQUE#1 NOT NULL</i><br />
@@ -15049,7 +15577,9 @@ The access token.</td>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
-oauthnonce__access_token__idx access_token <!-- View Definition -->
+oauthnonce__access_token__idx access_token
+oauthnonce__request_timestamp__idx request_timestamp 
+<!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -15282,10 +15812,10 @@ NULL)))</td>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.openidassociations" id=
-"public.table.openidassociations">openidassociations</a></h2>
+"public.table.openidassociation" id=
+"public.table.openidassociation">openidassociation</a></h2>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.openidassociations Structure</caption>
+<caption>public.openidassociation Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -15333,7 +15863,7 @@ public</a></p>
 <!-- Constraint List -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.openidassociations Constraints</caption>
+<caption>public.openidassociation Constraints</caption>
 <tr>
 <th>Name</th>
 <th>Constraint</th>
@@ -15406,6 +15936,154 @@ openidauthorixation__account__troot__expires__client_id__idx
 account, trust_root, date_expires, client_id 
 <!-- View Definition -->
  <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.openidconsumerassociation" id=
+"public.table.openidconsumerassociation">openidconsumerassociation</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.openidconsumerassociation Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>server_url</td>
+<td>character varying(2047)</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>handle</td>
+<td>character varying(255)</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>secret</td>
+<td>bytea</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>issued</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>lifetime</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>assoc_type</td>
+<td>character varying(64)</td>
+<td></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.openidconsumerassociation Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>secret_length_constraint</td>
+<td>CHECK ((length(secret) &lt;= 128))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.openidconsumernonce" id=
+"public.table.openidconsumernonce">openidconsumernonce</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.openidconsumernonce Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>server_url</td>
+<td>character varying(2047)</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>timestamp</td>
+<td>integer</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>salt</td>
+<td>character(40)</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.openidnonce" id=
+"public.table.openidnonce">openidnonce</a></h2>
+<p>Nonces for our OpenID consumer.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.openidnonce Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>server_url</td>
+<td>character varying(2047)</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>timestamp</td>
+<td>integer</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>salt</td>
+<td>character(40)</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+<!-- View Definition -->
+<!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
@@ -15490,6 +16168,15 @@ This RP can query for membership of any or all teams, including
 private teams. This setting overrides any other private team query
 ACLs, and should not be used if more granular options are
 suitable.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>auto_authorize</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+True if the user authorisation page is skipped by default for this
+RP.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -15969,6 +16656,190 @@ public</a></p>
 <!-- Indexes -->
 <!-- View Definition -->
 <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.packageset" id=
+"public.table.packageset">packageset</a></h2>
+<p>Package sets facilitate the grouping of packages for purposes
+like the control of upload permissions, et.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.packageset Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_created</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<br />
+Date and time of creation.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>owner</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The Person or team who owns the package set</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The name for the package set on hand.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>description</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The description for the package set on hand.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.packageset Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>packageset_name_check</td>
+<td>CHECK (valid_name(name))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.archivepermission">public.archivepermission</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.flatpackagesetinclusion">public.flatpackagesetinclusion</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.packagesetinclusion">public.packagesetinclusion</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.packagesetsources">public.packagesetsources</a></li>
+</ul>
+<!-- Indexes -->
+packageset__owner__idx owner <!-- View Definition -->
+ <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.packagesetinclusion" id=
+"public.table.packagesetinclusion">packagesetinclusion</a></h2>
+<p>sets may form a set-subset hierarchy; this table facilitates the
+definition of these set-subset relationships.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.packagesetinclusion Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.packageset">public.packageset.id</a></td>
+<td>parent</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The package set that is including a subset.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.packageset">public.packageset.id</a></td>
+<td>child</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The package set that is being included as a subset.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+packagesetinclusion__child__idx child <!-- View Definition -->
+ <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.packagesetsources" id=
+"public.table.packagesetsources">packagesetsources</a></h2>
+<p>This table associates package sets and source package names.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.packagesetsources Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.packageset">public.packageset.id</a></td>
+<td>packageset</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The associated package set.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
+<td>sourcepackagename</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The associated source package name.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+packagesetsources__sourcepackagename__idx sourcepackagename 
+<!-- View Definition -->
+ <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
@@ -16988,6 +17859,9 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 <li><a href="#public.table.packagediff">public.packagediff</a></li>
 </ul>
 <ul>
+<li><a href="#public.table.packageset">public.packageset</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.packaging">public.packaging</a></li>
 </ul>
 <ul>
@@ -17077,14 +17951,6 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 <ul>
 <li><a href=
 "#public.table.seriessourcepackagebranch">public.seriessourcepackagebranch</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.shipitsurvey">public.shipitsurvey</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.shippingrequest">public.shippingrequest</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -17822,35 +18688,41 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
+<td>diverged</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
 <td>translation0</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>translation1</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>translation2</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>translation3</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>translation4</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>translation5</td>
 <td>text</td>
@@ -17887,7 +18759,7 @@ SELECT (
 , pofile.topcomment AS translation_file_comment
 , pofile.header AS translation_header
 , pofile.fuzzyheader AS is_translation_header_fuzzy
-, potmsgset.sequence
+, translationtemplateitem.sequence
 , potmsgset.id AS potmsgset
 , translationmessage.comment
 , potmsgset.sourcecomment AS source_comment
@@ -17898,6 +18770,7 @@ SELECT (
 , msgid_plural.msgid AS msgid_plural
 , translationmessage.is_current
 , translationmessage.is_imported
+, translationmessage.potemplate AS diverged
 , potranslation0.translation AS translation0
 , potranslation1.translation AS translation1
 , potranslation2.translation AS translation2
@@ -17914,10 +18787,16 @@ FROM (
                                          (
                                                (
                                                      (
-                                                           (potmsgset 
+                                                           (
+                                                                 (potmsgset 
+                                                                    JOIN translationtemplateitem 
+                                                                      ON (
+                                                                             (translationtemplateitem.potmsgset = potmsgset.id)
+                                                                       )
+                                                                 )
                                                               JOIN potemplate 
                                                                 ON (
-                                                                       (potemplate.id = potmsgset.potemplate)
+                                                                       (potemplate.id = translationtemplateitem.potemplate)
                                                                  )
                                                            )
                                                         JOIN pofile 
@@ -17929,10 +18808,17 @@ FROM (
                                                     ON (
                                                            (
                                                                  (
-                                                                       (potmsgset.id = translationmessage.potmsgset)
-                                                                     AND (translationmessage.pofile = pofile.id)
+                                                                       (
+                                                                             (potmsgset.id = translationmessage.potmsgset)
+                                                                           AND (translationmessage.is_current IS TRUE)
+                                                                       )
+                                                                     AND (translationmessage.language = pofile.language)
                                                                  )
-                                                               AND (translationmessage.is_current IS TRUE)
+                                                               AND (NOT 
+                                                                       (translationmessage.variant IS DISTINCT 
+                                                                          FROM pofile.variant
+                                                                       )
+                                                                 )
                                                            )
                                                      )
                                                )
@@ -18285,8 +19171,8 @@ When was added latest translation message.</td>
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
 pofiletranslator__date_last_touched__idx date_last_touched
-pofiletranslator__latest_message__idx latest_message 
-<!-- View Definition -->
+pofiletranslator__latest_message__idx latest_message
+pofiletranslator__pofile__idx pofile <!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -18967,7 +19853,7 @@ SELECT COALESCE
 , potemplate.id AS potemplate
 , potemplate.header AS template_header
 , potemplate.languagepack
-, potmsgset.sequence
+, translationtemplateitem.sequence
 , potmsgset.id AS potmsgset
 , potmsgset.commenttext AS comment
 , potmsgset.sourcecomment AS source_comment
@@ -18978,10 +19864,16 @@ SELECT COALESCE
 , msgid_plural.msgid AS msgid_plural 
 FROM (
      (
-           (potmsgset 
+           (
+                 (potmsgset 
+                    JOIN translationtemplateitem 
+                      ON (
+                             (translationtemplateitem.potmsgset = potmsgset.id)
+                       )
+                 )
               JOIN potemplate 
                 ON (
-                       (potemplate.id = potmsgset.potemplate)
+                       (potemplate.id = translationtemplateitem.potemplate)
                  )
            )
    LEFT JOIN pomsgid msgid_singular 
@@ -19031,7 +19923,7 @@ The singular msgid for this message.</td>
 <td></td>
 <td>sequence</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The position of this message set inside the potemplate.</td>
 </tr>
@@ -19040,7 +19932,7 @@ The position of this message set inside the potemplate.</td>
 "#public.table.potemplate">public.potemplate.id</a></td>
 <td>potemplate</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The potemplate where this message set is stored.</td>
 </tr>
@@ -19108,7 +20000,16 @@ The plural msgid for this message.</td>
 "#public.table.translationtemplateitem">public.translationtemplateitem</a></li>
 </ul>
 <!-- Indexes -->
-potmsgset_potemplate_and_sequence_idx potemplate, sequence
+potmsgset__context__msgid_singular__msgid_plural__idx context,
+msgid_singular, msgid_plural) WHERE ((context IS NOT NULL) AND
+(msgid_plural IS NOT NULL)
+potmsgset__context__msgid_singular__no_msgid_plural__idx context,
+msgid_singular) WHERE ((context IS NOT NULL) AND (msgid_plural IS
+NULL) potmsgset__no_context__msgid_singular__msgid_plural__idx
+msgid_singular, msgid_plural) WHERE ((context IS NULL) AND
+(msgid_plural IS NOT NULL)
+potmsgset__no_context__msgid_singular__no_msgid_plural__idx
+msgid_singular) WHERE ((context IS NULL) AND (msgid_plural IS NULL)
 potmsgset_primemsgid_idx msgid_singular potmsgset_sequence_idx
 sequence <!-- View Definition -->
  <!-- List off permissions -->
@@ -19919,6 +20820,10 @@ NULL)))</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.revisioncache">public.revisioncache</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.specification">public.specification</a></li>
 </ul>
 <ul>
@@ -20116,77 +21021,48 @@ Evolution 1.5.4.</p>
 <td></td>
 <td>datereleased</td>
 <td>timestamp without time zone</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>version</td>
-<td>text</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
+<td><i>NOT NULL</i><br />
 <br />
-This is a text field containing the version string for this
-release, such as '1.2.4' or '2.0.38' or '7.4.3'.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>codename</td>
-<td>text</td>
-<td></td>
+The date when this version of the product was released.</td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>description</td>
+<td>release_notes</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+Description of changes in this product release.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>changelog</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+Detailed description of changes in this product release.</td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>summary</td>
-<td>text</td>
-<td><br />
+<td><i>NOT NULL</i><br />
 <br />
-A summary of this ProductRelease. This should be a very brief
-overview of changes and highlights, just a short paragraph of text.
-The summary is usually displayed in bold at the top of a page for
-this product release, above the more detailed description or
-changelog.</td>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.productseries">public.productseries.id</a></td>
-<td>productseries</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
-<br />
-A pointer to the Product Series this release forms part of. Using a
-Product Series allows us to distinguish between releases on stable
-and development branches of a product even if they are interspersed
-in time.</td>
+The person who created this product release.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>datecreated</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text,
-('now'::text)::timestamp(6) with time zone)</i></td>
+('now'::text)::timestamp(6) with time zone)</i><br />
+<br />
+The timestamp when this product release was created.</td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.milestone">public.milestone.id</a></td>
 <td>milestone</td>
 <td>integer</td>
-<td><i>UNIQUE</i><br />
+<td><i>UNIQUE NOT NULL</i><br />
 <br />
 The milestone for this product release. This is scheduled to become
 a NOT NULL column, so every product release will be linked to a
@@ -20195,18 +21071,6 @@ unique milestone.</td>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.productrelease Constraints</caption>
-<tr>
-<th>Name</th>
-<th>Constraint</th>
-</tr>
-<tr class="tr0">
-<td>valid_version</td>
-<td>CHECK (sane_version(version))</td>
-</tr>
-</table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
@@ -20345,19 +21209,19 @@ ProductSeries</p>
 <td></td>
 <td>id</td>
 <td>serial</td>
-<td><i>PRIMARY KEY UNIQUE#3</i></td>
+<td><i>PRIMARY KEY UNIQUE#2</i></td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.product">public.product.id</a></td>
 <td>product</td>
 <td>integer</td>
-<td><i>UNIQUE#1 UNIQUE#3 NOT NULL</i></td>
+<td><i>UNIQUE#3 UNIQUE#2 NOT NULL</i></td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
+<td><i>UNIQUE#3 NOT NULL</i><br />
 <br />
 The name of the ProductSeries is like a unix name, it should not
 contain any spaces and should start with a letter or number. Good
@@ -20376,15 +21240,6 @@ displayed at the top of the page, in bold, just beneath the title
 and above the description, if there is a description field.</td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.branch">public.branch.id</a></td>
-<td>import_branch</td>
-<td>integer</td>
-<td><i>UNIQUE</i><br />
-<br />
-The VCS imports branch for this product series. If user_branch is
-not set, then this is considered the product series branch.</td>
-</tr>
-<tr class="tr1">
 <td></td>
 <td>importstatus</td>
 <td>integer</td>
@@ -20395,7 +21250,7 @@ upstream code from its revision control system and publish that in
 the baz revision control system. The allowed values are documented
 in ImportStatus.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>datelastsynced</td>
 <td>timestamp without time zone</td>
@@ -20404,13 +21259,13 @@ in ImportStatus.</td>
 The timestamp when we last successfully completed a production sync
 of this upstream repository.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>syncinterval</td>
 <td>interval</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>rcstype</td>
 <td>integer</td>
@@ -20422,31 +21277,31 @@ NULL, then there should be no CVS or SVN information attached to
 this productseries, otherwise the relevant fields for CVS or SVN
 etc should be filled out.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>cvsroot</td>
 <td>text</td>
-<td><i>UNIQUE#2</i><br />
+<td><i>UNIQUE#1</i><br />
 <br />
 The CVS root where this productseries hosts its code. Only used if
 rcstype is CVS.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>cvsmodule</td>
 <td>text</td>
-<td><i>UNIQUE#2</i><br />
+<td><i>UNIQUE#1</i><br />
 <br />
 The CVS branch that contains the upstream code for this
 productseries. Only used if rcstype is CVS.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>cvsbranch</td>
 <td>text</td>
-<td><i>UNIQUE#2</i></td>
+<td><i>UNIQUE#1</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>cvstarfileurl</td>
 <td>text</td>
@@ -20460,7 +21315,7 @@ and then process it all locally. Once imported, we switch back to
 using the CVS server for ongoing syncronization. Only used if
 rcstype is CVS.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>svnrepository</td>
 <td>text</td>
@@ -20470,7 +21325,7 @@ The URL of the SVN branch where the upstream productseries code can
 be found. This single URL is the equivalent of the cvsroot,
 cvsmodule and cvsbranch for CVS. Only used if rcstype is SVN.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>releasefileglob</td>
 <td>text</td>
@@ -20480,7 +21335,7 @@ A fileglob that lets us see which URLs are potentially new upstream
 tarball releases. For example:
 http://ftp.gnu.org/gnu/libtool/libtool-1.5.*.gz.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>releaseverstyle</td>
 <td>integer</td>
@@ -20491,7 +21346,7 @@ numbering system. The options are documented in
 dbschema.UpstreamReleaseVersionStyle. Most applications use Gnu
 style numbering, but there are other alternatives.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>dateautotested</td>
 <td>timestamp without time zone</td>
@@ -20504,7 +21359,7 @@ autotester allows us to find the low hanging fruit that is easily
 brought into the bazaar import system by highlighting repositories
 which had no apparent difficulty in being imported.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>dateprocessapproved</td>
 <td>timestamp without time zone</td>
@@ -20515,7 +21370,7 @@ processing. Processing means it has passed autotesting, and is
 being moved towards production syncing. If the sync goes well, it
 will be approved for sync and then be fully in production.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>datesyncapproved</td>
 <td>timestamp without time zone</td>
@@ -20524,7 +21379,7 @@ will be approved for sync and then be fully in production.</td>
 The timestamp when this upstream import was certified for ongoing
 syncronisation.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>datestarted</td>
 <td>timestamp without time zone</td>
@@ -20533,7 +21388,7 @@ syncronisation.</td>
 The timestamp when we last initiated an import test or sync of this
 upstream repository.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>datefinished</td>
 <td>timestamp without time zone</td>
@@ -20542,14 +21397,14 @@ upstream repository.</td>
 The timestamp when we last completed an import test or sync of this
 upstream repository.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>datecreated</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text,
 ('now'::text)::timestamp(6) with time zone)</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>driver</td>
 <td>integer</td>
@@ -20561,21 +21416,11 @@ product drivers and project drivers can also do this for any series
 in the product or project, so use this only for the specific team
 responsible for this specific series.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.branch">public.branch.id</a></td>
-<td>user_branch</td>
-<td>integer</td>
-<td><br />
-<br />
-The branch for this product series, as set by the user. If this is
-not set, then import_branch is considered to be the product series
-branch</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -20602,9 +21447,25 @@ The current status of this productseries.</td>
 <td>integer</td>
 <td><i>NOT NULL DEFAULT 1</i><br />
 <br />
-At what level the import of translations from a branch in
-codehosting will happen: None, POT files only, POT and PO files.
-See also the corresponding Enum.</td>
+Level of translations imports from codehosting branch: None,
+templates only, templates and translations. See
+TranslationsBranchImportMode.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>branch</td>
+<td>integer</td>
+<td><br />
+<br />
+The branch for this product series.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>translations_branch</td>
+<td>integer</td>
+<td><br />
+<br />
+Branch to push translations updates to.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -20663,10 +21524,6 @@ IS NULL) = (cvsbranch IS NULL))))</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.productrelease">public.productrelease</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.productseriescodeimport">public.productseriescodeimport</a></li>
 </ul>
 <ul>
@@ -20682,6 +21539,8 @@ IS NULL) = (cvsbranch IS NULL))))</td>
 "#public.table.translationimportqueueentry">public.translationimportqueueentry</a></li>
 </ul>
 <!-- Indexes -->
+productseries__branch__idx branch) WHERE (branch IS NOT NULL
+productseries__translations_branch__idx translations_branch
 productseries_datecreated_idx datecreated <!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -22205,6 +23064,10 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
+"#public.table.revisioncache">public.revisioncache</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.revisionparent">public.revisionparent</a></li>
 </ul>
 <ul>
@@ -22274,8 +23137,122 @@ the email address of the revision author.</td>
 <ul>
 <li><a href="#public.table.revision">public.revision</a></li>
 </ul>
+<ul>
+<li><a href=
+"#public.table.revisioncache">public.revisioncache</a></li>
+</ul>
 <!-- Indexes -->
 revisionauthor__email__idx email revisionauthor__person__idx person
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.revisioncache" id=
+"public.table.revisioncache">revisioncache</a></h2>
+<p>A cache of revisions where the revision date is in the last 30
+days.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.revisioncache Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.revision">public.revision.id</a></td>
+<td>revision</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+A reference to the actual revision.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.revisionauthor">public.revisionauthor.id</a></td>
+<td>revision_author</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+A refernce to the revision author for the revision.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>revision_date</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL</i><br />
+<br />
+The date the revision was made. Should be within 30 days of today
+(or the cleanup code is not cleaning up).</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.product">public.product.id</a></td>
+<td>product</td>
+<td>integer</td>
+<td><br />
+<br />
+The product that the revision is found in (if it is indeed in a
+particular product).</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
+<td>integer</td>
+<td><br />
+<br />
+The distroseries for which a source package branch contains the
+revision.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
+<td>sourcepackagename</td>
+<td>integer</td>
+<td><br />
+<br />
+The sourcepackagename for which a source package branch contains
+the revision.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>private</td>
+<td>boolean</td>
+<td><i>NOT NULL</i><br />
+<br />
+True if the revision is only found in private branches, False if it
+can be found in a non-private branch.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.revisioncache Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>valid_target</td>
+<td>CHECK ((((distroseries IS NULL) = (sourcepackagename IS NULL))
+AND (((distroseries IS NULL) AND (product IS NULL)) OR
+((distroseries IS NULL) &lt;&gt; (product IS NULL)))))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+revisioncache__revision__idx revision
+revisioncache__revision_author__idx revision_author
+revisioncache__revision_date__idx revision_date 
 <!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -23075,7 +24052,7 @@ The sourcepackagename the branch is linked to.</td>
 <td><a href="#public.table.branch">public.branch.id</a></td>
 <td>branch</td>
 <td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
+<td><i>NOT NULL</i><br />
 <br />
 The branch being linked to a distribution suite.</td>
 </tr>
@@ -23172,8 +24149,8 @@ user.</p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
+<td></td>
+<td>account</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
@@ -23199,7 +24176,7 @@ user.</p>
 "#public.table.shipitsurveyresult">public.shipitsurveyresult</a></li>
 </ul>
 <!-- Indexes -->
-shipitsurvey__person__idx person <!-- View Definition -->
+shipitsurvey__account__idx account <!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -23433,7 +24410,7 @@ public</a></p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
+<td></td>
 <td>recipient</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
@@ -23441,7 +24418,7 @@ public</a></p>
 The person who requested.</td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
+<td></td>
 <td>whoapproved</td>
 <td>integer</td>
 <td><br />
@@ -23449,7 +24426,7 @@ The person who requested.</td>
 The person who approved this.</td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
+<td></td>
 <td>whocancelled</td>
 <td>integer</td>
 <td><br />
@@ -23596,6 +24573,12 @@ back).</td>
 <td><br />
 <br />
 The type of the request.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>is_admin_request</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i></td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -24019,6 +25002,10 @@ A lowercase name identifying one or more sourcepackages</td>
 "#public.table.packageselection">public.packageselection</a></li>
 </ul>
 <ul>
+<li><a href=
+"#public.table.packagesetsources">public.packagesetsources</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.packaging">public.packaging</a></li>
 </ul>
 <ul>
@@ -24029,6 +25016,10 @@ A lowercase name identifying one or more sourcepackages</td>
 </ul>
 <ul>
 <li><a href="#public.table.question">public.question</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.revisioncache">public.revisioncache</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -26679,7 +27670,7 @@ reviewed by someone and when was it reviewed.</p>
 <td><a href="#public.table.pofile">public.pofile.id</a></td>
 <td>pofile</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The translation file which this translation message is part
 of.</td>
@@ -26889,19 +27880,23 @@ Whether this translation was obsolete in last imported file.</td>
 "#public.table.pofiletranslator">public.pofiletranslator</a></li>
 </ul>
 <!-- Indexes -->
-translationmessage__current_or_imported__idx potmsgset) WHERE
-((is_current IS TRUE) OR (is_imported IS TRUE)
+tm__potmsgset__language__variant__not_used__idx potmsgset,
+language, variant) WHERE (NOT ((is_current IS TRUE) AND
+(is_imported IS TRUE)) translationmessage__current_or_imported__idx
+potmsgset) WHERE ((is_current IS TRUE) OR (is_imported IS TRUE)
+translationmessage__language__no_variant__submitter__idx language,
+submitter) WHERE (variant IS NULL
+translationmessage__language__variant__submitter__idx language,
+variant, submitter) WHERE (variant IS NOT NULL
 translationmessage__msgstr0__idx msgstr0
 translationmessage__msgstr1__idx msgstr1) WHERE (msgstr1 IS NOT
 NULL translationmessage__msgstr2__idx msgstr2) WHERE (msgstr2 IS
 NOT NULL translationmessage__msgstr3__idx msgstr3) WHERE (msgstr3
 IS NOT NULL translationmessage__msgstr4__idx msgstr4) WHERE
 (msgstr4 IS NOT NULL translationmessage__msgstr5__idx msgstr5)
-WHERE (msgstr5 IS NOT NULL
-translationmessage__pofile__submitter__idx pofile, submitter
+WHERE (msgstr5 IS NOT NULL translationmessage__pofile__idx pofile
 translationmessage__potmsgset__idx potmsgset
-translationmessage__potmsgset__pofile__not_used__key potmsgset,
-pofile) WHERE (NOT ((is_current IS TRUE) AND (is_imported IS TRUE))
+translationmessage__potmsgset__language__idx potmsgset, language
 translationmessage__reviewer__idx reviewer
 translationmessage__submitter__idx submitter 
 <!-- View Definition -->
@@ -27010,12 +28005,13 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td>translationtemplateitem_sequence_check</td>
-<td>CHECK ((sequence &gt; 0))</td>
+<td>CHECK ((sequence &gt;= 0))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
-translationtemplateitem__potmsgset__idx potmsgset 
+translationtemplateitem__potemplate__sequence__idx potemplate,
+sequence translationtemplateitem__potmsgset__idx potmsgset 
 <!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -27555,10 +28551,31 @@ before all the others have been killed.</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
-"public.function.assert-patch-applied-ARRAY-0x91beb80-integer-integer-integer"
+"public.function.activity" id="public.function.activity">activity(
+)</a></h2>
+<h3>Returns: SET OF pg_stat_activity</h3>
+<h3>Language: SQL</h3>
+<p>SECURITY DEFINER wrapper around pg_stat_activity allowing
+unprivileged users to access most of its information.</p>
+<pre>
+    SELECT
+        datid, datname, procpid, usesysid, usename,
+        CASE
+            WHEN current_query LIKE '&lt;IDLE&gt;%'
+                THEN current_query
+            ELSE
+                NULL
+        END AS current_query,
+        waiting, xact_start, query_start,
+        backend_start, client_addr, client_port
+    FROM pg_catalog.pg_stat_activity;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.assert-patch-applied-ARRAY-0x9c64070-integer-integer-integer"
 id=
-"public.function.assert-patch-applied-ARRAY-0x91beb80-integer-integer-integer">assert_patch_applied(
-ARRAY(0x91beb80) integer, integer, integer )</a></h2>
+"public.function.assert-patch-applied-ARRAY-0x9c64070-integer-integer-integer">assert_patch_applied(
+ARRAY(0x9c64070) integer, integer, integer )</a></h2>
 <h3>Returns: boolean</h3>
 <h3>Language: PLPYTHONU</h3>
 <p>Raise an exception if the given database patch has not been
@@ -27576,9 +28593,9 @@ applied.</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
-"public.function.debversion-sort-key-ARRAY-0x91bebd0-text" id=
-"public.function.debversion-sort-key-ARRAY-0x91bebd0-text">debversion_sort_key(
-ARRAY(0x91bebd0) text )</a></h2>
+"public.function.debversion-sort-key-ARRAY-0x9c640c0-text" id=
+"public.function.debversion-sort-key-ARRAY-0x9c640c0-text">debversion_sort_key(
+ARRAY(0x9c640c0) text )</a></h2>
 <h3>Returns: text</h3>
 <h3>Language: PLPYTHONU</h3>
 <p>Return a string suitable for sorting debian version strings
@@ -27751,6 +28768,90 @@ table</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.mv-branch-distribution-update" id=
+"public.function.mv-branch-distribution-update">mv_branch_distribution_update(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Maintain Branch name cache when Distribution is modified.</p>
+<pre>
+BEGIN
+    IF OLD.id != NEW.id THEN
+        RAISE EXCEPTION 'Cannot change Distribution.id';
+    END IF;
+    IF OLD.name != NEW.name THEN
+        UPDATE Branch SET unique_name = NULL
+        FROM DistroSeries
+        WHERE Branch.distroseries = Distroseries.id
+            AND Distroseries.distribution = NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.mv-branch-distroseries-update" id=
+"public.function.mv-branch-distroseries-update">mv_branch_distroseries_update(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Maintain Branch name cache when Distroseries is modified.</p>
+<pre>
+BEGIN
+    IF OLD.id != NEW.id THEN
+        RAISE EXCEPTION 'Cannot change Distroseries.id';
+    END IF;
+    IF OLD.name != NEW.name THEN
+        UPDATE Branch SET unique_name = NULL
+        WHERE Branch.distroseries = NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.mv-branch-person-update" id=
+"public.function.mv-branch-person-update">mv_branch_person_update(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Maintain Branch name cache when Person is modified.</p>
+<pre>
+DECLARE
+    v_branch RECORD;
+BEGIN
+    IF OLD.id != NEW.id THEN
+        RAISE EXCEPTION 'Cannot change Person.id';
+    END IF;
+    IF OLD.name != NEW.name THEN
+        UPDATE Branch SET owner_name = NEW.name WHERE owner = NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.mv-branch-product-update" id=
+"public.function.mv-branch-product-update">mv_branch_product_update(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Maintain Branch name cache when Product is modified.</p>
+<pre>
+DECLARE
+    v_branch RECORD;
+BEGIN
+    IF OLD.id != NEW.id THEN
+        RAISE EXCEPTION 'Cannot change Product.id';
+    END IF;
+    IF OLD.name != NEW.name THEN
+        UPDATE Branch SET target_suffix = NEW.name WHERE product=NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
 "public.function.mv-pillarname-distribution" id=
 "public.function.mv-pillarname-distribution">mv_pillarname_distribution(
 )</a></h2>
@@ -27818,12 +28919,11 @@ END;
 <p>Trigger maintaining the POFileTranslator table</p>
 <pre>
 DECLARE
-    v_old_entry INTEGER;
     v_trash_old BOOLEAN;
 BEGIN
     -- If we are deleting a row, we need to remove the existing
     -- POFileTranslator row and reinsert the historical data if it exists.
-    -- We also treat UPDATEs that change the key (submitter, pofile) the same
+    -- We also treat UPDATEs that change the key (submitter) the same
     -- as deletes. UPDATEs that don't change these columns are treated like
     -- INSERTs below.
     IF TG_OP = 'INSERT' THEN
@@ -27832,32 +28932,52 @@ BEGIN
         v_trash_old := TRUE;
     ELSE -- UPDATE
         v_trash_old = (
-            OLD.submitter != NEW.submitter OR OLD.pofile != NEW.pofile
+            OLD.submitter != NEW.submitter
             );
     END IF;
 
     IF v_trash_old THEN
         -- Was this somebody's most-recently-changed message?
-        SELECT INTO v_old_entry id FROM POFileTranslator
+        DELETE FROM POFileTranslator
         WHERE latest_message = OLD.id;
 
-        IF v_old_entry IS NOT NULL THEN
-            -- Delete the old record.
-            DELETE FROM POFileTranslator
-            WHERE POFileTranslator.id = v_old_entry;
+        IF FOUND THEN
+            -- Delete old records.
 
             -- Insert a past record if there is one.
             INSERT INTO POFileTranslator (
                 person, pofile, latest_message, date_last_touched
                 )
-            SELECT DISTINCT ON (person, pofile)
-                submitter AS person,
-                pofile,
-                id,
-                greatest(date_created, date_reviewed)
-            FROM TranslationMessage
-            WHERE pofile = OLD.pofile AND submitter = OLD.submitter
-            ORDER BY submitter, pofile, date_created DESC, id DESC;
+            SELECT DISTINCT ON (person, pofile.id)
+                new_latest_message.submitter AS person,
+                pofile.id,
+                new_latest_message.id,
+                greatest(new_latest_message.date_created,
+                         new_latest_message.date_reviewed)
+              FROM POFile
+              JOIN TranslationTemplateItem AS old_template_item
+                ON (OLD.potmsgset =
+                     old_template_item.potmsgset) AND
+                   (old_template_item.potemplate = pofile.potemplate) AND
+                   (pofile.language
+                     IS NOT DISTINCT FROM OLD.language) AND
+                   (pofile.variant
+                     IS NOT DISTINCT FROM OLD.variant)
+              JOIN TranslationTemplateItem AS new_template_item
+                ON (old_template_item.potemplate =
+                     new_template_item.potemplate)
+              JOIN TranslationMessage AS new_latest_message
+                ON (new_latest_message.potmsgset =
+                     new_template_item.potmsgset) AND
+                   (new_latest_message.language
+                     IS NOT DISTINCT FROM OLD.language AND
+                   (new_latest_message.variant)
+                     IS NOT DISTINCT FROM OLD.variant)
+              WHERE
+                new_latest_message.submitter=OLD.submitter
+              ORDER BY new_latest_message.submitter, pofile.id,
+                       new_latest_message.date_created DESC,
+                       new_latest_message.id DESC;
         END IF;
 
         -- No NEW with DELETE, so we can short circuit and leave.
@@ -27872,14 +28992,28 @@ BEGIN
         SET
             date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
             latest_message = NEW.id
-        WHERE person = NEW.submitter AND pofile = NEW.pofile;
+        FROM POFile, TranslationTemplateItem
+        WHERE person = NEW.submitter AND
+              TranslationTemplateItem.potmsgset=NEW.potmsgset AND
+              TranslationTemplateItem.potemplate=pofile.potemplate AND
+              pofile.language=NEW.language AND
+              pofile.variant IS NOT DISTINCT FROM NEW.variant AND
+              POFileTranslator.pofile = pofile.id;
         IF found THEN
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         END IF;
 
         BEGIN
             INSERT INTO POFileTranslator (person, pofile, latest_message)
-            VALUES (NEW.submitter, NEW.pofile, NEW.id);
+            SELECT DISTINCT ON (NEW.submitter, pofile.id)
+                NEW.submitter, pofile.id, NEW.id
+              FROM TranslationTemplateItem
+              JOIN POFile
+                ON pofile.language = NEW.language AND
+                   pofile.variant IS NOT DISTINCT FROM NEW.variant AND
+                   pofile.potemplate = translationtemplateitem.potemplate
+              WHERE
+                TranslationTemplateItem.potmsgset = NEW.potmsgset;
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         EXCEPTION WHEN unique_violation THEN
             -- do nothing
@@ -27923,9 +29057,9 @@ match.</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
-"public.function.null-count-ARRAY-0x91bee60-anyarray" id=
-"public.function.null-count-ARRAY-0x91bee60-anyarray">null_count(
-ARRAY(0x91bee60) anyarray )</a></h2>
+"public.function.null-count-ARRAY-0x9c646d0-anyarray" id=
+"public.function.null-count-ARRAY-0x9c646d0-anyarray">null_count(
+ARRAY(0x9c646d0) anyarray )</a></h2>
 <h3>Returns: integer</h3>
 <h3>Language: PLPGSQL</h3>
 <p>Return the number of NULLs in the first row of the given
@@ -27945,9 +29079,184 @@ END;
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
-"public.function.person-sort-key-ARRAY-0x91bee00-text-text" id=
-"public.function.person-sort-key-ARRAY-0x91bee00-text-text">person_sort_key(
-ARRAY(0x91bee00) text, text )</a></h2>
+"public.function.packageset-deleted-trig" id=
+"public.function.packageset-deleted-trig">packageset_deleted_trig(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Remove any DAG edges leading to/from the deleted package
+set.</p>
+<pre>
+BEGIN
+    DELETE FROM flatpackagesetinclusion
+      WHERE parent = OLD.id AND child = OLD.id;
+
+    -- A package set was deleted; it may have participated in package set
+    -- inclusion relations in a sub/superset role; delete all inclusion
+    -- relationships in which it participated.
+    DELETE FROM packagesetinclusion
+      WHERE parent = OLD.id OR child = OLD.id;
+    RETURN OLD;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.packageset-inserted-trig" id=
+"public.function.packageset-inserted-trig">packageset_inserted_trig(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Insert self-referencing DAG edge when a new package set is
+inserted.</p>
+<pre>
+BEGIN
+    -- A new package set was inserted; make it a descendent of itself in
+    -- the flattened package set inclusion table in order to facilitate
+    -- querying.
+    INSERT INTO flatpackagesetinclusion(parent, child)
+      VALUES (NEW.id, NEW.id);
+    RETURN NULL;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.packagesetinclusion-deleted-trig" id=
+"public.function.packagesetinclusion-deleted-trig">packagesetinclusion_deleted_trig(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Maintain the transitive closure in the DAG when an edge leading
+to/from a package set is deleted.</p>
+<pre>
+BEGIN
+    -- A package set inclusion relationship was deleted i.e. a set M
+    -- ceases to include another set N as a subset.
+    -- For an explanation of the queries below please see page 5 of
+    -- "Maintaining Transitive Closure of Graphs in SQL"
+    -- http://www.comp.nus.edu.sg/~wongls/psZ/dlsw-ijit97-16.ps
+    CREATE TEMP TABLE tmp_fpsi_suspect(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+    CREATE TEMP TABLE tmp_fpsi_trusted(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+    CREATE TEMP TABLE tmp_fpsi_good(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+
+    INSERT INTO tmp_fpsi_suspect (
+        SELECT X.parent, Y.child
+        FROM flatpackagesetinclusion X, flatpackagesetinclusion Y
+        WHERE X.child = OLD.parent AND Y.parent = OLD.child
+      UNION
+        SELECT X.parent, OLD.child FROM flatpackagesetinclusion X
+        WHERE X.child = OLD.parent
+      UNION
+        SELECT OLD.parent, X.child FROM flatpackagesetinclusion X
+        WHERE X.parent = OLD.child
+      UNION
+        SELECT OLD.parent, OLD.child
+        );
+
+    INSERT INTO tmp_fpsi_trusted (
+        SELECT parent, child FROM flatpackagesetinclusion
+        EXCEPT
+        SELECT parent, child FROM tmp_fpsi_suspect
+      UNION
+        SELECT parent, child FROM packagesetinclusion psi
+        WHERE psi.parent != OLD.parent AND psi.child != OLD.child
+        );
+
+    INSERT INTO tmp_fpsi_good (
+        SELECT parent, child FROM tmp_fpsi_trusted
+      UNION
+        SELECT T1.parent, T2.child
+        FROM tmp_fpsi_trusted T1, tmp_fpsi_trusted T2
+        WHERE T1.child = T2.parent
+      UNION
+        SELECT T1.parent, T3.child
+        FROM tmp_fpsi_trusted T1, tmp_fpsi_trusted T2, tmp_fpsi_trusted T3
+        WHERE T1.child = T2.parent AND T2.child = T3.parent
+        );
+
+    DELETE FROM flatpackagesetinclusion fpsi
+    WHERE NOT EXISTS (
+        SELECT * FROM tmp_fpsi_good T
+        WHERE T.parent = fpsi.parent AND T.child = fpsi.child);
+
+    DROP TABLE tmp_fpsi_good;
+    DROP TABLE tmp_fpsi_trusted;
+    DROP TABLE tmp_fpsi_suspect;
+
+    RETURN OLD;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.packagesetinclusion-inserted-trig" id=
+"public.function.packagesetinclusion-inserted-trig">packagesetinclusion_inserted_trig(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Maintain the transitive closure in the DAG for a newly inserted
+edge leading to/from a package set.</p>
+<pre>
+BEGIN
+    DECLARE
+        parent_name text;
+        child_name text;
+    BEGIN
+        IF EXISTS(
+            SELECT * FROM flatpackagesetinclusion
+            WHERE parent = NEW.child AND child = NEW.parent LIMIT 1)
+        THEN
+            SELECT name INTO parent_name FROM packageset WHERE id = NEW.parent;
+            SELECT name INTO child_name FROM packageset WHERE id = NEW.child;
+            RAISE EXCEPTION 'Package set % already includes %. Adding (% -&gt; %) would introduce a cycle in the package set graph (DAG).', child_name, parent_name, parent_name, child_name;
+        END IF;
+    END;
+    -- A new package set inclusion relationship was inserted i.e. a set M
+    -- now includes another set N as a subset.
+    -- For an explanation of the queries below please see page 4 of
+    -- "Maintaining Transitive Closure of Graphs in SQL"
+    -- http://www.comp.nus.edu.sg/~wongls/psZ/dlsw-ijit97-16.ps
+    CREATE TEMP TABLE tmp_fpsi_new(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+
+    INSERT INTO tmp_fpsi_new (
+        SELECT
+            X.parent AS parent, NEW.child AS child
+        FROM flatpackagesetinclusion X WHERE X.child = NEW.parent
+      UNION
+        SELECT
+            NEW.parent AS parent, X.child AS child
+        FROM flatpackagesetinclusion X WHERE X.parent = NEW.child
+      UNION
+        SELECT
+            X.parent AS parent, Y.child AS child
+        FROM flatpackagesetinclusion X, flatpackagesetinclusion Y
+        WHERE X.child = NEW.parent AND Y.parent = NEW.child
+        );
+    INSERT INTO tmp_fpsi_new(parent, child) VALUES(NEW.parent, NEW.child);
+
+    INSERT INTO flatpackagesetinclusion(parent, child) (
+        SELECT
+            parent, child FROM tmp_fpsi_new
+        EXCEPT
+        SELECT F.parent, F.child FROM flatpackagesetinclusion F
+        );
+
+    DROP TABLE tmp_fpsi_new;
+
+    RETURN NULL;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.person-sort-key-ARRAY-0x9c642f0-text-text" id=
+"public.function.person-sort-key-ARRAY-0x9c642f0-text-text">person_sort_key(
+ARRAY(0x9c642f0) text, text )</a></h2>
 <h3>Returns: text</h3>
 <h3>Language: PLPYTHONU</h3>
 <p>Return a string suitable for sorting people on, generated by
@@ -28332,6 +29641,58 @@ digits</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.update-branch-name-cache" id=
+"public.function.update-branch-name-cache">update_branch_name_cache(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Maintain the cached name columns in Branch.</p>
+<pre>
+DECLARE
+    needs_update boolean := FALSE;
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        needs_update := TRUE;
+    ELSIF (NEW.owner_name IS NULL
+        OR NEW.unique_name IS NULL
+        OR OLD.owner_name &lt;&gt; NEW.owner_name
+        OR OLD.unique_name &lt;&gt; NEW.unique_name
+        OR (NEW.target_suffix IS NULL &lt;&gt; OLD.target_suffix IS NULL)
+        OR COALESCE(OLD.target_suffix, '') &lt;&gt; COALESCE(NEW.target_suffix, '')
+        OR OLD.name &lt;&gt; NEW.name
+        OR OLD.owner &lt;&gt; NEW.owner
+        OR COALESCE(OLD.product, -1) &lt;&gt; COALESCE(NEW.product, -1)
+        OR COALESCE(OLD.distroseries, -1) &lt;&gt; COALESCE(NEW.distroseries, -1)
+        OR COALESCE(OLD.sourcepackagename, -1)
+            &lt;&gt; COALESCE(NEW.sourcepackagename, -1)) THEN
+        needs_update := TRUE;
+    END IF;
+
+    IF needs_update THEN   
+        SELECT
+            Person.name AS owner_name,
+            COALESCE(Product.name, SPN.name) AS target_suffix,
+            '~' || Person.name || '/' || COALESCE(
+                Product.name,
+                Distribution.name || '/' || Distroseries.name
+                    || '/' || SPN.name,
+                '+junk') || '/' || NEW.name AS unique_name
+        INTO NEW.owner_name, NEW.target_suffix, NEW.unique_name
+        FROM Person
+        LEFT OUTER JOIN DistroSeries ON NEW.distroseries = DistroSeries.id
+        LEFT OUTER JOIN Product ON NEW.product = Product.id
+        LEFT OUTER JOIN Distribution
+            ON Distroseries.distribution = Distribution.id
+        LEFT OUTER JOIN SourcepackageName AS SPN
+            ON SPN.id = NEW.sourcepackagename
+        WHERE Person.id = NEW.owner;
+    END IF;
+
+    RETURN NEW;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
 "public.function.valid-absolute-url-text" id=
 "public.function.valid-absolute-url-text">valid_absolute_url( text
 )</a></h2>
@@ -28520,6 +29881,75 @@ per the TeamParticipationUsage page on the Launchpad wiki</p>
 <!-- todroptodrop -->
 <hr />
 <h1>Schema todrop</h1>
+<hr />
+<h2>Table: <a href="#todrop.schema">todrop</a>.<a name=
+"todrop.table.openidassociations" id=
+"todrop.table.openidassociations">openidassociations</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>todrop.openidassociations Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>server_url</td>
+<td>character varying(2047)</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>handle</td>
+<td>character varying(255)</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>secret</td>
+<td>bytea</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>issued</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>lifetime</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>assoc_type</td>
+<td>character varying(64)</td>
+<td></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>todrop.openidassociations Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>secret_length_constraint</td>
+<td>CHECK ((length(secret) &lt;= 128))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#todrop.schema">Schema
+todrop</a></p>
 <!-- We've gone through the table structure, now lets take a look at user functions -->
 <!-- ts2ts2 -->
 <hr />

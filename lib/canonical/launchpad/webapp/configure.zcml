@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -51,18 +55,6 @@
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
         />
-    <!-- XXX StuartBishop 2009-03-04 bug=264783 Weee! Two OpenID Layers. -->
-    <adapter
-        for="canonical.launchpad.layers.IdLayer"
-        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
-        />
-    <adapter
-        for="canonical.launchpad.layers.OpenIDLayer"
-        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
-        />
-
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
         provides="canonical.launchpad.webapp.interfaces.IWebBrowserOriginatingRequest"
@@ -212,7 +204,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.browser.BugTaskListingItem"
+        for="lp.bugs.browser.bugtask.BugTaskListingItem"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
         name="image"
@@ -226,14 +218,14 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBuild"
+        for="lp.soyuz.interfaces.build.IBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
         name="image"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IArchive"
+        for="lp.soyuz.interfaces.archive.IArchive"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ArchiveImageDisplayAPI"
         name="image"
@@ -260,6 +252,13 @@
     <!-- The next directive is registered for all dicts, but we really only
          want it to apply to the page template's CONTEXTS dict.
       -->
+    <adapter
+        for="canonical.launchpad.interfaces.IPPA"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PPAFormatterAPI"
+        name="fmt"
+        />
+
     <adapter
         for="dict"
         provides="zope.traversing.interfaces.IPathAdapter"
@@ -373,7 +372,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBranch"
+        for="lp.code.interfaces.branch.IBranch"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchFormatterAPI"
         name="fmt"
@@ -394,35 +393,42 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBranchSubscription"
+        for="lp.code.interfaces.branchsubscription.IBranchSubscription"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchSubscriptionFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBranchMergeProposal"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchMergeProposalFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.diff.IPreviewDiff"
+        for="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SeriesSourcePackageBranchFormatter"
+        name="fmt"
+        />
+
+    <adapter
+        for="lp.code.interfaces.diff.IPreviewDiff"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.ICodeImport"
+        for="lp.code.interfaces.codeimport.ICodeImport"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
         name="fmt"
@@ -438,6 +444,12 @@
         for="canonical.launchpad.interfaces.IProductRelease"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ProductReleaseFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.registry.interfaces.productrelease.IProductReleaseFile"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ProductReleaseFileFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -465,12 +477,17 @@
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
         name="fmt"
         />
-
+    <adapter
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.traversing.interfaces.IPathAdapter"
@@ -738,11 +755,21 @@
       for="zope.schema.interfaces.IChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.SinglePopupWidget"
+      factory="canonical.widgets.popup.VocabularyPickerWidget"
       permission="zope.Public"
       />
 
-    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <!-- Define the widget used by PublicPersonChoice fields. -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="canonical.launchpad.fields.PublicPersonChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.popup.PersonPickerWidget"
+      permission="zope.Public"
+      />
+
+    <!-- Define the widget used by fields that use BranchVocabularyBase. -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice

@@ -1,13 +1,16 @@
 #!/usr/bin/python2.4
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 import _pythonpath
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.scripts.po_import import ImportProcess
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.translations.scripts.po_import import ImportProcess
+from lp.services.scripts.base import LaunchpadCronScript
 
 # Time goal for this run.  It is not exact.  The script will run for longer
 # than this time, but will know to stop taking on new batches of imports.

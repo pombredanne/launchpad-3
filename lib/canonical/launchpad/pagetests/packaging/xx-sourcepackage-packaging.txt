@@ -35,7 +35,7 @@ Now we can check if the Packaging record for "grumpy" is annotated:
   Upstream Project Series
   Ubuntu
   Grumpy
-  Mozilla Firefox Series: trunk
+  Mozilla Firefox trunk series
 
 
 The same Packaging record is also presented in "warty", because the
@@ -52,7 +52,7 @@ list of Packaging records depends only on the source package name:
   Upstream Project Series
   Ubuntu
   Grumpy
-  Mozilla Firefox Series: trunk
+  Mozilla Firefox trunk series
 
 
 Now, let's add a Packaging record to the warty context:
@@ -76,10 +76,10 @@ Now in the "warty" context both Packaging records are presented:
   Upstream Project Series
   Ubuntu
   Grumpy
-  Mozilla Firefox Series: trunk
+  Mozilla Firefox trunk series
   Ubuntu
   Warty
-  Mozilla Firefox Series: 1.0
+  Mozilla Firefox 1.0 series
 
 And the Packaging record for "warty" context is highlighted:
 
@@ -87,7 +87,7 @@ And the Packaging record for "warty" context is highlighted:
   ...    find_tags_by_class(user_browser.contents, 'highlight')[0])
   Ubuntu
   Warty
-  Mozilla Firefox Series: 1.0
+  Mozilla Firefox 1.0 series
 
 In the same way when we are back to the "grumpy" context the both
 stored Packaging records are presented but now, the "grumpy" Packaging
@@ -105,13 +105,13 @@ record is highlighted.
   Upstream Project Series
   Ubuntu
   Grumpy
-  Mozilla Firefox Series: trunk
+  Mozilla Firefox trunk series
   Ubuntu
   Warty
-  Mozilla Firefox Series: 1.0
+  Mozilla Firefox 1.0 series
 
   >>> print extract_text(
   ...     find_tags_by_class(user_browser.contents, 'highlight')[0])
   Ubuntu
   Grumpy
-  Mozilla Firefox Series: trunk
+  Mozilla Firefox trunk series

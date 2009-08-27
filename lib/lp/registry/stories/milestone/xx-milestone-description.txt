@@ -6,7 +6,7 @@ Let's make the sample user the owner of Ubuntu and alsa-utils for this test.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'name12'
-    >>> admin_browser.getControl('Change owner').click()
+    >>> admin_browser.getControl('Change').click()
 
     >>> admin_browser.open('http://launchpad.dev/alsa-utils/+edit-people')
     >>> admin_browser.getControl(name='field.owner').value = 'name12'
@@ -22,7 +22,7 @@ We can set the summary while creating a milestone for a Distribution.
     >>> test_browser.getControl('Name').value = 'milestone1'
     >>> test_browser.getControl('Summary').value = (
     ...     "Summary of first Ubuntu milestone.")
-    >>> test_browser.getControl('Register milestone').click()
+    >>> test_browser.getControl('Register Milestone').click()
 
 The summary appears on the milestone index page.
 
@@ -58,7 +58,7 @@ We can set the summary while creating a milestone for a Product.
     >>> test_browser.getControl('Name').value = 'milestone1'
     >>> test_browser.getControl('Summary').value = (
     ...     "Summary of first alsa-utils milestone.")
-    >>> test_browser.getControl('Register milestone').click()
+    >>> test_browser.getControl('Register Milestone').click()
 
 The summary appears on the milestone index page.
 

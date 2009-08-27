@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for codehosting."""
 
@@ -23,8 +24,9 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
+from lp.code.enums import BranchType
 from lp.code.interfaces.branch import (
-    BranchType, BranchCreationException, UnknownBranchTypeError)
+    BranchCreationException, UnknownBranchTypeError)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
@@ -34,7 +36,7 @@ from lp.code.interfaces.codehosting import (
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
-from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -97,11 +99,15 @@ class BranchPuller(LaunchpadXMLRPCView):
         """See `IBranchPuller`."""
         branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull()
         if branch is not None:
+            branch = removeSecurityProxy(branch)
             default_branch = branch.target.default_stacked_on_branch
-            if default_branch:
-                default_branch_name = default_branch.unique_name
-            else:
+            if default_branch is None:
                 default_branch_name = ''
+            elif (branch.branch_type == BranchType.MIRRORED
+                  and default_branch.private):
+                default_branch_name = ''
+            else:
+                default_branch_name = '/' + default_branch.unique_name
             return (branch.id, branch.getPullURL(), branch.unique_name,
                     default_branch_name, branch.branch_type.name)
         else:

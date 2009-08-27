@@ -1,5 +1,7 @@
 #!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sync Mailman data from one Launchpad to another."""
 
@@ -38,7 +40,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IMailingListSet, IPersonSet)
 from canonical.launchpad.mailman.config import configure_prefix
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 RSYNC_OPTIONS = ('-avz', '--delete')

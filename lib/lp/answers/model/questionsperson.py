@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -16,7 +17,7 @@ from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.question import QuestionPersonSearch
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import IPerson
 
 

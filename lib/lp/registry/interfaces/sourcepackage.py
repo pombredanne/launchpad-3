@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Source package interfaces."""
@@ -19,10 +21,9 @@ from zope.schema import Choice, Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.component import IComponent
-from lp.registry.interfaces.distribution import IDistribution
-from lazr.restful.fields import Reference
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.soyuz.interfaces.component import IComponent
+from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, operation_parameters,
@@ -63,7 +64,10 @@ class ISourcePackage(IBugTarget):
 
     distribution = exported(
         Reference(
-            IDistribution, title=_("Distribution"), required=True,
+            Interface,
+            # Really IDistribution, circular import fixed in
+            # _schema_circular_imports.
+            title=_("Distribution"), required=True,
             description=_("The distribution for this source package.")))
 
     # The interface for this is really IDistroSeries, but importing that would
@@ -82,9 +86,12 @@ class ISourcePackage(IBugTarget):
         "The best guess we have as to the Launchpad Project associated with "
         "this SourcePackage.")
 
+    # This is really a reference to an IProductSeries.
     productseries = exported(
-        Reference(
-            Interface, title=_("Product Series"), required=False,
+        ReferenceChoice(
+            title=_("Product Series"), required=False,
+            vocabulary="ProductSeries",
+            schema=Interface,
             description=_(
                 "The best guess we have as to the Launchpad ProductSeries "
                 "for this Source Package. Try find packaging information for "
@@ -123,6 +130,9 @@ class ISourcePackage(IBugTarget):
     development_version = Attribute(
         "This package on the distro's current series.")
 
+    distribution_sourcepackage = Attribute(
+        "The IDistributionSourcePackage for this source package.")
+
     def __getitem__(version):
         """Return the source package release with the given version in this
         distro series, or None."""
@@ -152,6 +162,13 @@ class ISourcePackage(IBugTarget):
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,
         and record that it was done by the owner.
+        """
+
+    def getSuiteSourcePackage(pocket):
+        """Return the `ISuiteSourcePackage` for this package in 'pocket'.
+
+        :param pocket: A `DBItem` of `PackagePublishingPocket`.
+        :return: An `ISuiteSourcePackage`.
         """
 
     def getPocketPath(pocket):

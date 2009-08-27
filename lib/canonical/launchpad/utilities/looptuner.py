@@ -1,4 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -44,8 +45,10 @@ class LoopTuner:
     and troughs in processing speed.
     """
 
-    def __init__(self, operation, goal_seconds, minimum_chunk_size=1,
-            maximum_chunk_size=1000000000, cooldown_time=None, log=None):
+    def __init__(
+        self, operation, goal_seconds,
+        minimum_chunk_size=1, maximum_chunk_size=1000000000,
+        abort_time=None, cooldown_time=None, log=None):
         """Initialize a loop, to be run to completion at most once.
 
         Parameters:
@@ -68,6 +71,9 @@ class LoopTuner:
         cooldown_time: time (in seconds, float) to sleep between consecutive
             operation runs.  Defaults to None for no sleep.
 
+        abort_time: abort the loop, logging a WARNING message, if the runtime
+            takes longer than this many seconds.
+
         log: The log object to use. DEBUG level messages are logged
             giving iteration statistics.
         """
@@ -77,6 +83,7 @@ class LoopTuner:
         self.minimum_chunk_size = minimum_chunk_size
         self.maximum_chunk_size = maximum_chunk_size
         self.cooldown_time = cooldown_time
+        self.abort_time = abort_time
         if log is None:
             self.log = canonical.launchpad.scripts.log
         else:
@@ -90,6 +97,13 @@ class LoopTuner:
         start_time = self._time()
         last_clock = start_time
         while not self.operation.isDone():
+
+            if (self.abort_time is not None
+                and last_clock >= start_time + self.abort_time):
+                self.log.warn(
+                    "Task aborted after %d seconds." % self.abort_time)
+                break
+
             self.operation(chunk_size)
 
             new_clock = self._time()
@@ -180,10 +194,10 @@ class DBLoopTuner(LoopTuner):
     """
 
     # We block until replication lag is under this threshold.
-    acceptable_replication_lag = timedelta(seconds=90) # In seconds.
+    acceptable_replication_lag = timedelta(seconds=30) # In seconds.
 
     # We block if there are transactions running longer than this threshold.
-    long_running_transaction = 60*60 # In seconds
+    long_running_transaction = 30*60 # In seconds
 
     def _blockWhenLagged(self):
         """When database replication lag is high, block until it drops."""
@@ -222,8 +236,9 @@ class DBLoopTuner(LoopTuner):
                     usename,
                     datname,
                     current_query
-                FROM pg_stat_activity
+                FROM activity()
                 WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
+                    AND datname = current_database()
                 """ % self.long_running_transaction).get_all())
             if not results:
                 break

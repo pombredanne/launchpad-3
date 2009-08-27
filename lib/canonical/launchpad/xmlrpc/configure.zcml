@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
@@ -51,13 +55,13 @@
 
   <securedutility
     class="canonical.launchpad.systemhomes.CodeImportSchedulerApplication"
-    provides="canonical.launchpad.interfaces.ICodeImportSchedulerApplication">
-    <allow interface="canonical.launchpad.interfaces.ICodeImportSchedulerApplication"/>
+    provides="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication">
+    <allow interface="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.ICodeImportSchedulerApplication"
-    interface="canonical.launchpad.interfaces.ICodeImportScheduler"
+    for="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"
+    interface="lp.code.interfaces.codeimportscheduler.ICodeImportScheduler"
     class="canonical.launchpad.xmlrpc.CodeImportSchedulerAPI"
     permission="zope.Public"
     />

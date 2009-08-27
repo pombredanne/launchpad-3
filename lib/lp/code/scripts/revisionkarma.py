@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The actual script class to allocate revisions."""
 
@@ -9,7 +10,7 @@ import transaction
 
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.code.interfaces.revision import IRevisionSet
 
 

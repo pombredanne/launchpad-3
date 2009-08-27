@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Classes to represent source packages in a distribution."""
@@ -17,20 +19,22 @@ from storm.expr import And, Desc, In
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.interfaces.structuralsubscription import IStructuralSubscriptionTarget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.distributionsourcepackagerelease import (
+from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
+from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
 from canonical.launchpad.database.structuralsubscription import (
@@ -49,9 +53,7 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(
-        IDistributionSourcePackage, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+    implements(IDistributionSourcePackage, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -81,8 +83,16 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def title(self):
         """See `IDistributionSourcePackage`."""
-        return smartquote('"%s" source package in %s') % (
+        return smartquote('"%s" package in %s') % (
             self.sourcepackagename.name, self.distribution.displayname)
+
+    @property
+    def development_version(self):
+        """See `IDistributionSourcePackage`."""
+        series = self.distribution.currentseries
+        if series is None:
+            return None
+        return series.getSourcePackage(self.sourcepackagename)
 
     @property
     def _self_in_database(self):
@@ -119,9 +129,6 @@ class DistributionSourcePackage(BugTargetBase,
     bug_reporting_guidelines = property(
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
-
-    def __getitem__(self, version):
-        return self.getVersion(version)
 
     @property
     def latest_overall_publication(self):
@@ -214,6 +221,55 @@ class DistributionSourcePackage(BugTargetBase,
                 result.append(candidate)
         return result
 
+    def findRelatedArchives(self,
+                            exclude_archive=None,
+                            archive_purpose=ArchivePurpose.PPA,
+                            required_karma=0):
+        """See `IDistributionSourcePackage`."""
+
+        extra_args = []
+
+        # Exclude the specified archive where appropriate
+        if exclude_archive is not None:
+            extra_args.append(Archive.id != exclude_archive.id)
+
+        # Filter by archive purpose where appropriate
+        if archive_purpose is not None:
+            extra_args.append(Archive.purpose == archive_purpose)
+
+        # Include only those archives containing the source package released
+        # by a person with karma for this source package greater than that
+        # specified.
+        if required_karma > 0:
+            extra_args.append(KarmaTotalCache.karma_total >= required_karma)
+
+        store = Store.of(self.distribution)
+        results = store.find(
+            Archive,
+            Archive.distribution == self.distribution,
+            Archive.private == False,
+            SourcePackagePublishingHistory.archive == Archive.id,
+            (SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED),
+            (SourcePackagePublishingHistory.sourcepackagerelease ==
+                SourcePackageRelease.id),
+            SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            # Ensure that the package was not copied.
+            SourcePackageRelease.upload_archive == Archive.id,
+            # Next, the joins for the ordering by soyuz karma of the
+            # SPR creator.
+            KarmaTotalCache.person == SourcePackageRelease.creatorID,
+            *extra_args
+            )
+
+        # Note: If and when we later have a field on IArchive to order by,
+        # such as IArchive.rank, we will then be able to return distinct
+        # results. As it is, we cannot return distinct results while ordering
+        # by a non-selected column.
+        results.order_by(Desc(KarmaTotalCache.karma_total))
+
+        return results
+
     @property
     def publishing_history(self):
         """See `IDistributionSourcePackage`."""
@@ -259,7 +315,7 @@ class DistributionSourcePackage(BugTargetBase,
     def getReleasesAndPublishingHistory(self):
         """See `IDistributionSourcePackage`."""
         # Local import of DistroSeries to avoid import loop.
-        from canonical.launchpad.database import DistroSeries
+        from lp.registry.model.distroseries import DistroSeries
         store = Store.of(self.distribution)
         result = store.find(
             (SourcePackageRelease, SourcePackagePublishingHistory),

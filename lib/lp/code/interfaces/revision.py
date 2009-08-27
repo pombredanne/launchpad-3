@@ -1,4 +1,6 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Revision interfaces."""
@@ -188,4 +190,21 @@ class IRevisionSet(Interface):
             project, where the revision_date is within `day_limit` number
             of days of now.  The results are ordered with the most recent
             revision_date first.
+        """
+
+    def updateRevisionCacheForBranch(branch):
+        """Update the RevisionCache table with the revisions from the branch.
+
+        Make sure that there is a reference in the RevisionCache table for all
+        revisions that are less than 30 days old that match the product or
+        source package for the branch.
+        """
+
+    def pruneRevisionCache(limit):
+        """Remove old rows from the RevisionCache.
+
+        All rows where the revision date is older than 30 days from now are
+        removed.
+
+        :param limit: Remove at most `limit` rows at once.
         """

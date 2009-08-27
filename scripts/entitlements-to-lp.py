@@ -1,5 +1,9 @@
 #!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0403
 
 __metaclass__ = type
 
@@ -8,11 +12,9 @@ import sys
 
 import _pythonpath
 
-from canonical.launchpad.scripts.base import LaunchpadScript
-from canonical.launchpad.scripts.entitlement import (
-    EntitlementExchange,
-    EntitlementImporter,
-    )
+from lp.services.scripts.base import LaunchpadScript
+from lp.registry.scripts.entitlement import (
+    EntitlementExchange, EntitlementImporter)
 
 
 class ImportEntitlementsScript(LaunchpadScript):
@@ -77,5 +79,6 @@ class ImportEntitlementsScript(LaunchpadScript):
         return 0
 
 if __name__ == '__main__':
-    script = ImportEntitlementsScript('canonical.launchpad.scripts.entitlements')
+    script = ImportEntitlementsScript(
+        'canonical.launchpad.scripts.entitlements')
     script.run()

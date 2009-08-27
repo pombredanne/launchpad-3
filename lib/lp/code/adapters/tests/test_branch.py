@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for branch-related components"""
 
@@ -7,9 +8,9 @@ from unittest import TestLoader, TestCase
 from canonical.testing import LaunchpadFunctionalLayer
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
-from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
+from lp.code.enums import BranchMergeProposalStatus
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestBranchMergeProposalDelta(TestCase):

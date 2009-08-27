@@ -1,0 +1,299 @@
+===========
+LanguageSet
+===========
+
+  >>> from canonical.launchpad.interfaces import ILanguageSet
+  >>> language_set = getUtility(ILanguageSet)
+
+getLanguageByCode
+=================
+
+We can get hold of languages by their language code.
+
+  >>> language = language_set.getLanguageByCode('es')
+  >>> language.englishname
+  u'Spanish'
+
+Or if it doesn't exist, we return None.
+
+  >>> language_set.getLanguageByCode('not-existing') is None
+  True
+
+canonicalise_language_code
+==========================
+
+We can convert language codes to standard form.
+
+  >>> language_set.canonicalise_language_code('pt')
+  'pt'
+  >>> language_set.canonicalise_language_code('pt_BR')
+  'pt_BR'
+  >>> language_set.canonicalise_language_code('pt-br')
+  'pt_BR'
+
+codes_to_languages
+==================
+
+Convert a list of ISO language codes to language objects. If the code is
+unknown, it's ignored.
+
+  # 'zz' code doesn't exist:
+  >>> language_set.getLanguageByCode('zz') is None
+  True
+  >>> languages = language_set.codes_to_languages(['es', 'pt_BR', 'zz'])
+  >>> [language.englishname for language in languages]
+  [u'Spanish', u'Portuguese (Brazil)']
+
+createLanguage
+==============
+
+This method creates a new language.
+
+  >>> foos = language_set.createLanguage('foos', 'Foo language')
+  >>> print foos.code
+  foos
+  >>> print foos.englishname
+  Foo language
+
+search
+======
+
+We are able to search languages with this method.
+
+  >>> languages = language_set.search('Spanish')
+  >>> for language in languages:
+  ...     print language.code, language.englishname
+  es Spanish
+  es_AR Spanish (Argentina)
+  es_BO Spanish (Bolivia)
+  es_CL Spanish (Chile)
+  es_CO Spanish (Colombia)
+  es_CR Spanish (Costa Rica)
+  es_DO Spanish (Dominican Republic)
+  es_EC Spanish (Ecuador)
+  es_SV Spanish (El Salvador)
+  es_GT Spanish (Guatemala)
+  es_HN Spanish (Honduras)
+  es_MX Spanish (Mexico)
+  es_NI Spanish (Nicaragua)
+  es_PA Spanish (Panama)
+  es_PY Spanish (Paraguay)
+  es_PE Spanish (Peru)
+  es_PR Spanish (Puerto Rico)
+  es_ES Spanish (Spain)
+  es_US Spanish (United States)
+  es_UY Spanish (Uruguay)
+  es_VE Spanish (Venezuela)
+
+It's case insensitive:
+
+  >>> languages = language_set.search('spanish')
+  >>> for language in languages:
+  ...     print language.code, language.englishname
+  es Spanish
+  es_AR Spanish (Argentina)
+  es_BO Spanish (Bolivia)
+  es_CL Spanish (Chile)
+  es_CO Spanish (Colombia)
+  es_CR Spanish (Costa Rica)
+  es_DO Spanish (Dominican Republic)
+  es_EC Spanish (Ecuador)
+  es_SV Spanish (El Salvador)
+  es_GT Spanish (Guatemala)
+  es_HN Spanish (Honduras)
+  es_MX Spanish (Mexico)
+  es_NI Spanish (Nicaragua)
+  es_PA Spanish (Panama)
+  es_PY Spanish (Paraguay)
+  es_PE Spanish (Peru)
+  es_PR Spanish (Puerto Rico)
+  es_ES Spanish (Spain)
+  es_US Spanish (United States)
+  es_UY Spanish (Uruguay)
+  es_VE Spanish (Venezuela)
+
+And it even does substring searching!
+
+  >>> languages = language_set.search('panis')
+  >>> for language in languages:
+  ...     print language.code, language.englishname
+  es Spanish
+  es_AR Spanish (Argentina)
+  es_BO Spanish (Bolivia)
+  es_CL Spanish (Chile)
+  es_CO Spanish (Colombia)
+  es_CR Spanish (Costa Rica)
+  es_DO Spanish (Dominican Republic)
+  es_EC Spanish (Ecuador)
+  es_SV Spanish (El Salvador)
+  es_GT Spanish (Guatemala)
+  es_HN Spanish (Honduras)
+  es_MX Spanish (Mexico)
+  es_NI Spanish (Nicaragua)
+  es_PA Spanish (Panama)
+  es_PY Spanish (Paraguay)
+  es_PE Spanish (Peru)
+  es_PR Spanish (Puerto Rico)
+  es_ES Spanish (Spain)
+  es_US Spanish (United States)
+  es_UY Spanish (Uruguay)
+  es_VE Spanish (Venezuela)
+
+We escape special characters like '%', which is an SQL wildcard
+matching any string:
+
+  >>> languages = language_set.search('%')
+  >>> for language in languages:
+  ...     print language.code, language.englishname
+
+Or '_', which means any character match, but we only get strings
+that contain the 'e_' substring:
+
+  >>> languages = language_set.search('e_')
+  >>> for language in languages:
+  ...     print language.code, language.englishname
+  de_AT German (Austria)
+  de_BE German (Belgium)
+  de_DE German (Germany)
+  de_LU German (Luxembourg)
+  de_CH German (Switzerland)
+
+
+========
+Language
+========
+
+The Language object represents a language.
+
+alt_suggestion_language
+=======================
+
+In some languages, you could reasonably expect to find good suggestions in a
+second language. They might not be perfect but they are useful nonetheless.
+
+pt_BR is not a descendent of pt:
+
+    >>> pt_BR = language_set.getLanguageByCode('pt_BR')
+    >>> print pt_BR.alt_suggestion_language
+    None
+
+However, es_MX would find es useful:
+
+    >>> language = language_set.getLanguageByCode('es_MX')
+    >>> print language.alt_suggestion_language.code
+    es
+
+And Nynorsk and Bokmal have a special relationship:
+
+    >>> language = language_set.getLanguageByCode('nn')
+    >>> print language.alt_suggestion_language.code
+    nb
+
+    >>> language = language_set.getLanguageByCode('nb')
+    >>> print language.alt_suggestion_language.code
+    nn
+
+English and non-visible languages are not translatable, so there
+are no suggestions.
+
+    >>> language = language_set.getLanguageByCode('en')
+    >>> language.alt_suggestion_language is None
+    True
+
+    >>> language = language_set.getLanguageByCode('zh')
+    >>> language.visible
+    False
+    >>> language.alt_suggestion_language is None
+    True
+
+
+dashedcode
+==========
+
+Although we use underscores to separate language and country codes to
+represent, for instance pt_BR, when used on web pages, it should use
+instead a dash char. This method does it automatically:
+
+  >>> pt_BR = language_set.getLanguageByCode('pt_BR')
+  >>> print pt_BR.dashedcode
+  pt-BR
+
+
+getFullCode
+===========
+
+This convenience method returns the language's code, including an
+optional variant.  No redundant country code is added; it's not done.
+
+  >>> sr = language_set.getLanguageByCode('sr')
+  >>> print sr.getFullCode()
+  sr
+
+An omitted variant can be either None or the empty string.
+
+  >>> print sr.getFullCode('')
+  sr
+
+  >>> print sr.getFullCode('Latn')
+  sr@Latn
+
+
+getFullEnglishName
+==================
+
+Use getFullEnglishName to compose a human-readable, displayable
+English name for a language including optional variant.
+
+  >>> print sr.getFullEnglishName()
+  Serbian
+
+  >>> print sr.getFullEnglishName('')
+  Serbian
+
+  >>> print sr.getFullEnglishName('Latn')
+  Serbian ("Latn" variant)
+
+
+=========
+countries
+=========
+
+Property holding a list of countries a language is spoken in, and allowing
+reading and setting them.
+
+  >>> es = language_set.getLanguageByCode('es')
+  >>> print [country.name for country in es.countries]
+  [u'Argentina', u'Bolivia', u'Chile', u'Colombia', u'Costa Rica',
+   u'Dominican Republic', u'Ecuador', u'El Salvador', u'Guatemala',
+   u'Honduras', u'Mexico', u'Nicaragua', u'Panama', u'Paraguay', u'Peru',
+   u'Puerto Rico', u'Spain', u'United States', u'Uruguay', u'Venezuela']
+
+We can add countries using `ILanguage.addCountry` method.
+
+  >>> from canonical.launchpad.interfaces import ICountrySet
+  >>> country_set = getUtility(ICountrySet)
+  >>> germany = country_set['DE']
+  >>> es.addCountry(germany)
+  >>> print [country.name for country in es.countries]
+  [u'Argentina', u'Bolivia', u'Chile', u'Colombia', u'Costa Rica',
+   u'Dominican Republic', u'Ecuador', u'El Salvador', u'Germany', u'Guatemala',
+   u'Honduras', u'Mexico', u'Nicaragua', u'Panama', u'Paraguay', u'Peru',
+   u'Puerto Rico', u'Spain', u'United States', u'Uruguay', u'Venezuela']
+
+Or, we can remove countries using `ILanguage.removeCountry` method.
+
+  >>> argentina = country_set['AR']
+  >>> es.removeCountry(argentina)
+  >>> print [country.name for country in es.countries]
+  [u'Bolivia', u'Chile', u'Colombia', u'Costa Rica', u'Dominican Republic',
+   u'Ecuador', u'El Salvador', u'Germany', u'Guatemala', u'Honduras',
+   u'Mexico', u'Nicaragua', u'Panama', u'Paraguay', u'Peru', u'Puerto Rico',
+   u'Spain', u'United States', u'Uruguay', u'Venezuela']
+
+We can also assign a complete set of languages directly to `countries`,
+but we need to log in as a translations administrator first.
+
+  >>> login('carlos@canonical.com')
+  >>> es.countries = set([argentina, germany])
+  >>> print [country.name for country in es.countries]
+  [u'Argentina', u'Germany']

@@ -43,9 +43,9 @@ atomic attributes. The display and and title attributes are composed.
     >>> print firefox_ms.code_name
     Candidate One
     >>> print firefox_ms.displayname
-    Mozilla Firefox: 1.0rc1
+    Mozilla Firefox 1.0rc1
     >>> print firefox_ms.title
-    Mozilla Firefox: 1.0rc1 "Candidate One"
+    Mozilla Firefox 1.0rc1 "Candidate One"
 
 The summary describes the intent of the milestone.
 
@@ -65,7 +65,7 @@ To retrieve a specific Milestone, use IMilestoneSet.get:
     >>> print firefox_ms_1_0.name
     1.0
     >>> print firefox_ms_1_0.displayname
-    Mozilla Firefox: 1.0
+    Mozilla Firefox 1.0
 
 Of course, you can also get them off a Product or Distribution using
 the getMilestone() method:
@@ -88,16 +88,16 @@ Now, lets test all of that for DistroSeriess too!
     >>> krunch = kubuntu.getSeries('krunch')
 
     # Only owners, experts, or admins can create a milestone.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> new_ms = krunch.newMilestone('1.3rc2')
     >>> print new_ms.name
     1.3rc2
     >>> print new_ms.code_name
     None
     >>> print new_ms.displayname
-    Kubuntu: 1.3rc2
+    Kubuntu 1.3rc2
     >>> print new_ms.title
-    Kubuntu: 1.3rc2
+    Kubuntu 1.3rc2
     >>> print new_ms.target.name
     kubuntu
     >>> print new_ms.series_target.name
@@ -138,12 +138,12 @@ neither any milestones.
     ...         product.name,
     ...         [milestone.title for milestone in product.all_milestones])
     applets []
-    evolution [u'Evolution: 2.1.6']
+    evolution [u'Evolution 2.1.6']
     gnome-terminal []
     gnomebaker []
-    netapplet [u'NetApplet: 1.0']
+    netapplet [u'NetApplet 1.0']
     >>> print [milestone.title for milestone in gnome.all_milestones]
-    [u'GNOME: 2.1.6', u'GNOME: 1.0']
+    [u'GNOME 2.1.6', u'GNOME 1.0']
 
 When a milestone for a product is defined, this milestone is "inherited"
 by the project.
@@ -192,9 +192,9 @@ The code_name and series attributes are always none.
     >>> print project_milestone.code_name
     None
     >>> print project_milestone.displayname
-    GNOME: 2.1.6
+    GNOME 2.1.6
     >>> print project_milestone.title
-    GNOME: 2.1.6
+    GNOME 2.1.6
     >>> print project_milestone.target.name
     gnome
     >>> print project_milestone.series_target
@@ -281,7 +281,7 @@ milestone, it is "inheritied" by the project milestone.
 When we change the milestone for a bug task, subscribers to both the old
 milestone and the new one are notified.
 
-    >>> from canonical.launchpad.database.bugnotification import (
+    >>> from lp.bugs.model.bugnotification import (
     ...     BugNotification)
     >>> from canonical.launchpad.interfaces import (
     ...     IBugSet, IPersonSet, IProductSet)
@@ -330,8 +330,8 @@ list of recipients.
         Milestone: 1.0 => 2.0
     >>> for recipient in notification.recipients:
     ...     print recipient.person.name, recipient.reason_header
-    cprov Subscriber (Mozilla Firefox: 1.0)
-    ddaa Subscriber (Mozilla Firefox: 2.0)
+    cprov Subscriber (Mozilla Firefox 1.0)
+    ddaa Subscriber (Mozilla Firefox 2.0)
     ...
 
 
@@ -382,6 +382,40 @@ a product.
     >>> fizzy_milestone.productseries = two_series
     >>> print fizzy_milestone.productseries.name
     2.0
+
+The driver for a milestone's target cannot change a milestone, but the driver
+of the series_target is a release manager can can make changes.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> driver = factory.makePerson(name='driver')
+    >>> fizzy_milestone.target.driver = driver
+
+    >>> release_manager = factory.makePerson(name='release-manager')
+    >>> fizzy_milestone.series_target.driver = release_manager
+
+    >>> login_person(driver)
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    False
+
+    >>> login_person(release_manager)
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    True
+
+# XXX sinzui 2009-07-18 bug=40978: There are milestones in the database
+# that are missing their series_target. The project owner can edit the
+# milestone to fix the issue. It is not possible in this scenario for the
+# milestone to have a driver.
+
+    >>> login_person(upstream_firefox.owner)
+
+Hack the milestone to put it in an invalid state.
+    >>> fizzy_milestone.productseries = None
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    True
+    >>> login_person(driver)
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    False
 
 The distroseries attribute can be edited if the milestone belongs to
 a distribution.

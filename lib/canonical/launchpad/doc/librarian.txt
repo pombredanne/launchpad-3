@@ -207,7 +207,7 @@ If we abort the transaction, it is still in there
 
 You can also set the expiry date on the file this way too:
 
-    >>> from datetime import datetime
+    >>> from datetime import date, datetime
     >>> from pytz import utc
     >>> url = client.remoteAddFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain',
@@ -564,6 +564,51 @@ public `LibraryFileAlias` the traversal chain is extended with a
     >>> view.target == public_file.http_url
     True
 
+Files in this condition cannot be handled by the view and it raises an
+appropriate AssertionError when it gets traversed.
+
+    # Create a new LibraryFileAlias pointing to a deleted content.
+    >>> from canonical.launchpad.database import (
+    ...     LibraryFileAlias, LibraryFileContent)
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    >>> deleted_content = LibraryFileContent(
+    ...     filesize=1, sha1='f00', md5='f00', deleted=True)
+    >>> ignore = store.add(deleted_content)
+    >>> deleted_file = LibraryFileAlias(
+    ...     content=deleted_content, filename='deleted.txt',
+    ...     mimetype='text/plain')
+    >>> ignore = store.add(deleted_file)
+    >>> store.commit()
+
+    >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]
+    >>> print deleted_file.content.deleted
+    True
+
+    >>> deleted_view = StreamOrRedirectLibraryFileAliasView(
+    ...     deleted_file, empty_request)
+
+    >>> view, extra = deleted_view.browserDefault(empty_request)
+    Traceback (most recent call last):
+    ...
+    AssertionError: StreamOrRedirectLibraryFileAliasView can not
+    operate on deleted librarian files, since their URL is undefined.
+
+
+== LibraryFileAliasMD5View ==
+
+The MD5 summary for a file can be downloaded. The text file contains the
+hash and file name.
+
+    >>> view = create_view(public_file, '+md5')
+    >>> print view.render()
+    cd0c6092d6a6874f379fe4827ed1db8b public.txt
+
+    >>> print view.request.response.getHeader('Content-type')
+    text/plain
+
 
 == Download counts ==
 
@@ -584,9 +629,9 @@ The count starts at 0, and cannot be changed directly.
 To change that, we have to use the updateDownloadCount() method, which takes
 care of creating/updating the necessary LibraryFileDownloadCount entries.
 
-    >>> from canonical.launchpad.interfaces.country import ICountrySet
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
     >>> country_set = getUtility(ICountrySet)
-    >>> november_1st_2006 = datetime(2006, 11, 1)
+    >>> november_1st_2006 = date(2006, 11, 1)
     >>> brazil = country_set['BR']
     >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=1)
     >>> public_file.hits
@@ -630,7 +675,7 @@ updated.
 
 If the hit happened on a different day, a separate entry would be created.
 
-    >>> november_2nd_2006 = datetime(2006, 11, 2)
+    >>> november_2nd_2006 = date(2006, 11, 2)
     >>> public_file.updateDownloadCount(november_2nd_2006, brazil, count=10)
     >>> public_file.hits
     16
@@ -639,3 +684,21 @@ If the hit happened on a different day, a separate entry would be created.
     ...     country=brazil, day=november_2nd_2006).one()
     >>> brazil_entry2.count
     10
+    >>> last_downloaded_date = november_2nd_2006
+
+
+== Time to last download ==
+
+The .last_downloaded property gives us the time delta from today to the day 
+that file was last downloaded, or None if it's never been downloaded. 
+
+    >>> today = datetime.now(utc).date()
+    >>> public_file.last_downloaded == today - last_downloaded_date
+    True
+
+    >>> content = 'something'
+    >>> brand_new_file = getUtility(ILibraryFileAliasSet).create(
+    ...     'new.txt', len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=False)
+    >>> print brand_new_file.last_downloaded
+    None

@@ -1,0 +1,20 @@
+Format: 1.8
+Date: Thu, 15 Apr 2009 15:14:09 +0100
+Source: debug
+Binary: debug-bin
+Architecture: i386
+Version: 1.0
+Distribution: hoary
+Urgency: low
+Maintainer: Launchpad team <launchpad@lists.canonical.com>
+Changed-By: Celso Providelo <cprov@canonical.com>
+Description: 
+ debug-bin  - Stuff for testing
+Changes: 
+ debug (1.0) hoary; urgency=low
+ .
+   * Testing debug binaries
+Files: 
+ 88eae94b28fcffdbfaeb520549f81d1d 654 devel optional debug-bin_1.0_i386.deb
+ 0ab4cf3b1b0422192c41060d903c3f51 664 devel optional debug-dbg_1.0_i386.ddeb
+

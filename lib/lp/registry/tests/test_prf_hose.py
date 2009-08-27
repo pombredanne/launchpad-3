@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Tests for lp.registry.scripts.productreleasefinder.hose."""
 
 import os
@@ -6,7 +9,7 @@ import tempfile
 import unittest
 
 from canonical.testing import reset_logging
-from canonical.codehosting.codeimport.tests.helpers import (
+from lp.codehosting.codeimport.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 
 

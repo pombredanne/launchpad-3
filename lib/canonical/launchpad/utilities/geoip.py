@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
     'GeoIP',
@@ -20,10 +21,10 @@ from canonical.config import config
 
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request)
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.geoip import (
     IGeoIP, IGeoIPRecord, IRequestLocalLanguages, IRequestPreferredLanguages)
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class GeoIP:

@@ -1,5 +1,7 @@
 #!/usr/bin/python2.4
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
 
@@ -21,7 +23,7 @@ from select import select
 TIMEOUT = 60 * 15
 
 def main():
-    """Call test.py with whatever arguments this script was run with.
+    """Call bin/test with whatever arguments this script was run with.
 
     If the tests ran ok (last line of stderr is 'OK<return>') then suppress
     output and exit(0).
@@ -134,7 +136,7 @@ def main():
 
     print 'Running tests.'
     os.chdir(here)
-    cmd = [sys.executable, 'test.py'] + sys.argv[1:]
+    cmd = [os.path.join(here, 'bin', 'test')] + sys.argv[1:]
     print ' '.join(cmd)
 
     # Run the test suite and return the error code
@@ -181,7 +183,7 @@ def main():
 def killem(pid, signal):
     """Kill the process group leader identified by pid and other group members
 
-    Note that test.py sets its process to a process group leader.
+    Note that bin/test sets its process to a process group leader.
     """
     try:
         os.killpg(os.getpgid(pid), signal)

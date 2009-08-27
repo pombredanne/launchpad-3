@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The database implementation class for CodeReviewComment."""
 
@@ -13,8 +14,9 @@ from sqlobject import ForeignKey, StringCol
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from lp.code.enums import CodeReviewVote
 from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote, ICodeReviewComment, ICodeReviewCommentDeletion)
+    ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 
@@ -53,9 +55,7 @@ class CodeReviewComment(SQLBase):
     @property
     def message_body(self):
         """See `ICodeReviewComment'."""
-        for chunk in self.message:
-            if chunk.content:
-                return chunk.content
+        return self.message.text_contents
 
     def getAttachments(self):
         """See `ICodeReviewComment`."""

@@ -1,8 +1,11 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 from unittest import TestLoader
 
 from canonical.database.constants import UTC_NOW
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 

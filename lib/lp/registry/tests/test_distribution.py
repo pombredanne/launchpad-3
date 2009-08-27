@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution."""
 
@@ -8,7 +9,7 @@ import unittest
 
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases)
-from canonical.launchpad.interfaces.distributionsourcepackagerelease import (
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 

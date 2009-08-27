@@ -1,5 +1,7 @@
 #! /usr/bin/python2.4
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the sendbranchmail script"""
 
@@ -7,13 +9,13 @@ import unittest
 import transaction
 
 from canonical.testing import ZopelessAppServerLayer
-from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.model.branchjob import (
     RevisionMailJob, RevisionsAddedJob)
+from lp.testing import TestCaseWithFactory
 
 
 class TestSendbranchmail(TestCaseWithFactory):

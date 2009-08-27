@@ -1,0 +1,20 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# NOTE: This is a generated file.  The original is in
+# buildout-templates/_pythonpath.py.in
+
+__metaclass__ = type
+
+import sys, os
+
+sys.path[0:0] = [${string-paths}]
+# Enable Storm's C extensions
+os.environ['STORM_CEXTENSIONS'] = '1'
+
+# We don't want to bother tests or logs with these.
+import warnings
+warnings.filterwarnings(
+    'ignore',
+    'Module .+ was already imported from .+, but .+ is being added.*',
+    UserWarning)

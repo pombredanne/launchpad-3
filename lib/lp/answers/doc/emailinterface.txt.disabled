@@ -400,7 +400,7 @@ config.answertracker.email_domain to the AnswerTrackerHandler.
     ...
     ... This is a new comment.
     ... """
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
 
     # Clear email queue of outgoing notifications.
     >>> stub.test_emails = []

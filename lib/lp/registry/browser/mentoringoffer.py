@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mentorship views."""
 
@@ -15,9 +16,10 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.mentoringoffer import IMentoringOffer, IMentoringOfferSet
+from lp.registry.interfaces.mentoringoffer import (
+    IMentoringOffer, IMentoringOfferSet)
 from lp.registry.interfaces.milestone import IBugTask
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct

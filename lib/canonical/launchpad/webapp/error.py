@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -9,7 +10,8 @@ from zope.interface import implements
 from zope.exceptions.exceptionformatter import format_exception
 from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -220,9 +222,11 @@ class InvalidBatchSizeView(SystemErrorView):
         return False
 
     @property
-    def max_batch_size(self):
-        """Return the maximum configured batch size."""
-        return config.launchpad.max_batch_size
+    def error_message(self):
+        """Return the error message from the exception."""
+        if len(self.context.args) > 0:
+            return self.context.args[0]
+        return ""
 
 
 class TranslationUnavailableView(SystemErrorView):

@@ -13,7 +13,7 @@ lists the bug assigned to that person.
 Note that we may see each bug more than once in case it's reported against
 more than one target (https://launchpad.net/bugs/1357).
 
-    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
         Mozilla Firefox Critical New

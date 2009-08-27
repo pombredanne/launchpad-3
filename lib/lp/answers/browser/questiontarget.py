@@ -1,4 +1,5 @@
-# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IQuestionTarget browser views."""
 
@@ -24,11 +25,12 @@ from operator import attrgetter
 from urllib import urlencode
 
 from zope.app.form.browser import DropdownWidget
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, queryMultiAdapter
 from zope.formlib import form
 from zope.schema import Bool, Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -45,6 +47,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -587,6 +590,10 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     label = _("Manage answer contacts")
 
+    @property
+    def page_title(self):
+        return 'Answer contact for %s' % self.context.title
+
     custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
@@ -820,3 +827,19 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         """Return a link to the manage answer contact view."""
         text = 'Set answer contact'
         return Link('+answer-contact', text, icon='edit')
+
+
+class QuestionTargetOnAnswersVHostBreadcrumb(Breadcrumb):
+    rootsite = 'answers'
+
+    @property
+    def text(self):
+        return 'Questions for %s' % self.context.title
+
+
+class PersonOnAnswersVHostBreadcrumb(Breadcrumb):
+    rootsite = 'answers'
+
+    @property
+    def text(self):
+        return 'Questions involving %s' % self.context.displayname

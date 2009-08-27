@@ -20,7 +20,7 @@ profile for them.
 Mark has a registered email address, and he has chosen to disclose it to
 the world. Anonymous users cannot see Mark's address
 
-    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
+    >>> anon_browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'contact-details'))
     Email: Log in for email information.
@@ -29,10 +29,10 @@ the world. Anonymous users cannot see Mark's address
 A logged in user such as Sample Person, can see Mark's addresses.
 
     >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> sample_browser.open('http://launchpad.dev/~sabdfl')
+    >>> sample_browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
-    Email: mark@hbd.com
+    Email: mark@example.com
     ...
 
 As for Sample Person, he has chosen not to disclose his email addresses.
@@ -67,7 +67,7 @@ When a person visits his or her own page, they'll see their OpenID login URL.
 The URL is followed by a helpful link.
 
     >>> print user_browser.getLink('(What\xe2\x80\x99s\xc2\xa0this?)').url
-    https://help.launchpad.net/OpenID
+    http://launchpad.dev/+help/openid.html
 
 However, when the user visits someone else's page, they see no such URL.
 
@@ -87,14 +87,14 @@ And there is no helpful link.
 
 A person's jabber IDs are only show to authenticated users.
 
-    >>> user_browser.open('http://launchpad.dev/~sabdfl')
+    >>> user_browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'contact-details'))
     Email:...
     Jabber: markshuttleworth@jabber.org
     ...
 
-    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
+    >>> anon_browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'contact-details'))
     Email:...
@@ -125,11 +125,12 @@ see the key ID with a link to the keyserver.
 == Languages ==
 
 The contact details portlet shows the languages that the user speaks.
-No Privileges Person can see the languages that sabdfl speaks.
+No Privileges Person can see the languages that mark speaks.
 
     >>> user_browser.open('http://launchpad.dev/~carlos')
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'languages'))
-    Languages: Catalan, English, Spanish
+    Languages:
+    Catalan, English, Spanish
 
 When viewing his own page, No Privileges Person sees his languages and can
 edit them.
@@ -137,31 +138,31 @@ edit them.
     >>> user_browser.open('http://launchpad.dev/~no-priv')
     >>> languages_row = find_tag_by_id(user_browser.contents, 'languages')
     >>> print languages_row.td
-    <td> English <a href="http://launchpad.dev/~no-priv/+editlanguages"...
+    <td> English <a href=".../~no-priv/+editlanguages"...
 
 
 == Summary Pagelets ==
 
 A person's homepage also lists Karma and status information:
 
-    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
     Bragging rights
     Member since: 2005-06-06
     Karma: 130
 
-Negative Ubuntero status is only displayed for yourself; others won't
-see it:
+Negative Ubuntu Code of Conduct signatory status is only displayed for
+yourself; others won't see it:
 
-    >>> "Ubuntero:" in browser.contents
+    >>> "Signed Ubuntu Code of Conduct:" in browser.contents
     False
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
+    >>> browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
     Bragging rights
     ...
-    Ubuntero: No
+    Signed Ubuntu Code of Conduct: No
 
 You can grab certain bits of information programatically:
 
@@ -209,12 +210,12 @@ and also the areas in which (s)he worked on each project.
     ...         img = td.find('img')
     ...         if img is not None:
     ...             print "\t", img['title']
-    The Evolution Groupware ...
+    Evolution
        Bug Management
        Translations in Rosetta
-    Ubuntu Linux
+    Ubuntu
        Bug Management
-    Gnome Baker
+    gnomebaker
        Bug Management
     Mozilla Thunderbird
        Bug Management

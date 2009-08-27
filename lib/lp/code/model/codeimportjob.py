@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for the CodeImportJob table."""
 
@@ -21,15 +22,15 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.interfaces.codeimport import CodeImportReviewStatus
+from lp.code.enums import (
+    CodeImportJobState, CodeImportMachineState, CodeImportResultStatus,
+    CodeImportReviewStatus)
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJob, ICodeImportJobSet,
+    ICodeImportJob, ICodeImportJobSet,
     ICodeImportJobSetPublic, ICodeImportJobWorkflow)
-from lp.code.interfaces.codeimportmachine import (
-    CodeImportMachineState, ICodeImportMachineSet)
-from lp.code.interfaces.codeimportresult import (
-    CodeImportResultStatus, ICodeImportResultSet)
+from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
+from lp.code.interfaces.codeimportresult import  ICodeImportResultSet
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person
@@ -277,6 +278,12 @@ class CodeImportJobWorkflow:
         machine = import_job.machine
         result = self._makeResultAndDeleteJob(
             import_job, status, logfile_alias)
+        # If the import has failed too many times in a row, mark it as
+        # FAILING.
+        failure_limit = config.codeimport.consecutive_failure_limit
+        if code_import.consecutive_failure_count >= failure_limit:
+            code_import.updateFromData(
+                dict(review_status=CodeImportReviewStatus.FAILING), None)
         # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
             self.newJob(code_import)

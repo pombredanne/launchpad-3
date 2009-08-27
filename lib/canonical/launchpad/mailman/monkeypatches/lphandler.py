@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A global pipeline handler for determining Launchpad membership."""
 
@@ -19,7 +20,7 @@ def process(mlist, msg, msgdata):
     # the contact address for a project's answer tracker, an automated message
     # will be sent from Launchpad. Check for a header that indicates this was
     # a Launchpad-generated message. See
-    # canonical.launchpad.mail.sendmail.sendmail for where this is set.
+    # lp.services.mail.sendmail.sendmail for where this is set.
     secret = msg['x-launchpad-hash']
     message_id = msg['message-id']
     if secret and message_id:

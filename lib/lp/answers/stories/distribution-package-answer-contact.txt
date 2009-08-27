@@ -53,7 +53,7 @@ To register himself as answer contact, the user clicks on the
     >>> browser.getLink('Answers').click()
     >>> browser.getLink('Set answer contact').click()
     >>> print backslashreplace(browser.title)
-    Answer contact for ...evolution... source package in Ubuntu
+    Answer contact for ...evolution... package in Ubuntu
 
 On this page, the user can choose to become an answer contact by
 clicking a checkbox. All the teams, he's a member of are also displayed

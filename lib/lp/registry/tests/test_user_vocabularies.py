@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the user vocabularies."""
 
@@ -10,7 +11,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.ftests import login, login_person
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 

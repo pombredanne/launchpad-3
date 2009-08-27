@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -12,8 +13,7 @@ from canonical.launchpad.interfaces.mail import (
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_person_or_team,
     IncomingEmailError, parse_commands)
-from canonical.launchpad.testing import (
-    login_person, TestCase, TestCaseWithFactory)
+from lp.testing import login_person, TestCase, TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.interaction import get_current_principal
 

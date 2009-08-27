@@ -6,8 +6,10 @@ software. It can be part of a Project or it can be standalone.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IHasTranslationImports, IProductSet, IProduct, IPersonSet,
+    ...     IProductSet, IProduct, IPersonSet,
     ...     NotFoundError)
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
@@ -120,7 +122,7 @@ ILaunchpadStatisticSet is stored in the 'stats' attribute.
     ...     def value(self, name):
     ...         return self.stats[name]
 
-    >>> from canonical.launchpad.database import ProductSet
+    >>> from lp.registry.model.product import ProductSet
     >>> class FakeStatsProductSet(ProductSet):
     ...     """Provide fake statistics, not to depend on sample data."""
     ...     stats = FakeStatistics()
@@ -481,8 +483,7 @@ Branches that are either Merged or Abandoned are not considered active.
 By marking all of Thunderbird's branches as Abandoned, thunderbird will
 no longer appear in the result set.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchLifecycleStatus)
+    >>> from lp.code.enums import BranchLifecycleStatus
     >>> from lp.code.interfaces.branchcollection import (
     ...     IAllBranches)
     >>> thunderbird_branches = getUtility(IAllBranches).inProduct(
@@ -536,7 +537,7 @@ testing this, we need to log in as a translations administrator.
 
 We'll also create new templates, so we need IPOTemplateSet:
 
-    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
 Firefox has two series, but no translatable series either:
@@ -544,7 +545,7 @@ Firefox has two series, but no translatable series either:
     >>> firefox = productset.getByName('firefox')
     >>> for firefoxseries in firefox.serieses:
     ...     print '%s %s' % (firefoxseries.displayname,
-    ...                      firefoxseries.getCurrentTranslationTemplates())
+    ...                      list(firefoxseries.getCurrentTranslationTemplates()))
     1.0 []
     trunk []
     >>> print firefox.primary_translatable

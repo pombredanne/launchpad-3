@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -8,21 +9,74 @@ __all__ = [
 
 import os
 import mimetypes
+import pytz
+import re
 import urlparse
 import urllib
 from datetime import datetime
-import pytz
 
 from cscvs.dircompare import path
 
 from zope.component import getUtility
 
+from canonical.launchpad.validators.name import invalid_name_pattern
+from canonical.launchpad.validators.version import sane_version
+
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import UpstreamFileType
-from canonical.launchpad.validators.version import sane_version
 from lp.registry.scripts.productreleasefinder.hose import Hose
 from lp.registry.scripts.productreleasefinder.filter import (
     FilterPattern)
+
+
+processors = '|'.join([
+    'all',
+    'amd64',
+    'arm',
+    'armel',
+    'i386',
+    'intel',
+    'hppa',
+    'hurd-i386',
+    'ia64',
+    'm68k',
+    'mips',
+    'mipsel',
+    'powerpc',
+    's390',
+    'sparc',
+    ])
+flavor_pattern = re.compile(r"""
+    (_[a-z][a-z]_[A-Z][A-Z]       # Language version
+     |_(%s)                       # or processor version
+     |[\.-](win32|OSX)            # or OS version
+     |\.(deb|noarch|rpm|dmg|exe)  # or packaging version
+    ).*                           # to the end of the string
+    """ % processors, re.VERBOSE)
+
+
+def extract_version(filename):
+    """Return the release version of the file, or None.
+
+    Ensure the version is compatible with Launchpad. None is returned
+    if a version could not be extracted.
+    """
+    version = path.split_version(path.name(filename))[1]
+    if version is None:
+        return None
+    # Tarballs pulled from a Debian-style archive often have
+    # ".orig" appended to the version number.  We don't want this.
+    if version.endswith('.orig'):
+        version = version[:-len('.orig')]
+    # Remove processor and language flavors from the version:
+    # eg. _de_DE, _all, _i386.
+    version = flavor_pattern.sub('', version)
+    # Launchpad requires all versions to be lowercase. They may contain
+    # letters, numbers, dots, underscores, and hyphens (a-z0-9._-).
+    version = version.lower()
+    version = invalid_name_pattern.sub('-', version)
+    version = version.replace('+', '-')
+    return version
 
 
 class ProductReleaseFinder:
@@ -147,6 +201,7 @@ class ProductReleaseFinder:
             self.ztm.abort()
             raise
 
+
     def handleRelease(self, product_name, series_name, url):
         """If the given URL looks like a release tarball, download it
         and create a corresponding ProductRelease."""
@@ -156,17 +211,10 @@ class ProductReleaseFinder:
             filename = filename[slash+1:]
         self.log.debug("Filename portion is %s", filename)
 
-        version = path.split_version(path.name(filename))[1]
-
+        version = extract_version(filename)
         if version is None:
-            self.log.error("Unable to parse version from %s", url)
+            self.log.info("Unable to parse version from %s", url)
             return
-
-        # Tarballs pulled from a Debian-style archive often have
-        # ".orig" appended to the version number.  We don't want this.
-        if version.endswith('.orig'):
-            version = version[:-len('.orig')]
-
         self.log.debug("Version is %s", version)
         if not sane_version(version):
             self.log.error("Version number '%s' for '%s' is not sane",

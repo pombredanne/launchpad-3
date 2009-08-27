@@ -26,16 +26,11 @@ name appears in the 'Subscribers' portlet:
     ...     print message
     You have subscribed to this question.
 
-    >>> portlet = find_tag_by_id(user_browser.contents, 'portlet-subscribers')
+    >>> portlet = find_tag_by_id(user_browser.contents, 'subscribers')
     >>> portlet.first('h2')
     <h2>Subscribers</h2>
     >>> portlet.first('ul')
-    <ul class="person">
-      <li>
-        <a href="/~no-priv">No Privileges
-            Person</a>
-      </li>
-    </ul>
+    <ul> ...No Privileges Person...
 
 
 == Unsubscribing ==
@@ -61,7 +56,7 @@ the question, doesn't appear anymore in the subscribers portlet:
     ...     print message
     You have unsubscribed from this question.
 
-    >>> portlet = find_tag_by_id(user_browser.contents, 'portlet-subscribers')
+    >>> portlet = find_tag_by_id(user_browser.contents, 'subscribers')
     >>> portlet.first('p')
     <p>
       <i>No subscribers.</i>
@@ -89,9 +84,10 @@ A notification message is displayed notifying of the subscription:
     Thanks for your information request.
     You have subscribed to this question.
 
-    >>> portlet = find_tag_by_id(user_browser.contents, 'portlet-subscribers')
+    >>> portlet = find_tag_by_id(user_browser.contents, 'subscribers')
     >>> for subscriber_link in portlet.findAll('a'):
     ...     print subscriber_link.renderContents()
+    <span ...
     No Privileges Person
 
 When the person is already subscribed to the question, the checkbox

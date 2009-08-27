@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # XXX: Gavin Panella 2008-11-21 bug=300725: This module need
 # refactoring and/or splitting into a package or packages.
@@ -25,8 +26,8 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.components.bug import BugDelta
-from canonical.launchpad.components.bugchange import get_bug_changes
+from lp.bugs.adapters.bugdelta import BugDelta
+from lp.bugs.adapters.bugchange import BugDuplicateChange, get_bug_changes
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 from canonical.launchpad.interfaces import (
@@ -34,15 +35,15 @@ from canonical.launchpad.interfaces import (
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     TeamMembershipStatus)
-from canonical.launchpad.interfaces.bugchange import IBugChange
+from lp.bugs.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
-from canonical.launchpad.mailout.mailwrapper import MailWrapper
-from canonical.launchpad.mailout.notificationrecipientset import (
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp import canonical_url
 
@@ -721,7 +722,16 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
         #     This if..else should be removed once the new BugChange API
         #     is complete and ubiquitous.
         if IBugChange.providedBy(change):
-            bug_delta.bug.addChange(change, recipients=recipients)
+            if isinstance(change, BugDuplicateChange):
+                no_dupe_master_recipients = (
+                    bug_delta.bug.getBugNotificationRecipients(
+                        old_bug=bug_delta.bug_before_modification,
+                        level=BugNotificationLevel.METADATA,
+                        include_master_dupe_subscribers=False))
+                bug_delta.bug.addChange(
+                    change, recipients=no_dupe_master_recipients)
+            else:
+                bug_delta.bug.addChange(change, recipients=recipients)
         else:
             bug_delta.bug.addChangeNotification(
                 change, person=bug_delta.user, recipients=recipients)
@@ -831,9 +841,9 @@ def notify_invitation_to_join_team(event):
     templatename = 'membership-invitation.txt'
     template = get_email_template(templatename)
     replacements = {
-        'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
-        'member': '%s (%s)' % (member.browsername, member.name),
-        'team': '%s (%s)' % (team.browsername, team.name),
+        'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
+        'member': '%s (%s)' % (member.displayname, member.name),
+        'team': '%s (%s)' % (team.displayname, team.name),
         'team_url': canonical_url(team),
         'membership_invitations_url':
             "%s/+invitation/%s" % (canonical_url(member), team.name)}
@@ -842,6 +852,17 @@ def notify_invitation_to_join_team(event):
         replacements['recipient_name'] = recipient.displayname
         msg = MailWrapper().format(template % replacements, force_wrap=True)
         simple_sendmail(from_addr, address, subject, msg)
+
+
+def send_team_email(from_addr, address, subject, template, replacements,
+                    rationale, headers=None):
+    """Send a team message with a rationale."""
+    if headers is None:
+        headers = {}
+    body = MailWrapper().format(template % replacements, force_wrap=True)
+    footer = "-- \n%s" % rationale
+    message = '%s\n\n%s' % (body, footer)
+    simple_sendmail(from_addr, address, subject, message, headers)
 
 
 @block_implicit_flushes
@@ -871,24 +892,42 @@ def notify_team_join(event):
         # notification to the person too.
         member_addrs = get_contact_email_addresses(person)
 
-        subject = 'You have been added to %s' % team.name
-        templatename = 'new-member-notification.txt'
+        headers = {}
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
             subject = '%s joined %s' % (person.name, team.name)
+            header_rational = "Indirect member (%s)" % team.name
+            footer_rationale = (
+                "You received this email because "
+                "%s is the new member." % person.name)
+        else:
+            templatename = 'new-member-notification.txt'
+            subject = 'You have been added to %s' % team.name
+            header_rational = "Member (%s)" % team.name
+            footer_rationale = (
+                "You received this email because you are the new member.")
+
+        if team.mailing_list is not None:
+            list_instructions = get_email_template(
+                'team-list-subscribe-block.txt')
+        else:
+            list_instructions = ''
 
         template = get_email_template(templatename)
         replacements = {
-            'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
+            'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
             'team_url': canonical_url(team),
-            'member': '%s (%s)' % (person.browsername, person.name),
-            'team': '%s (%s)' % (team.browsername, team.name)}
+            'member': '%s (%s)' % (person.displayname, person.name),
+            'team': '%s (%s)' % (team.displayname, team.name),
+            'list_instructions': list_instructions,
+            }
+        headers = {'X-Launchpad-Message-Rationale': header_rational}
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(
-                template % replacements, force_wrap=True)
-            simple_sendmail(from_addr, address, subject, msg)
+            send_team_email(
+                from_addr, address, subject, template, replacements,
+                footer_rationale, headers)
 
         # The member's email address may be in admin_addrs too; let's remove
         # it so the member don't get two notifications.
@@ -899,9 +938,9 @@ def notify_team_join(event):
         return
 
     replacements = {
-        'person_name': "%s (%s)" % (person.browsername, person.name),
-        'team_name': "%s (%s)" % (team.browsername, team.name),
-        'reviewer_name': "%s (%s)" % (reviewer.browsername, reviewer.name),
+        'person_name': "%s (%s)" % (person.displayname, person.name),
+        'team_name': "%s (%s)" % (team.displayname, team.name),
+        'reviewer_name': "%s (%s)" % (reviewer.displayname, reviewer.name),
         'url': canonical_url(membership)}
 
     headers = {}
@@ -925,9 +964,26 @@ def notify_team_join(event):
     for address in admin_addrs:
         recipient = getUtility(IPersonSet).getByEmail(address)
         replacements['recipient_name'] = recipient.displayname
-        msg = MailWrapper().format(
-            template % replacements, force_wrap=True)
-        simple_sendmail(from_addr, address, subject, msg, headers=headers)
+        if recipient.isTeam():
+            header_rationale = 'Admin (%s via %s)' % (
+                team.name, recipient.name)
+            footer_rationale = (
+                "you are an admin of the %s team\n"
+                "via the %s team." % (
+                team.displayname, recipient.displayname))
+        elif recipient == team.teamowner:
+            header_rationale = 'Owner (%s)' % team.name
+            footer_rationale = (
+                "you are the owner of the %s team." % team.displayname)
+        else:
+            header_rationale = 'Admin (%s)' % team.name
+            footer_rationale = (
+                "you are an admin of the %s team." % team.displayname)
+        footer = 'You received this email because %s' % footer_rationale
+        headers['X-Launchpad-Message-Rationale'] = header_rationale
+        send_team_email(
+            from_addr, address, subject, template, replacements,
+            footer, headers)
 
 
 def specification_notification_subject(spec):
@@ -981,9 +1037,15 @@ def notify_specification_modified(spec, event):
     if spec_delta.whiteboard is not None:
         if info_lines:
             info_lines.append('')
-        info_lines.append('Whiteboard changed to:')
-        info_lines.append('')
-        info_lines.append(mail_wrapper.format(spec_delta.whiteboard))
+        whiteboard_delta = spec_delta.whiteboard
+        if whiteboard_delta['old'] is None:
+            info_lines.append('Whiteboard set to:')
+            info_lines.append(mail_wrapper.format(whiteboard_delta['new']))
+        else:
+            whiteboard_diff = get_unified_diff(
+                whiteboard_delta['old'], whiteboard_delta['new'], 72)
+            info_lines.append('Whiteboard changed:')
+            info_lines.append(whiteboard_diff)
 
     if not info_lines:
         # The specification was modified, but we don't yet support
@@ -1129,7 +1191,7 @@ def notify_new_ppa_subscription(subscription, event):
 
     registrant_name = subscription.registrant.displayname
     ppa_name = subscription.archive.displayname
-    subject = 'New PPA subscription for ' + ppa_name
+    subject = 'PPA access granted for ' + ppa_name
 
     template = get_email_template('ppa-subscription-new.txt')
 

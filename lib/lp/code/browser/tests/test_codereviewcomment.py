@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeReviewComments."""
 
@@ -8,8 +9,7 @@ from textwrap import dedent
 import unittest
 
 from lp.code.browser.codereviewcomment import quote_text_as_email
-from canonical.launchpad.testing import (
-    login_person, TestCase, TestCaseWithFactory)
+from lp.testing import login_person, TestCase, TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
 

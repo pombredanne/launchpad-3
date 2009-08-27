@@ -17,7 +17,7 @@ Source packages can be obtained from the context of a distribution.
      u'official_bug_tags': [],
      u'resource_type_link': u'http://.../#distribution_source_package',
      u'self_link': u'http://.../debian/+source/mozilla-firefox',
-     u'title': u'\u201cmozilla-firefox\u201d source package in Debian',
+     u'title': u'\u201cmozilla-firefox\u201d package in Debian',
      u'upstream_product_link': None}
 
 You can obtain a collection of bug tasks associated with the source

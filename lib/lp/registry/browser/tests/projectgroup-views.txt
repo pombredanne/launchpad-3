@@ -1,0 +1,41 @@
+ProjectGroup views
+==================
+
+The +index view of projectgroup has a has_many_projects property. It is
+used by the template to determine how to layout out the page. A project
+with less than 10 projects is considered not have many projects.
+
+    >>> projectgroup = factory.makeProject(name='mothership')
+    >>> view = create_view(projectgroup, name='+index')
+    >>> projectgroup.products.count()
+    0
+
+    >>> view.has_many_projects
+    False
+
+    >>> def add_daughter(projectgroup, letters):
+    ...     for letter in letters:
+    ...         name = '%s-%s' % (letter, projectgroup.name)
+    ...         product = factory.makeProduct(
+    ...             name=name, owner=projectgroup.owner)
+    ...         product.project = projectgroup
+
+    >>> login_person(projectgroup.owner)
+    >>> add_daughter(projectgroup, 'a')
+    >>> projectgroup.products.count()
+    1
+
+    >>> view = create_view(projectgroup, name='+index')
+    >>> view.has_many_projects
+    False
+
+A projectgroup with more than 10 sub projects is considered to have many
+projects (10 projects are roughly 2 portlets deep.)
+
+    >>> add_daughter(projectgroup, 'bcdefghijk')
+    >>> projectgroup.products.count()
+    11
+
+    >>> view = create_view(projectgroup, name='+index')
+    >>> view.has_many_projects
+    True

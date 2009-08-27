@@ -59,7 +59,7 @@ contain a link to a page where it's possible to finish the registration
 process in order to validate that profile.
 
     >>> import email
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from canonical.launchpad.ftests.logintoken import (
     ...     get_token_url_from_email)
     >>> len(stub.test_emails)

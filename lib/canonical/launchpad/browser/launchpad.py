@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -16,8 +18,6 @@ __all__ = [
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
-    'MaloneApplicationNavigation',
-    'MaloneContextMenu',
     'MenuBox',
     'NavigationMenuTabs',
     'SoftTimeoutView',
@@ -33,7 +33,6 @@ import re
 import time
 import urllib
 from datetime import timedelta, datetime
-from urlparse import urlunsplit
 
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
@@ -44,28 +43,29 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
-import canonical.launchpad.layers
 from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
+from canonical.launchpad.layers import WebServiceLayer
 
 from lp.registry.interfaces.announcement import IAnnouncementSet
-from canonical.launchpad.interfaces.binarypackagename import (
+from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from lp.code.interfaces.branchlookup import (
-    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
+from lp.code.interfaces.branch import IBranchSet
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import InvalidNamespace
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
-from canonical.launchpad.interfaces.builder import IBuilderSet
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, NoLinkedBranch)
+from lp.bugs.interfaces.bug import IBugSet
+from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
-from canonical.launchpad.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
     IRosettaApplication, IStructuralHeaderPresentation,
@@ -74,9 +74,9 @@ from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
-from canonical.launchpad.interfaces.malone import IMaloneApplication
+from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -84,24 +84,24 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.project import IProjectSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.interfaces.specification import ISpecificationSet
-from canonical.launchpad.interfaces.sprint import ISprintSet
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link,
-    LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
-    canonical_url, custom_widget)
+    LaunchpadFormView, LaunchpadView, Link, Navigation,
+    StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
+    stepto)
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
-from canonical.launchpad.webapp.url import urlparse, urlappend
+from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -114,47 +114,6 @@ from canonical.widgets.project import ProjectScopeWidget
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
-
-
-class MaloneApplicationNavigation(Navigation):
-
-    usedfor = IMaloneApplication
-
-    newlayer = canonical.launchpad.layers.BugsLayer
-
-    @stepto('bugs')
-    def bugs(self):
-        return getUtility(IBugSet)
-
-    @stepto('bugtrackers')
-    def bugtrackers(self):
-        return getUtility(IBugTrackerSet)
-
-    @stepto('cve')
-    def cve(self):
-        return getUtility(ICveSet)
-
-    @stepto('distros')
-    def distros(self):
-        return getUtility(IDistributionSet)
-
-    @stepto('projects')
-    def projects(self):
-        return getUtility(IProductSet)
-
-    @stepto('products')
-    def products(self):
-        return self.redirectSubTree(
-            canonical_url(getUtility(IProductSet)), status=301)
-
-    def traverse(self, name):
-        # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
-        # /malone/$bug.id Just Work
-        bug = getUtility(IBugSet).getByNameOrID(name)
-        if not check_permission("launchpad.View", bug):
-            raise Unauthorized("Bug %s is private" % name)
-        return bug
-
 
 
 class MenuBox(LaunchpadView):
@@ -213,6 +172,7 @@ class NavigationMenuTabs(LaunchpadView):
             menu = queryAdapter(self.context, INavigationMenu, name=facet)
             if menu is not None:
                 self.title = menu.title
+        self.enabled_links = [link for link in self.links if link.enabled]
 
     def render(self):
         if not self.links:
@@ -227,6 +187,18 @@ class LinkView(LaunchpadView):
     The link is not rendered if it's not enabled and we are not in development
     mode.
     """
+    MODIFY_ICONS = ('edit', 'remove', 'trash-icon')
+
+    @property
+    def sprite_class(self):
+        """Return the class used to display the link's icon."""
+        if self.context.icon in self.MODIFY_ICONS:
+            # The 3.0 UI design says these are displayed like other icons
+            # But they do not have the same use so we want to keep this rule
+            # separate.
+            return 'sprite modify'
+        else:
+            return 'sprite'
 
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""
@@ -243,58 +215,41 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    @property
+    def objects(self):
+        """The objects for which we want breadcrumbs."""
+        return self.request.traversed_objects
+
     def items(self):
         """Return a list of `IBreadcrumb` objects visible in the hierarchy.
 
         The list starts with the breadcrumb closest to the hierarchy root.
         """
-        urlparts = urlparse(self.request.getURL(0, path_only=False))
-        baseurl = urlunsplit((urlparts[0], urlparts[1], '', '', ''))
-
-        # Construct a list of complete URLs for each URL path segment.
-        pathurls = []
-        working_url = baseurl
-        for segment in urlparts[2].split('/'):
-            working_url = urlappend(working_url, segment)
-            # Segments starting with '+' should be ignored because they
-            # will never correspond to an object in navigation.
-            if segment.startswith('+'):
-                continue
-            pathurls.append(working_url)
-
-        # We assume a 1:1 relationship between the traversed_objects list and
-        # the URL path segments.  Note that there may be more segments than
-        # there are objects.
-        object_urls = zip(self.request.traversed_objects, pathurls)
-        return self._breadcrumbs(object_urls)
-
-    def _breadcrumbs(self, object_urls):
-        """Generate the breadcrumb list.
-
-        :param object_urls: A sequence of (object, url) pairs.
-        :return: A list of 'IBreadcrumb' objects.
-        """
         breadcrumbs = []
-        for obj, url in object_urls:
-            crumb = self.breadcrumb_for(obj, url)
-            if crumb is not None:
-                breadcrumbs.append(crumb)
+        for obj in self.objects:
+            breadcrumb = queryAdapter(obj, IBreadcrumb)
+            if breadcrumb is not None:
+                breadcrumbs.append(breadcrumb)
+
+        host = URI(self.request.getURL()).host
+        if (len(breadcrumbs) == 0
+            or host == allvhosts.configs['mainsite'].hostname):
+            return breadcrumbs
+
+        # If we got this far it means we have breadcrumbs and we're not on the
+        # mainsite, so we'll sneak an extra breadcrumb for the vhost we're on.
+        vhost = host.split('.')[0]
+
+        # Iterate over the context of our breadcrumbs in reverse order and for
+        # the first one we find an adapter named after the vhost we're on,
+        # generate an extra breadcrumb and insert it in our list.
+        for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
+            extra_breadcrumb = queryAdapter(
+                breadcrumb.context, IBreadcrumb, name=vhost)
+            if extra_breadcrumb is not None:
+                breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                break
         return breadcrumbs
-
-    def breadcrumb_for(self, obj, url):
-        """Return the breadcrumb for the an object, using the supplied URL.
-
-        :return: An `IBreadcrumb` object, or None if a breadcrumb adaptation
-            for the object doesn't exist.
-        """
-        # If the object has an IBreadcrumbBuilder adaptation then the
-        # object is intended to be shown in the hierarchy.
-        builder = queryAdapter(obj, IBreadcrumbBuilder)
-        if builder is not None:
-            # The breadcrumb builder hasn't been given a URL yet.
-            builder.url = url
-            return builder.make_breadcrumb()
-        return None
 
     def render(self):
         """Render the hierarchy HTML.
@@ -477,16 +432,6 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
 
-class MaloneContextMenu(ContextMenu):
-    # XXX mpt 2006-03-27: No longer visible on Bugs front page.
-    usedfor = IMaloneApplication
-    links = ['cvetracker']
-
-    def cvetracker(self):
-        text = 'CVE tracker'
-        return Link('cve/', text, icon='cve')
-
-
 class LoginStatus:
 
     def __init__(self, context, request):
@@ -624,6 +569,7 @@ class LaunchpadRootNavigation(Navigation):
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
+        'branches': IBranchSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
         'builders': IBuilderSet,
@@ -637,6 +583,7 @@ class LaunchpadRootNavigation(Navigation):
         '+languages': ILanguageSet,
         '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
+        'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         'projects': IProductSet,
@@ -700,7 +647,8 @@ class LaunchpadRootNavigation(Navigation):
             if self.request.method == 'POST':
                 raise POSTToNonCanonicalURL
             return self.redirectSubTree(
-                canonical_url(self.context) + canonical_name(name),
+                (canonical_url(self.context, request=self.request) +
+                 canonical_name(name)),
                 status=301)
 
         pillar = getUtility(IPillarNameSet).getByName(
@@ -725,6 +673,10 @@ class LaunchpadRootNavigation(Navigation):
         # If this is a HTTP POST, we don't want to issue a redirect.
         # Doing so would go against the HTTP standard.
         if self.request.method == 'POST':
+            return None
+
+        # If this is a web service request, don't redirect.
+        if WebServiceLayer.providedBy(self.request):
             return None
 
         mainsite_host = config.vhost.mainsite.hostname

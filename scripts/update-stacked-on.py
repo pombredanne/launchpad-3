@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Update stacked_on_location for all Bazaar branches.
@@ -25,13 +28,13 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.config import TransportConfig
 from bzrlib import errors
 
-from canonical.codehosting.branchfs import LaunchpadInternalServer
-from canonical.codehosting.vfs import BlockingProxy
-from canonical.codehosting.vfs.transport import (
+from lp.codehosting.vfs.branchfs import LaunchpadInternalServer
+from lp.codehosting.vfs import BlockingProxy
+from lp.codehosting.vfs.transport import (
     get_chrooted_transport, get_readonly_transport, _MultiServer)
-from canonical.codehosting.bzrutils import get_branch_stacked_on_url
+from lp.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 
 
 def get_server(read_only):

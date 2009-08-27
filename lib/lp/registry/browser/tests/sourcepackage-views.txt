@@ -1,0 +1,53 @@
+SourcePackage views
+===================
+
+
+    >>> product = factory.makeProduct(name='bonkers', displayname='Bonkers')
+    >>> productseries = factory.makeProductSeries(
+    ...     name='crazy', product=product)
+    >>> distribution = factory.makeDistribution(
+    ...     name='youbuntu', displayname='Youbuntu')
+    >>> distroseries = factory.makeDistroRelease(name='busy',
+    ...     distribution=distribution)
+    >>> sourcepackagename = factory.makeSourcePackageName(name='bonkers')
+    >>> package = factory.makeSourcePackage(
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
+
+    >>> view = create_view(package, name='+edit-packaging')
+    >>> print view.label
+     Define upstream link for bonkers in Youbuntu Busy
+
+    >>> print view.page_title
+     Define upstream link for bonkers in Youbuntu Busy
+
+    >>> print view.cancel_url
+    http://launchpad.dev/youbuntu/busy/+source/bonkers
+
+The view allows the owner or admin to change productseries field.
+
+    >>> view.field_names
+    ['productseries']
+
+    >>> print package.productseries
+    None
+
+    >>> login_person(product.owner)
+    >>> form = {
+    ...     'field.productseries': 'bonkers/crazy',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     package, name='+edit-packaging', form=form,
+    ...     principal=product.owner)
+    >>> view.errors
+    []
+
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu/busy/+source/bonkers
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Upstream link updated.
+
+    >>> print package.productseries.name
+    crazy

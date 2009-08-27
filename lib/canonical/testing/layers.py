@@ -1,4 +1,6 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # We like global!
 # pylint: disable-msg=W0603,W0702
 
@@ -40,6 +42,7 @@ __all__ = [
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
     'ZopelessAppServerLayer',
+    'ZopelessDatabaseLayer',
     'ZopelessLayer',
     'disconnect_stores',
     'reconnect_stores',
@@ -81,8 +84,8 @@ from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
-import canonical.launchpad.mail.stub
-from canonical.launchpad.mail.mailbox import TestMailBox
+import lp.services.mail.stub
+from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
@@ -90,14 +93,15 @@ from canonical.launchpad.webapp.interfaces import (
         DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
-from canonical.testing.smtpcontrol import SMTPControl
-from canonical.lazr.testing.layers import MockRootFolder
+from canonical.testing.smtpd import SMTPController
+
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
@@ -282,7 +286,7 @@ class BaseLayer:
 
         BaseLayer.original_working_directory = None
         reset_logging()
-        del canonical.launchpad.mail.stub.test_emails[:]
+        del lp.services.mail.stub.test_emails[:]
         BaseLayer.test_name = None
         BaseLayer.check()
 
@@ -300,7 +304,7 @@ class BaseLayer:
             # threads around, apparently because of bzr. disable_thread_check
             # is a mechanism to turn off the BaseLayer behavior of causing a
             # test to fail if it leaves a thread behind. This comment is found
-            # in both canonical.codehosting.tests.test_acceptance and
+            # in both lp.codehosting.tests.test_acceptance and
             # canonical.testing.layers
             if BaseLayer.disable_thread_check:
                 print ("ERROR DISABLED: "
@@ -901,6 +905,13 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._original_sigint = signal.getsignal(signal.SIGINT)
         TwistedLayer._original_sigterm = signal.getsignal(signal.SIGTERM)
         TwistedLayer._original_sigchld = signal.getsignal(signal.SIGCHLD)
+        # XXX MichaelHudson, 2009-07-14, bug=399118: If a test case in this
+        # layer launches a process with spawnProcess, there should really be a
+        # SIGCHLD handler installed to avoid PotentialZombieWarnings.  But
+        # some tests in this layer use tachandler and it is fragile when a
+        # SIGCHLD handler is installed.  tachandler needs to be fixed.
+        # from twisted.internet import reactor
+        # signal.signal(signal.SIGCHLD, reactor._handleSigchld)
 
     @classmethod
     def _restore_signals(cls):
@@ -1035,6 +1046,43 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
 
         # Disconnect Storm so it doesn't get in the way of database resets
         disconnect_stores()
+
+
+
+class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
+    """Testing layer for unit tests with no need for librarian.
+
+    Can be used wherever you're accustomed to using LaunchpadZopeless
+    or LaunchpadScript layers, but there is no need for librarian.
+    """
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        # Signal Layer cannot be torn down fully
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # LaunchpadZopelessLayer takes care of reconnecting the stores
+        if not LaunchpadZopelessLayer.isSetUp:
+            reconnect_stores()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        disconnect_stores()
+
+    @classmethod
+    @profiled
+    def switchDbConfig(cls, database_config_section):
+        reconnect_stores(database_config_section=database_config_section)
 
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
@@ -1342,7 +1390,18 @@ class LayerProcessController:
         """Start the SMTP server if it hasn't already been started."""
         if cls.smtp_controller is not None:
             raise LayerInvariantError('SMTP server already running')
-        cls.smtp_controller = SMTPControl()
+        # Ensure that the SMTP server does proper logging.
+        log = logging.getLogger('lazr.smtptest')
+        log_file = os.path.join(config.mailman.build_var_dir, 'logs', 'smtpd')
+        handler = logging.FileHandler(log_file)
+        formatter = logging.Formatter(
+            fmt='%(asctime)s (%(process)d) %(message)s',
+            datefmt='%b %d %H:%M:%S %Y')
+        handler.setFormatter(formatter)
+        log.setLevel(logging.DEBUG)
+        log.addHandler(handler)
+        log.propagate = False
+        cls.smtp_controller = SMTPController('localhost', 9025)
         cls.smtp_controller.start()
         # Make sure that the smtp server is killed even if tearDown() is
         # skipped, which can happen if FunctionalLayer is in the mix.
@@ -1457,7 +1516,7 @@ class LayerProcessController:
         LaunchpadTestSetup().setUp()
         _config = cls.appserver_config
         cmd = [
-            os.path.join(_config.root, 'runlaunchpad.py'),
+            os.path.join(_config.root, 'bin', 'run'),
             '-C', 'configs/%s/launchpad.conf' % _config.instance_name]
         environ = dict(os.environ)
         environ['LPCONFIG'] = _config.instance_name

@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Person-related view classes."""
@@ -8,16 +10,17 @@ __metaclass__ = type
 __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
-    'FOAFSearchView',
     'EmailToPersonView',
+    'PeopleSearchMenu'
+    'PeopleSearchView',
     'PersonAccountAdministerView',
-    'PersonAdministerView',
     'PersonAddView',
+    'PersonAdministerView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
-    'PersonBreadcrumbBuilder',
+    'PersonBreadcrumb',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
@@ -28,10 +31,10 @@ __all__ = [
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
+    'PersonEditLocationView',
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
-    'PersonEditLocationView',
     'PersonFacets',
     'PersonGPGView',
     'PersonIndexView',
@@ -40,21 +43,20 @@ __all__ = [
     'PersonNavigation',
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
-    'PersonRdfView',
     'PersonRdfContentsView',
+    'PersonRdfView',
     'PersonRelatedBugTaskSearchListingView',
     'PersonRelatedSoftwareView',
     'PersonReportedBugTaskSearchListingView',
     'PersonSearchQuestionsView',
+    'PersonSetActionNavigationMenu',
     'PersonSetContextMenu',
     'PersonSetNavigation',
     'PersonSpecFeedbackView',
-    'PersonSpecsMenu',
-    'PersonSpecWorkloadView',
     'PersonSpecWorkloadTableView',
+    'PersonSpecWorkloadView',
+    'PersonSpecsMenu',
     'PersonSubscribedBugTaskSearchListingView',
-    'PersonTranslationView',
-    'PersonTranslationRelicensingView',
     'PersonView',
     'PersonVouchersView',
     'RedirectToEditLanguagesView',
@@ -66,14 +68,15 @@ __all__ = [
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
     'TeamAddMyTeamsView',
+    'TeamBreadcrumb',
     'TeamEditLocationView',
+    'TeamEditMenu',
     'TeamJoinView',
-    'TeamBreadcrumbBuilder',
     'TeamLeaveView',
-    'TeamNavigation',
-    'TeamOverviewMenu',
     'TeamMembershipView',
     'TeamMugshotView',
+    'TeamNavigation',
+    'TeamOverviewMenu',
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'archive_to_person',
@@ -93,9 +96,8 @@ from textwrap import dedent
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
-from zope.interface import implements, Interface
+from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
@@ -107,6 +109,8 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from z3c.ptcompat import ViewPageTemplateFile
+
 from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
@@ -117,38 +121,35 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
-from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.archive import traverse_named_ppa
-from canonical.launchpad.browser.archivesubscription import (
+from lp.registry.browser.team import TeamEditView
+from lp.soyuz.browser.archive import traverse_named_ppa
+from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.archivesubscriber import (
+from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
 from canonical.launchpad.interfaces.gpghandler import (
     GPGKeyNotFoundError, IGPGHandler)
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.interfaces.pofiletranslator import (
-    IPOFileTranslatorSet)
-from canonical.launchpad.interfaces.specification import SpecificationFilter
+from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
 from lp.answers.interfaces.questionenums import QuestionParticipation
@@ -172,8 +173,8 @@ from lp.registry.interfaces.teammembership import (
 from lp.registry.interfaces.wikiname import IWikiNameSet
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
-from canonical.launchpad.interfaces.build import (
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
@@ -182,29 +183,28 @@ from canonical.launchpad.interfaces.message import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.interfaces.openidserver import (
-    IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
-from canonical.launchpad.interfaces.sourcepackagerelease import (
+from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.launchpad.interfaces.translationrelicensingagreement import (
-    ITranslationRelicensingAgreementEdit,
-    TranslationRelicensingAgreementOptions)
-from canonical.launchpad.interfaces.translationsperson import (
-    ITranslationsPerson)
 
-from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.launchpad.browser.openiddiscovery import (
+from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
-from canonical.launchpad.browser.specificationtarget import (
+from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
     enabled_with_active_mailing_list)
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase,
+    TopLevelMenuMixin)
 from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
@@ -218,11 +218,12 @@ from canonical.launchpad.webapp import (
     custom_widget, enabled_with_permission, stepthrough, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
-from canonical.launchpad.webapp.menu import structured, NavigationMenu
+from canonical.launchpad.webapp.menu import (
+    get_current_view, structured, NavigationMenu)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from lazr.uri import URI, InvalidURIError
@@ -458,7 +459,7 @@ class TeamNavigation(PersonNavigation):
             person, self.context)
 
 
-class TeamBreadcrumbBuilder(BreadcrumbBuilder):
+class TeamBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITeam`."""
     @property
     def text(self):
@@ -590,7 +591,7 @@ class TeamInvitationView(LaunchpadFormView):
             self.context.team, data['acknowledger_comment'])
         self.request.response.addInfoNotification(
             _("This team is now a member of ${team}", mapping=dict(
-                  team=self.context.team.browsername)))
+                  team=self.context.team.displayname)))
 
     @action(_("Decline"), name="decline")
     def decline_action(self, action, data):
@@ -603,7 +604,7 @@ class TeamInvitationView(LaunchpadFormView):
             self.context.team, data['acknowledger_comment'])
         self.request.response.addInfoNotification(
             _("Declined the invitation to join ${team}", mapping=dict(
-                  team=self.context.team.browsername)))
+                  team=self.context.team.displayname)))
 
     @action(_("Cancel"), name="cancel")
     def cancel_action(self, action, data):
@@ -621,38 +622,25 @@ class PersonSetNavigation(Navigation):
         if person is None:
             raise NotFoundError(name)
         # Redirect to /~name
-        return self.redirectSubTree(canonical_url(person))
+        return self.redirectSubTree(
+            canonical_url(person, request=self.request))
 
     @stepto('+me')
     def me(self):
         me = getUtility(ILaunchBag).user
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
-        return self.redirectSubTree(canonical_url(me), status=303)
+        return self.redirectSubTree(
+            canonical_url(me, request=self.request), status=303)
 
 
-class PersonSetContextMenu(ContextMenu):
+class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
 
     usedfor = IPersonSet
 
-    links = ['products', 'distributions', 'people', 'meetings', 'newteam',
+    links = ['projects', 'distributions', 'people', 'meetings',
+             'register_team',
              'adminpeoplemerge', 'adminteammerge', 'mergeaccounts']
-
-    def products(self):
-        return Link('/projects/', 'View projects')
-
-    def distributions(self):
-        return Link('/distros/', 'View distributions')
-
-    def people(self):
-        return Link('/people/', 'View people')
-
-    def meetings(self):
-        return Link('/sprints/', 'View meetings')
-
-    def newteam(self):
-        text = 'Register a team'
-        return Link('+newteam', text, icon='add')
 
     def mergeaccounts(self):
         text = 'Merge accounts'
@@ -669,7 +657,7 @@ class PersonSetContextMenu(ContextMenu):
         return Link('+adminteammerge', text, icon='edit')
 
 
-class PersonBreadcrumbBuilder(BreadcrumbBuilder):
+class PersonBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IPerson`."""
     @property
     def text(self):
@@ -686,25 +674,25 @@ class PersonFacets(StandardLaunchpadFacets):
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about %s' % self.context.browsername
+        summary = 'General information about %s' % self.context.displayname
         return Link('', text, summary)
 
     def bugs(self):
         text = 'Bugs'
         summary = (
-            'Bug reports that %s is involved with' % self.context.browsername)
+            'Bug reports that %s is involved with' % self.context.displayname)
         return Link('', text, summary)
 
     def specifications(self):
         text = 'Blueprints'
         summary = (
             'Feature specifications that %s is involved with' %
-            self.context.browsername)
+            self.context.displayname)
         return Link('', text, summary)
 
     def bounties(self):
         text = 'Bounties'
-        browsername = self.context.browsername
+        browsername = self.context.displayname
         summary = (
             'Bounty offers that %s is involved with' % browsername)
         return Link('+bounties', text, summary)
@@ -712,20 +700,20 @@ class PersonFacets(StandardLaunchpadFacets):
     def branches(self):
         text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
-                   'by %s' % self.context.browsername)
+                   'by %s' % self.context.displayname)
         return Link('', text, summary)
 
     def answers(self):
         text = 'Answers'
         summary = (
-            'Questions that %s is involved with' % self.context.browsername)
+            'Questions that %s is involved with' % self.context.displayname)
         return Link('', text, summary)
 
     def translations(self):
         text = 'Translations'
         summary = (
             'Software that %s is involved in translating' %
-            self.context.browsername)
+            self.context.displayname)
         return Link('', text, summary)
 
 
@@ -789,24 +777,24 @@ class PersonSpecsMenu(ApplicationMenu):
 
     def registrant(self):
         text = 'Registrant'
-        summary = 'List specs registered by %s' % self.context.browsername
+        summary = 'List specs registered by %s' % self.context.displayname
         return Link('+specs?role=registrant', text, summary, icon='spec')
 
     def approver(self):
         text = 'Approver'
         summary = 'List specs with %s is supposed to approve' % (
-            self.context.browsername)
+            self.context.displayname)
         return Link('+specs?role=approver', text, summary, icon='spec')
 
     def assignee(self):
         text = 'Assignee'
         summary = 'List specs for which %s is the assignee' % (
-            self.context.browsername)
+            self.context.displayname)
         return Link('+specs?role=assignee', text, summary, icon='spec')
 
     def drafter(self):
         text = 'Drafter'
-        summary = 'List specs drafted by %s' % self.context.browsername
+        summary = 'List specs drafted by %s' % self.context.displayname
         return Link('+specs?role=drafter', text, summary, icon='spec')
 
     def subscriber(self):
@@ -816,7 +804,7 @@ class PersonSpecsMenu(ApplicationMenu):
     def feedback(self):
         text = 'Feedback requests'
         summary = 'List specs where feedback has been requested from %s' % (
-            self.context.browsername)
+            self.context.displayname)
         return Link('+specfeedback', text, summary, icon='info')
 
     def mentoring(self):
@@ -828,22 +816,6 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Workload'
         summary = 'Show all specification work assigned'
         return Link('+specworkload', text, summary, icon='info')
-
-
-class PersonTranslationsMenu(ApplicationMenu):
-
-    usedfor = IPerson
-    facet = 'translations'
-    links = ['imports', 'relicensing']
-
-    def imports(self):
-        text = 'See import queue'
-        return Link('+imports', text)
-
-    def relicensing(self):
-        text = 'Translations licensing'
-        enabled = (self.context == self.user)
-        return Link('+licensing', text, enabled=enabled)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -880,16 +852,10 @@ class CommonMenuLinks:
         text = 'Change home page'
         return Link(target, text, icon='edit')
 
-    def common_packages(self):
-        target = '+related-software'
-        text = 'List assigned packages'
-        summary = 'Packages assigned to %s' % self.context.browsername
-        return Link(target, text, summary, icon='package-source')
-
     def related_projects(self):
         target = '+related-software#projects'
         text = 'List related projects'
-        summary = 'Projects %s is involved with' % self.context.browsername
+        summary = 'Projects %s is involved with' % self.context.displayname
         return Link(target, text, summary, icon='product')
 
     @enabled_with_permission('launchpad.Edit')
@@ -909,7 +875,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
-             'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
+             'mentoringoffers', 'codesofconduct', 'karma',
              'administer', 'related_projects', 'activate_ppa',
              'view_ppa_subscriptions']
 
@@ -972,7 +938,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Show karma summary'
         summary = (
             u'%s\N{right single quotation mark}s activities '
-            u'in Launchpad' % self.context.browsername)
+            u'in Launchpad' % self.context.displayname)
         return Link(target, text, summary, icon='info')
 
     def memberships(self):
@@ -989,11 +955,14 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'Update SSH keys'
-        summary = (
-            'Used if %s stores code on Launchpad' %
-            self.context.browsername)
-        return Link(target, text, summary, icon='edit')
+        if self.context.sshkeys.count() == 0:
+            text = 'Add an SSH key'
+            icon = 'add'
+        else:
+            text = 'Update SSH keys'
+            icon = 'edit'
+        summary = 'Used when storing code on Launchpad'
+        return Link(target, text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.Edit')
     def editpgpkeys(self):
@@ -1045,7 +1014,12 @@ class PPANavigationMenuMixIn:
     def ppas(self):
         target = '#ppas'
         text = 'Personal Package Archives'
-        return Link(target, text)
+        view = get_current_view()
+        if isinstance(view, PersonView):
+            enabled = view.should_show_ppa_section
+        else:
+            enabled = True
+        return Link(target, text, enabled=enabled)
 
 
 class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
@@ -1142,17 +1116,11 @@ class PersonEditNavigationMenu(NavigationMenu):
         return Link(target, text)
 
 
-class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
-
-    usedfor = ITeam
-    facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
-             'editlanguages', 'map', 'polls',
-             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
-             'reassign', 'common_packages', 'related_projects',
-             'activate_ppa']
+class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
+    def profile(self):
+        target = ''
+        text = 'Overview'
+        return Link(target, text)
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1190,6 +1158,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def add_member(self):
         target = '+addmember'
         text = 'Add member'
+        return Link(target, text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def proposed_members(self):
+        target = '+editproposedmembers'
+        text = 'Approve/Decline applicants'
         return Link(target, text, icon='add')
 
     def map(self):
@@ -1241,15 +1215,20 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Change contact address'
         summary = (
             'The address Launchpad uses to contact %s' %
-            self.context.browsername)
+            self.team.displayname)
         return Link(target, text, summary, icon='edit')
+
+    @property
+    def team(self):
+        """Allow subclasses that use the view as the context."""
+        return self.context
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
         summary = (
-            'The mailing list associated with %s' % self.context.browsername)
+            'The mailing list associated with %s' % self.context.displayname)
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_active_mailing_list
@@ -1258,7 +1237,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+mailinglist-moderate'
         text = 'Moderate mailing list'
         summary = (
-            'The mailing list associated with %s' % self.context.browsername)
+            'The mailing list associated with %s' % self.context.displayname)
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1287,28 +1266,26 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
+class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
+
+    usedfor = ITeam
+    facet = 'overview'
+    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
+             'add_member', 'proposed_members',
+             'memberships', 'received_invitations',
+             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
+             'editlanguages', 'map', 'polls',
+             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
+             'reassign', 'related_projects',
+             'activate_ppa']
+
+
+class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
     """A top-level menu for navigation within a Team."""
 
     usedfor = ITeam
     facet = 'overview'
     links = ['profile', 'polls', 'members', 'ppas']
-
-    def profile(self):
-        target = ''
-        text = 'Overview'
-        return Link(target, text)
-
-    def polls(self):
-        target = '+polls'
-        text = 'Polls'
-        return Link(target, text)
-
-    @enabled_with_permission('launchpad.View')
-    def members(self):
-        target = '+members'
-        text = 'Members'
-        return Link(target, text)
 
 
 class ActiveBatchNavigator(BatchNavigator):
@@ -1359,33 +1336,43 @@ class TeamMembershipView(LaunchpadView):
         return self.proposed_memberships or self.invited_memberships
 
 
-class FOAFSearchView:
+class PersonSetActionNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for `PeopleSearchView`."""
+    usedfor = IPersonSet
+    links = ['register_team', 'register_project', 'create_account',
+             'request_merge', 'admin_merge_people', 'admin_merge_teams']
+
+
+class PeopleSearchView(LaunchpadView):
+    """Search for people and teams on the /people page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'People and teams in Launchpad'
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(PeopleSearchView, self).__init__(context, request)
         self.results = []
 
-    def teamsCount(self):
-        return getUtility(IPersonSet).teamsCount()
+    @property
+    def number_of_people(self):
+        return self.context.peopleCount()
 
-    def peopleCount(self):
-        return getUtility(IPersonSet).peopleCount()
+    @property
+    def number_of_teams(self):
+        return self.context.teamsCount()
 
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
-
         if not name:
             return None
-
         searchfor = self.request.get("searchfor")
         if searchfor == "peopleonly":
-            results = getUtility(IPersonSet).findPerson(name)
+            results = self.context.findPerson(name)
         elif searchfor == "teamsonly":
-            results = getUtility(IPersonSet).findTeam(name)
+            results = self.context.findTeam(name)
         else:
-            results = getUtility(IPersonSet).find(name)
-
+            results = self.context.find(name)
         return BatchNavigator(results, self.request)
 
 
@@ -1487,7 +1474,7 @@ class PersonClaimView(LaunchpadFormView):
                          "Launchpad profile, which you seem to have used at "
                          "some point. If that's the case, you can "
                          '<a href="/people/+requestmerge'
-                         '?field.dupeaccount=%s">combine '
+                         '?field.dupe_person=%s">combine '
                          "this profile with the other one</a> (you'll "
                          "have to log in with the other profile first, "
                          "though). If that's not the case, please try with a "
@@ -2292,7 +2279,6 @@ class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
     custom_widget('voucher', LaunchpadDropdownWidget)
-    custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
         """Set up the fields for this view."""
@@ -2400,12 +2386,19 @@ class PersonVouchersView(LaunchpadFormView):
             globalErrorUtility.raising(info, self.request)
 
 
-class PersonLanguagesView(LaunchpadView):
+class PersonLanguagesView(LaunchpadFormView):
+    """Edit preferred languages for a person or team."""
+    schema = Interface
 
-    def initialize(self):
-        request = self.request
-        if request.method == "POST" and "SAVE-LANGS" in request.form:
-            self.submitLanguages()
+    @property
+    def label(self):
+        """The form label."""
+        if self.is_current_user:
+            return "Your language preferences"
+        else:
+            return "%s's language preferences" % self.context.displayname
+
+    page_title = label
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -2436,7 +2429,15 @@ class PersonLanguagesView(LaunchpadView):
         """Return True when the Context is also the User."""
         return self.user == self.context
 
-    def submitLanguages(self):
+    @property
+    def next_url(self):
+        """Redirect to this url after successfully processing the form."""
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    @action(_("Save"), name="save")
+    def submitLanguages(self, action, data):
         '''Process a POST request to the language preference form.
 
         This list of languages submitted is compared to the list of
@@ -2476,6 +2477,12 @@ class PersonLanguagesView(LaunchpadView):
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             self.request.response.redirect(redirection_url)
+
+    @property
+    def answers_url(self):
+        return canonical_url(
+            getUtility(ILaunchpadCelebrities).lp_translations,
+            rootsite='answers')
 
 
 class PersonView(LaunchpadView, FeedsMixin):
@@ -2773,16 +2780,18 @@ class PersonView(LaunchpadView, FeedsMixin):
         The list contains email addresses when the EmailAddressVisibleState's
         PUBLIC or ALLOWED attributes are True. The preferred email
         address is the first in the list, the other validated email addresses
-        are not ordered.
+        are not ordered. When the team is the context, only the preferred
+        email address is in the list.
 
         :return: A list of email address strings that can be seen.
         """
         visible_states = (
             EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
         if self.email_address_visibility.state in visible_states:
-            emails = sorted(
-                email.email for email in self.context.validatedemails)
-            emails.insert(0, self.context.preferredemail.email)
+            emails = [self.context.preferredemail.email]
+            if not self.context.isTeam():
+                emails.extend(sorted(
+                    email.email for email in self.context.validatedemails))
             return emails
         else:
             return []
@@ -2848,6 +2857,42 @@ class PersonView(LaunchpadView, FeedsMixin):
             return ', '.join(sorted(englishnames))
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
+
+    @cachedproperty
+    def has_karma(self):
+        """Does the have karma?"""
+        return bool(self.context.karma_category_caches)
+
+    @cachedproperty
+    def has_expired_karma(self):
+        """Did the user have karm?."""
+        return self.context.latestKarma().count() > 0
+
+    @property
+    def public_private_css(self):
+        """The CSS classes that represent the public or private state."""
+        if self.context.private:
+            return 'aside private'
+        else:
+            return 'aside public'
+
+    @cachedproperty
+    def should_show_ppa_section(self):
+        """Return True if "Personal package archives" is to be shown.
+
+        We display it if:
+        person has any public PPA or current_user has lp.edit
+        """
+        # If the current user has edit permission, show the section.
+        if check_permission('launchpad.Edit', self.context):
+            return True
+
+        # If the current user has any public PPA, show the section.
+        for ppa in self.context.ppas:
+            if not ppa.private:
+                return True
+
+        return False
 
 
 class EmailAddressVisibleState:
@@ -2923,7 +2968,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../../../canonical/launchpad/templates/person-xrds.pt")
+        "../../services/openid/templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
@@ -2945,12 +2990,11 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return CurrentOpenIDEndPoint.getOldServiceURL()
+        return CurrentOpenIDEndPoint.getServiceURL()
 
     @cachedproperty
     def openid_identity_url(self):
-        return IOpenIDPersistentIdentity(
-            self.context).old_openid_identity_url
+        return IOpenIDPersistentIdentity(self.context).openid_identity_url
 
     def processForm(self):
         if not self.request.form.get('unsubscribe'):
@@ -3115,7 +3159,7 @@ class PersonEditWikiNamesView(LaunchpadView):
                         'The WikiName %s%s is already registered by '
                         '<a href="%s">%s</a>.',
                         wiki, wikiname, canonical_url(existingwiki.person),
-                        existingwiki.person.browsername)
+                        existingwiki.person.displayname)
                     return
                 elif existingwiki:
                     self.error_message = structured(
@@ -3206,7 +3250,7 @@ class PersonEditJabberIDsView(LaunchpadView):
                     'The Jabber ID %s is already registered by '
                     '<a href="%s">%s</a>.',
                     jabberid, canonical_url(existingjabber.person),
-                    existingjabber.person.browsername)
+                    existingjabber.person.displayname)
                 return
             else:
                 self.error_message = structured(
@@ -3289,118 +3333,6 @@ class PersonEditSSHKeysView(LaunchpadView):
         comment = sshkey.comment
         sshkey.destroySelf()
         self.info_message = structured('Key "%s" removed' % comment)
-
-
-class PersonTranslationView(LaunchpadView):
-    """View for translation-related Person pages."""
-
-    _pofiletranslator_cache = None
-
-    @cachedproperty
-    def batchnav(self):
-        translations_person = ITranslationsPerson(self.context)
-        batchnav = BatchNavigator(
-            translations_person.translation_history, self.request)
-
-        pofiletranslatorset = getUtility(IPOFileTranslatorSet)
-        batch = batchnav.currentBatch()
-        self._pofiletranslator_cache = (
-            pofiletranslatorset.prefetchPOFileTranslatorRelations(batch))
-
-        return batchnav
-
-    @cachedproperty
-    def translation_groups(self):
-        """Return translation groups a person is a member of."""
-        translations_person = ITranslationsPerson(self.context)
-        return list(translations_person.translation_groups)
-
-    @cachedproperty
-    def translators(self):
-        """Return translators a person is a member of."""
-        translations_person = ITranslationsPerson(self.context)
-        return list(translations_person.translators)
-
-    @cachedproperty
-    def person_filter_querystring(self):
-        """Return person's name appropriate for including in links."""
-        return urllib.urlencode({'person': self.context.name})
-
-    def should_display_message(self, translationmessage):
-        """Should a certain `TranslationMessage` be displayed.
-
-        Return False if user is not logged in and message may contain
-        sensitive data such as email addresses.
-
-        Otherwise, return True.
-        """
-        if self.user:
-            return True
-        return not (
-            translationmessage.potmsgset.hide_translations_from_anonymous)
-
-
-class PersonTranslationRelicensingView(LaunchpadFormView):
-    """View for Person's translation relicensing page."""
-    schema = ITranslationRelicensingAgreementEdit
-    field_names = ['allow_relicensing', 'back_to']
-    custom_widget(
-        'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget('back_to', TextWidget, visible=False)
-
-    @property
-    def initial_values(self):
-        """Set the default value for the relicensing radio buttons."""
-        translations_person = ITranslationsPerson(self.context)
-        # If the person has previously made a choice, we default to that.
-        # Otherwise, we default to BSD, because that's what we'd prefer.
-        if translations_person.translations_relicensing_agreement == False:
-            default = TranslationRelicensingAgreementOptions.REMOVE
-        else:
-            default = TranslationRelicensingAgreementOptions.BSD
-        return {
-            "allow_relicensing": default,
-            "back_to": self.request.get('back_to'),
-            }
-
-    @property
-    def relicensing_url(self):
-        """Return an URL for this view."""
-        return canonical_url(self.context, view_name='+licensing')
-
-    def getSafeRedirectURL(self, url):
-        """Successful form submission should send to this URL."""
-        if url and url.startswith(self.request.getApplicationURL()):
-            return url
-        else:
-            return canonical_url(self.context)
-
-    @action(_("Confirm"), name="submit")
-    def submit_action(self, action, data):
-        """Store person's decision about translations relicensing.
-
-        Decision is stored through
-        `ITranslationsPerson.translations_relicensing_agreement`
-        which uses TranslationRelicensingAgreement table.
-        """
-        translations_person = ITranslationsPerson(self.context)
-        allow_relicensing = data['allow_relicensing']
-        if allow_relicensing == TranslationRelicensingAgreementOptions.BSD:
-            translations_person.translations_relicensing_agreement = True
-            self.request.response.addInfoNotification(_(
-                "Thank you for BSD-licensing your translations."))
-        elif (allow_relicensing ==
-            TranslationRelicensingAgreementOptions.REMOVE):
-            translations_person.translations_relicensing_agreement = False
-            self.request.response.addInfoNotification(_(
-                "We respect your choice. "
-                "Your translations will be removed once we complete the "
-                "switch to the BSD license. "
-                "Thanks for trying out Launchpad Translations."))
-        else:
-            raise AssertionError(
-                "Unknown allow_relicensing value: %r" % allow_relicensing)
-        self.next_url = self.getSafeRedirectURL(data['back_to'])
 
 
 class PersonGPGView(LaunchpadView):
@@ -3606,11 +3538,17 @@ class PersonChangePasswordView(LaunchpadFormView):
         return canonical_url(self.context)
 
     def validate(self, form_values):
-        currentpassword = form_values.get('currentpassword')
+        current_password = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(currentpassword, self.context.password):
+        if not encryptor.validate(current_password, self.context.password):
             self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
+        # This is not part of the widget, since the value may
+        # be optional in some forms.
+        new_password = self.request.form.get('field.password', '')
+        if new_password.strip() == '':
+            self.setFieldError('password', _(
+                "Setting an empty password is not allowed."))
 
     @action(_("Change Password"), name="submit")
     def submit_action(self, action, data):
@@ -3618,6 +3556,11 @@ class PersonChangePasswordView(LaunchpadFormView):
         self.context.password = password
         self.request.response.addInfoNotification(_(
             "Password changed successfully"))
+
+    @property
+    def cancel_url(self):
+        """The URL that the 'Cancel' link should return to."""
+        return canonical_url(self.context)
 
 
 class BasePersonEditView(LaunchpadEditFormView):
@@ -3628,7 +3571,12 @@ class BasePersonEditView(LaunchpadEditFormView):
     @action(_("Save"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class PersonEditHomePageView(BasePersonEditView):
@@ -3636,6 +3584,13 @@ class PersonEditHomePageView(BasePersonEditView):
     field_names = ['homepage_content']
     custom_widget(
         'homepage_content', TextAreaWidget, height=30, width=30)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Change home page for %s' % self.context.displayname
+
+    page_title = label
 
 
 class PersonEditView(BasePersonEditView):
@@ -3651,10 +3606,22 @@ class PersonEditView(BasePersonEditView):
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
 
-    @property
-    def cancel_url(self):
-        """The URL that the 'Cancel' link should return to."""
-        return canonical_url(self.context)
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        When a user has a PPA renames are prohibited.
+        """
+        writable = self.context.archive is None
+        if not writable:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
+        super(PersonEditView, self).setUpWidgets()
+        if not writable:
+            # We can't change the widget's .hint directly because that's a
+            # read-only property.  But that property just delegates to the
+            # context's underlying description, so change that instead.
+            self.widgets['name'].context.description = _(
+                'This user has a PPA and may not be renamed.')
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""
@@ -3700,11 +3667,7 @@ class PersonEditView(BasePersonEditView):
         identifier = IOpenIDPersistentIdentity(self.context)
         unknown_trust_root_login_records = list(
             getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                identifier.old_openid_identity_url, True))
-        if identifier.new_openid_identifier is not None:
-            unknown_trust_root_login_records.extend(list(
-                getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                    identifier.new_openid_identity_url, True)))
+                identifier.openid_identity_url, True))
         return sorted([
             record.trust_root
             for record in unknown_trust_root_login_records])
@@ -3712,7 +3675,6 @@ class PersonEditView(BasePersonEditView):
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -4307,7 +4269,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
-                    '%s/+requestmerge?field.dupeaccount=%s'
+                    '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
                 self.addError(
                     structured(
@@ -4315,7 +4277,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                         '<a href="%s">%s</a>. If you think that is a '
                         'duplicated account, you can <a href="%s">merge it'
                         "</a> into your account.",
-                        newemail, canonical_url(owner), owner.browsername,
+                        newemail, canonical_url(owner), owner.displayname,
                         merge_url))
         return self.errors
 
@@ -4432,7 +4394,7 @@ class TeamReassignmentView(ObjectReassignmentView):
 
     @property
     def contextName(self):
-        return self.context.browsername
+        return self.context.displayname
 
     def _addOwnerAsMember(self, team, oldOwner, newOwner):
         """Add the new and the old owners as administrators of the team.
@@ -4456,7 +4418,7 @@ class TeamReassignmentView(ObjectReassignmentView):
                 status=TeamMembershipStatus.ADMIN, force_team_add=True)
 
 
-class PersonLatestQuestionsView(LaunchpadView):
+class PersonLatestQuestionsView(LaunchpadFormView):
     """View used by the porlet displaying the latest questions made by
     a person.
     """
@@ -4631,6 +4593,11 @@ class PersonAnswerContactForView(LaunchpadView):
     contact for.
     """
 
+    @property
+    def label(self):
+        return 'Projects for which %s is an answer contact' % (
+            self.context.displayname)
+
     @cachedproperty
     def direct_question_targets(self):
         """List of targets that the IPerson is a direct answer contact.
@@ -4664,7 +4631,7 @@ class PersonAnswersMenu(ApplicationMenu):
              'subscribed', 'answer_contact_for']
 
     def answer_contact_for(self):
-        summary = "Projects for which %s is an answer contact for" % (
+        summary = "Projects for which %s is an answer contact" % (
             self.context.displayname)
         return Link('+answer-contact-for', 'Answer contact for', summary)
 
@@ -4722,9 +4689,6 @@ class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-software."""
     implements(IPersonRelatedSoftwareMenu)
 
-    SUMMARY_PAGE_PACKAGE_LIMIT = 30
-    # Safety net for the Registry Admins case which is the owner/driver of
-    # lots of projects.
     max_results_to_display = config.launchpad.default_batch_size
 
     @cachedproperty
@@ -4775,26 +4739,26 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return self.related_projects_count > 5
 
     @cachedproperty
-    def too_many_related_projects_found(self):
-        """Does the user have more related projects than can be displayed?"""
-        return self.related_projects_count > self.max_results_to_display
+    def projects_header_message(self):
+        return self._tableHeaderMessage(
+            self.related_projects_count, label='project')
 
     def _related_projects(self):
         """Return all projects owned or driven by this person."""
         return self.context.getOwnedOrDrivenPillars()
 
-    def _tableHeaderMessage(self, count):
+    def _tableHeaderMessage(self, count, label='package'):
         """Format a header message for the tables on the summary page."""
-        if count > self.SUMMARY_PAGE_PACKAGE_LIMIT:
-            packages_header_message = (
-                "Displaying first %d packages out of %d total" % (
-                    self.SUMMARY_PAGE_PACKAGE_LIMIT, count))
+        if count > 1:
+            label += 's'
+        if count > self.max_results_to_display:
+            header_message = (
+                "Displaying first %d %s out of %d total" % (
+                    self.max_results_to_display, label, count))
         else:
-            packages_header_message = "%d package" % count
-            if count > 1:
-                packages_header_message += "s"
+            header_message = "%d %s" % (count, label)
 
-        return packages_header_message
+        return header_message
 
     def filterPPAPackageList(self, packages):
         """Remove packages that the user is not allowed to see.
@@ -4828,14 +4792,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
         :param packages: A SelectResults that contains the query
         :return: A tuple of (packages, header_message).
 
-        The packages returned are limited to self.SUMMARY_PAGE_PACKAGE_LIMIT
+        The packages returned are limited to self.max_results_to_display
         and decorated with the stats required in the page template.
         The header_message is the text to be displayed at the top of the
         results table in the template.
         """
         # This code causes two SQL queries to be generated.
         results = self._addStatsToPackages(
-            packages[:self.SUMMARY_PAGE_PACKAGE_LIMIT])
+            packages[:self.max_results_to_display])
         header_message = self._tableHeaderMessage(packages.count())
         return results, header_message
 
@@ -5028,6 +4992,8 @@ class PersonOAuthTokensView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Couldn't find authorization given to %s. Maybe it has been "
                 "revoked already?" % consumer.key)
+        self.request.response.redirect(
+            canonical_url(self.context, view_name='+oauth-tokens'))
 
 
 class PersonLocationForm(Interface):
@@ -5484,3 +5450,25 @@ class EmailToPersonView(LaunchpadFormView):
             return 'Contact yourself'
         else:
             return 'Contact this user'
+
+
+class ITeamEditMenu(Interface):
+    """A marker interface for the edit navigation menu."""
+
+
+class TeamEditMenu(NavigationMenu, TeamMenuMixin):
+    """A menu for different aspects of editing a team."""
+
+    usedfor = ITeamEditMenu
+    facet = 'overview'
+    title = 'Change team'
+    links = ('branding', 'common_edithomepage', 'editlanguages', 'reassign',
+             'editemail')
+
+    @property
+    def team(self):
+        """Override TeamOverviewMenu since the view is the context."""
+        return self.context.context
+
+
+classImplements(TeamEditView, ITeamEditMenu)

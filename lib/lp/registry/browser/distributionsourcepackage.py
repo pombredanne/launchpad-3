@@ -1,9 +1,10 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
-    'DistributionSourcePackageBreadcrumbBuilder',
+    'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
@@ -20,27 +21,29 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.distributionsourcepackagerelease import (
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
-from canonical.launchpad.interfaces.packagediff import IPackageDiffSet
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from canonical.launchpad.interfaces.packaging import IPackagingUtil
-from canonical.launchpad.interfaces.publishing import pocketsuffix
+from lp.soyuz.interfaces.publishing import pocketsuffix
 from lp.registry.interfaces.product import IDistributionSourcePackage
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.answers.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, Link, StandardLaunchpadFacets, action, canonical_url,
-    redirection)
+    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, Link,
+    Navigation, StandardLaunchpadFacets, action, canonical_url, redirection)
 from canonical.launchpad.webapp.menu import enabled_with_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from lazr.delegates import delegates
 from canonical.lazr.utils import smartquote
 
 
-class DistributionSourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
     @property
     def text(self):
@@ -52,7 +55,7 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
                                       StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
-    enable_only = ['overview', 'bugs', 'answers']
+    enable_only = ['overview', 'bugs', 'answers', 'branches']
 
 
 class DistributionSourcePackageOverviewMenu(ApplicationMenu):
@@ -80,15 +83,23 @@ class DistributionSourcePackageBugsMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['subscribe']
+    links = ['filebug', 'subscribe']
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='bug')
 
 
-class DistributionSourcePackageNavigation(GetitemNavigation,
-    BugTargetTraversalMixin, QuestionTargetTraversalMixin):
+class DistributionSourcePackageNavigation(Navigation,
+    BugTargetTraversalMixin, QuestionTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage
 
     redirection("+editbugcontact", "+subscribe")
+
+    def traverse(self, name):
+        return self.context.getVersion(name)
 
 
 class DecoratedDistributionSourcePackageRelease:
@@ -150,6 +161,80 @@ class DistributionSourcePackageView(LaunchpadFormView):
                     }
                 results.append(entry)
         return results
+
+    @property
+    def related_ppa_versions(self):
+        """Return a list of the latest 3 ppas with related publishings.
+
+        The list contains dictionaries each with a key of 'archive' and
+        'publications'.
+        """
+        # Grab the related archive publications and limit the result to
+        # the first 3.
+        # XXX Michael Nelson 2009-06-24 bug=387020
+        # Currently we need to find distinct archives here manually because,
+        # without a concept of IArchive.rank or similar, the best ordering
+        # that orderDistributionSourcePackage.findRelatedArchives() method
+        # can provide is on a join (SourcePackageRelease.dateuploaded), but
+        # this prohibits a distinct clause.
+        # To ensure that we find distinct archives here with only one query,
+        # we grab the first 20 results and iterate through to find three
+        # distinct archives (20 is a magic number being greater than
+        # 3 * number of distroseries).
+        related_archives = self.context.findRelatedArchives()
+        related_archives.config(limit=20)
+        top_three_archives = []
+        for archive in related_archives:
+            if archive in top_three_archives:
+                continue
+            else:
+                top_three_archives.append(archive)
+
+            if len(top_three_archives) == 3:
+                break
+
+        # Now we'll find the relevant publications for the top
+        # three archives.
+        archive_set = getUtility(IArchiveSet)
+        publications = archive_set.getPublicationsInArchives(
+                self.context.sourcepackagename, top_three_archives,
+                self.context.distribution)
+
+        # Collect the publishings for each archive
+        archive_publishings = {}
+        for pub in publications:
+            archive_publishings.setdefault(pub.archive, []).append(pub)
+
+        # Then construct a list of dicts with the results for easy use in
+        # the template, preserving the order of the archives:
+        archive_versions = []
+        for archive in top_three_archives:
+            versions = []
+
+            # For each publication, append something like:
+            # 'Jaunty (1.0.1b)' to the versions list.
+            for pub in archive_publishings[archive]:
+                versions.append(
+                    "%s (%s)" % (
+                        pub.distroseries.displayname,
+                        pub.source_package_version
+                        )
+                    )
+            archive_versions.append({
+                'archive': archive,
+                'versions': ", ".join(versions)
+                })
+
+        return archive_versions
+
+    @property
+    def further_ppa_versions_url(self):
+        """Return the url used to find further PPA versions of this package.
+        """
+        return "%s/+ppas?name_filter=%s" % (
+            canonical_url(self.context.distribution),
+            self.context.name,
+            )
 
     def _createPackagingField(self):
         """Create a field to specify a Packaging association.
@@ -273,10 +358,19 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     """Edit a distribution source package."""
 
     schema = IDistributionSourcePackage
-    label = "Change source package details"
     field_names = [
         'bug_reporting_guidelines',
         ]
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @action("Change", name='change')
     def change_action(self, action, data):

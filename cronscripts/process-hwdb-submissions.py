@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """
@@ -20,7 +23,7 @@ submissions that cannot be processed are set to the status INVALID.
 
 import _pythonpath
 
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.hwdbsubmissions import (
     process_pending_submissions)
 

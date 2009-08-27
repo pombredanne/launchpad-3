@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -61,7 +63,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
         if self.status == EmailAddressStatus.PREFERRED:
             raise UndeletableEmailAddress(
                 "This is a person's preferred email, so it can't be deleted.")
-        mailing_list = self.person.mailing_list
+        mailing_list = self.person and self.person.mailing_list
         if mailing_list is not None and mailing_list.address == self.email:
             raise UndeletableEmailAddress(
                 "This is the email address of a team's mailing list, so it "

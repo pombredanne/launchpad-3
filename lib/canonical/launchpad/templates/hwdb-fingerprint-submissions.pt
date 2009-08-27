@@ -34,7 +34,7 @@
               <td tal:define="owner submission/owner;
                       show_owner python: view.showOwner(submission)">
                 <a tal:condition="show_owner"
-                   tal:content="string: ${owner/browsername} (${owner/name})"
+                   tal:content="string: ${owner/displayname} (${owner/name})"
                    tal:attributes="href owner/fmt:url" />
                 <tal:hide_owner tal:condition="not: show_owner">
                    n/a

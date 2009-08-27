@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:i18n="http://namespaces.zope.org/i18n"
@@ -6,6 +10,7 @@
 
   <!-- Meta configuration (new directives) -->
   <include package="zope.app" file="meta.zcml" />
+  <includeOverrides package="z3c.ptcompat" file="meta.zcml" />
   <include package="zope.app.publisher.xmlrpc" file="meta.zcml" />
 
   <!-- Note that we need to do this early, as later startup

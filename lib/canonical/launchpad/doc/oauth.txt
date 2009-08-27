@@ -123,7 +123,7 @@ DistroSourcePackage).
     >>> request_token2.review(
     ...     salgado, OAuthPermission.WRITE_PRIVATE, context=evolution)
     >>> request_token2.context.title
-    u'\u201cevolution\u201d source package in Ubuntu'
+    u'\u201cevolution\u201d package in Ubuntu'
 
 
 === Retrieving request tokens ===

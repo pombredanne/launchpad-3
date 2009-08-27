@@ -21,12 +21,12 @@
 
       <p>
         These are the bounties related to
-        <tal:person replace="context/browsername">Foo Bar</tal:person>.
+        <tal:person replace="context/displayname">Foo Bar</tal:person>.
       </p>
 
   <tal:block condition="view/no_bounties">
     <p>No bounties associated with <span
-    tal:replace="context/browsername">Mark Shuttleworth</span>.</p>
+    tal:replace="context/displayname">Mark Shuttleworth</span>.</p>
   </tal:block>
 
   <tal:block condition="context/ownedBounties">

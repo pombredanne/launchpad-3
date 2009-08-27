@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -20,10 +21,12 @@ import mimetypes
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
 from zope.formlib.form import FormFields
 from zope.schema import Bool
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFileAddForm)
@@ -38,7 +41,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import DateTimeWidget
 
-from lp.registry.browser import RegistryDeleteViewMixin
+from lp.registry.browser import MilestoneOverlayMixin, RegistryDeleteViewMixin
 
 
 class ProductReleaseNavigation(Navigation):
@@ -62,7 +65,8 @@ class ProductReleaseContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        summary = "Edit this release"
+        return Link('+edit', text, summary=summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def add_file(self):
@@ -122,7 +126,7 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
                 _("The %s for this project release was deactivated "
                   "so that bugs and blueprints cannot be associated with "
                   "this release." % milestone_link)))
-        self.next_url = canonical_url(newrelease.milestone.productseries)
+        self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 
     @property
@@ -167,7 +171,8 @@ class ProductReleaseAddView(ProductReleaseAddViewBase):
         self._createRelease(self.context, data)
 
 
-class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
+class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
+                                      MilestoneOverlayMixin):
     """Create a product release from an existing or new milestone.
 
     Also, deactivate the milestone it is attached to.
@@ -203,15 +208,6 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
                 __name__='milestone_for_release',
                 vocabulary=SimpleVocabulary(terms)))
         self.form_fields = milestone_field + self.form_fields
-
-    @property
-    def milestone_form_uri(self):
-        """URI for form displayed by the formoverlay widget."""
-        return canonical_url(self.context) + '/+addmilestone/++form++'
-
-    @property
-    def series_api_uri(self):
-        return canonical_url(self.context, path_only_if_possible=True)
 
     @action(_('Create release'), name='create')
     def createRelease(self, action, data):

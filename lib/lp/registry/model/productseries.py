@@ -1,5 +1,8 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
+"""Models for `IProductSeries`."""
 
 __metaclass__ = type
 
@@ -8,10 +11,11 @@ __all__ = [
     'ProductSeriesSet',
     ]
 
+import datetime
+
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In
-from warnings import warn
+from storm.expr import In, Sum
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -22,46 +26,66 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bug import (
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bugtask import BugTask
+from lp.services.worlddata.model.language import Language
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.database.potemplate import POTemplate
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership)
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.specification import (
+from lp.translations.model.productserieslanguage import (
+    ProductSeriesLanguage)
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.model.distroseries import SeriesMixin
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packaging import PackagingType
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
-from canonical.launchpad.interfaces.specification import (
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import IStructuralSubscriptionTarget
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.productseries import IProductSeries, IProductSeriesSet
+from lp.registry.interfaces.productseries import (
+    IProductSeries, IProductSeriesSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
+
+def landmark_key(landmark):
+    """Sorts landmarks by date and name."""
+    if landmark['date'] is None:
+        # Null dates are assumed to be in the future.
+        date = '9999-99-99'
+    else:
+        date = landmark['date']
+    return date + landmark['name']
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
-                    StructuralSubscriptionTargetMixin):
+                    HasTranslationTemplatesMixin,
+                    StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(
-        IProductSeries, IHasTranslationTemplates,
-        IStructuralSubscriptionTarget)
+    implements(IProductSeries, IHasTranslationTemplates)
 
     _table = 'ProductSeries'
 
@@ -74,10 +98,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership,
+        notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership,
+        notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
     translations_autoimport_mode = EnumCol(
@@ -85,6 +111,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         notNull=True,
         schema=TranslationsBranchImportMode,
         default=TranslationsBranchImportMode.NO_IMPORT)
+    translations_branch = ForeignKey(
+        dbName='translations_branch', foreignKey='Branch', notNull=False,
+        default=None)
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
@@ -140,7 +169,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda x: x.displayname)
 
     @property
     def bug_supervisor(self):
@@ -159,13 +188,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     @property
     def title(self):
-        return self.product.displayname + ' Series: ' + self.displayname
-
-    def shortdesc(self):
-        warn('ProductSeries.shortdesc should be ProductSeries.summary',
-             DeprecationWarning)
-        return self.summary
-    shortdesc = property(shortdesc)
+        return '%s %s series' % (self.product.displayname, self.displayname)
 
     @property
     def bug_reporting_guidelines(self):
@@ -176,7 +199,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def sourcepackages(self):
         """See IProductSeries"""
         from lp.registry.model.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productseries=self)
+        ret = self.packagings
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distroseries=r.distroseries)
                     for r in ret]
@@ -414,18 +437,27 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                                      orderBy=['-priority','name'])
         return shortlist(result, 300)
 
-    def getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            productseries = %s AND
-            productseries = ProductSeries.id AND
-            iscurrent IS TRUE AND
-            ProductSeries.product = Product.id AND
-            Product.official_rosetta IS TRUE
-            ''' % sqlvalues(self),
-            orderBy=['-priority','name'],
-            clauseTables = ['ProductSeries', 'Product'])
-        return shortlist(result, 300)
+        store = Store.of(self)
+        if just_ids:
+            looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
+
+        # Select all current templates for this series, if the Product
+        # actually uses Launchpad Translations.  Otherwise, return an
+        # empty result.
+        result = store.find(looking_for, And(
+            self.product.official_rosetta == True,
+            POTemplate.iscurrent == True,
+            POTemplate.productseries == self))
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
+
+    @property
+    def potemplate_count(self):
+        """See `IProductSeries`."""
+        return self.getCurrentTranslationTemplates().count()
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -438,6 +470,109 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
+
+    @property
+    def productserieslanguages(self):
+        """See `IProductSeries`."""
+        store = Store.of(self)
+
+        english = getUtility(ILaunchpadCelebrities).english
+
+        results = []
+        if self.potemplate_count == 1:
+            # If there is only one POTemplate in a ProductSeries, fetch
+            # Languages and corresponding POFiles with one query, along
+            # with their stats, and put them into ProductSeriesLanguage
+            # objects.
+            origin = [Language, POFile, POTemplate]
+            query = store.using(*origin).find(
+                (Language, POFile),
+                POFile.language==Language.id,
+                POFile.variant==None,
+                Language.visible==True,
+                POFile.potemplate==POTemplate.id,
+                POTemplate.productseries==self,
+                POTemplate.iscurrent==True,
+                Language.id!=english.id)
+
+            for language, pofile in query.order_by(['Language.englishname']):
+                psl = ProductSeriesLanguage(self, language, pofile=pofile)
+                psl.setCounts(pofile.potemplate.messageCount(),
+                              pofile.currentCount(),
+                              pofile.updatesCount(),
+                              pofile.rosettaCount(),
+                              pofile.unreviewedCount())
+                results.append(psl)
+        else:
+            # If there is more than one template, do a single
+            # query to count total messages in all templates.
+            query = store.find(Sum(POTemplate.messagecount),
+                                POTemplate.productseries==self,
+                                POTemplate.iscurrent==True)
+            total, = query
+            # And another query to fetch all Languages with translations
+            # in this ProductSeries, along with their cumulative stats
+            # for imported, changed, rosetta-provided and unreviewed
+            # translations.
+            query = store.find(
+                (Language,
+                 Sum(POFile.currentcount),
+                 Sum(POFile.updatescount),
+                 Sum(POFile.rosettacount),
+                 Sum(POFile.unreviewed_count)),
+                POFile.language==Language.id,
+                POFile.variant==None,
+                Language.visible==True,
+                POFile.potemplate==POTemplate.id,
+                POTemplate.productseries==self,
+                POTemplate.iscurrent==True,
+                Language.id!=english.id).group_by(Language)
+
+            for (language, imported, changed, new, unreviewed) in (
+                query.order_by(['Language.englishname'])):
+                psl = ProductSeriesLanguage(self, language)
+                psl.setCounts(total, imported, changed, new, unreviewed)
+                results.append(psl)
+
+        return results
+
+    def getTimeline(self, include_inactive=False):
+        landmarks = []
+        for milestone in self.all_milestones:
+            if milestone.product_release is None:
+                # Skip inactive milestones, but include releases,
+                # even if include_inactive is False.
+                if not include_inactive and not milestone.active:
+                    continue
+                node_type = 'milestone'
+                date = milestone.dateexpected
+                uri = canonical_url(milestone, path_only_if_possible=True)
+            else:
+                node_type = 'release'
+                date = milestone.product_release.datereleased
+                uri = canonical_url(
+                    milestone.product_release, path_only_if_possible=True)
+
+            if isinstance(date, datetime.datetime):
+                date = date.date().isoformat()
+            elif isinstance(date, datetime.date):
+                date = date.isoformat()
+
+            entry = dict(
+                name=milestone.name,
+                code_name=milestone.code_name,
+                type=node_type,
+                date=date,
+                uri=uri)
+            landmarks.append(entry)
+
+        landmarks = sorted_dotted_numbers(landmarks, key=landmark_key)
+        landmarks.reverse()
+        return dict(
+            name=self.name,
+            is_development_focus=self.is_development_focus,
+            uri=canonical_url(self, path_only_if_possible=True),
+            landmarks=landmarks)
 
 
 class ProductSeriesSet:

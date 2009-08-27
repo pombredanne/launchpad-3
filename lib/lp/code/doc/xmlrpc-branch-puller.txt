@@ -31,7 +31,7 @@ The IBranchPuller interface defines some methods, for which see the unit
 tests.  To allow a minimal test here, we call getBranchPullQueue,
 which will return an empty list.
 
-    >>> from lp.code.interfaces.branch import BranchType
+    >>> from lp.code.enums import BranchType
     >>> branch_puller.getBranchPullQueue(BranchType.HOSTED.name)
     []
 

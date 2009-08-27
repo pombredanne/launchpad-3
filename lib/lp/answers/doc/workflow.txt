@@ -564,6 +564,28 @@ attributes.
     >>> question.datelastquery == old_datelastquery
     True
 
+
+== Setting the question assignee ==
+
+Users with launchpad.Moderator privileges, which are answer contacts,
+question target owners, and admins, can assign someone to answer a question.
+
+Sample Person is an answer contact for ubuntu. He can set the assignee.
+
+    >>> login('test@canonical.com')
+    >>> question.assignee = stub
+    >>> print question.assignee.displayname
+    Stuart Bishop
+
+Users without launchpad.Moderator privileges cannot set the assignee
+
+    >>> login('no-priv@canonical.com')
+    >>> question.assignee = sample_person
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Question ...>, 'assignee', 'launchpad.Moderate')
+
+
 == Events ==
 
 Each of the workflow methods will trigger a ObjectCreatedEvent for

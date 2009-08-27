@@ -32,7 +32,7 @@ them back to that same team, after the registration is complete.
     'http://launchpad.dev/%7Eubuntu-team/+join'
 
     # Clean up stub.test_emails to make sure other tests don't fuck us over.
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
 
 

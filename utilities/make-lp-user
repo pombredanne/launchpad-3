@@ -1,4 +1,8 @@
 #!/usr/bin/python2.4
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Create a user for testing the local Launchpad.
 
 Usage: make-lp-user <username> [<team1> <team2> ...]
@@ -39,7 +43,7 @@ from canonical.launchpad.interfaces import (
     TeamMembershipStatus,
     )
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 
 # Shut up, pyflakes.
 _pythonpath = _pythonpath

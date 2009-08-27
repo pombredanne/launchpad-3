@@ -3,7 +3,8 @@
 <feed xmlns="http://www.w3.org/2005/Atom"
       xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal"
-      xml:lang="en">
+      xml:lang="en"
+      tal:attributes="xml:lang string:en">
 
   <title tal:content="view/title">Recently opened bugs</title>
 

@@ -21,7 +21,7 @@
 <div metal:fill-slot="main">
 
   <tal:block tal:condition="view/user_can_request_to_join">
-    <h1>Joining <span tal:replace="context/browsername" /></h1>
+    <h1>Joining <span tal:replace="context/displayname" /></h1>
 
     <h2>Are you sure you want to join this team?</h2>
 
@@ -54,7 +54,7 @@
     </p>
 
     <p tal:condition="not: view/join_allowed" class="warning message">
-      <span tal:replace="context/browsername" /> is a restricted team.
+      <span tal:replace="context/displayname" /> is a restricted team.
       Only a team administrator can add new members.
     </p>
 

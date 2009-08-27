@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -22,7 +23,7 @@ from canonical.launchpad.interfaces import (
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
         BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
-        BugTaskStatus)
+        BugTaskStatus, UserCannotUnsubscribePerson)
 from lazr.lifecycle.event import (
     ObjectModifiedEvent, ObjectCreatedEvent)
 from lazr.lifecycle.interfaces import (
@@ -135,8 +136,7 @@ class BugEmailCommand(EmailCommand):
             params = CreateBugParams(
                 msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
-            bug = getUtility(IBugSet).createBug(params)
-            return bug, ObjectCreatedEvent(bug)
+            return getUtility(IBugSet).createBugWithoutTarget(params)
         else:
             try:
                 bugid = int(bugid)
@@ -346,9 +346,15 @@ class UnsubscribeEmailCommand(EmailCommand):
                 get_error_message('unsubscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
-            bug.unsubscribe(person, getUtility(ILaunchBag).user)
+            try:
+                bug.unsubscribe(person, getUtility(ILaunchBag).user)
+            except UserCannotUnsubscribePerson:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'user-cannot-unsubscribe.txt',
+                        person=person.displayname))
         if bug.isSubscribedToDupes(person):
-            bug.unsubscribeFromDupes(person)
+            bug.unsubscribeFromDupes(person, person)
 
         return bug, current_event
 

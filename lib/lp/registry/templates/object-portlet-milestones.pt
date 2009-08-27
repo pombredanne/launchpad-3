@@ -9,9 +9,9 @@
   <div class="portletBody portletContent">
     <table tal:condition="milestones">
       <tr tal:repeat="milestone milestones">
-        <td><img src="/@@/milestone" alt="" /></td>
+        <td><span class="sprite milestone" /></td>
         <td tal:content="milestone/dateexpected/fmt:date" />
-        <td class="milestone"><a tal:content="milestone/name"
+        <td><a tal:content="milestone/name"
                tal:attributes="href milestone/fmt:url">
                milestone name
             </a></td>

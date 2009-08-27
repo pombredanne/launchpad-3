@@ -39,11 +39,14 @@ And viewing that page should show the updated information.
 You can even modify the title and description of 'Answered' and
 'Invalid' questions:
 
+    >>> def print_question_status(browser):
+    ...     print extract_text(
+    ...         find_tag_by_id(browser.contents, 'question-details'))
+
     >>> user_browser.open('http://launchpad.dev/ubuntu/+question/3')
-    >>> portlet_details = find_tag_by_id(
-    ...     user_browser.contents, 'portlet-details')
-    >>> portlet_details.first('b', text='Status:').next.strip()
-    u'Invalid'
+    >>> print_question_status(user_browser)
+    Invalid ...
+
     >>> user_browser.getLink('Edit question')
     <Link...>
 
@@ -60,11 +63,6 @@ Any logged in user can change the question source package on the
     ...     name='field.target.package').value = 'linux-source-2.6.15'
     >>> user_browser.getControl('Continue').click()
 
-    >>> portlet_details = find_tag_by_id(
-    ...     user_browser.contents, 'portlet-details')
-    >>> print portlet_details.first('b', text='For:').next.strip()
-    ubuntu linux-source-2.6.15
-
 Product questions ignore sourcepackage information if it is submitted:
 
     >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
@@ -72,10 +70,6 @@ Product questions ignore sourcepackage information if it is submitted:
     >>> user_browser.getControl(
     ...     name='field.target.package').value = 'linux-source-2.6.15'
     >>> user_browser.getControl('Continue').click()
-    >>> portlet_details = find_tag_by_id(
-    ...     user_browser.contents, 'portlet-details')
-    >>> print portlet_details.first('b', text='For:').next.strip()
-    firefox
 
 
 == Changing Other Metadata ==
@@ -97,22 +91,16 @@ edit the Status Whiteboard using the 'Edit Question' page.
     >>> print soup.first('b', text='Whiteboard:').findNext('td').renderContents()
     Some note
     >>> portlet_details = find_tag_by_id(browser.contents, 'portlet-details')
-    >>> print extract_text(portlet_details.first('b', text='Assignee:').findNext('a'))
-    Foo Bar
 
 Since the assignee is notified of changes to the question, his name also
 appears under the 'Also notified' list in the 'Subscribers' portlet:
 
-    >>> portlet = find_tag_by_id(browser.contents, id='portlet-subscribers')
+    >>> portlet = find_tag_by_id(browser.contents, id='subscribers')
     >>> also_notified = portlet.first('b')
     >>> also_notified
     <b>Also notified:</b>
     >>> also_notified.findNextSibling('ul')
-    <ul class="person">
-      <li>
-        <a href=".../~name16">Foo Bar</a>
-      </li>
-    </ul>
+    <ul> ...Foo Bar...
 
 These fields cannot be modified by a non-privileged user:
 

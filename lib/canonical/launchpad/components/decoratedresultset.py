@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -6,11 +8,12 @@ __all__ = [
     'DecoratedResultSet',
     ]
 
+from zope.security.proxy import removeSecurityProxy
+
 from storm.expr import Column
 from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
-
 
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
@@ -93,7 +96,8 @@ class DecoratedResultSet(object):
         """
         # Can be a value or result set...
         value = self.result_set.__getitem__(*args, **kwargs)
-        if isinstance(value, type(self.result_set)):
+        naked_value = removeSecurityProxy(value)
+        if IResultSet.providedBy(naked_value):
             return DecoratedResultSet(
                 value, self.result_decorator, self.pre_iter_hook)
         else:
@@ -139,29 +143,3 @@ class DecoratedResultSet(object):
         new_result_set = self.result_set.order_by(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook)
-
-    def count(self, *args, **kwargs):
-        """See `IResultSet`.
-
-        Decorated to fix bug 217644
-
-        Currently Storm.store.ResultSet has a bug where aggregate
-        methods do not respect the distinct config option. This
-        decorated version ensures that the count method *does* respect
-        the distinct config option when called without args/kwargs.
-        """
-        # Only override the method call if
-        #  1) The result set has the distinct config set
-        #  2) count was called without any args or kwargs
-        if self.result_set._distinct and len(args) == 0 and len(kwargs) == 0:
-            spec = self.result_set._find_spec
-            columns, tables = spec.get_columns_and_tables()
-
-            # Note: The following looks a bit suspect because it will only
-            # work if the original result set includes an id column. But this
-            # should always be the case when using a DecoratedResultSet as
-            # we're decorating content classes.
-            main_id_column = Column('id', tables[0])
-            return self.result_set.count(expr=main_id_column, distinct=True)
-        else:
-            return self.result_set.count(*args, **kwargs)

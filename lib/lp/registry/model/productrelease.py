@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -46,8 +48,9 @@ class ProductRelease(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
-                            orderBy='-date_uploaded')
+    files = SQLMultipleJoin(
+        'ProductReleaseFile', joinColumn='productrelease',
+        orderBy='-date_uploaded', prejoins=['productrelease'])
 
     # properties
     @property
@@ -92,15 +95,13 @@ class ProductRelease(SQLBase):
 
     @property
     def displayname(self):
-        return self.productseries.product.displayname + ' ' + self.version
+        """See `IProductRelease`."""
+        return self.milestone.displayname
 
     @property
     def title(self):
         """See `IProductRelease`."""
-        thetitle = self.displayname
-        if self.codename:
-            thetitle += ' "' + self.codename + '"'
-        return thetitle
+        return self.milestone.title
 
     @staticmethod
     def normalizeFilename(filename):
@@ -240,10 +241,11 @@ class ProductReleaseSet(object):
 
     def getFilesForReleases(self, releases):
         """See `IProductReleaseSet`."""
-        if len(list(releases)) == 0:
-            return ProductReleaseFile.select('1 = 2')
+        releases = list(releases)
+        if len(releases) == 0:
+            return EmptyResultSet()
         return ProductReleaseFile.select(
             """ProductReleaseFile.productrelease IN %s""" % (
             sqlvalues([release.id for release in releases])),
             orderBy='-date_uploaded',
-            prejoins=['libraryfile'])
+            prejoins=['libraryfile', 'libraryfile.content', 'productrelease'])

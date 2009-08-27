@@ -6,6 +6,8 @@
     action=""
     method="get"
     accept-charset="UTF-8"
+    id=""
+    name=""
     tal:attributes="
       action string:${view/rooturl}+search;
       id string:sitesearch${view/id_suffix};
@@ -30,6 +32,9 @@
           class="textType"
           type="text"
           size="36"
+          id=""
+          value=""
+          name=""
           tal:attributes="
             id string:field.text${view/id_suffix};
             name string:field.text${view/id_suffix};

@@ -1,8 +1,9 @@
 #!/usr/bin/python2.4
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # General purpose package removal tool for ftpmaster
-# Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005  James Troup <james@nocrew.org>
-# Copyright (C) 2006  James Troup <james.troup@canonical.com>
 
 ################################################################################
 

@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Send person notifications.
@@ -19,7 +22,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class SendPersonNotifications(LaunchpadCronScript):
