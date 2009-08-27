@@ -16,7 +16,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry, DBUSER,
     get_host_date_status_and_request, get_day, get_files_to_parse,
-    get_method_and_file_id, NotALibraryFileAliasRequest, parse_file)
+    get_lfa_download_key, get_method_and_file_id, NotALibraryFileAliasRequest,
+    parse_file)
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.testing import TestCase
@@ -147,7 +148,8 @@ class TestLogFileParsing(TestCase):
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_lfa_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         date = datetime(2008, 6, 13)
         self.assertContentEqual(
@@ -168,7 +170,8 @@ class TestLogFileParsing(TestCase):
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=self._getLastLineStart(fd), logger=self.logger)
+            fd, start_position=self._getLastLineStart(fd), logger=self.logger,
+            get_download_key=get_lfa_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(parsed_bytes, fd.tell())
 
@@ -182,7 +185,8 @@ class TestLogFileParsing(TestCase):
         # Here we force an unexpected error on the first line.
         fd = StringIO('Not a log')
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_lfa_download_key)
         self.assertIn('Error', self.logger.buffer.getvalue())
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, 0)
@@ -192,7 +196,8 @@ class TestLogFileParsing(TestCase):
         fd = StringIO(
             self.sample_line % dict(status=status, method='GET'))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_lfa_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
@@ -214,7 +219,8 @@ class TestLogFileParsing(TestCase):
         fd = StringIO(
             self.sample_line % dict(status='200', method=method))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_lfa_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
@@ -232,7 +238,8 @@ class TestLogFileParsing(TestCase):
             '69.233.136.42 - - [13/Jun/2008:14:55:22 +0100] "GET / HTTP/1.1" '
             '200 2261 "https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_lfa_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())

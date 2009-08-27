@@ -59,7 +59,7 @@ def get_files_to_parse(root, file_names):
     return files_to_parse
 
 
-def parse_file(fd, start_position, logger):
+def parse_file(fd, start_position, logger, get_download_key):
     """Parse the given file starting on the given position.
 
     Return a dictionary mapping file_ids (from the librarian) to days to
@@ -88,7 +88,7 @@ def parse_file(fd, start_position, logger):
             if status != '200':
                 continue
 
-            download_key = get_lfa_download_key(request)
+            download_key = get_download_key(request)
 
             if download_key is None:
                 # Not a file or request that we care about.
