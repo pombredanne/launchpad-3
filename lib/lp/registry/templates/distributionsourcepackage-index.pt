@@ -142,6 +142,10 @@
       <tal:title_row condition="row/title_row">
       <tr class="section-heading shaded" style="vertical-align: middle">
         <td colspan=3>
+          <img tal:replace="structure context/distribution/image:icon"/>
+          <a tal:attributes="href row/series_package/fmt:url"
+             tal:content="row/distroseries/title"/>
+          (<span tal:replace="row/distroseries/status/title/lower"/>)
           <div style="float:right;">
             <a tal:condition="not: row/packaging"
                tal:replace="structure row/series_package/menu:overview/set_upstream/fmt:link"/>
@@ -162,10 +166,6 @@
               </form>
             </tal:has_packaging>
           </div><!--float right-->
-          <img tal:replace="structure context/distribution/image:icon"/>
-          <a tal:attributes="href row/series_package/fmt:url"
-             tal:content="row/distroseries/title"/>
-          (<span tal:content="row/distroseries/status/title/lower"/>)
         </td>
       </tr>
       </tal:title_row>
