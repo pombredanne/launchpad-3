@@ -50,24 +50,29 @@
           <div tal:condition="release/files">
             <h2 style="font-size: 1.2em">
               <a tal:attributes="href release/fmt:url">
-                <span tal:replace="release/milestone/name" />
-                (<span tal:replace="release/milestone/code_name" />)
-                  release</a>, from the
+                <span tal:replace="release/name_with_codename" /> release</a>,
+              from the
               <a tal:attributes="href series/fmt:url"
                  tal:content="series/name">name</a> series.
             </h2>
 
             <div id="release_notes">
               <h3>Release notes:</h3>
-              <span 
-                tal:content="structure release/release_notes/fmt:text-to-html"
-                tal:condition="release/release_notes">
-                Release notes
-              </span>
-              <strong>Released:</strong>
-              <span
-                tal:attributes="title release/datereleased/fmt:datetime"
-                tal:content="release/datereleased/fmt:approximatedate" />
+              <tal:notes condition="release/release_notes"
+                  define="notes release/release_notes/fmt:shorten/800">
+                <div tal:content="structure notes/fmt:text-to-html">
+                  Release notes
+                </div>
+              </tal:notes>
+              <div tal:condition="not: release/release_notes">
+                <em>This release does not have release notes.</em>
+              </div>
+              <div>
+                <strong>Released:</strong>
+                <span
+                  tal:attributes="title release/datereleased/fmt:datetime"
+                  tal:content="release/datereleased/fmt:approximatedate" />
+              </div>
             </div>
 
             <table class="listing">

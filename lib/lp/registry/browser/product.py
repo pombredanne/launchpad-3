@@ -703,6 +703,14 @@ class ReleaseWithFiles:
     def addFile(self, file):
         self.files.append(file)
 
+    @property
+    def name_with_codename(self):
+        milestone = self.release.milestone
+        if milestone.code_name:
+            return "%s (%s)" % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
+
     @cachedproperty
     def total_downloads(self):
         """Total downloads of files associated with this release."""
