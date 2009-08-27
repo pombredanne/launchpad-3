@@ -13,6 +13,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+from storm.store import EmptyResultSet
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -266,7 +267,9 @@ class POTMsgSet(SQLBase):
         return self._getUsedTranslationMessage(
             None, language, variant, current=True)
 
-    def getLocalTranslationMessages(self, potemplate, language):
+    def getLocalTranslationMessages(self, potemplate, language,
+                                    include_dismissed=False,
+                                    include_unreviewed=True):
         """See `IPOTMsgSet`."""
         query = """
             is_current IS NOT TRUE AND
@@ -277,13 +280,24 @@ class POTMsgSet(SQLBase):
         msgstr_clause = make_plurals_sql_fragment(
             "msgstr%(form)d IS NOT NULL", "OR")
         query += " AND (%s)" % msgstr_clause
-        current = self.getCurrentTranslationMessage(potemplate, language)
-        if current is not None:
-            if current.date_reviewed is None:
-                comparing_date = current.date_created
-            else:
-                comparing_date = current.date_reviewed
-            query += " AND date_created > %s" % sqlvalues(comparing_date)
+        if include_dismissed != include_unreviewed:
+            current = self.getCurrentTranslationMessage(potemplate, language)
+            if current is not None:
+                if current.date_reviewed is None:
+                    comparing_date = current.date_created
+                else:
+                    comparing_date = current.date_reviewed
+                if include_unreviewed:
+                    term = " AND date_created > %s"
+                else:
+                    term = " AND date_created <= %s"
+                query += term % sqlvalues(comparing_date)
+        elif include_dismissed and include_unreviewed:
+            # Return all messages
+            pass
+        else:
+            # No need to run a query.
+            return EmptyResultSet()
 
         return TranslationMessage.select(query)
 

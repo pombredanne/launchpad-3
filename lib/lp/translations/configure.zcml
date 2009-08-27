@@ -394,6 +394,11 @@
                 permission="launchpad.Edit"
                 set_schema="lp.translations.interfaces.translationgroup.ITranslationGroup"/>
         </class>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.translations.interfaces.translationgroup.ITranslationGroup"
+            factory="lp.translations.browser.translationgroup.TranslationGroupBreadcrumb"
+            permission="zope.Public"/>
 
         <!-- TranslationGroupSet -->
 
