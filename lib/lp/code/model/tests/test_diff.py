@@ -30,7 +30,7 @@ class DiffTestCase(TestCaseWithFactory):
 
         This will create or modify the file, as needed.
         """
-        committer = DirectBranchCommit(branch, mirrored=True)
+        committer = DirectBranchCommit(branch, to_mirror=True)
         committer.writeFile(path, contents)
         try:
             return committer.commit('committing')
@@ -307,10 +307,10 @@ class TestPreviewDiff(DiffTestCase):
         dep_branch.last_scanned_id = 'rev-d'
         self.assertEqual(True, mp.preview_diff.stale)
 
-    def test_fromBMP(self):
+    def test_fromBranchMergeProposal(self):
         # Correctly generates a PreviewDiff from a BranchMergeProposal.
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
-        preview = PreviewDiff.fromBMP(bmp)
+        preview = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual(source_rev_id, preview.source_revision_id)
         self.assertEqual(target_rev_id, preview.target_revision_id)
         transaction.commit()
