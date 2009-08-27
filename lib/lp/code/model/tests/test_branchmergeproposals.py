@@ -23,12 +23,8 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 from lazr.lifecycle.event import ObjectModifiedEvent
 
-from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, BranchMergeProposalJobType,
-    CreateMergeProposalJob, MergeProposalCreatedJob)
-from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal, BranchMergeProposalGetter, is_valid_transition)
-from lp.code.model.diff import StaticDiff
+from canonical.launchpad.interfaces.message import IMessageJob
+from canonical.launchpad.webapp.testing import verifyObject
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -43,14 +39,19 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, notify_modified, WrongBranchMergeProposal)
-from canonical.launchpad.interfaces.message import IMessageJob
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob, BranchMergeProposalJobType,
+    CreateMergeProposalJob, MergeProposalCreatedJob, UpdatePreviewDiffJob)
+from lp.code.model.branchmergeproposal import (
+    BranchMergeProposal, BranchMergeProposalGetter, is_valid_transition)
+from lp.code.model.diff import StaticDiff
+from lp.code.model.tests.test_diff import DiffTestCase
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
     capture_events, login_person, TestCaseWithFactory, time_counter)
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
-from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -1590,6 +1591,18 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         self.assertNotEqual(
             diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).diff_id)
+
+
+class TestUpdatePreviewDiffJob(DiffTestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_run(self):
+        bmp = self.createExampleMerge()[0]
+        job = UpdatePreviewDiffJob.create(bmp)
+        job.run()
+        transaction.commit()
+        self.checkExampleMerge(bmp.preview_diff.text)
 
 
 def test_suite():
