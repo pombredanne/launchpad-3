@@ -144,15 +144,10 @@ class TestDiff(DiffTestCase):
             {'foo': (2, 1), 'bar': (0, 3), 'baz': (2, 0)},
             Diff.generateDiffstat(self.diff_bytes))
 
-    def test_stringifyDiffstat(self):
-        self.assertEqual(
-            'bar: -3 +0\nbaz: -0 +2\nfoo: -1 +2\n',
-            Diff.stringifyDiffstat(Diff.generateDiffstat(self.diff_bytes)))
-
     def test_fromFileSetsDiffstat(self):
         diff = Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
-        self.assertEqual(
-            'bar: -3 +0\nbaz: -0 +2\nfoo: -1 +2\n', diff.diffstat)
+        self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
+                         diff.diffstat)
 
 
 class TestStaticDiff(TestCaseWithFactory):
@@ -239,7 +234,7 @@ class TestPreviewDiff(DiffTestCase):
         else:
             dependent_revision_id = u'rev-c'
         mp.updatePreviewDiff(
-            content, u'stat', u'rev-a', u'rev-b',
+            content, {}, u'rev-a', u'rev-b',
             dependent_revision_id=dependent_revision_id)
         # Make sure the librarian file is written.
         transaction.commit()
@@ -318,7 +313,7 @@ class TestPreviewDiff(DiffTestCase):
         self.assertEqual(target_rev_id, preview.target_revision_id)
         transaction.commit()
         self.checkExampleMerge(preview.text)
-        self.assertEqual('foo: -0 +5\n', preview.diffstat)
+        self.assertEqual({'foo': (5, 0)}, preview.diffstat)
 
 
 def test_suite():
