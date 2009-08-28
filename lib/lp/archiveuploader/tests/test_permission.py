@@ -108,7 +108,7 @@ class TestPermission(TestCaseWithFactory):
         self.assertEqual(
             ("The signer of this package has no upload rights to this "
              "distribution's primary archive.  Did you mean to upload to "
-             "a PPA"),
+             "a PPA?"),
             str(exception))
 
     def test_package_specific_rights(self):
