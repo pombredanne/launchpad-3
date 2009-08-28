@@ -38,6 +38,7 @@
                     </p>
                     <p></p>
                     <p>
+                      The default plural form expression for <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language> is:
                       <pre tal:content="context/pluralexpression">
                         n != 1
                       </pre>
