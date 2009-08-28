@@ -10,7 +10,7 @@ from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
 
 
-class TestQuestionTargetProjectAndPersonBreadcrumbBuilderOnAnswersVHost(
+class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
         BaseBreadcrumbTestCase):
     """Test Breadcrumbs for IQuestionTarget, IProject and IPerson on the
     answers vhost.
@@ -21,9 +21,8 @@ class TestQuestionTargetProjectAndPersonBreadcrumbBuilderOnAnswersVHost(
     """
 
     def setUp(self):
-        super(
-            TestQuestionTargetProjectAndPersonBreadcrumbBuilderOnAnswersVHost,
-            self).setUp()
+        super(TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost,
+              self).setUp()
         self.person = self.factory.makePerson()
         self.person_questions_url = canonical_url(
             self.person, rootsite='answers')

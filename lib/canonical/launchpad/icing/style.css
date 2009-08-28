@@ -37,7 +37,7 @@
 #subscribers-direct a, #portlet-subscribers a, #subscribers-indirect a, .bug-branch-summary {
    line-height: 1.4em;
 }
-#lp-hierarchy a.bzr-favicon, #lp-hierarchy a.person-tabs {
+ul.breadcrumbs a.bzr-favicon, ul.breadcrumbs a.person-tabs {
     padding: 8px 18px 0 23px;
 }
 h1 .edit {
@@ -683,7 +683,7 @@ hr {
   width: 100%;
   height: 21px;
   overflow: hidden;
-  margin: 0;
+  margin: 0 0 1em 0;
   padding: 0;
   background-color: #EEE;
   background-image:  url(globalheader_bg.gif);
@@ -727,75 +727,29 @@ hierarchy, and the application tabs. */
 }
 
 /* === Location hierarchy === */
-/*
-  # XXX mpt 20080710 bug=247420: Known issues with the hierarchy:
-  - The top border and bevel of the last segment is missing.
-  - The right border and bevel of the last segment is missing.
-  - The border between the last segment and the spine should not be present.
-  - The spine should have a slight top bevel as well as a border.
-*/
-/*
-  The location bar begins with a series of interlocking segments, showing
-  your location in the hierarchy of people and projects:
-*/
-#lp-hierarchy {
-  float: left;
-  width: auto;
-  background: #eee url(navigation-hierarchy-bg) top left no-repeat;
-  margin-bottom: -1px;
-  min-height: 25px;
+/* Breadcrumb styling - this should be moved into style-3.0.css. It is
+ * only here while we have existing non-3-0 templates, so that the
+ * breadcrumbs on non-3-0 pages don't appear as a simple ordered list.
+ */
+ol.breadcrumbs {
+    margin-left: 0;
+    clear: both;
 }
-/* The first segment has a rounded top left corner:*/
-.first-rounded {
-  background: url(navigation-hierarchy-nw) top left no-repeat;
-  min-height: 25px;
-  display: block;
-  width: 6px;
-  float: left;
+ol.breadcrumbs li {
+    display:inline;
+    list-style-type: none;
+    padding: 0;
 }
-/* The segments have '>' separators for the benefit of those without CSS: */
-#lp-hierarchy small {display: none;}
-/* The last segment is darker (on the front page, this is the only item): */
-#lp-hierarchy.home {
-  background: url(navigation-hierarchy-home-bg) no-repeat;
-  padding: 0 0 2px 6px;
-  width:110px;
+ol.breadcrumbs li a {
+    color: #494949;
 }
-/* Each segment appears as a clickable button: */
-#lp-hierarchy a {
-  color: #000; float:left; display: block; padding: 6px 22px 0 8px;
-}
-/* The segments have chevrons to convey their parent-child relationship: */
-#lp-hierarchy .item {
-  background: url(navigation-hierarchy-chevron-normal) no-repeat right;
-  float: left;
-  min-height: 25px;
-  padding-bottom: 2px;
-  vertical-align: middle;
-}
-/* The penultimate segment leads into the dark color of the last segment: */
-#lp-hierarchy .before-last {
-  background:url(navigation-hierarchy-chevron-selected) no-repeat right;
-}
-/* The last segment is dark, and has a rounded top right corner: */
-#lp-hierarchy .last a {font-weight: bold; padding-right: 10px;}
-#lp-hierarchy .last {
-  background: #ddd url(navigation-hierarchy-ne) top right no-repeat;
-}
-
-/* === Location spine === */
-/*
-  A narrow horizontal bar ties the location bar together. On those pages with
-  application tabs, it visually connects the selected hierarchy element and
-  the selected tab:
-*/
-.apps-separator {
-  clear: left;
-  height: 5px;
-  margin: 0;
-  padding: 0;
-  background: #ddd;
-  border: 1px solid #ccc;
+ol.breadcrumbs li:before { content: "»" }
+/* The following leaves a small margin in chrome/webkit, but using none
+ * doesn't hide the » in webkit either (both work for FF3.5).
+ */
+ol.breadcrumbs li:first-child:before { content: ''; }
+ol.breadcrumbs li:last-child {
+    font-weight: bold;
 }
 
 /* === Location application tabs === */
@@ -2100,7 +2054,7 @@ div#sub-unsub-spinner {
   display:none;
   padding:3px 5px 2px 17px;
 }
-.unsub-icon, .editsub-icon {position:absolute; right:8px;}
+.unsub-icon, .editsub-icon {position:absolute; right:16px;}
 
 .highlight-message {
   margin: 2em 0 2em 0;

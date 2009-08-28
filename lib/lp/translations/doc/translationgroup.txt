@@ -84,6 +84,52 @@ No Privileges Person *is* allowed to translate into Welsh.
     >>> pofile.canEditTranslations(no_priv)
     True
 
+Each group has a list of top_projects that it translates.  It is just
+a shorter list of all the projects.  At the moment, it lists only
+Evolution, and a number_of_remaining_projects (those not shown in the
+top_projects list) is zero.
+
+    >>> set(group.top_projects) == set([evolution])
+    True
+    >>> group.number_of_remaining_projects
+    0
+
+Making a distribution use the translation group puts it into top_projects.
+
+    >>> distro = factory.makeDistribution()
+    >>> distro.translationgroup = group
+    >>> set(group.top_projects) == set([evolution, distro])
+    True
+    >>> group.number_of_remaining_projects
+    0
+
+Project groups, if they use this translation group, appear in the
+top_projects too.
+
+    >>> project = factory.makeProject()
+    >>> project.translationgroup = group
+    >>> set(group.top_projects) == set([evolution, distro, project])
+    True
+    >>> group.number_of_remaining_projects
+    0
+
+If we add 2 projects more than what the group.TOP_PROJECTS_LIMIT is,
+the top_projects list is shortened and a number_of_remaining_projects tells
+us how many other projects are there (2).
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> limit = removeSecurityProxy(group).TOP_PROJECTS_LIMIT
+    >>> current = len(group.top_projects)
+    >>> goal = limit + 2 - current
+    >>> while goal > 0:
+    ...     product = factory.makeProduct()
+    ...     product.translationgroup = group
+    ...     goal -= 1
+    >>> len(group.top_projects) == limit
+    True
+    >>> group.number_of_remaining_projects
+    2
+
 We can use TranslationGroupSet to check what translation groups a person
 is a part of:
 

@@ -208,9 +208,14 @@ A link to further PPA searches is also included.
     >>> link.text
     "...more untrusted versions of..."
 
-/$DISTRO/+source/$PACKAGE pages contain a version history that lists
-each published version of a package with its changelog entry for that
-version.
+/$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that lists
+each published version of a package with its changelog entry for that version.
+
+XXX julian 2009-08-26
+The +changelog page is currently NOT linked from +index.  The index page is
+currently undergoing a redesign and the link to it will be added therein.
+Until then, +changelog is a hidden page, but needs to land ahead of that
+redesign.
 
 Each version history entry has a header with the version as the title
 and details of the publishing status in each distroseries it's published
@@ -218,16 +223,17 @@ in.
 
 Package "foobar" is deleted:
 
-    >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/")
+    >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/+changelog")
     >>> first_header = find_tag_by_id(browser.contents,
     ...     "detail_foobar_1.0")
     >>> print extract_text(first_header)
-    1.0 
+    1.0
     Deleted in warty-release on 2006-12-02 (Reason: I do not like it.)
 
 Package "alsa-utils" is pending in Warty and published in Hoary:
 
-    >>> browser.open("http://launchpad.dev/ubuntu/+source/alsa-utils/")
+    >>> browser.open(
+    ...     "http://launchpad.dev/ubuntu/+source/alsa-utils/+changelog")
     >>> first_header = find_tag_by_id(browser.contents,
     ...     'detail_alsa-utils_1.0.9a-4ubuntu1')
     >>> print extract_text(first_header)
@@ -264,7 +270,8 @@ logged in (this prevents bots from harvesting email addresses).
 If we view the same page as a logged-in user, we can see the email
 address:
 
-    >>> user_browser.open("http://launchpad.dev/ubuntu/+source/alsa-utils/")
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+source/alsa-utils/+changelog")
     >>> print extract_text(find_tag_by_id(user_browser.contents,
     ...     'body_alsa-utils_1.0.9a-4ubuntu1'))
     alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
@@ -295,7 +302,8 @@ changelog:
 If the package being viewed has no publishing history, a blank table is
 displayed:
 
-    >>> user_browser.open("http://launchpad.dev/ubuntu/+source/a52dec")
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+source/a52dec/")
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'packaging'))
     Ubuntu version                  Upstream version
 
@@ -313,7 +321,7 @@ as mentioned above.
     ...         print extract_text(section.div)
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/alsa-utils/")
+    ...     "http://launchpad.dev/ubuntu/+source/alsa-utils/+changelog")
 
     >>> print_displayed_versions(anon_browser.contents)
     1.0.9a-4ubuntu1
