@@ -301,7 +301,7 @@ different interpretations of "importer" in attachTranslationFiles.
   >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.interfaces.sourcepackagerelease import (
   ...     ISourcePackageRelease)
-  >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
   >>> class MockSourcePackageRelease:
   ...       implements(ISourcePackageRelease)

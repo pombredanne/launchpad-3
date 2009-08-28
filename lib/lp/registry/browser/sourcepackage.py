@@ -26,7 +26,7 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _

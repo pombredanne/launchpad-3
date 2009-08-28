@@ -269,7 +269,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     # Mark the testing build as FULLYBUILT and upload a corresponding
     # binary package for it which will be awaiting for acceptance.
     >>> login('foo.bar@canonical.com')
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> build.buildqueue_record.destroySelf()
     >>> build.buildstate = BuildStatus.FULLYBUILT
     >>> build.builder = bob_builder

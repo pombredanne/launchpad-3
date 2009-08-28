@@ -18,7 +18,7 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
