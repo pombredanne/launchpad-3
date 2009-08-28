@@ -42,10 +42,12 @@ class Diff(SQLBase):
     def _get_diffstat(self):
         if self._diffstat is None:
             return None
-        return dict((key, tuple(value)) for key, value
-             in simplejson.loads(self._diffstat).iteritems())
+        return dict((key, tuple(value))
+                    for key, value
+                    in simplejson.loads(self._diffstat).items())
 
     def _set_diffstat(self, diffstat):
+        # diffstats should be mappings of path to line counts.
         assert isinstance(diffstat, dict)
         self._diffstat = simplejson.dumps(diffstat)
 
@@ -121,7 +123,7 @@ class Diff(SQLBase):
         return klass.fromFile(diff_content, size, filename)
 
     @classmethod
-    def fromFile(klass, diff_content, size, filename=None, diffstat=None):
+    def fromFile(cls, diff_content, size, filename=None, diffstat=None):
         """Create a Diff from a textual diff.
 
         :diff_content: The diff text
@@ -143,9 +145,9 @@ class Diff(SQLBase):
             diff_content_bytes = diff_content.read(size)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
         if diffstat is None:
-            diffstat = klass.generateDiffstat(diff_content_bytes)
-        return klass(diff_text=diff_text, diff_lines_count=diff_lines_count,
-                     diffstat=diffstat)
+            diffstat = cls.generateDiffstat(diff_content_bytes)
+        return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
+                   diffstat=diffstat)
 
     @staticmethod
     def generateDiffstat(diff_bytes):
