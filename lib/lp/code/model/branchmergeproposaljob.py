@@ -38,7 +38,9 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, ICreateMergeProposalJob,
-    ICreateMergeProposalJobSource, IMergeProposalCreatedJob)
+    ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
+    IUpdatePreviewDiffJobSource,
+    )
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff, StaticDiff
@@ -240,6 +242,8 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     implements(IRunnableJob)
+
+    classProvides(IUpdatePreviewDiffJobSource)
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 

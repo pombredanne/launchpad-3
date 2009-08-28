@@ -604,6 +604,15 @@ class IMergeProposalCreatedJobSource(Interface):
         """Iterate through all ready MergeProposalCreatedJobs."""
 
 
+class IUpdatePreviewDiffJobSource(Interface):
+
+    def create(bmp):
+        """Create a MergeProposalCreatedJob for the specified Job."""
+
+    def iterReady():
+        """Iterate through all ready MergeProposalCreatedJobs."""
+
+
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 
