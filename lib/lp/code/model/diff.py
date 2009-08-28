@@ -263,7 +263,6 @@ class PreviewDiff(Storm):
         :param target_revision_id: The revision_id of the target branch.
         :param dependent_revision_id: The revision_id of the dependent branch.
         :param conflicts: The conflicts, as text.
-        ::
         :return: A `PreviewDiff` with specified values.
         """
         preview = cls()
