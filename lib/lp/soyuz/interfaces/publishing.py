@@ -19,14 +19,12 @@ __all__ = [
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
     'NotInPool',
-    'PackagePublishingPocket',
     'PackagePublishingPriority',
     'PackagePublishingStatus',
     'PoolFileOverwriteError',
     'active_publishing_status',
     'inactive_publishing_status',
     'name_priority_map',
-    'pocketsuffix',
     ]
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
@@ -36,8 +34,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
@@ -172,13 +169,14 @@ name_priority_map = {
     'standard': PackagePublishingPriority.STANDARD,
     'optional': PackagePublishingPriority.OPTIONAL,
     'extra': PackagePublishingPriority.EXTRA,
-    '': None
+    '': None,
     }
 
 
 #
 # Base Interfaces
 #
+
 
 class ICanPublishPackages(Interface):
     """Denotes the ability to publish associated publishing records."""
@@ -371,6 +369,7 @@ class IFilePublishing(Interface):
 # Source package publishing
 #
 
+
 class ISourcePackageFilePublishing(IFilePublishing):
     """Source package release files and their publishing status"""
     file_type_name = Attribute(
@@ -433,7 +432,7 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             title=_('Pocket'),
             description=_('The pocket into which this entry is published'),
             vocabulary=PackagePublishingPocket,
-            required=True, readonly=True
+            required=True, readonly=True,
             ))
     archive = exported(
         Reference(
@@ -659,6 +658,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
 # Binary package publishing
 #
 
+
 class IBinaryPackageFilePublishing(IFilePublishing):
     """Binary package files and their publishing status"""
     # Note that it is really /source/ package name below, and not a
@@ -733,7 +733,7 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             title=_('Pocket'),
             description=_('The pocket into which this entry is published'),
             vocabulary=PackagePublishingPocket,
-            required=True, readonly=True
+            required=True, readonly=True,
             ))
     supersededby = Int(
             title=_('The build which superseded this one'),
@@ -1060,4 +1060,3 @@ inactive_publishing_status = (
 
 
 # Circular import problems fixed in _schema_circular_imports.py
-
