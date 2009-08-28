@@ -67,11 +67,14 @@ def components_valid_for(archive, person):
 
 def verify_upload(person, sourcepackagename, archive, component,
                   strict_component=True):
-    """Can 'person' upload 'suite_sourcepackage' to 'archive'?
+    """Can 'person' upload 'sourcepackagename' to 'archive'?
 
-    XXX out of date
-    :param person: The `IPerson` trying to upload to the package.
+    :param person: The `IPerson` trying to upload to the package. Referred to
+        as 'the signer' in upload code.
+    :param sourcepackagename: The source package being uploaded. None if the
+        package is new.
     :param archive: The `IArchive` being uploaded to.
+    :param component: The `IComponent` that the source package belongs to.
     :param strict_component: True if access to the specific component for the
         package is needed to upload to it. If False, then access to any
         package will do.
