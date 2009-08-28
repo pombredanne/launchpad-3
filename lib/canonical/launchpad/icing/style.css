@@ -702,11 +702,6 @@ hr {
   padding-top: 2px;
 }
 
-/* === Location bar === */
-/* The location bar consists of three element: the login control, the location
-hierarchy, and the application tabs. */
-#locationbar {margin-bottom: 30px;}
-
 /* === Login control === */
 /* At the top right of the page is a link to log in or a button to log out: */
 #logincontrol {
@@ -733,21 +728,22 @@ hierarchy, and the application tabs. */
  */
 ol.breadcrumbs {
     margin-left: 0;
+    list-style-type: none;
     clear: both;
+    margin-bottom: 0.5em;
 }
 ol.breadcrumbs li {
     display:inline;
-    list-style-type: none;
     padding: 0;
 }
 ol.breadcrumbs li a {
     color: #494949;
 }
-ol.breadcrumbs li:before { content: "»" }
+ol.breadcrumbs li:after { content: "\00BB \0020" }
 /* The following leaves a small margin in chrome/webkit, but using none
  * doesn't hide the » in webkit either (both work for FF3.5).
  */
-ol.breadcrumbs li:first-child:before { content: ''; }
+ol.breadcrumbs li:last-child:after { content: ''; }
 ol.breadcrumbs li:last-child {
     font-weight: bold;
 }
@@ -1309,7 +1305,7 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
   text-decoration: underline;
 }
 
-a.official-tag { /* Looks just like a normal link */ }
+a.official-tag { /* Looks just like a normal link  }*/
 
 a.unofficial-tag {
   color: #6699ee;
@@ -1829,6 +1825,7 @@ div.logtail {
     -moz-border-radius: 5px;
     -o-border-radius: 5px;
     -webkit-border-radius: 5px;
+    -khtml-border-radius: 5px;
 }
 
 div.logtail p {
