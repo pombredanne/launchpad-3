@@ -56,3 +56,9 @@ class ITranslationsPerson(Interface):
 
         :param maximum: Maximum number of `POFile`s to return.
         """
+
+    def getTranslatableFiles(no_older_than=None):
+        """."""
+
+    def suggestTranslatableFiles(no_older_than=None):
+        """."""

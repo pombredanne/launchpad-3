@@ -6,7 +6,7 @@ __all__ = [
     'TranslationsPerson',
     ]
 
-from storm.expr import And, Join, LeftJoin, Or
+from storm.expr import And, Coalesce, Join, LeftJoin, Or
 from storm.info import ClassAlias
 from storm.store import Store
 
@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet)
+    ITranslationGroupSet, TranslationPermission)
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.interfaces.translator import ITranslatorSet
@@ -143,7 +143,71 @@ class TranslationsPerson:
         query = source.find(POFile, conditions)
         return query.config(distinct=True).order_by(POFile.id)
 
-    def _composePOFileReviewerJoins(self):
+    def _queryTranslatableFiles(self, worked_on, no_older_than=None):
+        """Get `POFile`s this person could help translate.
+
+        :param worked_on: If True, get `POFile`s that the person has
+            been working on recently (where "recently" is defined as
+            `no_older_than`).  If False, get ones that the person has
+            not been working on recently.
+        :param no_older_than: Oldest involvement to consider as
+            "recently been working on."  Whatever the person did with a
+            `POFile` before this date is ignored.
+        :return: An unsorted query yielding `POFile`s.
+        """
+        if self.person.isTeam():
+            return []
+
+        tables = self._composePOFileReviewerJoins(
+            expect_reviewer_status=False)
+
+        translator_join, translator_condition = (
+            self._composePOFileTranslatorJoin(True, no_older_than))
+        tables.append(translator_join)
+
+        translated_count = (
+            POFile.currentcount + POFile.updatescount + POFile.rosettacount)
+
+        conditions = And(
+            translated_count < POTemplate.messagecount, translator_condition)
+
+        # The person must not be a reviewer for this translation (unless
+        # it's in the sense that any user gets review permissions
+        # for it).
+        permission = Coalesce(
+            Distribution.translationpermission,
+            Product.translationpermission,
+            Project.translationpermission)
+        Reviewership = ClassAlias(TeamParticipation, 'Reviewership')
+        # XXX JeroenVermeulen 2009-08-28 bug=420364: Storm's Coalesce()
+        # can't currently infer its return type from its inputs, leading
+        # to a "can't adapt" error.  Using the enum's .value works
+        # around the problem.
+        not_reviewer = Or(
+            permission == TranslationPermission.OPEN.value,
+            And(permission == TranslationPermission.STRUCTURED.value,
+                Translator.id == None),
+            And(permission == TranslationPermission.RESTRICTED.value,
+                Translator.id != None,
+                Reviewership.id == None))
+
+        conditions = And(conditions, not_reviewer)
+
+        source = Store.of(self.person).using(*tables)
+        return source.find(POFile, conditions)
+
+    def getTranslatableFiles(self, no_older_than=None):
+        """See `ITranslationsPerson`."""
+        results = self._queryTranslatableFiles(True, no_older_than)
+        return results.order_by(-POFile.unreviewed_count)
+
+    def suggestTranslatableFiles(self, no_older_than=None):
+        """See `ITranslationsPerson`."""
+        results = self._queryTranslatableFiles(False, no_older_than)
+        # XXX: Should check for free license.  That's hard though.
+        return results.order_by(['random()'])
+
+    def _composePOFileReviewerJoins(self, expect_reviewer_status=True):
         """Compose certain Storm joins for common `POFile` queries.
 
         Returns a list of Storm joins for a query on `POFile`.  The
@@ -163,22 +227,21 @@ class TranslationsPerson:
             POTemplate.iscurrent == True))
 
         # This is a weird and complex diamond join.  Both DistroSeries
-        # and ProductSeries are left joins, but one of them will
+        # and ProductSeries are left joins, but one of them may
         # ultimately lead to a TranslationGroup.  In the case of
         # ProductSeries it may lead to up to two: one for the Product
         # and one for the Project.
         DistroSeriesJoin = LeftJoin(
             DistroSeries, DistroSeries.id == POTemplate.distroseriesID)
+
         # If there's a DistroSeries, it should be the distro's
         # translation focus.
-        # The check for translationgroup here is not necessary, but
-        # should give the query planner some extra selectivity to narrow
-        # down the query more aggressively.
-        DistroJoin = LeftJoin(Distribution, And(
+        distrojoin_conditions = And(
             Distribution.id == DistroSeries.distributionID,
             Distribution.official_rosetta == True,
-            Distribution.translationgroup != None,
-            Distribution.translation_focusID == DistroSeries.id))
+            Distribution.translation_focusID == DistroSeries.id)
+
+        DistroJoin = LeftJoin(Distribution, distrojoin_conditions)
 
         ProductSeriesJoin = LeftJoin(
             ProductSeries, ProductSeries.id == POTemplate.productseriesID)
@@ -188,23 +251,38 @@ class TranslationsPerson:
 
         ProjectJoin = LeftJoin(Project, Project.id == Product.projectID)
 
-        # Restrict to translations this person is a reviewer for.
-        GroupJoin = Join(TranslationGroup, Or(
+        # Look up translation group.
+        groupjoin_conditions = Or(
             TranslationGroup.id == Product.translationgroupID,
             TranslationGroup.id == Distribution.translationgroupID,
-            TranslationGroup.id == Project.translationgroupID))
-        TranslatorJoin = Join(Translator, And(
+            TranslationGroup.id == Project.translationgroupID)
+        if expect_reviewer_status:
+            GroupJoin = Join(TranslationGroup, groupjoin_conditions)
+        else:
+            GroupJoin = LeftJoin(TranslationGroup, groupjoin_conditions)
+
+        # Look up translation team.
+        translatorjoin_conditions = And(
             Translator.translationgroupID == TranslationGroup.id,
-            Translator.languageID == POFile.languageID))
+            Translator.languageID == POFile.languageID)
+        if expect_reviewer_status:
+            TranslatorJoin = Join(Translator, translatorjoin_conditions)
+        else:
+            TranslatorJoin = LeftJoin(Translator, translatorjoin_conditions)
 
         # Check for translation-team membership.  Use alias for
         # TeamParticipation; the query may want to include other
         # instances of that table.  It's just a linking table so the
         # query won't be interested in its actual contents anyway.
         Reviewership = ClassAlias(TeamParticipation, 'Reviewership')
-        TranslationTeamJoin = Join(Reviewership, And(
+        reviewerjoin_condition = And(
             Reviewership.teamID == Translator.translatorID,
-            Reviewership.personID == self.person.id))
+            Reviewership.personID == self.person.id)
+        if expect_reviewer_status:
+            TranslationTeamJoin = Join(Reviewership, reviewerjoin_condition)
+        else:
+            TranslationTeamJoin = LeftJoin(
+                Reviewership, reviewerjoin_condition)
 
         return [
             POFile,

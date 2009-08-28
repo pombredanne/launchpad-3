@@ -1109,6 +1109,20 @@ class Person(
         return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
+    def hasKarma(self, category_name=None):
+        """See `IPerson`."""
+        conditions = And(
+            KarmaCache.person == self,
+            KarmaCache.karmavalue > 0)
+
+        if category_name:
+            conditions = And(
+                conditions,
+                KarmaCache.category == KarmaCategory.id,
+                KarmaCategory.name == category_name)
+
+        return Store.of(self).find(KarmaCache, conditions).any() is not None
+
     # This is to cache TeamParticipation information as that's used tons of
     # times in each request.
     _inTeam_cache = None

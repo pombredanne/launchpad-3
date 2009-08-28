@@ -987,6 +987,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         Return no more than the number given as quantity.
         """
 
+    def hasKarma(category_name=None):
+        """Does this person have any karma (in the given category)?"""
+
     def iterTopProjectsContributedTo(limit=10):
         """Iterate over the top projects contributed to.
 

@@ -737,6 +737,13 @@
             permission="zope.Public"
             template="../templates/person-translations-to-review-table.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-complete-table"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-complete-table.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 
 <!-- Product views -->
