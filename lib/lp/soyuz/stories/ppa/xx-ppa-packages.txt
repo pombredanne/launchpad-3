@@ -31,16 +31,27 @@ You can see the build details of the packages in the archive by using
 the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
-    >>> anon_browser.title
-    'Builds for PPA for Celso Providelo'
+    >>> print anon_browser.title
+    Builds for PPA for Celso Providelo
 
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa/+builds'
 
-The user could return to the 'PPA' overview by using the breadcrumb link.
+The user can return to the 'PPA' overview by using the breadcrumb link.
 
-    >>> print anon_browser.getLink('PPA for Celso Providelo').url
+    >>> anon_browser.getLink('PPA for Celso Providelo').click()
+    >>> print anon_browser.url
     http://launchpad.dev/~cprov/+archive/ppa
 
 The rest of the builds page functionality is tested generically at
 in xx-builds-pages.txt.
+
+
+Package totals
+--------------
+
+A summary of the package totals is presented in a portlet.
+
+    >>> package_totals = find_portlet(
+    ...     anon_browser.contents, "Package totals")
+    >>> print extract_text(package_totals)
