@@ -37,11 +37,10 @@
             </p>
             <p>
               The default plural form expression for <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language> is:
-              <pre tal:content="context/pluralexpression">
-                n != 1
-              </pre>
             </p>
-            <p></p>
+            <pre tal:content="context/pluralexpression">
+              n != 1
+            </pre>
             <p>
               When translating into this language, you need to be able to
               express plural forms effectively. The plural form expression tells
