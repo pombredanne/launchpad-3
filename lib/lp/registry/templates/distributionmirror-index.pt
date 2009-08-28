@@ -15,6 +15,7 @@
   <tal:main metal:fill-slot="main"
             define="overview_menu context/menu:overview">
 
+    <div class="top-portlet">
     <p id="status" class="registered">
       <strong>
         <tal:status replace="context/status/title">Official</tal:status>
@@ -25,103 +26,107 @@
     </p>
 
     <tal:is-admin condition="context/required:launchpad.Admin">
-      <div class="whiteboard" id="whiteboard">
-        <h2>Whiteboard
-          <a tal:replace="structure overview_menu/review/fmt:icon"/>
-        </h2>
-        <tal:whiteboard replace="structure context/whiteboard/fmt:text-to-html" />
-      </div>
     </tal:is-admin>
+    </div>
+    <h2>Archive information</h2>
+    <div class="yui-g">
+      <div class="yui-u first">
+        <div class="top-portlet">
+          <tal:is-admin condition="context/required:launchpad.Admin">
+          <dl id="whiteboard">
+            <dt>
+              Whiteboard
+              <a tal:replace="structure overview_menu/review/fmt:icon"/>
+            </dt>
+            <dd tal:content="structure context/whiteboard/fmt:text-to-html" />
+          </dl>
+          </tal:is-admin>
+          <dl tal:condition="context/description">
+            <dt>Description:</dt>
+            <dd class="description"
+                tal:content="structure context/description/fmt:text-to-html" />
+          </dl>
+        </div>
+      </div>
 
-    <h2>Details</h2>
-    <ul class="horizontal">
-      <li><strong>Speed:</strong>
-        <tal:speed content="context/speed/title" />
-      </li>
-      <li><strong>Country:</strong>
-        <tal:country content="context/country/name" />
-      </li>
-      <li><strong>Type:</strong>
-        <tal:type content="context/content/title" />
-      </li>
-    </ul>
-    <!--
-    <table id="mirror-details" class="summary" style="float: right">
-      <tr>
-        <th>Speed:</th>
-        <td tal:content="context/speed/title">2 Mbps</td>
-      </tr>
-      <tr>
-        <th>Country:</th>
-        <td tal:content="context/country/name">Brazil</td>
-      </tr>
-      <tr>
-        <th>Content:</th>
-        <td tal:content="context/content/title">Archive</td>
-      </tr>
-    </table>
-    -->
-    <div tal:condition="context/description">
-    <h2>Description</h2>
-    <div class="description"
-         tal:condition="context/description">
-      <p tal:replace="structure context/description/fmt:text-to-html">
-          Distribution Mirror Description
-      </p>
+      <div class="yui-u">
+
+    <div class="top-portlet">
+      <div class="two-column-list">
+        <dl>
+          <dt>Speed:</dt>
+          <dd tal:content="context/speed/title" />
+        </dl>
+        <dl>
+          <dt>Country:</dt>
+          <dd tal:content="context/country/name" />
+        </dl>
+        <dl>
+          <dt>Type:</dt>
+          <dd tal:content="context/content/title" />
+        </dl>
+        <dl>
+          <dt>Organisation:</dt>
+          <dd tal:content="context/displayname" />
+        </dl>
+
+      </div>
     </div>
     </div>
+    </div>
 
-    <h2>Mirror URLs</h2>
+    <div class="portlet"
+         id="last-probe"
+         tal:define="probe context/last_probe_record">
+      <h2>Last probe</h2>
+      <tal:not-probe condition="not: probe">
+              <p tal:condition="context/isOfficial">
+                This mirror has never been verified.
+              </p>
+
+              <p tal:condition="not: context/isOfficial">
+                This mirror is an
+                <tal:status replace="context/status/title">Official</tal:status>
+                <span tal:replace="context/distribution/title">Ubuntu</span> mirror,
+                and will not be verified.
+              </p>
+          </tal:not-probe>
+          <tal:probe condition="probe">
+              <p>This mirror was last verified on
+                <strong
+                   tal:attributes="title probe/date_created/fmt:datetime"
+                   tal:content="probe/date_created/fmt:approximatedate" />.
+
+                <tal:is-owner condition="context/required:launchpad.Edit">
+                  You can see the
+                  <a tal:attributes="href probe/log_file/http_url">log file</a> of the
+                  probe.
+                </tal:is-owner>
+              </p>
+          </tal:probe>
+    </div>
+
+    <div class="portlet">
+    <h2>Mirror location information</h2>
 
     <ul class="webref" id="mirror-urls">
       <li tal:condition="context/http_base_url" >
-        Web: <a tal:content="context/http_base_url"
-                 tal:attributes="href context/http_base_url">http://url/</a>
+        <a tal:content="context/http_base_url"
+           tal:attributes="href context/http_base_url">http://url/</a>
       </li>
       <li tal:condition="context/ftp_base_url" >
-        FTP: <a tal:content="context/ftp_base_url"
-                tal:attributes="href context/ftp_base_url">ftp://url/</a>
+        <a tal:content="context/ftp_base_url"
+           tal:attributes="href context/ftp_base_url">ftp://url/</a>
       </li>
       <li tal:condition="context/rsync_base_url" >
-        Rsync: <a tal:content="context/rsync_base_url"
-                  tal:attributes="href context/rsync_base_url">
-                  rsync://url/</a>
+        <a tal:content="context/rsync_base_url"
+           tal:attributes="href context/rsync_base_url">
+          rsync://url/</a>
       </li>
     </ul>
 
     <tal:entries condition="context/content/enumvalue:ARCHIVE"
                  replace="structure view/sources_list_entries" />
-
-    <div id="last-probe" tal:define="probe context/last_probe_record">
-      <h2>Last probe</h2>
-
-      <tal:no-last-probe condition="not: probe">
-        <p tal:condition="context/isOfficial">
-          This mirror has never been verified.
-        </p>
-
-        <p tal:condition="not: context/isOfficial">
-          This mirror is an
-          <tal:status replace="context/status/title">Official</tal:status>
-          <span tal:replace="context/distribution/title">Ubuntu</span> mirror,
-          and will not be verified.
-        </p>
-      </tal:no-last-probe>
-
-      <tal:has-last-probe condition="probe">
-        <p>This mirror was last verified
-          <span
-            tal:attributes="title probe/date_created/fmt:datetime"
-            tal:content="probe/date_created/fmt:approximatedate" />.
-
-          <tal:is-owner condition="context/required:launchpad.Edit">
-            You can see the
-            <a tal:attributes="href probe/log_file/http_url">log file</a> of the
-            probe.
-          </tal:is-owner>
-        </p>
-      </tal:has-last-probe>
-    </div>
 
     <tal:has-last-probe condition="context/last_probe_record">
       <tal:archive-mirror condition="context/content/enumvalue:ARCHIVE"
@@ -137,11 +142,11 @@
           use-macro="context/@@+distributionmirror-macros/cdimage-mirror-content" />
       </tal:cdimage-mirror>
     </tal:has-last-probe>
+    </div>
   </tal:main>
 
-  <tal:side metal:fill-slot="side">
+  <tal:side metal:fill-slot="side" condition="context/required:launchpad.Edit">
     <tal:menu replace="structure context/@@+global-actions" />
   </tal:side>
-
 </body>
 </html>
