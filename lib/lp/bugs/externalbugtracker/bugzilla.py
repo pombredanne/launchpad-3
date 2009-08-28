@@ -558,7 +558,10 @@ class BugzillaAPI(Bugzilla):
 
         # Store the bugs we've imported and return only their IDs.
         self._storeBugs(remote_bugs)
-        bug_ids = [remote_bug['id'] for remote_bug in remote_bugs]
+
+        # Marshal the bug IDs into strings before returning them since
+        # the remote Bugzilla may return ints rather than strings.
+        bug_ids = [str(remote_bug['id']) for remote_bug in remote_bugs]
 
         return bug_ids
 

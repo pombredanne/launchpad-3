@@ -262,7 +262,8 @@ Getting a list of changed bugs
 IExternalBugTracker defines a method, getModifiedRemoteBugs(), which
 accepts a list of bug IDs and a datetime as a parameter and returns the
 list of all the bug IDs in the passed set that have been changed since
-that datetime.
+that datetime. Bug IDs are returned as strings so as to maintain
+compatibility with BugWatch.remotebug.
 
 This is acheived by calling the Bug.search() method on the
 remote server and passing it a 'changed_since' parameter.
@@ -278,7 +279,7 @@ remote server and passing it a 'changed_since' parameter.
         'last_change_time': <DateTime ...'20080611T09:00:00' at...>})
 
     >>> print bug_ids
-    [2]
+    ['2']
 
 If we alter the changed_since date to move it back by a day, we'll get
 both bugs 1 and 2 back from getModifiedRemoteBugs()
@@ -289,7 +290,7 @@ both bugs 1 and 2 back from getModifiedRemoteBugs()
         'last_change_time': <DateTime ...'20080610T09:00:00' at...>})
 
     >>> print bug_ids
-    [1, 2]
+    ['1', '2']
 
 Bugzilla's Bug.search() method returns all the data for each bug it
 returns. getModifiedRemoteBugs() saves this information into the
