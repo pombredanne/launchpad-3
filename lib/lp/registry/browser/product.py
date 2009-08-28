@@ -688,6 +688,14 @@ class ReleaseWithFiles:
     def addFile(self, file):
         self.files.append(file)
 
+    @property
+    def name_with_codename(self):
+        milestone = self.release.milestone
+        if milestone.code_name:
+            return "%s (%s)" % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
+
     @cachedproperty
     def total_downloads(self):
         """Total downloads of files associated with this release."""
@@ -784,12 +792,6 @@ class ProductDownloadFileMixin:
                 self.request.response.addNotification(
                     "%d files have been deleted." %
                     del_count)
-
-    def seriesHasDownloadFiles(self, series):
-        """Determine whether a series has any download files."""
-        for release in series.releases:
-            if len(release.files) > 0:
-                return True
 
     @cachedproperty
     def latest_release_with_download_files(self):
@@ -990,6 +992,10 @@ class ProductDownloadFilesView(LaunchpadView,
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
 
+    @property
+    def page_title(self):
+        return "%s project files" % self.context.displayname
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         self.form = self.request.form
@@ -1007,7 +1013,7 @@ class ProductDownloadFilesView(LaunchpadView,
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
         for series in self.product.serieses:
-            if self.seriesHasDownloadFiles(series):
+            if series.has_release_files:
                 return True
         return False
 

@@ -65,7 +65,7 @@ allows users with permission to create a PPA.
 While navigating around the PPA the "structural location" includes a PPA:
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo > PPA for Celso Providelo
+    Hierarchy: Celso Providelo > PPA for Celso Providelo
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -86,7 +86,7 @@ The PPA breadcrumb follows the PPA displayname.
     >>> cprov_browser.getControl("Save").click()
 
     >>> print_location(cprov_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo > Default PPA
+    Hierarchy: Celso Providelo > Default PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -120,7 +120,7 @@ The user can navigate to an individual build details:
     'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo > Default PPA
+    Hierarchy: Celso Providelo > Default PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov

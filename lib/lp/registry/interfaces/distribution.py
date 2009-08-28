@@ -211,9 +211,6 @@ class IDistributionPublic(
         title=_("DistroArchSeries inside this Distribution"))
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
-    is_read_only = Attribute(
-        "True if this distro is just monitored by Launchpad, rather than "
-        "allowing you to use Launchpad to actually modify the distro.")
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))
@@ -569,7 +566,7 @@ class IDistributionSet(Interface):
         """Retrieve a distribution by name"""
 
     @collection_default_content()
-    def getDistros(self):
+    def getDistros():
         """Return all distributions.
 
         Ubuntu and its flavours will always be at the top of the list, with
