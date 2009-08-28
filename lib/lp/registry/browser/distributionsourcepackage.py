@@ -17,7 +17,7 @@ import itertools
 import operator
 import pytz
 
-from zope.component import getUtility, provideAdapter
+from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements, Interface
 from zope.schema import Choice
@@ -41,7 +41,6 @@ from canonical.launchpad.browser.structuralsubscription import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, Link,
     Navigation, StandardLaunchpadFacets, action, canonical_url, redirection)
-from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp.menu import (
     enabled_with_permission, NavigationMenu)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -168,10 +167,6 @@ class DistributionSourcePackageActionMenu(
 
 class DistributionSourcePackageView(LaunchpadFormView):
     implements(IDistributionSourcePackageActionMenu)
-
-    @property
-    def page_title(self):
-        return self.context.title
 
     @property
     def page_title(self):
