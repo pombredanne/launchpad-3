@@ -676,11 +676,10 @@ the bug tracker page.
   Email bugtracker
   Location:
   mailto:bugs@example.com
-  Tracker Type:
+  Tracker type:
   Email Address
   Number of watches:
   1
-  Contact Details:
   Creator:
   Foo Bar
 
@@ -694,3 +693,21 @@ above are obfuscated:
   Location:
   mailto:&lt;email address hidden&gt;
   ...
+
+If the bug tracker has contact details, they will be shown:
+
+  >>> anon_browser.open(
+  ...     'http://bugs.launchpad.dev/bugs/bugtrackers/gnome-bugzilla')
+  >>> print extract_text(find_portlet(
+  ...     anon_browser.contents, 'GnomeGBug GTracker'))
+  GnomeGBug GTracker
+  Location:
+   http://bugzilla.gnome.org/bugs
+  Tracker type:
+  Bugzilla
+  Number of watches:
+  2
+  Contact details:
+  Jeff Waugh, in his pants.
+  Creator:
+  Foo Bar

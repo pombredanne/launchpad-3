@@ -12,12 +12,14 @@
       <img alt="" src="/@@/link" />
       <a tal:replace="structure context/fmt:external-link" />
     </dd>
-    <dt>Tracker Type:</dt>
+    <dt>Tracker type:</dt>
     <dd tal:content="context/bugtrackertype/title" />
     <dt>Number of watches:</dt>
     <dd tal:content="context/watches/count" />
-    <dt>Contact Details:</dt>
-    <dd tal:content="context/contactdetails" />
+    <tal:contact-details condition="context/contactdetails">
+      <dt>Contact details:</dt>
+      <dd tal:content="context/contactdetails" />
+    </tal:contact-details>
     <dt>Creator:</dt>
     <dd tal:content="structure context/owner/fmt:link" />
   </dl>
