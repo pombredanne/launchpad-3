@@ -310,26 +310,8 @@ statuses from Bugzilla APIs.
 Getting the remote product
 --------------------------
 
-getRemoteProduct() returns the product a remote bug is associated with
-in Bugzilla.
-
-    >>> bugzilla.xmlrpc_transport.bugs[2]['product']
-    'HeartOfGold'
-    >>> bugzilla.getRemoteProduct(2)
-    'HeartOfGold'
-
-A bug alias can also be given to getRemoteProduct().
-
-    >>> bugzilla.getRemoteProduct('bug-two')
-    'HeartOfGold'
-
-If the product is requested for a bug that can't be found, BugNotFound
-is raised.
-
-    >>> bugzilla.getRemoteProduct(12345)
-    Traceback (most recent call last):
-    ...
-    BugNotFound: 12345
+See externalbugtracker-bugzilla-api.txt for details of getting remote
+products from Bugzilla APIs.
 
 
 Retrieving remote comments
@@ -428,53 +410,6 @@ comment dict mappings under the key 'comments'.
         number: 2
         text: Life? Don't talk to me about life.
         time: 20080616T13:22:29
-
-
-getPosterForComment()
----------------------
-
-ISupportsCommentImport.getPosterForComment() returns a tuple of
-(displayname, email) for the author of a remote comment.
-
-    >>> bugzilla.fetchComments(bug_watch_two, ['2', '4'])
-    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, '4')
-    >>> print displayname, email
-    Ford Prefect ford.prefect@h2g2.com
-
-If the author's name as stored in the comment isn't a valid email
-address then the method will return displayname = None and will return
-the whole of the author's name in the email field.
-
-    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, '2')
-    >>> print displayname, email
-    None trillian
-
-
-getMessageForComment()
-----------------------
-
-ISupportsCommentImport.getMessageForComment() returns a Launchpad
-IMessage instance for a given comment. It takes a bug watch, a comment
-ID and a Person object generated from the return value of
-getPosterForComment(), above. For the sake of this test we'll use
-Sample Person as our poster.
-
-    >>> message = bugzilla.getMessageForComment(
-    ...     bug_watch_two, '2', sample_person)
-    >>> print message.text_contents
-    Bring the passengers to the bridge please Marvin.
-
-    >>> print message.owner.displayname
-    Sample Person
-
-The datecreated attribute of the Message will be the same as the 'time'
-field on the imported comment.
-
-    >>> print bugzilla._bugs[2]['comments'][2]['time']
-    20080616T13:08:08
-
-    >>> print message.datecreated
-    2008-06-16 13:08:08+00:00
 
 
 Pushing comments to remote systems

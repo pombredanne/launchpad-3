@@ -11,7 +11,7 @@ __all__ = [
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
-    'DistributionBreadcrumbBuilder',
+    'DistributionBreadcrumb',
     'DistributionChangeMembersView',
     'DistributionChangeMirrorAdminView',
     'DistributionCountryArchiveMirrorsView',
@@ -26,7 +26,7 @@ __all__ = [
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
     'DistributionSetActionNavigationMenu',
-    'DistributionSetBreadcrumbBuilder',
+    'DistributionSetBreadcrumb',
     'DistributionSetContextMenu',
     'DistributionSetFacets',
     'DistributionSetNavigation',
@@ -70,6 +70,8 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation,
@@ -80,7 +82,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import NavigationMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.image import ImageChangeWidget
 
 from lp.registry.browser import RegistryEditFormView
@@ -121,7 +123,7 @@ class UsesLaunchpadMixin:
 
 class DistributionNavigation(
     GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
-    FAQTargetNavigationMixin):
+    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistribution
 
@@ -170,7 +172,7 @@ class DistributionSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(distribution))
 
 
-class DistributionBreadcrumbBuilder(BreadcrumbBuilder):
+class DistributionBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistribution`."""
     @property
     def text(self):
@@ -190,7 +192,7 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class DistributionSetBreadcrumbBuilder(BreadcrumbBuilder):
+class DistributionSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSet`."""
     text = 'Distributions'
 
@@ -226,7 +228,6 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
     facet = 'overview'
     links = ('cdimage_mirrors',
              'archive_mirrors',
-             'newmirror',
              'disabled_mirrors',
              'pending_review_mirrors',
              'unofficial_mirrors',
@@ -241,19 +242,16 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return self.context.context
 
     def cdimage_mirrors(self):
-        text = 'CD Mirrors'
-        enabled = self.distribution.full_functionality
-        return Link('+cdmirrors', text, enabled=enabled, icon='info')
+        text = 'CD mirrors'
+        return Link('+cdmirrors', text, icon='info')
 
     def archive_mirrors(self):
-        text = 'Archive Mirrors'
-        enabled = self.distribution.full_functionality
-        return Link('+archivemirrors', text, enabled=enabled, icon='info')
+        text = 'Archive mirrors'
+        return Link('+archivemirrors', text, icon='info')
 
     def newmirror(self):
-        text = 'Register Mirror'
-        enabled = self.distribution.full_functionality
-        return Link('+newmirror', text, enabled=enabled, icon='add')
+        text = 'Register mirror'
+        return Link('+newmirror', text, icon='add')
 
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""
@@ -263,84 +261,49 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
                 and user.inTeam(self.distribution.mirror_admin))
 
     def disabled_mirrors(self):
-        text = 'Disabled Mirrors'
+        text = 'Disabled mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
     def pending_review_mirrors(self):
-        text = 'Pending-Review Mirrors'
+        text = 'Pending-review mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link(
             '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
-        text = 'Unofficial Mirrors'
+        text = 'Unofficial mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
 
-class DistributionNavigationMenu(NavigationMenu):
+class DistributionLinksMixin:
+    """A mixing to provide common links to menus."""
 
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+
+class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
+    """A menu of context actions."""
     usedfor = IDistribution
     facet = 'overview'
-    links = ('details',
-             'announcements',
-             'mentoring',
-             'mirrors',
-             'builds',
-             'ppas',
-             )
-
-    def details(self):
-        target = ''
-        text = 'Details'
-        return Link(target, text)
-
-    def announcements(self):
-        # XXX: BradCrittenden 2009-08-19 bug=410491: When the distribution
-        # index page is updated to UI 3.0 the text needs to read "Read all
-        # announcements".
-        target = '+announcements'
-        text = 'Announcements'
-        return Link(target, text)
-
-    def mentoring(self):
-        target = '+mentoring'
-        text = "Mentoring"
-        return Link(target, text)
-
-    def mirrors(self):
-        target = '+cdmirrors'
-        text = 'Mirrors'
-        menu = IDistributionMirrorMenuMarker
-        return Link(target, text, menu=menu)
-
-    def builds(self):
-        target = '+builds'
-        text = "Builds"
-        return Link(target, text)
-
-    def ppas(self):
-        target = '+ppas'
-        text = 'PPAs'
-        return Link(target, text)
+    links = ['edit']
 
 
-class DistributionOverviewMenu(ApplicationMenu):
+class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     usedfor = IDistribution
     facet = 'overview'
     links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
-             'mirror_admin', 'reassign', 'addseries', 'top_contributors',
+             'mirror_admin', 'reassign', 'addseries', 'series', 'milestones',
+             'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
              'ppas',]
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change distribution details'
-        return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -372,14 +335,12 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+mentoring', text, icon='info')
 
     def cdimage_mirrors(self):
-        text = 'Show CD mirrors'
-        enabled = self.context.full_functionality
-        return Link('+cdmirrors', text, enabled=enabled, icon='info')
+        text = 'CD mirrors'
+        return Link('+cdmirrors', text, icon='info')
 
     def archive_mirrors(self):
-        text = 'Show archive mirrors'
-        enabled = self.context.full_functionality
-        return Link('+archivemirrors', text, enabled=enabled, icon='info')
+        text = 'Archive mirrors'
+        return Link('+archivemirrors', text, icon='info')
 
     def _userCanSeeNonPublicMirrorListings(self):
         """Does the user have rights to see non-public mirrors listings?"""
@@ -389,18 +350,18 @@ class DistributionOverviewMenu(ApplicationMenu):
                 and user.inTeam(self.context.mirror_admin))
 
     def disabled_mirrors(self):
-        text = 'Show disabled mirrors'
+        text = 'Disabled mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
     def pending_review_mirrors(self):
-        text = 'Show pending-review mirrors'
+        text = 'Pending-review mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link(
             '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
-        text = 'Show unofficial mirrors'
+        text = 'Unofficial mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
@@ -427,6 +388,14 @@ class DistributionOverviewMenu(ApplicationMenu):
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
+
+    def series(self):
+        text = 'All series'
+        return Link('+series', text, icon='info')
+
+    def milestones(self):
+        text = 'All milestones'
+        return Link('+milestones', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
@@ -916,6 +885,9 @@ class DistributionMirrorsView(LaunchpadView):
 
     implements(IDistributionMirrorMenuMarker)
     show_freshness = True
+    show_archive_mirror = True
+    show_cd_mirror = True
+    description = None
 
     @cachedproperty
     def mirror_count(self):
@@ -989,6 +961,9 @@ class DistributionMirrorsView(LaunchpadView):
 class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     heading = 'Official Archive Mirrors'
+    description = ('These mirrors provide repositories and archives of all '
+                   'software for the distribution.')
+    show_archive_mirror = False
 
     @cachedproperty
     def mirrors(self):
@@ -998,6 +973,9 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     heading = 'Official CD Mirrors'
+    description = ('These mirrors offer ISO images which you can download '
+                   'and burn to CD to make installation disks.')
+    show_cd_mirror = False
     show_freshness = False
 
     @cachedproperty

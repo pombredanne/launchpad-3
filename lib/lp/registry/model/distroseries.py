@@ -88,7 +88,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
@@ -112,8 +112,6 @@ from lp.registry.interfaces.sourcepackagename import (
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationGoalStatus,
     SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
@@ -142,7 +140,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates, IStructuralSubscriptionTarget)
+        IHasTranslationTemplates)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -850,19 +848,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getSourcesPublishedForAllArchives(self):
         """See `IDistroSeries`."""
-        # Both, PENDING and PUBLISHED sources will be considered for
-        # as PUBLISHED. It's part of the assumptions made in:
-        # https://launchpad.net/soyuz/+spec/build-unpublished-source
-        pend_build_statuses = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED,
-            )
-
         query = """
             SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.status in %s
-         """ % sqlvalues(self, pend_build_statuses)
+            SourcePackagePublishingHistory.status in %s AND
+            Archive.purpose != %s
+         """ % sqlvalues(self, active_publishing_status, ArchivePurpose.COPY)
 
         if not self.isUnstable():
             # Stable distroseries don't allow builds for the release

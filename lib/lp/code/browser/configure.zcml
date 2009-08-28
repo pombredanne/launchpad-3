@@ -72,7 +72,7 @@
         class="lp.code.browser.codereviewvote.CodeReviewVoteReassign"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/reviewrequest-reassign.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <facet
         facet="branches">
         <browser:url
@@ -145,7 +145,7 @@
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:navigation
         module="lp.code.browser.branchmergeproposal"
@@ -309,7 +309,7 @@
         for="lp.code.interfaces.branchsubscription.IBranchSubscription"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:defaultView
         for="lp.code.interfaces.branchsubscription.IBranchSubscription"
@@ -330,7 +330,7 @@
         for="lp.code.interfaces.branch.IBranch"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:defaultView
         for="lp.code.interfaces.branch.IBranch"
@@ -458,14 +458,14 @@
         class="lp.code.browser.branchsubscription.BranchSubscriptionAddView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-subscription.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+register-merge"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.RegisterBranchMergeProposalView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-register-merge-proposal.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+linkbug"
         for="lp.code.interfaces.branch.IBranch"
@@ -486,7 +486,7 @@
         class="lp.code.browser.branchsubscription.BranchSubscriptionAddOtherView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-subscription.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+edit-subscription"
         for="lp.code.interfaces.branch.IBranch"
@@ -524,14 +524,14 @@
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.AddBranchVisibilityTeamPolicyView"
         permission="launchpad.Commercial"
-        template="../templates/branch-visibility-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+removebranchvisibilitypolicy"
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
         permission="launchpad.Commercial"
-        template="../templates/branch-visibility-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+spark"
         for="lp.code.interfaces.branch.IBranch"
@@ -547,7 +547,7 @@
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:url
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"

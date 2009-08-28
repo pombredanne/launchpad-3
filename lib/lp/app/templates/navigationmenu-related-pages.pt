@@ -6,11 +6,9 @@
 
   <ul>
     <tal:link tal:repeat="link view/links">
-      <tal:enabled tal:condition="link/enabled">
-        <li tal:condition="link/linked">
-          <a tal:replace="structure link/fmt:icon-link" />
-        </li>
-      </tal:enabled>
+      <li>
+        <a tal:replace="structure link/fmt:icon-link" />
+      </li>
     </tal:link>
   </ul>
 </div>

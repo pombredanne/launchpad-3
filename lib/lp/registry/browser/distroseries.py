@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesAddView',
     'DistroSeriesAdminView',
-    'DistroSeriesBreadcrumbBuilder',
+    'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesPackageSearchView',
@@ -37,12 +37,14 @@ from lp.registry.interfaces.distroseries import (
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
@@ -53,7 +55,8 @@ from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
-class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistroSeries
 
@@ -121,7 +124,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return getUtility(IPackageUploadSet).get(id)
 
 
-class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
     @property
     def text(self):

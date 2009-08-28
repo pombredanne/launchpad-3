@@ -100,8 +100,6 @@ from lp.registry.interfaces.sourcepackagename import (
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.validators.name import sanitize_name, valid_name
@@ -126,8 +124,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -315,11 +312,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return [self.driver]
         else:
             return [self.owner]
-
-    @property
-    def is_read_only(self):
-        """See `IDistribution`."""
-        return self.name in ['debian', 'redhat', 'gentoo']
 
     @property
     def _sort_key(self):

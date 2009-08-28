@@ -43,6 +43,7 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
@@ -96,7 +97,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
     stepto)
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -220,132 +221,44 @@ class Hierarchy(LaunchpadView):
         """The objects for which we want breadcrumbs."""
         return self.request.traversed_objects
 
+    @cachedproperty
     def items(self):
         """Return a list of `IBreadcrumb` objects visible in the hierarchy.
 
         The list starts with the breadcrumb closest to the hierarchy root.
         """
         breadcrumbs = []
-        for builder in self._getBreadcrumbBuilders():
-            crumb = builder.make_breadcrumb()
-            if crumb is not None:
-                breadcrumbs.append(crumb)
-        return breadcrumbs
-
-    def _getBreadcrumbBuilders(self):
-        builders = []
         for obj in self.objects:
-            builder = queryAdapter(obj, IBreadcrumbBuilder)
-            if builder is not None:
-                builders.append(builder)
+            breadcrumb = queryAdapter(obj, IBreadcrumb)
+            if breadcrumb is not None:
+                breadcrumbs.append(breadcrumb)
 
         host = URI(self.request.getURL()).host
-        if (len(builders) == 0
+        if (len(breadcrumbs) == 0
             or host == allvhosts.configs['mainsite'].hostname):
-            return builders
+            return breadcrumbs
 
         # If we got this far it means we have breadcrumbs and we're not on the
         # mainsite, so we'll sneak an extra breadcrumb for the vhost we're on.
         vhost = host.split('.')[0]
 
-        # Iterate over the context of our builders in reverse order and for
+        # Iterate over the context of our breadcrumbs in reverse order and for
         # the first one we find an adapter named after the vhost we're on,
         # generate an extra breadcrumb and insert it in our list.
-        for idx in reversed(xrange(len(builders))):
-            builder = builders[idx]
-            extra_builder = queryAdapter(
-                builder.context, IBreadcrumbBuilder, name=vhost)
-            if extra_builder is not None:
-                builders.insert(idx + 1, extra_builder)
+        for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
+            extra_breadcrumb = queryAdapter(
+                breadcrumb.context, IBreadcrumb, name=vhost)
+            if extra_breadcrumb is not None:
+                breadcrumbs.insert(idx + 1, extra_breadcrumb)
                 break
-        return builders
+        return breadcrumbs
 
-    def render(self):
-        """Render the hierarchy HTML.
-
-        The hierarchy elements are taken from the request.breadcrumbs list.
-        For each element, element.text is cgi escaped.
-        """
-        elements = self.items()
-
-        if config.launchpad.site_message:
-            site_message = (
-                '<div id="globalheader" xml:lang="en" lang="en" dir="ltr">'
-                '<div class="sitemessage">%s</div></div>'
-                % config.launchpad.site_message)
-        else:
-            site_message = ""
-
-        if len(elements) > 0:
-            # We're not on the home page.
-            prefix = ('<div id="lp-hierarchy">'
-                     '<span class="first-rounded"></span>')
-            suffix = ('</div><span class="last-rounded">&nbsp;</span>'
-                     '%s<div class="apps-separator"><!-- --></div>'
-                     % site_message)
-
-            if len(elements) == 1:
-                first_class = 'before-last item'
-            else:
-                first_class = 'item'
-
-            steps = []
-            steps.append(
-                '<span class="%s">'
-                '<a href="/" class="breadcrumb container"'
-                ' id="homebreadcrumb">'
-                '<img alt="Launchpad"'
-                ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
-                '</a>&nbsp;</span>' % first_class)
-
-            last_element = elements[-1]
-            if len(elements) > 1:
-                before_last_element = elements[-2]
-            else:
-                before_last_element = None
-
-            for element in elements:
-
-                if element is before_last_element:
-                    css_class = 'before-last'
-                elif element is last_element:
-                    css_class = 'last'
-                else:
-                    # No extra CSS class.
-                    css_class = ''
-
-                steps.append(
-                    self.getHtmlForBreadcrumb(element, css_class))
-
-            hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
-        else:
-            # We're on the home page.
-            hierarchy = ('<div id="lp-hierarchy" class="home">'
-                        '<a href="/" class="breadcrumb">'
-                        '<img alt="Launchpad" '
-                        ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
-                        '</a></div>'
-                        '%s<div class="apps-separator"><!-- --></div>' %
-                        site_message)
-
-        return hierarchy
-
-    def getHtmlForBreadcrumb(self, breadcrumb, extra_css_class=''):
-        """Return the HTML to display an `IBreadcrumb` object.
-
-        :param extra_css_class: A string of additional CSS classes
-            to apply to the breadcrumb.
-        """
-        bodytext = cgi.escape(breadcrumb.text)
-
-        if breadcrumb.icon is not None:
-            bodytext = '%s %s' % (breadcrumb.icon, bodytext)
-
-        css_class = 'item ' + extra_css_class
-        return (
-            '<span class="%s"><a href="%s">%s</a></span>'
-            % (css_class, breadcrumb.url, bodytext))
-
+    @property
+    def display_breadcrumbs(self):
+        """Return whether the breadcrumbs should be displayed."""
+        # If there is only one breadcrumb then it does not make sense
+        # to display it as it will simply repeat the context.title.
+        return len(self.items) > 1
 
 class MaintenanceMessage:
     """Display a maintenance message if the control file is present and
