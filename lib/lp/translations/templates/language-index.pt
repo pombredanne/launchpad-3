@@ -7,68 +7,66 @@
   metal:use-macro="view/macro:page/main_side"
 >
 <body>
-    <h1 metal:fill-slot="heading">
-        Overview of 
-        <tal:has_nativename condition="context/nativename">
-        <tal:nativename replace="context/nativename">
-                Espa&ntilde;ol
-        </tal:nativename> (
-        </tal:has_nativename>
-        <tal:englishname replace="context/englishname">Spain</tal:englishname>
-        <tal:has_nativename condition="context/nativename">)</tal:has_nativename>
-        in Launchpad
-    </h1>
-    
-    <tal:side metal:fill-slot="side">
-            <div tal:replace="structure context/@@+global-actions" />
-            <div tal:replace="structure context/@@+portlet-details" />
-    </tal:side>
+  <h1 metal:fill-slot="heading">
+    Overview of 
+    <tal:has_nativename condition="context/nativename">
+      <tal:nativename replace="context/nativename">
+        Espa&ntilde;ol
+      </tal:nativename> (
+    </tal:has_nativename>
+    <tal:englishname replace="context/englishname">Spain</tal:englishname>
+    <tal:has_nativename condition="context/nativename">)</tal:has_nativename>
+    in Launchpad
+  </h1>
+
+  <tal:side metal:fill-slot="side">
+    <div tal:replace="structure context/@@+global-actions" />
+    <div tal:replace="structure context/@@+portlet-details" />
+  </tal:side>
 
 
-    <tal:main metal:fill-slot="main">
+  <tal:main metal:fill-slot="main">
     <div class="yui-g">
-        <div class="yui-u first">
-            <div class="portlet">
-               <h2>Plural forms</h2>
-                 <tal:has_pluralforms condition="context/pluralexpression">
-                    <p>
-                    There are <tal:pluralforms replace="context/pluralforms">2</tal:pluralforms> 
-                    plural forms for <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language>.
-                    <!--Here I should elaborate how to display the plural forms.-->
-                    </p>
-                    <p></p>
-                    <p>
-                      The default plural form expression for <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language> is:
-                      <pre tal:content="context/pluralexpression">
-                        n != 1
-                      </pre>
-                   </p>
-                   <p></p>
-                   <p>
-                    When translating into this language, you need to be able to
-                    express plural forms effectively. The plural form expression tells
-                    the translation system when to use each plural form. For example,
-                    some languages express the idea of "zero objects" differently to
-                    "one object" or "more than ten objects". In these cases, the
-                    plural form expression captures the information needed to know
-                    which form to use based on the number in question.
-                  </p>
-                </tal:has_pluralforms>
-                <tal:has_not_pluralforms condition="not:context/pluralexpression">
-                    <p class="helpwanted">
-                      Unfortunately, Launchpad doesn't know the plural form
-                      information for this language. If you know it, please open a
-                      <a href="/rosetta/+addticket">ticket</a> with that information,
-                      so we can add it to Launchpad.
-                    </p>
-                </tal:has_not_pluralforms>
-            </div>
-       </div>
+      <div class="yui-u first">
+        <div class="portlet">
+          <h2>Plural forms</h2>
+          <tal:has_pluralforms condition="context/pluralexpression">
+            <p>
+              There are <tal:pluralforms replace="context/pluralforms">2</tal:pluralforms> 
+              plural forms for <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language>.
+            </p>
+            <p>
+              The default plural form expression for <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language> is:
+              <pre tal:content="context/pluralexpression">
+                n != 1
+              </pre>
+            </p>
+            <p></p>
+            <p>
+              When translating into this language, you need to be able to
+              express plural forms effectively. The plural form expression tells
+              the translation system when to use each plural form. For example,
+              some languages express the idea of "zero objects" differently to
+              "one object" or "more than ten objects". In these cases, the
+              plural form expression captures the information needed to know
+              which form to use based on the number in question.
+            </p>
+          </tal:has_pluralforms>
+          <tal:has_not_pluralforms condition="not:context/pluralexpression">
+            <p class="helpwanted">
+              Unfortunately, Launchpad doesn't know the plural form
+              information for this language. If you know it, please open a
+              <a href="/rosetta/+addticket">ticket</a> with that information,
+              so we can add it to Launchpad.
+            </p>
+          </tal:has_not_pluralforms>
+        </div>
+      </div>
 
-       <div class="yui-u">
-              <div tal:content="structure context/@@+portlet-top-contributors" />  
-       </div>
-   </div>
+      <div class="yui-u">
+        <div tal:content="structure context/@@+portlet-top-contributors" />  
+      </div>
+    </div>
 
     <div class="yui-g">
       <div class="first yui-u">
@@ -86,25 +84,25 @@
             <tr tal:repeat="expert_info view/translation_teams">
               <td>
                 <img tal:condition="expert_info/expert/isTeam"
-                     src="/@@/team" />
+                   src="/@@/team" />
                 <img tal:condition="not:expert_info/expert/isTeam"
-                     src="/@@/person" />
+                   src="/@@/person" />
               </td>
               <td>
                 <div>
                   <a
-                    tal:attributes="
-                      href expert_info/expert/fmt:url;
-                      title expert_info/expert/displayname/fmt:shorten/80"
-                    tal:content="expert_info/expert/displayname"
-                    >Expert name</a>(
-                    <tal:groups repeat="group expert_info/groups">
-                      <a tal:attributes="
-                           href group/fmt:url;
-                           title group/title/fmt:shorten/80"
-                         tal:content="group/title"
-                         >Translation group title</a>
-                    </tal:groups>)
+                  tal:attributes="
+                    href expert_info/expert/fmt:url;
+                    title expert_info/expert/displayname/fmt:shorten/80"
+                  tal:content="expert_info/expert/displayname"
+                  >Expert name</a>(
+                  <tal:groups repeat="group expert_info/groups">
+                    <a tal:attributes="
+                         href group/fmt:url;
+                         title group/title/fmt:shorten/80"
+                       tal:content="group/title"
+                       >Translation group title</a>
+                  </tal:groups>)
                 </div>
               </td>
             </tr>
@@ -115,41 +113,41 @@
             </tal:language>
             has no team or person registered as an expert.
           </p>
-         </div>
-       </div>
+        </div>
+      </div>
 
-       <div class="yui-u">
-         <div class="portlet">
+      <div class="yui-u">
+        <div class="portlet">
           <h2>Countries</h2>
           <tal:has_countries condition="context/countries">
             <p>
               <tal:language replace="view/language_name">
                 Espa&ntilde;ol
               </tal:language>
-                is registered as being spoken in the following countries:
+              is registered as being spoken in the following countries:
             </p>
             <ul>
               <li tal:repeat="country context/countries"
-                  tal:content="country/name">Spain</li>
+                tal:content="country/name">Spain</li>
             </ul>
           </tal:has_countries>
           <tal:has_not_countries condition="not:context/countries">
-          <p class="helpwanted">
-            <tal:language replace="view/language_name">
-              Espa&ntilde;ol
-            </tal:language>
-            is not registered as being spoken in any country. If you know
-            about a country that officially speaks this language, please
-            open a <a href="/rosetta/+addticket">ticket</a> with that
-            information, so we can add it to Launchpad.
-          </p>
+            <p class="helpwanted">
+              <tal:language replace="view/language_name">
+                Espa&ntilde;ol
+              </tal:language>
+              is not registered as being spoken in any country. If you know
+              about a country that officially speaks this language, please
+              open a <a href="/rosetta/+addticket">ticket</a> with that
+              information, so we can add it to Launchpad.
+            </p>
           </tal:has_not_countries>
-         </div>
-       </div>
+        </div>
+      </div>
 
     </div>
 
-    </tal:main>
+  </tal:main>
 
 
 </body>
