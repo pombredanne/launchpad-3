@@ -1227,7 +1227,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
         target = '+contactaddress'
-        text = 'Change contact address'
+        text = 'Set contact address'
         summary = (
             'The address Launchpad uses to contact %s' %
             self.team.displayname)
@@ -1236,10 +1236,16 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
         target = '+mailinglist'
-        text = 'Configure mailing list'
+        mailing_list = self.team.mailing_list
+        if mailing_list is not None and mailing_list.is_usable:
+            text = 'Configure mailing list'
+            icon = 'edit'
+        else:
+            text = 'Create a mailing list'
+            icon = 'add'
         summary = (
             'The mailing list associated with %s' % self.context.displayname)
-        return Link(target, text, summary, icon='edit')
+        return Link(target, text, summary, icon=icon)
 
     @enabled_with_active_mailing_list
     @enabled_with_permission('launchpad.Edit')

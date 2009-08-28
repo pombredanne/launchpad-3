@@ -45,7 +45,6 @@
             >proposed members</a>
         </tal:proposed>
       </div>
-      <tal:mugshots replace="structure context/menu:overview/mugshots/fmt:link" />
     </div>
 
     <p id="your-involvement" tal:condition="not: request/lp:person">
@@ -73,9 +72,14 @@
           </tal:can-leave>
         </tal:active-member>
         <tal:not-active-member tal:condition="not: view/userIsActiveMember">
-          <tal:not-member condition="not: view/userIsParticipant">
+          <div condition="not: view/userIsParticipant"
+               style="margin-top: 1.5em">
+            <a tal:define="link context/menu:overview/join"
+               tal:condition="link/enabled"
+               tal:replace="structure link/fmt:link"></a>
+            <br/>
             You are not a member of this team.
-          </tal:not-member>
+          </div>
           <tal:participant condition="view/userIsParticipant">
             You are an indirect member of this team:
             <br />
@@ -106,15 +110,11 @@
           <li tal:repeat="person view/recently_approved_members"
               tal:content="structure person/fmt:link" />
         </ul>
-        <div style="margin-top: 3px;">
-          <tal:mentorships
-            replace="structure overview_menu/mentorships/fmt:link" />
-        </div>
       </td>
       <td style="padding: 0px;" id="recently-applied"
         tal:condition="view/recently_proposed_members">
         <h3 style="color:black; font-weight:bold; margin: 0px">
-          Recently applied
+          Pending approval
         </h3>
         <ul>
           <li tal:repeat="person view/recently_proposed_members"

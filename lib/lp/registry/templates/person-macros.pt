@@ -35,9 +35,12 @@
           <div style="white-space: nowrap">
             <img src="/@@/mail" alt="mail" />
             <tal:email replace="email">foo2@bar.com</tal:email>
+            <a class="sprite edit"
+               tal:attributes="href overview_menu/editemail/fmt:url"></a>
           </div>
         </tal:emails>
-        <a tal:replace="structure overview_menu/editemail/fmt:link" />
+        <a tal:condition="not: view/visible_email_addresses"
+           tal:replace="structure overview_menu/editemail/fmt:link"></a>
       </dd>
     </dl>
 

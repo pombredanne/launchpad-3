@@ -31,16 +31,18 @@
     <span tal:content="view/visibility_info">Viewable by team members.</span>
   </div>
 
-  <tal:menu replace="structure view/@@+global-actions" />
-
-  <ul id="join-team" class="super-add-action">
-    <li tal:define="link context/menu:overview/join"
-        tal:condition="link/enabled"
-        >
+  <ul id="join-team"
+      class="super-add-action"
+      tal:define="link context/menu:overview/join"
+      tal:condition="link/enabled"
+      >
+    <li>
       <a tal:attributes="href link/fmt:url"
-        tal:content="link/text" />
+         tal:content="link/text" />
     </li>
   </ul>
+
+  <tal:menu replace="structure view/@@+global-actions" />
 
   <div id="polls" class="portlet">
     <h2>Polls</h2>
