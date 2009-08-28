@@ -68,7 +68,7 @@
        tal:define="newbugs context/new_bugtasks/count;
                    open_questions view/open_questions/count">
     This package has
-    <a tal:attributes="href view/menu:overview/new_bugs/url"><strong class="bugs-stat"><tal:newbugs content="newbugs"/> new bug<tal:plural content="string:s" condition="python: newbugs!=1"/><strong></a>
+    <a tal:attributes="href view/menu:overview/new_bugs/url"><strong class="bugs-stat"><tal:newbugs content="newbugs"/> new bug<tal:plural content="string:s" condition="python: newbugs!=1"/></strong></a>
      and <a tal:attributes="href view/menu:overview/open_questions/url"><strong class="answers-stat"><tal:openq content="open_questions"/> open question<tal:plural content="string:s" condition="python: open_questions!=1"/>.</strong></a>
   </div>
 
@@ -134,7 +134,7 @@
 
       <tal:title_row condition="row/title_row">
       <tr class="section-heading shaded" style="vertical-align: middle">
-        <td colspan=3>
+        <td colspan="3">
           <img tal:replace="structure context/distribution/image:icon"/>
           <a tal:attributes="href row/series_package/fmt:url"
              tal:content="row/distroseries/title"/>
@@ -147,7 +147,7 @@
               <tal:title replace="row/packaging/productseries/title"/>
               <a tal:attributes="
                 href row/series_package/menu:overview/edit_packaging/url">
-                <img src="/@@/edit">
+                <img src="/@@/edit"/>
               </a>
               <form style="display: inline"
                     method="POST"
@@ -195,7 +195,7 @@
         </td>
       </tr>
       <tr tal:attributes="id string:pub${pubid}" style="display: none">
-        <td colspan=3>
+        <td colspan="3">
           <div class="package-details"
                tal:attributes="id string:pub${pubid}-container" />
         </td>
@@ -205,7 +205,7 @@
       </tal:package_row>
 
       <tal:blank_row condition="row/blank_row">
-        <tr><td colspan=3 style="padding-bottom: 1em; border-top: 0" /></tr>
+        <tr><td colspan="3" style="padding-bottom: 1em; border-top: 0" /></tr>
       </tal:blank_row>
 
       </tal:rows>
