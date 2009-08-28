@@ -16,6 +16,7 @@ import unittest
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.errors import InvalidURLJoin
 from bzrlib.transport import get_transport
 
 import pytz
@@ -401,7 +402,9 @@ class TestCaseWithFactory(TestCase):
         if format is not None and isinstance(format, basestring):
             format = format_registry.get(format)()
         transport = get_transport(branch_url)
-        transport.create_prefix()
+        if not self.real_bzr_server:
+            # for real bzr servers, the prefix always exists.
+            transport.create_prefix()
         self.addCleanup(transport.delete_tree, '.')
         return BzrDir.create_branch_convenience(
             branch_url, format=format)
