@@ -30,8 +30,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
 from lp.blueprints.interfaces.sprintspecification import (
     SprintSpecificationStatus)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -77,8 +75,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner,
-               IStructuralSubscriptionTarget)
+               IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
