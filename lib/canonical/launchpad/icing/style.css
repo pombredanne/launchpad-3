@@ -1305,7 +1305,7 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
   text-decoration: underline;
 }
 
-a.official-tag { /* Looks just like a normal link  }*/
+a.official-tag { /* Looks just like a normal link  */}
 
 a.unofficial-tag {
   color: #6699ee;
