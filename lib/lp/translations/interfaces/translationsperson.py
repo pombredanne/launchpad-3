@@ -43,7 +43,7 @@ class ITranslationsPerson(Interface):
         :param no_older_than: Optional cutoff date.  Translations that
             this person hasn't contributed to since this date will be
             ignored.
-        :return: a sequence of `POFile`s ordered by age of oldest
+        :return: A query result of `POFile`s ordered by age of oldest
             unreviewed `TranslationMessage` (oldest first).
         """
 
@@ -58,7 +58,21 @@ class ITranslationsPerson(Interface):
         """
 
     def getTranslatableFiles(no_older_than=None):
-        """."""
+        """List `POFile`s this person should be able to help translate.
+
+        These are translations that this person is not a reviewer for,
+        but has worked on recently.
+
+        :param no_older_than: Optional cutoff date to define "recently."
+        :return: A query result of `POFile`s ordered by number of
+            untranslated messages.
+        """
 
     def suggestTranslatableFiles(no_older_than=None):
-        """."""
+        """Suggest `POFile`s this person could help translate.
+
+        Similar to `getTranslatableFiles`, this method picks an
+        arbitrary series of `POFile`s that the user is not a reviewer
+        for and has not worked on recently, but which are in a language
+        the user works in.
+        """
