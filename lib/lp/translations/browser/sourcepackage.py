@@ -11,8 +11,7 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
-    NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
+    enabled_with_permission, Link, NavigationMenu)
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.registry.interfaces.sourcepackage import ISourcePackage
