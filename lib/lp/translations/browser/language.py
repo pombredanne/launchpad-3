@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'LanguageAddView',
-    'LanguageContextMenu',
     'LanguageAdminView',
     'LanguageSetContextMenu',
     'LanguageSetNavigation',
