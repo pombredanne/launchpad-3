@@ -104,6 +104,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
     def testWriteHtpasswd(self):
         """Test that writing the .htpasswd file works properly."""
         fd, filename = tempfile.mkstemp()
+        os.close(fd)
         script = self.getScript()
 
         TEST_PASSWORD = "password"
@@ -199,7 +200,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
         # Write the same contents in a temp file.
         fd, temp_filename = tempfile.mkstemp()
-        file = open(temp_filename, "w")
+        file = os.fdopen(fd, "w")
         file.write(FILE_CONTENT)
         file.close()
 

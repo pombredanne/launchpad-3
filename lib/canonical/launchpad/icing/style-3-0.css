@@ -177,6 +177,9 @@ div.columns div.right div.portlet {
     border: none;
     padding: 0;
     }
+span.nolink {
+    font-weight: bold;
+    }
 #colophon {
     float: none;
     }
@@ -346,6 +349,11 @@ thead th, tr.thead th {
     text-align: center;
     vertical-align: bottom;
     }
+
+form h1 {
+    margin-bottom: 1em;
+    }
+
 form table th, form table td {
     padding: 2px;
     }
@@ -397,7 +405,9 @@ span.see-all {
     margin: 0 0 1em 0;
     font-size: 138.5%;
     }
-
+.main-portlet {
+    margin: 1em 0 1em 0;
+    }
 
 /* Common list presentations. */
 .bulleted {
