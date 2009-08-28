@@ -178,15 +178,34 @@ archive as well as some new PPAs.
 
     >>> logout()
 
-A /$DISTRO/+source/$PACKAGE page shows for a given source package all
-the distro series in which it is published, and if there is a link to
-a product series. If there is no upstream set, then a link to set one is
-given at the end of the row.  For each distro series, a list of the versions
-available in that series are presented, along with which pocket has each
-version, the component in which it's published, and the time elapsed since it
-was published.
+
+A /$DISTRO/+source/$PACKAGE page shows an overview of a source package in
+a distribution.  There are several sections of information.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/iceweasel/")
+
+Under the title there's a short paragraph that says how many 'new' bugs
+and open questions the package has.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bugs-and-questions-summary'))
+    This package has 0 new bugs and 0 open questions.
+
+Links exist to jump to the query page for the new bugs and open questions.
+
+    >>> print user_browser.getLink("0 new bugs").url
+    http://bugs.launchpad.dev/ubuntu/+source/iceweasel/+bugs?field.status:list=NEW
+
+    >>> print user_browser.getLink("0 open questions").url
+    http://answers.launchpad.dev/ubuntu/+source/iceweasel/+questions?field.status=OPEN
+
+The page also has a table that shows the distro series in which the package is
+published, and if there is a link to a product series. If there is no upstream
+set then a link to set one is given at the end of the row.  For each distro
+series a list of the versions available in that series are presented, along
+with which pocket has each version, the component in which it's published, and
+the time elapsed since it was published.
+
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'packages_list'))
     The Warty Warthog Release (current stable release)      Set upstream link

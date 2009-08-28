@@ -71,7 +71,7 @@
      Field specific error for the hidden packaging field.
   </p>
 
-  <div class="top-portlet"
+  <div class="top-portlet" id="bugs-and-questions-summary"
        tal:define="newbugs context/new_bugtasks/count;
                    open_questions view/open_questions/count">
     This package has
