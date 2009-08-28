@@ -32,10 +32,8 @@ def sigusr1_handler(signum, frame):
 _installed_handler = None
 
 def sigusr2_handler(signum, frame):
-    try:
-        _installed_handler(signum, frame)
-    finally:
-        notify('sigusr2')
+    _installed_handler(signum, frame)
+    notify('sigusr2')
 
 if __name__ == '__main__':
     logging.getLogger('').addHandler(FileHandler(sys.argv[1]))
