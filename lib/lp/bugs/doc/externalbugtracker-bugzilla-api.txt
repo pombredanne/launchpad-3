@@ -510,3 +510,52 @@ field on the imported comment.
 
     >>> print message.datecreated
     2008-06-16 13:08:08+00:00
+
+
+Adding a comment to a remote bug
+--------------------------------
+
+BugzillaAPI implements the ISupportsCommentPushing interface, which
+defines the necessary methods for pushing comments to remote servers.
+
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentPushing)
+    >>> verifyObject(ISupportsCommentPushing, bugzilla)
+    True
+
+ISupportsCommentPushing.addRemoteComment() is the method used to push a
+comment to the remote server. It takes three parameters: the remote bug
+ID, the body of the comment to push and the rfc822msgid of the comment
+being pushed. For the BugzillaAPI bugtracker we can pass None as the
+rfc822msgid, since Bugzilla won't use it. addRemoteComment() returns the
+ID of the new comment on the remote server.
+
+addRemoteComment() calls Bug.add_comment() on the remote server,
+which requires authentication.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> bugzilla.xmlrpc_transport.expireCookie(
+    ...     bugzilla.xmlrpc_transport.auth_cookie)
+
+    >>> comment_id  = bugzilla.addRemoteComment(
+    ...     1, "This is a new remote comment.", None)
+    CALLED User.login({'...'})
+    CALLED Bug.add_comment({'comment': 'This is a new remote comment.',
+        'id': 1})
+
+    >>> comment_id
+    '5'
+
+The comment will be stored on the remote server with the other comments.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = False
+    >>> print sorted(bugzilla.getCommentIds(bug_watch))
+    ['1', '3', '5']
+
+    >>> bugzilla.fetchComments(bug_watch, ['5'])
+    >>> message = bugzilla.getMessageForComment(
+    ...     bug_watch, '5', sample_person)
+    >>> print message.text_contents
+    This is a new remote comment.
+    <BLANKLINE>
+
