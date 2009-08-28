@@ -1,6 +1,9 @@
-===================================
+============================
+Distribution Source Packages
+============================
+
 Distribution Package Search Results
-===================================
+-----------------------------------
 
 Although there is a separate search page, we can search from the
 distribution overview page which takes us there and displays the
@@ -317,8 +320,17 @@ A link to further PPA searches is also included.
     >>> link.text
     "...more untrusted versions of..."
 
+
+Source package change logs
+--------------------------
+
 /$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that lists
 each published version of a package with its changelog entry for that version.
+To navigate to this page, click on the "View full change log" link from
+the index page.
+
+    >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/")
+    >>> browser.getLink("View full change log").click()
 
 Each version history entry has a header with the version as the title
 and details of the publishing status in each distroseries it's published
@@ -326,7 +338,6 @@ in.
 
 Package "foobar" is deleted:
 
-    >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/+changelog")
     >>> first_header = find_tag_by_id(browser.contents,
     ...     "detail_foobar_1.0")
     >>> print extract_text(first_header)
