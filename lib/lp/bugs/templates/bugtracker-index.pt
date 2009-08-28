@@ -11,12 +11,6 @@
       <tal:tracker replace="context/title">Gnome Bugzilla</tal:tracker>
       overview
     </h1>
-    <p tal:condition="not: context/active" id="inactive-message">
-      <strong>
-        Bug watch updates for <tal:bugtracker content="context/title" />
-        are disabled.
-      </strong>
-    </p>
   </metal:heading>
 
   <metal:side fill-slot="side">
@@ -73,6 +67,13 @@
 
   <div metal:fill-slot="main">
     <div class="top-portlet">
+      <p tal:condition="not: context/active" id="inactive-message">
+        <strong>
+          Bug watch updates for <tal:bugtracker
+          content="context/title" /> are disabled.
+        </strong>
+      </p>
+
       <p tal:content="context/summary">
         $BugTracker.summary goes here. This should be quite short,
         just a single paragraph of text really, giving the BugTracker

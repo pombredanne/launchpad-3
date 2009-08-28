@@ -12,7 +12,7 @@
     <div>
       <span>
         <strong tal:content="context/time_starts/fmt:date">2005-10-05</strong>
-          -
+          to
         <strong tal:content="context/time_ends/fmt:date">2005-10-05</strong>:
       </span>
       <strong><a tal:attributes="href context/fmt:url"

@@ -5,7 +5,7 @@ page, with the addition of a breadcrumb itself.
 
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
     >>> print_location(user_browser.contents)
-    Hierarchy: Launchpad > Bug trackers
+    Hierarchy: None displayed
     Tabs:
     * Launchpad Home - http://launchpad.dev/
     * Code - http://code.launchpad.dev/
