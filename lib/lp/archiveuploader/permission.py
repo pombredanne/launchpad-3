@@ -77,11 +77,10 @@ def verify_upload(person, sourcepackagename, archive, component,
         or ap_set.isSourceUploadAllowed(archive, sourcepackagename, person)):
         return
 
-    if component is not None:
-        if strict_component:
-            if archive.canUpload(person, component):
-                return
-        else:
-            if len(components_valid_for(archive, person)) != 0:
-                return
-    raise CannotUploadToArchive(person, archive)
+    if not components_valid_for(archive, person):
+        raise CannotUploadToArchive(archive, person)
+
+    if (component is not None
+        and strict_component
+        and not archive.canUpload(person, component)):
+        raise CannotUploadToArchive(person, archive)
