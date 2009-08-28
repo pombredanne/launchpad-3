@@ -130,7 +130,7 @@ class TestPermission(TestCaseWithFactory):
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         spn = self.factory.makeSourcePackageName()
-        package_set = self.factory.makePackageSet(packages=[spn])
+        package_set = self.factory.makePackageset(packages=[spn])
         self.permission_set.newPackagesetUploader(
             archive, person, package_set)
         self.assertCanUpload(person, spn, archive, None)

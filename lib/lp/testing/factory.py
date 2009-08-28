@@ -1597,7 +1597,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
 
-    def makePackageSet(self, name=None, description=None, owner=None,
+    def makePackageset(self, name=None, description=None, owner=None,
                        packages=()):
         """Make an `IPackageset`."""
         if name is None:
