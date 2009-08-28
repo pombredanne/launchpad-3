@@ -184,6 +184,11 @@ We can edit the details of the newly added bugtracker.
   >>> user_browser.getControl(
   ...     'Summary').value = 'This is used to be a test TRAC bug tracker.'
 
+There is a cancel link if we change our mind:
+
+  >>> user_browser.getLink('Cancel').url
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis'
+
 It's not possible to change the base URL to something that another bug
 tracker uses.
 

@@ -353,6 +353,10 @@ class BugTrackerEditView(LaunchpadEditFormView):
         # Go back to the bug tracker listing.
         self.next_url = canonical_url(getUtility(IBugTrackerSet))
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class BugTrackerNavigation(Navigation):
 
