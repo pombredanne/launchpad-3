@@ -44,6 +44,7 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff, StaticDiff
 from lp.codehosting.vfs import get_multi_server
 from lp.services.job.model.job import Job
+from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
 
 
@@ -237,6 +238,8 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
 
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
+
+    implements(IRunnableJob)
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 

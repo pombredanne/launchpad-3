@@ -49,6 +49,7 @@ from lp.code.model.diff import StaticDiff
 from lp.code.model.tests.test_diff import DiffTestCase
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.job.runner import JobRunner
 from lp.testing import (
     capture_events, login_person, TestCaseWithFactory, time_counter)
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
@@ -1602,9 +1603,11 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.useBzrBranches()
         bmp = self.createExampleMerge()[0]
         job = UpdatePreviewDiffJob.create(bmp)
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        bmp.source_branch.next_mirror_time = None
         transaction.commit()
         self.layer.switchDbUser(config.update_preview_diffs.dbuser)
-        job.run()
+        JobRunner.fromReady(UpdatePreviewDiffJob).runAll()
         transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
 
