@@ -548,7 +548,7 @@ class ProductSetFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSet
 
-    enable_only = ['overview']
+    enable_only = ['overview', 'branches']
 
 
 class SortSeriesMixin:
