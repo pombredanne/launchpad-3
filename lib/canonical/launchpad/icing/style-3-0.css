@@ -660,3 +660,24 @@ ul.language, li.language             {
   /* Disable .language sprite. */
   background: inherit;
 }
+
+/* ==== Translations hand-made forms ==== */
+
+form.translations div.fields {
+  padding: 1em;
+}
+
+form.translations div.actions {
+  padding: 1em;
+  text-align: right;
+}
+
+form.translations input {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+form.translations select {
+  margin-left: 0.5em;
+  padding-right: 0.5em;
+}
