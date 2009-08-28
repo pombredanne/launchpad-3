@@ -12,6 +12,7 @@ link a branch to a bug.
     >>> print extract_text(find_tag_by_id(
     ...    user_browser.contents, 'maincontent'))
     Bug #1 in Mozilla Firefox: "Firefox does not support SVG"
+    ...
     Add a branch to bug #1
     Linking a Bazaar branch to a bug allows you to notify others of
     work to fix this bug.
