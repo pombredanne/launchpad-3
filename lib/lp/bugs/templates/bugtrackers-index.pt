@@ -5,6 +5,12 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only">
 
+  <tal:comment condition="nothing">
+    Below, there is no "bogus" slot. It's a hack to make an "in-line"
+    template definition work. Without it, variables defined at the
+    call-site will not be available to the macro, but this macro
+    expects "id" and "trackers" to be defined.
+  </tal:comment>
   <metal:macros fill-slot="bogus">
     <metal:macro define-macro="tracker-table">
       <table class="sortable listing" tal:attributes="id id">
