@@ -60,7 +60,7 @@
                            class product/html_class;
                            title product/html_title"
            tal:content="product/name">project</a>
-        <p><a href="/+project-cloud">see all projects&#8230;</a></p>
+        <p><a href="/projects">see all projects&#8230;</a></p>
       </div>
 
       <div class="columns">
@@ -112,7 +112,7 @@
         <div>
           <strong tal:content="view/branch_count">123</strong>
           branches registered in
-          <a href="/+project-cloud">
+          <a href="/projects">
             <strong tal:content="view/product_count">1234</strong>
             projects
           </a>
@@ -129,7 +129,7 @@
         </div>
         <div>
           Launchpad uses <a href="http://bazaar-vcs.org/">Bazaar</a>
-          <tal:version tal:content="view/bzr_version">0.92.0</tal:version>.
+          <tal:version tal:content="view/bzr_version">2.0</tal:version>.
         </div>
       </div>
 
