@@ -75,7 +75,7 @@ class TestDiff(DiffTestCase):
         sio.write(content)
         size = sio.tell()
         sio.seek(0)
-        diff = Diff.fromFile(sio, size, diffstat='')
+        diff = Diff.fromFile(sio, size, diffstat={})
         # Commit to make the alias available for reading.
         transaction.commit()
         return diff
@@ -200,11 +200,11 @@ class TestStaticDiff(TestCaseWithFactory):
         diff_a = 'a'
         diff_b = 'b'
         static_diff = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_a, diffstat='')
+            'rev1', 'rev2', diff_a, diffstat={})
         self.assertEqual('rev1', static_diff.from_revision_id)
         self.assertEqual('rev2', static_diff.to_revision_id)
         static_diff2 = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_b, diffstat='')
+            'rev1', 'rev2', diff_b, diffstat={})
         self.assertIs(static_diff, static_diff2)
 
     def test_acquireFromTextEmpty(self):
@@ -213,7 +213,7 @@ class TestStaticDiff(TestCaseWithFactory):
 
     def test_acquireFromTextNonEmpty(self):
         static_diff = StaticDiff.acquireFromText(
-            'rev1', 'rev2', 'abc', diffstat='')
+            'rev1', 'rev2', 'abc', diffstat={})
         transaction.commit()
         self.assertEqual('abc', static_diff.diff.text)
 
