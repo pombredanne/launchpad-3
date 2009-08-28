@@ -661,8 +661,8 @@ projects portlet on the bug tracker page:
   Related projects
     You can link a registered bug tracker with a registered project in
     Launchpad:
-      The Mozilla Project
-      Jokosher Audio Editor
+      the Mozilla Project
+      Jokosher (Unspecified)
 
 
 == Info portlet ==
