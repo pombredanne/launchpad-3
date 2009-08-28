@@ -700,15 +700,13 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             canonical_url(self.context, view_name='+edit'),
             id="displayname", title="Edit this displayname")
 
-        self.setupSourcesListEntries()
-
-    def setupSourcesListEntries(self):
-        """Setup of the sources list entries widget."""
+    @property
+    def sources_list_entries(self):
+        """Setup and return the source list entries widget."""
         entries = SourcesListEntries(
             self.context.distribution, self.archive_url,
             self.context.series_with_sources)
-        self.sources_list_entries = SourcesListEntriesView(
-            entries, self.request)
+        return SourcesListEntriesView(entries, self.request)
 
     @property
     def package_copy_requests(self):
@@ -726,14 +724,6 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         return smartquote('Packages in "%s"' % self.context.displayname)
 
     @property
-    def sources_list_entries(self):
-        """Setup and return the source list entries widget."""
-        entries = SourcesListEntries(
-            self.context.distribution, self.archive_url,
-            self.context.series_with_sources)
-        return SourcesListEntriesView(entries, self.request)
-
-    @property
     def series_list_string(self):
         """Return an English string of the distroseries."""
         return english_list(
@@ -742,9 +732,8 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     @property
     def is_copy(self):
         """Return whether the context of this view is a copy archive."""
-        # This property enables menu items to be shared between a
+        # This property enables menu items to be shared between
         # context and view menues.
-        # TODO: can I use a simple delegate statement here instead?
         return self.context.is_copy
 
 

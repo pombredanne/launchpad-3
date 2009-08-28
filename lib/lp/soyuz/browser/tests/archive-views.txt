@@ -181,6 +181,40 @@ appropriate:
     pmount
 
 
+== ArchivePackageView ==
+
+This view displays detailed information about the archive packages that
+is not so relevant for the PPA index page, such as a summary of build
+statuses, repository usage, full publishing details and access to
+copy/delete packages where appropriate.
+
+And let's create two views to compare:
+
+    >>> ppa_archive_view = create_initialized_view(
+    ...     cprov.archive, name="+packages")
+    >>> copy_archive_view = create_initialized_view(
+    ...     copy_archive, name="+packages")
+
+    >>> print ppa_archive_view.page_title
+    Packages in ...PPA for Celso Providelo...
+
+    >>> print copy_archive_view.page_title
+    Packages in ...Copy archive intrepid-security-rebuild... 
+
+This view inherits from ArchiveViewBase and has all the
+corresponding properties such as archive_url, build_counters etc.
+(see ArchiveView above).
+
+Additionally, ArchivePackageView can display a string representation
+of the series supported by this archive.
+
+    >>> print ppa_archive_view.series_list_string
+    Breezy Badger Autotest and Warty
+
+    >>> copy_archive_view.series_list_string
+    ''
+
+
 == ArchivePackageDeletionView ==
 
 We use ArchivePackageDeletionView to provide the mechnisms used to

@@ -272,6 +272,11 @@ div.package-details {
   <tal:comment replace="nothing">
     Present a summary of the packages with build statuses for the archive.
     :archive: targetted IArchive.
+
+    XXX noodles 20090827 bug=419921
+    Currently we can only provide a direct link to successful builds
+    as there is no single filtering option for failed and pending
+    builds.
   </tal:comment>
 
   <div id="build-count-summary">
