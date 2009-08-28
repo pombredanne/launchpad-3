@@ -13,6 +13,7 @@ from bzrlib.diff import show_diff_trees
 from bzrlib.patches import parse_patches
 from bzrlib.merge import Merger, Merge3Merger
 from lazr.delegates import delegates
+import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
 from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
@@ -36,7 +37,19 @@ class Diff(SQLBase):
 
     diff_lines_count = IntCol()
 
-    diffstat = StringCol()
+    _diffstat = StringCol(dbName='diffstat')
+
+    def _get_diffstat(self):
+        if self._diffstat is None:
+            return None
+        return dict((key, tuple(value)) for key, value
+             in simplejson.loads(self._diffstat).iteritems())
+
+    def _set_diffstat(self, diffstat):
+        assert isinstance(diffstat, dict)
+        self._diffstat = simplejson.dumps(diffstat)
+
+    diffstat = property(_get_diffstat, _set_diffstat)
 
     added_lines_count = IntCol()
 
@@ -120,8 +133,7 @@ class Diff(SQLBase):
         if size == 0:
             diff_text = None
             diff_lines_count = 0
-            if diffstat is None:
-                diffstat = ''
+            diff_content_bytes = ''
         else:
             if filename is None:
                 filename = generate_uuid() + '.txt'
@@ -129,10 +141,9 @@ class Diff(SQLBase):
                 filename, size, diff_content, 'text/x-diff')
             diff_content.seek(0)
             diff_content_bytes = diff_content.read(size)
-            if diffstat is None:
-                diffstat_vals = klass.generateDiffstat(diff_content_bytes)
-                diffstat = klass.stringifyDiffstat(diffstat_vals)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
+        if diffstat is None:
+            diffstat = klass.generateDiffstat(diff_content_bytes)
         return klass(diff_text=diff_text, diff_lines_count=diff_lines_count,
                      diffstat=diffstat)
 
@@ -148,14 +159,6 @@ class Diff(SQLBase):
             path = patch.newname.split('\t')[0]
             file_stats[path] = tuple(patch.stats_values()[:2])
         return file_stats
-
-    @staticmethod
-    def stringifyDiffstat(diffstat):
-        """Return a string representing the supplied diffstat."""
-        lines = []
-        for path, (added, removed) in sorted(diffstat.items()):
-            lines.append('%s: -%i +%i\n' % (path, removed, added))
-        return ''.join(lines)
 
 
 class StaticDiff(SQLBase):
