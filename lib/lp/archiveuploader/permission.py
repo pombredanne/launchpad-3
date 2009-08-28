@@ -38,6 +38,15 @@ class CannotUploadToPPA(CannotUploadToArchive):
     _fmt = 'Signer has no upload rights to this PPA.'
 
 
+class NoRightsForArchive(CannotUploadToArchive):
+    """Raised when a person has absolutely no upload rights to an archive."""
+
+    _fmt = (
+        "The signer of this package has no upload rights to this "
+        "distribution's primary archive.  Did you mean to upload to "
+        "a PPA")
+
+
 def components_valid_for(archive, person):
     """Return the components that 'person' can upload to 'archive'.
 
@@ -78,7 +87,7 @@ def verify_upload(person, sourcepackagename, archive, component,
         return
 
     if not components_valid_for(archive, person):
-        raise CannotUploadToArchive(archive, person)
+        raise NoRightsForArchive(archive, person)
 
     if (component is not None
         and strict_component
