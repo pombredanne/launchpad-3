@@ -58,8 +58,8 @@ We can delete existing links between a bug and a branch.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'maincontent'))
     Remove bug branch link
-    Remove the link between Bug #1: Firefox does not support SVG and
-    lp://dev/~name12/firefox/main?
+    Are you sure you want to remove the link between Bug #1: Firefox does
+    not support SVG and the branch lp://dev/~name12/firefox/main?
     ...
 
     >>> user_browser.getControl('Delete').click()

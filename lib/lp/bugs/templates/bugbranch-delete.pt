@@ -12,9 +12,9 @@
     <div class="top-portlet">
       <div metal:use-macro="context/@@launchpad_form/form">
         <div metal:fill-slot="extra_info" class="documentDescription">
-          Remove the link between
+          Are you sure you want to remove the link between
           <span tal:replace="structure context/bug/fmt:link" /> and
-          <span tal:replace="structure context/branch/fmt:link" />?
+          the branch <span tal:replace="structure context/branch/fmt:link" />?
         </div>
       </div>
     </div>
