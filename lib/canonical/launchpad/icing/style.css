@@ -1840,7 +1840,7 @@ div.builds_list form {
     padding: 1em 1em 2em 0em;
 }
 
-/* XXX
+/* XXX Michael Nelson 20090828 bug=420376
  * Temporary style for actions on the ppa/+packages page until we move
  * the copy/delete packages functionality into the page itself. */
 div.ppa-packaging-tmp-actions {
