@@ -65,6 +65,14 @@ calculated daily. That's why it's still 0.
     >>> salgado.karma
     0
 
+With hasKarma we can see efficiently whether Salgado has any karma in a
+particular category, or at all.  This too is based on the cached values.
+
+    >>> salgado.hasKarma()
+    False
+    >>> salgado.hasKarma('bugs')
+    False
+
 Some Person's are not awarded karma: Teams, and the Launchpad Janitor,
 do not receive karma when assignKarma is called. There is no error
 or message to indicate nothing happed. The method assignKarma
@@ -167,4 +175,13 @@ config.karmacacheupdater.max_scaling.
     >>> salgado.karma
     70
 
+    >>> salgado.hasKarma()
+    True
+    >>> salgado.hasKarma('bugs')
+    True
 
+Karma in one category does not imply that the same person has karma in
+another category.
+
+    >>> salgado.hasKarma('translations')
+    False
