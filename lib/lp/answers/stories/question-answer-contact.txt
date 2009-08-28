@@ -75,7 +75,7 @@ languages header with English and Spanish.
 
     >>> browser.getLink('Your preferred languages').click()
     >>> print browser.title
-    Sample Person's preferred languages
+    Your language preferences
 
     >>> browser.getControl('English', index=0).selected
     True
@@ -111,7 +111,7 @@ a question.
 
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+question/7')
-    >>> portlet = find_tag_by_id(browser.contents, 'portlet-subscribers')
+    >>> portlet = find_tag_by_id(browser.contents, 'subscribers')
     >>> also_notified = portlet.find('b')
     >>> also_notified
     <b>Also notified:</b>
@@ -168,7 +168,7 @@ languages. He must add Spanish to the team's preferred languages.
 
     >>> browser.getLink('Set preferred languages').click()
     >>> print browser.title
-    Landscape Developers's preferred languages
+    Landscape Developers's language preferences
 
 Sample Person may be surprised to see English is already selected. Per
 the notification issued in the first example above, English was added to
@@ -195,12 +195,10 @@ subscribed to Spanish questions.
     >>> print extract_text(browser.title)
     Ubuntu question #10:...Play DVDs in Totem...
 
-    >>> portlet = find_portlet(browser.contents, 'Ubuntu question #10')
-    >>> language = portlet.find('b', text='Language:')
-    >>> print language, language.next.strip()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
     Language: English
 
-    >>> portlet = find_tag_by_id(browser.contents, 'portlet-subscribers')
+    >>> portlet = find_tag_by_id(browser.contents, 'subscribers')
     >>> print extract_text(portlet)
     Subscribers
     Sample Person
@@ -214,12 +212,10 @@ Question:
     >>> browser.title
     'Ubuntu question #12:...Problema al recompilar kernel con soporte smp...'
 
-    >>> portlet = find_portlet(browser.contents, 'Ubuntu question #12')
-    >>> language = portlet.find('b', text='Language:')
-    >>> print language, language.next.strip()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
     Language: Spanish
 
-    >>> portlet = find_tag_by_id(browser.contents, 'portlet-subscribers')
+    >>> portlet = find_tag_by_id(browser.contents, 'subscribers')
     >>> print extract_text(portlet).encode('ASCII', 'backslashreplace')
     Subscribers
     Carlos Perell\xf3 Mar\xedn

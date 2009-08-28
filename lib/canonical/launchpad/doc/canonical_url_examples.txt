@@ -69,8 +69,8 @@ The IPersonSet.
 
 An IPerson.
 
-    >>> canonical_url(getUtility(IPersonSet).getByName('sabdfl'))
-    u'http://launchpad.dev/~sabdfl'
+    >>> canonical_url(getUtility(IPersonSet).getByName('mark'))
+    u'http://launchpad.dev/~mark'
 
 An ITeam.
 
@@ -325,16 +325,16 @@ An IBranch.
     >>> branch = getUtility(IBranchLookup).get(10)
 
     >>> canonical_url(branch)
-    u'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2'
+    u'http://code.launchpad.dev/~mark/firefox/release-0.9.2'
 
 An IBugBranch.
 
     >>> bug = getUtility(IBugSet).get(1)
     >>> bug_branch = bug.linkBranch(
-    ...     branch, getUtility(IPersonSet).getByName('sabdfl'))
+    ...     branch, getUtility(IPersonSet).getByName('mark'))
 
     >>> canonical_url(bug_branch)
-    u'http://launchpad.dev/~sabdfl/firefox/release-0.9.2/+bug/1'
+    u'http://launchpad.dev/~mark/firefox/release-0.9.2/+bug/1'
 
 
 == BranchMergeProposals ==
@@ -451,7 +451,7 @@ Even for a dummy PO msgset
 Rosetta also has translation groups.
 
     >>> canonical_url(getUtility(ITranslationGroupSet))
-    u'http://launchpad.dev/+groups'
+    u'http://translations.launchpad.dev/+groups'
 
 
 == Specifications ==

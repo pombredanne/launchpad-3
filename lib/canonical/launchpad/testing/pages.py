@@ -542,15 +542,26 @@ def print_location(contents):
 def print_location_apps(contents):
     """Print the application tabs' text and URL."""
     location_apps = find_tag_by_id(contents, 'lp-apps')
-    for tab in location_apps.findAll('span'):
-        tab_text = extract_text(tab)
-        if tab['class'].find('active') != -1:
-            tab_text += ' (selected)'
-        if tab.a:
-            link = tab.a['href']
-        else:
-            link = 'not linked'
-        print "* %s - %s" % (tab_text, link)
+    if location_apps is None:
+        location_apps = first_tag_by_class(contents, 'watermark-apps-portlet')
+        if location_apps is not None:
+            location_apps = location_apps.ul.findAll('li')
+    else:
+        location_apps = location_apps.findAll('span')
+    if location_apps is None:
+        print "(Application tabs omitted)"
+    elif len(location_apps) == 0:
+        print "(No application tabs)"
+    else:
+        for tab in location_apps:
+            tab_text = extract_text(tab)
+            if tab['class'].find('active') != -1:
+                tab_text += ' (selected)'
+            if tab.a:
+                link = tab.a['href']
+            else:
+                link = 'not linked'
+            print "* %s - %s" % (tab_text, link)
 
 
 def print_tag_with_id(contents, id):

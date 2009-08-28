@@ -14,7 +14,7 @@ link to enable to change his preferred languages:
 
     >>> user_browser.getLink('Change your preferred languages').click()
     >>> print user_browser.title
-    No Privileges Person's preferred languages
+    Your language preferences
     >>> user_browser.url
     '.../~no-priv/+editlanguages'
 
@@ -87,7 +87,7 @@ the language in the question details portlet.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
-    >>> print soup.html['lang']
+    >>> print soup.find('div', id='question')['lang']
     pt-BR
     >>> print soup.html['dir']
     ltr
@@ -157,5 +157,3 @@ new question.
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-details')
-    >>> print portlet.find('b', text='Language:').next.strip()
-    Japanese

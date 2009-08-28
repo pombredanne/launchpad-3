@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageBreadcrumbBuilder',
+    'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
     'SourcePackageNavigation',
@@ -35,7 +35,7 @@ from canonical.launchpad.webapp import (
     redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr.utils import smartquote
@@ -67,7 +67,7 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
 
 
-class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     @property
     def text(self):
@@ -116,14 +116,25 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     field_names = ['productseries']
 
     @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Define upstream link for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
     def cancel_url(self):
         return canonical_url(self.context)
 
     @action(_("Change"), name="change")
     def change(self, action, data):
         self.context.setPackaging(data['productseries'], self.user)
-        self.status_message = 'Upstream link updated, thank you!'
+        self.request.response.addNotification('Upstream link updated.')
         self.next_url = canonical_url(self.context)
+
 
 class SourcePackageView(BuildRecordsView):
 

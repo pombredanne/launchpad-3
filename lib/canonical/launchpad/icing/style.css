@@ -71,6 +71,7 @@ span.invisible {left:-9999em;display:block;}
 .info {background:url(icon-sprites) 0 -96px no-repeat;}
 .question {background:url(icon-sprites) 0 -128px no-repeat;}
 .download-icon {background:url(icon-sprites) 0 -160px no-repeat;}
+.download {background:url(icon-sprites) 0 -160px no-repeat;}
 .search-icon {background:url(icon-sprites) 0 -187px no-repeat;}
 .no {background:url(icon-sprites) 0 -224px no-repeat;}
 .yes {background:url(icon-sprites) 0 -256px no-repeat;}
@@ -1481,7 +1482,11 @@ highlighting menu items, so padding is handled by the contents instead: */
 ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.build-success, li.build-success   {list-style-image: url(/@@/build-success);}
 ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
-ul.language, li.language             {list-style-image: url(/@@/language);}
+ul.language, li.language             {
+  list-style-image: url(/@@/language);
+  /* Disable .language sprite. */
+  background: inherit;
+}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.news, li.news {
@@ -1849,6 +1854,33 @@ form.archive-subscription-activation button:hover {
     text-decoration: underline;
 }
 
+/* Colored build status. */
+.buildstatusNEEDSBUILD     {color: gray;}
+.buildstatusBUILDING       {color: black;}
+.buildstatusFULLYBUILT     {color: green;}
+.buildstatusFAILEDTOBUILD  {color: red;}
+.buildstatusMANUALDEPWAIT  {color: red;}
+.buildstatusCHROOTWAIT     {color: red;}
+.buildstatusSUPERSEDED     {color: red;}
+.buildstatusFAILEDTOUPLOAD {color: red;}
+
+/* Shaded logging area. */
+div.logtail {
+    margin: 0.5em;
+    background-color: #f6f6f6;
+    padding: 5px;
+    border: solid gray;
+    border-width: 1px;
+    font: 100% monospace;
+    -moz-border-radius: 5px;
+    -o-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+
+div.logtail p {
+    max-width: 100%;
+}
+
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
    linkified should be lined-through. */
 a.ppa-icon-inactive {
@@ -1858,6 +1890,9 @@ span.ppa-icon-inactive {
     text-decoration: line-through;
 }
 
+div.builds_list form {
+    padding: 1em 1em 2em 0em;
+}
 
 /* --- Code --- */
 

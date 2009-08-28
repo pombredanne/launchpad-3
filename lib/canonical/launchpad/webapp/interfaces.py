@@ -259,14 +259,6 @@ class IBreadcrumb(Interface):
     icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
 
 
-class IBreadcrumbBuilder(IBreadcrumb):
-    """An object that builds `IBreadcrumb` objects."""
-    # We subclass IBreadcrumb to minimize interface drift.
-
-    def make_breadcrumb():
-        """Return an object implementing the `IBreadcrumb` interface."""
-
-
 #
 # Canonical URLs
 #

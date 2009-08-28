@@ -14,6 +14,7 @@ __all__ = [
     'BugTargetView',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
+    'BugTaskBreadcrumb',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
     'BugTaskListingItem',
@@ -45,7 +46,6 @@ import pytz
 import re
 from simplejson import dumps
 import urllib
-from urlparse import urlparse, urlunparse
 from operator import attrgetter, itemgetter
 
 from zope import component
@@ -54,7 +54,8 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
-from zope.component import getAdapter, getUtility, getMultiAdapter
+from zope.component import (
+    ComponentLookupError, getAdapter, getUtility, getMultiAdapter)
 from zope.event import notify
 from zope import formlib
 from zope.interface import implementer, implements, providedBy
@@ -62,6 +63,7 @@ from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.traversing.interfaces import IPathAdapter
@@ -72,6 +74,7 @@ from lazr.enum import EnumeratedType, Item
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer, IReferenceChoice, IWebServiceClientRequest)
 
@@ -116,6 +119,7 @@ from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnexpectedFormData)
 
@@ -1224,8 +1228,11 @@ class BugTaskEditView(LaunchpadEditFormView):
                 __name__='milestone',
                 title=self.schema['milestone'].title,
                 source=milestone_source, required=False)
-            self.form_fields = self.form_fields.omit('milestone')
-            self.form_fields += formlib.form.Fields(milestone_field)
+        else:
+            milestone_field = copy_field(IBugTask['milestone'], readonly=False)
+
+        self.form_fields = self.form_fields.omit('milestone')
+        self.form_fields += formlib.form.Fields(milestone_field)
 
         for field in read_only_field_names:
             self.form_fields[field].for_display = True
@@ -3129,6 +3136,14 @@ class BugTaskTableRowView(LaunchpadView):
         """
         return self.context.userCanEditImportance(self.user)
 
+    @property
+    def user_can_edit_milestone(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        return self.context.userCanEditMilestone(self.user)
+
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
         return dumps({
@@ -3147,7 +3162,11 @@ class BugTaskTableRowView(LaunchpadView):
                                     request=IWebServiceClientRequest(
                                         self.request)) or
                                 None),
-            'user_can_edit_importance': self.user_can_edit_importance})
+            'user_can_edit_milestone': self.user_can_edit_milestone,
+            'user_can_edit_status': not self.context.bugwatch,
+            'user_can_edit_importance': (
+                self.user_can_edit_importance and
+                not self.context.bugwatch)})
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
@@ -3490,3 +3509,20 @@ class BugActivityItem:
                 return_dict[key] = cgi.escape(return_dict[key])
 
         return "%(old_value)s &#8594; %(new_value)s" % return_dict
+
+
+class BugTaskBreadcrumb(Breadcrumb):
+    """Breadcrumb for an `IBugTask`."""
+
+    def __init__(self, context):
+        super(BugTaskBreadcrumb, self).__init__(context)
+        # If the user does not have permission to view the bug for
+        # whatever reason, raise ComponentLookupError.
+        try:
+            name = context.bug.displayname
+        except Unauthorized:
+            raise ComponentLookupError()
+
+    @property
+    def text(self):
+        return self.context.bug.displayname

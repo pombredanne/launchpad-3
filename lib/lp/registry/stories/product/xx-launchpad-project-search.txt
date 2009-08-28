@@ -10,14 +10,11 @@ distributions.
     >>> anon_browser.url
     'http://launchpad.dev/projects/+index?text=whizzbar'
 
-When no matches are found, the user is told so and suggested to register the
-project.
+The user is informed when no matches are found.
 
     >>> find_tag_by_id(anon_browser.contents, 'application-summary')
     <div id="application-summary">
     <p class="error"> No projects matching ...whizzbar... were found. </p>...
-    <h2>Haven...t found your project?</h2>...
-    <a href="/projects/+new"> <img ...> </a>...
 
 Launchpad shows up to config.launchpad.default_batch_size results; if there
 are more results than that, the user sees an informational message that asks
@@ -118,7 +115,7 @@ instead.
 
     >>> anon_browser.open('http://launchpad.dev/projects?text=ubuntu')
     >>> print_search_results(anon_browser)
-    sprite distribution Ubuntu
+    bg-image Ubuntu
     sprite distribution ubuntutest
     sprite product Evolution
     sprite product Tomcat
