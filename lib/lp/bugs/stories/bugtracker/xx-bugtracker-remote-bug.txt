@@ -64,7 +64,6 @@ Mark bug 1 as private:
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
 
-
 List Launchpad bugs watching Mozilla bug 42:
 
   >>> anon_browser.open(
@@ -82,7 +81,7 @@ List Launchpad bugs watching Mozilla bug 42:
   Main heading: Remote Bug #42 in The Mozilla.org Bug Tracker
 
   >>> print_table(find_tag_by_id(anon_browser.contents, 'watchedbugs'))
-  #1: Private Bug
+  #1: Private bug
   #2: Blackhole Trash folder
 
 The bug title is still provided if the user can view the private bug:
