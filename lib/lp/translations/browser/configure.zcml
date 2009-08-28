@@ -295,7 +295,7 @@
             module="lp.translations.browser.language"
             classes="
                 LanguageSetContextMenu
-                LanguageContextMenu"/>
+                LanguageNavigationMenu"/>
         <browser:url
             for="canonical.launchpad.interfaces.ILanguage"
             path_expression="code"
