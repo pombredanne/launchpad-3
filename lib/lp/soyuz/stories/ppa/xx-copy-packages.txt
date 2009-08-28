@@ -56,6 +56,7 @@ PPA in order to be able to copy packages.
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
     Copy packages from PPA for Celso Providelo
+    ...
     To be able to copy packages you have to participate in at least one
     PPA. Activate your own PPA or join a team with an active PPA.
     Create a new PPA
