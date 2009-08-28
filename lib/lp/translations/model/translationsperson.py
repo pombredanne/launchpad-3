@@ -143,7 +143,8 @@ class TranslationsPerson:
         query = source.find(POFile, conditions)
         return query.config(distinct=True).order_by(POFile.id)
 
-    def _queryTranslatableFiles(self, worked_on, no_older_than=None):
+    def _queryTranslatableFiles(self, worked_on, no_older_than=None,
+                                languages=None):
         """Get `POFile`s this person could help translate.
 
         :param worked_on: If True, get `POFile`s that the person has
@@ -153,6 +154,7 @@ class TranslationsPerson:
         :param no_older_than: Oldest involvement to consider as
             "recently been working on."  Whatever the person did with a
             `POFile` before this date is ignored.
+        :param languages: Optional set of languages to restrict search to.
         :return: An unsorted query yielding `POFile`s.
         """
         if self.person.isTeam():
@@ -193,8 +195,22 @@ class TranslationsPerson:
 
         conditions = And(conditions, not_reviewer)
 
+        if languages is not None:
+            conditions = And(conditions, POFile.languageID.is_in(languages))
+
         source = Store.of(self.person).using(*tables)
         return source.find(POFile, conditions)
+
+    def _getActiveTranslationLanguages(self, no_older_than=None):
+        """Which languages has this person translated to recently?"""
+        english = getUtility(ILaunchpadCelebrities).english
+        query = Store.of(self.person).execute("""
+            SELECT DISTINCT language
+            FROM POFile
+            JOIN POFileTranslator ON POFile.id = POFileTranslator.pofile
+            WHERE person = %s AND language <> %s
+            """ % sqlvalues(self.person, english))
+        return [id for id, in query]
 
     def getTranslatableFiles(self, no_older_than=None):
         """See `ITranslationsPerson`."""
@@ -203,8 +219,11 @@ class TranslationsPerson:
 
     def suggestTranslatableFiles(self, no_older_than=None):
         """See `ITranslationsPerson`."""
-        results = self._queryTranslatableFiles(False, no_older_than)
-        # XXX: Should check for free license.  That's hard though.
+        # XXX JeroenVermeulen 2009-08-28: Ideally this would also check
+        # for a free license.  That's hard to do in SQL though.
+        languages = self._getActiveTranslationLanguages(no_older_than)
+        results = self._queryTranslatableFiles(
+            False, no_older_than, languages=languages)
         return results.order_by(['random()'])
 
     def _composePOFileReviewerJoins(self, expect_reviewer_status=True):
