@@ -93,12 +93,10 @@ about the selected language.
     >>> print pluralforms_portlet
     <div ...
     ...
-                        There are 2 
-                        plural forms for Spanish.
+                        There are 2 plural forms for Spanish.
     ...
     <pre>n != 1</pre>
     ...
-    </div>
 
     >>> translationteams_portlet = find_portlet(
     ...     browser.contents, 'Translation teams')
