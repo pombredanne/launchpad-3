@@ -401,7 +401,8 @@ changelog:
     <a href="http://launchpad.dev/~name16" class="sprite person">&nbsp;foo.bar@canonical.com</a>
 
 
-== Packages that are not published ==
+Packages that are not published
+-------------------------------
 
 If the package being viewed has no publishing history, a blank table is
 displayed:
@@ -419,7 +420,8 @@ at all in the distribution.
      There is no current release for this source package in Ubuntu.
 
 
-== Version history ==
+Version history
+---------------
 
 The sourcepackage version history in a distribution is presented as
 all distinct sourcepackage releases and their corresponding changelogs
