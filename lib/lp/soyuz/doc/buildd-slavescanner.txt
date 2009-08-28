@@ -521,7 +521,7 @@ new sample data for a build that can be uploaded with binary packages attached
 to it.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> removeSecurityProxy(
     ...     bqItem10.build).pocket = PackagePublishingPocket.UPDATES
     >>> setupBuildQueue(bqItem10, a_builder)

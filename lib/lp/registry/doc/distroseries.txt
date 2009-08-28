@@ -126,7 +126,7 @@ not, according the distroseries status and the upload target pocket.
    >>> breezy_autotest = ubuntu['breezy-autotest']
    >>> hoary = ubuntu['hoary']
 
-   >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
 
    >>> warty.status.name
