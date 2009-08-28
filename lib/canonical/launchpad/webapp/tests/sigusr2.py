@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Helper for test_siguser2.py."""
+"""Helper for test_sigusr2.py."""
 
 import logging
 import os.path
