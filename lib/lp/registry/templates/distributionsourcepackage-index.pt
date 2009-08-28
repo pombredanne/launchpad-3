@@ -20,10 +20,7 @@
 </metal:block>
 
 <tal:heading metal:fill-slot="heading">
-  <h1>
-    &ldquo;<span tal:replace="context/name" />&rdquo; source package in
-    <span tal:replace="context/distribution/displayname" />
-  </h1>
+  <h1 tal:content="view/page_title"/>
 </tal:heading>
 
 <tal:side metal:fill-slot="side">
@@ -36,7 +33,7 @@
     <tal:involved replace="structure context/@@+get-involved" />
 
     <tal:current define="current context/currentrelease">
-    <div class="portlet" tal:condition="current">
+    <div class="portlet" id="latest-release" tal:condition="current">
       <h2>Latest release</h2>
       <dl>
         <dt>Version:</dt>

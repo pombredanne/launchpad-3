@@ -1,4 +1,6 @@
-= Distribution Package Search Results =
+===================================
+Distribution Package Search Results
+===================================
 
 Although there is a separate search page, we can search from the
 distribution overview page which takes us there and displays the
@@ -108,7 +110,8 @@ finds the fti results:
     pmount
 
 
-== Distribution package change summary ==
+Distribution package change summary
+-----------------------------------
 
 Before we can test the page we publish netapplet to the ubuntutest main
 archive as well as some new PPAs.
@@ -211,7 +214,7 @@ the time elapsed since it was published.
     The Warty Warthog Release (current stable release)      Set upstream link
       1.0  release  (main)  ... weeks ago
 
-The same page also has a section that gives some package information:
+There's also a section that gives some package information:
 
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'current'))
     Package information
@@ -245,6 +248,44 @@ Go back to the source page, and now the upstream's description is shown.
     Upstream
     The Mozilla Firefox web browser
 
+
+Distribution source packages side-bar
+-------------------------------------
+
+The page has a side-bar with a global actions menu, a "Get Involved"
+menu, a "Latest release" portlet and a "Bug subscriptions" portlet.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'global-actions'))
+    View full change log
+    Subscribe to bug mail
+
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'involvement'))
+    Get Involved
+    Report a bug
+    Ask a question
+    Help translate
+
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'latest-release'))
+    Latest release
+    Version: 1.0
+    Uploaded by: Mark Shuttleworth
+    On date: ...
+
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents,
+    ...                    'portlet-structural-subscribers'))
+    Bug subscriptions
+    ...
+
+(see bugs/stories/structural-subscriptions/xx-bug-subscriptions.txt for more
+on structural subscriptions)
+
+
+Related PPAs
+------------
 
 Switching to a different source now, "netapplet" is published in two
 distroseries.  The distroseries are presented in order, most recent first.
