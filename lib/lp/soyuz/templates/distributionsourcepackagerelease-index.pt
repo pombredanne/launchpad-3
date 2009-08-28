@@ -3,68 +3,162 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
-  <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:portlets>
+<body>
+
+<div metal:fill-slot="heading">
+  <h1>
+      &ldquo;<span tal:replace="context/sourcepackage/name"/>&rdquo;
+      source package in
+      <span tal:replace="context/distribution/displayname" />
+  </h1>
+  <h2><tal:version content="context/version" /></h2>
+</div>
+
+<div metal:fill-slot="side">
+<style>
+.side h2 {font-weight: bold;}
+.archheading { text-align: center; font-weight: bold; }
+.packageicon { text-align: center; }
+.b-right {border-right: 1px solid #d2d2d2; }
+</style>
+
+  <div id="downloads" class="top-portlet downloads">
+    <h2>Download source</h2>
+    <ul>
+      <li id="files"> <a href="blah">alsa-utils...orig.tar.gz (1.2 MiB)</a>
+      <li id="files"> <a href="blah">alsa-utils...tu1.diff.gz (42.4 KiB)</a>
+      <li id="files"> <a href="blah">alsa-utils...ubuntu1.dsc (1.6 KiB)</a>
+    </ul>
+  </div>
+  <div id="package-diffs" class="top-portlet downloads">
+    <h2>Available diffs</h2>
+    <ul>
+    <li id="files"><a href="blah">1.0.9-4ubuntu1 to 1.0.9a-4ubuntu2 (1.9 KiB)</a>
+      <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs"/>
+    </ul>
+  </div>
+</div>
+
 
 <div metal:fill-slot="main">
 
-    <div>
-      <a
-        tal:attributes="href context/sourcepackage/fmt:url"
-        tal:content="context/sourcepackage/title"
-      />
-    </div>
-    <h1><tal:release replace="context/version" /> version</h1>
-
-  <h2>Download source</h2>
-
-   <div id="files" tal:content="structure context/sourcepackagerelease/@@+files" />
-
-  <tal:has_packages condition="context/sample_binary_packages">
-    <p>
-      Binary packages produced in
-      <span tal:replace="context/distribution/displayname" />
-      for this version of
-      <a tal:attributes="href context/sourcepackage/fmt:url"
-         tal:content="context/sourcepackage/name"/>:
-    </p>
-
-    <ul class="binary package">
-      <li tal:repeat="drbp context/sample_binary_packages">
-        <strong>
-          <a tal:attributes="href drbp/fmt:url"
-             tal:content="drbp/name"
-             class="sprite package-binary">apache-utils</a>:
-          <span tal:replace="drbp/summary">package summary</span>
-        </strong>
-        <div>
-           <span tal:replace="drbp/description">
-             description goes here
-           </span>
-        </div>
-      </li>
-    </ul>
-  </tal:has_packages>
-
-  <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs" />
-
-  <div tal:replace="structure context/@@+portlet-builds" />
-
-  <h2>Publishing history</h2>
-  <div id="publishing_history">
-    <tal:block repeat="publishing context/publishing_history"
-               replace="structure publishing/@@+listing-detailed">
-    </tal:block>
+  <div id="changelog" class="top-portlet">
+    <tal:changelog content="structure context/sourcepackagerelease/@@+changelog"/>
   </div>
+
+  <div class="yui-u">
+    <div class="top-portlet">
+      <h2>Binary packages produced in
+        <span tal:replace="context/distribution/displayname" />
+        for this version of
+        <a tal:attributes="href context/sourcepackage/fmt:url"
+           tal:content="context/sourcepackage/name"/>
+      </h2>
+
+      <table class="listing">
+      <colgroup span="1" class="b-right"/>
+      <colgroup span="3" class="b-right"/>
+      <colgroup span="3" class="b-right"/>
+
+      <thead><tr class="archheading">
+      <td/>
+      <td colspan="3">Intrepid </td>
+      <td colspan="3">Jaunty </td>
+      <td colspan="3">Karmic </td>
+      </tr>
+      <tr>
+        <td>Binary name</td>
+        <td>i386<img src="/@@/yes"></td>
+        <td>amd64<img src="/@@/yes"></td>
+        <td class="border-right" >lpia<img src="/@@/yes"></td>
+        <td>i386<img src="/@@/yes"></td>
+        <td>amd64<img src="/@@/yes"></td>
+        <td class="border-right" >lpia<img src="/@@/yes"></td>
+        <td>i386<img src="/@@/yes"></td>
+        <td>amd64<img src="/@@/yes"></td>
+        <td>lpia<img src="/@@/no"></td>
+      </tr>
+      </thead>
+
+      <tr class="packageicon">
+        <td style="text-align: left"><img src="/@@/treeCollapsed">foo-flimflam</td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td/>
+      </tr>
+      <tr class="packageicon">
+        <td style="text-align: left"><img src="/@@/treeCollapsed">foo-dev</td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td/>
+      </tr>
+      <tr class="packageicon">
+        <td style="text-align: left"><img src="/@@/treeExpanded">foo-bin</td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td><img src="/@@/package-binary"/></td>
+        <td/>
+      </tr>
+
+      <tr>
+        <td style="padding-left: 1em" colspan=10>
+          <div><strong>Package Summary Here</strong></div>
+          <div>Package description here</div>
+          <h3>Files</h3>
+            <div style="padding-left: 1em"><a href="blah">abrowser-3.5_3.5~b4~hg20090330r24021+nobinonly-0ubuntu1_all.deb</a>  (68.5 KiB)</div>
+          <h3>Package Relationships</h3>
+            <div style="padding-left: 1em">
+            <div>Depends: <a href="blah">abrowser-3.5-branding, firefox-3.5</a></div>
+            <div>Conflicts: <a href="blah">aabrowser-3.1 (<< 3.1~b4~hg20090317)</a></div>
+            <div>Provides: <a href="blah">aabrowser-3.1</a></div>
+            <div>Replaces: <a href="blah">aabrowser-3.1</a></div>
+            <div style="display:none;">
+            <div>Suggests:</div>
+            <div>Recommends:</div>
+            <div>Pre-Depends on:</div>
+            <div>Enhances:</div>
+            <div>Breaks:</div>
+            </div>
+            </div>
+        </td>
+      </tr>
+
+
+   </table>
+   </div>
+  </div>
+
+
+  <div class="yui-u">
+      <h2>Publishing overview</h2>
+      <div id="publishing_overview">
+        <tal:block repeat="publishing context/publishing_history"
+                   replace="structure publishing/@@+listing-detailed">
+        </tal:block>
+      </div>
+  </div>
+
 
 </div>
 </body>
