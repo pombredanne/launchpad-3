@@ -34,14 +34,9 @@ the 'View all builds' link.
     >>> print anon_browser.title
     Builds for PPA for Celso Providelo
 
-    >>> anon_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa/+builds'
-
-The user can return to the 'PPA' overview by using the breadcrumb link.
-
-    >>> anon_browser.getLink('PPA for Celso Providelo').click()
     >>> print anon_browser.url
-    http://launchpad.dev/~cprov/+archive/ppa
+    http://launchpad.dev/~cprov/+archive/ppa/+builds
+
 
 The rest of the builds page functionality is tested generically at
 in xx-builds-pages.txt.
@@ -50,8 +45,32 @@ in xx-builds-pages.txt.
 Package totals
 --------------
 
-A summary of the package totals is presented in a portlet.
+A summary of the package totals is presented in a portlet (although the
+actual values are loaded in asynchronously.
 
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> package_totals = find_portlet(
     ...     anon_browser.contents, "Package totals")
     >>> print extract_text(package_totals)
+    Package totals
+    ...
+    Package counters and estimated archive size temporarily
+    unavailable.
+
+A summary of the builds for the PPA is also presented.
+
+    >>> build_summary = find_portlet(
+    ...     anon_browser.contents, "View all builds Package build summary")
+    >>> print extract_text(build_summary)
+    View...
+    A total of 4 builds have been dispatched for this PPA.
+    Completed builds
+    3 successful
+    1 failed
+
+Successful builds link directly to the builds filter.
+
+    >>> successful_builds_link = anon_browser.getLink('3 successful')
+    >>> print successful_builds_link.url
+    http://launchpad.dev/~cprov/+archive/ppa/+builds?build_state=built
+
