@@ -152,7 +152,6 @@ class TestPermission(TestCaseWithFactory):
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         component = self.factory.makeComponent()
-        #self.setComponent(archive, ssp, component)
         self.permission_set.newComponentUploader(archive, person, component)
         self.assertCanUpload(person, None, archive, component)
 
