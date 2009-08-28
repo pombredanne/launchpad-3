@@ -24,10 +24,6 @@
 </tal:heading>
 
 <tal:side metal:fill-slot="side">
-<style>
-.side h2 {font-weight: bold;}
-</style>
-
     <tal:menu replace="structure view/@@+global-actions" />
 
     <tal:involved replace="structure context/@@+get-involved" />
