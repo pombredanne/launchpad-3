@@ -58,9 +58,12 @@ class TestOopsPrune(unittest.TestCase):
             INSERT INTO MessageChunk(message, sequence, content)
             VALUES (1, 99, 'OOPS-%s')
             """ % self.referenced_oops_code)
+        if not os.path.exists(config.error_reports.error_dir):
+            os.mkdir(config.error_reports.error_dir)
 
     def tearDown(self):
         shutil.rmtree(self.oops_dir)
+        shutil.rmtree(config.error_reports.error_dir)
 
     def test_referenced_oops(self):
         self.failUnlessEqual(

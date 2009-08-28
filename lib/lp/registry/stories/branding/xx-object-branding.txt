@@ -19,7 +19,7 @@ Team branding
     ...
     Unauthorized:...
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team'
@@ -78,11 +78,11 @@ Distribution branding
     ...
     Unauthorized:...
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/kubuntu')
     >>> browser.url
     'http://launchpad.dev/kubuntu'
-    >>> browser.getLink('Change distribution details').click()
+    >>> browser.getLink('Change details').click()
     >>> browser.url
     'http://launchpad.dev/kubuntu/+edit'
 
@@ -109,7 +109,7 @@ Here we see the updated values.
 
     >>> browser.url
     'http://launchpad.dev/kubuntu'
-    >>> browser.getLink('Change distribution details').click()
+    >>> browser.getLink('Change details').click()
 
     >>> browser.getControl(name='field.icon.action').value
     ['keep']
@@ -135,7 +135,7 @@ Project branding
     ...
     Unauthorized:...
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> browser.url
     'http://launchpad.dev/mozilla'
@@ -194,7 +194,7 @@ Product branding
     ...
     Unauthorized:...
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/jokosher')
     >>> browser.url
     'http://launchpad.dev/jokosher'
@@ -259,7 +259,7 @@ Again, for Sprints, we have not exposed icon editing through the UI.
     ...
     Unauthorized:...
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/sprints/futurista')
     >>> browser.url
     'http://launchpad.dev/sprints/futurista'

@@ -25,7 +25,8 @@ from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
-from zope.traversing.interfaces import ITraversable, IPathAdapter
+from zope.traversing.interfaces import (
+    ITraversable, IPathAdapter, TraversalError)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -68,12 +69,6 @@ def escape(text, quote=True):
     return cgi.escape(text, quote)
 
 
-class TraversalError(NotFoundError):
-    """Remove this when we upgrade to a more recent Zope x3."""
-    # XXX: Steve Alexander 2004-12-14:
-    # Remove this when we upgrade to a more recent Zope x3.
-
-
 class MenuAPI:
     """Namespace to give access to the facet menus.
 
@@ -101,7 +96,7 @@ class MenuAPI:
             self.view = None
             self._selectedfacetname = None
 
-    def __getattr__(self, facet):
+    def __getattribute__(self, facet):
         """Retrieve the links associated with a facet.
 
         It's used with expressions like context/menu:bugs/subscribe.
@@ -111,7 +106,18 @@ class MenuAPI:
         :raise AttributeError: when there is no application menu for the
             facet.
         """
-        if not self._has_facet(facet):
+        # Use __getattribute__ instead of __getattr__, since __getattr__
+        # gets called if any of the other properties raise an AttributeError,
+        # which makes troubleshooting confusing. The has_facet can't easily
+        # be placed first, since all the properties it uses would need to
+        # be retrieved with object.__getattribute().
+        missing = object()
+        if (getattr(MenuAPI, facet, missing) is not missing
+            or facet in object.__getattribute__(self, '__dict__')):
+            return object.__getattribute__(self, facet)
+
+        has_facet = object.__getattribute__(self, '_has_facet')
+        if not has_facet(facet):
             raise AttributeError(facet)
         menu = queryAdapter(self._context, IApplicationMenu, facet)
         if menu is None:
@@ -128,9 +134,10 @@ class MenuAPI:
     def _getMenuLinksAndAttributes(self, menu):
         """Return a dict of the links and attributes of the menu."""
         menu.request = self._request
+        request_url = self._request_url()
         result = dict(
             (link.name, link)
-            for link in menu.iterlinks(request_url=self._request_url()))
+            for link in menu.iterlinks(request_url=request_url))
         extras = menu.extra_attributes
         if extras is not None:
             for attr in extras:
@@ -424,7 +431,6 @@ class ObjectFormatterAPI:
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
         'public-private-css': 'public_private_css',
-        'location_heading': 'location_heading',
         }
 
     def __init__(self, context):
@@ -455,7 +461,10 @@ class ObjectFormatterAPI:
         version number. It's the same as 'url', but without any view
         name.
         """
-        return self.url()
+
+        # Some classes override the rootsite. We always want a path-only
+        # URL, so we override it to nothing.
+        return self.url(rootsite=None)
 
     def traverse(self, name, furtherPath):
         if name.startswith('link:') or name.startswith('url:'):
@@ -512,24 +521,6 @@ class ObjectFormatterAPI:
         else:
             return 'public'
 
-    def location_heading(self):
-        """Return a heading for the nearest object supporting a logo."""
-        context = self._context
-        if not IHasLogo.providedBy(context):
-            context = nearest(context, IHasLogo)
-            heading = 'h2'
-        else:
-            heading = 'h1'
-
-        if context is None:
-            title = 'Launchpad.net'
-        else:
-            title = context.title
-
-        return "<%(heading)s>%(title)s</%(heading)s>" % {
-            'heading': heading,
-            'title': cgi.escape(title)
-            }
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
@@ -1260,7 +1251,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
             html += ')'
         return html % replacements
 
-    def url(self, view_name, rootsite=None):
+    def url(self, view_name=None, rootsite=None):
         """Return the URL to download the file."""
         return self._getDownloadURL(self._context.libraryfile)
 

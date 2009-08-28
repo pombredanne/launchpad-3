@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'get_status_count',
     'MilestoneOverlayMixin',
+    'RegistryEditFormView',
     'RegistryDeleteViewMixin',
     'StatusCount',
     ]
@@ -16,9 +17,12 @@ __all__ = [
 from operator import attrgetter
 
 from zope.component import getUtility
+
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.launchpadform import (
+    action, LaunchpadEditFormView)
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class StatusCount:
@@ -120,3 +124,22 @@ class RegistryDeleteViewMixin:
             for release_file in release.files:
                 release_file.destroySelf()
             release.destroySelf()
+
+
+class RegistryEditFormView(LaunchpadEditFormView):
+    """A base class that provides consistent edit form behaviour."""
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    next_url = cancel_url
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)

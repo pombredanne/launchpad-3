@@ -310,4 +310,5 @@ that's checked for duplicates is the 'name' field.
 
     >>> for error in view.errors:
     ...     print error
-    ('name', 'URL', badger is already used by another project)
+    ('name', 'URL',
+     LaunchpadValidationError(u'badger is already used by another project'))

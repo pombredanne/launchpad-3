@@ -9,7 +9,7 @@ __all__ = [
     'CodeImportEditView',
     'CodeImportMachineView',
     'CodeImportNewView',
-    'CodeImportSetBreadcrumbBuilder',
+    'CodeImportSetBreadcrumb',
     'CodeImportSetNavigation',
     'CodeImportSetView',
     'CodeImportView',
@@ -44,7 +44,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from lazr.restful.interface import copy_field, use_template
@@ -62,7 +62,7 @@ class CodeImportSetNavigation(Navigation):
         return getUtility(ICodeImportMachineSet)
 
 
-class CodeImportSetBreadcrumbBuilder(BreadcrumbBuilder):
+class CodeImportSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ICodeImportSet`."""
     text = u'Code Import System'
 
@@ -429,6 +429,8 @@ class CodeImportEditView(CodeImportBaseView):
     # Need this to render the context to prepopulate the form fields.
     # Added here as the base class isn't LaunchpadEditFormView.
     render_context = True
+    page_title = 'Edit import details'
+    label = page_title
 
     @property
     def initial_values(self):

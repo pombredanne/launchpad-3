@@ -12,7 +12,7 @@ __all__ = [
     'ProductAdminView',
     'ProductBountiesMenu',
     'ProductBrandingView',
-    'ProductBreadcrumbBuilder',
+    'ProductBreadcrumb',
     'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductDownloadFileMixin',
@@ -26,8 +26,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSetBreadcrumbBuilder',
-    'ProductSetContextMenu',
+    'ProductSetBreadcrumb',
     'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
@@ -82,21 +81,25 @@ from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from lp.registry.browser.distribution import UsesLaunchpadMixin
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
-    canonical_url, custom_widget, enabled_with_permission,
-    sorted_version_numbers, stepthrough, stepto, structured)
+    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    custom_widget, enabled_with_permission, sorted_version_numbers,
+    stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
@@ -114,7 +117,8 @@ SPACE = ' '
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
-    FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
+    FAQTargetNavigationMixin, QuestionTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -243,7 +247,7 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProduct`."""
     @property
     def text(self):
@@ -319,6 +323,7 @@ class ProductNavigationMenu(NavigationMenu):
     def branchvisibility(self):
         text = 'Branch Visibility Policy'
         return Link('+branchvisibility', text)
+
 
 class ProductEditLinksMixin:
     """A mixin class for menus that need Product edit links."""
@@ -533,7 +538,7 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
-class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSetBreadcrumb(Breadcrumb):
     """Return a breadcrumb for an `IProductSet`."""
     text = "Projects"
 
@@ -544,45 +549,6 @@ class ProductSetFacets(StandardLaunchpadFacets):
     usedfor = IProductSet
 
     enable_only = ['overview']
-
-
-class ProductSetContextMenu(ContextMenu):
-
-    usedfor = IProductSet
-
-    links = ['products', 'distributions', 'people', 'meetings',
-             'all', 'register', 'register_team', 'review_licenses']
-
-    def register(self):
-        text = 'Register a project'
-        # We link to the guided form, though people who know the URL can
-        # just jump to +new directly. That might be considered a
-        # feature!
-        return Link('+new', text, icon='add')
-
-    def register_team(self):
-        text = 'Register a team'
-        return Link('/people/+newteam', text, icon='add')
-
-    def all(self):
-        text = 'List all projects'
-        return Link('+all', text, icon='list')
-
-    def products(self):
-        return Link('/projects/', 'View projects')
-
-    def distributions(self):
-        return Link('/distros/', 'View distributions')
-
-    def people(self):
-        return Link('/people/', 'View people')
-
-    def meetings(self):
-        return Link('/sprints/', 'View meetings')
-
-    @enabled_with_permission('launchpad.ProjectReview')
-    def review_licenses(self):
-        return Link('+review-licenses', 'Review projects')
 
 
 class SortSeriesMixin:
@@ -1400,33 +1366,56 @@ class Icon:
         return self.library_alias.getURL()
 
 
-class ProductSetView(LaunchpadView):
+class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for products index."""
+    usedfor = IProductSet
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        'review_licenses',
+        'view_all_projects',
+        ]
 
-    __used_for__ = IProductSet
+    @enabled_with_permission('launchpad.ProjectReview')
+    def review_licenses(self):
+        return Link('+review-licenses', 'Review projects', icon='edit')
+
+    def view_all_projects(self):
+        return Link('+all', 'Show all projects', icon='list')
+
+
+class ProductSetView(LaunchpadView):
+    """View for products index page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'Projects registered in Launchpad'
 
     max_results_to_display = config.launchpad.default_batch_size
     results = None
-    searchrequested = False
+    search_requested = False
 
     def initialize(self):
-        """See `LaunchpadFormView`."""
+        """See `LaunchpadView`."""
         form = self.request.form_ng
         self.search_string = form.getOne('text')
         if self.search_string is not None:
-            self.searchrequested = True
+            self.search_requested = True
 
+    @cachedproperty
     def all_batched(self):
         return BatchNavigator(self.context.all_active, self.request)
 
     @cachedproperty
     def matches(self):
-        if not self.searchrequested:
+        if not self.search_requested:
             return None
         pillarset = getUtility(IPillarNameSet)
         return pillarset.count_search_matches(self.search_string)
 
     @cachedproperty
-    def searchresults(self):
+    def search_results(self):
         search_string = self.search_string.lower()
         limit = self.max_results_to_display
         return getUtility(IPillarNameSet).search(search_string, limit)

@@ -822,29 +822,29 @@ an uploader for 'firefox'.
 Ulploaders with explicit permissions will be listed along with the other
 uploaders.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
+    >>> mark = getUtility(IPersonSet).getByName("mark")
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     ubuntu_archive, sabdfl, firefox_ps, True)
+    ...     ubuntu_archive, mark, firefox_ps, True)
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(ubuntu_archive, firefox_ps))
-    primary     sabdfl:      firefox ->           UPLOAD (explicit)
+    primary     mark:      firefox ->           UPLOAD (explicit)
     primary    juergen:      firefox ->           UPLOAD (implicit)
 
 Persons can have both explicit or non-explicit permissions for package sets.
 
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     ubuntu_archive, sabdfl, thunderbird_ps)
+    ...     ubuntu_archive, mark, thunderbird_ps)
     >>> print_permission(
-    ...     ap_set.packagesetsForUploader(ubuntu_archive, sabdfl))
-    primary     sabdfl:      firefox ->           UPLOAD (explicit)
-    primary     sabdfl:  thunderbird ->           UPLOAD (implicit)
+    ...     ap_set.packagesetsForUploader(ubuntu_archive, mark))
+    primary     mark:      firefox ->           UPLOAD (explicit)
+    primary     mark:  thunderbird ->           UPLOAD (implicit)
 
 Sometimes it's handy to know what permissions apply for a given source
 package irrespective of the person.
 
     >>> print_permission(
     ...     ap_set.packagesetsForSource(ubuntu_archive, 'mozilla-firefox'))
-    primary     sabdfl:      firefox ->           UPLOAD (explicit)
+    primary     mark:      firefox ->           UPLOAD (explicit)
     primary    juergen:      firefox ->           UPLOAD (implicit)
 
 If we make the 'mozilla' package set include 'firefox' again and ask the same
@@ -857,7 +857,7 @@ source package (directly)).
     >>> print_permission(
     ...     ap_set.packagesetsForSource(
     ...         ubuntu_archive, 'mozilla-firefox', direct_permissions=False))
-    primary     sabdfl:      firefox ->           UPLOAD (explicit)
+    primary     mark:      firefox ->           UPLOAD (explicit)
     primary     hacker:      mozilla ->           UPLOAD (implicit)
     primary    juergen:      firefox ->           UPLOAD (implicit)
 
@@ -865,34 +865,34 @@ Attempting to create an explicit permission when a non-explicit one exists
 already will fail.
 
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     ubuntu_archive, sabdfl, thunderbird_ps, True)
+    ...     ubuntu_archive, mark, thunderbird_ps, True)
     Traceback (most recent call last):
     ...
     ValueError: Permission for package set 'thunderbird' already exists for
-    sabdfl but with a different 'explicit' flag value (False).
+    mark but with a different 'explicit' flag value (False).
 
 And the other way around:
 
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     ubuntu_archive, sabdfl, firefox_ps)
+    ...     ubuntu_archive, mark, firefox_ps)
     Traceback (most recent call last):
     ...
     ValueError: Permission for package set 'firefox' already exists for
-    sabdfl but with a different 'explicit' flag value (True).
+    mark but with a different 'explicit' flag value (True).
 
 Removing package set based permissions is straight-forward.
 
     >>> ap_set.deletePackagesetUploader(
-    ...     ubuntu_archive, sabdfl, firefox_ps, True)
+    ...     ubuntu_archive, mark, firefox_ps, True)
     >>> print_permission(
-    ...     ap_set.packagesetsForUploader(ubuntu_archive, sabdfl))
-    primary     sabdfl:  thunderbird ->           UPLOAD (implicit)
+    ...     ap_set.packagesetsForUploader(ubuntu_archive, mark))
+    primary     mark:  thunderbird ->           UPLOAD (implicit)
 
 
     >>> ap_set.deletePackagesetUploader(
-    ...     ubuntu_archive, sabdfl, thunderbird_ps)
+    ...     ubuntu_archive, mark, thunderbird_ps)
     >>> print_permission(ap_set.packagesetsForUploader(
-    ...     ubuntu_archive, sabdfl))
+    ...     ubuntu_archive, mark))
 
 An attempt to look up package set based permission by something else than
 by a package set (name) results in a failure.

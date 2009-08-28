@@ -524,7 +524,7 @@
         <browser:page
             name="+addcomment"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="lp.bugs.browser.bug.BugView"
+            class="lp.bugs.browser.bugmessage.BugMessageAddFormView"
             permission="launchpad.Edit"
             template="../templates/bug-comment-add.pt"/>
         <browser:page
@@ -786,7 +786,7 @@
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:url
         for="lp.bugs.interfaces.bugbranch.IBugBranch"

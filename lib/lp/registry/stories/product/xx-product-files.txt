@@ -70,7 +70,7 @@ Again, for an authenticated user who is not the firefox product owner.
 Now, login as a firefox admin and see the delete fields.
 
     >>> firefox_owner = setupBrowser(
-    ...     auth='Basic mark@hbd.com:test')
+    ...     auth='Basic mark@example.com:test')
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> firefox_owner.url
     'http://launchpad.dev/firefox/+download'

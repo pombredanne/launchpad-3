@@ -10,9 +10,11 @@ __all__ = [
     'QuestionAddView',
     'QuestionChangeStatusView',
     'QuestionConfirmAnswerView',
-    'QuestionContextMenu',
     'QuestionCreateFAQView',
+    'QuestionEditMenu',
     'QuestionEditView',
+    'QuestionExtrasMenu',
+    'QuestionHistoryView',
     'QuestionLinkFAQView',
     'QuestionMessageDisplayView',
     'QuestionSetContextMenu',
@@ -58,9 +60,10 @@ from canonical.launchpad.interfaces import (
     QuestionSort, NotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
-    LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
-    custom_widget, redirection, safe_action)
+    ApplicationMenu, ContextMenu, Link, canonical_url,
+    enabled_with_permission, Navigation, LaunchpadView, action,
+    LaunchpadFormView, LaunchpadEditFormView, custom_widget, redirection,
+    safe_action, NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
@@ -69,6 +72,108 @@ from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 from canonical.lazr.utils import smartquote
+
+
+class QuestionLinksMixin:
+    """A mixin class that provides links used by more than one menu."""
+
+    def subscription(self):
+        """Return a Link to the subscription view."""
+        if self.user is not None and self.context.isSubscribed(self.user):
+            text = 'Unsubscribe'
+            icon = 'remove'
+        else:
+            text = 'Subscribe'
+            icon = 'mail'
+        return Link('+subscribe', text, icon=icon)
+
+
+class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
+    """A menu for different aspects of editing a object."""
+
+    usedfor = IQuestion
+    facet = 'answers'
+    title = 'Edit question'
+    links = ['edit', 'changestatus', 'reject', 'subscription']
+
+    def edit(self):
+        """Return a Link to the edit view."""
+        text = 'Edit question'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def changestatus(self):
+        """Return a Link to the change status view."""
+        return Link('+change-status', _('Change status'), icon='edit')
+
+    def reject(self):
+        """Return a Link to the reject view."""
+        enabled = self.user is not None and self.context.canReject(self.user)
+        text = 'Reject question'
+        return Link('+reject', text, icon='edit', enabled=enabled)
+
+
+class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
+    """Context menu of actions that can be performed upon a Question."""
+    usedfor = IQuestion
+    facet = 'answers'
+    links = ['history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
+        'createfaq']
+
+    def initialize(self):
+        """Initialize the menu from the Question's state."""
+        self.has_bugs = bool(self.context.bugs)
+
+    def history(self):
+        """Return a Link to the history view."""
+        text = 'History'
+        return Link('+history', text, icon='list',
+                    enabled=bool(self.context.messages))
+
+    def linkbug(self):
+        """Return a Link to the link bug view."""
+        text = 'Link existing bug'
+        return Link('+linkbug', text, icon='add')
+
+    def unlinkbug(self):
+        """Return a Link to the unlink bug view."""
+        text = 'Remove bug link'
+        return Link('+unlinkbug', text, icon='remove', enabled=self.has_bugs)
+
+    def makebug(self):
+        """Return a Link to the make bug view."""
+        text = 'Create bug report'
+        summary = 'Create a bug report from this question.'
+        return Link('+makebug', text, summary, icon='add',
+                    enabled=not self.has_bugs)
+
+    def linkfaq(self):
+        """Link for linking to a FAQ."""
+        text = 'Link to a FAQ'
+        summary = 'Link this question to a FAQ.'
+        return Link('+linkfaq', text, summary, icon='add')
+
+    def createfaq(self):
+        """LInk for creating a FAQ."""
+        text = 'Create a new FAQ'
+        summary = 'Create a new FAQ from this question.'
+        return Link('+createfaq', text, summary, icon='add')
+
+
+class QuestionSetContextMenu(ContextMenu):
+    """Context menu of actions that can be preformed upon a QuestionSet."""
+    usedfor = IQuestionSet
+    links = ['findproduct', 'finddistro']
+
+    def findproduct(self):
+        """Return a Link to the find product view."""
+        text = 'Find upstream project'
+        return Link('/projects', text, icon='search')
+
+    def finddistro(self):
+        """Return a Link to the find distribution view."""
+        text = 'Find distribution'
+        return Link('/distros', text, icon='search')
 
 
 class QuestionSetNavigation(Navigation):
@@ -195,6 +300,17 @@ class QuestionSubscriptionView(LaunchpadView):
             response.redirect(canonical_url(self.context))
         notify(ObjectModifiedEvent(
             self.context, question_unmodified, list(modified_fields)))
+
+    @property
+    def page_title(self):
+        return 'Subscription to question #%s' % self.context.id
+
+    @property
+    def label(self):
+        if self.subscription:
+            return 'Unsubscribe from question'
+        else:
+            return 'Subscribe to question'
 
     @property
     def subscription(self):
@@ -338,6 +454,16 @@ class QuestionSupportLanguageMixin:
         return self.chosen_language.code != old_chosen_language
 
 
+class QuestionHistoryView(LaunchpadView):
+    """A view for listing the history of a question."""
+
+    @property
+    def page_title(self):
+        return 'History of question #%s' % self.context.id
+
+    label = page_title
+
+
 class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     """Multi-page add view.
 
@@ -422,7 +548,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                     _('You must provide details about your problem.'))
 
     @property
-    def pagetitle(self):
+    def page_title(self):
         """The current page title."""
         return _('Ask a question about ${context}',
                  mapping=dict(context=self.context.displayname))
@@ -484,6 +610,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 class QuestionChangeStatusView(LaunchpadFormView):
     """View for changing a question status."""
     schema = IQuestionChangeStatusForm
+    label = 'Change question status'
+
+    @property
+    def page_title(self):
+        return 'Change status of question #%s' % self.context.id
 
     def validate(self, data):
         """Check that the status and message are valid."""
@@ -518,6 +649,12 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     custom_widget('whiteboard', TextAreaWidget, height=5)
     custom_widget('target', LaunchpadTargetWidget)
 
+    @property
+    def page_title(self):
+        return 'Edit question #%s details' % self.context.id
+
+    label = page_title
+
     def setUpFields(self):
         """Select the subset of fields to display.
 
@@ -549,6 +686,11 @@ class QuestionRejectView(LaunchpadFormView):
     """View for rejecting a question."""
     schema = IQuestionChangeStatusForm
     field_names = ['message']
+    label = 'Reject question'
+
+    @property
+    def page_title(self):
+        return 'Reject question #%s' % self.context.id
 
     def validate(self, data):
         """Check that required information was provided."""
@@ -588,6 +730,13 @@ class QuestionWorkflowView(LaunchpadFormView):
 
     # Do not autofocus the message widget.
     initial_focus_widget = None
+
+    @property
+    def page_title(self):
+        return smartquote('%s question #%d: "%s"') % (
+            self.context.target.displayname,
+            self.context.id,
+            self.context.title)
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -937,6 +1086,10 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     label = _('Create a new FAQ')
 
+    @property
+    def page_title(self):
+        return 'Create a FAQ for %s' % self.context.product.displayname
+
     field_names = ['title', 'keywords', 'content']
 
     custom_widget('keywords', TokensTextWidget)
@@ -1121,6 +1274,10 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
     label = _('Is this a FAQ?')
 
     @property
+    def page_title(self):
+        return _('Is question #%s a FAQ?' % self.context.id)
+
+    @property
     def initial_values(self):
         """Sets initial form values."""
         return {
@@ -1145,94 +1302,3 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
             data['message'] += '\n' + self.getFAQMessageReference(data['faq'])
         self.context.linkFAQ(self.user, data['faq'], data['message'])
         self.next_url = canonical_url(self.context)
-
-
-class QuestionContextMenu(ContextMenu):
-    """Context menu of actions that can be performed upon a Question."""
-    usedfor = IQuestion
-    links = [
-        'edit',
-        'reject',
-        'changestatus',
-        'history',
-        'subscription',
-        'linkbug',
-        'unlinkbug',
-        'makebug',
-        'linkfaq',
-        ]
-
-    def initialize(self):
-        """Initialize the menu from the Question's state."""
-        self.has_bugs = bool(self.context.bugs)
-
-    def edit(self):
-        """Return a Link to the edit view."""
-        text = 'Edit question'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def changestatus(self):
-        """Return a Link to the change status view."""
-        return Link('+change-status', _('Change status'), icon='edit')
-
-    def reject(self):
-        """Return a Link to the reject view."""
-        enabled = self.user is not None and self.context.canReject(self.user)
-        text = 'Reject question'
-        return Link('+reject', text, icon='edit', enabled=enabled)
-
-    def history(self):
-        """Return a Link to the history view."""
-        text = 'History'
-        return Link('+history', text, icon='list',
-                    enabled=bool(self.context.messages))
-
-    def subscription(self):
-        """Return a Link to the subscription view."""
-        if self.user is not None and self.context.isSubscribed(self.user):
-            text = 'Unsubscribe'
-            icon = 'edit'
-        else:
-            text = 'Subscribe'
-            icon = 'mail'
-        return Link('+subscribe', text, icon=icon)
-
-    def linkbug(self):
-        """Return a Link to the link bug view."""
-        text = 'Link existing bug'
-        return Link('+linkbug', text, icon='add')
-
-    def unlinkbug(self):
-        """Return a Link to the unlink bug view."""
-        text = 'Remove bug link'
-        return Link('+unlinkbug', text, icon='edit', enabled=self.has_bugs)
-
-    def makebug(self):
-        """Return a Link to the make bug view."""
-        text = 'Create bug report'
-        summary = 'Create a bug report from this question.'
-        return Link('+makebug', text, summary, icon='add',
-                    enabled=not self.has_bugs)
-
-    def linkfaq(self):
-        """Link for This is a FAQ."""
-        text = 'This is a FAQ'
-        summary = 'Answer this question using a FAQ, or add one as a comment.'
-        return Link('+linkfaq', text, summary)
-
-
-class QuestionSetContextMenu(ContextMenu):
-    """Context menu of actions that can be preformed upon a QuestionSet."""
-    usedfor = IQuestionSet
-    links = ['findproduct', 'finddistro']
-
-    def findproduct(self):
-        """Return a Link to the find product view."""
-        text = 'Find upstream project'
-        return Link('/projects', text, icon='search')
-
-    def finddistro(self):
-        """Return a Link to the find distribution view."""
-        text = 'Find distribution'
-        return Link('/distros', text, icon='search')

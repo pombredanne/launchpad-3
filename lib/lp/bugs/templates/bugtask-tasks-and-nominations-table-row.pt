@@ -133,7 +133,8 @@
       <div class="milestone-content"
            tal:condition="view/target_has_milestones"
            style="width: 100%; float: left">
-        <tal:not-milestoned condition="not: context/milestone">
+        <tal:not-milestoned condition="python: not context.milestone and
+                                               view.user_can_edit_milestone">
           <a href="+editstatus"> 
             <img class="addicon" src="/@@/add">
           </a>
@@ -150,9 +151,9 @@
           <a href="+editstatus" style="display:none" class="nulltext js-sction">
             Target to milestone
           </a>
-          <a href="+editstatus" class="value"
-              tal:content="context/milestone/title" />
-          <a href="+editstatus">
+          <a tal:attributes="href context/milestone/fmt:url" class="value"
+             tal:content="context/milestone/title" />
+          <a href="+editstatus" tal:condition="view/user_can_edit_milestone">
             <img class="editicon" src="/@@/edit">
           </a>
         </tal:milestoned>

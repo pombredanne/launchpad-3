@@ -133,6 +133,22 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         self.assertSameContent(public_file, private_file)
         self.assertFileIsReset(private_file)
 
+    def test_re_upload_file_does_not_leak_file_descriptors(self):
+        # Reuploading a library file doesn't leak file descriptors. The
+        # only extra file opened by the end of the process is the socket
+        # with the librarian server.
+        private_file = self.factory.makeLibraryFileAlias(restricted=True)
+        transaction.commit()
+
+        def number_of_open_files():
+            return len(os.listdir('/proc/%d/fd/' % os.getpid()))
+        previously_open_files = number_of_open_files()
+
+        public_file = re_upload_file(private_file)
+
+        open_files = number_of_open_files() - previously_open_files
+        self.assertEqual(1, open_files)
+
 
 class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
     """Test publication `updateFilesPrivacy` helper.
@@ -1317,7 +1333,7 @@ class CopyPackageTestCase(TestCase):
         # Repeating the copy of source and it's binaries.
         copy_helper = self.getCopier(
             sourcename='foo', from_suite='hoary', to_suite='hoary',
-            to_ppa='sabdfl')
+            to_ppa='mark')
         copied = copy_helper.mainTask()
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 3)
@@ -1810,7 +1826,7 @@ class CopyPackageTestCase(TestCase):
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
-            from_suite='warty', to_suite='hoary', to_ppa='sabdfl')
+            from_suite='warty', to_suite='hoary', to_ppa='mark')
         copied = copy_helper.mainTask()
 
         self.assertEqual(
@@ -1818,7 +1834,7 @@ class CopyPackageTestCase(TestCase):
             'cprov: warty-RELEASE')
         self.assertEqual(
             str(copy_helper.destination),
-            'sabdfl: hoary-RELEASE')
+            'mark: hoary-RELEASE')
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)

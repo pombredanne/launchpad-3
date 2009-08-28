@@ -8,9 +8,14 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:webservice="http://namespaces.canonical.com/webservice"
+    xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+
+    <lp:help-folder
+        folder="help" type="canonical.launchpad.layers.TranslationsLayer" />
+
     <class
         class="lp.translations.model.vpotexport.VPOTExport">
         <allow
@@ -389,6 +394,11 @@
                 permission="launchpad.Edit"
                 set_schema="lp.translations.interfaces.translationgroup.ITranslationGroup"/>
         </class>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.translations.interfaces.translationgroup.ITranslationGroup"
+            factory="lp.translations.browser.translationgroup.TranslationGroupBreadcrumb"
+            permission="zope.Public"/>
 
         <!-- TranslationGroupSet -->
 
@@ -398,6 +408,11 @@
             <allow
                 interface="lp.translations.interfaces.translationgroup.ITranslationGroupSet"/>
         </securedutility>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
+            factory="lp.translations.browser.translationgroup.TranslationGroupSetBreadcrumb"
+            permission="zope.Public"/>
     </facet>
     <class
         class="lp.translations.model.potmsgset.POTMsgSet">
