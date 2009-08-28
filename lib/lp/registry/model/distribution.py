@@ -310,11 +310,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return [self.owner]
 
     @property
-    def is_read_only(self):
-        """See `IDistribution`."""
-        return self.name in ['debian', 'redhat', 'gentoo']
-
-    @property
     def _sort_key(self):
         """Return something that can be used to sort distributions,
         putting Ubuntu and its major derivatives first.

@@ -25,7 +25,6 @@ __all__ = [
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSetBreadcrumb',
-    'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
@@ -81,8 +80,7 @@ from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase,
-    TopLevelMenuMixin)
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
@@ -93,10 +91,10 @@ from canonical.launchpad.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
-    canonical_url, custom_widget, enabled_with_permission,
-    sorted_version_numbers, stepthrough, stepto, structured)
+    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    custom_widget, enabled_with_permission, sorted_version_numbers,
+    stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -530,22 +528,6 @@ class ProductSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview']
 
 
-class ProductSetContextMenu(ContextMenu, TopLevelMenuMixin):
-
-    usedfor = IProductSet
-
-    links = ['projects', 'distributions', 'people', 'meetings',
-             'all', 'register_project', 'register_team', 'review_licenses']
-
-    def all(self):
-        text = 'List all projects'
-        return Link('+all', text, icon='list')
-
-    @enabled_with_permission('launchpad.ProjectReview')
-    def review_licenses(self):
-        return Link('+review-licenses', 'Review projects')
-
-
 class SortSeriesMixin:
     """Provide access to helpers for series."""
 
@@ -683,6 +665,14 @@ class ReleaseWithFiles:
     def addFile(self, file):
         self.files.append(file)
 
+    @property
+    def name_with_codename(self):
+        milestone = self.release.milestone
+        if milestone.code_name:
+            return "%s (%s)" % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
+
     @cachedproperty
     def total_downloads(self):
         """Total downloads of files associated with this release."""
@@ -779,12 +769,6 @@ class ProductDownloadFileMixin:
                 self.request.response.addNotification(
                     "%d files have been deleted." %
                     del_count)
-
-    def seriesHasDownloadFiles(self, series):
-        """Determine whether a series has any download files."""
-        for release in series.releases:
-            if len(release.files) > 0:
-                return True
 
     @cachedproperty
     def latest_release_with_download_files(self):
@@ -985,6 +969,10 @@ class ProductDownloadFilesView(LaunchpadView,
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
 
+    @property
+    def page_title(self):
+        return "%s project files" % self.context.displayname
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         self.form = self.request.form
@@ -1002,7 +990,7 @@ class ProductDownloadFilesView(LaunchpadView,
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
         for series in self.product.serieses:
-            if self.seriesHasDownloadFiles(series):
+            if series.has_release_files:
                 return True
         return False
 
@@ -1368,12 +1356,16 @@ class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
         'register_team',
         'register_project',
         'create_account',
-        'review_licenses'
+        'review_licenses',
+        'view_all_projects',
         ]
 
     @enabled_with_permission('launchpad.ProjectReview')
     def review_licenses(self):
         return Link('+review-licenses', 'Review projects', icon='edit')
+
+    def view_all_projects(self):
+        return Link('+all', 'Show all projects', icon='list')
 
 
 class ProductSetView(LaunchpadView):
@@ -1394,6 +1386,7 @@ class ProductSetView(LaunchpadView):
         if self.search_string is not None:
             self.search_requested = True
 
+    @cachedproperty
     def all_batched(self):
         return BatchNavigator(self.context.all_active, self.request)
 
