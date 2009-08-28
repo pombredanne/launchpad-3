@@ -22,14 +22,9 @@ class CannotUploadToArchive(Exception):
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
-    def __init__(self, person, archive):
-        """Construct a `CannotUploadToArchive`.
-
-        :param person: The person trying to get at the archive.
-        :param archive: The archive.
-        """
-        Exception.__init__(
-            self, self._fmt % {'person': person, 'archive': archive})
+    def __init__(self, **args):
+        """Construct a `CannotUploadToArchive`."""
+        Exception.__init__(self, self._fmt % args)
 
 
 class CannotUploadToPPA(CannotUploadToArchive):
@@ -45,6 +40,17 @@ class NoRightsForArchive(CannotUploadToArchive):
         "The signer of this package has no upload rights to this "
         "distribution's primary archive.  Did you mean to upload to "
         "a PPA")
+
+
+class NoRightsForComponent(CannotUploadToArchive):
+    """Raised when a person tries to upload to a component without permission.
+    """
+
+    _fmt = (
+        "Signer is not permitted to upload to the component '%(component)s'.")
+
+    def __init__(self, component):
+        CannotUploadToArchive.__init__(self, component=component.name)
 
 
 def components_valid_for(archive, person):
@@ -75,7 +81,7 @@ def verify_upload(person, sourcepackagename, archive, component,
     # For PPAs...
     if archive.purpose == ArchivePurpose.PPA:
         if not archive.canUpload(person):
-            raise CannotUploadToPPA(person, archive)
+            raise CannotUploadToPPA()
         else:
             return True
 
@@ -87,9 +93,9 @@ def verify_upload(person, sourcepackagename, archive, component,
         return
 
     if not components_valid_for(archive, person):
-        raise NoRightsForArchive(archive, person)
+        raise NoRightsForArchive()
 
     if (component is not None
         and strict_component
         and not archive.canUpload(person, component)):
-        raise CannotUploadToArchive(person, archive)
+        raise NoRightsForComponent(component)

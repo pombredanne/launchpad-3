@@ -145,6 +145,25 @@ class TestPermission(TestCaseWithFactory):
         self.permission_set.newComponentUploader(archive, person, component)
         self.assertCanUpload(person, spn, archive, component)
 
+    def test_incorrect_component_rights(self):
+        # Even if a person has upload rights for a particular component in an
+        # archive, it doesn't mean they have upload rights for everything in
+        # that archive.
+        person = self.factory.makePerson()
+        spn = self.factory.makeSourcePackageName()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        permitted_component = self.factory.makeComponent()
+        forbidden_component = self.factory.makeComponent()
+        self.permission_set.newComponentUploader(
+            archive, person, permitted_component)
+        exception = self.assertRaises(
+            CannotUploadToArchive, verify_upload, person, spn, archive,
+            forbidden_component)
+        self.assertEqual(
+            u"Signer is not permitted to upload to the component '%s'." % (
+                forbidden_component.name),
+            str(exception))
+
     def test_component_rights_no_package(self):
         # A person allowed to upload to a particular component of an archive
         # can upload basically whatever they want to that component, even if
