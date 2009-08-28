@@ -32,13 +32,9 @@
                <h2>Plural forms</h2>
                  <tal:has_pluralforms condition="context/pluralexpression">
                     <p>
-                      There are
-                      <tal:pluralforms replace="context/pluralforms">2</tal:pluralforms>
-                      plural forms for
-                      <tal:language replace="view/language_name">
-                        Espa&ntilde;ol
-                      </tal:language>.
-                      <!--Here I should elaborate how to display the plural forms.-->
+                    There are <tal:pluralforms replace="context/pluralforms">2</tal:pluralforms> 
+                    plural forms for <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language>.
+                    <!--Here I should elaborate how to display the plural forms.-->
                     </p>
                     <p></p>
                     <p>
