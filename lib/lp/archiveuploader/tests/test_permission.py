@@ -103,13 +103,8 @@ class TestPermission(TestCaseWithFactory):
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         spn = self.factory.makeSourcePackageName()
-        exception = self.assertRaises(
+        self.assertRaises(
             CannotUploadToArchive, verify_upload, person, spn, archive, None)
-        self.assertEqual(
-            ("The signer of this package has no upload rights to this "
-             "distribution's primary archive.  Did you mean to upload to "
-             "a PPA"),
-            str(exception))
 
     def test_package_specific_rights(self):
         # A person can be granted specific rights for uploading a package,
