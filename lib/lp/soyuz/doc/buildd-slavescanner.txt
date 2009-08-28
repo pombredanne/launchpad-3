@@ -663,7 +663,7 @@ in our filesystem.
 
     >>> import gzip, tempfile
     >>> fd, fname = tempfile.mkstemp()
-    >>> tmp = open(fname, 'wb')
+    >>> tmp = os.fdopen(fd, 'wb')
     >>> tmp.write(logfile.read())
     >>> tmp.close()
     >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
