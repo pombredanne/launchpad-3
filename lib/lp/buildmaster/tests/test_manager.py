@@ -546,6 +546,7 @@ class TestBuilddManagerScan(TrialTestCase):
                 'archive_purpose': 'PRIMARY',
                 'archives':
                 ['deb http://ftpmaster.internal/ubuntu hoary main'],
+                'build_debug_symbols': False,
                 'ogrecomponent': 'main',
                 'suite': u'hoary'}))],
             slave.calls, "Job was not properly dispatched.")

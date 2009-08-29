@@ -393,6 +393,10 @@ class Builder(SQLBase):
         # archive.
         args['archive_private'] = build_queue_item.build.archive.private
 
+        # Tell the slave if we want dbgsyms to be built.
+        args['build_debug_symbols'] = (
+            build_queue_item.build.archive.build_debug_symbols)
+
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
         # subsequent runs.
