@@ -216,7 +216,8 @@ Farm list. Celso cannot see the link to it.
     >>> print extract_text(find_main_content(cprov_browser.contents))
     The Launchpad build farm
     Register a new build machine
-    1 build machines registered, 0 available, 1 disabled and 0 building.
+    0 available build machines, 1 disabled and 0 building of a total
+    of 1 registered.
     Builders
     Name  Processor Status
     frog  386       Disabled

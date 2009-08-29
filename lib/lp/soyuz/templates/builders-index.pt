@@ -18,18 +18,24 @@
        <span style="float:right;"
              tal:content="structure view/menu:overview/add/fmt:icon-link" />
        <p>
-         <span style="font-weight: bold"
-               tal:content="view/number_of_registered_builders">2</span>
-         build machines registered,
          <span style="font-weight: bold; color: green"
                tal:content="view/number_of_available_builders">1</span>
-         available,
+         available build
+         <tal:singular
+           condition="python: view.number_of_available_builders == 1"
+           replace="string:machine,">machine</tal:singular>
+         <tal:plural
+           condition="python: view.number_of_available_builders != 1"
+           replace="string:machines,">machines</tal:plural>
          <span style="font-weight: bold; color: red"
                tal:content="view/number_of_disabled_builders">1</span>
          disabled and
          <span style="font-weight: bold; color: blue"
                tal:content="view/number_of_building_builders">1</span>
-         building.
+         building of a total of
+         <span style="font-weight: bold"
+               tal:content="view/number_of_registered_builders">2</span>
+         registered.
        </p>
      </div>
 

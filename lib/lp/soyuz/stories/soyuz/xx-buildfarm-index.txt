@@ -14,7 +14,8 @@ containing the build queue status summary for each build domain.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     The Launchpad build farm
-    2 build machines registered, 1 available, 1 disabled and 1 building.
+    1 available build machine, 1 disabled and 1 building of a total of
+    2 registered.
     Builders
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox 0.9 ...
