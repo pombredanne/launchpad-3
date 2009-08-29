@@ -283,7 +283,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         if line_count:
             content = 'random content'
         else:
-            content = ''
+            content = None
         preview = bmp.updatePreviewDiff(
             content, u'diff stat', u'rev-a', u'rev-b', conflicts=conflicts)
         bmp.source_branch.last_scanned_id = preview.source_revision_id
