@@ -872,7 +872,7 @@
         name="+select-language-pack-admin"
         class="lp.translations.browser.distribution.DistributionLanguagePackAdminView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/distribution-language-pack-admin.pt"
+        template="../../app/templates/generic-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 <!-- DistroSeries -->
