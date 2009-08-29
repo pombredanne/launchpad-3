@@ -26,14 +26,14 @@
           </label>
 	</div>
 
-	<div style="position: relative;">
-	  <span style="top: 0px; position: absolute;">
+	<div class="alignment">
+	  <div class="top-alignment">
             <label>
               <input name="what" type="radio" value="some" />
               Selected files:
             </label>
-	  </span>
-	  <span style="visibility:hidden">
+	  </div>
+	  <span class="spacer">
 	    <!-- preserve space for the actual radio button and label -->
             <label><input type="radio" />Selected files:</label>
 	  </span>
