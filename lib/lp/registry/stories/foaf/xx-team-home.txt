@@ -21,7 +21,7 @@ The page contains a few interesting details about team membership.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
-    Recently applied
+    Pending approval
     Sample Person
     Andrew Bennetts
 
@@ -97,9 +97,8 @@ He can also see the contact email address and a link to contact the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-email'))
     Email:
-    Contact this team's administrators
+    Contact this team's email address
     support@ubuntu.com
-    Change contact address
 
 Member can contact their team even if the team does not have a contact
 address:
@@ -110,10 +109,8 @@ address:
     ...     find_tag_by_id(sample_browser.contents, 'contact-email'))
     Email:
     No contact email
-    Change contact address
-    Contact this team's administrators
-    (Launchpad notifications are sent to all
-    team members)
+    Contact this team's members
+    Set contact address
 
 As teams do not have OpenID Logins, there is not link in the Contact
 details section for help.
@@ -129,6 +126,7 @@ will even show the path from the user to the team.
     >>> sample_browser.open('http://launchpad.dev/~name18')
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'your-involvement'))
+    Join...
     You are an indirect member of this team:
     Sample Person &rarr; Warty Security Team &rarr; Ubuntu Gnome Team...
 
@@ -148,7 +146,7 @@ Team owners and admins can see a link to approve and decline applicants.
     >>> owner_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
     ...     find_tag_by_id(owner_browser.contents, 'recently-applied'))
-    Recently applied
+    Pending approval
     Sample Person
     Andrew Bennetts
     Approve/Decline applicants
@@ -164,6 +162,7 @@ No Privileges Person is not a member of the Ubuntu team.
     >>> user_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'your-involvement'))
+    Join...
     You are not a member of this team...
 
 He can see the contact address, and the link explains the email
@@ -172,7 +171,7 @@ will actually go to the team's administrators.
     >>> content = find_tag_by_id(user_browser.contents, 'contact-email')
     >>> print extract_text(content)
     Email:
-    Contact this team's administrators
+    Contact this team's owner
     support@ubuntu.com
 
     >>> content.a

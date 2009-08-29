@@ -5,7 +5,7 @@ will be held for moderator review, if the sender is not a Launchpad
 member in good standing (as is the default).
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
-    >>> admin_browser.getLink('Configure mailing list').click()
+    >>> admin_browser.getLink(url='+mailinglist').click()
     >>> admin_browser.getControl('Apply for Mailing List').click()
     >>> admin_browser.open('http://launchpad.dev/+mailinglists')
     >>> admin_browser.getControl(name='field.guadamen').value = ['approve']

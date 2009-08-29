@@ -29,7 +29,6 @@ user/team page.
    >>> print_tag_with_id(browser.contents, 'ppas')
    Personal package archives
    Create a new PPA
-   Maintained Packages
 
 The form looks almost identical to that for a public team.
 

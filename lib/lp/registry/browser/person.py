@@ -849,6 +849,11 @@ class TeamBugsMenu(PersonBugsMenu):
 
 class CommonMenuLinks:
 
+    @property
+    def person(self):
+        """Allow subclasses that use the view as the context."""
+        return self.context
+
     @enabled_with_permission('launchpad.Edit')
     def common_edithomepage(self):
         target = '+edithomepage'
@@ -877,7 +882,7 @@ class CommonMenuLinks:
     def maintained(self):
         target = '+maintained-packages'
         text = 'Maintained Packages'
-        enabled = bool(self.team.getLatestMaintainedPackages())
+        enabled = bool(self.person.getLatestMaintainedPackages())
         return Link(target, text, enabled=enabled, icon='info')
 
     def uploaded(self):
@@ -1085,6 +1090,11 @@ class PersonRelatedSoftwareNavigationMenu(NavigationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ('summary', 'maintained', 'uploaded', 'ppa', 'projects')
 
+    @property
+    def person(self):
+        """Override CommonMenuLinks since the view is the context."""
+        return self.context.context
+
 
 class PersonEditNavigationMenu(NavigationMenu):
     """A sub-menu for different aspects of editing a Person's profile."""
@@ -1127,11 +1137,6 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     You will need to override the team attribute if your menu subclass
     has the view as its context object.
     """
-
-    @property
-    def team(self):
-        """Allow subclasses that use the view as the context."""
-        return self.context
 
     def profile(self):
         target = ''
@@ -1191,7 +1196,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        if self.team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             # This is a restricted team; users can't join.
             enabled = False
         return Link(target, text, icon='add', enabled=enabled)
@@ -1230,13 +1235,13 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Set contact address'
         summary = (
             'The address Launchpad uses to contact %s' %
-            self.team.displayname)
+            self.person.displayname)
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
         target = '+mailinglist'
-        mailing_list = self.team.mailing_list
+        mailing_list = self.person.mailing_list
         if mailing_list is not None and mailing_list.is_usable:
             text = 'Configure mailing list'
             icon = 'edit'
@@ -1264,9 +1269,9 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
 
     def leave(self):
         enabled = True
-        if not userIsActiveTeamMember(self.team):
+        if not userIsActiveTeamMember(self.person):
             enabled = False
-        if self.team.teamowner == self.user:
+        if self.person.teamowner == self.user:
             # The owner cannot leave his team.
             enabled = False
         target = '+leave'
@@ -1276,9 +1281,9 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
 
     def join(self):
         enabled = True
-        if userIsActiveTeamMember(self.team):
+        if userIsActiveTeamMember(self.person):
             enabled = False
-        if self.team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             # This is a restricted team; users can't join.
             enabled = False
         target = '+join'
@@ -5531,8 +5536,8 @@ class ITeamEditMenu(Interface):
 class TeamNavigationMenuBase(NavigationMenu, TeamMenuMixin):
 
     @property
-    def team(self):
-        """Override TeamOverviewMenu since the view is the context."""
+    def person(self):
+        """Override CommonMenuLinks since the view is the context."""
         return self.context.context
 
 
