@@ -7,6 +7,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'LinkTranslationsBranchView',
     'ProductSeriesTemplatesView',
     'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
@@ -457,3 +458,24 @@ class ProductSeriesTemplatesView(LaunchpadView):
     def can_administer(self, template):
         """Can the user administer the template?"""
         return check_permission('launchpad.Admin', template)
+
+
+class LinkTranslationsBranchView(LaunchpadEditFormView):
+    """View to set the series' translations export branch."""
+
+    schema = IProductSeries
+    field_names = ['translations_branch']
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Translations export branch updated.')
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the settings page."""

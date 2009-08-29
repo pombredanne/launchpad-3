@@ -681,7 +681,7 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         permission="launchpad.Edit"
         template="../templates/productseries-link-translations-branch.pt"
-        class="lp.registry.browser.productseries.LinkTranslationsBranchView"/>
+        class="lp.translations.browser.productseries.LinkTranslationsBranchView"/>
 
 <!-- Person views -->
 
