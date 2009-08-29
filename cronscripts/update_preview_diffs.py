@@ -10,36 +10,11 @@
 __metaclass__ = type
 
 import _pythonpath
-from zope.component import getUtility
 
-from canonical.config import config
 from lp.codehosting.vfs import get_scanner_server
-from lp.services.job.runner import JobRunner
+from lp.services.job.runner import JobRunner, JobCronScript
 from lp.code.interfaces.branchmergeproposal import (
     IUpdatePreviewDiffJobSource,)
-from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-
-
-class JobCronScript(LaunchpadCronScript):
-    """Base class for scripts that run jobs."""
-
-    def __init__(self):
-        dbuser = getattr(config, self.config_name).dbuser
-        super(JobCronScript, self).__init__(self.config_name, dbuser)
-
-    def main(self):
-        globalErrorUtility.configure(self.config_name)
-        runner = JobRunner.fromReady(getUtility(self.source_interface))
-        cleanups = self.setUp()
-        try:
-            runner.runAll()
-        finally:
-            for cleanup in reversed(cleanups):
-                cleanup()
-        self.logger.info(
-            'Ran %d %s jobs.',
-            len(runner.completed_jobs), self.source_interface.__name__)
 
 
 class RunUpdatePreviewDiffJobs(JobCronScript):
