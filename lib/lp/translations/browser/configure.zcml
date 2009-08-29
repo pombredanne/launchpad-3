@@ -923,7 +923,7 @@
         permission="launchpad.TranslationsAdmin"
         class="lp.translations.browser.distroseries.DistroSeriesTranslationsAdminView"
         name="+admin"
-        template="../templates/distroseries-translationsadmin.pt"
+        template="../../app/templates/generic-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"

@@ -38,17 +38,30 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
 
     field_names = ['hide_all_translations', 'defer_translation_imports']
 
-    def initialize(self):
-        LaunchpadEditFormView.initialize(self)
-        self.label = 'Change translation options of %s' % self.context.title
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    @property
+    def label(self):
+        return "Translation settings"
+
+    @property
+    def page_title(self):
+        return "Change translation settings for %s %s" % (
+            self.context.distribution.displayname,
+            self.context.displayname)
+    
 
     @action("Change")
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
-
-        self.next_url = canonical_url(self.context)
 
 
 class DistroSeriesLanguagePackView(LaunchpadEditFormView):
