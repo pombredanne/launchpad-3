@@ -64,7 +64,7 @@ class DistributionLanguagePackAdminView(LaunchpadEditFormView):
 
     @property
     def page_title(self):
-        'Change the %s language pack administrator' % (
+        return 'Change the %s language pack administrator' % (
             self.context.displayname)
 
     @action("Change", name='change')
