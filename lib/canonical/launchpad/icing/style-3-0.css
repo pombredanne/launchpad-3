@@ -682,3 +682,12 @@ form.translations select {
   margin-left: 0.5em;
   padding-right: 0.5em;
 }
+
+form.translations label {
+  padding-left: 0.5em;
+  padding-right: 1em;
+}
+
+form.translations .listbox label {
+  padding: 2px 1em 2px 2px;
+}

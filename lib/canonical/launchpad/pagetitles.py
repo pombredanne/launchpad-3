@@ -925,8 +925,6 @@ potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
 potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
-potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
-
 product_admin = ContextTitle('Administer %s in Launchpad')
 
 product_bugs = ContextDisplayName('Bugs in %s')

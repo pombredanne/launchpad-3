@@ -463,7 +463,12 @@ class POTemplateAdminView(POTemplateEditView):
 
 
 class POTemplateExportView(BaseExportView):
+    """Request downloads of POTemplate and its translations."""
 
+    @property
+    def page_title(self):
+        return "Download translations of %s" % (self.context.displayname)
+        
     def processForm(self):
         """Process a form submission requesting a translation export."""
         what = self.request.form.get('what')

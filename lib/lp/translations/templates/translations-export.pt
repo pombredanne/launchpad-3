@@ -8,12 +8,9 @@
 >
 <body>
 
-  <h2 metal:fill-slot="heading">
-    Download translations
-  </h2>
-
 <div metal:fill-slot="main">
 
+  <h1>Download translations</h1>
 
   <div tal:condition="view/uses_translations"
        class="main-portlet">
