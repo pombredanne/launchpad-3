@@ -285,9 +285,15 @@ class POFileUploadView(POFileView):
         self.form = self.request.form
         self.process_form()
 
+    @property
+    def page_title(self):
+        return "Upload %s translation for %s" % (
+            self.context.language.englishname,
+            self.context.potemplate.displayname)
+
     def process_form(self):
         """Handle a form submission to request a translation file upload."""
-        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # XXX henninge 2008-12-03 bug=192925: This code is duplicated for
         # productseries and potemplate and should be unified.
 
         if self.request.method != 'POST' or self.user is None:

@@ -893,8 +893,6 @@ def pofile_translate(context, view):
     return 'Translating %s into %s' % (
         context.potemplate.displayname, context.language.englishname)
 
-pofile_upload = ContextTitle(smartquote('Upload file for "%s"'))
-
 # portlet_* are portlets
 
 poll_edit = ContextTitle(smartquote('Edit poll "%s"'))
@@ -922,8 +920,6 @@ poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
-
-potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 

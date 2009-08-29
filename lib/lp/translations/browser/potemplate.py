@@ -17,6 +17,7 @@ __all__ = [
     'POTemplateSubsetURL',
     'POTemplateSubsetView',
     'POTemplateURL',
+    'POTemplateUploadView',
     'POTemplateView',
     'POTemplateViewPreferred',
     ]
@@ -205,7 +206,6 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
     def initialize(self):
         """Get the requested languages and submit the form."""
         self.description = self.context.description
-        self.submitForm()
 
     def requestPoFiles(self):
         """Yield a POFile or DummyPOFile for each of the languages in the
@@ -266,6 +266,18 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             pofile = pofileset.getDummy(self.context, language)
         return pofile
 
+class POTemplateUploadView(LaunchpadView, TranslationsMixin):
+    """Upload translations and updated template."""
+
+    @property
+    def page_title(self):
+        return "Upload translation files to %s" % (
+            self.context.displayname)
+
+    def initialize(self):
+        """Get the requested languages and submit the form."""
+        self.submitForm()
+    
     def submitForm(self):
         """Called from the page template to do any processing needed if a form
         was submitted with the request."""
