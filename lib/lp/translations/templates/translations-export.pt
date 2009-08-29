@@ -46,8 +46,7 @@
 
       <div class="actions">
         <p>
-         <input type="submit" value="Request Download"
-                style="padding-left:6px; padding-right:6px;" />
+         <input type="submit" value="Request Download" />
         </p>
       </div>
     </form>

@@ -883,10 +883,6 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
-pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
-
-pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
-
 pofile_filter = FilteredTranslationsTitle(
     smartquote('Translations by %(person)s in "%(title)s"'))
 

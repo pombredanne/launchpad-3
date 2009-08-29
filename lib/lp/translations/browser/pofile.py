@@ -657,3 +657,10 @@ class POExportView(BaseExportView):
 
     def getDefaultFormat(self):
         return self.context.potemplate.source_file_format
+
+    @property
+    def page_title(self):
+        return "Download %s translation of %s" % (
+            self.context.language.englishname,
+            self.context.potemplate.displayname)
+    
