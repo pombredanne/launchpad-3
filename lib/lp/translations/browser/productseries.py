@@ -466,16 +466,22 @@ class LinkTranslationsBranchView(LaunchpadEditFormView):
     schema = IProductSeries
     field_names = ['translations_branch']
 
+    label = "Set translations export branch"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
     @property
     def next_url(self):
-        return canonical_url(self.context) + '/+translations-settings'
+        return self.cancel_url
+
+    @property
+    def page_title(self):
+        return "Set translations export branch for %s" % (self.context.title)
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Translations export branch updated.')
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the settings page."""

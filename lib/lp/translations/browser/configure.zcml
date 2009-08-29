@@ -680,7 +680,7 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         for="lp.registry.interfaces.productseries.IProductSeries"
         permission="launchpad.Edit"
-        template="../templates/productseries-link-translations-branch.pt"
+        template="../../app/templates/generic-edit.pt"
         class="lp.translations.browser.productseries.LinkTranslationsBranchView"/>
 
 <!-- Person views -->

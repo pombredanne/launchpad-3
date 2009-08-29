@@ -988,9 +988,6 @@ products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
 
-productseries_link_translations_branch = ContextTitle(
-    "Set translations export branch for %s")
-
 productseries_index = ContextTitle('%s')
 
 productseries_packaging = ContextDisplayName(
