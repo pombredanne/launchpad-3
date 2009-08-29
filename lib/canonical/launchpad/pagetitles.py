@@ -400,8 +400,6 @@ default_editform = 'Default "Edit" Page'
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
-
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
@@ -498,8 +496,6 @@ errorservice_index = 'Error log report'
 errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
-
-faq_edit = ContextId('Edit FAQ #%s details')
 
 def faq_index(context, view):
     """Return the FAQ index page title."""
@@ -958,8 +954,6 @@ product_packages = ContextDisplayName('%s packages in Launchpad')
 product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 
-product_files = ContextDisplayName('%s project files')
-
 product_review_license = ContextTitle('Review %s')
 
 product_series = ContextDisplayName('%s timeline')
@@ -987,8 +981,6 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
-
-productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_link_translations_branch = ContextTitle(
     "Set translations export branch for %s")
@@ -1046,10 +1038,6 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Project and group registration in Launchpad'
 
-products_all = 'Upstream projects registered in Launchpad'
-
-projects_all = 'Project groups registered in Launchpad'
-
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
@@ -1065,15 +1053,6 @@ rosetta_index = 'Launchpad Translations'
 rosetta_products = 'Projects with Translations in Launchpad'
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
-
-question_history = ContextId('History of question #%s')
-
-def question_index(context, view):
-    """Return the page title to a question's index view."""
-    text = (
-        smartquote('%s question #%d: "%s"') %
-        (context.target.displayname, context.id, context.title))
-    return text
 
 def question_listing(context, view):
     """Return the page title list questions."""
@@ -1140,8 +1119,6 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
-
-sourcepackage_export = ContextTitle('Download translations for %s')
 
 def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""
@@ -1247,8 +1224,6 @@ sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 
-sprints_all = 'All sprints and meetings registered in Launchpad'
-
 sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve blueprint for sprint agenda'
@@ -1323,8 +1298,6 @@ token_authorized = 'Almost finished ...'
 
 translationgroup_index = ContextTitle(
     smartquote('"%s" Launchpad translation group'))
-
-translationgroup_add = 'Add a new translation group to Launchpad'
 
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))

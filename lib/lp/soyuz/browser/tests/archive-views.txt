@@ -932,7 +932,9 @@ value is submitted.
     >>> print archive_widget.getInputValue()
     Traceback (most recent call last):
     ...
-    WidgetInputError: ('destination_archive', u'Destination PPA', )
+    WidgetInputError: ('destination_archive',
+                       u'Destination PPA',
+                       RequiredMissing())
 
 
 === Copy private files to public archives ===

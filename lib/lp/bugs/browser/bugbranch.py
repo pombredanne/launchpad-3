@@ -54,6 +54,10 @@ class BugBranchAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def label(self):
+        return 'Add a branch to bug #%i' % self.context.bug.id
+
     cancel_url = next_url
 
 
