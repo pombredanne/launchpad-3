@@ -164,6 +164,12 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         self.form = self.request.form
         self.processForm()
 
+    @property
+    def page_title(self):
+        return "Upload translations to %s %s" % (
+            self.context.product.displayname,
+            self.context.displayname)
+
     def processForm(self):
         """Process a form if it was submitted."""
         if not self.request.method == "POST":
@@ -178,7 +184,7 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         and uploader (importer) in the queue and the new upload cannot be
         safely matched to any of them.  The user will be informed about the
         failure with a warning message."""
-        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # XXX henninge 2008-12-03 bug=192925: This code is duplicated for
         # potemplate and pofile and should be unified.
 
         file = self.request.form['file']
