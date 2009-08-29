@@ -25,7 +25,7 @@ class BaseBreadcrumbTestCase(TestCaseWithFactory):
 
     def _getBreadcrumbs(self, url, traversed_objects):
         view = self._getHierarchyView(url, traversed_objects)
-        return view.items()
+        return view.items
 
     def _getBreadcrumbsTexts(self, url, traversed_objects):
         return [crumb.text
