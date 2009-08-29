@@ -164,7 +164,7 @@ class TranslationsPerson:
             expect_reviewer_status=False)
 
         translator_join, translator_condition = (
-            self._composePOFileTranslatorJoin(True, no_older_than))
+            self._composePOFileTranslatorJoin(worked_on, no_older_than))
         tables.append(translator_join)
 
         translated_count = (
@@ -187,9 +187,11 @@ class TranslationsPerson:
         # around the problem.
         not_reviewer = Or(
             permission == TranslationPermission.OPEN.value,
-            And(permission == TranslationPermission.STRUCTURED.value,
+            And(
+                permission == TranslationPermission.STRUCTURED.value,
                 Translator.id == None),
-            And(permission == TranslationPermission.RESTRICTED.value,
+            And(
+                permission == TranslationPermission.RESTRICTED.value,
                 Translator.id != None,
                 Reviewership.id == None))
 
@@ -201,17 +203,6 @@ class TranslationsPerson:
         source = Store.of(self.person).using(*tables)
         return source.find(POFile, conditions)
 
-    def _getActiveTranslationLanguages(self, no_older_than=None):
-        """Which languages has this person translated to recently?"""
-        english = getUtility(ILaunchpadCelebrities).english
-        query = Store.of(self.person).execute("""
-            SELECT DISTINCT language
-            FROM POFile
-            JOIN POFileTranslator ON POFile.id = POFileTranslator.pofile
-            WHERE person = %s AND language <> %s
-            """ % sqlvalues(self.person, english))
-        return [id for id, in query]
-
     def getTranslatableFiles(self, no_older_than=None):
         """See `ITranslationsPerson`."""
         results = self._queryTranslatableFiles(True, no_older_than)
@@ -221,7 +212,8 @@ class TranslationsPerson:
         """See `ITranslationsPerson`."""
         # XXX JeroenVermeulen 2009-08-28: Ideally this would also check
         # for a free license.  That's hard to do in SQL though.
-        languages = self._getActiveTranslationLanguages(no_older_than)
+        languages = set([
+            language.id for language in self.translatable_languages])
         results = self._queryTranslatableFiles(
             False, no_older_than, languages=languages)
         return results.order_by(['random()'])
