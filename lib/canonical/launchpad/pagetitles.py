@@ -408,9 +408,6 @@ distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
-distribution_language_pack_admin = ContextTitle(
-    'Change the language pack administrator for %s')
-
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_mirrors = ContextTitle("Mirrors of %s")
