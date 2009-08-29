@@ -921,10 +921,6 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-# potemplate_chart is a fragment
-
-potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
-
 potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
 potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
