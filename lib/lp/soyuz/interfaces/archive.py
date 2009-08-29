@@ -155,6 +155,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
         description=_("Whether this archive requires its packages to be "
                       "built on a virtual builder."))
 
+    build_debug_symbols = Bool(
+        title=_("Build debug symbols"), required=False,
+        description=_("Whether builds for this archive should create debug "
+                      "symbol packages."))
+
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
         max=2 ** 31 - 1,

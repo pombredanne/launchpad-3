@@ -1540,7 +1540,8 @@ class ArchiveEditView(BaseArchiveEditView):
 class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
-                   'buildd_secret', 'authorized_size', 'relative_build_score']
+                   'build_debug_symbols', 'buildd_secret', 'authorized_size',
+                   'relative_build_score']
 
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
