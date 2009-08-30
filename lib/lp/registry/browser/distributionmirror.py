@@ -18,9 +18,8 @@ from datetime import datetime
 import pytz
 
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.component import provideAdapter
 from zope.event import notify
-from zope.interface import implements, Interface
+from zope.interface import implements
 
 from lp.archivepublisher.debversion import Version
 from canonical.launchpad import _
@@ -35,7 +34,6 @@ from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Link, NavigationMenu, action,
     canonical_url, enabled_with_permission)
