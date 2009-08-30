@@ -8,12 +8,8 @@ __all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
 
 from cStringIO import StringIO
 
-from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.patches import parse_patches
-from bzrlib.merge import Merger, Merge3Merger
 from lazr.delegates import delegates
-import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
 from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
@@ -37,21 +33,7 @@ class Diff(SQLBase):
 
     diff_lines_count = IntCol()
 
-    _diffstat = StringCol(dbName='diffstat')
-
-    def _get_diffstat(self):
-        if self._diffstat is None:
-            return None
-        return dict((key, tuple(value))
-                    for key, value
-                    in simplejson.loads(self._diffstat).items())
-
-    def _set_diffstat(self, diffstat):
-        # diffstats should be mappings of path to line counts.
-        assert isinstance(diffstat, dict)
-        self._diffstat = simplejson.dumps(diffstat)
-
-    diffstat = property(_get_diffstat, _set_diffstat)
+    diffstat = StringCol()
 
     added_lines_count = IntCol()
 
@@ -78,37 +60,6 @@ class Diff(SQLBase):
         return diff_size > config.diff.max_read_size
 
     @classmethod
-    def mergePreviewFromBranches(cls, source_branch, source_revision,
-                                 target_branch):
-        """Generate a merge preview diff from the supplied branches.
-
-        :param source_branch: The branch that will be merged.
-        :param source_revision: The revision_id of the revision that will be
-            merged.
-        :param target_branch: The branch that the source will merge into.
-        :return: A `Diff` for a merge preview.
-        """
-        source_branch.lock_read()
-        try:
-            target_branch.lock_write()
-            try:
-                merge_target = target_branch.basis_tree()
-                merger = Merger.from_revision_ids(
-                    None, merge_target, source_revision,
-                    other_branch=source_branch, tree_branch=target_branch)
-                merger.merge_type = Merge3Merger
-                transform = merger.make_merger().make_preview_transform()
-                try:
-                    to_tree = transform.get_preview_tree()
-                    return Diff.fromTrees(merge_target, to_tree)
-                finally:
-                    transform.finalize()
-            finally:
-                target_branch.unlock()
-        finally:
-            source_branch.unlock()
-
-    @classmethod
     def fromTrees(klass, from_tree, to_tree, filename=None):
         """Create a Diff from two Bazaar trees.
 
@@ -123,44 +74,35 @@ class Diff(SQLBase):
         return klass.fromFile(diff_content, size, filename)
 
     @classmethod
-    def fromFile(cls, diff_content, size, filename=None, diffstat=None):
+    def fromFile(klass, diff_content, size, filename=None):
         """Create a Diff from a textual diff.
 
         :diff_content: The diff text
         :size: The number of bytes in the diff text.
-        :filename: The filename to store the content with.  Randomly generated
-            if not supplied.
-        :diffstat: The diffstat for this diff.  Generated if not supplied.
         """
         if size == 0:
             diff_text = None
-            diff_lines_count = 0
-            diff_content_bytes = ''
         else:
             if filename is None:
                 filename = generate_uuid() + '.txt'
             diff_text = getUtility(ILibraryFileAliasSet).create(
                 filename, size, diff_content, 'text/x-diff')
-            diff_content.seek(0)
-            diff_content_bytes = diff_content.read(size)
-            diff_lines_count = len(diff_content_bytes.strip().split('\n'))
-        if diffstat is None:
-            diffstat = cls.generateDiffstat(diff_content_bytes)
-        return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
-                   diffstat=diffstat)
+        return klass(diff_text=diff_text)
 
-    @staticmethod
-    def generateDiffstat(diff_bytes):
-        """Generate statistics about the provided diff.
-
-        :param diff_bytes: A unified diff, as bytes.
-        :return: A map of {filename: (added_line_count, removed_line_count)}
-        """
-        file_stats = {}
-        for patch in parse_patches(diff_bytes.splitlines(True)):
-            path = patch.newname.split('\t')[0]
-            file_stats[path] = tuple(patch.stats_values()[:2])
-        return file_stats
+    def _update(self, diff_content, diffstat, filename):
+        """Update the diff content and diffstat."""
+        # XXX: Tim Penhey, 2009-02-12, bug 328271
+        # If the branch is private we should probably use the restricted
+        # librarian.
+        if diff_content is None or len(diff_content) == 0:
+            self.diff_text = None
+            self.diff_lines_count = 0
+        else:
+            self.diff_text = getUtility(ILibraryFileAliasSet).create(
+                filename, len(diff_content), StringIO(diff_content),
+                'text/x-diff')
+            self.diff_lines_count = len(diff_content.strip().split('\n'))
+        self.diffstat = diffstat
 
 
 class StaticDiff(SQLBase):
@@ -193,13 +135,13 @@ class StaticDiff(SQLBase):
 
     @classmethod
     def acquireFromText(klass, from_revision_id, to_revision_id, text,
-                        filename=None, diffstat=None):
+                        filename=None):
         """See `IStaticDiffSource`."""
         existing_diff = klass.selectOneBy(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id)
         if existing_diff is not None:
             return existing_diff
-        diff = Diff.fromFile(StringIO(text), len(text), filename, diffstat)
+        diff = Diff.fromFile(StringIO(text), len(text), filename)
         return klass(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id,
             diff=diff)
@@ -234,50 +176,16 @@ class PreviewDiff(Storm):
         "PreviewDiff.id", "BranchMergeProposal.preview_diff_id",
         on_remote=True)
 
-    @classmethod
-    def fromBranchMergeProposal(cls, bmp):
-        """Create a `PreviewDiff` from a `BranchMergeProposal`.
-
-        Includes a diff from the source to the target.
-        :param bmp: The `BranchMergeProposal` to generate a `PreviewDiff` for.
-        :return: A `PreviewDiff`.
-        """
-        source_branch = Branch.open(bmp.source_branch.warehouse_url)
-        source_revision = source_branch.last_revision()
-        target_branch = Branch.open(bmp.target_branch.warehouse_url)
-        target_revision = target_branch.last_revision()
-        preview = cls()
-        preview.source_revision_id = source_revision.decode('utf-8')
-        preview.target_revision_id = target_revision.decode('utf-8')
-        preview.diff = Diff.mergePreviewFromBranches(
-            source_branch, source_revision, target_branch)
-        return preview
-
-    @classmethod
-    def create(cls, diff_content, diffstat,
+    def update(self, diff_content, diffstat,
                source_revision_id, target_revision_id,
                dependent_revision_id, conflicts):
-        """Create a PreviewDiff with specified values.
-
-        :param diff_content: The text of the dift, as bytes.
-        :param diffstat: The diffstat associated with the diff, as bytes.
-        :param source_revision_id: The revision_id of the source branch.
-        :param target_revision_id: The revision_id of the target branch.
-        :param dependent_revision_id: The revision_id of the dependent branch.
-        :param conflicts: The conflicts, as text.
-        :return: A `PreviewDiff` with specified values.
-        """
-        preview = cls()
-        preview.source_revision_id = source_revision_id
-        preview.target_revision_id = target_revision_id
-        preview.dependent_revision_id = dependent_revision_id
-        preview.conflicts = conflicts
+        self.source_revision_id = source_revision_id
+        self.target_revision_id = target_revision_id
+        self.dependent_revision_id = dependent_revision_id
+        self.conflicts = conflicts
 
         filename = generate_uuid() + '.txt'
-        size = len(diff_content)
-        preview.diff = Diff.fromFile(StringIO(diff_content), size, filename,
-                                     diffstat)
-        return preview
+        self.diff._update(diff_content, diffstat, filename)
 
     @property
     def stale(self):
