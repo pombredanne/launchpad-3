@@ -17,8 +17,8 @@
       <tal:menu replace="structure context/@@+related-pages" />
     </tal:side>
 
-    <div metal:fill-slot="main">
-
+    <div metal:fill-slot="main"
+         class="main-portlet">
       <table class="listing">
         <tbody>
           <tal:sprint
@@ -28,7 +28,6 @@
         </tbody>
       </table>
 
-      <p/>
       <p id="application-summary" class="application-summary">
         Launchpad can help you organize your developer sprints, summits and
         gatherings. Register the meeting here, then you can invite people to

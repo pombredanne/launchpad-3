@@ -129,6 +129,10 @@ class DecoratedDistributionSourcePackageRelease:
 
 class DistributionSourcePackageView(LaunchpadFormView):
 
+    @property
+    def page_title(self):
+        return self.context.title
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         # No schema is set in this form, because all fields are created with

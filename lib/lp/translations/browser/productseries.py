@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=E1002
 
 """View classes for `IProductSeries`."""
 
@@ -104,7 +105,17 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     Only complete downloads are supported for now; there is no option to
     select languages, and templates are always included.
     """
-    pass
+
+    @property
+    def download_description(self):
+        """Current context description used inline in paragraphs."""
+        return "%s %s series" % (
+            self.context.product.displayname,
+            self.context.name)
+
+    @property
+    def page_title(self):
+        return "Download translations for %s" % self.download_description
 
 
 class ProductSeriesTranslationsMixin(object):

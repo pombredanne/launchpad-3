@@ -148,20 +148,20 @@ class ArchiveCruftChecker:
         if not os.path.exists(filename):
             raise TagFileNotFound("File does not exist: %s" % filename)
 
-        unused_fd, temp_filename = tempfile.mkstemp()
+        temp_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
         if result != 0:
             raise ArchiveCruftCheckerError(
                 "Gunzip invocation failed!\n%s" % output)
 
-        temp_fd = open(temp_filename)
+        temp_file = os.fdopen(temp_fd)
         # XXX cprov 2006-05-15: maybe we need some sort of data integrity
         # check at this point, and maybe keep the uncrompressed file
         # for debug purposes, let's see how it behaves in real conditions.
-        parsed_contents = apt_pkg.ParseTagFile(temp_fd)
+        parsed_contents = apt_pkg.ParseTagFile(temp_file)
 
-        return temp_fd, temp_filename, parsed_contents
+        return temp_file, temp_filename, parsed_contents
 
     def processSources(self):
         """Process archive sources index.
