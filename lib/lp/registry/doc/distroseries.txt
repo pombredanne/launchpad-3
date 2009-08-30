@@ -557,7 +557,7 @@ the future.
    >>> hoary = ubuntu['hoary']
 
    >>> from canonical.launchpad.interfaces import (
-   ...    PackagePublishingPocket, PackagePublishingStatus)
+   ...    PackagePublishingStatus)
 
    >>> hoary_pub_sources = hoary.getSourcePackagePublishing(
    ...     PackagePublishingStatus.PUBLISHED,
