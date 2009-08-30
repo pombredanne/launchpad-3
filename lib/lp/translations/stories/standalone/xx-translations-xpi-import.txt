@@ -24,7 +24,7 @@ Now, lets upload this file.
 
   >>> browser.getControl('File:').add_file(
   ...     xpifile, 'application/zip', 'en-US.xpi')
-  >>> browser.getControl('Request Upload').click()
+  >>> browser.getControl('Upload').click()
 
   >>> print browser.url
   http://translations.launchpad.dev/firefox/trunk/+translations-upload
