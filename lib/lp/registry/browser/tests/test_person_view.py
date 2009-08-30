@@ -12,58 +12,55 @@ from canonical.database.sqlbase import cursor, sqlvalues
 from lp.registry.browser.person import PersonView
 from lp.testing import TestCaseWithFactory
 from zope.component import getUtility
-from canonical.launchpad.interfaces import IKarmaCacheManager
+from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
+from lp.registry.model.karma import KarmaCategory
 
-class TestPerson(TestCaseWithFactory):
-    """Test Person view."""
+class TestPersonView(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        # Create a person
         TestCaseWithFactory.setUp(self)
         self.person = self.factory.makePerson()
         self.view = PersonView(self.person,
                                LaunchpadTestRequest())
+        self.makeKarmaCache(person=self.person, 
+            category=KarmaCategory.byName('bugs'))
+        self.makeKarmaCache(person=self.person, 
+            category=KarmaCategory.byName('answers'))
+        self.makeKarmaCache(person=self.person, 
+            category=KarmaCategory.byName('code')) 
 
     def test_karma_category_sort(self):
-        # Add karma to some categories for the user
-        self.makeKarmaCache(person=self.person, category_id=2)
-        self.makeKarmaCache(person=self.person, category_id=7)
-        self.makeKarmaCache(person=self.person, category_id=8) 
-
-        # Get contributed categories for the factory user 
         categories = self.view.contributed_categories
         category_names = []
         for category in categories:
             category_names.append(category.name)
 
-        # Assert that the contributed categories are sorted correctly
         self.assertEqual(category_names, [u'code', u'bugs', u'answers'], 
                          'Categories are not sorted correctly')
 
-    def makeKarmaCache(self, person=None, value=10, category_id=2,
-                       product_id=5):
-        # Create KarmaCache Record
-        LaunchpadZopelessLayer.switchDbUser(config.karmacacheupdater.dbuser)
-        karmacache = getUtility(IKarmaCacheManager).new(
-            person_id=person.id, value=value, category_id=category_id,
-            product_id=product_id)
-        LaunchpadZopelessLayer.commit()
+    def makeKarmaCache(self, person, category, value=10, product=None):
+        if product is None:
+            product = self.factory.makeProduct()
 
-        # Update totals for this product
-        query = """
-            INSERT INTO KarmaCache 
-                (person, category, karmavalue, product, distribution,
-                 sourcepackagename, project)
-            SELECT person, NULL, SUM(karmavalue), product, NULL, NULL, NULL
-            FROM KarmaCache
-            WHERE product = %(product)s
-               AND person = %(person)s 
-            GROUP BY person, product
-            """ % sqlvalues(person=person.id, product=product_id)
-        cur = cursor()
-        cur.execute(query)
+        # karmacacheupdater is the only db user who has write access to
+        # the KarmaCache table so we switch to it here
+        LaunchpadZopelessLayer.switchDbUser('karma')
+
+        cache_manager = getUtility(IKarmaCacheManager)
+        karmacache = cache_manager.new(
+            value, person.id, category.id, product_id=product.id)
+
+        try:
+            cache_manager.updateKarmaValue(
+                value, person.id, category_id=None, product_id=product.id)
+        except NotFoundError:
+            cache_manager.new(
+                value, person.id, category_id=None, product_id=product.id)
+
+        LaunchpadZopelessLayer.commit()
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
 
         return karmacache
 
