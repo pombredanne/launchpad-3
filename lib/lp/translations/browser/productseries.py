@@ -7,6 +7,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'LinkTranslationsBranchView',
     'ProductSeriesTemplatesView',
     'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
@@ -471,3 +472,30 @@ class ProductSeriesTemplatesView(LaunchpadView):
     def can_administer(self, template):
         """Can the user administer the template?"""
         return check_permission('launchpad.Admin', template)
+
+
+class LinkTranslationsBranchView(LaunchpadEditFormView):
+    """View to set the series' translations export branch."""
+
+    schema = IProductSeries
+    field_names = ['translations_branch']
+
+    label = "Set translations export branch"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @property
+    def page_title(self):
+        return "Set translations export branch for %s" % (self.context.title)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Translations export branch updated.')

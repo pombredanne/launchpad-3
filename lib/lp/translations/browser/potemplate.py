@@ -440,7 +440,7 @@ class POTemplateEditView(LaunchpadEditFormView):
 
     schema = IPOTemplate
     field_names = ['description', 'priority', 'owner']
-    label = 'Change PO template information'
+    label = 'Edit translation template details'
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -460,7 +460,17 @@ class POTemplateEditView(LaunchpadEditFormView):
             UTC = pytz.timezone('UTC')
             context.date_last_updated = datetime.datetime.now(UTC)
 
-        self.next_url = canonical_url(self.context)
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return 'Edit template "%s" details' % (self.context.name)
 
 
 class POTemplateAdminView(POTemplateEditView):

@@ -398,14 +398,14 @@
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateEditView"
             permission="launchpad.Edit"
-            template="../templates/potemplate-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+admin"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateAdminView"
             permission="launchpad.Admin"
-            template="../templates/potemplate-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+export"
@@ -680,8 +680,8 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         for="lp.registry.interfaces.productseries.IProductSeries"
         permission="launchpad.Edit"
-        template="../templates/productseries-link-translations-branch.pt"
-        class="lp.registry.browser.productseries.LinkTranslationsBranchView"/>
+        template="../../app/templates/generic-edit.pt"
+        class="lp.translations.browser.productseries.LinkTranslationsBranchView"/>
 
 <!-- Person views -->
 
@@ -872,7 +872,7 @@
         name="+select-language-pack-admin"
         class="lp.translations.browser.distribution.DistributionLanguagePackAdminView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/distribution-language-pack-admin.pt"
+        template="../../app/templates/generic-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 <!-- DistroSeries -->
@@ -923,7 +923,7 @@
         permission="launchpad.TranslationsAdmin"
         class="lp.translations.browser.distroseries.DistroSeriesTranslationsAdminView"
         name="+admin"
-        template="../templates/distroseries-translationsadmin.pt"
+        template="../../app/templates/generic-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
