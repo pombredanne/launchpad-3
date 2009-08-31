@@ -66,7 +66,7 @@
                      value="POCHANGED" />
               <label for="cb_pochanged">
 		<span><noscript><em>PO format only:</em></noscript>
-		  Only strings that differ from packaged versions
+		  Only strings that differ from imported versions
 		  (<a href="https://help.launchpad.net/Translations/PartialPOExport"
                       target="_blank">What's this?</a>).</span>
               </label>
