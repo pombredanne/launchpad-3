@@ -33,7 +33,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
         super(BugSubscriptionAddView, self).setUpFields()
         self.form_fields['person'].for_input = True
 
-    @action('Add', name='add')
+    @action('Subscribe user', name='add')
     def add_action(self, action, data):
         person = data['person']
         subscription = self.context.bug.subscribe(person, self.user)
