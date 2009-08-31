@@ -2273,7 +2273,10 @@ class EditPackageset(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """The owner of a package set can edit the object."""
-        return user.inTeam(self.obj.owner)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(self.obj.owner)
+            or user.inTeam(celebrities.admin))
 
 
 class EditPackagesetSet(AuthorizationBase):
