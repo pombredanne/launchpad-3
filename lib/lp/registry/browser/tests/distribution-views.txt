@@ -242,6 +242,9 @@ Only admins and owners can access the view.
 Distribution +index
 ===================
 
++index portlets
+---------------
+
 The distribution index page may contain portlets for Launchpad applications.
 If the distribution does not officially use the apps, its portlet does
 not appear.
