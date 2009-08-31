@@ -39,10 +39,10 @@
             <label for="user_type">
               Updated translation
             </label>
-            <div class="discreet">
+            <p class="discreet">
               You have exported a PO file from Launchpad, worked on it off-line,
               and now you want to contribute your updates back.
-            </div>
+            </p>
           </span>
         </div>
 
@@ -58,10 +58,10 @@
             <label for="upstream_type">
               Imported translation
             </label>
-            <div class="discreet">
+            <p class="discreet">
               You want to upload a more recent translation from upstream
               release or from a source package.
-            </div>
+            </p>
           </span>
         </div>
 
