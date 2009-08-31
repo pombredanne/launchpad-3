@@ -2159,7 +2159,7 @@
         class="lp.registry.browser.driver.AppointDriverView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/object-driver.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
    <browser:defaultView
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         name="+index" />
