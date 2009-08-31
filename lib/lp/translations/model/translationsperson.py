@@ -159,10 +159,11 @@ class TranslationsPerson:
         :param worked_on: If True, get `POFile`s that the person has
             been working on recently (where "recently" is defined as
             `no_older_than`).  If False, get ones that the person has
-            not been working on recently.
-        :param no_older_than: Oldest involvement to consider as
-            "recently been working on."  Whatever the person did with a
-            `POFile` before this date is ignored.
+            not been working on recently (those that the person has
+            never worked on, or last worked on before `no_older_than`).
+        :param no_older_than: Oldest involvement to consider.  If the
+            person last worked on a `POFile` before this date, that
+            counts as not having worked on it.
         :param languages: Optional set of languages to restrict search to.
         :return: An unsorted query yielding `POFile`s.
         """
