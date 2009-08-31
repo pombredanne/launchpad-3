@@ -14,6 +14,7 @@ from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer, ZopelessLayer
+from canonical.launchpad.scripts.librarian_apache_log_parser import DBUSER
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry, get_day, get_files_to_parse,
     get_host_date_status_and_request, parse_file)
@@ -22,7 +23,6 @@ from lp.testing import TestCase
 
 
 here = os.path.dirname(__file__)
-DBUSER = 'librarianlogparser'
 
 
 class TestLineParsing(TestCase):
