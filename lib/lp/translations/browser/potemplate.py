@@ -139,11 +139,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         specifications_link.target = self.target
         return specifications_link
 
-    def bounties(self):
-        bounties_link = self.target_facets.bounties()
-        bounties_link.target = self.target
-        return bounties_link
-
     def calendar(self):
         calendar_link = self.target_facets.calendar()
         calendar_link.target = self.target
