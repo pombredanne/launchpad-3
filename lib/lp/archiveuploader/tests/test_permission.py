@@ -37,6 +37,8 @@ class TestComponents(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         component = self.factory.makeComponent()
         person = self.factory.makePerson()
+        # Only admins or techboard members can add permissions normally. That
+        # restriction isn't relevant to this test.
         ap_set = removeSecurityProxy(getUtility(IArchivePermissionSet))
         ap_set.newComponentUploader(archive, person, component)
         self.assertEqual(
@@ -50,11 +52,13 @@ class TestPermission(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         permission_set = getUtility(IArchivePermissionSet)
+        # Only admins or techboard members can add permissions normally. That
+        # restriction isn't relevant to these tests.
         self.permission_set = removeSecurityProxy(permission_set)
 
     def assertCanUpload(self, person, spn, archive, component,
                         strict_component=True):
-        """Assert that 'person' can upload 'ssp' to 'archive'."""
+        """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
         verify_upload(person, spn, archive, component, strict_component)
 
