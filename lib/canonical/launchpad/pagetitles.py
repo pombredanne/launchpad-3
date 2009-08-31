@@ -176,11 +176,6 @@ bug_activity = ContextBugId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
-def bug_attachment_edit(context, view):
-    """Return the page title for the edit attachment page."""
-    return smartquote('Bug #%d - Edit attachment "%s"') % (
-        context.bug.id, context.title)
-
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
