@@ -54,12 +54,12 @@ class InvolvedMenu(NavigationMenu):
 
     def submit_code(self):
         return Link(
-            '+filebug', 'Submit code', site='code', icon='code',
+            '+addbranch', 'Submit code', site='code', icon='code',
             enabled=self.context.official_codehosting)
 
     def register_blueprint(self):
         return Link(
-            '+addbranch', 'Register a blueprint', site='blueprints',
+            '+addspec', 'Register a blueprint', site='blueprints',
             icon='blueprints', enabled=self.context.official_blueprints)
 
 
