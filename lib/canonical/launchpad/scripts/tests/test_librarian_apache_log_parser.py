@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
-    get_lfa_download_key)
+    get_library_file_id)
 from lp.services.apachelogparser.base import parse_file, get_method_and_path
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.ftests import ANONYMOUS, login
@@ -27,7 +27,7 @@ class TestRequestParsing(TestCase):
 
     def assertMethodAndFileIDAreCorrect(self, request):
         method, path = get_method_and_path(request)
-        file_id = get_lfa_download_key(path)
+        file_id = get_library_file_id(path)
         self.assertEqual(method, 'GET')
         self.assertEqual(file_id, '8196569')
 
@@ -61,15 +61,15 @@ class TestRequestParsing(TestCase):
     def test_requests_for_paths_that_are_not_of_an_lfa_return_none(self):
         request = 'GET https://launchpadlibrarian.net/ HTTP/1.1'
         self.assertEqual(
-            get_lfa_download_key(get_method_and_path(request)[1]), None)
+            get_library_file_id(get_method_and_path(request)[1]), None)
 
         request = 'GET /robots.txt HTTP/1.1'
         self.assertEqual(
-            get_lfa_download_key(get_method_and_path(request)[1]), None)
+            get_library_file_id(get_method_and_path(request)[1]), None)
 
         request = 'GET /@@person HTTP/1.1'
         self.assertEqual(
-            get_lfa_download_key(get_method_and_path(request)[1]), None)
+            get_library_file_id(get_method_and_path(request)[1]), None)
 
 
 class TestLibrarianLogFileParsing(TestCase):
@@ -88,7 +88,7 @@ class TestLibrarianLogFileParsing(TestCase):
             '"https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
-            get_download_key=get_lfa_download_key)
+            get_download_key=get_library_file_id)
         self.assertEqual(self.logger.buffer.getvalue(), '')
 
         date = datetime(2008, 6, 13)
@@ -105,7 +105,7 @@ class TestLibrarianLogFileParsing(TestCase):
             '200 2261 "https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
-            get_download_key=get_lfa_download_key)
+            get_download_key=get_library_file_id)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())

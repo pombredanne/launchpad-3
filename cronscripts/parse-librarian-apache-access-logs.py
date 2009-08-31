@@ -32,7 +32,7 @@ from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry, get_files_to_parse, parse_file)
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
-    DBUSER, get_lfa_download_key)
+    DBUSER, get_library_file_id)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -46,7 +46,7 @@ class ParseLibrarianApacheLogs(LaunchpadCronScript):
         country_set = getUtility(ICountrySet)
         for fd, position in files_to_parse.items():
             downloads, parsed_bytes = parse_file(
-                fd, position, self.logger, get_lfa_download_key)
+                fd, position, self.logger, get_library_file_id)
             # Use a while loop here because we want to pop items from the dict
             # in order to free some memory as we go along. This is a good
             # thing here because the downloads dict may get really huge.

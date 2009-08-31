@@ -12,7 +12,7 @@ lfa_path_re = re.compile('^/[0-9]+/')
 multi_slashes_re = re.compile('/+')
 
 
-def get_lfa_download_key(path):
+def get_library_file_id(path):
     path = multi_slashes_re.sub('/', path)
     if not lfa_path_re.match(path):
         # We only count downloads of LibraryFileAliases, and this is
