@@ -109,8 +109,11 @@ ProductSeries can use this view. The product is used to set the links.
     submit_code register_blueprint
 
 DistributionSourcePackages can use this view. The distribution is used to
-set the links.
+set the links.  Despite the fact that the distribution uses blueprints,
+the blueprint link is not enabled for DistributionSourcePackages.
 
+    >>> login_person(distribution.owner)
+    >>> distribution.official_blueprints = True
     >>> package = factory.makeDistributionSourcePackage(
     ...     distribution=distribution)
     >>> view = create_view(package, '+get-involved')
