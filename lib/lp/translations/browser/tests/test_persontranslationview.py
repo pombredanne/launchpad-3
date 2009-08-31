@@ -311,6 +311,8 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofiles = self._makePOFiles(50, previously_worked_on=True)
         for number, pofile in enumerate(pofiles):
             self._addUntranslatedMessages(pofile, number + 1)
+        products = [
+            pofile.potemplate.productseries.product for pofile in pofiles]
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
@@ -325,9 +327,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertTrue(set(targets[3:]).issubset(products[:15]))
 
         # No target is mentioned more than once in the listing.
-        self.assertEqual(
-            len(least_translated_targets) + len(most_translated_targets),
-            len(set(least_translated_targets + most_translated_targets)))
+        self.assertEqual(len(targets), len(set(targets)))
 
     def test_top_p_n_p_to_translate_caps_total(self):
         # The list never shows more than 10 entries.
