@@ -3295,6 +3295,8 @@ class BugTaskCreateQuestionView(LaunchpadFormView):
 
     label = 'Convert this bug to a question'
 
+    page_title = label
+
 
 class BugTaskRemoveQuestionView(LaunchpadFormView):
     """View for creating a question from a bug."""
