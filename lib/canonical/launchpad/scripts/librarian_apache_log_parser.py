@@ -20,7 +20,5 @@ def get_lfa_download_key(path):
         return None
 
     file_id = path.split('/')[1]
-
     assert file_id.isdigit(), ('File ID is not a digit: %s' % path)
-
     return file_id
