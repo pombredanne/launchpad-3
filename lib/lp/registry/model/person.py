@@ -2858,6 +2858,28 @@ class PersonSet:
             DELETE FROM BranchSubscription WHERE person=%(from_id)d
             ''' % vars())
 
+    def _mergeBountySubscriptions(self, cur, from_id, to_id):
+        # XXX: JonathanLange 2009-08-31: Even though all of the other bounty
+        # code has been removed from Launchpad, the merging code has to stay
+        # until the tables themselves are removed. Otherwise, the person
+        # merging code raises consistency errors (and rightly so).
+        #
+        # Update only the BountySubscriptions that will not conflict.
+        cur.execute('''
+            UPDATE BountySubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND bounty NOT IN
+                (
+                SELECT bounty
+                FROM BountySubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM BountySubscription WHERE person=%(from_id)d
+            ''' % vars())
+
     def _mergeBugAffectsPerson(self, cur, from_id, to_id):
         # Update only the BugAffectsPerson that will not conflict
         cur.execute('''
@@ -3305,6 +3327,9 @@ class PersonSet:
 
         self._mergeBugAffectsPerson(cur, from_id, to_id)
         skip.append(('bugaffectsperson', 'person'))
+
+        self._mergeBountySubscriptions(cur, from_id, to_id)
+        skip.append(('bountysubscription', 'person'))
 
         self._mergeAnswerContact(cur, from_id, to_id)
         skip.append(('answercontact', 'person'))
