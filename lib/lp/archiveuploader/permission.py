@@ -13,7 +13,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 
 
@@ -82,7 +81,7 @@ def verify_upload(person, sourcepackagename, archive, component,
     :return: Nothing of interest.
     """
     # For PPAs...
-    if archive.purpose == ArchivePurpose.PPA:
+    if archive.isPPA:
         if not archive.canUpload(person):
             raise CannotUploadToPPA()
         else:
@@ -93,7 +92,7 @@ def verify_upload(person, sourcepackagename, archive, component,
     if sourcepackagename is not None and (
         archive.canUpload(person, sourcepackagename)
         or ap_set.isSourceUploadAllowed(archive, sourcepackagename, person)):
-        return
+        return True
 
     if not components_valid_for(archive, person):
         raise NoRightsForArchive()
