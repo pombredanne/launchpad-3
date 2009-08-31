@@ -111,23 +111,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         return field_values
 
     @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return self.next_url
-
-    @property
     def next_url(self):
-        """See `LaunchpadFormView`."""
-        # The referer header we want is only available before the view's
-        # form submits to itself. This field is a hidden input in the form.
-        referrer = self.request.form.get('next_url')
-
-        if (referrer is not None
-            and referrer.startswith(self.request.getApplicationURL())):
-            return referrer
-        else:
-            translationimportqueue_set = getUtility(ITranslationImportQueue)
-            return canonical_url(translationimportqueue_set)
+        """Return the URL of the main import queue at 'rosetta/imports'."""
+        translationimportqueue_set = getUtility(ITranslationImportQueue)
+        return canonical_url(translationimportqueue_set)
 
     def initialize(self):
         """Remove some fields based on the entry handled."""
