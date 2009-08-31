@@ -61,15 +61,30 @@ class TestPermission(TestCaseWithFactory):
         # For now, just check that doesn't raise an exception.
         verify_upload(person, spn, archive, component, strict_component)
 
+    def assertCannotUpload(self, reason, person, spn, archive, component):
+        """Assert that 'person' cannot upload to the archive.
+
+        :param reason: The expected reason for not being able to upload. A
+            string.
+        :param person: The person trying to upload.
+        :param spn: The `ISourcePackageName` being uploaded to. None if the
+            package does not yet exist.
+        :param archive: The `IArchive` being uploaded to.
+        :param component: The IComponent to which the package belongs.
+        """
+        exception = self.assertRaises(
+            CannotUploadToArchive, verify_upload, person, spn, archive,
+            component)
+        self.assertEqual(reason, str(exception))
+
     def test_random_person_cannot_upload_to_ppa(self):
         # Arbitrary people cannot upload to a PPA.
         person = self.factory.makePerson()
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         spn = self.factory.makeSourcePackageName()
-        exception = self.assertRaises(
-            CannotUploadToArchive, verify_upload, person, spn, ppa, None)
-        self.assertEqual(
-            'Signer has no upload rights to this PPA.', str(exception))
+        self.assertCannotUpload(
+            'Signer has no upload rights to this PPA.',
+            person, spn, ppa, None)
 
     def test_owner_can_upload_to_ppa(self):
         # If the archive is a PPA, and you own it, then you can upload pretty
@@ -95,13 +110,11 @@ class TestPermission(TestCaseWithFactory):
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         spn = self.factory.makeSourcePackageName()
-        exception = self.assertRaises(
-            CannotUploadToArchive, verify_upload, person, spn, archive, None)
-        self.assertEqual(
+        self.assertCannotUpload(
             ("The signer of this package has no upload rights to this "
              "distribution's primary archive.  Did you mean to upload to "
              "a PPA?"),
-            str(exception))
+            person, spn, archive, None)
 
     def test_package_specific_rights(self):
         # A person can be granted specific rights for uploading a package,
@@ -148,13 +161,10 @@ class TestPermission(TestCaseWithFactory):
         forbidden_component = self.factory.makeComponent()
         self.permission_set.newComponentUploader(
             archive, person, permitted_component)
-        exception = self.assertRaises(
-            CannotUploadToArchive, verify_upload, person, spn, archive,
-            forbidden_component)
-        self.assertEqual(
+        self.assertCannotUpload(
             u"Signer is not permitted to upload to the component '%s'." % (
                 forbidden_component.name),
-            str(exception))
+            person, spn, archive, forbidden_component)
 
     def test_component_rights_no_package(self):
         # A person allowed to upload to a particular component of an archive
