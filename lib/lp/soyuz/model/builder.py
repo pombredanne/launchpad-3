@@ -114,7 +114,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    _defaultOrder = ['processor', 'virtualized', 'name']
+    _defaultOrder = ['id']
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
@@ -694,7 +694,8 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
-        return Builder.selectBy(active=True)
+        return Builder.selectBy(
+            active=True, orderBy=['virtualized', 'processor', 'name'])
 
     def getBuildersByArch(self, arch):
         """See IBuilderSet."""
@@ -732,7 +733,7 @@ class BuilderSet(object):
             Archive.require_virtualized == virtualized,
             )
 
-        return queue.count()
+        return (queue.count(), queue.sum(Build.estimated_build_duration))
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""

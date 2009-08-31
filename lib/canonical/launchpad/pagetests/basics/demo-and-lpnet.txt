@@ -28,17 +28,20 @@ information and styles.
 
     # Set config to pretend we're on a demo site:
     >>> from textwrap import dedent
+    >>> site_message = ('This is a demo site mmk. '
+    ...                 '<a href="http://example.com">File a bug</a>.')
     >>> test_data = dedent("""
     ...     [launchpad]
     ...     is_demo: True
-    ...     site_message: This is a demo site mmk
-    ...     """)
+    ...     site_message: %s
+    ...     """ % site_message)
     >>> config.push('test_data', test_data)
     >>> print config.launchpad.is_demo
     True
 
 The demo style is applied and the site_message is also included as part
- of the header.
+of the header. The site-message is structured so that any links will not
+be escaped.
 
 For a 3-0 page:
 
@@ -51,7 +54,9 @@ For a 3-0 page:
     &bull;...Launchpad...) devmode demo site
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'globalheader'))
-    This is a demo site mmk
+    This is a demo site mmk. File a bug.
+    >>> print browser.getLink(url="http://example.com").text
+    File a bug
 
 And for a non-3-0 page:
 
@@ -64,7 +69,9 @@ And for a non-3-0 page:
     |...Launchpad...) devmode demo site
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'globalheader'))
-    This is a demo site mmk
+    This is a demo site mmk. File a bug.
+    >>> print browser.getLink(url="http://example.com").text
+    File a bug
 
 
 When you are not on a demo site, the text no longer appears.
