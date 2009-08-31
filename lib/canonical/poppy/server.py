@@ -4,19 +4,13 @@
 __metaclass__ = type
 
 import asyncore
-import tempfile
 import logging
-import os
 import sys
-
+import tempfile
 from time import time
 
-from zope.interface import implements
-from zope.server.interfaces.ftp import IFileSystem
-from zope.server.interfaces.ftp import IFileSystemAccess
 from zope.server.ftp.server import FTPServerChannel
 from zope.server.ftp.server import STORChannel as OriginalSTORChannel
-from zope.server.ftp import server as ftp
 from zope.server.taskthreads import ThreadedTaskDispatcher
 from zope.server.serverbase import ServerBase
 
@@ -188,7 +182,7 @@ def main():
     def client_done_hook(fsroot, host, port):
         print "client done:", fsroot, host, port
 
-    def auth_verify_hook(fsroot, user,passw):
+    def auth_verify_hook(fsroot, user, passw):
         print "Auth Verification hook:", fsroot, user, passw
         return True
 
