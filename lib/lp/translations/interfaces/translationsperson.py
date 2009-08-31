@@ -34,6 +34,14 @@ class ITranslationsPerson(Interface):
         title=_("Whether person agrees to relicense their translations"),
         readonly=False)
 
+    def getTranslationHistory(no_older_than=None):
+        """Query most recent `POFileTranslator` entries for this person.
+
+        :param no_older_than: Optional cutoff date.  If given, older
+            `POFileTranslator` entries are ignored.
+        :return: a Storm query result.
+        """
+
     def getReviewableTranslationFiles(no_older_than=None):
         """List `POFile`s this person should be able to review.
 

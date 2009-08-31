@@ -172,7 +172,9 @@ class PersonTranslationView(LaunchpadView):
     @property
     def person_is_translator(self):
         """Is this person active in translations?"""
-        return self.context.hasKarma('translations')
+        person = ITranslationsPerson(self.context)
+        history = person.getTranslationHistory(self.history_horizon).any()
+        return history is not None
 
     @property
     def person_includes_me(self):

@@ -6,7 +6,7 @@ __all__ = [
     'TranslationsPerson',
     ]
 
-from storm.expr import And, Coalesce, Join, LeftJoin, Or
+from storm.expr import And, Coalesce, Desc, Join, LeftJoin, Or
 from storm.info import ClassAlias
 from storm.store import Store
 
@@ -58,12 +58,21 @@ class TranslationsPerson:
             Language.visible""" % sqlvalues(self.person),
             clauseTables=['PersonLanguage'], orderBy='englishname')
 
+    def getTranslationHistory(self, no_older_than=None):
+        """See `ITranslationsPerson`."""
+        conditions = (POFileTranslator.person == self.person)
+        if no_older_than is not None:
+            conditions = And(
+                conditions,
+                POFileTranslator.date_last_touched >= no_older_than)
+
+        entries = Store.of(self.person).find(POFileTranslator, conditions)
+        return entries.order_by(Desc(POFileTranslator.date_last_touched))
+
     @property
     def translation_history(self):
         """See `ITranslationsPerson`."""
-        return POFileTranslator.select(
-            'POFileTranslator.person = %s' % sqlvalues(self.person),
-            orderBy='-date_last_touched')
+        return self.getTranslationHistory()
 
     @property
     def translation_groups(self):

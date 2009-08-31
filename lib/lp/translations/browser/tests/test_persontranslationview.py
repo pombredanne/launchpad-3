@@ -42,26 +42,6 @@ class TestPersonTranslationView(TestCaseWithFactory):
             translationgroup=self.translationgroup, language=self.dutch,
             translator=self.view.context)
 
-    def _makeTranslator(self):
-        """Qualify the current user as a translator."""
-        # This involves manipulating the karma cache, which in turn
-        # involves switching into another DB user.
-        transaction.commit()
-        self.layer.switchDbUser('karma')
-        try:
-            karma_category = KarmaCategory.byName('translations')
-            cache_manager = getUtility(IKarmaCacheManager)
-            cache_manager.new(1, self.view.context.id, karma_category.id)
-            transaction.commit()
-        finally:
-            try:
-                self.layer.switchDbUser('launchpad')
-            except:
-                # We have have gotten to this "finally" clause because
-                # of an exception that could reasonably break the switch
-                # back to launchpad, so ignore a failure there.
-                pass
-
     def _makePOFiles(self, count, previously_worked_on):
         """Create `count` `POFile`s that the view's person can review.
 
@@ -230,9 +210,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertFalse(self.view.person_is_translator)
 
     def test_person_is_translator_true(self):
-        # A user becomes listed as a translator by gaining translations
-        # karma.
-        self._makeTranslator()
+        # Doing translation work turns a user into a translator.
+        self._makePOFiles(1, previously_worked_on=True)
+
         self.assertTrue(self.view.person_is_translator)
 
     def test_getTargetsForTranslation(self):
@@ -334,34 +314,19 @@ class TestPersonTranslationView(TestCaseWithFactory):
         for number, pofile in enumerate(pofiles):
             self._addUntranslatedMessages(pofile, number + 1)
 
+        descriptions = self.view.top_projects_and_packages_to_translate
+
+        self.assertEqual(6, len(descriptions))
+        targets = [item['target'] for item in descriptions]
+
         # We happen to know that no more than 15 POFiles are fetched for
         # each of the two categories, so the top 3 targets must be taken
         # from the last 15 pofiles and the next 3 must be taken from the
         # first 15 pofiles.
-        least_translated_products = set([
-            pofile.potemplate.productseries.product
-            for pofile in pofiles[15:]
-            ])
-        most_translated_products = set([
-            pofile.potemplate.productseries.product
-            for pofile in pofiles[:15]
-            ])
+        self.assertTrue(set(targets[:3]).issubset(products[15:]))
+        self.assertTrue(set(targets[3:]).issubset(products[:15]))
 
-        descriptions = self.view.top_projects_and_packages_to_translate
-
-        self.assertEqual(6, len(descriptions))
-        least_translated_targets = [
-            item['target'] for item in descriptions[:3]]
-        most_translated_targets = [
-            item['target'] for item in descriptions[3:]]
-
-        for target in least_translated_targets:
-            self.assertTrue(target in least_translated_products)
-
-        for target in most_translated_targets:
-            self.assertTrue(target in most_translated_products)
-
-        # A target is not mentioned twice in the listing.
+        # No target is mentioned more than once in the listing.
         self.assertEqual(
             len(least_translated_targets) + len(most_translated_targets),
             len(set(least_translated_targets + most_translated_targets)))
