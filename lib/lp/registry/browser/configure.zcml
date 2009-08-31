@@ -488,13 +488,18 @@
         module="lp.registry.browser.distributionsourcepackage"
         classes="
             DistributionSourcePackageNavigation"/>
-    <browser:page
+    <browser:pages
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageView"
-        permission="zope.Public"
-        name="+index"
         facet="overview"
-        template="../templates/distributionsourcepackage-index.pt"/>
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/distributionsourcepackage-index.pt"/>
+        <browser:page
+            name="+changelog"
+            template="../templates/distributionsourcepackage-changelog.pt"/>
+    </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         permission="launchpad.Edit"
@@ -1592,7 +1597,6 @@
             ProductFacets
             ProductNavigationMenu
             ProductOverviewMenu
-            ProductSetContextMenu
             ProductSetFacets
             ProductSetNavigationMenu
             ProductSpecificationsMenu
@@ -2217,7 +2221,7 @@
     <browser:page
         name="+prober-logs"
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
-        class="lp.registry.browser.distributionmirror.DistributionMirrorView"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorProberLogView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/distributionmirror-prober-logs.pt">
