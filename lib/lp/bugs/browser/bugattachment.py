@@ -119,6 +119,9 @@ class BugAttachmentEditView(LaunchpadFormView):
             name=old_filealias.filename, size=len(old_content),
             file=StringIO(old_content), contentType=new_content_type)
 
-    def page_title(self):
+    @property
+    def label(self):
         return smartquote('Bug #%d - Edit attachment "%s"') % (
             self.context.bug.id, self.context.title)
+
+    page_title = label
