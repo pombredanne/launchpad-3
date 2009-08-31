@@ -3,10 +3,8 @@
 
 __metaclass__ = type
 
-import transaction
 from unittest import TestLoader
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.testing import TestCaseWithFactory
@@ -14,8 +12,6 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from lp.registry.model.karma import KarmaCategory
-from canonical.launchpad.interfaces import IKarmaCacheManager
 from lp.services.worlddata.model.language import LanguageSet
 from lp.translations.browser.person import PersonTranslationView
 from lp.translations.model.translator import TranslatorSet
