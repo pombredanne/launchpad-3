@@ -153,7 +153,7 @@ class SoyuzTestPublisher:
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
                      maintainer=None, creator=None, date_uploaded=UTC_NOW,
-                     do_upload=True):
+                     create_packageupload=True):
         """Return a mock source publishing record."""
         if sourcename is None:
             sourcename = self.default_package_name
@@ -195,7 +195,7 @@ class SoyuzTestPublisher:
             archive=archive, dateuploaded=date_uploaded)
 
         changes_file_name = "%s_%s_source.changes" % (sourcename, version)
-        if do_upload:
+        if create_packageupload:
             package_upload = self.addPackageUpload(
                 archive, distroseries, pocket,
                 changes_file_name=changes_file_name,
