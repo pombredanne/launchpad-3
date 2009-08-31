@@ -294,9 +294,10 @@ The FAQ keywords and content appears just below:
 The FAQ's original author and creation date appears in the the
 'Lifecycle' portlet:
 
-    >>> print extract_text(
-    ...     find_tag_by_id(owner_browser.contents, 'faq-details'))
-    Created by Sample Person on ...
+    >>> print extract_text(find_portlet(owner_browser.contents, 'Lifecycle'))
+    Lifecycle
+    Created by: Sample Person
+    When: ...
 
 A 'Related questions' portlet contains links to the question answered by
 the FAQ:
