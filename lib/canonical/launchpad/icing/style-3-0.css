@@ -708,15 +708,10 @@ form.translations div.alignment .spacer {
 form.translations div.alignment .content {
   display: inline-block;
   margin-left: 0px;
-  position: relative;
-  top: 0px;
 }
+
 form.translations div.alignment .content label {
   padding: 0px;
   margin: 0px;
   font-weight: bold;
-}
-
-form.translations .border {
-  border: 1px solid red;
 }
