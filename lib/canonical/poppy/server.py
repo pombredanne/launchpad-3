@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import asyncore
 import tempfile
 import logging
 import os
@@ -18,8 +19,6 @@ from zope.server.ftp.server import STORChannel as OriginalSTORChannel
 from zope.server.ftp import server as ftp
 from zope.server.taskthreads import ThreadedTaskDispatcher
 from zope.server.serverbase import ServerBase
-
-import ThreadedAsync
 
 from canonical.poppy.filesystem import UploadFileSystem
 
@@ -160,7 +159,7 @@ def run_server(host, port, ident, numthreads,
                     task_dispatcher=task_dispatcher)
     server.SERVER_IDENT = ident
     try:
-        ThreadedAsync.loop()
+        asyncore.loop()
     except KeyboardInterrupt:
         # Exit without spewing an exception.
         pass
