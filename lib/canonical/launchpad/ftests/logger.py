@@ -23,7 +23,15 @@ class MockLogger:
 
     def log(self, *args, **kwargs):
         # The standard logger takes a template string as the first argument.
-        print "log>", args[0] % args[1:]
+        log_line = args[0]
+
+        # Only attempt this if we have arguments.
+        # Otherwise logging messages with string formatting sequences
+        # will die.
+        if len(args) > 1:
+            log_line %= args[1:]
+
+        print "log> ", log_line
 
         if "exc_info" in kwargs:
             import sys
