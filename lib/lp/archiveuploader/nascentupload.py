@@ -504,12 +504,11 @@ class NascentUpload:
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
-        try:
-            verify_upload(
-                signer, source_name, archive, self.changes.dsc.component,
-                not self.is_new)
-        except CannotUploadToArchive, e:
-            self.reject(str(e))
+        rejection_reason = verify_upload(
+            signer, source_name, archive, self.changes.dsc.component,
+            not self.is_new)
+        if rejection_reason is not None:
+            self.reject(str(rejection_reason))
 
     #
     # Handling checking of versions and overrides

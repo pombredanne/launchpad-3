@@ -59,7 +59,9 @@ class TestPermission(TestCaseWithFactory):
                         strict_component=True):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
-        verify_upload(person, spn, archive, component, strict_component)
+        self.assertIs(
+            None,
+            verify_upload(person, spn, archive, component, strict_component))
 
     def assertCannotUpload(self, reason, person, spn, archive, component):
         """Assert that 'person' cannot upload to the archive.
@@ -72,9 +74,7 @@ class TestPermission(TestCaseWithFactory):
         :param archive: The `IArchive` being uploaded to.
         :param component: The IComponent to which the package belongs.
         """
-        exception = self.assertRaises(
-            CannotUploadToArchive, verify_upload, person, spn, archive,
-            component)
+        exception = verify_upload(person, spn, archive, component)
         self.assertEqual(reason, str(exception))
 
     def test_random_person_cannot_upload_to_ppa(self):

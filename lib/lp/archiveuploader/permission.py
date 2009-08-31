@@ -77,29 +77,29 @@ def verify_upload(person, sourcepackagename, archive, component,
     :param strict_component: True if access to the specific component for the
         package is needed to upload to it. If False, then access to any
         package will do.
-    :raise CannotUploadToArchive: If 'person' cannot upload to the archive.
-    :return: Nothing of interest.
+    :return: CannotUploadToArchive if 'person' cannot upload to the archive,
+        None otherwise.
     """
     # For PPAs...
     if archive.is_ppa:
         if not archive.canUpload(person):
-            raise CannotUploadToPPA()
+            return CannotUploadToPPA()
         else:
-            return True
+            return None
 
     # For any other archive...
     ap_set = getUtility(IArchivePermissionSet)
     if sourcepackagename is not None and (
         archive.canUpload(person, sourcepackagename)
         or ap_set.isSourceUploadAllowed(archive, sourcepackagename, person)):
-        return True
+        return None
 
     if not components_valid_for(archive, person):
-        raise NoRightsForArchive()
+        return NoRightsForArchive()
 
     if (component is not None
         and strict_component
         and not archive.canUpload(person, component)):
-        raise NoRightsForComponent(component)
+        return NoRightsForComponent(component)
 
-    return True
+    return None
