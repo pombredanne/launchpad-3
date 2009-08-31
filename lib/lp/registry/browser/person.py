@@ -20,7 +20,7 @@ __all__ = [
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
-    'PersonBreadcrumbBuilder',
+    'PersonBreadcrumb',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
@@ -69,7 +69,7 @@ __all__ = [
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
     'TeamAddMyTeamsView',
-    'TeamBreadcrumbBuilder',
+    'TeamBreadcrumb',
     'TeamEditLocationView',
     'TeamEditMenu',
     'TeamIndexMenu',
@@ -202,7 +202,7 @@ from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from lp.registry.browser.menu import (
@@ -221,7 +221,7 @@ from canonical.launchpad.webapp import (
     custom_widget, enabled_with_permission, stepthrough, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
@@ -462,7 +462,7 @@ class TeamNavigation(PersonNavigation):
             person, self.context)
 
 
-class TeamBreadcrumbBuilder(BreadcrumbBuilder):
+class TeamBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITeam`."""
     @property
     def text(self):
@@ -660,7 +660,7 @@ class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
         return Link('+adminteammerge', text, icon='edit')
 
 
-class PersonBreadcrumbBuilder(BreadcrumbBuilder):
+class PersonBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IPerson`."""
     @property
     def text(self):

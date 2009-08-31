@@ -114,9 +114,15 @@
     classes="QuestionCollectionAnswersMenu QuestionTargetAnswersMenu"
     />
   <browser:menus
-    module=".question"
-    classes="QuestionContextMenu QuestionSetContextMenu"
+    module="canonical.launchpad.browser"
+    classes="FAQContextMenu"
     />
+  <browser:menus
+    module="lp.answers.browser.question"
+    classes="
+        QuestionEditMenu
+        QuestionExtrasMenu
+        QuestionSetContextMenu" />
 
   <browser:defaultView
     for="lp.answers.interfaces.question.IQuestion"
@@ -134,10 +140,6 @@
     for="lp.answers.interfaces.question.IQuestion"
     permission="zope.Public"
     >
-    <browser:page
-      name="+history"
-      template="../templates/question-history.pt"
-      />
     <browser:page
       name="+portlet-reopenings"
       template="../templates/question-portlet-reopenings.pt"
@@ -169,6 +171,14 @@
     class=".question.QuestionWorkflowView"
     permission="zope.Public"
     template="../templates/question-index.pt"
+    />
+
+  <browser:page
+    name="+history"
+    for="lp.answers.interfaces.question.IQuestion"
+    class=".question.QuestionHistoryView"
+    permission="zope.Public"
+    template="../templates/question-history.pt"
     />
 
   <browser:page
@@ -330,11 +340,7 @@
     for="lp.answers.interfaces.faq.IFAQ"
     class=".faq.FAQEditView"
     permission="launchpad.Edit"
-    template="../templates/faq-edit.pt"
-    />
-  <browser:menus
-    module="canonical.launchpad.browser"
-    classes="FAQContextMenu"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:defaultView
