@@ -17,7 +17,7 @@ First, we need to feed the import queue.
   >>> file_ctrl = browser.getControl('File:')
   >>> file_ctrl.add_file(
   ...     tarball, 'application/x-gzip', 'test-autofilling.tar.gz')
-  >>> browser.getControl('Request Upload').click()
+  >>> browser.getControl('Upload').click()
   >>> browser.url
   'http://translations.launchpad.dev/alsa-utils/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(browser.contents, 'message'):

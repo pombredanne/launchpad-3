@@ -1600,7 +1600,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return distroseries.getSourcePackage(sourcepackagename)
 
     def getAnyPocket(self):
-        return PackagePublishingPocket.RELEASE
+        return PackagePublishingPocket.BACKPORTS
 
     def makeSuiteSourcePackage(self, distroseries=None,
                                sourcepackagename=None, pocket=None):
