@@ -859,10 +859,6 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
-pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
-
-pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
-
 pofile_filter = FilteredTranslationsTitle(
     smartquote('Translations by %(person)s in "%(title)s"'))
 
@@ -872,8 +868,6 @@ def pofile_translate(context, view):
     """Return the page to translate a template into a language."""
     return 'Translating %s into %s' % (
         context.potemplate.displayname, context.language.englishname)
-
-pofile_upload = ContextTitle(smartquote('Upload file for "%s"'))
 
 # portlet_* are portlets
 
@@ -902,10 +896,6 @@ poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
-
-potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
-
-potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -977,8 +967,6 @@ productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
 productseries_translations = ContextTitle('Translations overview for %s')
-
-productseries_translations_upload = 'Request new translations upload'
 
 productseries_translations_settings = 'Settings for translations'
 

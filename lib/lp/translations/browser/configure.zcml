@@ -391,7 +391,7 @@
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             permission="launchpad.Edit"
             template="../templates/potemplate-upload.pt"
-            class="lp.translations.browser.potemplate.POTemplateView"
+            class="lp.translations.browser.potemplate.POTemplateUploadView"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+edit"
