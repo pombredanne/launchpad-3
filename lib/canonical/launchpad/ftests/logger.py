@@ -25,17 +25,15 @@ class MockLogger:
     def getEffectiveLevel(self):
         return self.loglevel
 
-    def log(self, *args, **kwargs):
-        # The standard logger takes a template string as the first argument.
-        log_line = args[0]
+    def log(self, msg, *args, **kwargs):
+        # The standard logger takes a template string as the first
+        # argument, but we must only attempt to use it as one if we have
+        # arguments. Otherwise logging of messages with string formatting
+        # sequences will die.
+        if len(args) > 0:
+            msg %= args
 
-        # Only attempt this if we have arguments.
-        # Otherwise logging messages with string formatting sequences
-        # will die.
-        if len(args) > 1:
-            log_line %= args[1:]
-
-        self.outfile.write("log> %s\n" % log_line)
+        self.outfile.write("log> %s\n" % msg)
 
         if "exc_info" in kwargs:
             import sys
