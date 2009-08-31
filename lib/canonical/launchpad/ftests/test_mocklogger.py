@@ -69,5 +69,6 @@ class TestMockLogger(unittest.TestCase):
         self.logger.info('foobar')
         self.assertOutput('')
 
+
 def test_suite():
         return unittest.TestLoader().loadTestsFromName(__name__)
