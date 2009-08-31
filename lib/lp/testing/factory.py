@@ -1098,6 +1098,36 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner=self.makePerson(),
             product=product)
 
+    def makeQuestion(self, target=None, title=None):
+        """Create and return a new, arbitrary Question.
+
+        :param target: The IQuestionTarget to make the question on. If one is
+            not specified, an arbitrary product is created.
+        :param title: The question title. If one is not provided, an
+            arbitrary title is created.
+        """
+        if target is None:
+            target = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
+        return target.newQuestion(
+            owner=target.owner, title=title, description='description')
+
+    def makeFAQ(self, target=None, title=None):
+        """Create and return a new, arbitrary FAQ.
+
+        :param target: The IFAQTarget to make the FAQ on. If one is
+            not specified, an arbitrary product is created.
+        :param title: The FAQ title. If one is not provided, an
+            arbitrary title is created.
+        """
+        if target is None:
+            target = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
+        return target.newFAQ(
+            owner=target.owner, title=title, content='content')
+
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
                        git_repo_url=None):
