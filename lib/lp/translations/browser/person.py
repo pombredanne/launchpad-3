@@ -130,9 +130,8 @@ class PersonTranslationView(LaunchpadView):
 
     def __init__(self, *args, **kwargs):
         super(PersonTranslationView, self).__init__(*args, **kwargs)
-        if self.history_horizon is None:
-            now = datetime.now(pytz.timezone('UTC'))
-            self.history_horizon = now - timedelta(90, 0, 0)
+        now = datetime.now(pytz.timezone('UTC'))
+        self.history_horizon = now - timedelta(90, 0, 0)
 
     @cachedproperty
     def batchnav(self):
