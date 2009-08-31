@@ -305,11 +305,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
     def test_top_p_n_p_to_translate_lists_most_and_least_translated(self):
         # Of the maximum of 6 translations that the user has already
         # worked on, the first 3 will be the ones with the most
-        # untranslated strings and the last 3 will be the ones with the
-        # fewest.
-        # We create a whole bunch more POFiles because internally the
-        # property will fetch a lot more of them for each of the two
-        # categories.
+        # untranslated strings; the last 3 will have the fewest.
+        # We create a lot more POFiles because internally the property
+        # will fetch many POFiles.
         pofiles = self._makePOFiles(50, previously_worked_on=True)
         for number, pofile in enumerate(pofiles):
             self._addUntranslatedMessages(pofile, number + 1)
