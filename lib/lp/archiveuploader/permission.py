@@ -16,14 +16,17 @@ from zope.component import getUtility
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 
 
-class CannotUploadToArchive(Exception):
-    """Raised when a person cannot upload to archive."""
+class CannotUploadToArchive:
+    """A reason for not being able to upload to an archive."""
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
     def __init__(self, **args):
         """Construct a `CannotUploadToArchive`."""
-        Exception.__init__(self, self._fmt % args)
+        self._message = self._fmt % args
+
+    def __str__(self):
+        return self._message
 
 
 class CannotUploadToPPA(CannotUploadToArchive):
@@ -49,7 +52,7 @@ class NoRightsForComponent(CannotUploadToArchive):
         "Signer is not permitted to upload to the component '%(component)s'.")
 
     def __init__(self, component):
-        CannotUploadToArchive.__init__(self, component=component.name)
+        super(NoRightsForComponent, self).__init__(component=component.name)
 
 
 def components_valid_for(archive, person):
