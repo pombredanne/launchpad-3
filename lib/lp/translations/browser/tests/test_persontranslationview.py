@@ -3,8 +3,10 @@
 
 __metaclass__ = type
 
+import transaction
 from unittest import TestLoader
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.testing import TestCaseWithFactory
@@ -12,6 +14,8 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.registry.model.karma import KarmaCategory
+from canonical.launchpad.interfaces import IKarmaCacheManager
 from lp.services.worlddata.model.language import LanguageSet
 from lp.translations.browser.person import PersonTranslationView
 from lp.translations.model.translator import TranslatorSet
@@ -22,21 +26,41 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-
     def setUp(self):
         super(TestPersonTranslationView, self).setUp()
         person = removeSecurityProxy(self.factory.makePerson())
         self.view = PersonTranslationView(person, LaunchpadTestRequest())
         self.translationgroup = None
+        self.dutch = LanguageSet().getLanguageByCode('nl')
+        self.view.context.addLanguage(self.dutch)
 
     def _makeReviewer(self):
         """Set up the person we're looking at as a Dutch reviewer."""
         owner = self.factory.makePerson()
         self.translationgroup = self.factory.makeTranslationGroup(owner=owner)
-        dutch = LanguageSet().getLanguageByCode('nl')
         TranslatorSet().new(
-            translationgroup=self.translationgroup, language=dutch,
+            translationgroup=self.translationgroup, language=self.dutch,
             translator=self.view.context)
+
+    def _makeTranslator(self):
+        """Qualify the current user as a translator."""
+        # This involves manipulating the karma cache, which in turn
+        # involves switching into another DB user.
+        transaction.commit()
+        self.layer.switchDbUser('karma')
+        try:
+            karma_category = KarmaCategory.byName('translations')
+            cache_manager = getUtility(IKarmaCacheManager)
+            cache_manager.new(1, self.view.context.id, karma_category.id)
+            transaction.commit()
+        finally:
+            try:
+                self.layer.switchDbUser('launchpad')
+            except:
+                # We have have gotten to this "finally" clause because
+                # of an exception that could reasonably break the switch
+                # back to launchpad, so ignore a failure there.
+                pass
 
     def _makePOFiles(self, count, previously_worked_on):
         """Create `count` `POFile`s that the view's person can review.
@@ -48,9 +72,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
         pofiles = []
         for counter in xrange(count):
             pofile = self.factory.makePOFile(language_code='nl')
-            product = pofile.potemplate.productseries.product
 
             if self.translationgroup:
+                product = pofile.potemplate.productseries.product
                 product.translationgroup = self.translationgroup
 
             if previously_worked_on:
@@ -201,6 +225,16 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertEqual(10, len(targets))
         self.assertEqual(10, len(set(item['link'] for item in targets)))
 
+    def test_person_is_translator_false(self):
+        # By default, a user is not a translator.
+        self.assertFalse(self.view.person_is_translator)
+
+    def test_person_is_translator_true(self):
+        # A user becomes listed as a translator by gaining translations
+        # karma.
+        self._makeTranslator()
+        self.assertTrue(self.view.person_is_translator)
+
     def test_getTargetsForTranslation(self):
         # If there's nothing to translate, _getTargetsForTranslation
         # returns nothing.
@@ -224,7 +258,6 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # The max_fetch parameter limits how many POFiles are considered
         # by _getTargetsForTranslation.  This lets you get the target(s)
         # with the most untranslated messages.
-
         pofiles = self._makePOFiles(3, previously_worked_on=True)
         urgent_pofile = pofiles[2]
         medium_pofile = pofiles[1]
@@ -247,12 +280,26 @@ class TestPersonTranslationView(TestCaseWithFactory):
             nonurgent_pofile.potemplate.productseries.product,
             descriptions[0]['target'])
 
+    def test_suggestTargetsForTranslation(self):
+        previous_contrib = self._makePOFiles(1, previously_worked_on=True)
+        pofile = self._makePOFiles(1, previously_worked_on=False)[0]
+        self._addUntranslatedMessages(pofile, 1)
+
+        descriptions = self.view._suggestTargetsForTranslation()
+
+        self.assertEqual(1, len(descriptions))
+        self.assertEqual(
+            pofile.potemplate.productseries.product,
+            descriptions[0]['target'])
+
     def test_top_projects_and_packages_to_translate(self):
         # top_projects_and_packages_to_translate lists targets that the
         # user has worked on and could help translate, followed by
         # randomly suggested ones that also need translation.
         worked_on = self._makePOFiles(1, previously_worked_on=True)[0]
+        self._addUntranslatedMessages(worked_on, 1)
         not_worked_on = self._makePOFiles(1, previously_worked_on=False)[0]
+        self._addUntranslatedMessages(not_worked_on, 1)
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
@@ -268,6 +315,8 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # top_projects_and_packages_to_translate shows no more than 6
         # targets that the user has already worked on.
         pofiles = self._makePOFiles(7, previously_worked_on=True)
+        for pofile in pofiles:
+            self._addUntranslatedMessages(pofile, 1)
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
@@ -278,22 +327,52 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # worked on, the first 3 will be the ones with the most
         # untranslated strings and the last 3 will be the ones with the
         # fewest.
-        pofiles = self._makePOFiles(7, previously_worked_on=True)
+        # We create a whole bunch more POFiles because internally the
+        # property will fetch a lot more of them for each of the two
+        # categories.
+        pofiles = self._makePOFiles(50, previously_worked_on=True)
         for number, pofile in enumerate(pofiles):
-            self._addUntranslatedStrings(pofile, number + 1)
-        products = [
-            pofile.potemplate.productseries.product for pofile in pofiles]
+            self._addUntranslatedMessages(pofile, number + 1)
+
+        # We happen to know that no more than 15 POFiles are fetched for
+        # each of the two categories, so the top 3 targets must be taken
+        # from the last 15 pofiles and the next 3 must be taken from the
+        # first 15 pofiles.
+        least_translated_products = set([
+            pofile.potemplate.productseries.product
+            for pofile in pofiles[15:]
+            ])
+        most_translated_products = set([
+            pofile.potemplate.productseries.product
+            for pofile in pofiles[:15]
+            ])
 
         descriptions = self.view.top_projects_and_packages_to_translate
-        targets = [item['target'] for item in descriptions]
 
-        self.assertContentEqual(products[:3], targets[:3])
-        self.assertContentEqual(products[-3:], targets[-3:])
+        self.assertEqual(6, len(descriptions))
+        least_translated_targets = [
+            item['target'] for item in descriptions[:3]]
+        most_translated_targets = [
+            item['target'] for item in descriptions[3:]]
+
+        for target in least_translated_targets:
+            self.assertTrue(target in least_translated_products)
+
+        for target in most_translated_targets:
+            self.assertTrue(target in most_translated_products)
+
+        # A target is not mentioned twice in the listing.
+        self.assertEqual(
+            len(least_translated_targets) + len(most_translated_targets),
+            len(set(least_translated_targets + most_translated_targets)))
 
     def test_top_p_n_p_to_translate_caps_total(self):
         # The list never shows more than 10 entries.
         for previously_worked_on in (True, False):
-            self._makePOFiles(11, previously_worked_on=previously_worked_on)
+            pofiles = self._makePOFiles(
+                11, previously_worked_on=previously_worked_on)
+            for pofile in pofiles:
+                self._addUntranslatedMessages(pofile, 1)
 
         descriptions = self.view.top_projects_and_packages_to_translate
         self.assertEqual(10, len(descriptions))
