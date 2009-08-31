@@ -126,8 +126,6 @@ class PersonTranslationView(LaunchpadView):
 
     _pofiletranslator_cache = None
 
-    history_horizon = None
-
     def __init__(self, *args, **kwargs):
         super(PersonTranslationView, self).__init__(*args, **kwargs)
         now = datetime.now(pytz.timezone('UTC'))
