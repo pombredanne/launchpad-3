@@ -60,7 +60,7 @@ class DistributionLanguagePackAdminView(LaunchpadEditFormView):
 
     @property
     def next_url(self):
-        return self.cancel_url
+        return canonical_url(self.context)
 
     @property
     def page_title(self):

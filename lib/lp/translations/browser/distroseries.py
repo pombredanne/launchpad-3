@@ -44,7 +44,7 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
 
     @property
     def next_url(self):
-        return self.cancel_url
+        return canonical_url(self.context)
 
     @property
     def label(self):
@@ -55,7 +55,7 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
         return "Change translation settings for %s %s" % (
             self.context.distribution.displayname,
             self.context.displayname)
-    
+
 
     @action("Change")
     def change_action(self, action, data):
