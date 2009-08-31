@@ -771,7 +771,7 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.translations.browser.product.ProductChangeTranslatorsView"
         permission="launchpad.Edit"
-        template="../templates/product-translators.pt"
+        template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
@@ -815,14 +815,12 @@
         for="lp.registry.interfaces.project.IProject"
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
-    <browser:editform
+    <browser:page
         name="+changetranslators"
         for="lp.registry.interfaces.project.IProject"
-        schema="lp.registry.interfaces.project.IProject"
-        fields="translationgroup translationpermission"
+        class="lp.translations.browser.project.ProjectChangeTranslatorsView"
         permission="launchpad.Edit"
-        label="Select a new translation group"
-        template="../templates/project-translators.pt"
+        template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 <!-- Distribution -->
