@@ -1372,8 +1372,10 @@ class PeopleSearchView(LaunchpadView):
 class PersonAddView(LaunchpadFormView):
     """The page where users can create new Launchpad profiles."""
 
-    label = "Create a new Launchpad profile"
+    page_title = "Create a new Launchpad profile"
+    label = page_title
     schema = INewPerson
+
     custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
 
     @action(_("Create Profile"), name="create")
