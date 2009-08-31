@@ -89,6 +89,7 @@ from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -243,6 +244,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person
+
+    def makeGPGKey(self, owner):
+        """Give 'owner' a crappy GPG key for the purposes of testing."""
+        return getUtility(IGPGKeySet).new(
+            owner.id,
+            keyid='DEADBEEF',
+            fingerprint='A' * 40,
+            keysize=self.factory.getUniqueInteger(),
+            algorithm=GPGKeyAlgorithm.R,
+            active=True,
+            can_encrypt=False)
 
     def _stuff_preferredemail_cache(self, person):
         """Stuff the preferredemail cache.

@@ -14,7 +14,6 @@ from canonical.testing import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
     CannotUploadToArchive, components_valid_for, verify_upload)
-from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import TestCaseWithFactory
@@ -61,17 +60,6 @@ class TestPermission(TestCaseWithFactory):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
         verify_upload(person, spn, archive, component, strict_component)
-
-    def makeGPGKey(self, owner):
-        """Give 'owner' a crappy GPG key for the purposes of testing."""
-        return getUtility(IGPGKeySet).new(
-            owner.id,
-            keyid='DEADBEEF',
-            fingerprint='A' * 40,
-            keysize=self.factory.getUniqueInteger(),
-            algorithm=GPGKeyAlgorithm.R,
-            active=True,
-            can_encrypt=False)
 
     def test_random_person_cannot_upload_to_ppa(self):
         # Arbitrary people cannot upload to a PPA.
