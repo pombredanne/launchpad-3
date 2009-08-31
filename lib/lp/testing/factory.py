@@ -1079,13 +1079,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None, title=None):
+    def makeSpecification(self, product=None, title=None, distribution=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
             not specified, an arbitrary product is created.
         """
-        if product is None:
+        if distribution is None and product is None:
             product = self.makeProduct()
         if title is None:
             title = self.getUniqueString('title')
@@ -1096,7 +1096,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary=self.getUniqueString('summary'),
             definition_status=SpecificationDefinitionStatus.NEW,
             owner=self.makePerson(),
-            product=product)
+            product=product,
+            distribution=distribution)
 
     def makeQuestion(self, target=None, title=None):
         """Create and return a new, arbitrary Question.
