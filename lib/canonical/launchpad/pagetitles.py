@@ -715,9 +715,6 @@ notification_test = 'Notification test'
 
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
-object_branding = ContextDisplayName('Change the images used to represent '
-    '%s in Launchpad')
-
 def object_driver(context, view):
     """Return the page title to change the driver."""
     return view.page_title
@@ -725,8 +722,6 @@ def object_driver(context, view):
 object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 # object_pots is a fragment.
-
-object_reassignment = ContextTitle('Reassign %s')
 
 object_translations = ContextDisplayName('Translation templates for %s')
 
@@ -806,14 +801,9 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editlanguages = ContextDisplayName(
-    smartquote("%s's preferred languages"))
-
 person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
 
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
 
 person_editircnicknames = ContextDisplayName(smartquote("%s's IRC nicknames"))
 
@@ -992,8 +982,6 @@ products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
 
-productseries_export = ContextTitle('Download translations for "%s"')
-
 productseries_link_translations_branch = ContextTitle(
     "Set translations export branch for %s")
 
@@ -1132,8 +1120,6 @@ sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
 
-sourcepackage_export = ContextTitle('Download translations for %s')
-
 def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""
     return '%s source packages' % context.distroseries.title
@@ -1251,10 +1237,6 @@ standardshipitrequest_edit = 'Edit standard option'
 team_addmember = ContextBrowsername('Add members to %s')
 
 team_add_my_teams = 'Propose/add one of your teams to another one'
-
-team_contactaddress = ContextDisplayName('%s contact address')
-
-team_edit = 'Edit team information'
 
 team_editproposed = ContextBrowsername('Proposed members of %s')
 
