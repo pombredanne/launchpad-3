@@ -199,7 +199,7 @@ from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from lp.registry.browser.menu import (
@@ -689,13 +689,6 @@ class PersonFacets(StandardLaunchpadFacets):
             'Feature specifications that %s is involved with' %
             self.context.displayname)
         return Link('', text, summary)
-
-    def bounties(self):
-        text = 'Bounties'
-        browsername = self.context.displayname
-        summary = (
-            'Bounty offers that %s is involved with' % browsername)
-        return Link('+bounties', text, summary)
 
     def branches(self):
         text = 'Code'
@@ -2706,12 +2699,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
-
-    def no_bounties(self):
-        return not (self.context.ownedBounties or
-            self.context.reviewerBounties or
-            self.context.subscribedBounties or
-            self.context.claimedBounties)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""

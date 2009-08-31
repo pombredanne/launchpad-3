@@ -10,11 +10,9 @@ __all__ = [
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
-    'ProductBountiesMenu',
     'ProductBrandingView',
     'ProductBreadcrumb',
     'ProductBugsMenu',
-    'ProductChangeTranslatorsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditNavigationMenu',
@@ -76,7 +74,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -273,12 +271,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
         return Link('', text, summary)
-
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'Bounties related to %s' % self.context.displayname
-        return Link(target, text, summary)
 
     def branches(self):
         text = 'Code'
@@ -514,21 +506,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
         text = 'Register a blueprint'
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
-
-
-class ProductBountiesMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
 
 
 def _sort_distros(a, b):

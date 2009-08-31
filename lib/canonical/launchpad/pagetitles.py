@@ -158,18 +158,6 @@ def binarypackagerelease_index(context, view):
 
 binarypackagenames_index = 'Binary package name set'
 
-bounties_index = 'Bounties registered in Launchpad'
-
-bounty_add = 'Register a bounty'
-
-bounty_edit = ContextTitle(smartquote('Edit bounty "%s"'))
-
-bounty_link = ContextTitle('Link a bounty to %s')
-
-bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
-
-bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
-
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_index = ContextDisplayName(smartquote(
@@ -408,9 +396,6 @@ distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
-distribution_language_pack_admin = ContextTitle(
-    'Change the language pack administrator for %s')
-
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_mirrors = ContextTitle("Mirrors of %s")
@@ -471,9 +456,6 @@ distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
 distroseries_search = ContextDisplayName('Search packages in %s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
-
-distroseries_translationsadmin = ContextTitle(
-    'Admin translation options for %s')
 
 distroseries_builds = ContextTitle('%s builds')
 
@@ -715,9 +697,6 @@ notification_test = 'Notification test'
 
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
-object_branding = ContextDisplayName('Change the images used to represent '
-    '%s in Launchpad')
-
 def object_driver(context, view):
     """Return the page title to change the driver."""
     return view.page_title
@@ -725,8 +704,6 @@ def object_driver(context, view):
 object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 # object_pots is a fragment.
-
-object_reassignment = ContextTitle('Reassign %s')
 
 object_translations = ContextDisplayName('Translation templates for %s')
 
@@ -789,8 +766,6 @@ person_archive_subscriptions = 'Private PPA access'
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
-person_bounties = ContextDisplayName('Bounties for %s')
-
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
@@ -806,14 +781,9 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editlanguages = ContextDisplayName(
-    smartquote("%s's preferred languages"))
-
 person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
 
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
 
 person_editircnicknames = ContextDisplayName(smartquote("%s's IRC nicknames"))
 
@@ -883,10 +853,6 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
-pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
-
-pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
-
 pofile_filter = FilteredTranslationsTitle(
     smartquote('Translations by %(person)s in "%(title)s"'))
 
@@ -896,8 +862,6 @@ def pofile_translate(context, view):
     """Return the page to translate a template into a language."""
     return 'Translating %s into %s' % (
         context.potemplate.displayname, context.language.englishname)
-
-pofile_upload = ContextTitle(smartquote('Upload file for "%s"'))
 
 # portlet_* are portlets
 
@@ -921,15 +885,7 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-# potemplate_chart is a fragment
-
-potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
-
 potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
-
-potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
-
-potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -992,19 +948,12 @@ products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
 
-productseries_export = ContextTitle('Download translations for "%s"')
-
-productseries_link_translations_branch = ContextTitle(
-    "Set translations export branch for %s")
-
 productseries_index = ContextTitle('%s')
 
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
 productseries_translations = ContextTitle('Translations overview for %s')
-
-productseries_translations_upload = 'Request new translations upload'
 
 productseries_translations_settings = 'Settings for translations'
 
@@ -1049,8 +998,6 @@ def reference_index(context, view):
 registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Project and group registration in Launchpad'
-
-related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
 
@@ -1131,8 +1078,6 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
-
-sourcepackage_export = ContextTitle('Download translations for %s')
 
 def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""
@@ -1251,10 +1196,6 @@ standardshipitrequest_edit = 'Edit standard option'
 team_addmember = ContextBrowsername('Add members to %s')
 
 team_add_my_teams = 'Propose/add one of your teams to another one'
-
-team_contactaddress = ContextDisplayName('%s contact address')
-
-team_edit = 'Edit team information'
 
 team_editproposed = ContextBrowsername('Proposed members of %s')
 
