@@ -767,10 +767,6 @@ def people_list(context, view):
 
 people_mergerequest_sent = 'Merge request sent'
 
-people_newperson = 'Create a new Launchpad profile'
-
-people_newteam = 'Register a new team in Launchpad'
-
 people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
