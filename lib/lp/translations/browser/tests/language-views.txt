@@ -10,25 +10,25 @@ Admin Language
 
     >>> language_set = getUtility(ILanguageSet)
     >>> language = language_set.getLanguageByCode('pt_BR')
-    >>> language_view = create_view(
+    >>> language_admin_view = create_view(
     ...     language, '+admin', layer=TranslationsLayer)
-    >>> language_view.initialize()
+    >>> language_admin_view.initialize()
 
 The language +admin view provides a label and a page_title for the page.
 
-    >>> print language_view.label
+    >>> print language_admin_view.label
     Edit Portuguese (Brazil) in Launchpad
 
-    >>> print language_view.page_title
+    >>> print language_admin_view.page_title
     Edit Portuguese (Brazil) (pt_BR)
 
 The view provides also a cancel_url and a next_url, but they're the same because
 the previous and next steps of editing a language are returning to its index.
 
-    >>> print language_view.cancel_url
+    >>> print language_admin_view.cancel_url
     http://translations.launchpad.dev/+languages/pt_BR
 
-    >>> print language_view.next_url
+    >>> print language_admin_view.next_url
     http://translations.launchpad.dev/+languages/pt_BR
 
 
@@ -72,5 +72,4 @@ The view provides also a cancel_url and a next_url:
 
     >>> print language_add_view.next_url
     http://translations.launchpad.dev/+languages/lp_US
-
 

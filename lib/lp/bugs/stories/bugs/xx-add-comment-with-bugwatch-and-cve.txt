@@ -11,7 +11,7 @@ added to the bugwatches resp CVEs related to this bug
   ...        described here http://some.bugzilla/show_bug.cgi?id=9876
   ...        See also CVE-1991-9911
   ...     ''')
-  >>> user_browser.getControl('Post comment', index=-1).click()
+  >>> user_browser.getControl('Post Comment', index=-1).click()
 
   >>> user_browser.url
   'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
@@ -40,7 +40,7 @@ url of a remote bug.
   ...     u'\xabhttps://answers.launchpad.net/ubuntu\xbb is not a linked bug '
   ...     u'but https://bugzilla.example.org/show_bug.cgi?id=1235555 '
   ...     u'is.'.encode('utf-8'))
-  >>> user_browser.getControl('Post comment', index=-1).click()
+  >>> user_browser.getControl('Post Comment', index=-1).click()
   >>> user_browser.url
   'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 

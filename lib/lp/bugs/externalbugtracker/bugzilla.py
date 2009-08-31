@@ -375,7 +375,7 @@ def needs_authentication(func):
 class BugzillaAPI(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -558,7 +558,10 @@ class BugzillaAPI(Bugzilla):
 
         # Store the bugs we've imported and return only their IDs.
         self._storeBugs(remote_bugs)
-        bug_ids = [remote_bug['id'] for remote_bug in remote_bugs]
+
+        # Marshal the bug IDs into strings before returning them since
+        # the remote Bugzilla may return ints rather than strings.
+        bug_ids = [str(remote_bug['id']) for remote_bug in remote_bugs]
 
         return bug_ids
 
@@ -679,6 +682,24 @@ class BugzillaAPI(Bugzilla):
             datecreated=comment_datetime)
 
         return message
+
+    @needs_authentication
+    def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
+        """Add a comment to the remote bugtracker.
+
+        See `ISupportsCommentPushing`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
+        request_params = {
+            'id': actual_bug_id,
+            'comment': comment_body,
+            }
+        return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
+
+        # We cast the return value to string, since that's what
+        # BugWatchUpdater will expect (see bug 248938).
+        return str(return_dict['id'])
 
 
 class BugzillaLPPlugin(BugzillaAPI):

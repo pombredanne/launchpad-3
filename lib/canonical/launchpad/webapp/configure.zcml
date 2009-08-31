@@ -702,11 +702,14 @@
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
 
-    <!-- the SIGUSR1 handler -->
-
+    <!-- Signal handlers -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
+        />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigusr2.setup_sigusr2"
         />
 
     <!-- Confirm the database is the correct revision level -->
