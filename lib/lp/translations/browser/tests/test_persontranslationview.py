@@ -166,7 +166,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertEqual(
             set(expected_links), set(item['link'] for item in targets))
 
-    def test_top_projects_and_packages_caps_existing_involvement(self):
+    def test_top_p_n_p_to_review_caps_existing_involvement(self):
         # top_projects_and_packages will return at most 9 POFiles that
         # the person has already worked on.
         self._makeReviewer()
@@ -177,7 +177,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertEqual(9, len(targets))
         self.assertEqual(9, len(set(item['link'] for item in targets)))
 
-    def test_top_projects_and_packages_caps_suggestions(self):
+    def test_top_p_n_p_to_review_caps_suggestions(self):
         # top_projects_and_packages will suggest at most 10 POFiles that
         # the person has not worked on.
         self._makeReviewer()
@@ -188,7 +188,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertEqual(10, len(targets))
         self.assertEqual(10, len(set(item['link'] for item in targets)))
 
-    def test_top_projects_and_packages_caps_total(self):
+    def test_top_p_n_p_to_review_caps_total(self):
         # top_projects_and_packages will show at most 10 POFiles
         # overall.  The last one will be a suggestion.
         self._makeReviewer()
@@ -247,6 +247,56 @@ class TestPersonTranslationView(TestCaseWithFactory):
             nonurgent_pofile.potemplate.productseries.product,
             descriptions[0]['target'])
 
+    def test_top_projects_and_packages_to_translate(self):
+        # top_projects_and_packages_to_translate lists targets that the
+        # user has worked on and could help translate, followed by
+        # randomly suggested ones that also need translation.
+        worked_on = self._makePOFiles(1, previously_worked_on=True)[0]
+        not_worked_on = self._makePOFiles(1, previously_worked_on=False)[0]
+
+        descriptions = self.view.top_projects_and_packages_to_translate
+
+        self.assertEqual(2, len(descriptions))
+        self.assertEqual(
+            worked_on.potemplate.productseries.product,
+            descriptions[0]['target'])
+        self.assertEqual(
+            not_worked_on.potemplate.productseries.product,
+            descriptions[1]['target'])
+
+    def test_top_p_n_p_to_translate_caps_existing_involvement(self):
+        # top_projects_and_packages_to_translate shows no more than 6
+        # targets that the user has already worked on.
+        pofiles = self._makePOFiles(7, previously_worked_on=True)
+
+        descriptions = self.view.top_projects_and_packages_to_translate
+
+        self.assertEqual(6, len(descriptions))
+
+    def test_top_p_n_p_to_translate_lists_most_and_least_translated(self):
+        # Of the maximum of 6 translations that the user has already
+        # worked on, the first 3 will be the ones with the most
+        # untranslated strings and the last 3 will be the ones with the
+        # fewest.
+        pofiles = self._makePOFiles(7, previously_worked_on=True)
+        for number, pofile in enumerate(pofiles):
+            self._addUntranslatedStrings(pofile, number + 1)
+        products = [
+            pofile.potemplate.productseries.product for pofile in pofiles]
+
+        descriptions = self.view.top_projects_and_packages_to_translate
+        targets = [item['target'] for item in descriptions]
+
+        self.assertContentEqual(products[:3], targets[:3])
+        self.assertContentEqual(products[-3:], targets[-3:])
+
+    def test_top_p_n_p_to_translate_caps_total(self):
+        # The list never shows more than 10 entries.
+        for previously_worked_on in (True, False):
+            self._makePOFiles(11, previously_worked_on=previously_worked_on)
+
+        descriptions = self.view.top_projects_and_packages_to_translate
+        self.assertEqual(10, len(descriptions))
 
 
 def test_suite():
