@@ -114,6 +114,10 @@ class ProductSeriesTranslationsExportView(BaseExportView):
             self.context.name)
 
     @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
     def page_title(self):
         return "Download translations for %s" % self.download_description
 
@@ -163,6 +167,10 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         """See `LaunchpadFormView`."""
         self.form = self.request.form
         self.processForm()
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     @property
     def page_title(self):

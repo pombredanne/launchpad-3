@@ -286,6 +286,10 @@ class POFileUploadView(POFileView):
         self.process_form()
 
     @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
     def page_title(self):
         return "Upload %s translation for %s" % (
             self.context.language.englishname,
@@ -665,8 +669,11 @@ class POExportView(BaseExportView):
         return self.context.potemplate.source_file_format
 
     @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
     def page_title(self):
         return "Download %s translation of %s" % (
             self.context.language.englishname,
             self.context.potemplate.displayname)
-    

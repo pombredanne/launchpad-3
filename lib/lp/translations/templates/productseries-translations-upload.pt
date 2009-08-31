@@ -35,16 +35,17 @@
     >Read the translations import policy</a>)
   </p>
 
-  <form action="+translations-upload" method="post" 
-	enctype="multipart/form-data" class="translations">
+  <form action="+translations-upload" method="post"
+        enctype="multipart/form-data" class="translations">
     <div class="fields">
       <label for="file_input">File:</label>
       <input id="file_input" name="file" type="file" />
     </div>
     <div class="actions">
       <p>
-	<input name="translations_upload" type="submit"
+        <input name="translations_upload" type="submit"
                value="Upload"/>
+        or <a tal:attributes="href view/cancel_url">Cancel</a>
       </p>
     </div>
   </form>

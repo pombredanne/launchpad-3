@@ -18,7 +18,7 @@
     </h1>
 
     <form action="+upload" method="POST" enctype="multipart/form-data"
-	  class="translations">
+          class="translations">
       <h2>Choose a file to upload</h2>
       <div class="fields">
         <input id="file_input" name="file" type="file" />
@@ -27,48 +27,51 @@
 
       <h2>What kind of upload is this?</h2>
       <div class="fields">
-	<div class="alignment">
-	  <div class="top-alignment">
+        <div class="alignment">
+          <div class="top-alignment">
             <input id="user_type" name="upload_type" type="radio"
-		   value="user" checked="checked" />
-	  </div>
-	  <!-- Preserve space for the input box -->
-	  <input type="radio" class="spacer" />
+                   value="user" checked="checked" />
+          </div>
+          <!-- Preserve space for the input box -->
+          <input type="radio" class="spacer" />
 
-	  <span class="content">
+          <span class="content">
             <label for="user_type">
-	      Updated translation
-	    </label>
+              Updated translation
+            </label>
             <div class="discreet">
-	      You have exported a PO file from Launchpad, worked on it off-line,
-	      and now you want to contribute your updates back.
+              You have exported a PO file from Launchpad, worked on it off-line,
+              and now you want to contribute your updates back.
             </div>
-	  </span>
-	</div>
+          </span>
+        </div>
 
-	<div class="alignment">
-	  <div class="top-alignment">
+        <div class="alignment">
+          <div class="top-alignment">
             <input id="upstream_type" name="upload_type" type="radio"
-		   value="upstream" />
-	  </div>
-	  <!-- Preserve space for the input box -->
-	  <input type="radio" class="spacer" />
+                   value="upstream" />
+          </div>
+          <!-- Preserve space for the input box -->
+          <input type="radio" class="spacer" />
 
-	  <span class="content">
+          <span class="content">
             <label for="upstream_type">
-	      Imported translation
-	    </label>
+              Imported translation
+            </label>
             <div class="discreet">
-	      You want to upload a more recent translation from upstream
-	      release or from a source package.
+              You want to upload a more recent translation from upstream
+              release or from a source package.
             </div>
-	  </span>
-	</div>
+          </span>
+        </div>
 
       </div>
 
       <div class="actions">
-        <p><input name="pofile_upload" type="submit" value="Upload" /></p>
+        <p>
+          <input name="pofile_upload" type="submit" value="Upload" />
+          or <a tal:attributes="href view/cancel_url">Cancel</a>
+        </p>
       </div>
     </form>
   </div>

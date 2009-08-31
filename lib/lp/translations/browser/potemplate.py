@@ -266,8 +266,13 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             pofile = pofileset.getDummy(self.context, language)
         return pofile
 
+
 class POTemplateUploadView(LaunchpadView, TranslationsMixin):
     """Upload translations and updated template."""
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     @property
     def page_title(self):
@@ -277,10 +282,9 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
     def initialize(self):
         """Get the requested languages and submit the form."""
         self.submitForm()
-    
+
     def submitForm(self):
-        """Called from the page template to do any processing needed if a form
-        was submitted with the request."""
+        """Process any uploaded files."""
 
         if self.request.method == 'POST':
             if 'UPLOAD' in self.request.form:
@@ -475,12 +479,16 @@ class POTemplateAdminView(POTemplateEditView):
 
 
 class POTemplateExportView(BaseExportView):
-    """Request downloads of POTemplate and its translations."""
+    """Request downloads of a `POTemplate` and its translations."""
 
     @property
     def page_title(self):
         return "Download translations of %s" % (self.context.displayname)
-        
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
     def processForm(self):
         """Process a form submission requesting a translation export."""
         what = self.request.form.get('what')

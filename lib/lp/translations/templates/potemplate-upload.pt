@@ -21,13 +21,16 @@
   </p>
 
   <form action="+upload" method="POST" enctype="multipart/form-data"
-	class="translations">
+        class="translations">
     <div class="fields">
       <label for="file_input">File:</label>
       <input id="file_input" name="file" type="file" />
     </div>
     <div class="actions">
-      <p><input name="UPLOAD" type="submit" value="Upload"/></p>
+      <p>
+        <input name="UPLOAD" type="submit" value="Upload"/>
+        or <a tal:attributes="href view/cancel_url">Cancel</a>
+      </p>
     </div>
   </form>
 </div>

@@ -44,6 +44,7 @@
       <div class="actions">
         <p>
          <input type="submit" value="Request Download" />
+         or <a tal:attributes="href view/cancel_url">Cancel</a>
         </p>
       </div>
     </form>

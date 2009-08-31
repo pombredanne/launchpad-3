@@ -39,50 +39,51 @@
     <div metal:fill-slot="main">
       <h1>Download translation</h1>
       <div class="main-portlet">
-	<p>
-	  Choose the format you want to export 
-	  <tal:language replace="context/language/englishname">
-	    Serbian
-	  </tal:language> translations as.  PO format is an editable
-	  format which allows you to upload translations back to
-	  Launchpad after you have updated them.
-	</p>
-	<form action="" method="post" class="translations">
-	  <div class="fields">
+        <p>
+          Choose the format you want to export
+          <tal:language replace="context/language/englishname">
+            Serbian
+          </tal:language> translations as.  PO format is an editable
+          format which allows you to upload translations back to
+          Launchpad after you have updated them.
+        </p>
+        <form action="" method="post" class="translations">
+          <div class="fields">
             <div id="div_format">
               <label for="sel_format">Format:</label>
               <select name="format" id="sel_format">
-		<option
-		   tal:repeat="format view/formats"
-		   tal:content="format/title"
-		   tal:attributes="
-				   value format/value;
-				   selected format/is_default"
-		   >PO format</option>
+                <option
+                   tal:repeat="format view/formats"
+                   tal:content="format/title"
+                   tal:attributes="
+                                   value format/value;
+                                   selected format/is_default"
+                   >PO format</option>
               </select>
             </div>
             <div id="div_pochanged" style="margin-top: 10px">
               <input type="checkbox" name="pochanged" id="cb_pochanged"
                      value="POCHANGED" />
               <label for="cb_pochanged">
-		<span><noscript><em>PO format only:</em></noscript>
-		  Only strings that differ from imported versions
-		  (<a href="https://help.launchpad.net/Translations/PartialPOExport"
+                <span><noscript><em>PO format only:</em></noscript>
+                  Only strings that differ from imported versions
+                  (<a href="https://help.launchpad.net/Translations/PartialPOExport"
                       target="_blank">What's this?</a>).</span>
               </label>
             </div>
-	  </div>
+          </div>
           <p>
             Once the file is ready for download, Launchpad will e-mail
             <code tal:content="view/user/preferredemail/email">user@domain</code>
             with a link to the file.
           </p>
           <div class="actions">
-	    <p>
+            <p>
               <input type="submit" value="Request Download" />
-	    </p>
+              or <a tal:attributes="href view/cancel_url">Cancel</a>
+            </p>
           </div>
-	</form>
+        </form>
       </div>
     </div>
   </body>
