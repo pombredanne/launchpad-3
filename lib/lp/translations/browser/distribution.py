@@ -54,6 +54,19 @@ class DistributionLanguagePackAdminView(LaunchpadEditFormView):
     label = "Change the language pack administrator"
     field_names = ['language_pack_admin']
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return 'Change the %s language pack administrator' % (
+            self.context.displayname)
+
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)

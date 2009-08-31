@@ -95,8 +95,7 @@ start time makes no sense. Hence an exception is raised.
     AssertionError: The start time is only estimated for pending builds.
 
 On a build job in state `NEEDSBUILD` we can ask for its estimated
-build start time. In this context the result will be undefined because
-the corresponding build pool is empty.
+build start time.
 
     # Create a brand new pending build.
     >>> login('foo.bar@canonical.com')
@@ -104,8 +103,8 @@ the corresponding build pool is empty.
     >>> [pending_build] = source.createMissingBuilds()
     >>> login(ANONYMOUS)
 
-    >>> print pending_build.getEstimatedBuildStartTime()
-    None
+    >>> pending_build.getEstimatedBuildStartTime()
+    datetime.datetime(...)
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
