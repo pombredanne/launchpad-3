@@ -177,6 +177,9 @@ div.columns div.right div.portlet {
     border: none;
     padding: 0;
     }
+span.nolink {
+    font-weight: bold;
+    }
 #colophon {
     float: none;
     }
@@ -323,6 +326,7 @@ p, li, dt, dd, blockquote {
     }
 pre, code, samp, tt, .console {
   font-size: 116%;
+  margin-bottom: 0.8em;
     }
 ol {
        margin-left: 1.8em;
@@ -346,6 +350,11 @@ thead th, tr.thead th {
     text-align: center;
     vertical-align: bottom;
     }
+
+form h1 {
+    margin-bottom: 1em;
+    }
+
 form table th, form table td {
     padding: 2px;
     }
@@ -397,7 +406,9 @@ span.see-all {
     margin: 0 0 1em 0;
     font-size: 138.5%;
     }
-
+.main-portlet {
+    margin: 1em 0 1em 0;
+    }
 
 /* Common list presentations. */
 .bulleted {
@@ -649,4 +660,25 @@ ul.language, li.language             {
   list-style-image: url(/@@/language);
   /* Disable .language sprite. */
   background: inherit;
+}
+
+/* ==== Translations hand-made forms ==== */
+
+form.translations div.fields {
+  padding: 1em;
+}
+
+form.translations div.actions {
+  padding: 1em;
+  text-align: right;
+}
+
+form.translations input {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+form.translations select {
+  margin-left: 0.5em;
+  padding-right: 0.5em;
 }

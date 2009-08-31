@@ -400,8 +400,6 @@ default_editform = 'Default "Edit" Page'
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
-
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
@@ -717,9 +715,6 @@ notification_test = 'Notification test'
 
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
-object_branding = ContextDisplayName('Change the images used to represent '
-    '%s in Launchpad')
-
 def object_driver(context, view):
     """Return the page title to change the driver."""
     return view.page_title
@@ -727,8 +722,6 @@ def object_driver(context, view):
 object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 # object_pots is a fragment.
-
-object_reassignment = ContextTitle('Reassign %s')
 
 object_translations = ContextDisplayName('Translation templates for %s')
 
@@ -808,14 +801,9 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editlanguages = ContextDisplayName(
-    smartquote("%s's preferred languages"))
-
 person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
 
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
 
 person_editircnicknames = ContextDisplayName(smartquote("%s's IRC nicknames"))
 
@@ -966,8 +954,6 @@ product_packages = ContextDisplayName('%s packages in Launchpad')
 product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 
-product_files = ContextDisplayName('%s project files')
-
 product_review_license = ContextTitle('Review %s')
 
 product_series = ContextDisplayName('%s timeline')
@@ -995,8 +981,6 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
-
-productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_link_translations_branch = ContextTitle(
     "Set translations export branch for %s")
@@ -1053,10 +1037,6 @@ def reference_index(context, view):
 registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Project and group registration in Launchpad'
-
-products_all = 'Upstream projects registered in Launchpad'
-
-projects_all = 'Project groups registered in Launchpad'
 
 related_bounties = ContextDisplayName('Bounties for %s')
 
@@ -1139,8 +1119,6 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
-
-sourcepackage_export = ContextTitle('Download translations for %s')
 
 def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""
@@ -1246,8 +1224,6 @@ sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 
-sprints_all = 'All sprints and meetings registered in Launchpad'
-
 sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve blueprint for sprint agenda'
@@ -1261,10 +1237,6 @@ standardshipitrequest_edit = 'Edit standard option'
 team_addmember = ContextBrowsername('Add members to %s')
 
 team_add_my_teams = 'Propose/add one of your teams to another one'
-
-team_contactaddress = ContextDisplayName('%s contact address')
-
-team_edit = 'Edit team information'
 
 team_editproposed = ContextBrowsername('Proposed members of %s')
 

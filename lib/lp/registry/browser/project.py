@@ -54,7 +54,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.registry.browser.product import (
     ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
@@ -493,8 +493,13 @@ class ProjectAddProductView(ProductAddView):
 class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for project group index."""
     usedfor = IProjectSet
-    links = ['register_team', 'register_project', 'create_account',
-             'register_project_group', 'view_all_project_groups']
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        'register_project_group',
+        'view_all_project_groups',
+        ]
 
     @enabled_with_permission('launchpad.ProjectReview')
     def register_project_group(self):

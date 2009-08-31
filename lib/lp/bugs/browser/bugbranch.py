@@ -54,6 +54,10 @@ class BugBranchAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def label(self):
+        return 'Add a branch to bug #%i' % self.context.bug.id
+
     cancel_url = next_url
 
 
@@ -75,6 +79,8 @@ class BugBranchDeleteView(LaunchpadEditFormView):
     @action('Delete', name='delete')
     def delete_action(self, action, data):
         self.context.bug.unlinkBranch(self.context.branch, self.user)
+
+    label = 'Remove bug branch link'
 
 
 class BranchLinkToBugView(LaunchpadFormView):
