@@ -851,7 +851,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         super(TeamAddView, self).setUpFields()
         self.conditionallyOmitVisibility()
 
-    @action('Create', name='create')
+    @action('Create Team', name='create')
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
