@@ -96,6 +96,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
     stepto)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
@@ -234,24 +235,37 @@ class Hierarchy(LaunchpadView):
                 breadcrumbs.append(breadcrumb)
 
         host = URI(self.request.getURL()).host
-        if (len(breadcrumbs) == 0
-            or host == allvhosts.configs['mainsite'].hostname):
-            return breadcrumbs
+        mainhost = allvhosts.configs['mainsite'].hostname
+        if len(breadcrumbs) != 0 and host != mainhost:
+            # We have breadcrumbs and we're not on the mainsite, so we'll
+            # sneak an extra breadcrumb for the vhost we're on.
+            vhost = host.split('.')[0]
 
-        # If we got this far it means we have breadcrumbs and we're not on the
-        # mainsite, so we'll sneak an extra breadcrumb for the vhost we're on.
-        vhost = host.split('.')[0]
-
-        # Iterate over the context of our breadcrumbs in reverse order and for
-        # the first one we find an adapter named after the vhost we're on,
-        # generate an extra breadcrumb and insert it in our list.
-        for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
-            extra_breadcrumb = queryAdapter(
-                breadcrumb.context, IBreadcrumb, name=vhost)
-            if extra_breadcrumb is not None:
-                breadcrumbs.insert(idx + 1, extra_breadcrumb)
-                break
+            # Iterate over the context of our breadcrumbs in reverse order and
+            # for the first one we find an adapter named after the vhost we're
+            # on, generate an extra breadcrumb and insert it in our list.
+            for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
+                extra_breadcrumb = queryAdapter(
+                    breadcrumb.context, IBreadcrumb, name=vhost)
+                if extra_breadcrumb is not None:
+                    breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                    break
+        if len(breadcrumbs):
+            leaf_crumb = self.getBreadCrumbForLeaf()
+            if leaf_crumb:
+                breadcrumbs.append(leaf_crumb)
         return breadcrumbs
+
+    def getBreadCrumbForLeaf(self):
+        url = self.request.getURL()
+        last_segment = URI(url).path.split('/')[-1]
+        if last_segment.startswith('+') and last_segment != '+index':
+            breadcrumb = Breadcrumb(None)
+            breadcrumb._url = url
+            breadcrumb.text = last_segment
+            return breadcrumb
+        else:
+            return None
 
     @property
     def display_breadcrumbs(self):
@@ -259,6 +273,7 @@ class Hierarchy(LaunchpadView):
         # If there is only one breadcrumb then it does not make sense
         # to display it as it will simply repeat the context.title.
         return len(self.items) > 1
+
 
 class MaintenanceMessage:
     """Display a maintenance message if the control file is present and
