@@ -16,7 +16,9 @@ class MockLogger:
     """Imitates a logger, but prints to standard output."""
     loglevel = logging.INFO
 
-    def __init__(self, outfile=sys.stdout):
+    def __init__(self, outfile=None):
+        if outfile is None:
+            outfile = sys.stdout
         self.outfile = outfile
 
     def setLevel(self, loglevel):
