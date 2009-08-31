@@ -81,7 +81,7 @@ def verify_upload(person, sourcepackagename, archive, component,
     :return: Nothing of interest.
     """
     # For PPAs...
-    if archive.isPPA:
+    if archive.is_ppa:
         if not archive.canUpload(person):
             raise CannotUploadToPPA()
         else:
@@ -101,3 +101,5 @@ def verify_upload(person, sourcepackagename, archive, component,
         and strict_component
         and not archive.canUpload(person, component)):
         raise NoRightsForComponent(component)
+
+    return True
