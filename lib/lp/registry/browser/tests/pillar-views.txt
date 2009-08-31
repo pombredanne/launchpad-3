@@ -135,8 +135,8 @@ The pillar involvement view uses the InvolvedMenu when rendering links:
     >>> for link in sorted(
     ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
     ...     print link.url
-    http://bugs.launchpad.dev/.../+filebug
-    http://answers.launchpad.dev/.../+addquestion
-    http://translations.launchpad.dev/
-    http://code.launchpad.dev/.../+addbranch
-    http://blueprints.launchpad.dev/.../+addspec
+    http://bugs.launchpad.dev/bread/+filebug
+    http://answers.launchpad.dev/bread/+addquestion
+    http://translations.launchpad.dev/bread
+    http://code.launchpad.dev/bread/+addbranch
+    http://blueprints.launchpad.dev/bread/+addspec

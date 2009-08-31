@@ -49,7 +49,7 @@ class InvolvedMenu(NavigationMenu):
 
     def help_translate(self):
         return Link(
-            '/', 'Help translate', site='translations', icon='translations',
+            '', 'Help translate', site='translations', icon='translations',
             enabled=self.context.official_rosetta)
 
     def submit_code(self):
