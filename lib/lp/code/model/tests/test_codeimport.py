@@ -105,6 +105,21 @@ class TestCodeImportCreation(unittest.TestCase):
         # A job is created for the import.
         self.assertTrue(code_import.import_job is not None)
 
+    def test_git_import_reviewed(self):
+        """A new git import is always reviewed by default."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            product=self.factory.makeProduct(),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.GIT,
+            git_repo_url=self.factory.getUniqueURL(),
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # A job is created for the import.
+        self.assertTrue(code_import.import_job is not None)
+
 
 class TestCodeImportDeletion(unittest.TestCase):
     """Test the deletion of CodeImports."""
