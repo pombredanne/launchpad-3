@@ -230,15 +230,17 @@ class PersonTranslationView(LaunchpadView):
         return ReviewLinksAggregator().aggregate(pofiles)
 
     def _getTargetsForTranslation(self, max_fetch=None):
-        """Get translation targets for this person to translate."""
+        """Get translation targets for this person to translate.
+
+        Results are ordered from most to fewest untranslated messages.
+        """
         person = ITranslationsPerson(self.context)
+        urgent_first = (max_fetch >= 0)
         pofiles = person.getTranslatableFiles(
-            no_older_than=self.history_horizon)
+            no_older_than=self.history_horizon, urgent_first=urgent_first)
+
         if max_fetch is not None:
-            if max_fetch >= 0:
-                pofiles = pofiles[:max_fetch]
-            else:
-                pofiles = pofiles[-max_fetch:]
+            pofiles = pofiles[:abs(max_fetch)]
 
         return TranslateLinksAggregator().aggregate(pofiles)
 

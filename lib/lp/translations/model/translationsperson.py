@@ -203,10 +203,17 @@ class TranslationsPerson:
         source = Store.of(self.person).using(*tables)
         return source.find(POFile, conditions)
 
-    def getTranslatableFiles(self, no_older_than=None):
+    def getTranslatableFiles(self, no_older_than=None, urgent_first=True):
         """See `ITranslationsPerson`."""
         results = self._queryTranslatableFiles(True, no_older_than)
-        return results.order_by(-POFile.unreviewed_count)
+
+        translated_count = (
+            POFile.currentcount + POFile.updatescount + POFile.rosettacount)
+        ordering = translated_count - POTemplate.messagecount
+        if not urgent_first:
+            ordering = -ordering
+
+        return results.order_by(ordering)
 
     def suggestTranslatableFiles(self, no_older_than=None):
         """See `ITranslationsPerson`."""

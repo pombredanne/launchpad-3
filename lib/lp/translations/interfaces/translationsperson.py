@@ -57,13 +57,16 @@ class ITranslationsPerson(Interface):
         :param maximum: Maximum number of `POFile`s to return.
         """
 
-    def getTranslatableFiles(no_older_than=None):
+    def getTranslatableFiles(no_older_than=None, urgent_first=True):
         """List `POFile`s this person should be able to help translate.
 
         These are translations that this person is not a reviewer for,
         but has worked on recently.
 
         :param no_older_than: Optional cutoff date to define "recently."
+        :param urgent_first: If True, sort `POFile`s with the most
+            untranslated strings to the front.  If False, sort the other
+            way around.
         :return: A query result of `POFile`s ordered by number of
             untranslated messages.
         """

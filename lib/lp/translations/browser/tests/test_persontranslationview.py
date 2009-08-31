@@ -22,10 +22,12 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+
     def setUp(self):
         super(TestPersonTranslationView, self).setUp()
         person = removeSecurityProxy(self.factory.makePerson())
         self.view = PersonTranslationView(person, LaunchpadTestRequest())
+        self.translationgroup = None
 
     def _makeReviewer(self):
         """Set up the person we're looking at as a Dutch reviewer."""
@@ -47,7 +49,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
         for counter in xrange(count):
             pofile = self.factory.makePOFile(language_code='nl')
             product = pofile.potemplate.productseries.product
-            product.translationgroup = self.translationgroup
+
+            if self.translationgroup:
+                product.translationgroup = self.translationgroup
 
             if previously_worked_on:
                 potmsgset = self.factory.makePOTMsgSet(
@@ -60,6 +64,11 @@ class TestPersonTranslationView(TestCaseWithFactory):
             pofiles.append(pofile)
 
         return pofiles
+
+    def _addUntranslatedMessages(self, pofile, untranslated_messages):
+        """Add to `pofile`'s count of untranslated messages."""
+        template = pofile.potemplate
+        removeSecurityProxy(template).messagecount += untranslated_messages
 
     def test_translation_groups(self):
         # translation_groups lists the translation groups a person is
@@ -191,6 +200,53 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         self.assertEqual(10, len(targets))
         self.assertEqual(10, len(set(item['link'] for item in targets)))
+
+    def test_getTargetsForTranslation(self):
+        # If there's nothing to translate, _getTargetsForTranslation
+        # returns nothing.
+        self.assertEqual([], self.view._getTargetsForTranslation())
+
+        # If there's a translation that this person has worked on and
+        # is not a reviewer for, and it has untranslated strings, it
+        # shows up in _getTargetsForTranslation.
+        pofile = self._makePOFiles(1, previously_worked_on=True)[0]
+        self._addUntranslatedMessages(pofile, 1)
+        product = pofile.potemplate.productseries.product
+
+        descriptions = self.view._getTargetsForTranslation()
+
+        self.assertEqual(1, len(descriptions))
+        description = descriptions[0]
+        self.assertEqual(product, description['target'])
+        self.assertTrue(description['link'].startswith(canonical_url(pofile)))
+
+    def test_getTargetsForTranslation_max_fetch(self):
+        # The max_fetch parameter limits how many POFiles are considered
+        # by _getTargetsForTranslation.  This lets you get the target(s)
+        # with the most untranslated messages.
+
+        pofiles = self._makePOFiles(3, previously_worked_on=True)
+        urgent_pofile = pofiles[2]
+        medium_pofile = pofiles[1]
+        nonurgent_pofile = pofiles[0]
+        self._addUntranslatedMessages(urgent_pofile, 10)
+        self._addUntranslatedMessages(medium_pofile, 2)
+        self._addUntranslatedMessages(nonurgent_pofile, 1)
+
+        descriptions = self.view._getTargetsForTranslation(1)
+        self.assertEqual(1, len(descriptions))
+        self.assertEqual(
+            urgent_pofile.potemplate.productseries.product,
+            descriptions[0]['target'])
+
+        # Passing a negative max_fetch makes _getTargetsForTranslation
+        # pick translations with the fewest untranslated messages.
+        descriptions = self.view._getTargetsForTranslation(-1)
+        self.assertEqual(1, len(descriptions))
+        self.assertEqual(
+            nonurgent_pofile.potemplate.productseries.product,
+            descriptions[0]['target'])
+
 
 
 def test_suite():
