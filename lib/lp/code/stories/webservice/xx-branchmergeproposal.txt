@@ -206,7 +206,7 @@ merge would look like if the source branch was merged into the target branch.
     >>> response = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'updatePreviewDiff',
     ...     diff_content=diff_content,
-    ...     diff_stat='M fooix.txt', source_revision_id='rev-a',
+    ...     diff_stat={}, source_revision_id='rev-a',
     ...     target_revision_id='rev-b', conflicts='oh, no conflicts')
     >>> print response.getOutput()
     HTTP/1.1 200 Ok

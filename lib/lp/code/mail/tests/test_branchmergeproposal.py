@@ -40,7 +40,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             review_diff = StaticDiff.acquireFromText(
                 self.factory.getUniqueString('revid'),
                 self.factory.getUniqueString('revid'),
-                diff_text)
+                diff_text, diffstat={})
             transaction.commit()
         else:
             review_diff = None
