@@ -51,6 +51,12 @@ class BugSubscriptionAddView(LaunchpadFormView):
 
     cancel_url = next_url
 
+    @property
+    def label(self):
+        return 'Subscribe someone else to bug #%i' % self.context.bug.id
+
+    page_title = label
+
 
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
