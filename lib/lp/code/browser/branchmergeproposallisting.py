@@ -16,19 +16,25 @@ __all__ = [
 
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, Interface
+from zope.schema import Choice
+
+from lazr.delegates import delegates
+from lazr.enum import EnumeratedType, Item, use_template
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal,
-    IBranchMergeProposalGetter, IBranchMergeProposalListingBatchNavigator)
-from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp import custom_widget, LaunchpadView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from lazr.delegates import delegates
+from canonical.widgets import LaunchpadDropdownWidget
+
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.code.interfaces.branchcollection import (
+    IAllBranches, IBranchCollection)
+from lp.code.interfaces.branchmergeproposal import (
+    IBranchMergeProposal, IBranchMergeProposalGetter,
+    IBranchMergeProposalListingBatchNavigator)
 
 
 class BranchMergeProposalListingItem:
@@ -99,10 +105,6 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
-        # Add preview_diff to self.show_column dict if there are any diffs.
-        for proposal in self.proposals:
-            if proposal.preview_diff is not None:
-                self.show_column['preview_diff'] = True
 
     @cachedproperty
     def _proposals_for_current_batch(self):
@@ -135,11 +137,60 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
             return "listing sortable"
 
 
+class FilterableStatusValues(EnumeratedType):
+    """Selectable values for filtering the merge proposal listings."""
+    use_template(BranchMergeProposalStatus)
+
+    sort_order = (
+        'ACTIVE', 'ALL', 'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED',
+        'REJECTED', 'MERGED', 'MERGE_FAILED', 'QUEUED', 'SUPERSEDED')
+
+    ACTIVE = Item("Any active review")
+    ALL = Item("Any status")
+
+
+class BranchMergeProposalFilterSchema(Interface):
+    """Schema for generating the filter widget for listing views."""
+
+    # Stats and status attributes
+    status = Choice(
+        title=_('Status'), vocabulary=FilterableStatusValues,
+        default=FilterableStatusValues.ACTIVE,)
+
+
 class BranchMergeProposalListingView(LaunchpadView):
     """A base class for views of branch merge proposal listings."""
 
+    schema = BranchMergeProposalFilterSchema
+    field_names = ['status']
+    custom_widget('status', LaunchpadDropdownWidget)
+
     extra_columns = []
     _queue_status = None
+
+    @property
+    def initial_values(self):
+        return {
+            'status': FilterableStatusValues.ACTIVE,
+            }
+
+    @cachedproperty
+    def selected_status(self):
+        widget = self.widgets['status']
+
+        if widget.hasValidInput():
+            filter = widget.getInputValue()
+        else:
+            filter = FilterableStatusValues.ACTIVE
+
+        if filter == FilterableStatusValues.ALL:
+            return None
+        elif filter == FilterableStatusValues.ACTIVE:
+            return (
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.CODE_APPROVED)
+        else:
+            return (BranchMergeProposalStatus.items[filter.name], )
 
     @property
     def proposals(self):
@@ -152,8 +203,10 @@ class BranchMergeProposalListingView(LaunchpadView):
 
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""
-        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, self._queue_status, self.user)
+        # Adapt the context to a branch collection.
+        collection = IBranchCollection(self.context)
+        collection = collection.visibleByUser(self.user)
+        return collection.getMergeProposals(statuses=self.selected_status)
 
     @cachedproperty
     def proposal_count(self):
