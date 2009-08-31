@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = ['MockLogger']
 
 import logging
+import sys
 
 # XXX cprov 20071018: This class should be combined with
 # launchpad.scripts.logger.FakeLogger at some point.
@@ -14,6 +15,9 @@ import logging
 class MockLogger:
     """Imitates a logger, but prints to standard output."""
     loglevel = logging.INFO
+
+    def __init__(self, outfile=sys.stdout):
+        self.outfile = outfile
 
     def setLevel(self, loglevel):
         self.loglevel = loglevel
@@ -31,7 +35,7 @@ class MockLogger:
         if len(args) > 1:
             log_line %= args[1:]
 
-        print "log> ", log_line
+        self.outfile.write("log> %s\n" % log_line)
 
         if "exc_info" in kwargs:
             import sys
