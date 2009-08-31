@@ -10,11 +10,9 @@ __all__ = [
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
-    'ProductBountiesMenu',
     'ProductBrandingView',
     'ProductBreadcrumb',
     'ProductBugsMenu',
-    'ProductChangeTranslatorsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditNavigationMenu',
@@ -274,12 +272,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         summary = 'Bugs reported about %s' % self.context.displayname
         return Link('', text, summary)
 
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'Bounties related to %s' % self.context.displayname
-        return Link(target, text, summary)
-
     def branches(self):
         text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
@@ -514,21 +506,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
         text = 'Register a blueprint'
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
-
-
-class ProductBountiesMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
 
 
 def _sort_distros(a, b):

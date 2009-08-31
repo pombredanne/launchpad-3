@@ -24,7 +24,7 @@
     </p>
   </div>
   <tal:side metal:fill-slot="side">
-      <tal:menu replace="structure view/@@+global-actions" />
+      <tal:menu replace="structure context/@@+global-actions" />
   </tal:side>
 
 </body>
