@@ -41,10 +41,9 @@ from lp.code.interfaces.branchmergeproposal import (
     ICreateMergeProposalJobSource, IMergeProposalCreatedJob)
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.diff import PreviewDiff, StaticDiff
+from lp.code.model.diff import StaticDiff
 from lp.codehosting.vfs import get_multi_server
 from lp.services.job.model.job import Job
-from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
 
 
@@ -56,12 +55,6 @@ class BranchMergeProposalJobType(DBEnumeratedType):
 
         This job generates the review diff for a BranchMergeProposal if
         needed, then sends mail to all interested parties.
-        """)
-
-    UPDATE_PREVIEW_DIFF = DBItem(1, """
-        Update the preview diff for the BranchMergeProposal.
-
-        This job generates the preview diff for a BranchMergeProposal.
         """)
 
 
@@ -155,13 +148,6 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return not (self == job)
 
     @classmethod
-    def create(klass, bmp):
-        """See `IMergeProposalCreationJob`."""
-        job = BranchMergeProposalJob(
-            bmp, klass.class_job_type, {})
-        return klass(job)
-
-    @classmethod
     def iterReady(klass):
         """Iterate through all ready BranchMergeProposalJobs."""
         from lp.code.model.branch import Branch
@@ -182,12 +168,21 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return (klass(job) for job in jobs)
 
 
+
+
 class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
     """See `IMergeProposalCreatedJob`."""
 
     implements(IMergeProposalCreatedJob)
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
+
+    @classmethod
+    def create(klass, bmp):
+        """See `IMergeProposalCreationJob`."""
+        job = BranchMergeProposalJob(
+            bmp, klass.class_job_type, {})
+        return klass(job)
 
     def run(self):
         """See `IMergeProposalCreatedJob`."""
@@ -235,18 +230,6 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
         return ('notifying people about the proposal to merge %s into %s' %
             (self.branch_merge_proposal.source_branch.bzr_identity,
              self.branch_merge_proposal.target_branch.bzr_identity))
-
-
-class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
-
-    implements(IRunnableJob)
-
-    class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
-
-    def run(self):
-        preview = PreviewDiff.fromBranchMergeProposal(
-            self.branch_merge_proposal)
-        self.branch_merge_proposal.preview_diff = preview
 
 
 class CreateMergeProposalJob(BaseRunnableJob):

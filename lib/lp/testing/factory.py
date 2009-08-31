@@ -1582,7 +1582,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return distroseries.getSourcePackage(sourcepackagename)
 
     def getAnyPocket(self):
-        return PackagePublishingPocket.RELEASE
+        return PackagePublishingPocket.BACKPORTS
 
     def makeSuiteSourcePackage(self, distroseries=None,
                                sourcepackagename=None, pocket=None):
@@ -1696,7 +1696,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return MergeDirective2(
             'revid', 'sha', 0, 0, target_branch_url,
             source_branch=source_branch_url, base_revision_id='base-revid',
-            patch='')
+            patch='booga')
 
     def makeMergeDirectiveEmail(self, body='Hi!\n', signing_context=None):
         """Create an email with a merge directive attached.

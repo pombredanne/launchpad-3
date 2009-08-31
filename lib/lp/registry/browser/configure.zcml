@@ -312,10 +312,6 @@
         <!-- Projects portlets -->
 
         <browser:page
-            name="+portlet-bounties"
-            facet="bounties"
-            template="../templates/object-portlet-bounties.pt"/>
-        <browser:page
             name="+details"
             facet="overview"
             template="../templates/project-details.pt"/>
@@ -328,14 +324,6 @@
             facet="overview"
             template="../templates/object-portlet-milestones.pt"/>
     </browser:pages>
-    <browser:page
-        facet="bounties"
-        for="lp.registry.interfaces.project.IProject"
-        class="lp.registry.browser.project.ProjectView"
-        layer="canonical.launchpad.layers.PageTestLayer"
-        name="+bounties"
-        permission="zope.Public"
-        template="../templates/related-bounties.pt"/>
     <browser:page
         for="lp.registry.interfaces.project.IProject"
         class="lp.registry.browser.project.ProjectRdfView"
@@ -385,31 +373,6 @@
         class="lp.registry.browser.project.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
-    <browser:addform
-        name="+linkbounty"
-        for="lp.registry.interfaces.project.IProject"
-        facet="bounties"
-        schema="canonical.launchpad.interfaces.IProjectBounty"
-        class="canonical.launchpad.browser.bounty.BountyLinkView"
-        label="Link an existing bounty"
-        fields="project bounty"
-        keyword_arguments="project bounty"
-        permission="launchpad.AnyPerson"
-        template="../templates/bounty-link.pt">
-        <browser:widget
-            field="project"
-            class="canonical.widgets.ContextWidget"/>
-    </browser:addform>
-    <browser:addform
-        name="+addbounty"
-        for="lp.registry.interfaces.project.IProject"
-        facet="bounties"
-        schema="canonical.launchpad.interfaces.IBounty"
-        label="Register a bounty"
-        fields="name title summary usdvalue difficulty description"
-        class="canonical.launchpad.browser.BountyAddView"
-        permission="launchpad.AnyPerson"
-        template="../../../canonical/launchpad/templates/bounty-add.pt"/>
     <browser:defaultView
         for="lp.registry.interfaces.project.IProjectSet"
         name="+index"/>
@@ -458,7 +421,6 @@
         classes="
             ProjectActionMenu
             ProjectAnswersMenu
-            ProjectBountiesMenu
             ProjectBugsMenu
             ProjectEditNavigationMenu
             ProjectFacets
@@ -942,14 +904,6 @@
             for="lp.registry.interfaces.person.IPerson"
             name="+projects"
             new_name="+related-software"/>
-        <browser:page
-            class="lp.registry.browser.person.PersonView"
-            facet="bounties"
-            for="lp.registry.interfaces.person.IPerson"
-            layer="canonical.launchpad.layers.PageTestLayer"
-            name="+bounties"
-            permission="zope.Public"
-            template="../templates/person-bounties.pt"/>
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
@@ -1435,10 +1389,6 @@
             facet="overview"
             template="../templates/object-milestones.pt"/>
         <browser:page
-            name="+portlet-bounties"
-            facet="bounties"
-            template="../templates/object-portlet-bounties.pt"/>
-        <browser:page
             name="+portlet-packages"
             facet="overview"
             template="../templates/product-portlet-packages.pt"/>
@@ -1473,13 +1423,6 @@
             template="../templates/product-edit-people.pt"/>
     </browser:pages>
     <browser:page
-        facet="bounties"
-        for="lp.registry.interfaces.product.IProduct"
-        layer="canonical.launchpad.layers.PageTestLayer"
-        name="+bounties"
-        permission="zope.Public"
-        template="../templates/related-bounties.pt"/>
-    <browser:page
         name="+edit"
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"
@@ -1507,31 +1450,6 @@
         class="lp.registry.browser.product.ProductReviewLicenseView"
         permission="launchpad.ProjectReview"
         template="../templates/product-review-license.pt"/>
-    <browser:addform
-        name="+linkbounty"
-        for="lp.registry.interfaces.product.IProduct"
-        schema="canonical.launchpad.interfaces.IProductBounty"
-        class="canonical.launchpad.browser.bounty.BountyLinkView"
-        facet="bounties"
-        label="Link an existing bounty"
-        fields="product bounty"
-        keyword_arguments="product bounty"
-        permission="launchpad.AnyPerson"
-        template="../templates/bounty-link.pt">
-        <browser:widget
-            field="product"
-            class="canonical.widgets.ContextWidget"/>
-    </browser:addform>
-    <browser:addform
-        name="+addbounty"
-        for="lp.registry.interfaces.product.IProduct"
-        schema="canonical.launchpad.interfaces.IBounty"
-        label="Register a bounty"
-        fields="name title summary usdvalue difficulty description"
-        class="canonical.launchpad.browser.BountyAddView"
-        facet="bounties"
-        permission="launchpad.AnyPerson"
-        template="../../../canonical/launchpad/templates/bounty-add.pt"/>
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.product.IProduct"
@@ -1591,7 +1509,6 @@
     <browser:menus
         classes="
             ProductActionNavigationMenu
-            ProductBountiesMenu
             ProductBugsMenu
             ProductEditNavigationMenu
             ProductFacets
@@ -1870,14 +1787,6 @@
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionView"
-        facet="bounties"
-        layer="canonical.launchpad.layers.PageTestLayer"
-        name="+bounties"
-        permission="zope.Public"
-        template="../templates/related-bounties.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.registry.browser.distribution.DistributionView"
         permission="zope.Public"
         name="+series-and-milestones"
         facet="overview"
@@ -1904,9 +1813,6 @@
             name="+milestones"
             facet="overview"
             template="../templates/object-milestones.pt"/>
-        <browser:page
-            name="+portlet-bounties"
-            template="../templates/object-portlet-bounties.pt"/>
         <browser:page
             name="+portlet-aboutcve"
             template="../templates/portlet-aboutcve.pt"/>
@@ -1959,30 +1865,6 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
-    <browser:addform
-        name="+linkbounty"
-        for="lp.registry.interfaces.distribution.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistributionBounty"
-        class="canonical.launchpad.browser.bounty.BountyLinkView"
-        facet="bounties"
-        fields="distribution bounty"
-        keyword_arguments="distribution bounty"
-        permission="launchpad.AnyPerson"
-        template="../templates/bounty-link.pt">
-        <browser:widget
-            field="distribution"
-            class="canonical.widgets.ContextWidget"/>
-    </browser:addform>
-    <browser:addform
-        name="+addbounty"
-        for="lp.registry.interfaces.distribution.IDistribution"
-        schema="canonical.launchpad.interfaces.IBounty"
-        label="Register a bounty"
-        fields="name title summary usdvalue difficulty description"
-        class="canonical.launchpad.browser.BountyAddView"
-        facet="bounties"
-        permission="launchpad.AnyPerson"
-        template="../../../canonical/launchpad/templates/bounty-add.pt"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistributionSet"
         name="+index"/>
@@ -2018,7 +1900,6 @@
         template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
-            DistributionBountiesMenu
             DistributionBugsMenu
             DistributionFacets
             DistributionMirrorsNavigationMenu
