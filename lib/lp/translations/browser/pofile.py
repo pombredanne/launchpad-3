@@ -251,12 +251,12 @@ class POFileFilteredView(LaunchpadView):
     def page_title(self):
         """See `LaunchpadView`."""
         if self.person is None:
-            person = "unknown"
+            person_name = "unknown"
         else:
-            person = self.person
+            person_name = self.person.displayname
 
         return smartquote('Translations by %s in "%s"') % (
-            person.displayname, self.context.title)
+            person_name, self.context.title)
     
     def label(self):
         """See `LaunchpadView`."""

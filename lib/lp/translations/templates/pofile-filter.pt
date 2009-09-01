@@ -32,9 +32,9 @@
 
     <tal:translations condition="messages">
       <p tal:condition="view/person">
-        <tal:contributor content="view/person/displayname"/> has
+        <a tal:replace="structure view/person/fmt:link"/> has
         submitted the following strings to this translation.
-        Contributions are visually coded as follows:
+        Contributions are visually coded:
         <span class="usedtranslation">currently used translations</span>,
         <span>unreviewed suggestions</span>,
         <span class="hiddentranslation">rejected suggestions</span>.
