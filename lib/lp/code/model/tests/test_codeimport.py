@@ -22,7 +22,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
-from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from lp.testing import (
     login, login_person, logout, TestCaseWithFactory, time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
@@ -559,9 +558,10 @@ def make_import_active(factory, code_import, last_update=None):
     """Make `code_import` active as per `ICodeImportSet.getActiveImports`."""
     from zope.security.proxy import removeSecurityProxy
     naked_import = removeSecurityProxy(code_import)
-    naked_import.updateFromData(
-        {'review_status': CodeImportReviewStatus.REVIEWED},
-        factory.makePerson())
+    if naked_import.review_status != CodeImportReviewStatus.REVIEWED:
+        naked_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            factory.makePerson())
     if last_update is None:
         # If last_update is not specfied, presumably we don't care what it is
         # so we just use some made up value.
