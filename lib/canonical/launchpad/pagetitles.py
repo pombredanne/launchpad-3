@@ -198,8 +198,6 @@ bug_mark_as_affecting_user = ContextBugId(
 
 bug_nominate_for_series = ViewLabel()
 
-bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
-
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')

@@ -97,6 +97,11 @@ class CveUnlinkView(CveLinkView):
             'CVE-%s removed.' % data['sequence'])
         self.next_url = canonical_url(self.context)
 
+    def label(self):
+        return  'Bug # %s Remove link to CVE report' % self.context.bug.id
+
+    page_title = label
+
 
 class CveSetView:
 
