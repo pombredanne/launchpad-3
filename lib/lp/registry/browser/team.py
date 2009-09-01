@@ -943,6 +943,10 @@ class TeamMemberAddView(LaunchpadFormView):
     schema = ITeamMember
     label = "Select the new member"
 
+    @property
+    def page_title(self):
+        return 'Add members to %s' % self.context.displayname
+
     def validate(self, data):
         """Verify new member.
 
