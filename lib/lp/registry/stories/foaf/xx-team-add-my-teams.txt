@@ -16,12 +16,14 @@ For moderated teams, it's only possible to propose another team as a member.
 The proposal will have to be reviewed by a team administrator.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Ubuntu Team
     Propose these teams as members
     This is a moderated team, so one of its administrators will have
     to review any memberships you propose.
     Launchpad Administrators
     Mailing List Experts
     Rosetta Administrators
+    or Cancel
 
 We'll now propose Launchpad Administrators as a member of Ubuntu Team.
 
@@ -78,6 +80,7 @@ your teams as members.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Ubuntu Team
     This is a restricted team
     New members can not be proposed&mdash;they can only be added by one
     of the team's administrators.
@@ -122,5 +125,5 @@ And when no teams can be added, a message is displayed:
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
     >>> print extract_text(find_main_content(browser.contents))
+    Ubuntu Team
     None of the teams you administer can be added to this team.
-
