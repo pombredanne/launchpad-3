@@ -349,6 +349,13 @@ class Branch(SQLBase):
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
 
+    def scheduleDiffUpdates(self):
+        """See `IBranch`."""
+        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
+        jobs = [UpdatePreviewDiffJob.create(target)
+                for target in self.landing_targets]
+        return jobs
+
     # XXX: Tim Penhey, 2008-06-18, bug 240881
     merge_queue = ForeignKey(
         dbName='merge_robot', foreignKey='MultiBranchMergeQueue',

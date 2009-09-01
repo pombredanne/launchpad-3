@@ -1862,5 +1862,21 @@ class TestBranchSetTarget(TestCaseWithFactory):
         self.assertEqual(branch.owner, branch.target.context)
 
 
+class TestScheduleDiffUpdates(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_scheduleDiffUpdates(self):
+        """Create jobs for all merge proposals."""
+        bmp1 = self.factory.makeBranchMergeProposal()
+        bmp2 = self.factory.makeBranchMergeProposal(
+            source_branch=bmp1.source_branch)
+        jobs = bmp1.source_branch.scheduleDiffUpdates()
+        self.assertEqual(2, len(jobs))
+        bmps_to_update = set(
+            removeSecurityProxy(job).branch_merge_proposal for job in jobs)
+        self.assertEqual(set([bmp1, bmp2]), bmps_to_update)
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
