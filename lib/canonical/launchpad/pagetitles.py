@@ -506,8 +506,6 @@ def hasspecifications_specs(context, view):
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
-hastranslationimports_index = 'Translation import queue'
-
 hwdb_fingerprint_submissions = (
     "Hardware Database submissions for a fingerprint")
 
@@ -1259,10 +1257,6 @@ translationgroup_reassignment = ContextTitle(smartquote(
 translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
-
-translationimportqueue_index = 'Translation import queue'
-
-translationimportqueue_blocked = 'Translation import queue - Blocked'
 
 def translationmessage_translate(context, view):
     """Return the page to translate a template into a language per message."""
