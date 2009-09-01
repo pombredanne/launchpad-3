@@ -80,6 +80,8 @@ class BugBranchDeleteView(LaunchpadEditFormView):
     def delete_action(self, action, data):
         self.context.bug.unlinkBranch(self.context.branch, self.user)
 
+    label = 'Remove bug branch link'
+
 
 class BranchLinkToBugView(LaunchpadFormView):
     """The view to create bug-branch links."""
