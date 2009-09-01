@@ -11,12 +11,10 @@
 >
 <body>
 
-<h1 metal:fill-slot="heading" tal:content="view/page_title" />
-
 <div metal:fill-slot="main">
 
   <p>
-    Here you can see the people who have earned most Launchpad
+    Here you can see the people who have earned the most Launchpad
     karma while working on
     <span id="project-name" tal:content="context/displayname">
       this project
@@ -24,24 +22,9 @@
     (<a href="https://help.launchpad.net/YourAccount/Karma">What is karma?</a>)
   </p>
 
-  <style>
-    table {
-      max-width: 43em;
-    }
-    thead th.karma-person {
-      width: 10em;
-    }
-    thead th.karma-count {
-      width: 16em;
-    }
-    tbody td {
-      white-space: nowrap;
-    }
-  </style>
-
   <h2>Overall</h2>
 
-  <table class="listing sortable" id="overall_top">
+  <table class="listing sortable narrow-listing" id="overall_top">
   <thead>
     <tr>
       <th class="karma-person">Person</th>
@@ -64,7 +47,7 @@
     define="contributors_by_category view/top_contributors_by_category">
     <tal:categories repeat="category view/sorted_categories">
       <table style="margin-bottom: 2em"
-             class="listing sortable"
+             class="listing sortable narrow-listing"
              tal:attributes="id category"
         >
       <thead>
