@@ -14,6 +14,8 @@ on their status and content.
     ...         if 'highlighted' in str(tr.attrs):
     ...             print "%s: %s" % (country, mirrors)
     ...             country = extract_text(tr.find('th'))
+    ...             if country == 'Total':
+    ...                 break
     ...             mirrors = []
     ...         elif 'note' in str(tr.attrs):
     ...             # This is an empty row to visually separate the mirrors
@@ -21,7 +23,7 @@ on their status and content.
     ...             pass
     ...         else:
     ...             mirrors.append(extract_text(tr.find('td')))
-    ...     print "%s: %s" % (country, mirrors)
+
 
 == Official mirrors ==
 
@@ -48,7 +50,7 @@ the release (cdimage) ones.
             France: [u'Releases-mirror', u'Unreachable-mirror']
            Germany: [u'Releases-mirror2']
     United Kingdom: [u'Canonical-releases']
-  
+
 === Disabled mirrors ===
 
 These are official mirrors for which the last check wasn't successful (e.g.
@@ -65,11 +67,11 @@ seen by distro owners, mirror admins of the distro or launchpad admins.
     >>> browser.url
     'http://launchpad.dev/ubuntu/+disabledmirrors'
 
-    >>> print find_tag_by_id(browser.contents, 'mainarea').renderContents()
+    >>> print find_tag_by_id(browser.contents, 'maincontent').renderContents()
     <BLANKLINE>
     ...We don't know of any Disabled Mirrors for this distribution...
 
-  
+
 == Unofficial mirrors ==
 
 The unofficial mirrors are listed in a separate page, which is not public.

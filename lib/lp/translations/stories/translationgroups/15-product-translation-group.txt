@@ -46,7 +46,7 @@ group and permissions.
     >>> change_translators_url = netapplet_owner_browser.url
 
     >>> print netapplet_owner_browser.title
-    Set translation group for Network Applet
+    Set translation permissions for NetApplet
 
     >>> print netapplet_owner_browser.getControl(
     ...     'Translation group').displayOptions

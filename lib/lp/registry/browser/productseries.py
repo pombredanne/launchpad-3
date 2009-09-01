@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
-    'LinkTranslationsBranchView',
     'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
@@ -52,6 +51,8 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser import StatusCount
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
@@ -80,7 +81,8 @@ def quote(text):
     return cgi.escape(text, quote=True)
 
 
-class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
+class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
     """A class to navigate `IProductSeries` URLs."""
     usedfor = IProductSeries
 
@@ -638,27 +640,6 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-
-
-class LinkTranslationsBranchView(LaunchpadEditFormView):
-    """View to set the series' translations export branch."""
-
-    schema = IProductSeries
-    field_names = ['translations_branch']
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context) + '/+translations-settings'
-
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
-        self.updateContextFromData(data)
-        self.request.response.addInfoNotification(
-            'Translations export branch updated.')
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the settings page."""
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):

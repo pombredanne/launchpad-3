@@ -21,7 +21,8 @@ from zope.publisher.interfaces import implements, NotFound
 from canonical.launchpad import _
 from lp.bugs.browser.bug import BugContextMenu
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bugnomination import IBugNomination, IBugNominationForm
+from lp.bugs.interfaces.bugnomination import (IBugNomination,
+    IBugNominationForm)
 from lp.bugs.interfaces.bugtask import INullBugTask
 from lp.bugs.interfaces.cve import ICveSet
 from canonical.launchpad.webapp import (
@@ -105,8 +106,9 @@ class BugNominationView(LaunchpadFormView):
                 target=series, owner=self.user)
 
             # If the user has the permission to approve the nomination,
-            # then nomination was approved automatically.
-            if nomination.isApproved():
+            # we approve it automatically.
+            if nomination.canApprove(self.user):
+                nomination.approve(self.user)
                 approved_nominations.append(
                     nomination.target.bugtargetdisplayname)
             else:

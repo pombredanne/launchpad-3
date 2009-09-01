@@ -165,9 +165,10 @@
         classes="
             SprintFacets
             SprintOverviewMenu
+            SprintSetFacets
+            SprintSetNavigationMenu
             SprintSpecificationsMenu
-            SprintSetContextMenu
-            SprintSetFacets"
+            "
         module="lp.blueprints.browser.sprint"/>
     <browser:defaultView
         for="lp.blueprints.interfaces.sprintspecification.ISprintSpecification"

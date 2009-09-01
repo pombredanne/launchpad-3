@@ -55,6 +55,7 @@ def distroseries_sourcepackage_filebug(distroseries, summary, status=None):
     bug = distroseries.distribution.createBug(params)
     nomination = bug.addNomination(
         distroseries.distribution.owner, distroseries)
+    nomination.approve(distroseries.distribution.owner)
     return bug
 
 def distroSeriesSourcePackageSetUp(test):
