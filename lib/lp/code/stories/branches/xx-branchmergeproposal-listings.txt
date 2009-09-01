@@ -1,11 +1,14 @@
-= Listings of branch merge proposals =
+==================================
+Listings of branch merge proposals
+==================================
 
 From both the main code page for a person or team, or a product, it is
 possible to go to a listing of merge proposals that are either needing a
 review, or have been approved for landing.
 
 
-== Create a new product and merge proposals for it ==
+Create a new product and merge proposals for it
+===============================================
 
 Log-in an administrator to avoid permission problems.
 
@@ -52,7 +55,8 @@ Make two proposals for bob, one needing review, and one approved.
     >>> transaction.commit()
 
 
-== Listings from the main product code page ==
+Listings from the main product code page
+========================================
 
 Below the branch counts in the main content, there is a paragraph that lists
 the number of active reviews and approved merges.
@@ -84,7 +88,8 @@ summary.
             Albert        ...                     None
 
 
-== Listings from the main person code page ==
+Listings from the main person code page
+=======================================
 
 The summary before the branch listings also shows the number of active reviews
 and approved merges.
