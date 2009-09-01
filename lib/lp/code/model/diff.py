@@ -11,7 +11,7 @@ from cStringIO import StringIO
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
 from bzrlib.patches import parse_patches
-from bzrlib.merge import Merger, Merge3Merger
+from bzrlib.merge import Merge3Merger
 from lazr.delegates import delegates
 import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
@@ -104,7 +104,7 @@ class Diff(SQLBase):
                 merger = Merge3Merger(
                     merge_target, merge_target, merge_base, merge_source,
                     do_merge=False)
-                transform =merger.make_preview_transform()
+                transform = merger.make_preview_transform()
                 try:
                     to_tree = transform.get_preview_tree()
                     return Diff.fromTrees(merge_target, to_tree)

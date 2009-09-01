@@ -6,7 +6,6 @@
 """Test the update_preview_diffs script."""
 
 
-import unittest
 import transaction
 
 from canonical.testing import ZopelessAppServerLayer
