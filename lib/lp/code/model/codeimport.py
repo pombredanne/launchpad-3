@@ -232,7 +232,11 @@ class CodeImportSet:
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
         if review_status is None:
-            review_status = CodeImportReviewStatus.NEW
+            # Auto approve git imports.
+            if rcs_type == RevisionControlSystems.GIT:
+                review_status = CodeImportReviewStatus.REVIEWED
+            else:
+                review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         namespace = get_branch_namespace(vcs_imports, product)
