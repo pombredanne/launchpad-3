@@ -178,8 +178,6 @@ bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
 
-bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
-
 bug_edit = ContextBugId('Bug #%d - Edit')
 
 bug_edit_confirm = ContextBugId('Bug #%d - Edit confirmation')
