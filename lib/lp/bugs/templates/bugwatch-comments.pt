@@ -3,25 +3,18 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
 >
   <body>
-
-<metal:portlets fill-slot="portlets">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-bugtasks" />
-</metal:portlets>
-
     <div metal:fill-slot="main">
-        <h1>Imported comments</h1>
-
+        <h1 tal:replace="view/page_title">Imported comments</h1>
         <tal:comments repeat="comment view/comments">
           <tal:coment tal:replace="structure comment/@@+box" />
         </tal:comments>
     </div>
-
+    <div metal:fill-slot="side">
+      <div tal:replace="structure context/@@+portlet-details" />
+      <div tal:replace="structure context/@@+portlet-bugtasks" />
+    </div>
   </body>
 </html>

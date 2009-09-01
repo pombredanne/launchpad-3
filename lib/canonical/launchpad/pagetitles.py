@@ -255,11 +255,6 @@ def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
 
-def bugwatch_comments(context, view):
-    """Return the title for a page of imported comments for a bug watch."""
-    return "Bug #%d - Comments imported from bug watch %s on %s" % (
-        context.bug.id, context.remotebug, context.bugtracker.title)
-
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
     if view.user:

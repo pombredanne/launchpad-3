@@ -41,6 +41,12 @@ class BugWatchView(LaunchpadView):
     schema = IBugWatch
 
     @property
+    def page_title(self):
+        return 'Bug #%d - Comments imported from %s, bug %s' % (
+            self.context.bug.id, self.context.bugtracker.title,
+            self.context.remotebug)
+
+    @property
     def comments(self):
         """Return the comments to be displayed for a bug watch.
 
