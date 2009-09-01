@@ -1,7 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Module docstring goes here."""
+"""Interfaces defining a 'pocket'.
+
+Any given package in a `IDistroSeries` may be published in more than one
+'pocket'. The pocket gives information on what kind of publication the package
+is.
+"""
 
 __metaclass__ = type
 __all__ = [
