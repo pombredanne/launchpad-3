@@ -3314,6 +3314,10 @@ class BugTaskCreateQuestionView(LaunchpadFormView):
         comment = data.get('comment', None)
         self.context.bug.convertToQuestion(self.user, comment=comment)
 
+    label = 'Convert this bug to a question'
+
+    page_title = label
+
 
 class BugTaskRemoveQuestionView(LaunchpadFormView):
     """View for creating a question from a bug."""
