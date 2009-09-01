@@ -78,7 +78,7 @@ class KarmaContextTopContributorsView(LaunchpadView):
 
     @property
     def page_title(self):
-        return "Top %s contributors" % self.context.displayname
+        return "Top %s Contributors" % self.context.title
 
     def initialize(self):
         context = self.context
