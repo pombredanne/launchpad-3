@@ -251,7 +251,7 @@ class POFileFilteredView(LaunchpadView):
     def page_title(self):
         """See `LaunchpadView`."""
         if self.person is None:
-            person_name = "unknown"
+            person_name = "unknown person"
         else:
             person_name = self.person.displayname
 
@@ -260,7 +260,11 @@ class POFileFilteredView(LaunchpadView):
     
     def label(self):
         """See `LaunchpadView`."""
-        return "Translations by %s" % self.person.displayname
+        if self.person:
+            person_name = "unknown person"
+        else:
+            person_name = self.person.displayname
+        return "Translations by %s" % person_name
 
     def initialize(self):
         """See `LaunchpadView`."""
