@@ -16,11 +16,23 @@
 
   <facet facet="branches">
 
+  <browser:defaultView
+      for="lp.registry.interfaces.product.IProductSet"
+      layer="canonical.launchpad.layers.CodeLayer"
+      name="+project-cloud"/>
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.registry.interfaces.product.IProductSet"
+      layer="canonical.launchpad.layers.CodeLayer"
       name="+project-cloud"
       class="lp.code.browser.bazaar.BazaarProductView"
       template="../templates/code-in-branches.pt"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+project-cloud"
+      class="lp.code.browser.bazaar.BazaarProjectsRedirect"
       permission="zope.Public"
       />
   <browser:page
@@ -145,7 +157,7 @@
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:navigation
         module="lp.code.browser.branchmergeproposal"
@@ -309,7 +321,7 @@
         for="lp.code.interfaces.branchsubscription.IBranchSubscription"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:defaultView
         for="lp.code.interfaces.branchsubscription.IBranchSubscription"
@@ -330,7 +342,7 @@
         for="lp.code.interfaces.branch.IBranch"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:defaultView
         for="lp.code.interfaces.branch.IBranch"
@@ -547,7 +559,7 @@
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:url
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"

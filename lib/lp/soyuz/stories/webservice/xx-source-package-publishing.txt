@@ -179,7 +179,7 @@ access to the PPA publications.
 
     >>> cprov_srcs_response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources')
-    >>> print cprov_srcs_response.getOutput()
+    >>> print cprov_srcs_response
     HTTP/1.1 200 Ok
     ...
 
@@ -187,7 +187,7 @@ Any other user attempt would result in a 401 error.
 
     >>> response = user_webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -196,7 +196,7 @@ also fail in their quest.
 
     >>> private_publication_url = pubs['entries'][0]['self_link']
     >>> response = user_webservice.get(private_publication_url)
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -252,7 +252,7 @@ cprov's ppa:
     >>> cprov_srcs = cprov_srcs_response.jsonBody()
     >>> src_link = cprov_srcs['entries'][0]['self_link']
 
-The src_link will be of the form: 
+The src_link will be of the form:
 u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+sourcepub/27'
 so:
 
@@ -283,4 +283,3 @@ and a list of all the relevant builds for the summary:
     >>> print_build_summaries(build_summaries)
     Source ID 27: FAILEDTOBUILD ([u'i386'])
     Source ID 28: FULLYBUILT_PENDING ([u'i386'])
-

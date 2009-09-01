@@ -11,8 +11,7 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
-    NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
+    canonical_url, enabled_with_permission, Link, NavigationMenu)
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -45,4 +44,19 @@ class SourcePackageTranslationsMenu(NavigationMenu):
 
 class SourcePackageTranslationsExportView(BaseExportView):
     """Request tarball export of all translations for a source package."""
-    pass
+
+    @property
+    def download_description(self):
+        """Current context description used inline in paragraphs."""
+        return "%s package in %s %s" % (
+            self.context.sourcepackagename.name,
+            self.context.distroseries.distribution.displayname,
+            self.context.distroseries.displayname)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return "Download translations for %s" % self.download_description

@@ -1,4 +1,4 @@
-= This is a FAQ =
+= Link to a FAQ =
 
 Even though similar questions are shown when a user creates a new
 question, common questions still happen for a number of reasons.
@@ -9,12 +9,12 @@ a particular question.
 
 == Linking to a FAQ ==
 
-Any logged in user can use the 'This is a FAQ' action item to link
+Any logged in user can use the 'Link to a FAQ' action item to link
 the question to an existing FAQ.
 
 For example, No Privileges Person comes across a question about SVG
 support in Firefox. That question has a well-known answer, so he clicks
-on 'This is a FAQ' to answer the question:
+on 'Link to a FAQ' to answer the question:
 
     # We use backslashreplace because the page title includes smart quotes.
     >>> from canonical.launchpad.helpers import backslashreplace
@@ -24,7 +24,7 @@ on 'This is a FAQ' to answer the question:
     Mozilla Firefox question #2:
     \u201cProblem showing the SVG demo on W3C site\u201d
 
-    >>> user_browser.getLink('This is a FAQ').click()
+    >>> user_browser.getLink('Link to a FAQ').click()
     >>> print backslashreplace(user_browser.title)
     Is question #2 a FAQ?
 
@@ -103,10 +103,12 @@ page.
 
 He sees that the question's status was changed to 'Answered':
 
-    >>> details_portlet = find_portlet(
-    ...     user_browser.contents, 'Mozilla Firefox question #2')
-    >>> print details_portlet.find('b', text='Status:').next.strip()
-    Answered
+    >>> def print_question_status(browser):
+    ...     print extract_text(
+    ...         find_tag_by_id(browser.contents, 'question-details'))
+
+    >>> print_question_status(user_browser)
+    Answered ...
 
 A link to the FAQ appears under the question's description:
 
@@ -127,13 +129,13 @@ The answer message was added to the question's discussion:
 
 == Modifying the FAQ ==
 
-The link to the FAQ can be changed by using the same 'This is a FAQ'
+The link to the FAQ can be changed by using the same 'Link to a FAQ'
 option. Continuing on the previous example, the user went on to read
 the FAQ that he just linked and found that it doesn't really answer
-the question. To correct the mistake, he uses the same 'This is a FAQ'
+the question. To correct the mistake, he uses the same 'Link to a FAQ'
 action.
 
-    >>> user_browser.getLink('This is a FAQ').click()
+    >>> user_browser.getLink('Link to a FAQ').click()
 
 The existing linked FAQ is selected and the other FAQs matching the
 question's title are displayed:
@@ -182,14 +184,14 @@ The link was also removed from the details portlet:
 == Creating a new FAQ ==
 
 When no existing FAQs are relevant, it is possible to create a new FAQ
-from the same 'This is a FAQ' action. But this option is reserved to
+from the same 'Link to a FAQ' action. But this option is reserved to
 users having 'moderation' privilege on the project (this includes
 answer contacts and the project's owner).
 
 Since No Privileges Person isn't an answer contact for the project nor
 the project owner, he doesn't have the possibility to create a new FAQ.
 
-    >>> user_browser.getLink('This is a FAQ').click()
+    >>> user_browser.getLink('Link to a FAQ').click()
     >>> user_browser.getLink('create a new FAQ')
     Traceback (most recent call last):
       ...
@@ -206,7 +208,7 @@ Sample Person who is the project owner does have that ability.
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> owner_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
-    >>> owner_browser.getLink('This is a FAQ').click()
+    >>> owner_browser.getLink('Link to a FAQ').click()
     >>> owner_browser.getLink('create a new FAQ').click()
     >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+question/2/+createfaq
@@ -276,7 +278,7 @@ FAQ title to display the FAQ content.
 The FAQ's title appears as the prime heading:
 
     >>> main_content = find_main_content(owner_browser.contents)
-    >>> print main_content.find('h1').renderContents()
+    >>> print main_content.find('h2').renderContents()
     Displaying SVG in Firefox
 
 The FAQ keywords and content appears just below:
@@ -319,7 +321,7 @@ can also be linked to FAQs.
     ...     'http://answers.launchpad.dev/ubuntu/+question/11')
     >>> user_browser.title
     'Ubuntu question #11:...'
-    >>> user_browser.getLink('This is a FAQ').click()
+    >>> user_browser.getLink('Link to a FAQ').click()
     >>> print user_browser.title
     Is question #11 a FAQ?
 
@@ -328,7 +330,7 @@ can also be linked to FAQs.
     ...     '/+question/8')
     >>> user_browser.title
     'mozilla-firefox in ubuntu question #8:...'
-    >>> user_browser.getLink('This is a FAQ').click()
+    >>> user_browser.getLink('Link to a FAQ').click()
     >>> print user_browser.title
     Is question #8 a FAQ?
 
@@ -347,9 +349,9 @@ information.
     ...     '+question/9')
     >>> details_portlet = find_portlet(
     ...     user_browser.contents, 'mozilla-firefox in ubuntu question #9')
-    >>> print details_portlet.find('b', text='Status:').next.strip()
-    Solved
-    >>> user_browser.getLink('This is a FAQ').click()
+    >>> print_question_status(user_browser)
+    Solved...
+    >>> user_browser.getLink('Link to a FAQ').click()
 
     >>> print user_browser.title
     Is question #9 a FAQ?
@@ -365,8 +367,8 @@ discussion.
 
     >>> user_browser.title
     'mozilla-firefox in ubuntu question #9:...'
-    >>> print details_portlet.find('b', text='Status:').next.strip()
-    Solved
+    >>> print_question_status(user_browser)
+    Solved...
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'related-faq'))

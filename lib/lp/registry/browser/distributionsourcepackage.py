@@ -31,6 +31,8 @@ from lp.registry.interfaces.product import IDistributionSourcePackage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.answers.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, Link,
     Navigation, StandardLaunchpadFacets, action, canonical_url, redirection)
@@ -89,7 +91,8 @@ class DistributionSourcePackageBugsMenu(
 
 
 class DistributionSourcePackageNavigation(Navigation,
-    BugTargetTraversalMixin, QuestionTargetTraversalMixin):
+    BugTargetTraversalMixin, QuestionTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage
 
@@ -125,6 +128,10 @@ class DecoratedDistributionSourcePackageRelease:
 
 
 class DistributionSourcePackageView(LaunchpadFormView):
+
+    @property
+    def page_title(self):
+        return self.context.title
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""

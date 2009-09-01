@@ -321,7 +321,7 @@ no user can subscribe that team to a bug.
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
     >>> admin_browser.getControl('Person').value = 'myteam'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Subscribe user').click()
     >>> admin_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
     >>> get_feedback_messages(admin_browser.contents)
@@ -352,7 +352,7 @@ no user can specify that team as a translator.
     ...                    '/+groups/testing-translation-team/+appoint')
     >>> admin_browser.getControl('Language').value = ['de']
     >>> admin_browser.getControl('Translator').value = 'myteam'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Appoint').click()
     >>> admin_browser.url
     'http://translations.launchpad.dev/+groups/testing-translation-team/+appoint'
     >>> get_feedback_messages(admin_browser.contents)

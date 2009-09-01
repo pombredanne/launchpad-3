@@ -15,7 +15,6 @@ __all__ = [
     'SprintNavigation',
     'SprintOverviewMenu',
     'SprintSetBreadcrumb',
-    'SprintSetContextMenu',
     'SprintSetFacets',
     'SprintSetNavigation',
     'SprintSetView',
@@ -34,7 +33,7 @@ from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 from lp.blueprints.interfaces.specification import (
@@ -44,7 +43,7 @@ from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
+    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
@@ -157,32 +156,6 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
     usedfor = ISprintSet
     enable_only = ['overview', ]
-
-
-class SprintSetContextMenu(ContextMenu):
-
-    usedfor = ISprintSet
-    links = ['products', 'distributions', 'people', 'sprints', 'all', 'new']
-
-    def all(self):
-        text = 'List all meetings'
-        return Link('+all', text)
-
-    def new(self):
-        text = 'Register a meeting'
-        return Link('+new', text, icon='add')
-
-    def products(self):
-        return Link('/projects/', 'View projects')
-
-    def distributions(self):
-        return Link('/distros/', 'View distributions')
-
-    def people(self):
-        return Link('/people/', 'View people')
-
-    def sprints(self):
-        return Link('/sprints/', 'View meetings')
 
 
 class SprintView(HasSpecificationsView, LaunchpadView):
@@ -498,7 +471,12 @@ class SprintSetNavigationMenu(RegistryCollectionActionMenuBase):
         'register_team',
         'register_project',
         'create_account',
+        'view_all_sprints',
         ]
+
+    def view_all_sprints(self):
+        text = 'Show all sprints'
+        return Link('+all', text, icon='list')
 
 
 class SprintSetView(LaunchpadView):

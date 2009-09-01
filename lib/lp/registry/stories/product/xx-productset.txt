@@ -192,14 +192,14 @@ will be displayed as proprietary.
 The unprivileged user can see "+all".
 
     >>> user_browser.open('http://launchpad.dev/projects/+all')
-    >>> user_browser.title
-    'Upstream projects registered in Launchpad'
+    >>> print user_browser.title
+    Projects registered in Launchpad
 
 The commercial user can also view "+all".
 
     >>> registry_browser.open('http://launchpad.dev/projects/+all')
-    >>> registry_browser.title
-    'Upstream projects registered in Launchpad'
+    >>> print registry_browser.title
+    Projects registered in Launchpad
 
 == Create a project ==
 
