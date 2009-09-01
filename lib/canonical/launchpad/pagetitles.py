@@ -772,13 +772,7 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
-
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_editircnicknames = ContextDisplayName(smartquote("%s's IRC nicknames"))
-
-person_editjabberids = ContextDisplayName(smartquote("%s's Jabber IDs"))
 
 person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
 

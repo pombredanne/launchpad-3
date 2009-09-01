@@ -7,6 +7,8 @@
 
 __metaclass__ = type
 
+
+
 __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
@@ -3166,15 +3168,23 @@ class PersonEditWikiNamesView(LaunchpadView):
                 return
 
 
-class PersonEditIRCNicknamesView(LaunchpadView):
+class PersonEditIRCNicknamesView(LaunchpadFormView):
 
-    def initialize(self):
+    schema = Interface
+
+    @property
+    def page_title(self):
+        return smartquote("%s's IRC nicknames" % self.context.displayname)
+
+    label = page_title
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
         """Process the IRC nicknames form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
-            return
-
         form = self.request.form
         for ircnick in self.context.ircnicknames:
             # XXX: GuilhermeSalgado 2005-08-25:
@@ -3204,10 +3214,21 @@ class PersonEditIRCNicknamesView(LaunchpadView):
                 self.newnetwork = network
                 self.error_message = structured(
                     "Neither Nickname nor Network can be empty.")
-                return
 
 
 class PersonEditJabberIDsView(LaunchpadView):
+
+    @property
+    def page_title(self):
+        return smartquote("%s's Jabber IDs" % self.context.displayname)
+
+    label = page_title
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
     def initialize(self):
         """Process the Jabber ID form."""
@@ -5000,6 +5021,18 @@ class PersonEditLocationView(LaunchpadFormView):
 
     schema = PersonLocationForm
     custom_widget('location', LocationWidget)
+
+    @property
+    def page_title(self):
+        return smartquote("%s's usual location" % self.context.displayname)
+
+    label = page_title
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
     @property
     def field_names(self):
