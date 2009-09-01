@@ -10,11 +10,9 @@ __all__ = [
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
-    'ProductBountiesMenu',
     'ProductBrandingView',
     'ProductBreadcrumb',
     'ProductBugsMenu',
-    'ProductChangeTranslatorsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditNavigationMenu',
@@ -76,7 +74,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -273,12 +271,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
         return Link('', text, summary)
-
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'Bounties related to %s' % self.context.displayname
-        return Link(target, text, summary)
 
     def branches(self):
         text = 'Code'
@@ -516,21 +508,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, summary, icon='add')
 
 
-class ProductBountiesMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
-
-
 def _sort_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""
     if a['name'] == 'ubuntu':
@@ -548,7 +525,7 @@ class ProductSetFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSet
 
-    enable_only = ['overview']
+    enable_only = ['overview', 'branches']
 
 
 class SortSeriesMixin:
@@ -688,6 +665,14 @@ class ReleaseWithFiles:
     def addFile(self, file):
         self.files.append(file)
 
+    @property
+    def name_with_codename(self):
+        milestone = self.release.milestone
+        if milestone.code_name:
+            return "%s (%s)" % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
+
     @cachedproperty
     def total_downloads(self):
         """Total downloads of files associated with this release."""
@@ -784,12 +769,6 @@ class ProductDownloadFileMixin:
                 self.request.response.addNotification(
                     "%d files have been deleted." %
                     del_count)
-
-    def seriesHasDownloadFiles(self, series):
-        """Determine whether a series has any download files."""
-        for release in series.releases:
-            if len(release.files) > 0:
-                return True
 
     @cachedproperty
     def latest_release_with_download_files(self):
@@ -990,6 +969,10 @@ class ProductDownloadFilesView(LaunchpadView,
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
 
+    @property
+    def page_title(self):
+        return "%s project files" % self.context.displayname
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         self.form = self.request.form
@@ -1007,7 +990,7 @@ class ProductDownloadFilesView(LaunchpadView,
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
         for series in self.product.serieses:
-            if self.seriesHasDownloadFiles(series):
+            if series.has_release_files:
                 return True
         return False
 
