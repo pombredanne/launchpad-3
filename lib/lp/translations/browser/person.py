@@ -361,6 +361,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     custom_widget('back_to', TextWidget, visible=False)
 
     @property
+    def page_title(self):
+        return "Translations licensing by %s" % self.context.displayname
+
+    @property
     def initial_values(self):
         """Set the default value for the relicensing radio buttons."""
         translations_person = ITranslationsPerson(self.context)
@@ -379,6 +383,11 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     def relicensing_url(self):
         """Return an URL for this view."""
         return canonical_url(self.context, view_name='+licensing')
+
+    @property
+    def cancel_url(self):
+        """Escape to the person's main Translations page."""
+        return canonical_url(self.context)
 
     def getSafeRedirectURL(self, url):
         """Successful form submission should send to this URL."""
@@ -406,8 +415,8 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
             translations_person.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
-                "Your translations will be removed once we complete the "
-                "switch to the BSD license. "
+                "Your translations will be removed later; this may take "
+                "quite some time. "
                 "Thanks for trying out Launchpad Translations."))
         else:
             raise AssertionError(

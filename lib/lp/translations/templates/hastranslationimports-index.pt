@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
@@ -39,6 +39,8 @@
 
       <metal:translation-import-queue
         use-macro="view/translation_import_queue_content" />
+
+      <tal:menu replace="structure context/@@+related-pages" />
     </div>
   </body>
 </html>

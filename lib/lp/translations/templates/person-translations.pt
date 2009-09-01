@@ -3,17 +3,17 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="heading">
   <h1>Translations related to <tal:name content="context/displayname" /></h1>
+</div>
+
+<div metal:fill-slot="main">
 
   <tal:me condition="view/person_includes_me">
     <tal:reviewer condition="view/person_is_reviewer">
@@ -58,12 +58,12 @@
         <tal:navigation content="structure view/batchnav/@@+navigation-links-upper" />
       </div>
 
-      <table class="listing">
+      <table class="listing" style="max-width:800px">
         <thead>
           <tr>
             <th>Translation file</th>
             <th>Untranslated</th>
-            <th>Needs review</th>
+            <th>Need review</th>
             <th>Latest translation</th>
           </tr>
         </thead>
@@ -125,33 +125,38 @@
     <span tal:replace="context/displayname">Mark Shuttleworth</span> is
     a member of the following translation groups:
 
-      <table class="listing" id="translation-group-memberships">
-        <thead>
-          <tr>
-            <th>Translation group</th>
-            <th>Language</th>
-            <th>Translation guidelines</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="translator view/translators">
-            <td><a tal:attributes="href translator/translationgroup/fmt:url"
-           tal:content="translator/translationgroup/title"></a></td>
-           <td tal:content="translator/language/englishname">Esperanto</td>
-           <td><a tal:condition="translator/style_guide_url"
-                  tal:content="translator/style_guide_url"
-                  tal:attributes="href translator/style_guide_url"
-                >Documentation URL</a>
-           <a tal:attributes="href string:${translator/translationgroup/fmt:url}/${translator/language/code}/+edit"
-           ><img src="/@@/edit" /></a></td>
-      </tr>
+    <table class="listing"
+           id="translation-group-memberships"
+           style="max-width:800px">
+      <thead>
+        <tr>
+          <th>Translation group</th>
+          <th>Language</th>
+          <th>Translation guidelines</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="translator view/translators">
+          <td>
+            <a tal:replace="structure translator/translationgroup/fmt:link">
+              Launchpad Translators
+            </a>
+          </td>
+          <td tal:content="translator/language/englishname">Esperanto</td>
+          <td><a tal:condition="translator/style_guide_url"
+                 tal:content="translator/style_guide_url"
+                 tal:attributes="href translator/style_guide_url"
+              >Documentation URL</a>
+            <a tal:attributes="href string:${translator/translationgroup/fmt:url}/${translator/language/code}/+edit"
+            ><img src="/@@/edit" /></a></td>
+        </tr>
       </tbody>
     </table>
 
   </tal:block>
 
+  <tal:menu replace="structure context/@@+related-pages" />
+
 </div>
-
-
 </body>
 </html>
