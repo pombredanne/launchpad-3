@@ -147,17 +147,3 @@ register a new tracker:
     >>> user_browser.getLink("Register another bug tracker").click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
-
-In fact, the link is there twice: once at the top of the page, once at
-the bottom.
-
-    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
-    >>> links = find_tags_by_class(
-    ...     user_browser.contents, 'menu-link-newbugtracker')
-    >>> len(links)
-    2
-
-    >>> for link in links:
-    ...     print extract_text(link)
-    Register another bug tracker
-    Register another bug tracker

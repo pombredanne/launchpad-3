@@ -3,12 +3,8 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_side"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="malone">
-
-  <div metal:fill-slot="side">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </div>
 
   <div metal:fill-slot="main">
     <h1>Change bug tracker details</h1>

@@ -69,11 +69,6 @@
           shown in Launchpad, and Launchpad subscribers are notified when
           the external status changes.
         </p>
-        <p tal:define="link context/menu:context/newbugtracker"
-           tal:content="structure link/render"
-           tal:condition="link/enabled">
-          Add a new bug tracker
-        </p>
         <tal:table define="id string:trackers;
                            trackers view/active_bug_trackers">
           <metal:table use-macro="template/macros/tracker-table" />
