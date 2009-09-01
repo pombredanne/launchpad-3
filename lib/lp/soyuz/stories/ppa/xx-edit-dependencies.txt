@@ -214,8 +214,8 @@ aware of this condition.
     http://launchpad.dev/~no-priv/+archive/ppa
 
 When accessed by their owners, a PPA depending on disabled archives
-will additionaly show an warning. This way PPA maintainer can react to
-this problem.
+will additionally show an warning. This way PPA maintainer can react
+to this problem.
 
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> ui_dependencies = find_tag_by_id(
