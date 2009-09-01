@@ -278,7 +278,7 @@ FAQ title to display the FAQ content.
 The FAQ's title appears as the prime heading:
 
     >>> main_content = find_main_content(owner_browser.contents)
-    >>> print main_content.find('h1').renderContents()
+    >>> print main_content.find('h2').renderContents()
     Displaying SVG in Firefox
 
 The FAQ keywords and content appears just below:

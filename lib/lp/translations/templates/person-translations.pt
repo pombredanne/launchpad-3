@@ -37,6 +37,14 @@
         </span>
       </div>
     </tal:reviewer>
+
+    <tal:translator condition="view/person_is_translator">
+      <div id="translations-to-complete-section" style="max-width:800px">
+        <h2>Translations you can help complete</h2>
+        <metal:translations-to-complete
+          tal:replace="structure context/@@+translations-to-complete-table" />
+      </div>
+    </tal:translator>
   </tal:me>
 
 
