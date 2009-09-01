@@ -34,6 +34,7 @@ import time
 import urllib
 from datetime import timedelta, datetime
 
+from zope.app import zapi
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
@@ -251,21 +252,28 @@ class Hierarchy(LaunchpadView):
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
         if len(breadcrumbs):
-            leaf_crumb = self.getBreadCrumbForLeaf()
-            if leaf_crumb:
-                breadcrumbs.append(leaf_crumb)
+            page_crumb = self.getBreadCrumbForRequestedPage()
+            if page_crumb:
+                breadcrumbs.append(page_crumb)
         return breadcrumbs
 
-    def getBreadCrumbForLeaf(self):
+    def getBreadCrumbForRequestedPage(self):
+        """Return an `IBreadcrumb` for the requested page.
+
+        If the requested page (as specified in self.request) is the default
+        one for the last traversed object, return None.
+        """
         url = self.request.getURL()
         last_segment = URI(url).path.split('/')[-1]
-        if last_segment.startswith('+') and last_segment != '+index':
+        default_view_name = zapi.getDefaultViewName(
+            self.request.traversed_objects[-1], self.request)
+        if last_segment == default_view_name:
+            return None
+        else:
             breadcrumb = Breadcrumb(None)
             breadcrumb._url = url
             breadcrumb.text = last_segment
             return breadcrumb
-        else:
-            return None
 
     @property
     def display_breadcrumbs(self):
