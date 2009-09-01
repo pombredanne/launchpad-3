@@ -21,7 +21,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
     layer = ZopelessAppServerLayer
 
     def test_update_preview_diffs(self):
-        """Ensure mpcreationjobs runs and generates diffs."""
+        """Ensure update_preview_diffs runs and generates diffs."""
         self.useTempBzrHome()
         target, target_tree = self.createMirroredBranchAndTree()
         target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
@@ -45,5 +45,5 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertEqual(
             'INFO    creating lockfile\n'
-            'INFO    Ran 1 MergeProposalCreatedJobs.\n', stderr)
+            'INFO    Ran 1 IUpdatePreviewDiffJobSource jobs.\n', stderr)
         self.assertIsNot(None, bmp.preview_diff)
