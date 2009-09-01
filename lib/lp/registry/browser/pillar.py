@@ -49,17 +49,17 @@ class InvolvedMenu(NavigationMenu):
 
     def help_translate(self):
         return Link(
-            '/', 'Help translate', site='translations', icon='translations',
+            '', 'Help translate', site='translations', icon='translations',
             enabled=self.context.official_rosetta)
 
     def submit_code(self):
         return Link(
-            '+filebug', 'Submit code', site='code', icon='code',
+            '+addbranch', 'Submit code', site='code', icon='code',
             enabled=self.context.official_codehosting)
 
     def register_blueprint(self):
         return Link(
-            '+addbranch', 'Register a blueprint', site='blueprints',
+            '+addspec', 'Register a blueprint', site='blueprints',
             icon='blueprints', enabled=self.context.official_blueprints)
 
 

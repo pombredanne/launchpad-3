@@ -690,13 +690,6 @@ class PersonFacets(StandardLaunchpadFacets):
             self.context.displayname)
         return Link('', text, summary)
 
-    def bounties(self):
-        text = 'Bounties'
-        browsername = self.context.displayname
-        summary = (
-            'Bounty offers that %s is involved with' % browsername)
-        return Link('+bounties', text, summary)
-
     def branches(self):
         text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
@@ -1379,8 +1372,10 @@ class PeopleSearchView(LaunchpadView):
 class PersonAddView(LaunchpadFormView):
     """The page where users can create new Launchpad profiles."""
 
-    label = "Create a new Launchpad profile"
+    page_title = "Create a new Launchpad profile"
+    label = page_title
     schema = INewPerson
+
     custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
 
     @action(_("Create Profile"), name="create")
@@ -2706,12 +2701,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
-
-    def no_bounties(self):
-        return not (self.context.ownedBounties or
-            self.context.reviewerBounties or
-            self.context.subscribedBounties or
-            self.context.claimedBounties)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""

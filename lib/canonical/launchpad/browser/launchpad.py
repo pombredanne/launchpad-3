@@ -52,7 +52,6 @@ from canonical.launchpad.layers import WebServiceLayer
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
-from canonical.launchpad.interfaces.bounty import IBountySet
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import InvalidNamespace
@@ -136,7 +135,7 @@ class MenuBox(LaunchpadView):
             if link.enabled or config.devmode],
             key=operator.attrgetter('sort_key'))
         facet = menuapi.selectedfacetname()
-        if facet not in ('unknown', 'bounties'):
+        if facet != 'unknown':
             # XXX sinzui 2008-06-23 bug=242453:
             # Why are we getting unknown? Bounties are borked. We need
             # to end the facet hacks to get a clear state for the menus.
@@ -341,12 +340,6 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 
-    def bounties(self):
-        target = 'bounties'
-        text = 'Bounties'
-        summary = 'The Launchpad Universal Bounty Tracker'
-        return Link(target, text, summary)
-
     def branches(self):
         target = ''
         text = 'Code'
@@ -492,7 +485,6 @@ class LaunchpadRootNavigation(Navigation):
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,
-        'bounties': IBountySet,
         'bugs': IMaloneApplication,
         'builders': IBuilderSet,
         '+code': IBazaarApplication,
