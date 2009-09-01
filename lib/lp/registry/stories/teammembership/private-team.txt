@@ -64,7 +64,7 @@ A member of the team or an admin can subscribe a private team to a bug.
     >>> cprov_browser.open('http://launchpad.dev/bugs/15')
     >>> cprov_browser.getLink('Subscribe someone else').click()
     >>> cprov_browser.getControl(name='field.person').value = 'private-team'
-    >>> cprov_browser.getControl('Add').click()
+    >>> cprov_browser.getControl('Subscribe user').click()
     >>> for message in get_feedback_messages(cprov_browser.contents):
     ...     print message
     Private Team team has been subscribed to this bug.
@@ -74,7 +74,7 @@ A regular user gets an error indicating the team is NotFound.
     >>> user_browser.open('http://launchpad.dev/bugs/13')
     >>> user_browser.getLink('Subscribe someone else').click()
     >>> user_browser.getControl(name='field.person').value = 'private-team'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Subscribe user').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.

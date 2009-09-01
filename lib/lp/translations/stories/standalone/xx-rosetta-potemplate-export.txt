@@ -19,8 +19,8 @@ Logged in as a regular user, the +export page is accessible.
   ...     '/+source/evolution/+pots/evolution-2.2')
   >>> browser.getLink('Download').click()
   >>> print browser.title
-  Download translations for “Template "evolution-2.2" in Ubuntu Hoary
-  package "evolution"”
+  Download translations of evolution-2.2 in Ubuntu Hoary
+  package "evolution"
 
 If we POST without the appropriate format included, we tell the user off:
 

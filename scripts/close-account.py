@@ -112,7 +112,6 @@ def close_account(con, log, username):
         ('GpgKey', 'owner'),
 
         # Subscriptions
-        ('BountySubscription', 'person'),
         ('BranchSubscription', 'person'),
         ('BugSubscription', 'person'),
         ('QuestionSubscription', 'person'),

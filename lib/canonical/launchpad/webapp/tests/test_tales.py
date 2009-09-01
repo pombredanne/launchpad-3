@@ -285,7 +285,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         else:
             content = ''
         preview = bmp.updatePreviewDiff(
-            content, u'diff stat', u'rev-a', u'rev-b', conflicts=conflicts)
+            content, {}, u'rev-a', u'rev-b', conflicts=conflicts)
         bmp.source_branch.last_scanned_id = preview.source_revision_id
         bmp.target_branch.last_scanned_id = preview.target_revision_id
         # Update the values directly sidestepping the security.

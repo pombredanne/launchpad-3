@@ -15,7 +15,7 @@ and permissions on a project.
 
     >>> gnome_owner_browser.getLink('Settings').click()
     >>> print gnome_owner_browser.title
-    Set translation group for The GNOME Project
+    Set translation permissions for GNOME
 
 Other users don't see the "Change translators" link and aren't allowed
 to access the page it leads to.
@@ -45,17 +45,11 @@ closed permissions.
     ...     'Translation group').displayValue = [
     ...         'The PolyGlot Translation Group']
     >>> gnome_owner_browser.getControl('Change').click()
-    >>> print gnome_owner_browser.title
-    Set translation group for The GNOME Project
-
-    >>> for tag in find_tags_by_class(
-    ...     gnome_owner_browser.contents, 'informational message'):
-    ...     print tag.renderContents()
-    Updated on ...
 
 And make sure these changes are now reflected in the Gnome project page
 in the relevant portlet.
 
-    >>> gnome_owner_browser.getLink('Translations').click()
+    >>> gnome_owner_browser.url
+    'http://translations.launchpad.dev/gnome'
     >>> print gnome_owner_browser.title
     Translatable projects for The GNOME Project

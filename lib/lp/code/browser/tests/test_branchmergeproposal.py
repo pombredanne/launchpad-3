@@ -462,7 +462,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def test_review_diff_utf8(self):
         """A review_diff in utf-8 should be converted to utf-8."""
         text = ''.join(unichr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text.encode('utf-8'))
+        diff = StaticDiff.acquireFromText(
+            'x', 'y', text.encode('utf-8'), diffstat={})
         transaction.commit()
         self.bmp.review_diff = diff
         self.assertEqual(text, self._createView().review_diff)
@@ -470,7 +471,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def test_review_diff_all_chars(self):
         """review_diff should work on diffs containing all possible bytes."""
         text = ''.join(chr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text)
+        diff = StaticDiff.acquireFromText('x', 'y', text, diffstat={})
         transaction.commit()
         self.bmp.review_diff = diff
         self.assertEqual(text.decode('windows-1252', 'replace'),

@@ -18,7 +18,8 @@ notification they would like to receive.
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')
-    >>> diff = getUtility(IStaticDiffSource).acquireFromText('a', 'b', 'c')
+    >>> diff = getUtility(IStaticDiffSource).acquireFromText(
+    ...     'a', 'b', 'c', diffstat={})
     >>> # Make Librarian happy.
     >>> transaction.commit()
     >>> bmp = factory.makeBranchMergeProposal()
