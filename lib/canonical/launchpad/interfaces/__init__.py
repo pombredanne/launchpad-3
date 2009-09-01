@@ -27,9 +27,6 @@ from canonical.launchpad.interfaces.authserver import *
 from canonical.launchpad.interfaces.authtoken import *
 from lp.soyuz.interfaces.binarypackagerelease import *
 from lp.soyuz.interfaces.binarypackagename import *
-from canonical.launchpad.interfaces.bounty import *
-from canonical.launchpad.interfaces.bountymessage import *
-from canonical.launchpad.interfaces.bountysubscription import *
 from lp.bugs.interfaces.bugactivity import *
 from lp.bugs.interfaces.bugattachment import *
 from lp.bugs.interfaces.bug import *
@@ -56,7 +53,6 @@ from lp.services.worlddata.interfaces.country import *
 from lp.bugs.interfaces.cve import *
 from lp.bugs.interfaces.cvereference import *
 from lp.registry.interfaces.distribution import *
-from canonical.launchpad.interfaces.distributionbounty import *
 from lp.registry.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
 from lp.soyuz.interfaces.distributionsourcepackagecache import *
@@ -103,12 +99,10 @@ from canonical.launchpad.interfaces.pathlookup import *
 from lp.registry.interfaces.poll import *
 from lp.soyuz.interfaces.processor import *
 from lp.registry.interfaces.product import *
-from canonical.launchpad.interfaces.productbounty import *
 from lp.registry.interfaces.productlicense import *
 from lp.registry.interfaces.productrelease import *
 from lp.registry.interfaces.productseries import *
 from lp.registry.interfaces.project import *
-from canonical.launchpad.interfaces.projectbounty import *
 from lp.soyuz.interfaces.publishedpackage import *
 from lp.soyuz.interfaces.publishing import *
 from lp.soyuz.interfaces.queue import *

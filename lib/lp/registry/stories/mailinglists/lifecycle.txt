@@ -133,7 +133,7 @@ address until Mailman has acknowledged successful creation.
     ...
     LookupError: ...
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> browser.getControl('Apply for Mailing List')
     Traceback (most recent call last):
     ...
@@ -200,7 +200,7 @@ address.
 
 The mailing list's configuration screen is also now available.
 
-    >>> browser.getLink('Configure mailing list').url
+    >>> browser.getLink(url='+mailinglist').url
     'http://launchpad.dev/~landscape-developers/+mailinglist'
 
 Although of course, it's not available to someone with no permission to
