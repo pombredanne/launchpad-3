@@ -33,7 +33,7 @@ We'll now propose Launchpad Administrators as a member of Ubuntu Team.
     [u'Launchpad Administrators has been proposed to this team.']
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
-    Recently applied
+    Pending approval
     Launchpad Administrators
     ...
 
