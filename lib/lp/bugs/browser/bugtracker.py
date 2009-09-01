@@ -22,12 +22,11 @@ __all__ = [
 from itertools import chain
 
 from zope.interface import implements
-from zope.component import getAdapter, getUtility
+from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.formlib import form
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
-from zope.traversing.interfaces import IPathAdapter
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
@@ -171,14 +170,6 @@ class BugTrackerView(LaunchpadView):
 
     def initialize(self):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
-
-    @property
-    def layout(self):
-        macro = getAdapter(self, IPathAdapter, 'macro')
-        if self.user is None:
-            return macro.page('main_only')
-        else:
-            return macro.page('main_side')
 
     @property
     def related_projects(self):
