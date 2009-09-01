@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <metal:heading fill-slot="head_epilogue">
@@ -22,40 +19,7 @@
 </metal:heading>
 
 <body>
-
-<metal:portlets fill-slot="portlets">
-
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-stats" />
-
-</metal:portlets>
-
-    <div metal:fill-slot="help">
-
-      <p>This page shows a list of all translations a user has submitted
-        for a certain PO file. It includes both currently used and
-        unused suggestions, including those which are now hidden.</p>
-
-      <dl>
-        <dt class="usedtranslation">Bold:</dt>
-          <dd>Indicates currently used submissions.</dd>
-        <dt>Regular:</dt>
-          <dd>Indicates unused, recent suggestion.</dd>
-        <dt class="hiddentranslation">Gray</dt>
-          <dd>Indicates hidden, unused suggestion (hidden are those
-          which have been reviewed but rejected).</dd>
-      </dl>
-    </div>
-
 <div metal:fill-slot="main">
-
-    <div>
-      <a tal:attributes="href context/fmt:url"
-         tal:content="context/title">
-        evolution 2.10 translation
-      </a>
-    </div>
-
     <h1 tal:condition="view/person">Contributions by
       <tal:contributor content="view/person/displayname"/>
     </h1>
@@ -69,11 +33,14 @@
     <tal:translations condition="messages">
       <p tal:condition="view/person">
         <tal:contributor content="view/person/displayname"/> has
-        submitted following translations.
+        submitted the following strings to this translation.
+        Contributions are visually coded as follows:
+        <span class="usedtranslation">currently used translations</span>,
+        <span>unreviewed suggestions</span>,
+        <span class="hiddentranslation">rejected suggestions</span>.
       </p>
 
-
-      <div class="lesser">
+      <div>
         <tal:navigation content="
           structure view/batchnav/@@+navigation-links-upper" />
       </div>
@@ -114,6 +81,7 @@
 
       </tal:translations>
     </tal:block>
+    <tal:menu replace="structure context/@@+related-pages" />
     </div>
   </body>
 </html>

@@ -24,6 +24,8 @@ from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
+from canonical.lazr.utils import smartquote
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.translations.browser.translationmessage import (
@@ -245,6 +247,20 @@ class POFileFilteredView(LaunchpadView):
     """A filtered view for a `POFile`."""
 
     DEFAULT_BATCH_SIZE = 50
+
+    def page_title(self):
+        """See `LaunchpadView`."""
+        if self.person is None:
+            person = "unknown"
+        else:
+            person = self.person
+
+        return smartquote('Translations by %s in "%s"') % (
+            person.displayname, self.context.title)
+    
+    def label(self):
+        """See `LaunchpadView`."""
+        return "Translations by %s" % self.person.displayname
 
     def initialize(self):
         """See `LaunchpadView`."""

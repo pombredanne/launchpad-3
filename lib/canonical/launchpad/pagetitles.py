@@ -76,17 +76,6 @@ class ContextDisplayName(SubstitutionHelper):
         return self.text % context.displayname
 
 
-class FilteredTranslationsTitle(SubstitutionHelper):
-    """Return the formatted string with context's title and view's person."""
-    def __call__(self, context, view):
-        if view.person is not None:
-            person = view.person.displayname
-        else:
-            person = 'unknown'
-        return self.text % {'title' : context.title,
-                            'person' : person }
-
-
 class ContextId(SubstitutionHelper):
     """Return the formatted string with context's id."""
     def __call__(self, context, view):
@@ -836,9 +825,6 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
-
-pofile_filter = FilteredTranslationsTitle(
-    smartquote('Translations by %(person)s in "%(title)s"'))
 
 pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
