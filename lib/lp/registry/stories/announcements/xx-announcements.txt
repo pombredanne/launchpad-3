@@ -34,34 +34,77 @@ Making an announcement
 ----------------------
 
 If you are not logged in, you don't see the link to make an
-announcement.
+announcement, neither on the pillar page nor on the announcements
+page.
 
-    >>> anon_browser.open('http://launchpad.dev/apache')
+    >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> anon_browser.getLink('Make announcement')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
+    >>> anon_browser.getLink('Read all announcements').click()
+    >>> anon_browser.getLink('Make announcement')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
+    >>> anon_browser.getLink('Make announcement')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.getLink('Read all announcements').click()
+    >>> anon_browser.getLink('Make announcement')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
 Logged in users can only see it if they have launchpad.Edit on the
 pillar.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
-    >>> nopriv_browser.open('http://launchpad.dev/apache')
+    >>> nopriv_browser.open('http://launchpad.dev/firefox')
+    >>> nopriv_browser.getLink('Make announcement')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> nopriv_browser.getLink('Read all announcements').click()
     >>> nopriv_browser.getLink('Make announcement')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> priv_browser = setupBrowser(auth="Basic mark@example.com:test")
-    >>> priv_browser.open('http://launchpad.dev/apache')
+    >>> priv_browser.open('http://launchpad.dev/ubuntu')
     >>> link = priv_browser.getLink('Make announcement')
     >>> print link.text
     Make announcement
 
+    >>> priv_browser.getLink('Read all announcements').click()
+    >>> link = priv_browser.getLink('Make announcement')
+    >>> print link.text
+    Make announcement
+
+    >>> priv_browser.open('http://launchpad.dev/firefox')
+    >>> link = priv_browser.getLink('Make announcement')
+    >>> print link.text
+    Make announcement
+
+    >>> priv_browser.getLink('Read all announcements').click()
+    >>> link = priv_browser.getLink('Make announcement')
+    >>> print link.text
+    Make announcement
+
+
 Following the action link takes you to a form where you can make the
 announcement:
 
-    >>> link.click()
+    >>> priv_browser.open('http://launchpad.dev/apache')
+    >>> priv_browser.getLink('Make announcement').click()
     >>> priv_browser.getControl('Headline').value = (
     ...     'Apache announcement headline')
     >>> priv_browser.getControl('Summary').value = (

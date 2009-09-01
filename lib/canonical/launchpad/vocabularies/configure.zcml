@@ -5,12 +5,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <utility
-    name="Bounty"
-    component="canonical.launchpad.vocabularies.BountyVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    />
-
-  <utility
     name="Branch"
     component="canonical.launchpad.vocabularies.BranchVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

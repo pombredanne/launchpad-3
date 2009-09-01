@@ -11,7 +11,6 @@ __all__ = [
     'ProjectAddQuestionView',
     'ProjectAddView',
     'ProjectAnswersMenu',
-    'ProjectBountiesMenu',
     'ProjectBrandingView',
     'ProjectBreadcrumb',
     'ProjectBugsMenu',
@@ -54,7 +53,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.registry.browser.product import (
     ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
@@ -283,21 +282,6 @@ class ProjectEditNavigationMenu(NavigationMenu, ProjectEditMenuMixin):
     facet = 'overview'
     title = 'Change project group'
     links = ('branding', 'reassign', 'driver', 'administer')
-
-
-class ProjectBountiesMenu(ApplicationMenu):
-
-    usedfor = IProject
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register a bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
 
 
 class ProjectSpecificationsMenu(ApplicationMenu):

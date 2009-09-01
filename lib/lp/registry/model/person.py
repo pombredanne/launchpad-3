@@ -383,18 +383,6 @@ class Person(
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
-    ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
-        orderBy='id')
-    reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
-        orderBy='id')
-    # XXX: matsubara 2006-03-06 bug=33935:
-    # Is this really needed? There's no attribute 'claimant' in the Bounty
-    # database class or interface, but the column exists in the database.
-    claimedBounties = SQLMultipleJoin('Bounty', joinColumn='claimant',
-        orderBy='id')
-    subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
-        otherColumn='bounty', intermediateTable='BountySubscription',
-        orderBy='id')
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -1736,7 +1724,6 @@ class Person(
 
         # Nuke all subscriptions of this person.
         removals = [
-            ('BountySubscription', 'person'),
             ('BranchSubscription', 'person'),
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
@@ -2872,6 +2859,11 @@ class PersonSet:
             ''' % vars())
 
     def _mergeBountySubscriptions(self, cur, from_id, to_id):
+        # XXX: JonathanLange 2009-08-31: Even though all of the other bounty
+        # code has been removed from Launchpad, the merging code has to stay
+        # until the tables themselves are removed. Otherwise, the person
+        # merging code raises consistency errors (and rightly so).
+        #
         # Update only the BountySubscriptions that will not conflict.
         cur.execute('''
             UPDATE BountySubscription
@@ -3303,7 +3295,7 @@ class PersonSet:
 
         # These rows are in a UNIQUE index, and we can only move them
         # to the new Person if there is not already an entry. eg. if
-        # the destination and source persons are both subscribed to a bounty,
+        # the destination and source persons are both subscribed to a bug,
         # we cannot change the source persons subscription. We just leave them
         # as noise for the time being.
 
@@ -3333,11 +3325,11 @@ class PersonSet:
         self._mergeBranchSubscription(cur, from_id, to_id)
         skip.append(('branchsubscription', 'person'))
 
-        self._mergeBountySubscriptions(cur, from_id, to_id)
-        skip.append(('bountysubscription', 'person'))
-
         self._mergeBugAffectsPerson(cur, from_id, to_id)
         skip.append(('bugaffectsperson', 'person'))
+
+        self._mergeBountySubscriptions(cur, from_id, to_id)
+        skip.append(('bountysubscription', 'person'))
 
         self._mergeAnswerContact(cur, from_id, to_id)
         skip.append(('answercontact', 'person'))
