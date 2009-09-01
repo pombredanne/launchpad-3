@@ -943,9 +943,6 @@ productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
 
-productseries_translations_bzr_import = (
-    'Request translations import from Bazaar branch')
-
 project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
