@@ -2,8 +2,9 @@
 Distribution Source Packages
 ============================
 
+
 Distribution Package Search Results
------------------------------------
+===================================
 
 Although there is a separate search page, we can search from the
 distribution overview page which takes us there and displays the
@@ -31,8 +32,8 @@ Follow pmount source package path
 
 Get pmount 0.1-2 version
 
-    >>> browser.getLink("0.1-2").url
-    'http://localhost/ubuntu/+source/pmount/0.1-2'
+    >>> print browser.getLink("0.1-2").url
+    http://localhost/ubuntu/+source/pmount/0.1-2
 
 Ensure that the correct binaries appear on the search results.  We only
 show one link to mozilla-firefox on the results page under each distro

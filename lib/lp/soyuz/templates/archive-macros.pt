@@ -66,11 +66,14 @@ function startUpdate(container) {
 
     /*
      * If a page wants to use this outside of an archive context then it
-     * car define LP.client.cache['archive_context'], which should be a
+     * can define LP.client.cache['archive_context'], which should be a
      * full or relative URL to the context archive page required.
      */
-    var base_url = (typeof(LP.client.cache['archive_context_url']) != "undefined") ? LP.client.cache['archive_context_url'] : '';
-    if (base_url !== ''){
+    var base_url = (
+        typeof(LP.client.cache['archive_context_url']) != "undefined")
+            ? LP.client.cache['archive_context_url']
+            : '';
+    if (base_url !== '') {
         base_url += '/'
     }
     var pub_id = container.get('id').replace(

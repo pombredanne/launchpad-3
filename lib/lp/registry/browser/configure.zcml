@@ -521,10 +521,10 @@
     </browser:pages>
     <browser:menus
         classes="
-            DistributionSourcePackageFacets
-            DistributionSourcePackageOverviewMenu
             DistributionSourcePackageActionMenu
-            DistributionSourcePackageBugsMenu"
+            DistributionSourcePackageBugsMenu
+            DistributionSourcePackageFacets
+            DistributionSourcePackageOverviewMenu"
         module="lp.registry.browser.distributionsourcepackage"/>
     <browser:url
         for="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"

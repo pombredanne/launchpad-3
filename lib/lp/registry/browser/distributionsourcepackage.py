@@ -158,7 +158,7 @@ class DistributionSourcePackageActionMenu(
     usedfor = IDistributionSourcePackageActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('change_log', 'subscribe', 'edit')
+    links = ['change_log', 'subscribe', 'edit']
 
     def change_log(self):
         text = 'View full change log'
@@ -166,6 +166,7 @@ class DistributionSourcePackageActionMenu(
 
 
 class DistributionSourcePackageView(LaunchpadFormView):
+    """View class for DistributionSourcePackage."""
     implements(IDistributionSourcePackageActionMenu)
 
     @property
@@ -364,8 +365,8 @@ class DistributionSourcePackageView(LaunchpadFormView):
         series = set()
         for package in self.active_distroseries_packages:
             series.add(package.distroseries)
-        result = list(series)
-        result.sort(key=operator.attrgetter("version"), reverse=True)
+        result = sorted(
+            series, key=operator.attrgetter('version'), reverse=True)
         return result
 
     def published_by_version(self, sourcepackage):
@@ -378,10 +379,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
         pocket_dict = {}
         for pub in publications:
             version = pub.source_package_version
-            if version not in pocket_dict:
-                pocket_dict[version] = [pub]
-            else:
-                pocket_dict[version].append(pub)
+            pocket_dict.setdefault(version, []).append(pub)
         return pocket_dict
 
     @property
@@ -418,21 +416,23 @@ class DistributionSourcePackageView(LaunchpadFormView):
             # After the title row, we list each package version that's
             # currently published, and which pockets it's published in.
             pocket_dict = self.published_by_version(package)
-            for version in pocket_dict.iterkeys():
+            for version in pocket_dict:
                 most_recent_publication = pocket_dict[version][0]
-                if most_recent_publication.datepublished is None:
+                date_published = most_recent_publication.datepublished
+                if date_published is None:
                     published_since = None
                 else:
-                    published_since = datetime.now(
-                        tz=pytz.UTC) - most_recent_publication.datepublished
+                    now = datetime.now(tz=pytz.UTC)
+                    published_since = now - date_published
+                pockets = ", ".join(
+                    [pub.pocket.name for pub in pocket_dict[version]])
                 row = {
                     'blank_row': False,
                     'title_row': False,
                     'data_row': True,
                     'version': version,
                     'publication': most_recent_publication,
-                    'pockets': ", ".join(
-                        [pub.pocket.name for pub in pocket_dict[version]]),
+                    'pockets': pockets,
                     'component': most_recent_publication.component_name,
                     'published_since': published_since,
                     }
