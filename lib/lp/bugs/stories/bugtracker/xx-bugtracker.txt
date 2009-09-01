@@ -677,15 +677,13 @@ the bug tracker page.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
   >>> print extract_text(find_portlet(
-  ...     user_browser.contents, 'Email bugtracker'))
-  Email bugtracker
-  Location:
+  ...     user_browser.contents, 'Details'))
+  Details
+  Location
   mailto:bugs@example.com
-  Tracker type:
+  Tracker type
   Email Address
-  Number of watches:
-  1
-  Creator:
+  Created by
   Foo Bar
 
 If the user is not logged in, email addresses in the Location field
@@ -693,9 +691,9 @@ above are obfuscated:
 
   >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
   >>> print extract_text(find_portlet(
-  ...     anon_browser.contents, 'Email bugtracker'))
-  Email bugtracker
-  Location:
+  ...     anon_browser.contents, 'Details'))
+  Details
+  Location
   mailto:&lt;email address hidden&gt;
   ...
 
@@ -704,15 +702,14 @@ If the bug tracker has contact details, they will be shown:
   >>> anon_browser.open(
   ...     'http://bugs.launchpad.dev/bugs/bugtrackers/gnome-bugzilla')
   >>> print extract_text(find_portlet(
-  ...     anon_browser.contents, 'GnomeGBug GTracker'))
-  GnomeGBug GTracker
-  Location:
-   http://bugzilla.gnome.org/bugs
-  Tracker type:
+  ...     anon_browser.contents, 'Details'))
+  Details
+  Location
+  http://bugzilla.gnome.org/bugs
+  http://alias.example.com/ (Alias)
+  Tracker type
   Bugzilla
-  Number of watches:
-  2
-  Contact details:
+  Contact details
   Jeff Waugh, in his pants.
-  Creator:
+  Created by
   Foo Bar

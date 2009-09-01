@@ -740,6 +740,9 @@
             <browser:page
                 name="+portlet-projects"
                 template="../templates/bugtracker-portlet-projects.pt"/>
+            <browser:page
+                name="+portlet-watches"
+                template="../templates/bugtracker-portlet-watches.pt"/>
         </browser:pages>
         <browser:page
             name="+edit"
