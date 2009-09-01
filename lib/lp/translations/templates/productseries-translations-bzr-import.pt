@@ -21,29 +21,35 @@
   <tal:form tal:condition="view/context/branch">
     <div metal:use-macro="context/@@launchpad_form/form">
       <div metal:fill-slot="extra_info">
-        <p
-	   class="not-translated-in-launchpad"
+        <p class="not-translated-in-launchpad"
 	   tal:condition="not: context/product/official_rosetta">
 	  <strong>
-	    This project is not configured to use Launchpad for translations.
+	    This project is not configured to use Launchpad for
+            translations.
 	  </strong>
-	  <tal:admin_or_owner condition="context/product/required:launchpad.Edit">
+	  <tal:admin_or_owner condition="
+              context/product/required:launchpad.Edit">
 	    You can change this in the
 	    <a tal:attributes="href view/product_edit_url">
-              project settings</a>. (<a href="/+help/getting-started-for-your-project.html" target="help">Getting started with translating your project in Launchpad</a>)
+              project settings</a>.
+            (<a href="/+help/getting-started-for-your-project.html"
+                target="help">Getting started with translating your project
+              in Launchpad</a>)
 	  </tal:admin_or_owner>
 	</p>
-	
+
 	<tal:rosetta condition="context/product/official_rosetta">
 	  <p>
-	    You can ask Launchpad for a one-time import of all the translation files
-	    (templates and translations) that it finds in
+	    You can ask Launchpad for a one-time import of all the
+            translation files (templates and translations) that it finds in
 	    <strong><tal:series replace="structure view/series_title">
-		Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
-	    (<a href="https://help.launchpad.net/Translations/ImportPolicy">Read the
-	      translations import policy</a>)
+		Evolution Series:trunk</tal:series>'s</strong>
+            official Bazaar branch.
+	    (<a href="https://help.launchpad.net/Translations/ImportPolicy"
+                >Read the translations import policy</a>)
 	  </p>
-	  <p tal:condition="not:view/has_imports_enabled" id="settings-display">
+	  <p tal:condition="not:view/has_imports_enabled"
+             id="settings-display">
 	    <img src="/@@/info" class="inline-icon" />
 	    To enable continuous imports please change the settings
 	    <a tal:attributes="href view/translations_settings_url">here</a>.
