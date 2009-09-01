@@ -916,8 +916,6 @@ product_timeline = ContextTitle('Timeline Diagram for %s')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
-product_translators = ContextTitle('Set translation group for %s')
-
 productrelease_add = ContextDisplayName('Publish the release of %s')
 
 productrelease_add_from_series = productrelease_add
@@ -966,8 +964,6 @@ project_rosetta_index = ContextTitle('Launchpad Translations: %s')
 project_specs = ContextTitle('Blueprints for %s')
 
 project_translations = ContextTitle('Translatable projects for %s')
-
-project_translators = ContextTitle('Set translation group for %s')
 
 projects_request = 'Launchpad Translations: Request a project group'
 
