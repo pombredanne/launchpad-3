@@ -86,7 +86,7 @@
         </p>
       </div>
     </div>
-    <div class="yui-u" condition="view/inactive_bug_trackers">
+    <div class="yui-u" tal:condition="view/inactive_bug_trackers">
       <div class="portlet">
         <h2>Inactive bug trackers</h2>
         <tal:table define="id string:inactive-trackers;
