@@ -483,9 +483,10 @@
     </browser:pages>
     <browser:menus
         classes="
+            DistributionSourcePackageActionMenu
+            DistributionSourcePackageBugsMenu
             DistributionSourcePackageFacets
-            DistributionSourcePackageOverviewMenu
-            DistributionSourcePackageBugsMenu"
+            DistributionSourcePackageOverviewMenu"
         module="lp.registry.browser.distributionsourcepackage"/>
     <browser:url
         for="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"
