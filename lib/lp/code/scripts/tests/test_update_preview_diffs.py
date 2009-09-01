@@ -15,7 +15,7 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
 
 
-class TestCreateMergeProposals(TestCaseWithFactory):
+class TestUpdatePreviewDiffs(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
 
