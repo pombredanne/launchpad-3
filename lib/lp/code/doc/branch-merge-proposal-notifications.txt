@@ -9,6 +9,7 @@ notifications.
 When subscribers subscribe to branches, they can specify what level of
 notification they would like to receive.
 
+    >>> from difflib import unified_diff
     >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
@@ -18,8 +19,9 @@ notification they would like to receive.
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')
+    >>> diff_bytes = ''.join(unified_diff('', 'c'))
     >>> diff = getUtility(IStaticDiffSource).acquireFromText(
-    ...     'a', 'b', 'c', diffstat={})
+    ...     'a', 'b', diff_bytes)
     >>> # Make Librarian happy.
     >>> transaction.commit()
     >>> bmp = factory.makeBranchMergeProposal()

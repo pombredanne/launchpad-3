@@ -3,6 +3,7 @@
 
 """tales.py doctests."""
 
+from difflib import unified_diff
 from textwrap import dedent
 import unittest
 
@@ -281,11 +282,11 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # correct last scanned ids to ensure that the new diff is not stale.
         bmp = self.factory.makeBranchMergeProposal()
         if line_count:
-            content = 'random content'
+            content = ''.join(unified_diff('', 'random content'))
         else:
             content = ''
         preview = bmp.updatePreviewDiff(
-            content, {}, u'rev-a', u'rev-b', conflicts=conflicts)
+            content, u'rev-a', u'rev-b', conflicts=conflicts)
         bmp.source_branch.last_scanned_id = preview.source_revision_id
         bmp.target_branch.last_scanned_id = preview.target_revision_id
         # Update the values directly sidestepping the security.

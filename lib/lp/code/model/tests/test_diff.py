@@ -7,6 +7,7 @@ __metaclass__ = type
 
 
 from cStringIO import StringIO
+from difflib import unified_diff
 from unittest import TestLoader
 
 from bzrlib.branch import Branch
@@ -75,7 +76,7 @@ class TestDiff(DiffTestCase):
         sio.write(content)
         size = sio.tell()
         sio.seek(0)
-        diff = Diff.fromFile(sio, size, diffstat={})
+        diff = Diff.fromFile(sio, size)
         # Commit to make the alias available for reading.
         transaction.commit()
         return diff
@@ -83,13 +84,13 @@ class TestDiff(DiffTestCase):
     def test_text_reads_librarian_content(self):
         # IDiff.text will read at most config.diff.max_read_size bytes from
         # the librarian.
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertEqual(content, diff.text)
 
     def test_oversized_normal(self):
         # A diff smaller than config.diff.max_read_size is not oversized.
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertFalse(diff.oversized)
 
@@ -97,14 +98,14 @@ class TestDiff(DiffTestCase):
         # IDiff.text will read at most config.diff.max_read_size bytes from
         # the librarian.
         self.pushConfig("diff", max_read_size=25)
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertEqual(content[:25], diff.text)
 
     def test_oversized_for_big_diff(self):
         # A diff larger than config.diff.max_read_size is oversized.
         self.pushConfig("diff", max_read_size=25)
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
 
@@ -197,14 +198,14 @@ class TestStaticDiff(TestCaseWithFactory):
         It creates a new object if there is none, but uses the existing one
         if possible.
         """
-        diff_a = 'a'
-        diff_b = 'b'
+        diff_a = ''.join(unified_diff('', 'a'))
+        diff_b = ''.join(unified_diff('', 'b'))
         static_diff = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_a, diffstat={})
+            'rev1', 'rev2', diff_a)
         self.assertEqual('rev1', static_diff.from_revision_id)
         self.assertEqual('rev2', static_diff.to_revision_id)
         static_diff2 = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_b, diffstat={})
+            'rev1', 'rev2', diff_b)
         self.assertIs(static_diff, static_diff2)
 
     def test_acquireFromTextEmpty(self):
@@ -212,10 +213,11 @@ class TestStaticDiff(TestCaseWithFactory):
         self.assertEqual('', static_diff.diff.text)
 
     def test_acquireFromTextNonEmpty(self):
+        diff_bytes = ''.join(unified_diff('', 'abc'))
         static_diff = StaticDiff.acquireFromText(
-            'rev1', 'rev2', 'abc', diffstat={})
+            'rev1', 'rev2', diff_bytes)
         transaction.commit()
-        self.assertEqual('abc', static_diff.diff.text)
+        self.assertEqual(diff_bytes, static_diff.diff.text)
 
 
 class TestPreviewDiff(DiffTestCase):
@@ -224,7 +226,7 @@ class TestPreviewDiff(DiffTestCase):
     layer = LaunchpadFunctionalLayer
 
     def _createProposalWithPreviewDiff(self, dependent_branch=None,
-                                       content='content'):
+                                       content=None):
         # Create and return a preview diff.
         mp = self.factory.makeBranchMergeProposal(
             dependent_branch=dependent_branch)
@@ -233,8 +235,10 @@ class TestPreviewDiff(DiffTestCase):
             dependent_revision_id = None
         else:
             dependent_revision_id = u'rev-c'
+        if content is None:
+            content = ''.join(unified_diff('', 'content'))
         mp.updatePreviewDiff(
-            content, {}, u'rev-a', u'rev-b',
+            content, u'rev-a', u'rev-b',
             dependent_revision_id=dependent_revision_id)
         # Make sure the librarian file is written.
         transaction.commit()
