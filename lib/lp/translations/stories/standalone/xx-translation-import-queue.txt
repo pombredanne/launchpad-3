@@ -166,6 +166,12 @@ So we'd better specify a valid name.
 
 Open the edit form for the fourth entry.
 
+XXX DaniloSegan 2009-09-01: it seems we are hitting Zope testbrowser
+bug, so we need to reopen the page we are currently at to set 'referer'
+header properly.  This seems similar to #98437 but the fix proposed
+there doesn't help.
+
+  >>> browser.open('http://translations.launchpad.dev/+imports')
   >>> browser.getLink(url='imports/4').click()
 
 And provide information for this IPOFile to be newly created.
@@ -193,7 +199,7 @@ imported assigned.
   po/es.po in
   Mozilla Firefox 1.0 series
   Approved
-  ...    
+  ...
   Spanish (es) translation of pkgconf-mozilla in Mozilla Firefox 1.0
   ...
 

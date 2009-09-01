@@ -18,7 +18,7 @@
 
 <div metal:fill-slot="main">
 
-  <tal:form tal:condition="view/context/branch">
+  <tal:form tal:condition="context/branch">
     <div metal:use-macro="context/@@launchpad_form/form">
       <div metal:fill-slot="extra_info">
         <p class="not-translated-in-launchpad"
@@ -55,8 +55,7 @@
 	    <a tal:attributes="href view/translations_settings_url">here</a>.
 	  </p>
 	</tal:rosetta>
-	<p tal:condition="view/context/branch"
-	   tal:define="branch view/context/branch"
+	<p tal:define="branch context/branch"
 	   id="branch-display">
 	  The official Bazaar branch is:
 	  <img src="/@@/branch" class="inline-icon" />
@@ -68,15 +67,20 @@
 			     title string:Change official branch"
              ><img src="/@@/edit" class="inline-icon" /></a>
 	</p>
-	<p tal:condition="not:view/context/branch"
-	   id="no-branch-display">
-	  This series does not have an official Bazaar branch.
-	  <a tal:attributes="href view/link_branch_url">
-	    Please set it first.</a>
-	</p>
       </div>
     </div>
   </tal:form>
+  <tal:no-branch condition="not:context/branch">
+    <h1 tal:content="view/label" />
+    <div class="main-portlet">
+      <p tal:condition="not:view/context/branch"
+	 id="no-branch-display">
+	This series does not have an official Bazaar branch.
+	<a tal:attributes="href view/link_branch_url">
+	  Please set it first.</a>
+      </p>
+    </div>
+  </tal:no-branch>
 </div>
 
 </body>

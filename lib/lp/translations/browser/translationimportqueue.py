@@ -113,11 +113,20 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     @property
     def cancel_url(self):
         """See `LaunchpadFormView`."""
-        return self.referrer_url
+        referrer = self.referrer_url
+        if referrer is None:
+            translationimportqueue_set = getUtility(ITranslationImportQueue)
+            return canonical_url(translationimportqueue_set)
+        else:
+            return referrer
 
     @property
     def referrer_url(self):
-        return self.request.getHeader('referer')
+        referrer = self.request.getHeader('referer')
+        if referrer != canonical_url(self.context):
+            return referrer
+        else:
+            return None
 
     @property
     def next_url(self):
