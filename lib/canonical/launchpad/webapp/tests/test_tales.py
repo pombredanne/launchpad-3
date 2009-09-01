@@ -11,7 +11,6 @@ from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctestunit import DocTestSuite
 
-from canonical.config import config
 from canonical.launchpad.ftests import test_tales
 from canonical.launchpad.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.tales import FormattersAPI
@@ -294,7 +293,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         naked_diff.diff_lines_count = line_count
         naked_diff.added_lines_count = added
         naked_diff.removed_lines_count = removed
-        # In order to get the canonical url of the librarian file, we need to commit.
+        # In order to get the canonical url of the librarian file, we need to
+        # commit.
         # transaction.commit()
         # Make sure that the preview diff is in the db for the test.
         # Storm bug: 324724

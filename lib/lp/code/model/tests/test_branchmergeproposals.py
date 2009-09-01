@@ -9,7 +9,6 @@ __metaclass__ = type
 
 from datetime import datetime
 from difflib import unified_diff
-from textwrap import dedent
 from unittest import TestCase, TestLoader
 
 from bzrlib import errors as bzr_errors
