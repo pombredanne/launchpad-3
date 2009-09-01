@@ -3185,6 +3185,8 @@ class PersonEditIRCNicknamesView(LaunchpadFormView):
     @action(_("Save Changes"), name="save")
     def save(self, action, data):
         """Process the IRC nicknames form."""
+        # XXX: EdwinGrubbs 2009-09-01 bug=422784
+        # This view should use schema and form validation.
         form = self.request.form
         for ircnick in self.context.ircnicknames:
             # XXX: GuilhermeSalgado 2005-08-25:
@@ -3232,6 +3234,8 @@ class PersonEditJabberIDsView(LaunchpadFormView):
     @action(_("Save Changes"), name="save")
     def save(self, action, data):
         """Process the Jabber ID form."""
+        # XXX: EdwinGrubbs 2009-09-01 bug=422784
+        # This view should use schema and form validation.
         form = self.request.form
         for jabber in self.context.jabberids:
             if form.get('remove_%s' % jabber.jabberid):
