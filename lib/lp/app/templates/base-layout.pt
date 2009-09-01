@@ -120,10 +120,7 @@
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
             <div tal:condition="view/macro:pagehas/applicationtabs">
-              <h2
-                tal:condition="context/title|nothing"
-                tal:content="context/title"
-                metal:define-slot="heading" />
+              <metal:slot metal:define-slot="heading" />
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
