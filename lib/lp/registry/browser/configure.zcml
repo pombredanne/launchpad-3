@@ -543,6 +543,7 @@
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             name="+index"
             permission="launchpad.Admin"
+            class="lp.registry.browser.karma.KarmaActionView"
             template="../templates/karmaaction-index.pt"/>
         <browser:pages
             for="lp.registry.interfaces.karma.IKarmaContext"

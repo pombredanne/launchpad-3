@@ -511,10 +511,6 @@ hwdb_fingerprint_submissions = (
 hwdb_submit_hardware_data = (
     'Submit New Data to the Launchpad Hardware Database')
 
-karmaaction_index = 'Karma actions'
-
-karmacontext_topcontributors = ContextTitle('Top %s Contributors')
-
 language_index = ContextDisplayName("%s in Launchpad")
 
 languageset_index = 'Languages in Launchpad'
