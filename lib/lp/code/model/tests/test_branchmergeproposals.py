@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 from datetime import datetime
+from difflib import unified_diff
 from textwrap import dedent
 from unittest import TestCase, TestLoader
 
@@ -1194,8 +1195,8 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         job = MergeProposalCreatedJob.create(bmp)
         self.assertRaises(bzr_errors.NotBranchError, job.run)
-        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo',
-                                                 diffstat={})
+        diff_bytes = ''.join(unified_diff('', 'foo'))
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', diff_bytes)
         transaction.commit()
         removeSecurityProxy(bmp).review_diff = review_diff
         # If job.run were trying to use the bzr branch, it would error.
@@ -1203,8 +1204,8 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_run_sends_email(self):
         """MergeProposalCreationJob.run sends an email."""
-        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo',
-                                                 diffstat={})
+        diff_bytes = ''.join(unified_diff('', 'foo'))
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', diff_bytes)
         transaction.commit()
         bmp = self.factory.makeBranchMergeProposal(review_diff=review_diff)
         job = MergeProposalCreatedJob.create(bmp)
@@ -1542,24 +1543,23 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
 
     def _updatePreviewDiff(self, merge_proposal):
         # Update the preview diff for the merge proposal.
-        diff_text = dedent("""\
-            === modified file 'sample.py'
-            --- sample     2009-01-15 23:44:22 +0000
-            +++ sample     2009-01-29 04:10:57 +0000
-            @@ -19,7 +19,7 @@
-             from zope.interface import implements
-
-             from storm.expr import Desc, Join, LeftJoin
-            -from storm.references import Reference
-            +from storm.locals import Int, Reference
-             from sqlobject import ForeignKey, IntCol
-
-             from canonical.config import config
-            """)
+        diff_text = (
+            "=== modified file 'sample.py'\n"
+            "--- sample\t2009-01-15 23:44:22 +0000\n"
+            "+++ sample\t2009-01-29 04:10:57 +0000\n"
+            "@@ -19,7 +19,7 @@\n"
+            " from zope.interface import implements\n"
+            "\n"
+            " from storm.expr import Desc, Join, LeftJoin\n"
+            "-from storm.references import Reference\n"
+            "+from storm.locals import Int, Reference\n"
+            " from sqlobject import ForeignKey, IntCol\n"
+            "\n"
+            " from canonical.config import config\n")
         diff_stat = {'sample': (1, 1)}
         login_person(merge_proposal.registrant)
         merge_proposal.updatePreviewDiff(
-            diff_text, diff_stat, u"source_id", u"target_id")
+            diff_text, u"source_id", u"target_id")
         # Have to commit the transaction to make the Librarian file
         # available.
         transaction.commit()
@@ -1576,7 +1576,8 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         # Test that both the PreviewDiff and the Diff get updated.
         merge_proposal = self.factory.makeBranchMergeProposal()
         login_person(merge_proposal.registrant)
-        merge_proposal.updatePreviewDiff("random text", {}, u"a", u"b")
+        diff_bytes = ''.join(unified_diff('', 'random text'))
+        merge_proposal.updatePreviewDiff(diff_bytes, u"a", u"b")
         transaction.commit()
         # Extract the primary key ids for the preview diff and the diff to
         # show that we are not reusing the objects.

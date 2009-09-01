@@ -123,14 +123,13 @@ class Diff(SQLBase):
         return klass.fromFile(diff_content, size, filename)
 
     @classmethod
-    def fromFile(cls, diff_content, size, filename=None, diffstat=None):
+    def fromFile(cls, diff_content, size, filename=None):
         """Create a Diff from a textual diff.
 
         :diff_content: The diff text
         :size: The number of bytes in the diff text.
         :filename: The filename to store the content with.  Randomly generated
             if not supplied.
-        :diffstat: The diffstat for this diff.  Generated if not supplied.
         """
         if size == 0:
             diff_text = None
@@ -144,8 +143,7 @@ class Diff(SQLBase):
             diff_content.seek(0)
             diff_content_bytes = diff_content.read(size)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
-        if diffstat is None:
-            diffstat = cls.generateDiffstat(diff_content_bytes)
+        diffstat = cls.generateDiffstat(diff_content_bytes)
         return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
                    diffstat=diffstat)
 
@@ -193,13 +191,13 @@ class StaticDiff(SQLBase):
 
     @classmethod
     def acquireFromText(klass, from_revision_id, to_revision_id, text,
-                        filename=None, diffstat=None):
+                        filename=None):
         """See `IStaticDiffSource`."""
         existing_diff = klass.selectOneBy(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id)
         if existing_diff is not None:
             return existing_diff
-        diff = Diff.fromFile(StringIO(text), len(text), filename, diffstat)
+        diff = Diff.fromFile(StringIO(text), len(text), filename)
         return klass(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id,
             diff=diff)
@@ -254,13 +252,11 @@ class PreviewDiff(Storm):
         return preview
 
     @classmethod
-    def create(cls, diff_content, diffstat,
-               source_revision_id, target_revision_id,
+    def create(cls, diff_content, source_revision_id, target_revision_id,
                dependent_revision_id, conflicts):
         """Create a PreviewDiff with specified values.
 
         :param diff_content: The text of the dift, as bytes.
-        :param diffstat: The diffstat associated with the diff, as bytes.
         :param source_revision_id: The revision_id of the source branch.
         :param target_revision_id: The revision_id of the target branch.
         :param dependent_revision_id: The revision_id of the dependent branch.
@@ -275,8 +271,7 @@ class PreviewDiff(Storm):
 
         filename = generate_uuid() + '.txt'
         size = len(diff_content)
-        preview.diff = Diff.fromFile(StringIO(diff_content), size, filename,
-                                     diffstat)
+        preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
         return preview
 
     @property

@@ -76,7 +76,7 @@ class IStaticDiffSource(Interface):
         """Get or create a StaticDiff."""
 
     def acquireFromText(from_revision_id, to_revision_id, text,
-                        filename=None, diffstat=None):
+                        filename=None):
         """Get or create a StaticDiff from a string.
 
         If a StaticDiff exists for this revision_id pair, the text is ignored.
@@ -86,8 +86,6 @@ class IStaticDiffSource(Interface):
         :param text: The text of the diff, as bytes.
         :param filename: The filename to store for the diff.  Randomly
             generated if not supplied.
-        :param diffstat: The diffstat for the supplied diff.  Generated if not
-            supplied.
         """
 
 
