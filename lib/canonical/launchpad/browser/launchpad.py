@@ -252,13 +252,16 @@ class Hierarchy(LaunchpadView):
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
         if len(breadcrumbs):
-            page_crumb = self.getBreadCrumbForRequestedPage()
+            page_crumb = self.makeBreadcrumbForRequestedPage()
             if page_crumb:
                 breadcrumbs.append(page_crumb)
         return breadcrumbs
 
-    def getBreadCrumbForRequestedPage(self):
+    def makeBreadcrumbForRequestedPage(self):
         """Return an `IBreadcrumb` for the requested page.
+
+        The `IBreadcrumb` for the requested page is created using the current
+        URL and the page's name (i.e. the last path segment of the URL).
 
         If the requested page (as specified in self.request) is the default
         one for the last traversed object, return None.
@@ -267,13 +270,13 @@ class Hierarchy(LaunchpadView):
         last_segment = URI(url).path.split('/')[-1]
         default_view_name = zapi.getDefaultViewName(
             self.request.traversed_objects[-1], self.request)
-        if last_segment == default_view_name:
-            return None
-        else:
+        if last_segment.startswith('+') and last_segment != default_view_name:
             breadcrumb = Breadcrumb(None)
             breadcrumb._url = url
             breadcrumb.text = last_segment
             return breadcrumb
+        else:
+            return None
 
     @property
     def display_breadcrumbs(self):
