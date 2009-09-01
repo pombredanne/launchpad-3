@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import (
-    enabled_with_permission, Link, NavigationMenu)
+    canonical_url, enabled_with_permission, Link, NavigationMenu)
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -52,6 +52,10 @@ class SourcePackageTranslationsExportView(BaseExportView):
             self.context.sourcepackagename.name,
             self.context.distroseries.distribution.displayname,
             self.context.distroseries.displayname)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     @property
     def page_title(self):

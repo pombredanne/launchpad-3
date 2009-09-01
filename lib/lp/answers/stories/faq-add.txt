@@ -70,7 +70,7 @@ The FAQ is created and the browser displays the page for Sample Person.
     'Mozilla Firefox FAQ #...: ...How do I read RSS?...'
 
     >>> content = find_main_content(owner_browser.contents)
-    >>> extract_text(content.h1)
+    >>> extract_text(content.h2)
     u'How do I read RSS?'
     >>> extract_text(content.find('div', {'id' : 'faq-keywords'}))
     u'Keywords:...RSS bookmark'
