@@ -90,14 +90,21 @@ class Diff(SQLBase):
         """
         source_branch.lock_read()
         try:
-            target_branch.lock_write()
+            target_branch.lock_read()
             try:
                 merge_target = target_branch.basis_tree()
-                merger = Merger.from_revision_ids(
-                    None, merge_target, source_revision,
-                    other_branch=source_branch, tree_branch=target_branch)
-                merger.merge_type = Merge3Merger
-                transform = merger.make_merger().make_preview_transform()
+                # Can't use bzrlib.merge.Merger because it fetches.
+                graph = target_branch.repository.get_graph(
+                    source_branch.repository)
+                base_revision = graph.find_unique_lca(
+                    source_revision, merge_target.get_revision_id())
+                repo = source_branch.repository
+                merge_source, merge_base = repo.revision_trees(
+                    [source_revision, base_revision])
+                merger = Merge3Merger(
+                    merge_target, merge_target, merge_base, merge_source,
+                    do_merge=False)
+                transform =merger.make_preview_transform()
                 try:
                     to_tree = transform.get_preview_tree()
                     return Diff.fromTrees(merge_target, to_tree)
