@@ -42,7 +42,7 @@ class BugWatchView(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Bug #%d - Comments imported from %s, bug %s' % (
+        return 'Comments imported to bug #%d from %s bug #%s' % (
             self.context.bug.id, self.context.bugtracker.title,
             self.context.remotebug)
 
