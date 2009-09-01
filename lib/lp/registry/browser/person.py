@@ -5018,15 +5018,10 @@ class PersonEditLocationView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote("%s's usual location" % self.context.displayname)
+        return smartquote(
+            "%s's location and timezone" % self.context.displayname)
 
     label = page_title
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    cancel_url = next_url
 
     @property
     def field_names(self):
