@@ -56,6 +56,22 @@ The page contains a few interesting details about team membership.
     Subteam of
     &#8220;Ubuntu Team&#8221; is a member of these teams: GuadaMen...
 
+The subteam-of portlet is not shown if the team is not a subteam.
+
+    >>> browser.open('http://launchpad.dev/~launchpad')
+    >>> print find_tag_by_id(browser.contents, 'subteam-of')
+    None
+
+Unless the user is the owner of the team and there are invitations to
+join a team.
+
+    >>> admin_browser.open('http://launchpad.dev/~launchpad')
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'subteam-of'))
+    Subteam of...
+    itself is not a member of any other team.
+    Show received invitations
+
 If the team does not have any recently approved or proposed members,
 the recent members sections are not displayed:
 

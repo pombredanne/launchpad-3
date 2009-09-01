@@ -79,8 +79,8 @@
 <metal:macro define-macro="subteam-of">
   <div class="portlet"
        id="subteam-of"
-       tal:condition="
-          python: context.super_teams or context.open_membership_invitations">
+       tal:condition="view/can_show_subteam_portlet"
+       >
     <h2>Subteam of</h2>
 
     <p tal:condition="not: context/super_teams">

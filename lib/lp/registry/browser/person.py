@@ -3126,6 +3126,21 @@ class TeamIndexView(PersonIndexView):
     """
 
     @property
+    def can_show_subteam_portlet(self):
+        """Only show the subteam portlet if there is info to display.
+
+        Either the team is a member of another team, or there are
+        invitations to join a team, and the owner needs to see the
+        link so that the invitation can be accepted.
+        """
+        try:
+          return (self.context.super_teams.count() > 0
+                  or (self.context.open_membership_invitations
+                      and check_permission('launchpad.Edit', self.context)))
+        except AttributeError, e:
+          raise AssertionError(e)
+
+    @property
     def visibility(self):
         return self.context.visibility.title + ' Team'
 
