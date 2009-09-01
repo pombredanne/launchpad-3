@@ -56,16 +56,10 @@ from lp.coop.answersbugs.model import *
 
 from canonical.launchpad.database.account import *
 from canonical.launchpad.database.personnotification import *
-from canonical.launchpad.database.productbounty import *
 from canonical.launchpad.database.packaging import *
-from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
 from canonical.launchpad.database.binaryandsourcepackagename import *
-from canonical.launchpad.database.distributionbounty import *
-from canonical.launchpad.database.bounty import *
-from canonical.launchpad.database.bountymessage import *
-from canonical.launchpad.database.bountysubscription import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.structuralsubscription import *
 from canonical.launchpad.database.logintoken import *

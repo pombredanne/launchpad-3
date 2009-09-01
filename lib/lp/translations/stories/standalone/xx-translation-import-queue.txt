@@ -24,10 +24,10 @@ translations.
     >>> upload
     <Control name='file' type='file'>
     >>> upload.add_file(tarball, 'application/x-gzip', test_file_name)
-    >>> ff_owner_browser.getControl('Request Upload').click()
+    >>> ff_owner_browser.getControl('Upload').click()
     >>> ff_owner_browser.url
     'http://translations.launchpad.dev/firefox/1.0/+translations-upload'
-    >>> 'Upload new translation resources' in ff_owner_browser.contents
+    >>> 'Upload translation files' in ff_owner_browser.contents
     True
     >>> for tag in find_tags_by_class(ff_owner_browser.contents,
     ...                               'informational message'):
@@ -340,7 +340,7 @@ Let's check tar.bz2 uploads. They work ;-)
 
   >>> evo_owner_browser.getControl('File').add_file(
   ...     tarball, 'application/x-bzip', test_file_name)
-  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.getControl('Upload').click()
   >>> evo_owner_browser.url
   'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
@@ -373,7 +373,7 @@ Let's try now a tarball upload. Should work:
 
   >>> evo_owner_browser.getControl('File').add_file(
   ...     tarball, 'application/x-gzip', test_file_name)
-  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.getControl('Upload').click()
   >>> evo_owner_browser.url
   'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
@@ -394,7 +394,7 @@ We can handle an empty file disguised as a bzipped tarfile:
 
   >>> evo_owner_browser.getControl('File').add_file(
   ...     tarball, 'application/x-gzip', test_file_name)
-  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.getControl('Upload').click()
   >>> evo_owner_browser.url
   'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
@@ -414,7 +414,7 @@ And also a truncated tarball inside a bzip2 wrapper:
 
   >>> evo_owner_browser.getControl('File').add_file(
   ...     tarball, 'application/x-gzip', test_file_name)
-  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.getControl('Upload').click()
   >>> evo_owner_browser.url
   'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
@@ -429,7 +429,7 @@ says that.
   ...     '+translations-upload')
   >>> evo_owner_browser.getControl('File').add_file(
   ...     StringIO('foo'), 'application/x-gzip', test_file_name)
-  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.getControl('Upload').click()
   >>> evo_owner_browser.url
   'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
   >>> msgs = get_feedback_messages(evo_owner_browser.contents)

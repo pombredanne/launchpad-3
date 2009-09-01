@@ -452,21 +452,6 @@ class DistributionBugsMenu(ApplicationMenu):
         return Link('+subscribe', text)
 
 
-class DistributionBountiesMenu(ApplicationMenu):
-
-    usedfor = IDistribution
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register new bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
-
-
 class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
