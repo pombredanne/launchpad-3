@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_side"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
 
   <metal:heading fill-slot="heading">
@@ -16,7 +16,6 @@
 
   <div metal:fill-slot="main">
     <div class="top-portlet">
-      <h2>Is watched by...</h2>
       <p>
         The following bugs in Launchpad are watching bug #<span
         tal:replace="context/remotebug">1234</span> in <span
@@ -25,26 +24,20 @@
         using &ldquo;Also affects project&rdquo; or &ldquo;Also
         affects distribution&rdquo; on the bug page.
       </p>
-      <table class="listing" id="watchedbugs">
-        <thead>
-          <tr>
-            <th>Bug</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tal:bugs tal:repeat="bug context/bugs">
-            <tr tal:define="visible bug/required:launchpad.View">
-              <td tal:condition="visible">
-                <a class="sprite bug"
-                   tal:attributes="href bug/fmt:url"
-                   tal:content="string:#${bug/id}: ${bug/title}" />
-              </td>
-              <td tal:condition="not:visible"
-                  tal:content="string:#${bug/id}: Private bug" />
-            </tr>
-          </tal:bugs>
-        </tbody>
-      </table>
+      <ul id="watchedbugs">
+        <tal:bugs repeat="bug context/bugs">
+          <li tal:define="visible bug/required:launchpad.View">
+            <tal:visible condition="visible">
+              <a tal:replace="structure bug/fmt:link" />
+            </tal:visible>
+            <tal:hidden condition="not:visible">
+              <span class="sprite bug">
+                Bug #<span tal:replace="bug/id" />: <em>(Private)</em>
+              </span>
+            </tal:hidden>
+          </li>
+        </tal:bugs>
+      </ul>
     </div>
   </div>
 

@@ -24,9 +24,9 @@ then a list of the relevant Launchpad bugs:
   * Answers - http://answers.launchpad.dev/
   Main heading: Remote Bug #42 in The Mozilla.org Bug Tracker
 
-  >>> print_table(find_tag_by_id(browser.contents, 'watchedbugs'))
-  #1: Firefox does not support SVG
-  #2: Blackhole Trash folder
+  >>> print extract_text(find_tag_by_id(browser.contents, 'watchedbugs'))
+  Bug #1: Firefox does not support SVG
+  Bug #2: Blackhole Trash folder
 
 If there is only a single bug watching the remote bug, then we skip
 the list page and redirect the user directly to that bug's page:
@@ -80,16 +80,16 @@ List Launchpad bugs watching Mozilla bug 42:
   * Answers - http://answers.launchpad.dev/
   Main heading: Remote Bug #42 in The Mozilla.org Bug Tracker
 
-  >>> print_table(find_tag_by_id(anon_browser.contents, 'watchedbugs'))
-  #1: Private bug
-  #2: Blackhole Trash folder
+  >>> print extract_text(find_tag_by_id(anon_browser.contents, 'watchedbugs'))
+  Bug #1: (Private)
+  Bug #2: Blackhole Trash folder
 
 The bug title is still provided if the user can view the private bug:
 
   >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/42')
-  >>> print_table(find_tag_by_id(browser.contents, 'watchedbugs'))
-  #1: Firefox does not support SVG
-  #2: Blackhole Trash folder
+  >>> print extract_text(find_tag_by_id(browser.contents, 'watchedbugs'))
+  Bug #1: Firefox does not support SVG
+  Bug #2: Blackhole Trash folder
 
 For the case where the private bug is the only one watching the given
 remote bug, we don't perform the redirect ahead of time:
