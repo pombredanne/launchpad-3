@@ -58,8 +58,6 @@
              tal:content="string:release manager for ${release_context/displayname}"/>.
         </p>
 
-        <h3 tal:condition="view/userIsReleaseManager">Release Targets</h3>
-        <h3 tal:condition="not:view/userIsReleaseManager">Nominate</h3>
       </div>
 
     </div>
