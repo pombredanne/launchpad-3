@@ -3198,7 +3198,7 @@ class PersonEditIRCNicknamesView(LaunchpadFormView):
                 nick = form.get('nick_%d' % ircnick.id)
                 network = form.get('network_%d' % ircnick.id)
                 if not (nick and network):
-                    self.error_message = structured(
+                    self.request.response.addErrorNotification(
                         "Neither Nickname nor Network can be empty.")
                     return
                 ircnick.nickname = nick
@@ -3212,11 +3212,12 @@ class PersonEditIRCNicknamesView(LaunchpadFormView):
             else:
                 self.newnick = nick
                 self.newnetwork = network
-                self.error_message = structured(
+                self.request.response.addErrorNotification(
                     "Neither Nickname nor Network can be empty.")
 
 
-class PersonEditJabberIDsView(LaunchpadView):
+class PersonEditJabberIDsView(LaunchpadFormView):
+    schema = Interface
 
     @property
     def page_title(self):
@@ -3225,18 +3226,12 @@ class PersonEditJabberIDsView(LaunchpadView):
     label = page_title
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
 
-    cancel_url = next_url
-
-    def initialize(self):
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
         """Process the Jabber ID form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
-            return
-
         form = self.request.form
         for jabber in self.context.jabberids:
             if form.get('remove_%s' % jabber.jabberid):
@@ -3244,7 +3239,7 @@ class PersonEditJabberIDsView(LaunchpadView):
             else:
                 jabberid = form.get('jabberid_%s' % jabber.jabberid)
                 if not jabberid:
-                    self.error_message = structured(
+                    self.request.response.addErrorNotification(
                         "You cannot save an empty Jabber ID.")
                     return
                 jabber.jabberid = jabberid
@@ -3256,16 +3251,15 @@ class PersonEditJabberIDsView(LaunchpadView):
             if existingjabber is None:
                 jabberset.new(self.context, jabberid)
             elif existingjabber.person != self.context:
-                self.error_message = structured(
-                    'The Jabber ID %s is already registered by '
-                    '<a href="%s">%s</a>.',
-                    jabberid, canonical_url(existingjabber.person),
-                    existingjabber.person.displayname)
-                return
+                self.request.response.addErrorNotification(
+                    structured(
+                        'The Jabber ID %s is already registered by '
+                        '<a href="%s">%s</a>.',
+                        jabberid, canonical_url(existingjabber.person),
+                        existingjabber.person.displayname))
             else:
-                self.error_message = structured(
-                    'The Jabber ID %s already belongs to you.', jabberid)
-                return
+                self.request.response.addErrorNotification(
+                    'The Jabber ID %s already belongs to you.' % jabberid)
 
 
 class PersonEditSSHKeysView(LaunchpadView):
