@@ -415,8 +415,6 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
             translations_person.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
-                "Your translations will be removed later; this may take "
-                "quite some time. "
                 "Thanks for trying out Launchpad Translations."))
         else:
             raise AssertionError(
