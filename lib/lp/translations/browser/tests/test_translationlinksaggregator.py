@@ -224,7 +224,7 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
             (product, canonical_url(product_pofile), [product_pofile]),
             (package, canonical_url(package_pofile), [package_pofile]),
             ]
-        self.assertEqual(expected, descriptions)
+        self.assertContentEqual(expected, descriptions)
 
     def test_aggregate_bundles_productseries(self):
         # _aggregateTranslationTargets describes POFiles for the same

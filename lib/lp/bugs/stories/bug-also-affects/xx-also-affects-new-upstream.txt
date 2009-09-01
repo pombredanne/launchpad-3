@@ -65,7 +65,7 @@ First, let's use the existing project.
 
     >>> from lp.bugs.tests.bug import print_remote_bugtasks
     >>> print_remote_bugtasks(user_browser.contents)
-    The Foo Project     auto-bugs.foo.org #421
+    The Foo Project ...    auto-bugs.foo.org #421
 
 If we try using that same existing project again, we'll get an error
 explaining we can't because it's already known that it's affected by
@@ -88,8 +88,8 @@ the bug as affecting another (unregistered) upstream.
     >>> user_browser.title
     'Bug #2 in The Bar Project:...
     >>> print_remote_bugtasks(user_browser.contents)
-    The Bar Project     auto-bugs.foo.org #123
-    The Bar Project     auto-bugs.foo.org #421
+    The Bar Project ...   auto-bugs.foo.org #123
+    The Bar Project ...   auto-bugs.foo.org #421
 
 == Error handling ==
 
