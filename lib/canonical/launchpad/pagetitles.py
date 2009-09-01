@@ -204,9 +204,6 @@ bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
-bug_remove_question = LaunchbagBugID(
-    'Bug #%d - Convert this question back to a bug')
-
 bugbranch_delete = 'Delete bug branch link'
 
 bugbranch_edit = "Edit branch fix status"

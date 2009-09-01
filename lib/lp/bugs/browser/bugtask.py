@@ -3353,6 +3353,13 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
                 subject=self.context.bug.followup_subject(),
                 content=comment)
 
+    @property
+    def label(self):
+        return ('Bug #%i - Convert this question back to a bug'
+                % self.context.bug.id)
+
+    page_title = label
+
 
 class BugTaskExpirableListingView(LaunchpadView):
     """View for listing Incomplete bugs that can expire."""
