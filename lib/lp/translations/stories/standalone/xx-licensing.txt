@@ -33,11 +33,10 @@ Karl chooses "no".
     >>> radiobuttons.value = ['REMOVE']
     >>> browser.getControl("Confirm").click()
 
-Karl sees a notice that his translations will be removed in the near
-future.
+Karl sees a notice acknowledging his choice.
 
     >>> get_feedback_messages(browser.contents)
-    [u'We respect your choice. Your translations will be removed...']
+    [u'We respect your choice...']
 
 He's also forwarded back to the Spanish alsa-utils translations page.
 

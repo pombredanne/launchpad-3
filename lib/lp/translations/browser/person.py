@@ -400,9 +400,9 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     def submit_action(self, action, data):
         """Store person's decision about translations relicensing.
 
-        Decision is stored through
+        The user's decision is stored through
         `ITranslationsPerson.translations_relicensing_agreement`
-        which uses TranslationRelicensingAgreement table.
+        which is backed by the TranslationRelicensingAgreement table.
         """
         translations_person = ITranslationsPerson(self.context)
         allow_relicensing = data['allow_relicensing']
