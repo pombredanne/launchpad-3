@@ -44,6 +44,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.lazr.utils import smartquote
 from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
 
 
@@ -78,8 +79,9 @@ class BugTrackerSetContextMenu(ContextMenu):
 
 class BugTrackerAddView(LaunchpadFormView):
 
+    page_title = u"Register an external bug tracker"
     schema = IBugTracker
-    label = "Register an external bug tracker"
+    label = page_title
     field_names = ['name', 'bugtrackertype', 'title', 'summary',
                    'baseurl', 'contactdetails']
 
@@ -123,7 +125,9 @@ class BugTrackerAddView(LaunchpadFormView):
 
 class BugTrackerSetView(LaunchpadView):
     """View for actions on the bugtracker index pages."""
-    PILLAR_LIMIT = 3
+
+    page_title = u"Bug trackers registered in Launchpad"
+    pillar_limit = 3
 
     def initialize(self):
         # Sort the bug trackers into active and inactive lists so that
@@ -147,19 +151,19 @@ class BugTrackerSetView(LaunchpadView):
 
         In more detail, the dictionary holds a list of products/projects
         and a boolean determining whether or not there we omitted
-        pillars by truncating to PILLAR_LIMIT.
+        pillars by truncating to pillar_limit.
 
         If no pillars are mapped to this bugtracker, returns {}.
         """
         if bugtracker not in self._pillar_cache:
             return {}
         pillars = self._pillar_cache[bugtracker]
-        if len(pillars) > self.PILLAR_LIMIT:
+        if len(pillars) > self.pillar_limit:
             has_more_pillars = True
         else:
             has_more_pillars = False
         return {
-            'pillars': pillars[:self.PILLAR_LIMIT],
+            'pillars': pillars[:self.pillar_limit],
             'has_more_pillars': has_more_pillars
         }
 
@@ -167,6 +171,10 @@ class BugTrackerSetView(LaunchpadView):
 class BugTrackerView(LaunchpadView):
 
     usedfor = IBugTracker
+
+    @property
+    def page_title(self):
+        return smartquote(u'Bug tracker "%s"' % self.context.title)
 
     def initialize(self):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
@@ -193,6 +201,11 @@ class BugTrackerEditView(LaunchpadEditFormView):
     custom_widget('summary', TextAreaWidget, width=30, height=5)
     custom_widget('aliases', DelimitedListWidget, height=3)
     custom_widget('active', LaunchpadRadioWidget, orientation='vertical')
+
+    @property
+    def page_title(self):
+        return smartquote(
+            u'Change details for "%s" bug tracker' % self.context.title)
 
     @cachedproperty
     def field_names(self):
