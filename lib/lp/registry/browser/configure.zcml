@@ -483,9 +483,10 @@
     </browser:pages>
     <browser:menus
         classes="
+            DistributionSourcePackageActionMenu
+            DistributionSourcePackageBugsMenu
             DistributionSourcePackageFacets
-            DistributionSourcePackageOverviewMenu
-            DistributionSourcePackageBugsMenu"
+            DistributionSourcePackageOverviewMenu"
         module="lp.registry.browser.distributionsourcepackage"/>
     <browser:url
         for="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"
@@ -542,6 +543,7 @@
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             name="+index"
             permission="launchpad.Admin"
+            class="lp.registry.browser.karma.KarmaActionView"
             template="../templates/karmaaction-index.pt"/>
         <browser:pages
             for="lp.registry.interfaces.karma.IKarmaContext"
@@ -750,6 +752,7 @@
                 PersonSpecsMenu
                 TeamBugsMenu
                 TeamEditMenu
+                TeamIndexMenu
                 TeamOverviewMenu
                 TeamOverviewNavigationMenu
                 TeamSpecsMenu
@@ -1027,13 +1030,13 @@
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
-            class="lp.registry.browser.person.PersonIndexView"
+            class="lp.registry.browser.person.TeamIndexView"
             name="+index"
             template="../templates/team-index.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
-            class="canonical.launchpad.browser.TeamMapView"
+            class="lp.registry.browser.team.TeamMapView"
             name="+map"
             template="../templates/team-map.pt"/>
         <browser:page
@@ -1070,6 +1073,18 @@
             permission="zope.Public"
             name="+portlet-map"
             template="../templates/team-portlet-map.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.person.PersonIndexView"
+            permission="zope.Public"
+            name="+portlet-membership"
+            template="../templates/team-portlet-membership.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.person.PersonIndexView"
+            permission="zope.Public"
+            name="+portlet-mailinglist"
+            template="../templates/team-portlet-mailinglist.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.Edit"
