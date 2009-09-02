@@ -3406,6 +3406,10 @@ class BugTaskExpirableListingView(LaunchpadView):
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
 
+    @property
+    def page_title(self):
+        return "Bugs that can expire in %s" % self.context.title
+
 
 class BugActivityItem:
     """A decorated BugActivity."""
