@@ -21,7 +21,7 @@
           <ul tal:define="archs series/virtualized_architectures"
               tal:condition="archs">
             <li class="sprite" tal:repeat="arch archs">
-              <a class="sprite arquitecture"
+              <a class="sprite architecture"
                  tal:attributes="href arch/fmt:url">
                 <tal:title replace="arch/architecturetag" />
                 <tal:official condition="arch/official">
