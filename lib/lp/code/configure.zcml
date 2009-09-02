@@ -112,6 +112,14 @@
       for="lp.registry.interfaces.project.IProject"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
+  <adapter
+      for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_source_package"/>
+  <adapter
+      for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_distro_source_package"/>
   <securedutility
       class="lp.code.model.branchcollection.GenericBranchCollection"
       provides="lp.code.interfaces.branchcollection.IAllBranches">
