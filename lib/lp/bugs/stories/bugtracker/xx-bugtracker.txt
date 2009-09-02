@@ -106,7 +106,7 @@ to the bug tracker page.
   'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis'
 
   >>> user_browser.title
-  'Bug tracker \xe2\x80\x9cTest Mantis Tracker\xe2\x80\x9d'
+  'The \xe2\x80\x9cTest Mantis Tracker\xe2\x80\x9d bug tracker in Launchpad'
 
   >>> 'Test Mantis Tracker' in user_browser.contents
   True
@@ -176,7 +176,7 @@ We can edit the details of the newly added bugtracker.
   'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis/+edit'
 
   >>> user_browser.title
-  'Change details for \xe2\x80\x9cTest Mantis Tracker\xe2\x80\x9d bug tracker'
+  'Change details for the \xe2\x80\x9cTest Mantis Tracker\xe2\x80\x9d bug tracker'
 
   >>> user_browser.getControl('Name').value = 'testbugzilla'
   >>> user_browser.getControl('Title').value = 'A test Bugzilla Tracker'

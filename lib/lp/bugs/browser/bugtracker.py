@@ -174,7 +174,8 @@ class BugTrackerView(LaunchpadView):
 
     @property
     def page_title(self):
-        return smartquote(u'Bug tracker "%s"' % self.context.title)
+        return smartquote(
+            u'The "%s" bug tracker in Launchpad' % self.context.title)
 
     def initialize(self):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
@@ -205,7 +206,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
     @property
     def page_title(self):
         return smartquote(
-            u'Change details for "%s" bug tracker' % self.context.title)
+            u'Change details for the "%s" bug tracker' % self.context.title)
 
     @cachedproperty
     def field_names(self):
