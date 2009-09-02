@@ -373,6 +373,12 @@
         <allow
             interface="lp.soyuz.interfaces.processor.IProcessorFamilySet"/>
     </securedutility>
+    <adapter
+        for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        factory="lp.soyuz.browser.distroarchseriesbinarypackagerelease.DistroArchSeriesBinaryPackageReleaseBreadcrumb"
+        permission="zope.Public" />
+
 
     <!-- Archive -->
 
