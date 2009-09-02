@@ -259,6 +259,7 @@ class Hierarchy(LaunchpadView):
         # to display it as it will simply repeat the context.title.
         return len(self.items) > 1
 
+
 class MaintenanceMessage:
     """Display a maintenance message if the control file is present and
     it contains a valid iso format time.
