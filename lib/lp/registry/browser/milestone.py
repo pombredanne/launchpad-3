@@ -347,6 +347,10 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     field_names = []
 
     @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
     def label(self):
         """The form label."""
         return 'Delete %s' % self.context.title

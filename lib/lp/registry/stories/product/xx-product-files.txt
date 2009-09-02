@@ -14,7 +14,7 @@ Any user can see that a project with no releases has no downloads.
     >>> content = find_tag_by_id(anon_browser.contents, 'project-downloads')
     >>> print extract_text(content)
     No download files exist for this project.
-    You might want to check this project's Bazzar branches...
+    You might want to check this project's Bazaar branches...
 
 Any user can see a project with a release without files has no downlaod files.
 
@@ -98,6 +98,7 @@ A project owner should not see the delete button when there are no files.
     >>> main_content = find_main_content(tbird_owner.contents)
     >>> print extract_text(main_content)
     Download project files
+    Mozilla Thunderbird...
     No download files exist for this project...
     Add download file for release: 0.8
     >>> tbird_owner.getControl('Delete Files')

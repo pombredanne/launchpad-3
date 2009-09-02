@@ -33,7 +33,7 @@
     <div tal:condition="not: view/has_download_files" id="no-downloads">
       <p>No download files exist for this project.</p>
       <p>You might want to check
-        <a tal:attributes="href context/fmt:url:code">this project's Bazzar
+        <a tal:attributes="href context/fmt:url:code">this project's Bazaar
           branches</a>
         <span tal:condition="context/homepageurl">or its
           <a tal:attributes="href context/homepageurl">home page</a>

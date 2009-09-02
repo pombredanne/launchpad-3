@@ -737,6 +737,13 @@
             permission="zope.Public"
             template="../templates/person-translations-to-review-table.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-complete-table"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-complete-table.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 
 <!-- Product views -->
@@ -771,7 +778,7 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.translations.browser.product.ProductChangeTranslatorsView"
         permission="launchpad.Edit"
-        template="../templates/product-translators.pt"
+        template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
@@ -815,14 +822,12 @@
         for="lp.registry.interfaces.project.IProject"
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
-    <browser:editform
+    <browser:page
         name="+changetranslators"
         for="lp.registry.interfaces.project.IProject"
-        schema="lp.registry.interfaces.project.IProject"
-        fields="translationgroup translationpermission"
+        class="lp.translations.browser.project.ProjectChangeTranslatorsView"
         permission="launchpad.Edit"
-        label="Select a new translation group"
-        template="../templates/project-translators.pt"
+        template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 <!-- Distribution -->
@@ -852,13 +857,12 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
-    <browser:editform
+    <browser:page
         name="+settings"
         for="lp.registry.interfaces.distribution.IDistribution"
-        schema="lp.registry.interfaces.distribution.IDistribution"
-        fields="translationgroup translationpermission"
+        class="lp.translations.browser.distribution.DistributionSettingsView"
         permission="launchpad.Edit"
-        template="../templates/distribution-translation-settings.pt"
+        template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"

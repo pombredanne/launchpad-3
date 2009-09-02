@@ -831,8 +831,10 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
 
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
+
+    page_title = 'Register a new team in Launchpad'
+    label = page_title
     schema = ITeamCreation
-    label = ''
 
     custom_widget('teamowner', HiddenUserWidget)
     custom_widget(
@@ -849,7 +851,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         super(TeamAddView, self).setUpFields()
         self.conditionallyOmitVisibility()
 
-    @action('Create', name='create')
+    @action('Create Team', name='create')
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')

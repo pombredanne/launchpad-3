@@ -176,14 +176,7 @@ bug_activity = ContextBugId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
-def bug_attachment_edit(context, view):
-    """Return the page title for the edit attachment page."""
-    return smartquote('Bug #%d - Edit attachment "%s"') % (
-        context.bug.id, context.title)
-
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
-
-bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextBugId('Bug #%d - Edit')
 
@@ -203,17 +196,9 @@ bug_mark_as_affecting_user = ContextBugId(
 
 bug_nominate_for_series = ViewLabel()
 
-bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
-
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
-
-bug_create_question = LaunchbagBugID(
-    'Bug #%d - Convert this bug to a question')
-
-bug_remove_question = LaunchbagBugID(
-    'Bug #%d - Convert this question back to a bug')
 
 bugbranch_delete = 'Delete bug branch link'
 
@@ -234,8 +219,6 @@ buglisting_default = ContextTitle("Bugs in %s")
 def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
-
-bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
 
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
@@ -519,10 +502,6 @@ hwdb_fingerprint_submissions = (
 hwdb_submit_hardware_data = (
     'Submit New Data to the Launchpad Hardware Database')
 
-karmaaction_index = 'Karma actions'
-
-karmacontext_topcontributors = ContextTitle('Top %s Contributors')
-
 language_index = ContextDisplayName("%s in Launchpad")
 
 languageset_index = 'Languages in Launchpad'
@@ -749,15 +728,9 @@ def people_list(context, view):
 
 people_mergerequest_sent = 'Merge request sent'
 
-people_newperson = 'Create a new Launchpad profile'
-
-people_newteam = 'Register a new team in Launchpad'
-
 people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
-
-active_reviews = ContextDisplayName('Pending proposals for %s')
 
 person_archive_subscription = ContextDisplayName('%s')
 
@@ -781,13 +754,7 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
-
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_editircnicknames = ContextDisplayName(smartquote("%s's IRC nicknames"))
-
-person_editjabberids = ContextDisplayName(smartquote("%s's Jabber IDs"))
 
 person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
 
@@ -928,8 +895,6 @@ product_timeline = ContextTitle('Timeline Diagram for %s')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
-product_translators = ContextTitle('Set translation group for %s')
-
 productrelease_add = ContextDisplayName('Publish the release of %s')
 
 productrelease_add_from_series = productrelease_add
@@ -978,8 +943,6 @@ project_rosetta_index = ContextTitle('Launchpad Translations: %s')
 project_specs = ContextTitle('Blueprints for %s')
 
 project_translations = ContextTitle('Translatable projects for %s')
-
-project_translators = ContextTitle('Set translation group for %s')
 
 projects_request = 'Launchpad Translations: Request a project group'
 
