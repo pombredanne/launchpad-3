@@ -178,8 +178,6 @@ bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
 
-bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
-
 bug_edit = ContextBugId('Bug #%d - Edit')
 
 bug_edit_confirm = ContextBugId('Bug #%d - Edit confirmation')
@@ -196,16 +194,11 @@ bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 bug_mark_as_affecting_user = ContextBugId(
     'Bug #%d - does this bug affect you?')
 
-bug_nominate_for_series = ViewLabel()
-
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
-
-bug_remove_question = LaunchbagBugID(
-    'Bug #%d - Convert this question back to a bug')
 
 bugbranch_delete = 'Delete bug branch link'
 
@@ -226,8 +219,6 @@ buglisting_default = ContextTitle("Bugs in %s")
 def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
-
-bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
 
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""

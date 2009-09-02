@@ -3374,6 +3374,13 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
                 subject=self.context.bug.followup_subject(),
                 content=comment)
 
+    @property
+    def label(self):
+        return ('Bug #%i - Convert this question back to a bug'
+                % self.context.bug.id)
+
+    page_title = label
+
 
 class BugTaskExpirableListingView(LaunchpadView):
     """View for listing Incomplete bugs that can expire."""
@@ -3405,6 +3412,10 @@ class BugTaskExpirableListingView(LaunchpadView):
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
+
+    @property
+    def page_title(self):
+        return "Bugs that can expire in %s" % self.context.title
 
 
 class BugActivityItem:
