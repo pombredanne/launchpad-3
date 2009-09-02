@@ -694,6 +694,7 @@ form.translations div.fields {
 form.translations div.actions {
   padding: 1em;
   text-align: right;
+  clear:both;
 }
 
 form.translations input {
