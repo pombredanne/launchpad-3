@@ -606,9 +606,7 @@ class BugWatchUpdater(object):
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
             remotesystem.sync_comments)
-        can_push_comments = (
-            ISupportsCommentPushing.providedBy(remotesystem) and
-            remotesystem.sync_comments)
+        can_push_comments = False
 
         if can_import_comments and server_time is None:
             can_import_comments = False
