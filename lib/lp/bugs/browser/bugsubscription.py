@@ -33,7 +33,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
         super(BugSubscriptionAddView, self).setUpFields()
         self.form_fields['person'].for_input = True
 
-    @action('Add', name='add')
+    @action('Subscribe user', name='add')
     def add_action(self, action, data):
         person = data['person']
         subscription = self.context.bug.subscribe(person, self.user)
@@ -50,6 +50,12 @@ class BugSubscriptionAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+    @property
+    def label(self):
+        return 'Subscribe someone else to bug #%i' % self.context.bug.id
+
+    page_title = label
 
 
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
