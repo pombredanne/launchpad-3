@@ -31,7 +31,7 @@
             <input name="what" type="radio" value="some" />
             Selected files:
           </label>
-          <div class="listbox" class="content">
+          <div class="listbox content secondary">
             <div>
               <label>
                 <input type="checkbox" name="potemplate" />

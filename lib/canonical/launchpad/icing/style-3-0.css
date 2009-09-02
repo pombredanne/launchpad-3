@@ -717,7 +717,7 @@ form.translations .listbox label {
 
 /* Provide top-alignment for radio boxes and longer explanations
  * without using tables.
- * 
+ *
  * Examples:
  *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
  *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
@@ -734,6 +734,10 @@ form.translations div.alignment .content label {
   padding: 0px;
   margin: 0px;
   font-weight: bold;
+}
+form.translations div.alignment .secondary label {
+  font-weight: normal;
+  padding: 2px 1em 2px 2px;
 }
 
 table.narrow-listing {
