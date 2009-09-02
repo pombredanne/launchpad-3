@@ -194,7 +194,7 @@ bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 bug_mark_as_affecting_user = ContextBugId(
     'Bug #%d - does this bug affect you?')
 
-bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
+bug_nominate_for_series = ViewLabel()
 
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
@@ -921,9 +921,6 @@ productseries_packaging = ContextDisplayName(
 productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
-
-productseries_translations_bzr_import = (
-    'Request translations import from Bazaar branch')
 
 project_add = 'Register a project group with Launchpad'
 
