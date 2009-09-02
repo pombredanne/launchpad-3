@@ -1191,7 +1191,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        restricted = TeamSubscriptionPolicy.RESTRICTED
+        if self.person.subscriptionpolicy == restricted:
             # This is a restricted team; users can't join.
             enabled = False
         return Link(target, text, icon='add', enabled=enabled)
@@ -1276,9 +1277,10 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
 
     def join(self):
         enabled = True
-        if userIsActiveTeamMember(self.person):
+        person = self.person
+        if userIsActiveTeamMember(person):
             enabled = False
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             # This is a restricted team; users can't join.
             enabled = False
         target = '+join'
@@ -3130,11 +3132,11 @@ class TeamIndexView(PersonIndexView):
         link so that the invitation can be accepted.
         """
         try:
-          return (self.context.super_teams.count() > 0
-                  or (self.context.open_membership_invitations
-                      and check_permission('launchpad.Edit', self.context)))
+            return (self.context.super_teams.count() > 0
+                    or (self.context.open_membership_invitations
+                        and check_permission('launchpad.Edit', self.context)))
         except AttributeError, e:
-          raise AssertionError(e)
+            raise AssertionError(e)
 
     @property
     def visibility(self):
