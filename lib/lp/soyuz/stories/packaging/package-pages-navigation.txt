@@ -151,7 +151,7 @@ hierarchy. Instead, the hierarchy stops at the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04
+    Hierarchy: Ubuntu > 5.04 > i386
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     * Code - http://code.launchpad.dev/ubuntu/hoary
@@ -170,7 +170,7 @@ Instead, the hierarchy stops at the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386/pmount')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04
+    Hierarchy: Ubuntu > 5.04 > i386 > pmount
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     ...
@@ -196,7 +196,7 @@ themselves. Instead, the hierarchy stops at the distribution series.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04
+    Hierarchy: Ubuntu > 5.04 > i386 > pmount > 0.1-1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     ...
