@@ -572,6 +572,11 @@
         <allow
             interface="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"/>
     </class>
+    <adapter
+        for="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        factory="lp.soyuz.browser.distroarchseriesbinarypackage.DistroArchSeriesBinaryPackageBreadcrumb"
+        permission="zope.Public" />
 
     <!-- PublishedPackage -->
 

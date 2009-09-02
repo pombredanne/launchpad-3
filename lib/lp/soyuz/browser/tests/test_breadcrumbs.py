@@ -21,17 +21,24 @@ class TestDistroArchSeriesBreadcrumb(BaseBreadcrumbTestCase):
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         self.hoary = self.ubuntu.getSeries('hoary')
         self.hoary_i386 = self.hoary['i386']
-        self.das_url = canonical_url(self.hoary_i386)
         self.traversed_objects = [
             self.root, self.ubuntu, self.hoary, self.hoary_i386]
 
     def test_distroarchseries(self):
-        urls = self._getBreadcrumbsURLs(self.das_url, self.traversed_objects)
-        self.assertEquals(urls[-1], self.das_url)
-        texts = self._getBreadcrumbsTexts(
-            self.das_url, self.traversed_objects)
+        das_url = canonical_url(self.hoary_i386)
+        urls = self._getBreadcrumbsURLs(das_url, self.traversed_objects)
+        self.assertEquals(urls[-1], das_url)
+        texts = self._getBreadcrumbsTexts(das_url, self.traversed_objects)
         self.assertEquals(texts[-1], "i386")
 
+    def test_distroarchseriesbinarypackage(self):
+        pmount_hoary_i386 = self.hoary_i386.getBinaryPackage("pmount")
+        self.traversed_objects.append(pmount_hoary_i386)
+        pmount_url = canonical_url(pmount_hoary_i386)
+        urls = self._getBreadcrumbsURLs(pmount_url, self.traversed_objects)
+        self.assertEquals(urls[-1], pmount_url)
+        texts = self._getBreadcrumbsTexts(pmount_url, self.traversed_objects)
+        self.assertEquals(texts[-1], "pmount")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
