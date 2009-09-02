@@ -679,11 +679,11 @@ the bug tracker page.
   >>> print extract_text(find_portlet(
   ...     user_browser.contents, 'Details'))
   Details
-  Location
+  Location:
   mailto:bugs@example.com
-  Tracker type
+  Tracker type:
   Email Address
-  Created by
+  Created by:
   Foo Bar
 
 If the user is not logged in, email addresses in the Location field
@@ -693,7 +693,7 @@ above are obfuscated:
   >>> print extract_text(find_portlet(
   ...     anon_browser.contents, 'Details'))
   Details
-  Location
+  Location:
   mailto:&lt;email address hidden&gt;
   ...
 
@@ -704,12 +704,12 @@ If the bug tracker has contact details, they will be shown:
   >>> print extract_text(find_portlet(
   ...     anon_browser.contents, 'Details'))
   Details
-  Location
+  Location:
   http://bugzilla.gnome.org/bugs
   http://alias.example.com/ (Alias)
-  Tracker type
+  Tracker type:
   Bugzilla
-  Contact details
+  Contact details:
   Jeff Waugh, in his pants.
-  Created by
+  Created by:
   Foo Bar

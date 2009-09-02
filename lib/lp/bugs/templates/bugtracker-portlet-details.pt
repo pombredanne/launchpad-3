@@ -5,7 +5,7 @@
     class="portlet" id="portlet-details">
   <h2>Details</h2>
   <dl>
-    <dt>Location</dt>
+    <dt>Location:</dt>
     <dd>
       <ul id="bugtracker-urls">
         <li>
@@ -20,13 +20,13 @@
         </li>
       </ul>
     </dd>
-    <dt>Tracker type</dt>
+    <dt>Tracker type:</dt>
     <dd tal:content="context/bugtrackertype/title" />
     <tal:contact-details condition="context/contactdetails">
-      <dt>Contact details</dt>
+      <dt>Contact details:</dt>
       <dd tal:content="context/contactdetails" />
     </tal:contact-details>
-    <dt>Created by</dt>
+    <dt>Created by:</dt>
     <dd tal:content="structure context/owner/fmt:link" />
   </dl>
 </div>
