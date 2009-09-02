@@ -18,8 +18,8 @@ __all__ = [
     'ArchiveNavigationMenu',
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
-    'ArchivePackagesView',
     'ArchivePackagesActionMenu',
+    'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
     'traverse_distro_archive',
@@ -734,7 +734,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     def series_list_string(self):
         """Return an English string of the distroseries."""
         return english_list(
-            [series.displayname for series in self.series_with_sources])
+            series.displayname for series in self.series_with_sources)
 
     @property
     def is_copy(self):

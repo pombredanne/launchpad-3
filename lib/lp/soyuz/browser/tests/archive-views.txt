@@ -318,6 +318,15 @@ of the series supported by this archive.
     >>> copy_archive_view.series_list_string
     ''
 
+The view also has a page_title property and can indicate whether the context
+is a copy archive.
+
+    >>> print copy_archive_view.page_title
+    Packages in ...Copy archive intrepid-security-rebuild...
+
+    >>> copy_archive_view.is_copy
+    True
+
 
 == ArchivePackageDeletionView ==
 
