@@ -62,8 +62,11 @@
   </div><!--yui-g-->
 
 
+  <style>#relationships div {padding-top:0.5em;}</style>
   <div class="yui-g" tal:define="bpr context/binarypackagerelease">
-   <h2>Package relationships</h2>
+  <div class="portlet" id="relationships">
+
+    <h2>Package relationships</h2>
 
     <div tal:replace="structure bpr/@@+portlet-depends" />
     <div tal:replace="structure bpr/@@+portlet-conflicts" />
@@ -75,6 +78,7 @@
     <div tal:replace="structure bpr/@@+portlet-enhances" />
     <div tal:replace="structure bpr/@@+portlet-breaks" />
 
+  </div><!--portlet-->
   </div><!--yui-g-->
 
 </div>

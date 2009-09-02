@@ -6,8 +6,8 @@
   tal:condition="relationships/has_items"
   class="first yui-u" id="portlet-depends">
 
-  <div class="portlet" id="depends">
-    <h2>Depends on</h2>
+  <div id="depends">
+    <dt>Depends on:</dt>
     <tal:block replace="structure relationships/@@+render-list"/>
   </div>
 
