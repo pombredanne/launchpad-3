@@ -65,33 +65,15 @@
   <div class="yui-g" tal:define="bpr context/binarypackagerelease">
    <h2>Package relationships</h2>
 
-  <div class="first yui-u">
     <div tal:replace="structure bpr/@@+portlet-depends" />
-  </div>
-  <div class="first yui-u">
     <div tal:replace="structure bpr/@@+portlet-conflicts" />
-  </div>
-  <div class="first yui-u">
     <div tal:replace="structure bpr/@@+portlet-provides" />
-  </div>
-  <div class="first yui-u">
     <div tal:replace="structure bpr/@@+portlet-replaces" />
-  </div>
-  <div class="first yui-u">
     <div tal:replace="structure bpr/@@+portlet-suggests" />
-  </div>
-  <div class="first yui-u">
     <div tal:replace="structure bpr/@@+portlet-recommends" />
-  </div>
-  <div class="first yui-u">
     <div tal:replace="structure bpr/@@+portlet-predepends" />
-  </div>
-  <div class="first yui-u">
     <div tal:replace="structure bpr/@@+portlet-enhances" />
-  </div>
-  <div class="first yui-u">
     <div tal:replace="structure bpr/@@+portlet-breaks" />
-  </div>
 
   </div><!--yui-g-->
 

@@ -2,17 +2,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-replaces">
+  tal:define="relationships view/replaces"
+  tal:condition="relationships/has_items"
+  class="first yui-u" id="portlet-replaces">
 
-  <h2>Replaces</h2>
-
-  <div class="portletBody portletContent"
-       id="replaces"
-       tal:define="relationships view/replaces">
-
-     <tal:block condition="relationships/has_items"
-                replace="structure relationships/@@+render-list"/>
-
+  <div class="portlet" id="replaces">
+    <h2>Replaces</h2>
+    <tal:block replace="structure relationships/@@+render-list"/>
   </div>
 
 
