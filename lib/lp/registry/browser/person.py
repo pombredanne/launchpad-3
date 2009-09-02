@@ -95,7 +95,7 @@ from operator import attrgetter, itemgetter
 from textwrap import dedent
 
 from zope.error.interfaces import IErrorReportingUtility
-from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.app.form.browser import CheckBoxWidget, TextAreaWidget, TextWidget
 from zope.formlib.form import FormFields
 from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
@@ -3669,13 +3669,25 @@ class PersonBrandingView(BrandingChangeView):
     field_names = ['logo', 'mugshot']
     schema = IPerson
 
+class TeamJoinForm(Interface):
+    mailinglist_subscribe = Bool(
+        title=_("Subscribe me to this team's mailing list"),
+        required=True, default=False)
 
-class TeamJoinView(PersonView):
+class TeamJoinView(LaunchpadFormView, PersonView):
+    schema = TeamJoinForm
 
-    def initialize(self):
-        super(TeamJoinView, self).initialize()
-        if self.request.method == "POST":
-            self.processForm()
+    @property
+    def field_names(self):
+        """See `LaunchpadFormView`.
+
+        If the user can subscribe to the mailing list then include the
+        mailinglist subscription checkbox otherwise remove it.
+        """
+        if self.user_can_subscribe_to_list:
+            return ['mailinglist_subscribe']
+        else:
+            return []
 
     @property
     def join_allowed(self):
@@ -3724,7 +3736,12 @@ class TeamJoinView(PersonView):
         policy = self.context.subscriptionpolicy
         return policy == TeamSubscriptionPolicy.MODERATED
 
-    def processForm(self):
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Join"), name="join")
+    def action_save(self, action, data):
         request = self.request
         user = self.user
         context = self.context
