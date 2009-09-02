@@ -71,7 +71,7 @@ class DistroArchSeriesBinaryPackage:
     @property
     def title(self):
         """See IDistroArchSeriesBinaryPackage."""
-        return 'Binary Package "%s" in %s' % (
+        return '"%s" binary package in %s' % (
             self.binarypackagename.name, self.distroarchseries.title)
 
     @cachedproperty
@@ -238,7 +238,7 @@ class DistroArchSeriesBinaryPackage:
         current_release = self.currentrelease
         if current_release is None:
             return None
-            
+
         src_pkg_release = current_release.distributionsourcepackagerelease
         if src_pkg_release is None:
             return None
