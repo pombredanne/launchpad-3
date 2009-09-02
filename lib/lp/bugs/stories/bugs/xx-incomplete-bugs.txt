@@ -245,7 +245,7 @@ expirable bugs he reads that Debian does not use bug expiration.
     >>> print extract_text(find_main_content(user_browser.contents).p)
     This project has not enabled bug expiration. No bugs can expire.
     Project administrator's may choose to enable bug expiration by
-    updating the project's details.
+    updating the project's details. See Bugs/Expiry.
 
 
 == Default search parameters for incomplete bugs ==
