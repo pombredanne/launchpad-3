@@ -34,6 +34,7 @@ import time
 import urllib
 from datetime import timedelta, datetime
 
+from zope.app import zapi
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
@@ -95,6 +96,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
     stepto)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
@@ -233,24 +235,47 @@ class Hierarchy(LaunchpadView):
                 breadcrumbs.append(breadcrumb)
 
         host = URI(self.request.getURL()).host
-        if (len(breadcrumbs) == 0
-            or host == allvhosts.configs['mainsite'].hostname):
-            return breadcrumbs
+        mainhost = allvhosts.configs['mainsite'].hostname
+        if len(breadcrumbs) != 0 and host != mainhost:
+            # We have breadcrumbs and we're not on the mainsite, so we'll
+            # sneak an extra breadcrumb for the vhost we're on.
+            vhost = host.split('.')[0]
 
-        # If we got this far it means we have breadcrumbs and we're not on the
-        # mainsite, so we'll sneak an extra breadcrumb for the vhost we're on.
-        vhost = host.split('.')[0]
-
-        # Iterate over the context of our breadcrumbs in reverse order and for
-        # the first one we find an adapter named after the vhost we're on,
-        # generate an extra breadcrumb and insert it in our list.
-        for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
-            extra_breadcrumb = queryAdapter(
-                breadcrumb.context, IBreadcrumb, name=vhost)
-            if extra_breadcrumb is not None:
-                breadcrumbs.insert(idx + 1, extra_breadcrumb)
-                break
+            # Iterate over the context of our breadcrumbs in reverse order and
+            # for the first one we find an adapter named after the vhost we're
+            # on, generate an extra breadcrumb and insert it in our list.
+            for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
+                extra_breadcrumb = queryAdapter(
+                    breadcrumb.context, IBreadcrumb, name=vhost)
+                if extra_breadcrumb is not None:
+                    breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                    break
+        if len(breadcrumbs):
+            page_crumb = self.makeBreadcrumbForRequestedPage()
+            if page_crumb:
+                breadcrumbs.append(page_crumb)
         return breadcrumbs
+
+    def makeBreadcrumbForRequestedPage(self):
+        """Return an `IBreadcrumb` for the requested page.
+
+        The `IBreadcrumb` for the requested page is created using the current
+        URL and the page's name (i.e. the last path segment of the URL).
+
+        If the requested page (as specified in self.request) is the default
+        one for the last traversed object, return None.
+        """
+        url = self.request.getURL()
+        last_segment = URI(url).path.split('/')[-1]
+        default_view_name = zapi.getDefaultViewName(
+            self.request.traversed_objects[-1], self.request)
+        if last_segment.startswith('+') and last_segment != default_view_name:
+            breadcrumb = Breadcrumb(None)
+            breadcrumb._url = url
+            breadcrumb.text = last_segment
+            return breadcrumb
+        else:
+            return None
 
     @property
     def display_breadcrumbs(self):

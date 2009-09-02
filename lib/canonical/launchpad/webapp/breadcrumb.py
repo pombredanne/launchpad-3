@@ -27,6 +27,7 @@ class Breadcrumb:
     implements(IBreadcrumb)
 
     text = None
+    _url = None
 
     def __init__(self, context):
         self.context = context
@@ -46,7 +47,10 @@ class Breadcrumb:
 
     @property
     def url(self):
-        return canonical_url(self.context, rootsite=self.rootsite)
+        if self._url is None:
+            return canonical_url(self.context, rootsite=self.rootsite)
+        else:
+            return self._url
 
     @property
     def icon(self):

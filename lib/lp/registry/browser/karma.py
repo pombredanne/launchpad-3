@@ -34,6 +34,12 @@ class KarmaActionSetNavigation(Navigation):
         return self.context.getByName(name)
 
 
+class KarmaActionView(LaunchpadView):
+    """View class for the index of karma actions."""
+
+    page_title = 'Actions that give people karma'
+
+
 class KarmaActionEditView(LaunchpadEditFormView):
 
     schema = IKarmaAction
@@ -69,6 +75,10 @@ class KarmaContextContributor:
 
 class KarmaContextTopContributorsView(LaunchpadView):
     """List this KarmaContext's top contributors."""
+
+    @property
+    def page_title(self):
+        return "Top %s Contributors" % self.context.title
 
     def initialize(self):
         context = self.context

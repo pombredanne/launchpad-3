@@ -88,7 +88,7 @@ with mailing lists is prohibited.  This is done by making the 'name' field of
 such team pages read-only.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
     # Approval of mailing lists is not yet exposed through the web.
