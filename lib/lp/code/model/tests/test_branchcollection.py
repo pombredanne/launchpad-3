@@ -31,6 +31,42 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
+class TestBranchCollectionAdaptation(TestCaseWithFactory):
+    """Check that certain objects can be adapted to a branch collection."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product(self):
+        # A product can be adapted to a branch collection.
+        product = self.factory.makeProduct()
+        collection = IBranchCollection(product, None)
+        self.assertIsNot(None, collection)
+
+    def test_project(self):
+        # A project can be adapted to a branch collection.
+        project = self.factory.makeProject()
+        collection = IBranchCollection(project, None)
+        self.assertIsNot(None, collection)
+
+    def test_person(self):
+        # A person can be adapted to a branch collection.
+        person = self.factory.makePerson()
+        collection = IBranchCollection(person, None)
+        self.assertIsNot(None, collection)
+
+    def test_source_package(self):
+        # A source package can be adapted to a branch collection.
+        source_package = self.factory.makeSourcePackage()
+        collection = IBranchCollection(source_package, None)
+        self.assertIsNot(None, collection)
+
+    def test_distribution_source__package(self):
+        # A distribution source pakcage can be adapted to a branch collection.
+        distro_source_package = self.factory.makeDistributionSourcePackage()
+        collection = IBranchCollection(distro_source_package, None)
+        self.assertIsNot(None, collection)
+
+
 class TestGenericBranchCollection(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

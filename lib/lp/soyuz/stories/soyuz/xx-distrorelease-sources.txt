@@ -38,10 +38,10 @@ Let's have a look at the firefox DistributionSourcePackage.
   >>> print browser.url
   http://launchpad.dev/ubuntu/+source/mozilla-firefox
 
-Click the "Show publishing history" link to see specific information
+Click the "See full publishing history" link to see specific information
 about Firefox's publishing history.
 
-  >>> browser.getLink("Show publishing history").click()
+  >>> browser.getLink("See full publishing history").click()
   >>> print extract_text(find_tag_by_id(browser.contents, 'publishing-summary'))
   Date                                              Status     Target   Pocket   Component   Section   Version
   2006-02-13 12:19:00 UTC                           Published  Warty    release  main        web       0.9
@@ -54,7 +54,7 @@ Jump back to the DistributionSourcePackage page to continue the tests:
 By clicking in the 'target' distroseries we will get to the
 SourcePackage page:
 
-  >>> browser.getLink("warty").click()
+  >>> browser.getLink("The Warty Warthog Release").click()
   >>> browser.url
   'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox'
 
@@ -438,9 +438,8 @@ If the publishing is a copy, the original location, distribution,
 distroseries and archive are shown.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+source/alsa-utils')
-
-    >>> anon_browser.getLink("Show publishing history").click()
+    ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/'
+    ...     '+publishinghistory')
 
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'publishing-summary'))

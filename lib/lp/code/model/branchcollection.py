@@ -151,6 +151,14 @@ class GenericBranchCollection:
         """
         return []
 
+    def getMergeProposalsForPerson(self, person, status=None):
+        """See `IBranchCollection`."""
+        # We want to limit the proposals to those where the source branch is
+        # limited by the defined collection.
+        owned = self.ownedBy(person).getMergeProposals(status)
+        reviewing = self.getMergeProposalsForReviewer(person, status)
+        return owned.union(reviewing)
+
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""
         tables = [

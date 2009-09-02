@@ -179,6 +179,58 @@ sources.list widget).
     PPA for Mark Shuttleworth (included ... ago)
     PPA for No Privileges Person (included ... ago)
 
+The dependency entries are links to their target archives.
+
+    >>> print user_browser.getLink('PPA for Mark Shuttleworth').url
+    http://launchpad.dev/~mark/+archive/ppa
+
+    >>> print user_browser.getLink('PPA for No Privileges Person').url
+    http://launchpad.dev/~no-priv/+archive/ppa
+
+If, by any chance, a dependency gets disabled, the link is turned off
+and the text '[disabled]' is appended to it. So PPA users will be
+aware of this condition.
+
+    # Disable Mark's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> mark.archive.enabled = False
+    >>> logout()
+
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> print_tag_with_id(anon_browser.contents, 'archive-dependencies')
+    Build dependencies:
+    PPA for Mark Shuttleworth [disabled] (included ... ago)
+    PPA for No Privileges Person (included ... ago)
+
+    >>> anon_browser.getLink('PPA for Mark Shuttleworth')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print anon_browser.getLink('PPA for No Privileges Person').url
+    http://launchpad.dev/~no-priv/+archive/ppa
+
+When accessed by their owners, a PPA depending on disabled archives
+will additionally show an warning. This way PPA maintainer can react
+to this problem.
+
+    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> ui_dependencies = find_tag_by_id(
+    ...     cprov_browser.contents, 'archive-dependencies')
+    >>> print extract_text(
+    ...     first_tag_by_class(str(ui_dependencies), 'message warning'))
+    This PPA depends on disabled archives. it may cause spurious
+    build failures or binaries with unexpected contents.
+
+Re-enable Mark's PPA for subsequent tests.
+
+    >>> login('foo.bar@canonical.com')
+    >>> mark.archive.enabled = True
+    >>> logout()
+
 
 == Removing dependencies ==
 
