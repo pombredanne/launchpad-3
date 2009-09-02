@@ -678,6 +678,11 @@
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
         </class>
+        <adapter
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            factory="lp.soyuz.browser.distroarchseries.DistroArchSeriesBreadcrumb"
+            permission="zope.Public" />
     </facet>
 
     <!-- DistroArchSeriesSet -->
