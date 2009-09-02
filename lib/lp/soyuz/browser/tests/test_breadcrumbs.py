@@ -11,7 +11,6 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.testing import ANONYMOUS, login
 
 
 class TestDistroArchSeriesBreadcrumb(BaseBreadcrumbTestCase):
