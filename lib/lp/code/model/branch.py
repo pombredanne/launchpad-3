@@ -72,7 +72,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
-    IPerson, validate_person_not_private_membership, validate_public_person)
+    validate_person_not_private_membership, validate_public_person)
 
 
 class Branch(SQLBase):
@@ -184,7 +184,8 @@ class Branch(SQLBase):
             target = IBranchTarget(source_package)
             if target is None:
                 raise BranchTargetError(
-                    '%r is not a valid source package target' % source_package)
+                    '%r is not a valid source package target' %
+                    source_package)
         else:
             target = IBranchTarget(self.owner)
             # Person targets are always valid.
