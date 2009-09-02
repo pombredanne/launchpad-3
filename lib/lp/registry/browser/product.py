@@ -1518,7 +1518,7 @@ class ProjectAddStepOne(StepView):
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
@@ -1553,7 +1553,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     product = None
 

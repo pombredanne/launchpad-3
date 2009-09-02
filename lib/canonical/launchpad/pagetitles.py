@@ -817,9 +817,6 @@ person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
 person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 
-person_vouchers = ContextDisplayName(
-    'Commercial subscription vouchers for %s')
-
 pofile_filter = FilteredTranslationsTitle(
     smartquote('Translations by %(person)s in "%(title)s"'))
 
@@ -873,10 +870,6 @@ product_edit_people = "Change the roles of people"
 product_index = ContextTitle('%s in Launchpad')
 
 def product_mergeproposals(context, view):
-    """Return the view's heading."""
-    return view.heading
-
-def product_new(context, view):
     """Return the view's heading."""
     return view.heading
 

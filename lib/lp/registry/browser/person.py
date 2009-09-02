@@ -2303,6 +2303,11 @@ class PersonVouchersView(LaunchpadFormView):
 
     custom_widget('voucher', LaunchpadDropdownWidget)
 
+    @property
+    def page_title(self):
+        return ('Commercial subscription vouchers for %s'
+                % self.context.displayname)
+
     def setUpFields(self):
         """Set up the fields for this view."""
 
