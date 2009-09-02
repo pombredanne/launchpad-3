@@ -15,8 +15,7 @@ home page.
 For moderated teams, it's only possible to propose another team as a member.
 The proposal will have to be reviewed by a team administrator.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    Ubuntu Team
+    >>> print extract_text(find_tag_by_id(browser.contents, 'candidates'))
     Propose these teams as members
     This is a moderated team, so one of its administrators will have
     to review any memberships you propose.
@@ -79,8 +78,7 @@ your teams as members.
     LinkNotFoundError
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    Ubuntu Team
+    >>> print extract_text(find_tag_by_id(browser.contents, 'candidates'))
     This is a restricted team
     New members can not be proposed&mdash;they can only be added by one
     of the team's administrators.
@@ -124,6 +122,5 @@ anymore of the Ubuntu Team:
 And when no teams can be added, a message is displayed:
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
-    >>> print extract_text(find_main_content(browser.contents))
-    Ubuntu Team
+    >>> print extract_text(find_tag_by_id(browser.contents, 'no-candidates'))
     None of the teams you administer can be added to this team.
