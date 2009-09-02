@@ -7,6 +7,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'LinkTranslationsBranchView',
     'ProductSeriesTemplatesView',
     'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
@@ -114,6 +115,10 @@ class ProductSeriesTranslationsExportView(BaseExportView):
             self.context.name)
 
     @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
     def page_title(self):
         return "Download translations for %s" % self.download_description
 
@@ -164,6 +169,16 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         self.form = self.request.form
         self.processForm()
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return "Upload translations to %s %s" % (
+            self.context.product.displayname,
+            self.context.displayname)
+
     def processForm(self):
         """Process a form if it was submitted."""
         if not self.request.method == "POST":
@@ -178,7 +193,7 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         and uploader (importer) in the queue and the new upload cannot be
         safely matched to any of them.  The user will be informed about the
         failure with a warning message."""
-        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # XXX henninge 2008-12-03 bug=192925: This code is duplicated for
         # potemplate and pofile and should be unified.
 
         file = self.request.form['file']
@@ -420,6 +435,17 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
     schema = IProductSeries
     field_names = []
 
+    label = "Request one-time import of translations"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return "One-time import of %s %s translations from bazaar" % (
+            self.context.product.displayname, self.context.displayname)
+
     def __init__(self, context, request):
         super(ProductSeriesTranslationsBzrImportView, self).__init__(
             context, request)
@@ -457,3 +483,30 @@ class ProductSeriesTemplatesView(LaunchpadView):
     def can_administer(self, template):
         """Can the user administer the template?"""
         return check_permission('launchpad.Admin', template)
+
+
+class LinkTranslationsBranchView(LaunchpadEditFormView):
+    """View to set the series' translations export branch."""
+
+    schema = IProductSeries
+    field_names = ['translations_branch']
+
+    label = "Set translations export branch"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @property
+    def page_title(self):
+        return "Set translations export branch for %s" % (self.context.title)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Translations export branch updated.')

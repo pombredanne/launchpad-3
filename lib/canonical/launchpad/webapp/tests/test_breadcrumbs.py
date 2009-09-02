@@ -37,6 +37,29 @@ class TestBreadcrumb(TestCase):
         self.assertEquals(Breadcrumb(cookbook).rootsite, 'cooking')
 
 
+class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
+    """When the current page is not the object's default one (+index), we add
+    an extra breadcrumb for it.
+    """
+
+    def setUp(self):
+        super(TestExtraBreadcrumbForLeafPageOnHierarchyView, self).setUp()
+        login('test@canonical.com')
+        self.product = self.factory.makeProduct(name='crumb-tester')
+        self.product_url = canonical_url(self.product)
+
+    def test_default_page(self):
+        urls = self._getBreadcrumbsURLs(
+            self.product_url, [self.root, self.product])
+        self.assertEquals(urls, [self.product_url])
+
+    def test_non_default_page(self):
+        downloads_url = "%s/+download" % self.product_url
+        urls = self._getBreadcrumbsURLs(
+            downloads_url, [self.root, self.product])
+        self.assertEquals(urls, [self.product_url, downloads_url])
+
+
 class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
     """How our breadcrumbs behave when using a vhost other than the main one?
 
