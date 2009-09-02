@@ -194,8 +194,6 @@ bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 bug_mark_as_affecting_user = ContextBugId(
     'Bug #%d - does this bug affect you?')
 
-bug_nominate_for_series = ViewLabel()
-
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
