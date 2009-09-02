@@ -132,7 +132,6 @@ tr#package-counters p{
             </p>
           </div>
         </div></div> <!-- portlet, yui-u -->
-
         <div class="yui-u">
           <div tal:define="archive context"
                tal:condition="archive_active"
@@ -140,7 +139,7 @@ tr#package-counters p{
                class="portlet">
             <h2>
               <span class="see-all"><a
-                tal:replace="structure context/menu:context/builds/fmt:link" />
+                tal:replace="structure context/menu:overview/builds/fmt:link" />
               </span>
               Package build summary
             </h2>

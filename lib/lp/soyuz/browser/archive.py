@@ -11,11 +11,11 @@ __all__ = [
     'ArchiveBadges',
     'ArchiveBreadcrumb',
     'ArchiveBuildsView',
-    'ArchiveContextMenu',
+    'ArchiveNavigationMenu',
     'ArchiveEditDependenciesView',
     'ArchiveEditView',
     'ArchiveNavigation',
-    'ArchiveNavigationMenu',
+    'ArchiveIndexActionsMenu',
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchivePackagesView',
@@ -28,12 +28,11 @@ __all__ = [
 
 
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements, Interface
-from zope.schema import Choice, List
+from zope.schema import Choice, List, TextLine
+from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlobject import SQLObjectNotFound
@@ -52,8 +51,7 @@ from lp.soyuz.adapters.archivesourcepublication import (
     ArchiveSourcePublications)
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy, IArchive, IArchiveEditDependenciesForm,
-    IArchivePackageCopyingForm, IArchivePackageDeletionForm,
-    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm, NoSuchPPA)
+    IArchiveSet, IPPAActivateForm, NoSuchPPA)
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
@@ -76,7 +74,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
-    stepthrough, ContextMenu, LaunchpadEditFormView,
+    stepthrough, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation)
 from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.authorization import check_permission
@@ -85,11 +83,13 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
+from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget)
-from canonical.widgets.lazrjs import TextLineEditorWidget
+from canonical.widgets.lazrjs import (
+    TextAreaEditorWidget, TextLineEditorWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -329,7 +329,9 @@ class ArchiveMenuMixin:
         link = Link('+subscriptions', text, icon='edit')
 
         # This link should only be available for private archives:
-        if not self.context.private:
+        view = self.context
+        archive = view.context
+        if not archive.private:
             link.enabled = False
 
         return link
@@ -375,22 +377,26 @@ class ArchiveMenuMixin:
         return Link('+edit-dependencies', text, icon='edit')
 
 
-class ArchiveContextMenu(ContextMenu, ArchiveMenuMixin):
+class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
     """Overview Menu for IArchive."""
 
     usedfor = IArchive
+    facet = 'overview'
     links = ['ppa', 'admin', 'edit', 'builds', 'builds_successful', 'delete',
-             'copy', 'edit_dependencies', 'manage_subscribers']
+             'copy', 'edit_dependencies']
 
 
-class ArchiveNavigationMenu(NavigationMenu):
+class IArchiveIndexActionsMenu(Interface):
+    """A marker interface for the ppa index actions menu."""
+
+class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
     """IArchive navigation menu.
 
     Deliberately empty.
     """
-    usedfor = IArchive
+    usedfor = IArchiveIndexActionsMenu
     facet = 'overview'
-    links = []
+    links = ['admin', 'edit', 'edit_dependencies', 'manage_subscribers']
 
 
 class IArchivePackagesActionMenu(Interface):
@@ -531,50 +537,40 @@ class ArchiveViewBase(LaunchpadView):
         return can_edit and len(disabled_dependencies) > 0
 
 
-class ArchiveSourcePackageListViewBase(ArchiveViewBase):
+class ArchiveSeriesVocabularyFactory:
+    """A factory for generating vocabularies of an archive's series."""
+
+    implements(IContextSourceBinder)
+
+    def __call__(self, context):
+        series_terms = [SimpleTerm(None, token='any', title='Any Series')]
+        for distroseries in context.series_with_sources:
+            series_terms.append(
+                SimpleTerm(distroseries, token=distroseries.name,
+                           title=distroseries.displayname))
+        return SimpleVocabulary(series_terms)
+
+
+class IPPAPackageFilter(Interface):
+    """An browser-only interface for package filtering."""
+    name_filter = TextLine(
+        title=_("Package name contains"), required=False)
+    series_filter = Choice(
+        source=ArchiveSeriesVocabularyFactory(), required=False)
+    status_filter = Choice(vocabulary=SimpleVocabulary((
+        SimpleTerm(active_publishing_status, 'published', 'Published'),
+        SimpleTerm(inactive_publishing_status, 'superseded', 'Superseded'),
+        SimpleTerm(None, 'any', 'Any status')
+        )), required=False)
+
+
+class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
     """Common features for archive views with lists of packages."""
 
-    def initialize(self):
-        """Setup package filtering fields.
+    schema = IPPAPackageFilter
 
-        Setup status filter widget and the series filter widget.
-        """
-        self.setupNameFilterWidget()
-        self.setupStatusFilterWidget()
-        self.setupSeriesFilterWidget()
-        self.setupPackageBatchResult()
-
-        # By default, this view will not present selectable sources
-        self.selectable_sources = False
-
-        super(ArchiveSourcePackageListViewBase, self).initialize()
-
-    @cachedproperty
-    def simplified_status_vocabulary(self):
-        """Return a simplified publishing status vocabulary.
-
-        Receives the one of the established field values:
-
-        ('published', 'superseded', 'any').
-
-        Allow user to select between:
-
-         * Published:  PENDING and PUBLISHED records,
-         * Superseded: SUPERSEDED and DELETED records,
-         * Any Status
-        """
-        class StatusCollection:
-            def __init__(self, collection=None):
-                self.collection = collection
-
-        status_terms = [
-            SimpleTerm(StatusCollection(active_publishing_status),
-                       'published', 'Published'),
-            SimpleTerm(StatusCollection(inactive_publishing_status),
-                       'superseded', 'Superseded'),
-            SimpleTerm(StatusCollection(), 'any', 'Any Status')
-            ]
-        return SimpleVocabulary(status_terms)
+    # This view will not present selectable sources
+    selectable_sources = False
 
     @cachedproperty
     def series_with_sources(self):
@@ -582,91 +578,63 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
         return self.context.series_with_sources
 
     @property
-    def series_vocabulary(self):
-        """Return a vocabulary for selecting a distribution series.
-
-        This property defines the _vocabulary_ of a widget that allows the
-        selection of a series
-        """
-        series_terms = [SimpleTerm(None, token='any', title='Any Series')]
-        for distroseries in self.series_with_sources:
-            series_terms.append(
-                SimpleTerm(distroseries, token=distroseries.name,
-                           title=distroseries.displayname))
-        return SimpleVocabulary(series_terms)
-
-    def setupNameFilterWidget(self):
-        """Set the specified name filter property."""
+    def specified_name_filter(self):
+        """Return the specified name filter if one was specified """
         requested_name_filter = self.request.query_string_params.get(
             'field.name_filter')
 
-        self.specified_name_filter = None
         if requested_name_filter is not None:
-            self.specified_name_filter = requested_name_filter[0]
+            return requested_name_filter[0]
+        else:
+            return None
 
-    def setupStatusFilterWidget(self):
-        """Build a customized publishing status select widget.
-
-        See `status_vocabulary`.
-        """
+    @cachedproperty
+    def selected_status_filter(self):
+        """Return the selected status filter or the default."""
         requested_status_filter = self.request.query_string_params.get(
             'field.status_filter')
 
         # If the request included a status filter, try to use it:
-        self.selected_status_filter = None
+        selected_status_filter = None
         if requested_status_filter is not None:
-            self.selected_status_filter = (
-                self.simplified_status_vocabulary.getTermByToken(
+            selected_status_filter = (
+                self.widgets['status_filter'].vocabulary.getTermByToken(
                     requested_status_filter[0]))
 
         # If the request didn't include a status, or it was invalid, use
         # the default:
-        if self.selected_status_filter is None:
-            self.selected_status_filter = self.default_status_filter
+        if selected_status_filter is None:
+            selected_status_filter = self.default_status_filter
 
-        field = Choice(
-            __name__='status_filter', title=_("Status Filter"),
-            vocabulary=self.simplified_status_vocabulary, required=True)
-        setUpWidget(self, 'status_filter', field, IInputWidget)
+        return selected_status_filter
 
     @property
     def plain_status_filter_widget(self):
         """Render a <select> control with no <div>s around it."""
-        return self.status_filter_widget.renderValue(
+        return self.widgets['status_filter'].renderValue(
             self.selected_status_filter.value)
 
-    def setupSeriesFilterWidget(self):
-        """Build a customized archive series select widget.
-
-        Allows users to select between a valid distribution series for the
-        archive distribution, or 'Any Series'.
-        """
+    @property
+    def selected_series_filter(self):
+        """Return the currently selected filter or None."""
         series_filter = self.request.query_string_params.get(
             'field.series_filter', ['any'])
-        self.selected_series_filter = (
-            self.series_vocabulary.getTermByToken(series_filter[0]))
 
-        field = Choice(
-            __name__='series_filter', title=_("Series Filter"),
-            vocabulary=self.series_vocabulary, required=True)
-        setUpWidget(self, 'series_filter', field, IInputWidget)
+        series_vocabulary = self.widgets['series_filter'].vocabulary
+        return series_vocabulary.getTermByToken(series_filter[0])
 
     @property
     def plain_series_filter_widget(self):
         """Render a <select> control with no <div>s around it."""
-        return self.series_filter_widget.renderValue(
+        return self.widgets['series_filter'].renderValue(
             self.selected_series_filter.value)
 
-    @cachedproperty
+    @property
     def filtered_sources(self):
-        """Return the source results for display after filtering.
-
-        It expects 'self.selected_status_filter' and
-        'self.selected_series_filter' to be set.
-        """
+        """Return the source results for display after filtering."""
         return self.context.getPublishedSources(
             name=self.specified_name_filter,
-            status=self.selected_status_filter.value.collection,
+            status=self.selected_status_filter.value,
             distroseries=self.selected_series_filter.value)
 
     @property
@@ -675,14 +643,19 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
 
         Subclasses of ArchiveViewBase can override this when required.
         """
-        return self.simplified_status_vocabulary.getTermByToken('published')
+        return self.widgets['status_filter'].vocabulary.getTermByToken(
+            'published')
 
-    def setupPackageBatchResult(self):
-        """Setup of the package search results."""
-        self.batchnav = BatchNavigator(
-            self.filtered_sources, self.request)
+    @cachedproperty
+    def batchnav(self):
+        """Return a batch navigator of the filtered sources."""
+        return BatchNavigator(self.filtered_sources, self.request)
+
+    @cachedproperty
+    def batched_sources(self):
+        """Return the current batch of archive source publications."""
         results = list(self.batchnav.currentBatch())
-        self.batched_sources = ArchiveSourcePublications(results)
+        return ArchiveSourcePublications(results)
 
     @cachedproperty
     def has_sources_for_display(self):
@@ -702,6 +675,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     """
 
     __used_for__ = IArchive
+    implements(IArchiveIndexActionsMenu)
 
     def initialize(self):
         """Setup infrastructure for the PPA index page.
@@ -733,6 +707,20 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         return(getUtility(
                 IPackageCopyRequestSet).getByTargetArchive(self.context))
 
+    @property
+    def archive_description_html(self):
+        """The archive's description as HTML."""
+        formatter = FormattersAPI
+        hide_email = formatter(self.context.description).obfuscate_email()
+        description = formatter(hide_email).text_to_html()
+        return TextAreaEditorWidget(
+            self.context,
+            'description',
+            canonical_url(self.context, view_name='+edit'),
+            id="edit-description",
+            title="Archive description",
+            value=description)
+
 
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
@@ -756,13 +744,14 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         return self.context.is_copy
 
 
-class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
-                                     LaunchpadFormView):
+class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
     """Base class to implement a source selection widget for PPAs."""
 
-    schema = IArchiveSourceSelectionForm
+    schema = IPPAPackageFilter
 
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
+
+    selectable_sources = True
 
     def initialize(self):
         """Ensure both parent classes initialize methods are called.
@@ -770,7 +759,6 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
         super() ensures this happens in left-to-right order.
         """
         super(ArchiveSourceSelectionFormView, self).initialize()
-        self.selectable_sources = True
 
     def setNextURL(self):
         """Set self.next_url based on current context.
@@ -783,23 +771,27 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
         else:
             self.next_url = self.request.URL
 
-    def setUpFields(self):
-        """Override `LaunchpadFormView`.
+    def setUpWidgets(self, context=None):
+        """Setup our custom widget which depends on the filter widget values.
 
-        In addition to setting schema fields, also initialize the
-        'selected_sources' field.
-
-        See `createSelectedSourcesField` method.
+        To create the selected sources field, we need to define a vocabulary
+        based on the currently selected sources (using self.batched_sources)
+        but this itself requires the current values of the filtering
+        widgets. So we setup the widgets, then add the extra field and
+        create its widget too.
         """
-        LaunchpadFormView.setUpFields(self)
+        super(ArchiveSourceSelectionFormView, self).setUpWidgets(context)
 
+        # Add the field whose vocabulary is dependent on the value
+        # of other widgets.
+        self.form_fields += self.createSelectedSourcesField()
 
-        # Build and store 'selected_sources' field.
-        selected_sources_field = self.createSelectedSourcesField()
-
-        # Append the just created fields to the global form fields, so
-        # `setupWidgets` will do its job.
-        self.form_fields += selected_sources_field
+        # Note to reviewer: The only way I could get the widget added
+        # was to call super.setUpWidgets again - this doesn't seem to bad
+        # as it is exactly what Zope's FormBase.reset_form() does, but
+        # was hoping that I could instead use the singular setupWidget and
+        # simply add the widget to self.widgets, but this didn't work.
+        super(ArchiveSourceSelectionFormView, self).setUpWidgets(context)
 
     def focusedElementScript(self):
         """Override `LaunchpadFormView`.
@@ -836,6 +828,14 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
         return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
 
 
+class IArchivePackageDeletionForm(IPPAPackageFilter):
+    """Schema used to delete packages within an archive."""
+
+    deletion_comment = TextLine(
+        title=_("Deletion comment"), required=False,
+        description=_("The reason why the package is being deleted."))
+
+
 class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """Archive package deletion view class.
 
@@ -850,7 +850,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     @property
     def default_status_filter(self):
         """Present records in any status by default."""
-        return self.simplified_status_vocabulary.getTermByToken('any')
+        return self.widgets['status_filter'].vocabulary.getTermByToken('any')
 
     @cachedproperty
     def filtered_sources(self):
@@ -864,7 +864,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         """
         return self.context.getSourcesForDeletion(
             name=self.specified_name_filter,
-            status=self.selected_status_filter.value.collection,
+            status=self.selected_status_filter.value,
             distroseries=self.selected_series_filter.value)
 
     @cachedproperty
@@ -941,7 +941,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     This view presents a package selection slot in a POST form implementing
     a copying action that can be performed upon a set of selected packages.
     """
-    schema = IArchivePackageCopyingForm
+    schema = IPPAPackageFilter
 
     custom_widget('destination_archive', DestinationArchiveDropdownWidget)
     custom_widget('destination_series', DestinationSeriesDropdownWidget)
@@ -952,7 +952,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     @property
     def default_status_filter(self):
         """Present published records by default."""
-        return self.simplified_status_vocabulary.getTermByToken('published')
+        return self.widgets['status_filter'].vocabulary.getTermByToken(
+            'published')
 
     def setUpFields(self):
         """Override `ArchiveSourceSelectionFormView`.

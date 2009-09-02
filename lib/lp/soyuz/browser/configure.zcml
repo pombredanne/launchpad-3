@@ -326,8 +326,8 @@
     </browser:pages>
     <browser:menus
         classes="
-            ArchiveContextMenu
             ArchiveNavigationMenu
+            ArchiveIndexActionsMenu
             ArchivePackagesActionMenu"
         module="lp.soyuz.browser.archive"/>
     <browser:url

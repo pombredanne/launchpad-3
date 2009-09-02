@@ -62,19 +62,19 @@ IPackageCopyRequest's associated with an archive:
     >>> ppa_archive_view.package_copy_requests.count()
     0
 
-An ArchiveView provides a helper method returning a simplified status
-vocabulary for selecting a status filter:
+An ArchiveView inherits the status-filter widget for filtering
+packages by status.
 
-    >>> for term in ppa_archive_view.simplified_status_vocabulary:
+    >>> for term in ppa_archive_view.widgets['status_filter'].vocabulary:
     ...     print term.title
     Published
     Superseded
-    Any Status
+    Any status
 
-An ArchiveView provides a helper method returning a distribution series
-vocabulary for selecting a series filter:
+An ArchiveView inherits the series-filter widget for filtering packages
+by series.
 
-    >>> for term in ppa_archive_view.series_vocabulary:
+    >>> for term in ppa_archive_view.widgets['series_filter'].vocabulary:
     ...     print term.title
     Any Series
     Breezy Badger Autotest
@@ -430,7 +430,16 @@ If by any chance, the form containing already deleted items, is
 re-POSTed to the page, the code is able to identify such invalid
 situation and ignore it. See bug #185922 for reference.
 
-    >>> view.initialize()
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+delete-packages",
+    ...     form={
+    ...         'field.actions.delete': 'Delete Packages',
+    ...         'field.name_filter': '',
+    ...         'field.status_filter': 'any',
+    ...         'field.deletion_comment': 'Go away',
+    ...         'field.selected_sources': ['27', '28', '29'],
+    ...         'field.selected_sources-empty-marker': 1,
+    ...         })
 
     >>> view.has_sources_for_display
     False

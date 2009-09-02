@@ -301,7 +301,7 @@ div.package-details {
     <dl>
       <dt>Completed builds</dt>
       <dd>
-        <a tal:attributes="href context/menu:context/builds_successful/fmt:url">
+        <a tal:attributes="href context/menu:overview/builds_successful/fmt:url">
           <span class="build-count succeeded"
                 tal:content="view/build_counters/succeeded">100</span>
           successful</a></dd>
