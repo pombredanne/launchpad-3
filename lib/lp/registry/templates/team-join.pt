@@ -4,6 +4,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only">
+
 <div metal:fill-slot="main">
 
   <tal:can-join tal:condition="view/user_can_request_to_join">
