@@ -248,23 +248,22 @@ class POFileFilteredView(LaunchpadView):
 
     DEFAULT_BATCH_SIZE = 50
 
+    @property
+    def _person_name(self):
+        """Person's display name.  Graceful about unknown persons."""
+        if self.person is None:
+            return "unknown person"
+        else:
+            return self.person.displayname
+
     def page_title(self):
         """See `LaunchpadView`."""
-        if self.person is None:
-            person_name = "unknown person"
-        else:
-            person_name = self.person.displayname
-
         return smartquote('Translations by %s in "%s"') % (
-            person_name, self.context.title)
+            self._person_name, self.context.title)
     
     def label(self):
         """See `LaunchpadView`."""
-        if self.person:
-            person_name = "unknown person"
-        else:
-            person_name = self.person.displayname
-        return "Translations by %s" % person_name
+        return "Translations by %s" % self._person_name
 
     def initialize(self):
         """See `LaunchpadView`."""

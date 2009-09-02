@@ -147,8 +147,9 @@
                  tal:content="translator/style_guide_url"
                  tal:attributes="href translator/style_guide_url"
               >Documentation URL</a>
-            <a tal:attributes="href string:${translator/translationgroup/fmt:url}/${translator/language/code}/+edit"
-            ><img src="/@@/edit" /></a></td>
+            <a class="edit sprite"
+               tal:attributes="href string:${translator/translationgroup/fmt:url}/${translator/language/code}/+edit"
+            ><span class="invisible-link">edit</span></a></td>
         </tr>
       </tbody>
     </table>
