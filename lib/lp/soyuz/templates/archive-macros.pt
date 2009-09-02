@@ -64,9 +64,21 @@ function startUpdate(container) {
         }
     };
 
+    /*
+     * If a page wants to use this outside of an archive context then it
+     * can define LP.client.cache['archive_context'], which should be a
+     * full or relative URL to the context archive page required.
+     */
+    var base_url = (
+        typeof(LP.client.cache['archive_context_url']) != "undefined")
+            ? LP.client.cache['archive_context_url']
+            : '';
+    if (base_url !== '') {
+        base_url += '/'
+    }
     var pub_id = container.get('id').replace(
         '-container', '').replace('pub', '');
-    var uri = '+sourcepub/' + pub_id + '/+listing-archive-extra';
+    var uri = base_url + '+sourcepub/' + pub_id + '/+listing-archive-extra';
     Y.io(uri, config);
 }
 
