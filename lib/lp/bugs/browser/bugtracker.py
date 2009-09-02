@@ -192,7 +192,7 @@ class BugTrackerView(LaunchpadView):
 
 
 BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
-    [('on', True), ('off', False)])
+    [('On', True), ('Off', False)])
 
 
 class BugTrackerEditView(LaunchpadEditFormView):

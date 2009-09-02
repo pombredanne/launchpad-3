@@ -465,7 +465,7 @@ But admins can.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
-    >>> admin_browser.getControl(name='field.active').value = ['off']
+    >>> admin_browser.getControl(name='field.active').value = ['Off']
     >>> admin_browser.getControl('Change').click()
 
     >>> message = find_tag_by_id(admin_browser.contents, 'inactive-message')
@@ -503,7 +503,7 @@ The admin can re-activate the bug tracker.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
-    >>> admin_browser.getControl(name='field.active').value = ['on']
+    >>> admin_browser.getControl(name='field.active').value = ['On']
     >>> admin_browser.getControl('Change').click()
 
     >>> message = find_tag_by_id(user_browser.contents, 'inactive-message')
