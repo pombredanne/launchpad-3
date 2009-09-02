@@ -178,8 +178,6 @@ bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
 
-bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
-
 bug_edit = ContextBugId('Bug #%d - Edit')
 
 bug_edit_confirm = ContextBugId('Bug #%d - Edit confirmation')
@@ -198,14 +196,9 @@ bug_mark_as_affecting_user = ContextBugId(
 
 bug_nominate_for_series = ViewLabel()
 
-bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
-
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
-
-bug_remove_question = LaunchbagBugID(
-    'Bug #%d - Convert this question back to a bug')
 
 bugbranch_delete = 'Delete bug branch link'
 
@@ -226,8 +219,6 @@ buglisting_default = ContextTitle("Bugs in %s")
 def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
-
-bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
 
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
@@ -404,8 +395,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
-
-distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -931,9 +920,6 @@ productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
 
-productseries_translations_bzr_import = (
-    'Request translations import from Bazaar branch')
-
 project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
@@ -1164,12 +1150,6 @@ standardshipitrequests_index = 'Standard ShipIt options'
 standardshipitrequest_new = 'Create a new standard option'
 
 standardshipitrequest_edit = 'Edit standard option'
-
-team_addmember = ContextBrowsername('Add members to %s')
-
-team_add_my_teams = 'Propose/add one of your teams to another one'
-
-team_editproposed = ContextBrowsername('Proposed members of %s')
 
 team_index = ContextBrowsername('%s in Launchpad')
 
