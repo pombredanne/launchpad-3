@@ -3898,6 +3898,7 @@ class TeamJoinView(PersonView):
 class TeamAddMyTeamsView(LaunchpadFormView):
     """Propose/add to this team any team that you're an administrator of."""
 
+    page_title = 'Propose/add one of your teams to another one'
     custom_widget('teams', LabeledMultiCheckBoxWidget)
 
     def initialize(self):
@@ -3945,11 +3946,10 @@ class TeamAddMyTeamsView(LaunchpadFormView):
             candidates.append(team)
         return candidates
 
-    @action(_("Cancel"), name="cancel",
-            validator=LaunchpadFormView.validate_none)
-    def cancel_action(self, action, data):
-        """Simply redirect to the team's page."""
-        pass
+    @property
+    def cancel_url(self):
+        """The return URL."""
+        return canonical_url(self.context)
 
     def validate(self, data):
         if len(data.get('teams', [])) == 0:
