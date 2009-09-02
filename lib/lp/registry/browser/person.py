@@ -95,7 +95,7 @@ from operator import attrgetter, itemgetter
 from textwrap import dedent
 
 from zope.error.interfaces import IErrorReportingUtility
-from zope.app.form.browser import CheckBoxWidget, TextAreaWidget, TextWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.formlib.form import FormFields
 from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
@@ -2478,7 +2478,57 @@ class PersonLanguagesView(LaunchpadFormView):
             rootsite='answers')
 
 
-class PersonView(LaunchpadView, FeedsMixin):
+class TeamJoinMixin:
+    """Mixin class for views related to joining teams."""
+
+    @property
+    def user_can_subscribe_to_list(self):
+        """Can the user subscribe to this team's mailing list?
+
+        A user can subscribe to the list if the team has an active
+        mailing list, and if they do not already have a subscription.
+        """
+        if self.team_has_mailing_list:
+            # If we are already subscribed, then we can not subscribe again.
+            return not self.user_is_subscribed_to_list
+        else:
+            return False
+
+    @property
+    def user_is_subscribed_to_list(self):
+        """Is the user subscribed to the team's mailing list?
+
+        Subscriptions hang around even if the list is deactivated, etc.
+
+        It is an error to ask if the user is subscribed to a mailing list
+        that doesn't exist.
+        """
+        if self.user is None:
+            return False
+
+        mailing_list = self.context.mailing_list
+        assert mailing_list is not None, "This team has no mailing list."
+        has_subscription = bool(mailing_list.getSubscription(self.user))
+        return has_subscription
+
+    @property
+    def team_has_mailing_list(self):
+        """Is the team mailing list available for subscription?"""
+        mailing_list = self.context.mailing_list
+        return mailing_list is not None and mailing_list.is_usable
+
+    def userIsActiveMember(self):
+        """Return True if the user is an active member of this team."""
+        return userIsActiveTeamMember(self.context)
+
+    def userIsProposedMember(self):
+        """Return True if the user is a proposed member of this team."""
+        if self.user is None:
+            return False
+        return self.user in self.context.proposedmembers
+
+
+class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
     """A View class used in almost all Person's pages."""
 
     @cachedproperty
@@ -2590,42 +2640,6 @@ class PersonView(LaunchpadView, FeedsMixin):
             raise AssertionError('Unknown subscription policy.')
         return description
 
-    @property
-    def user_can_subscribe_to_list(self):
-        """Can the user subscribe to this team's mailing list?
-
-        A user can subscribe to the list if the team has an active
-        mailing list, and if they do not already have a subscription.
-        """
-        if self.team_has_mailing_list:
-            # If we are already subscribed, then we can not subscribe again.
-            return not self.user_is_subscribed_to_list
-        else:
-            return False
-
-    @property
-    def user_is_subscribed_to_list(self):
-        """Is the user subscribed to the team's mailing list?
-
-        Subscriptions hang around even if the list is deactivated, etc.
-
-        It is an error to ask if the user is subscribed to a mailing list
-        that doesn't exist.
-        """
-        if self.user is None:
-            return False
-
-        mailing_list = self.context.mailing_list
-        assert mailing_list is not None, "This team has no mailing list."
-        has_subscription = bool(mailing_list.getSubscription(self.user))
-        return has_subscription
-
-    @property
-    def team_has_mailing_list(self):
-        """Is the team mailing list available for subscription?"""
-        mailing_list = self.context.mailing_list
-        return mailing_list is not None and mailing_list.is_usable
-
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -2732,16 +2746,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         if self.user is None:
             return False
         return self.user.inTeam(self.context)
-
-    def userIsActiveMember(self):
-        """Return True if the user is an active member of this team."""
-        return userIsActiveTeamMember(self.context)
-
-    def userIsProposedMember(self):
-        """Return True if the user is a proposed member of this team."""
-        if self.user is None:
-            return False
-        return self.user in self.context.proposedmembers
 
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.
@@ -3669,12 +3673,16 @@ class PersonBrandingView(BrandingChangeView):
     field_names = ['logo', 'mugshot']
     schema = IPerson
 
+
 class TeamJoinForm(Interface):
+    """Schema for team join."""
     mailinglist_subscribe = Bool(
         title=_("Subscribe me to this team's mailing list"),
-        required=True, default=False)
+        required=True, default=True)
 
-class TeamJoinView(LaunchpadFormView, PersonView):
+
+class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
+    """A view class for joining a team."""
     schema = TeamJoinForm
 
     @property
@@ -3737,50 +3745,41 @@ class TeamJoinView(LaunchpadFormView, PersonView):
         return policy == TeamSubscriptionPolicy.MODERATED
 
     @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
     def cancel_url(self):
         return canonical_url(self.context)
 
     @action(_("Join"), name="join")
     def action_save(self, action, data):
-        request = self.request
-        user = self.user
-        context = self.context
         response = self.request.response
 
-        notification = None
-        if 'join' in request.form and self.user_can_request_to_join:
+        if self.user_can_request_to_join:
             # Shut off mailing list auto-subscription - we want direct
             # control over it.
-            user.join(context, may_subscribe_to_list=False)
+            self.user.join(self.context, may_subscribe_to_list=False)
 
             if self.team_is_moderated:
                 response.addInfoNotification(
                     _('Your request to join ${team} is awaiting '
                       'approval.',
-                      mapping={'team': context.displayname}))
+                      mapping={'team': self.context.displayname}))
             else:
                 response.addInfoNotification(
                     _('You have successfully joined ${team}.',
-                      mapping={'team': context.displayname}))
+                      mapping={'team': self.context.displayname}))
+            if data.get('mailinglist_subscribe', False):
+                self._subscribeToList(response)
 
-            if 'mailinglist_subscribe' in request.form:
-                self._subscribeToList()
-
-        elif 'join' in request.form:
+        else:
             response.addErrorNotification(
                 _('You cannot join ${team}.',
-                  mapping={'team': context.displayname}))
-        elif 'goback' in request.form:
-            # User clicked on the 'Go back' button, so we'll simply redirect.
-            pass
-        else:
-            raise UnexpectedFormData(
-                "Couldn't find any of the expected actions.")
-        self.request.response.redirect(canonical_url(context))
+                  mapping={'team': self.context.displayname}))
 
-    def _subscribeToList(self):
+    def _subscribeToList(self, response):
         """Subscribe the user to the team's mailing list."""
-        response = self.request.response
 
         if self.user_can_subscribe_to_list:
             # 'user_can_subscribe_to_list' should have dealt with

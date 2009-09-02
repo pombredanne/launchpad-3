@@ -4,6 +4,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only">
+
 <div metal:fill-slot="main">
 
   <tal:can-join tal:condition="view/user_can_request_to_join">
@@ -17,10 +18,11 @@
     </p>
 
     <div metal:use-macro="context/@@launchpad_form/form" />
+
   </tal:can-join>
 
   <tal:cannot-join tal:condition="not: view/user_can_request_to_join">
-    <p tal:condition="view/join_allowed" class="warning message">
+    <p tal:condition="view/join_allowed" class="informational message">
       <tal:active-member condition="view/userIsActiveMember">
         You are an active member of this team already.
       </tal:active-member>
@@ -30,10 +32,16 @@
       </tal:proposed-member>
     </p>
 
-    <p tal:condition="not: view/join_allowed" class="warning message">
+    <p tal:condition="not: view/join_allowed" class="informational message">
       <span tal:replace="context/displayname" /> is a restricted team.
       Only a team administrator can add new members.
     </p>
+
+    <p>
+      <a tal:attributes="href view/cancel_url">Back</a>
+    </p>
   </tal:cannot-join>
+
+
 </div>
 </team-join>
