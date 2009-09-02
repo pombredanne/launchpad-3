@@ -167,6 +167,15 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         jobs.config(distinct=True)
         return (klass(job) for job in jobs)
 
+    def getOopsVars(self):
+        vars =  BaseRunnableJob.getOopsVars()
+        bmp = self.context.branch_merge_proposal
+        vars.extend([
+            ('branchmergeproposal_job_id', self.context.id),
+            ('branchmergeproposal_job_type', self.context.job_type.title),
+            ('source_branch', bmp.source_branch.unique_name),
+            ('target_branch', bmp.target_branch.unique_name)])
+        return vars
 
 
 

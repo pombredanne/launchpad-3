@@ -80,6 +80,9 @@ class BaseRunnableJob:
             return
         ctrl.send()
 
+    def getOopsVars(self):
+        return [('job_id', self.job.id)]
+
     def notifyUserError(self, e):
         """See `IRunnableJob`."""
         ctrl = self.getUserErrorMailController(e)
@@ -136,6 +139,7 @@ class JobRunner(object):
                 job.notifyUserError(e)
             except Exception:
                 info = sys.exc_info()
-                errorlog.globalErrorUtility.raising(info)
+                request = errorlog.ScriptRequest(job.getOopsVars())
+                errorlog.globalErrorUtility.raising(info, request)
                 oops = errorlog.globalErrorUtility.getLastOopsReport()
                 job.notifyOops(oops)
