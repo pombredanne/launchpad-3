@@ -605,12 +605,13 @@ class IMergeProposalCreatedJobSource(Interface):
 
 
 class IUpdatePreviewDiffJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
 
     def create(bmp):
-        """Create a MergeProposalCreatedJob for the specified Job."""
+        """Create a job to update the diff for this merge proposal."""
 
     def iterReady():
-        """Iterate through all ready MergeProposalCreatedJobs."""
+        """Iterate through jobs ready to update preview diffs."""
 
 
 def notify_modified(proposal, func, *args, **kwargs):
