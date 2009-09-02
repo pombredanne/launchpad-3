@@ -45,6 +45,10 @@ class RequestPeopleMergeView(LaunchpadFormView):
     label = 'Merge Launchpad accounts'
     schema = IRequestPeopleMerge
 
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(IPersonSet))
+
     @action('Continue', name='continue')
     def continue_action(self, action, data):
         dupeaccount = data['dupe_person']
@@ -92,6 +96,10 @@ class AdminMergeBaseView(LaunchpadFormView):
     dupe_person_emails = ()
     dupe_person = None
     target_person = None
+
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(IPersonSet))
 
     def validate(self, data):
         """Check that user is not attempting to merge a person into itself."""
