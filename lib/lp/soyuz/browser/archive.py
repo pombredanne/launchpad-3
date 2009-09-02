@@ -398,10 +398,10 @@ class IArchivePackagesActionMenu(Interface):
 
 
 class ArchivePackagesActionMenu(NavigationMenu, ArchiveMenuMixin):
-    #"""An action menu for archive package-related actions."""
-        usedfor = IArchivePackagesActionMenu
-        facet= 'overview'
-        links = ['copy', 'delete']
+    """An action menu for archive package-related actions."""
+    usedfor = IArchivePackagesActionMenu
+    facet = 'overview'
+    links = ['copy', 'delete']
 
 
 class ArchiveBreadcrumb(Breadcrumb):
