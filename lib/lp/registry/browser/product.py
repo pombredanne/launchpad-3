@@ -63,7 +63,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
+    IEditableContextTitle, ILaunchBag, NotFoundError,
+    UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductReviewSearch, License
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -784,7 +785,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                   ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
-    implements(IProductActionMenu)
+    implements(IProductActionMenu, IEditableContextTitle)
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)

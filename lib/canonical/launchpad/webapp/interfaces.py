@@ -731,6 +731,14 @@ class IPrimaryContext(Interface):
     context = Attribute('The primary context.')
 
 
+class IEditableContextTitle(Interface):
+    """Interface specifying that the context has an editable title."""
+
+    title_edit_widget = Attribute(
+        'The title of the context as an editable widget.')
+
+
+
 #
 # Database policies
 #

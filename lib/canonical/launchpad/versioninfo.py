@@ -63,12 +63,12 @@ else:
 
 
 try:
+    version_file = open('version.txt')
+except IOError:
+    release = 'x.y.z'
+else:
     try:
-        version_file = open('version.txt')
-    except IOError:
-        release = 'x.y.z'
-    else:
         version_data = version_file.read()
         release = version_data.strip()
-finally:
-    version_file.close()
+    finally:
+        version_file.close()

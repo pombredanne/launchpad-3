@@ -93,8 +93,8 @@
 
       <div class="watermark-apps-portlet top-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
-        <span tal:replace="structure context/watermark:logo"></span>
-        <h2 tal:replace="structure context/watermark:heading">
+        <span tal:replace="structure view/watermark:logo"></span>
+        <h2 tal:replace="structure view/watermark:heading">
           Celso Providelo
         </h2>
         <metal:heading_nav
