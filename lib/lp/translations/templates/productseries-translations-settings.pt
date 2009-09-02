@@ -49,8 +49,7 @@
               After the initial import, Launchpad will continue to scan your Bazaar
               branch for updates to template and translation files.
             </p>
-            <p id="bzr-request-display">
-              <img src="/@@/info" class="inline-icon" />
+            <p id="bzr-request-display"  class="info sprite">
               If you only need a one-time import, please request it
               <a tal:attributes="href view/request_bzr_import_url">here</a>.
             </p>
@@ -58,14 +57,10 @@
                tal:define="branch view/context/branch"
                id="branch-display">
               The official Bazaar branch is:
-              <img src="/@@/branch" class="inline-icon" />
-              <a tal:attributes="href branch/fmt:url; title branch/bzr_identity"
-                 tal:content="branch/displayname">
-                branchname
-              </a>
+              <a tal:replace="structure branch/fmt:link">branch</a>
               <a tal:attributes="href view/link_branch_url;
                                  title string:Change official branch"
-                 ><img src="/@@/edit" class="inline-icon" /></a>
+                 ><span class="edit sprite" /></a>
             </p>
             <p tal:condition="not:view/context/branch"
                id="no-branch-display">
@@ -100,24 +95,20 @@
 	    Currently not exporting translations to a branch.
 	    <a href="+link-translations-branch">
               Choose a target branch.
-              <img src="/@@/edit" class="inline-icon" alt="edit" />
+              <span class="edit sprite" alt="edit" />
 	    </a>
 	  </tal:no-translations-branch>
 	  <tal:translations-branch condition="context/translations_branch">
 	    Exporting translations to branch:
-	    <img src="/@@/branch" class="inline-icon" />
-	    <a
-               id="translations-branch-link"
-               tal:attributes="href context/translations_branch/fmt:url;
-                               title string:Change translations export branch"
-               tal:content="context/translations_branch/displayname"
-               >branch name</a>
-	    <a
-               id="translations-branch-edit-link"
-               tal:attributes="href string:+link-translations-branch;
-                               title string:Set translations export branch"
-               ><img src="/@@/edit" class="inline-icon" alt="edit" /></a>
-
+            <span id="translations-branch-link">
+	      <a tal:replace="structure context/translations_branch/fmt:link"
+                 >branch name</a>
+	      <a class="edit sprite"
+                 id="translations-branch-edit-link"
+                 tal:attributes="href string:+link-translations-branch;
+                                 title string:Set translations export branch"
+                 ></a>
+            </span>
 	  </tal:translations-branch>
 	</p>
 

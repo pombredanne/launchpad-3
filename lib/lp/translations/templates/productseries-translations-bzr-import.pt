@@ -49,8 +49,7 @@
                 >Read the translations import policy</a>)
 	  </p>
 	  <p tal:condition="not:view/has_imports_enabled"
-             id="settings-display">
-	    <img src="/@@/info" class="inline-icon" />
+             id="settings-display" class="info sprite">
 	    To enable continuous imports please change the settings
 	    <a tal:attributes="href view/translations_settings_url">here</a>.
 	  </p>
@@ -58,14 +57,12 @@
 	<p tal:define="branch context/branch"
 	   id="branch-display">
 	  The official Bazaar branch is:
-	  <img src="/@@/branch" class="inline-icon" />
-	  <a tal:attributes="href branch/fmt:url; title branch/bzr_identity"
-	     tal:content="branch/displayname">
+	  <a tal:replace="structure branch/fmt:link">
             branchname
 	  </a>
-	  <a tal:attributes="href view/link_branch_url;
-			     title string:Change official branch"
-             ><img src="/@@/edit" class="inline-icon" /></a>
+	  <a tal:attributes="href view/link_branch_url"
+             title="Change official branch"
+             class="edit sprite"></a>
 	</p>
       </div>
     </div>
