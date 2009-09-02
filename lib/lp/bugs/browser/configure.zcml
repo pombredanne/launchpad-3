@@ -102,12 +102,6 @@
         permission="zope.Public"
         template="../templates/bugtarget-macros-search.pt"/>
     <browser:page
-        name="+linkbug"
-        for="canonical.launchpad.interfaces.IBugLinkTarget"
-        class="lp.bugs.browser.buglinktarget.BugLinkView"
-        permission="launchpad.AnyPerson"
-        template="../templates/buglinktarget-linkbug.pt"/>
-    <browser:page
         name="+unlinkbug"
         for="canonical.launchpad.interfaces.IBugLinkTarget"
         class="lp.bugs.browser.buglinktarget.BugsUnlinkView"
