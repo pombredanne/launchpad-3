@@ -511,10 +511,6 @@ hwdb_fingerprint_submissions = (
 hwdb_submit_hardware_data = (
     'Submit New Data to the Launchpad Hardware Database')
 
-karmaaction_index = 'Karma actions'
-
-karmacontext_topcontributors = ContextTitle('Top %s Contributors')
-
 language_index = ContextDisplayName("%s in Launchpad")
 
 languageset_index = 'Languages in Launchpad'
@@ -745,8 +741,6 @@ people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
-active_reviews = ContextDisplayName('Pending proposals for %s')
-
 person_archive_subscription = ContextDisplayName('%s')
 
 person_archive_subscriptions = 'Private PPA access'
@@ -769,13 +763,7 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
-
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_editircnicknames = ContextDisplayName(smartquote("%s's IRC nicknames"))
-
-person_editjabberids = ContextDisplayName(smartquote("%s's Jabber IDs"))
 
 person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
 
