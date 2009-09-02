@@ -90,6 +90,7 @@ from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
 
+
 def get_plural_text(count, singular, plural):
     """Return 'singular' if 'count' is 1, 'plural' otherwise."""
     if count == 1:

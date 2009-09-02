@@ -55,13 +55,25 @@ class TestBranchCollectionAdaptation(TestCaseWithFactory):
         collection = IBranchCollection(person, None)
         self.assertIsNot(None, collection)
 
+    def test_distribution(self):
+        # A distribution can be adapted to a branch collection.
+        distribution = self.factory.makeDistribution()
+        collection = IBranchCollection(distribution, None)
+        self.assertIsNot(None, collection)
+
+    def test_distro_series(self):
+        # A distro series can be adapted to a branch collection.
+        distro_series = self.factory.makeDistroRelease()
+        collection = IBranchCollection(distro_series, None)
+        self.assertIsNot(None, collection)
+
     def test_source_package(self):
         # A source package can be adapted to a branch collection.
         source_package = self.factory.makeSourcePackage()
         collection = IBranchCollection(source_package, None)
         self.assertIsNot(None, collection)
 
-    def test_distribution_source__package(self):
+    def test_distribution_source_package(self):
         # A distribution source pakcage can be adapted to a branch collection.
         distro_source_package = self.factory.makeDistributionSourcePackage()
         collection = IBranchCollection(distro_source_package, None)
