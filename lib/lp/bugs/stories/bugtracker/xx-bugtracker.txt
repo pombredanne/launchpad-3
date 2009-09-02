@@ -664,10 +664,11 @@ projects portlet on the bug tracker page:
   >>> print extract_text(find_portlet(
   ...     admin_browser.contents, 'Related projects'))
   Related projects
-    You can link a registered bug tracker with a registered project in
-    Launchpad:
-      the Mozilla Project
-      Jokosher (Unspecified)
+  You can link a registered project to a
+  registered bug tracker in the project's &ldquo;Change
+  details&rdquo; page.
+  the Mozilla Project
+  Jokosher (Unspecified)
 
 
 == Info portlet ==
