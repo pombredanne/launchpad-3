@@ -183,6 +183,7 @@ class BranchJobDerived(BaseRunnableJob):
         return (cls(job) for job in jobs)
 
     def getOopsVars(self):
+        """See `IRunnableJob`."""
         vars =  BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('branch_job_id', self.context.id),

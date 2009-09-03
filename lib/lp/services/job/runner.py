@@ -81,6 +81,7 @@ class BaseRunnableJob:
         ctrl.send()
 
     def getOopsVars(self):
+        """See `IRunnableJob`."""
         return [('job_id', self.job.id)]
 
     def notifyUserError(self, e):

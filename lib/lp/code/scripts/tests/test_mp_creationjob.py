@@ -50,6 +50,7 @@ class TestDiffBMPs(TestCaseWithFactory):
         self.assertIsNot(None, bmp.review_diff)
 
     def test_mpcreationjobs_records_oops(self):
+        """Ensure mpcreationjobs logs an oops if the job fails."""
         bmp = self.factory.makeBranchMergeProposal()
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         job = MergeProposalCreatedJob.create(bmp)
