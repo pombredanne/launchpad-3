@@ -393,11 +393,9 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
 class IArchiveIndexActionsMenu(Interface):
     """A marker interface for the ppa index actions menu."""
 
-class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
-    """IArchive navigation menu.
 
-    Deliberately empty.
-    """
+class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
+    """Archive index navigation menu."""
     usedfor = IArchiveIndexActionsMenu
     facet = 'overview'
     links = ['admin', 'edit', 'edit_dependencies', 'manage_subscribers']
@@ -547,6 +545,13 @@ class ArchiveSeriesVocabularyFactory:
     implements(IContextSourceBinder)
 
     def __call__(self, context):
+        """Return a vocabulary created dynamically from the context archive.
+
+        :param context: The context used to generate the vocabulary. This
+            is passed automatically by the zope machinery. Therefore
+            this factory can only be used in a class where the context is
+            an IArchive.
+        """
         series_terms = [SimpleTerm(None, token='any', title='Any Series')]
         for distroseries in context.series_with_sources:
             series_terms.append(
@@ -556,11 +561,13 @@ class ArchiveSeriesVocabularyFactory:
 
 
 class IPPAPackageFilter(Interface):
-    """An browser-only interface for package filtering."""
+    """The interface used as the schema for the package filtering form."""
     name_filter = TextLine(
         title=_("Package name contains"), required=False)
+
     series_filter = Choice(
         source=ArchiveSeriesVocabularyFactory(), required=False)
+
     status_filter = Choice(vocabulary=SimpleVocabulary((
         SimpleTerm(active_publishing_status, 'published', 'Published'),
         SimpleTerm(inactive_publishing_status, 'superseded', 'Superseded'),
@@ -569,11 +576,12 @@ class IPPAPackageFilter(Interface):
 
 
 class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
-    """Common features for archive views with lists of packages."""
+    """A Form view for filtering and batching source packages."""
 
     schema = IPPAPackageFilter
 
-    # This view will not present selectable sources
+    # By default this view will not display the sources with selectable
+    # checkboxes, but subclasses can override as needed.
     selectable_sources = False
 
     @cachedproperty
@@ -757,18 +765,9 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
     """Base class to implement a source selection widget for PPAs."""
 
-    schema = IPPAPackageFilter
-
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
 
     selectable_sources = True
-
-    def initialize(self):
-        """Ensure both parent classes initialize methods are called.
-
-        super() ensures this happens in left-to-right order.
-        """
-        super(ArchiveSourceSelectionFormView, self).initialize()
 
     def setNextURL(self):
         """Set self.next_url based on current context.
@@ -783,25 +782,20 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
 
     def setUpWidgets(self, context=None):
         """Setup our custom widget which depends on the filter widget values.
-
-        To create the selected sources field, we need to define a vocabulary
-        based on the currently selected sources (using self.batched_sources)
-        but this itself requires the current values of the filtering
-        widgets. So we setup the widgets, then add the extra field and
-        create its widget too.
         """
-        super(ArchiveSourceSelectionFormView, self).setUpWidgets(context)
+        # To create the selected sources field, we need to define a
+        # vocabulary based on the currently selected sources (using self
+        # batched_sources) but this itself requires the current values of
+        # the filtering widgets. So we setup the widgets, then add the
+        # extra field and create its widget too.
+        super(ArchiveSourceSelectionFormView, self).setUpWidgets()
 
-        # Add the field whose vocabulary is dependent on the value
-        # of other widgets.
         self.form_fields += self.createSelectedSourcesField()
 
-        # Note to reviewer: The only way I could get the widget added
-        # was to call super.setUpWidgets again - this doesn't seem to bad
-        # as it is exactly what Zope's FormBase.reset_form() does, but
-        # was hoping that I could instead use the singular setupWidget and
-        # simply add the widget to self.widgets, but this didn't work.
-        super(ArchiveSourceSelectionFormView, self).setUpWidgets(context)
+        self.widgets += form.setUpWidgets(
+            self.form_fields.select('selected_sources'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
 
     def focusedElementScript(self):
         """Override `LaunchpadFormView`.
@@ -1148,6 +1142,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         self.request.response.addNotification(structured(notification))
 
         self.setNextURL()
+
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     """Archive dependencies view class."""
