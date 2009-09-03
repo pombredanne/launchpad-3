@@ -114,11 +114,6 @@ merge proposal is considered a "landing target" with an optional
 
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> nopriv_browser.getLink('Merge Proposals').click()
-    >>> printMergeProposals(nopriv_browser, 'landing-targets')
-    lp://dev/~name12/gnome-terminal/main - view proposal details
-    Merge proposed by No Privileges Person
-    Needs review
 
 Since the user who registered the merge proposal is different
 to the owner of the source branch, they are shown explicitly.
@@ -140,23 +135,6 @@ shown.
     >>> printMergeProposals(sample_browser, 'landing-targets')
     lp://dev/~name12/gnome-terminal/main - view proposal details
     Needs review
-
-
-== Landing Candidates ==
-
-From the point of view of the target branch, the proposals are
-"landing candidates".  The most recently created merge proposals are
-shown first.
-
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> browser.getLink('Merge Proposals').click()
-    >>> printMergeProposals(browser, 'landing-candidates')
-    lp://dev/~name12/gnome-terminal/scanned (Development) - view proposal details
-      Needs review
-    lp://dev/~name12/gnome-terminal/klingon (Experimental) - view proposal details
-      Merge proposed by No Privileges Person
-      Needs review
 
 
 == Viewing a proposal for merging ==
