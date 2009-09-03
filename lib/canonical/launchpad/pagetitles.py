@@ -442,8 +442,6 @@ distroseries_builds = ContextTitle('%s builds')
 
 distroseries_queue = ContextTitle('Queue for %s')
 
-distroseriesbinarypackage_index = ContextTitle('%s')
-
 distroserieslanguage_index = ContextTitle('%s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
