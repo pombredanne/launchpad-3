@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BugTrackerAddView',
-    'BugTrackerBreadcrumb',
     'BugTrackerContextMenu',
     'BugTrackerEditView',
     'BugTrackerNavigation',
@@ -41,7 +40,6 @@ from canonical.launchpad.webapp import (
     redirection, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
 
 
@@ -194,10 +192,6 @@ BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
 class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
-    field_names = ['name', 'title', 'bugtrackertype',
-                   'summary', 'baseurl', 'aliases', 'contactdetails',
-                   'active']
-
     custom_widget('summary', TextAreaWidget, width=30, height=5)
     custom_widget('aliases', DelimitedListWidget, height=3)
     custom_widget('active', LaunchpadRadioWidget, orientation='vertical')
@@ -377,13 +371,6 @@ class BugTrackerNavigation(Navigation):
         else:
             # else list the watching bugs
             return RemoteBug(self.context, remotebug, bugs)
-
-
-class BugTrackerBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IBugTracker`."""
-    @property
-    def text(self):
-        return self.context.title
 
 
 class RemoteBug:

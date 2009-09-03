@@ -12,7 +12,6 @@ __all__ = [
     'ProjectAddView',
     'ProjectAnswersMenu',
     'ProjectBrandingView',
-    'ProjectBreadcrumb',
     'ProjectBugsMenu',
     'ProjectEditView',
     'ProjectFacets',
@@ -102,13 +101,6 @@ class ProjectSetNavigation(Navigation):
         if project is None:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(project))
-
-
-class ProjectBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IProject`."""
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class ProjectSetBreadcrumb(Breadcrumb):

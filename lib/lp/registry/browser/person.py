@@ -22,7 +22,6 @@ __all__ = [
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
-    'PersonBreadcrumb',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
@@ -660,13 +659,6 @@ class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
     def adminteammerge(self):
         text = 'Admin merge teams'
         return Link('+adminteammerge', text, icon='edit')
-
-
-class PersonBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IPerson`."""
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class PersonFacets(StandardLaunchpadFacets):
