@@ -610,11 +610,8 @@ ul.super-add-action li a {
     text-decoration: underline;
     }
 
-.involvement ul {
-    border-top: 1px solid #d0d0d0;
-    }
 .involvement li {
-    border-bottom: 1px solid #d0d0d0;
+    border-top: 1px solid #d0d0d0;
     padding: 0;
     font-size: 108%;
     font-weight: bold;
@@ -622,6 +619,10 @@ ul.super-add-action li a {
 .involvement a {
     display: block;
     padding: 0.3em;
+    }
+.involvement a:hover {
+    text-decoration: none;
+    background-color: #eee;
     }
 .involvement a.bugs {
     color: #b9413e;
