@@ -540,10 +540,11 @@ link to a repository that doesn't exist yet.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    This archive is public
     PPA for No Privileges Person
-    Description
+    ...
+    PPA description
     I am not allowed to say, I have no privs.
+    Adding this PPA to your system
     This PPA does not contain
     any packages yet. Find more information about how to upload
     packages in the PPA help page
@@ -593,11 +594,11 @@ section in the PPA details table.
     ...     auth='Basic no-priv@canonical.com:test')
     >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
 
-    >>> print print_tag_with_id(
-    ...     no_priv_browser.contents, 'upload-hint')
-    Upload packages: dput ppa:no-priv/ppa &lt;source.changes&gt;
+    >>> print_tag_with_id(no_priv_browser.contents, 'upload-hint')
+    Uploading packages to this PPA
+    You can upload packages to this PPA using:
+    dput ppa:no-priv/ppa &lt;source.changes&gt;
     (Read about uploading)
-    None
 
 It also has a link pointing to its corresponding help page.
 
@@ -673,25 +674,6 @@ And further down, next to the key id, we link to that same pop-up help:
     http://launchpad.dev/+help/soyuz/ppa-sources-list.html
 
 
-== PPA Builds ==
-
-Each PPA provides a public page where the users can browse build
-records by name and/or state. See pagetests/soyuz/23-builds-pages.txt
-for more information.
-
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
-    >>> anon_browser.getLink("View build records").click()
-
-The only difference introduced in the PPA builds page is the fact that
-it presents NEEDSBUILD records by default, which is the most accessed
-status in the PPA workflow.
-
-    >>> print extract_text(find_main_content(anon_browser.contents))
-    Builds for PPA for Celso Providelo
-    ...
-    No 'Needs building' build records.
-
-
 == Single-publication PPAs ==
 
 Just quickly check if the singular form of this section is handled
@@ -714,22 +696,6 @@ And the sources.list entries point to the right distribution release:
     >>> print text
     deb http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
     deb-src http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
-
-The repository size information is available in a separate page,
-'+repository-size', which is going be to added to the index page using
-javascript.
-
-    >>> results = find_tag_by_id(anon_browser.contents, 'package-counters')
-    >>> print extract_text(results)
-    Repository disk usage:
-    Package counters and estimated archive size temporarily unavailable.
-
-    >>> anon_browser.open(
-    ...    "http://launchpad.dev/~mark/+archive/ppa/+repository-size")
-    >>> print extract_text(anon_browser.contents)
-    1 source package (9.5 MiB)
-    1 binary package (0 bytes)
-    Estimated repository size: 9.5 MiB (0.92%) of 1.0 GiB
 
 
 == Other Distribution PPAs ==

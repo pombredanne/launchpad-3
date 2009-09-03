@@ -46,6 +46,12 @@ the string 'PPA' or 'Archive' depending on whether the archive is a PPA
     >>> print copy_archive_view.archive_label
     Archive
 
+The ArchiveView is provides the html for the inline description
+editing widget.
+
+    >>> print ppa_archive_view.archive_description_html.title
+    PPA description
+
 For convenience the ArchiveView also includes a build_counters property
 that returns a dict of the build count summary for the archive:
 

@@ -349,6 +349,10 @@ class ArchiveMenuMixin:
         text = 'View successful builds'
         return Link('+builds?build_state=built', text, icon='info')
 
+    def packages(self):
+        text = 'View detailed package list'
+        return Link('+packages', text, icon='info')
+
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         """Display a delete menu option for non-copy archives."""
@@ -382,8 +386,8 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['ppa', 'admin', 'edit', 'builds', 'builds_successful', 'delete',
-             'copy', 'edit_dependencies']
+    links = ['admin', 'builds', 'builds_successful', 'copy', 'delete',
+              'edit', 'edit_dependencies', 'packages', 'ppa']
 
 
 class IArchiveIndexActionsMenu(Interface):
@@ -711,14 +715,20 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     def archive_description_html(self):
         """The archive's description as HTML."""
         formatter = FormattersAPI
-        hide_email = formatter(self.context.description).obfuscate_email()
-        description = formatter(hide_email).text_to_html()
+
+        description = self.context.description
+        if description is not None:
+            hide_email = formatter(self.context.description).obfuscate_email()
+            description = formatter(hide_email).text_to_html()
+        else:
+            description = ''
+
         return TextAreaEditorWidget(
             self.context,
             'description',
             canonical_url(self.context, view_name='+edit'),
             id="edit-description",
-            title="Archive description",
+            title=self.archive_label + " description",
             value=description)
 
 

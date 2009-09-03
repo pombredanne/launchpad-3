@@ -256,9 +256,6 @@
             facet="overview"
             name="+ppa-row"/>
         <browser:page
-            name="+portlet-privacy"
-            template="../templates/archive-portlet-privacy.pt"/>
-        <browser:page
             template="../templates/archive-repository-size.pt"
             name="+repository-size"/>
     </browser:pages>
