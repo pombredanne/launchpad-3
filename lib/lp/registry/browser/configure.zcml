@@ -726,6 +726,9 @@
         name="+announcement-macros"
         permission="zope.Public"
         template="../templates/announcement-macros.pt" />
+    <browser:navigation
+        module="lp.registry.browser.announcement"
+        classes="AnnouncementNavigation"/>
     <browser:menus
         module="lp.registry.browser.announcement"
         classes="
@@ -2125,6 +2128,9 @@
     <browser:menus
         module="lp.registry.browser.distributionmirror"
         classes="DistributionMirrorOverviewMenu" />
+    <browser:navigation
+        module="lp.registry.browser.distributionmirror"
+        classes="DistributionMirrorNavigation"/>
     <browser:page
         name="+macros"
         for="lp.registry.interfaces.productrelease.IProductReleaseFile"

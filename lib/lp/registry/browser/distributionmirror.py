@@ -11,6 +11,7 @@ __all__ = [
     'DistributionMirrorReviewView',
     'DistributionMirrorReassignmentView',
     'DistributionMirrorDeleteView',
+    'DistributionMirrorNavigation',
     'DistributionMirrorProberLogView',
     ]
 
@@ -35,8 +36,13 @@ from lp.registry.interfaces.distributionmirror import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadFormView, Link, NavigationMenu, action,
-    canonical_url, enabled_with_permission)
+    action, canonical_url, enabled_with_permission, LaunchpadEditFormView,
+    LaunchpadFormView, Link, Navigation, NavigationMenu)
+
+
+class DistributionMirrorNavigation(Navigation):
+    """The navigation for `IDistributionMirror`."""
+    usedfor = IDistributionMirror
 
 
 class DistributionMirrorOverviewMenu(NavigationMenu):
