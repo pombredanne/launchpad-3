@@ -221,11 +221,6 @@ def bugnomination_edit(context, view):
     return 'Manage nomination for bug #%d in %s' % (
         context.bug.id, context.target.bugtargetdisplayname)
 
-def bugwatch_editform(context, view):
-    """Return the title for the page to edit an external bug watch."""
-    return 'Bug #%d - Edit external bug watch (%s in %s)' % (
-        context.bug.id, context.remotebug, context.bugtracker.title)
-
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
     if view.user:

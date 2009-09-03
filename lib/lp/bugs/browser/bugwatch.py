@@ -91,6 +91,13 @@ class BugWatchEditView(LaunchpadFormView):
     custom_widget('url', URIWidget)
 
     @property
+    def page_title(self):
+        """The page title."""
+        return 'Edit bug watch for %s in %s on bug #%d' % (
+            self.context.remotebug, self.context.bugtracker.title,
+            self.context.bug.id)
+
+    @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
         return {'url' : self.context.url}
@@ -129,4 +136,8 @@ class BugWatchEditView(LaunchpadFormView):
 
     @property
     def next_url(self):
+        return canonical_url(getUtility(ILaunchBag).bug)
+
+    @property
+    def cancel_url(self):
         return canonical_url(getUtility(ILaunchBag).bug)
