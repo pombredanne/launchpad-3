@@ -168,6 +168,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return (klass(job) for job in jobs)
 
     def getOopsVars(self):
+        """See `IRunnableJob`."""
         vars =  BaseRunnableJob.getOopsVars(self)
         bmp = self.context.branch_merge_proposal
         vars.extend([
