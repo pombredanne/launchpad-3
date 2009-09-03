@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <div class="top-portlet">
+  <div id="source-changelog" class="top-portlet">
     <h2>Changelog</h2>
     <tal:changelog
       replace="structure context/sourcepackagerelease/@@+changelog"
