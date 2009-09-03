@@ -36,7 +36,7 @@ from datetime import timedelta, datetime
 
 from zope.app import zapi
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getUtility, queryAdapter
+from zope.component import getMultiAdapter, getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -103,6 +103,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
+from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -267,12 +268,27 @@ class Hierarchy(LaunchpadView):
         """
         url = self.request.getURL()
         last_segment = URI(url).path.split('/')[-1]
-        default_view_name = zapi.getDefaultViewName(
-            self.request.traversed_objects[-1], self.request)
+        obj = self.request.traversed_objects[-1]
+        default_view_name = zapi.getDefaultViewName(obj, self.request)
         if last_segment.startswith('+') and last_segment != default_view_name:
+            if last_segment in ("+viewstatus", "+editstatus"):
+                # XXX: Another evil hack because of
+                # BugTaskNavigation.traverse().
+                last_segment += '-page'
+            view = getMultiAdapter((obj, self.request), name=last_segment)
+            title = getattr(view, 'page_title', None)
+            if title is None:
+                template = getattr(view, 'template', None)
+                if template is None:
+                    template = view.index
+                foo = PageTemplateContextsAPI(
+                    dict(context=obj, template=template, view=view))
+                title = foo.pagetitle()
+            if len(title) > 30:
+                title = "%s..." % title[:30]
             breadcrumb = Breadcrumb(None)
             breadcrumb._url = url
-            breadcrumb.text = last_segment
+            breadcrumb.text = title
             return breadcrumb
         else:
             return None

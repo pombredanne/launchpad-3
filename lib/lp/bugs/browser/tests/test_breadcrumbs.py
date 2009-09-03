@@ -38,7 +38,6 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         self.assertEquals(urls[-1], "%s/+activity" % self.bugtask_url)
         self.assertEquals(urls[-2], self.bugtask_url)
         texts = self._getBreadcrumbsTexts(url, self.traversed_objects)
-        self.assertEquals(texts[-1], "+activity")
         self.assertEquals(texts[-2], "Bug #%d" % self.bug.id)
 
     def test_bugtask_private_bug(self):

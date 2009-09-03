@@ -1675,6 +1675,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 class ProductAddView(MultiStepView):
     """The controlling view for product/+new."""
 
+    # XXX: This is a hack to make breadcrumbs work.
+    heading = ProjectAddStepOne.heading
     total_steps = 2
 
     @property

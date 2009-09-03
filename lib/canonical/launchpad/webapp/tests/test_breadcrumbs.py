@@ -48,6 +48,25 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
         self.product = self.factory.makeProduct(name='crumb-tester')
         self.product_url = canonical_url(self.product)
 
+    def test_breadcrumb_text_for_page_with_short_title(self):
+        # When the page title is less than 30 characters long, we use the
+        # complete title as the breadcrumb's text.
+        downloads_url = "%s/+download" % self.product_url
+        texts = self._getBreadcrumbsTexts(
+            downloads_url, [self.root, self.product])
+        self.assertEquals(texts[-1],
+                          '%s project files' % self.product.displayname)
+
+    def test_breadcrumb_text_for_page_with_long_title(self):
+        # When the page title is more than 30 characters long, we use only the
+        # first 30 as the breadcrumb's text.
+        downloads_url = "%s/+purchase-subscription" % self.product_url
+        texts = self._getBreadcrumbsTexts(
+            downloads_url, [self.root, self.product])
+        self.assertEquals(
+            texts[-1],
+            'Purchase Subscription for %s...' % self.product.displayname[:4])
+
     def test_default_page(self):
         urls = self._getBreadcrumbsURLs(
             self.product_url, [self.root, self.product])
