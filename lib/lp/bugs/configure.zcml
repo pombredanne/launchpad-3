@@ -827,8 +827,6 @@
             class="canonical.launchpad.database.BugWatchSet">
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchSet"/>
-            <allow
-                interface="zope.app.form.browser.interfaces.IAddFormCustomization"/>
         </class>
         <securedutility
             class="canonical.launchpad.database.BugWatchSet"

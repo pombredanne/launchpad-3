@@ -31,7 +31,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from lp.bugs.model.bugmessage import BugMessage
-from lp.bugs.model.bugset import BugSetBase
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -268,14 +267,13 @@ class BugWatch(SQLBase):
             Not(BugMessage.remote_comment_id == None))
 
 
-class BugWatchSet(BugSetBase):
+class BugWatchSet:
     """A set for BugWatch"""
 
     implements(IBugWatchSet)
     table = BugWatch
 
-    def __init__(self, bug=None):
-        BugSetBase.__init__(self, bug)
+    def __init__(self):
         self.title = 'A set of bug watches'
         self.bugtracker_parse_functions = {
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
@@ -297,6 +295,8 @@ class BugWatchSet(BugSetBase):
             return BugWatch.get(watch_id)
         except SQLObjectNotFound:
             raise NotFoundError, watch_id
+
+    __getitem__ = get
 
     def search(self):
         return BugWatch.select()
