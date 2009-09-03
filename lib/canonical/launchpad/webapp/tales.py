@@ -205,14 +205,15 @@ class MenuAPI:
     def navigation(self):
         """Navigation menu links list."""
         try:
-            # NavigationMenus may be associated with a content object or one of
-            # its views. The context we need is the one from the TAL expression.
+            # NavigationMenus may be associated with a content object or one
+            # of its views. The context we need is the one from the TAL
+            # expression.
             context = self._tales_context
             if self._selectedfacetname is not None:
                 selectedfacetname = self._selectedfacetname
             else:
-                # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
-                # facet name from the layer implemented by the request.
+                # XXX sinzui 2008-05-09 bug=226917: We should be retrieving
+                # the facet name from the layer implemented by the request.
                 view = get_current_view(self._request)
                 selectedfacetname = get_facet(view)
             try:
