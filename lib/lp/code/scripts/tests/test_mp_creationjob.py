@@ -60,6 +60,8 @@ class TestDiffBMPs(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertIn(
             'INFO    Ran 0 MergeProposalCreatedJobs.\n', stderr)
+        self.assertIn(
+            'INFO    Job resulted in OOPS:', stderr)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

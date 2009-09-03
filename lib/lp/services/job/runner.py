@@ -94,15 +94,16 @@ class BaseRunnableJob:
 class JobRunner(object):
     """Runner of Jobs."""
 
-    def __init__(self, jobs):
+    def __init__(self, jobs, logger=None):
         self.jobs = jobs
         self.completed_jobs = []
         self.incomplete_jobs = []
+        self.logger = logger
 
     @classmethod
-    def fromReady(klass, job_class):
+    def fromReady(klass, job_class, logger=None):
         """Return a job runner for all ready jobs of a given class."""
-        return klass(job_class.iterReady())
+        return klass(job_class.iterReady(), logger)
 
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
@@ -143,3 +144,5 @@ class JobRunner(object):
                 errorlog.globalErrorUtility.raising(info, request)
                 oops = errorlog.globalErrorUtility.getLastOopsReport()
                 job.notifyOops(oops)
+                if self.logger is not None:
+                    self.logger.info('Job resulted in OOPS: %s' % oops.id)
