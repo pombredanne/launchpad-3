@@ -11,8 +11,6 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Leaving &#8220;<span tal:replace="context/displayname" />&#8221;</h1>
-
   <tal:can-leave tal:condition="view/user_can_request_to_leave">
     <p>Are you sure you want to leave this team?</p>
 

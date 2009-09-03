@@ -8,8 +8,6 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Joining <span tal:replace="context/displayname" /></h1>
-
   <tal:can-join tal:condition="view/user_can_request_to_join">
 
     <p>Are you sure you want to join this team?</p>

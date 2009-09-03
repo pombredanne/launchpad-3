@@ -476,14 +476,15 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
 
     schema = ITeamMembership
     field_names = []
-    label = 'Renew team membership'
     template = ViewPageTemplateFile(
         '../templates/teammembership-self-renewal.pt')
 
     @property
-    def page_title(self):
+    def label(self):
         return "Renew membership of %s in %s" % (
             self.context.person.displayname, self.context.team.displayname)
+
+    page_title = label
 
     def __init__(self, context, request):
         # Only the member himself or admins of the member (in case it's a
@@ -1195,7 +1196,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if (self.person.subscriptionpolicy ==
+            TeamSubscriptionPolicy.RESTRICTED):
             # This is a restricted team; users can't join.
             enabled = False
         return Link(target, text, icon='add', enabled=enabled)
@@ -1282,7 +1284,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         enabled = True
         if userIsActiveTeamMember(self.person):
             enabled = False
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        elif (self.person.subscriptionpolicy ==
+              TeamSubscriptionPolicy.RESTRICTED):
             # This is a restricted team; users can't join.
             enabled = False
         target = '+join'
@@ -1970,7 +1973,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         if extra_params is not None:
             # We must UTF-8 encode searchtext to play nicely with
             # urllib.urlencode, because it may contain non-ASCII characters.
-            if extra_params.has_key("field.searchtext"):
+            if 'field.searchtext' in extra_params:
                 extra_params["field.searchtext"] = (
                     extra_params["field.searchtext"].encode("utf8"))
 
@@ -2476,7 +2479,7 @@ class PersonLanguagesView(LaunchpadFormView):
         new_languages = []
 
         for key in all_languages.keys():
-            if self.request.has_key(key) and self.request.get(key) == u'on':
+            if self.request.get(key, None) == u'on':
                 new_languages.append(all_languages[key])
 
         if self.is_current_user:
@@ -3136,11 +3139,11 @@ class TeamIndexView(PersonIndexView):
         link so that the invitation can be accepted.
         """
         try:
-          return (self.context.super_teams.count() > 0
-                  or (self.context.open_membership_invitations
-                      and check_permission('launchpad.Edit', self.context)))
+            return (self.context.super_teams.count() > 0
+                    or (self.context.open_membership_invitations
+                        and check_permission('launchpad.Edit', self.context)))
         except AttributeError, e:
-          raise AssertionError(e)
+            raise AssertionError(e)
 
     @property
     def visibility(self):
@@ -3801,15 +3804,17 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     """A view class for joining a team."""
     schema = TeamJoinForm
 
+    @property
+    def label(self):
+        return 'Join ' + cgi.escape(self.context.displayname)
+
+    page_title = label
+
     def setUpWidgets(self):
         super(TeamJoinView, self).setUpWidgets()
         if 'mailinglist_subscribe' in self.field_names:
             widget = self.widgets['mailinglist_subscribe']
             widget.setRenderedValue(self.user_wants_list_subscriptions)
-
-    @property
-    def page_title(self):
-        return "Join %s" % self.context.displayname
 
     @property
     def field_names(self):
@@ -3853,7 +3858,8 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
         """
         if not self.join_allowed:
             return False
-        return not (self.user_is_active_member or self.user_is_proposed_member)
+        return not (self.user_is_active_member or
+                    self.user_is_proposed_member)
 
     @property
     def user_wants_list_subscriptions(self):
@@ -4016,8 +4022,10 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
     schema = Interface
 
     @property
-    def page_title(self):
-        return "Leave %s" % self.context.displayname
+    def label(self):
+        return 'Leave ' + cgi.escape(self.context.displayname)
+
+    page_title = label
 
     @property
     def cancel_url(self):
