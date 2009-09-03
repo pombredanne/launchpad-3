@@ -12,8 +12,6 @@
     <include file="account.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binaryandsourcepackagename.zcml" />
-    <include file="bountysubscription.zcml" />
-    <include file="bounty.zcml" />
     <include file="crowd.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />

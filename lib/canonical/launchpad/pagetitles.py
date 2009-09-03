@@ -158,18 +158,6 @@ def binarypackagerelease_index(context, view):
 
 binarypackagenames_index = 'Binary package name set'
 
-bounties_index = 'Bounties registered in Launchpad'
-
-bounty_add = 'Register a bounty'
-
-bounty_edit = ContextTitle(smartquote('Edit bounty "%s"'))
-
-bounty_link = ContextTitle('Link a bounty to %s')
-
-bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
-
-bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
-
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_index = ContextDisplayName(smartquote(
@@ -188,14 +176,7 @@ bug_activity = ContextBugId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
-def bug_attachment_edit(context, view):
-    """Return the page title for the edit attachment page."""
-    return smartquote('Bug #%d - Edit attachment "%s"') % (
-        context.bug.id, context.title)
-
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
-
-bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextBugId('Bug #%d - Edit')
 
@@ -215,17 +196,9 @@ bug_mark_as_affecting_user = ContextBugId(
 
 bug_nominate_for_series = ViewLabel()
 
-bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
-
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
-
-bug_create_question = LaunchbagBugID(
-    'Bug #%d - Convert this bug to a question')
-
-bug_remove_question = LaunchbagBugID(
-    'Bug #%d - Convert this question back to a bug')
 
 bugbranch_delete = 'Delete bug branch link'
 
@@ -246,8 +219,6 @@ buglisting_default = ContextTitle("Bugs in %s")
 def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
-
-bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
 
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
@@ -408,9 +379,6 @@ distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
-distribution_language_pack_admin = ContextTitle(
-    'Change the language pack administrator for %s')
-
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_mirrors = ContextTitle("Mirrors of %s")
@@ -427,8 +395,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
-
-distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -471,9 +437,6 @@ distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
 distroseries_search = ContextDisplayName('Search packages in %s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
-
-distroseries_translationsadmin = ContextTitle(
-    'Admin translation options for %s')
 
 distroseries_builds = ContextTitle('%s builds')
 
@@ -536,10 +499,6 @@ hwdb_fingerprint_submissions = (
 
 hwdb_submit_hardware_data = (
     'Submit New Data to the Launchpad Hardware Database')
-
-karmaaction_index = 'Karma actions'
-
-karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
 language_index = ContextDisplayName("%s in Launchpad")
 
@@ -767,15 +726,9 @@ def people_list(context, view):
 
 people_mergerequest_sent = 'Merge request sent'
 
-people_newperson = 'Create a new Launchpad profile'
-
-people_newteam = 'Register a new team in Launchpad'
-
 people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
-
-active_reviews = ContextDisplayName('Pending proposals for %s')
 
 person_archive_subscription = ContextDisplayName('%s')
 
@@ -783,8 +736,6 @@ person_archive_subscriptions = 'Private PPA access'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
-
-person_bounties = ContextDisplayName('Bounties for %s')
 
 person_changepassword = 'Change your password'
 
@@ -801,13 +752,7 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
-
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_editircnicknames = ContextDisplayName(smartquote("%s's IRC nicknames"))
-
-person_editjabberids = ContextDisplayName(smartquote("%s's Jabber IDs"))
 
 person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
 
@@ -873,10 +818,6 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
-pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
-
-pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
-
 pofile_filter = FilteredTranslationsTitle(
     smartquote('Translations by %(person)s in "%(title)s"'))
 
@@ -886,8 +827,6 @@ def pofile_translate(context, view):
     """Return the page to translate a template into a language."""
     return 'Translating %s into %s' % (
         context.potemplate.displayname, context.language.englishname)
-
-pofile_upload = ContextTitle(smartquote('Upload file for "%s"'))
 
 # portlet_* are portlets
 
@@ -911,15 +850,7 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-# potemplate_chart is a fragment
-
-potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
-
 potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
-
-potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
-
-potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -962,8 +893,6 @@ product_timeline = ContextTitle('Timeline Diagram for %s')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
-product_translators = ContextTitle('Set translation group for %s')
-
 productrelease_add = ContextDisplayName('Publish the release of %s')
 
 productrelease_add_from_series = productrelease_add
@@ -982,9 +911,6 @@ products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
 
-productseries_link_translations_branch = ContextTitle(
-    "Set translations export branch for %s")
-
 productseries_index = ContextTitle('%s')
 
 productseries_packaging = ContextDisplayName(
@@ -992,12 +918,7 @@ productseries_packaging = ContextDisplayName(
 
 productseries_translations = ContextTitle('Translations overview for %s')
 
-productseries_translations_upload = 'Request new translations upload'
-
 productseries_translations_settings = 'Settings for translations'
-
-productseries_translations_bzr_import = (
-    'Request translations import from Bazaar branch')
 
 project_add = 'Register a project group with Launchpad'
 
@@ -1018,8 +939,6 @@ project_specs = ContextTitle('Blueprints for %s')
 
 project_translations = ContextTitle('Translatable projects for %s')
 
-project_translators = ContextTitle('Set translation group for %s')
-
 projects_request = 'Launchpad Translations: Request a project group'
 
 projects_search = 'Search for project groups in Launchpad'
@@ -1037,8 +956,6 @@ def reference_index(context, view):
 registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Project and group registration in Launchpad'
-
-related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
 
@@ -1233,12 +1150,6 @@ standardshipitrequests_index = 'Standard ShipIt options'
 standardshipitrequest_new = 'Create a new standard option'
 
 standardshipitrequest_edit = 'Edit standard option'
-
-team_addmember = ContextBrowsername('Add members to %s')
-
-team_add_my_teams = 'Propose/add one of your teams to another one'
-
-team_editproposed = ContextBrowsername('Proposed members of %s')
 
 team_index = ContextBrowsername('%s in Launchpad')
 
