@@ -7,7 +7,7 @@ Remove this section when the old templates and these declarations are gone.
 #maincontent {
     float: left;
     width: 100%;
-    margin-right: -25em;
+    margin-right: -25%;
     }
 #maincontent ol, #maincontent ul {
     padding-left: auto;
