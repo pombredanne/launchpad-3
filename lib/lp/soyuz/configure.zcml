@@ -373,6 +373,12 @@
         <allow
             interface="lp.soyuz.interfaces.processor.IProcessorFamilySet"/>
     </securedutility>
+    <adapter
+        for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        factory="lp.soyuz.browser.distroarchseriesbinarypackagerelease.DistroArchSeriesBinaryPackageReleaseBreadcrumb"
+        permission="zope.Public" />
+
 
     <!-- Archive -->
 
@@ -572,6 +578,11 @@
         <allow
             interface="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"/>
     </class>
+    <adapter
+        for="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        factory="lp.soyuz.browser.distroarchseriesbinarypackage.DistroArchSeriesBinaryPackageBreadcrumb"
+        permission="zope.Public" />
 
     <!-- PublishedPackage -->
 
@@ -678,6 +689,11 @@
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
         </class>
+        <adapter
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            factory="lp.soyuz.browser.distroarchseries.DistroArchSeriesBreadcrumb"
+            permission="zope.Public" />
     </facet>
 
     <!-- DistroArchSeriesSet -->
