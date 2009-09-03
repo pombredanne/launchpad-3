@@ -261,7 +261,7 @@ class Hierarchy(LaunchpadView):
 
     @cachedproperty
     def page_title(self):
-        """Return the page title, constructed of the reversed breadcrumbs."""
+        """The page title, constructed from the reversed breadcrumbs."""
         return COLON.join(
             breadcrumb.text for breadcrumb in reversed(self.items))
 
