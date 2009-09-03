@@ -747,7 +747,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
         :param review_requests: An optional list of (`Person`, review_type).
         """
 
-    def scheduleDiffUpdates(self):
+    def scheduleDiffUpdates():
         """Create UpdatePreviewDiffJobs for this branch's targets."""
 
     def getStackedBranches():
