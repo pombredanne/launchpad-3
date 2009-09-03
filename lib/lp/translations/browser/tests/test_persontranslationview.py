@@ -282,7 +282,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         self.assertEqual(2, len(descriptions))
         self.assertNotEqual(
-            descriptions['0']['target'], descriptions['1']['target'])
+            descriptions[0]['target'], descriptions[1]['target'])
 
     def test_top_projects_and_packages_to_translate(self):
         # top_projects_and_packages_to_translate lists targets that the
