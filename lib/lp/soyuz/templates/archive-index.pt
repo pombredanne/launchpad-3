@@ -111,12 +111,65 @@
         <span class="see-all"><a
               tal:replace="structure context/menu:overview/packages/fmt:link" />
         </span>
-      <metal:package_filter_form
-              use-macro="context/@@+macros/package-filter-form" />
+        <h2>Overview of all packages published in
+          <form class="package-search-filter" action="" method="GET"
+                style="display:inline;font-size:90%">
+            <tal:series_filter
+              replace="structure view/plain_series_filter_widget" />
+            <input type="submit" value="Filter" />
+          </form>
+        </h2>
 
-      <metal:package-list
-          use-macro="context/@@+macros/source-package-list" />
+        <div style="padding-top: 1em;" tal:define="batch view/batched_sources">
 
+          <tal:navigation_top
+            replace="structure view/batchnav/@@+navigation-links-upper" />
+
+          <table class="listing" id="packages_list"
+                 tal:condition="batch">
+            <thead>
+              <tr class="archive_package_row">
+                <th>Package</th>
+                <th>Version</th>
+                <th>Uploaded by</th>
+            </thead>
+            <tbody>
+              <tr tal:repeat="publishing batch">
+                <td>
+                  <img src="/@@/package-source" />
+                  <tal:source_name replace="publishing/sourcepackagerelease/name">
+                    foo
+                  </tal:source_name>
+                </td>
+                <td tal:define="
+                  version_name publishing/meta_distroseriessourcepackagerelease/version;"
+                    tal:content="version_name">
+                  2.0.39</td>
+                <td tal:define="spr publishing/sourcepackagerelease;
+                                signer spr/dscsigningkey/owner|nothing">
+                    <tal:has_signer condition="signer">
+                    <a tal:attributes="href spr/dscsigningkey/owner/fmt:url"
+                        tal:content="spr/dscsigningkey/owner/name"></a>
+                    </tal:has_signer>
+                    <tal:no_signer condition="not: signer">
+                    no signer
+                    </tal:no_signer>
+                </td>
+
+              </tr>
+            </tbody>
+          </table>
+
+          <tal:navigation_bottom
+            replace="structure view/batchnav/@@+navigation-links-lower" />
+
+          <div id="empty-result"
+               tal:define="name_filter view/specified_name_filter|nothing"
+               tal:condition="not: batch">
+            No matching package for '<tal:name_filter replace="name_filter" />'.
+          </div>
+
+        </div>
       </div>
 
     </tal:main>
