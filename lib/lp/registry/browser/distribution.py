@@ -449,7 +449,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
-        return Link('+subscribe', text)
+        return Link('+subscribe', text, icon='edit')
 
 
 class DistributionSpecificationsMenu(ApplicationMenu):
@@ -653,12 +653,17 @@ class DistributionArchivesView(LaunchpadView):
             self.context, purposes=[ArchivePurpose.COPY], user=self.user)
         return results.order_by('date_created DESC')
 
+
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
 
     def initialize(self):
         self.name_filter = self.request.get('name_filter')
         self.show_inactive = self.request.get('show_inactive')
+
+    @property
+    def page_title(self):
+        return '%s Personal Package Archives' % self.context.title
 
     @property
     def search_results(self):
