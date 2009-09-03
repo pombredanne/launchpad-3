@@ -26,6 +26,9 @@ __all__ = [
     ]
 
 
+COLON = ' : '
+
+
 import cgi
 import operator
 import os
@@ -255,6 +258,12 @@ class Hierarchy(LaunchpadView):
             if page_crumb:
                 breadcrumbs.append(page_crumb)
         return breadcrumbs
+
+    @cachedproperty
+    def page_title(self):
+        """Return the page title, constructed of the reversed breadcrumbs."""
+        return COLON.join(
+            breadcrumb.text for breadcrumb in reversed(self.items))
 
     def makeBreadcrumbForRequestedPage(self):
         """Return an `IBreadcrumb` for the requested page.
