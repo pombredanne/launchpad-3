@@ -6,20 +6,11 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/main_side"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="malone"
 >
 
 <body>
-  <metal:block fill-slot="head_epilogue">
-    <script type='text/javascript'
-            tal:content="string:var yui_base='${yui}';" />
-    <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
-            tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
-    </script>
-  </metal:block>
-
   <div metal:fill-slot="main">
 
     <div id="maincontent">
@@ -72,11 +63,6 @@
     </div>
 
   </div>
-  <tal:side metal:fill-slot="side">
-    <div metal:use-macro="context/bug/@@+portlet-subscribers/custom">
-      <div metal:fill-slot="heading" />
-    </div>
-  </tal:side>
 
 </body>
 </html>
