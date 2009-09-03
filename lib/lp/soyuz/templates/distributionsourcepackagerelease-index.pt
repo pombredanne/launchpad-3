@@ -128,6 +128,12 @@
             <tal:icon replace="structure build/image:icon" />
             <a tal:attributes="href build/fmt:url"
                tal:content="build/distroarchseries/architecturetag">i386</a>
+            <tal:upload define="upload build/package_upload"
+                        condition="upload">
+              <tal:not-done condition="not: upload/status/enumvalue:DONE">
+                (<span tal:replace="upload/status/title">New</span>)
+              </tal:not-done>
+            </tal:upload>
           </tal:builds>
         </p>
       </tal:series>
