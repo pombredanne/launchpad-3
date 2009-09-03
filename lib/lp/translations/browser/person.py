@@ -247,7 +247,7 @@ class PersonTranslationView(LaunchpadView):
         """Suggest translations this person could be helping complete."""
         person = ITranslationsPerson(self.context)
         pofiles = person.suggestTranslatableFiles(
-            no_older_than=self.history_horizon)
+            no_older_than=self.history_horizon)[:max_fetch]
 
         return TranslateLinksAggregator().aggregate(pofiles)
 
