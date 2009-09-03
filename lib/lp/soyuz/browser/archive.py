@@ -389,11 +389,9 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
 class IArchiveIndexActionsMenu(Interface):
     """A marker interface for the ppa index actions menu."""
 
-class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
-    """IArchive navigation menu.
 
-    Deliberately empty.
-    """
+class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
+    """Archive index navigation menu."""
     usedfor = IArchiveIndexActionsMenu
     facet = 'overview'
     links = ['admin', 'edit', 'edit_dependencies', 'manage_subscribers']
@@ -543,6 +541,13 @@ class ArchiveSeriesVocabularyFactory:
     implements(IContextSourceBinder)
 
     def __call__(self, context):
+        """Return a vocabulary created dynamically from the context archive.
+
+        :param context: The context used to generate the vocabulary. This
+            is passed automatically by the zope machinery. Therefore
+            this factory can only be used in a class where the context is
+            an IArchive.
+        """
         series_terms = [SimpleTerm(None, token='any', title='Any Series')]
         for distroseries in context.series_with_sources:
             series_terms.append(
@@ -552,11 +557,13 @@ class ArchiveSeriesVocabularyFactory:
 
 
 class IPPAPackageFilter(Interface):
-    """An browser-only interface for package filtering."""
+    """The interface used as the schema for the package filtering form."""
     name_filter = TextLine(
         title=_("Package name contains"), required=False)
+
     series_filter = Choice(
         source=ArchiveSeriesVocabularyFactory(), required=False)
+
     status_filter = Choice(vocabulary=SimpleVocabulary((
         SimpleTerm(active_publishing_status, 'published', 'Published'),
         SimpleTerm(inactive_publishing_status, 'superseded', 'Superseded'),
@@ -565,11 +572,12 @@ class IPPAPackageFilter(Interface):
 
 
 class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
-    """Common features for archive views with lists of packages."""
+    """A Form view for filtering and batching source packages."""
 
     schema = IPPAPackageFilter
 
-    # This view will not present selectable sources
+    # By default this view will not display the sources with selectable
+    # checkboxes, but subclasses can override as needed.
     selectable_sources = False
 
     @cachedproperty
@@ -747,18 +755,9 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
     """Base class to implement a source selection widget for PPAs."""
 
-    schema = IPPAPackageFilter
-
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
 
     selectable_sources = True
-
-    def initialize(self):
-        """Ensure both parent classes initialize methods are called.
-
-        super() ensures this happens in left-to-right order.
-        """
-        super(ArchiveSourceSelectionFormView, self).initialize()
 
     def setNextURL(self):
         """Set self.next_url based on current context.
