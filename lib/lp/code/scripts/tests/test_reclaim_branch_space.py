@@ -69,9 +69,7 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
 
 
     def test_reclaimbranchspace_script_logs_oops(self):
-        # When the reclaimbranchspace script is run, it removes from the file
-        # system any branches that were deleted from the database more than a
-        # week ago.
+        # If the job fails, an oops is logged.
         db_branch = self.factory.makeAnyBranch()
         mirrored_path = self.getBranchPath(
             db_branch, config.codehosting.mirrored_branches_root)
