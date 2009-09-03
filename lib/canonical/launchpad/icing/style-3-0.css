@@ -397,6 +397,9 @@ span.see-all {
     color: #666;
     font-style: italic;
     }
+li .registered {
+    font-style: normal;
+    }
 .description {
     clear: both;
     font-size: 100%;
@@ -620,10 +623,6 @@ ul.super-add-action li a {
     display: block;
     padding: 0.3em;
     }
-.involvement a:hover {
-    text-decoration: none;
-    background-color: #eee;
-    }
 .involvement a.bugs {
     color: #b9413e;
     background: url(/@@/bugs-arrow-right.png) right center no-repeat;
@@ -643,6 +642,10 @@ ul.super-add-action li a {
 .involvement a.blueprints {
     color: #5ba4c6;
     background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
+    }
+.involvement a:hover {
+    text-decoration: none;
+    background-color: #eee;
     }
 
 .announcements li {
