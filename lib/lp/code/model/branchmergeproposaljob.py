@@ -157,11 +157,11 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return not (self == job)
 
     @classmethod
-    def create(klass, bmp):
+    def create(cls, bmp):
         """See `IMergeProposalCreationJob`."""
         job = BranchMergeProposalJob(
-            bmp, klass.class_job_type, {})
-        return klass(job)
+            bmp, cls.class_job_type, {})
+        return cls(job)
 
     @classmethod
     def iterReady(klass):
@@ -240,6 +240,10 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
 
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
+    """A job to update the preview diff for a branch merge proposal.
+
+    Provides class methods to create and retrieve such jobs.
+    """
 
     implements(IRunnableJob)
 
@@ -248,6 +252,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
     def run(self):
+        """See `IRunnableJob`"""
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
         self.branch_merge_proposal.preview_diff = preview

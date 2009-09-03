@@ -916,8 +916,17 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             # different when passed to TestBugzillaXMLRPCTransport.comments.
             del comments_args['ids']
             comments_args['bug_ids'] = arguments['ids']
-            [return_dict] = TestBugzillaXMLRPCTransport.comments(
+            [returned_dict] = TestBugzillaXMLRPCTransport.comments(
                 self, comments_args)
+
+            # We need to move the comments for each bug in to a
+            # 'comments' dict.
+            bugs_dict = returned_dict['bugs']
+            bug_comments_dict = {}
+            for bug_id, comment_list in bugs_dict.items():
+                bug_comments_dict[bug_id] = {'comments': comment_list}
+
+            return_dict = {'bugs': bug_comments_dict}
         else:
             return_dict = {'bugs': {}}
 

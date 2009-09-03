@@ -194,7 +194,7 @@ bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 bug_mark_as_affecting_user = ContextBugId(
     'Bug #%d - does this bug affect you?')
 
-bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
+bug_nominate_for_series = ViewLabel()
 
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
@@ -395,8 +395,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
-
-distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -922,9 +920,6 @@ productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
 
-productseries_translations_bzr_import = (
-    'Request translations import from Bazaar branch')
-
 project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
@@ -1155,12 +1150,6 @@ standardshipitrequests_index = 'Standard ShipIt options'
 standardshipitrequest_new = 'Create a new standard option'
 
 standardshipitrequest_edit = 'Edit standard option'
-
-team_addmember = ContextBrowsername('Add members to %s')
-
-team_add_my_teams = 'Propose/add one of your teams to another one'
-
-team_editproposed = ContextBrowsername('Proposed members of %s')
 
 team_index = ContextBrowsername('%s in Launchpad')
 
