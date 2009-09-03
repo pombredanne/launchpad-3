@@ -775,7 +775,8 @@
         <browser:url
             for="lp.bugs.interfaces.bugtracker.IRemoteBug"
             path_expression="string:${remotebug}"
-            attribute_to_parent="bugtracker"/>
+            attribute_to_parent="bugtracker"
+            rootsite="bugs"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugtracker.IRemoteBug"
             name="+index"/>

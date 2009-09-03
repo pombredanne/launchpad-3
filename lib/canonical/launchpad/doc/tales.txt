@@ -650,7 +650,7 @@ Bug Trackers
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
-    u'/bugs/bugtrackers/email'
+    u'http://bugs.launchpad.dev/bugs/bugtrackers/email'
 
 (The url is relative if possible, and our test request claims to be from
 launchpad.dev, so the url is relative.)
