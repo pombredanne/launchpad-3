@@ -435,6 +435,17 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
     schema = IProductSeries
     field_names = []
 
+    label = "Request one-time import of translations"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return "One-time import of %s %s translations from bazaar" % (
+            self.context.product.displayname, self.context.displayname)
+
     def __init__(self, context, request):
         super(ProductSeriesTranslationsBzrImportView, self).__init__(
             context, request)
