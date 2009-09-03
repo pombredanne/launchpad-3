@@ -1209,38 +1209,6 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(expected_activity=expected_activity)
 
-    def test_series_nominated_and_approved(self):
-        # When adding a nomination that is approved automatically, it's
-        # like adding a new bug task for the series directly.
-        product = self.factory.makeProduct(owner=self.user)
-        product.driver = self.user
-        series = self.factory.makeProductSeries(product=product)
-        self.bug.addTask(self.user, product)
-        self.saveOldChanges()
-
-        nomination = self.bug.addNomination(self.user, series)
-        self.assertTrue(nomination.isApproved())
-
-        expected_activity = {
-            'person': self.user,
-            'newvalue': series.bugtargetname,
-            'whatchanged': 'bug task added',
-            'newvalue': series.bugtargetname,
-            }
-
-        task_added_notification = {
-            'person': self.user,
-            'text': (
-                '** Also affects: %s\n'
-                '   Importance: Undecided\n'
-                '       Status: New' % (
-                    series.bugtargetname)),
-            }
-
-        self.assertRecordedChange(
-            expected_activity=expected_activity,
-            expected_notification=task_added_notification)
-
     def test_nomination_approved(self):
         # When a nomination is approved, it's like adding a new bug
         # task for the series directly.

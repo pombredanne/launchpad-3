@@ -34,7 +34,7 @@ from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
-from lp.code.model.diff import Diff, PreviewDiff
+from lp.code.model.diff import PreviewDiff
 from lp.registry.model.person import Person
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
@@ -146,6 +146,15 @@ class BranchMergeProposal(SQLBase):
         dbName='merge_reporter', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
         default=None)
+
+    @property
+    def related_bugs(self):
+        """Bugs which are linked to the source but not the target.
+
+        Implies that these bugs would be fixed, in the target, by the merge.
+        """
+        return (bug for bug in self.source_branch.linked_bugs
+                if bug not in self.target_branch.linked_bugs)
 
     @property
     def address(self):
@@ -649,13 +658,8 @@ class BranchMergeProposal(SQLBase):
                           source_revision_id, target_revision_id,
                           dependent_revision_id=None, conflicts=None):
         """See `IBranchMergeProposal`."""
-        if self.preview_diff is None:
-            # Create the PreviewDiff.
-            preview = PreviewDiff()
-            preview.diff = Diff()
-            self.preview_diff = preview
-
-        self.preview_diff.update(
+        # Create the PreviewDiff.
+        self.preview_diff = PreviewDiff.create(
             diff_content, diff_stat, source_revision_id, target_revision_id,
             dependent_revision_id, conflicts)
 

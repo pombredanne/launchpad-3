@@ -23,11 +23,15 @@ class BaseBreadcrumbTestCase(TestCaseWithFactory):
         request = make_fake_request(url, traversed_objects)
         return getMultiAdapter((self.root, request), name='+hierarchy')
 
-    def _getBreadcrumbsTexts(self, url, traversed_objects):
+    def _getBreadcrumbs(self, url, traversed_objects):
         view = self._getHierarchyView(url, traversed_objects)
-        return [crumb.text for crumb in view.items()]
+        return view.items
+
+    def _getBreadcrumbsTexts(self, url, traversed_objects):
+        return [crumb.text
+                for crumb in self._getBreadcrumbs(url, traversed_objects)]
 
     def _getBreadcrumbsURLs(self, url, traversed_objects):
-        view = self._getHierarchyView(url, traversed_objects)
-        return [crumb.url for crumb in view.items()]
+        return [crumb.url
+                for crumb in self._getBreadcrumbs(url, traversed_objects)]
 

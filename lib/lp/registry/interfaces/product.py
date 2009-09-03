@@ -24,7 +24,6 @@ __all__ = [
 
 
 import re
-import sets
 
 from textwrap import dedent
 
@@ -39,6 +38,8 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.app.interfaces.rootcontext import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
@@ -576,8 +577,6 @@ class IProductPublic(
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
-    bounties = Attribute(_("The bounties that are related to this product."))
-
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
         "translated sorted by distroseries.name and sourcepackage.name.")
@@ -670,10 +669,6 @@ class IProductPublic(
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this product. Return None.
-        """
-
     def getCustomLanguageCode(language_code):
         """Look up `ICustomLanguageCode` for `language_code`, if any.
 
@@ -702,7 +697,8 @@ class IProductPublic(
 
 
 class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
-               IProductDriverRestricted, IProductPublic, IRootContext):
+               IProductDriverRestricted, IProductPublic, IRootContext,
+               IStructuralSubscriptionTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -884,10 +880,6 @@ class IProductSet(Interface):
         """Return a count of the number of products that have
         upstream-oriented translations configured in Rosetta."""
 
-    def count_bounties():
-        """Return a number of products that have bounties registered in the
-        Launchpad for them."""
-
     def count_buggy():
         """Return the number of products that have bugs associated with them
         in Launchpad."""
@@ -956,8 +948,7 @@ class IProductReviewSearch(Interface):
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
-        # Zope requires sets.Set() instead of the builtin set().
-        default=sets.Set(
+        default=set(
             [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
 
     has_zero_licenses = Choice(

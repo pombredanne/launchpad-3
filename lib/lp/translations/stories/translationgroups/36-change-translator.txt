@@ -9,14 +9,16 @@ The system allows us to change the translator for a concrete language
     >>> print anon_browser.url
     http://translations.launchpad.dev/+groups/polyglot
 
-    >>> portlet = find_portlet(anon_browser.contents, 'Translation Teams')
+    >>> portlet = find_tag_by_id(
+    ...     anon_browser.contents, "translation-teams-listing")
     >>> language_rows = portlet.find('tbody').findAll('tr')
     >>> for language_row in language_rows:
-    ...     lang_name = language_row.findNext('td')
-    ...     lang_team = lang_name.findNext('td')
-    ...     print '%s: %s' % (lang_name.renderContents(), lang_team.a.string)
-    Abkhazian: Hoary Gnome Team
-    Afrikaans: No Privileges Person
+    ...     cell = language_row.findNext('td')
+    ...     lang_name = extract_text(cell)
+    ...     lang_team = extract_text(cell.findNext('td').findNext('a'))
+    ...     print '%s: %s' % (lang_name, lang_team)
+    Abkhazian (ab): Hoary Gnome Team
+    Afrikaans (af): No Privileges Person
 
     >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
     >>> browser.open(
@@ -26,7 +28,7 @@ The system allows us to change the translator for a concrete language
 
     # We are going to change the Afrikaans (af) translator.
 
-    >>> browser.getLink(url='af').click()
+    >>> browser.getLink(id='edit-af-translator').click()
     >>> print browser.url
     http://translations.launchpad.dev/+groups/polyglot/af
 
@@ -78,12 +80,14 @@ instance Welsh (cy), the change will work.
 
     # And the 'Translation Teams' portlet shows the new information.
 
-    >>> portlet = find_portlet(browser.contents, 'Translation Teams')
+    >>> portlet = find_tag_by_id(
+    ...     browser.contents, "translation-teams-listing")
     >>> language_rows = portlet.find('tbody').findAll('tr')
     >>> for language_row in language_rows:
-    ...     lang_name = language_row.findNext('td')
-    ...     lang_team = lang_name.findNext('td')
-    ...     print '%s: %s' % (lang_name.renderContents(), lang_team.a.string)
-    Abkhazian: Hoary Gnome Team
-    Welsh: No Privileges Person
+    ...     cell = language_row.findNext('td')
+    ...     lang_name = extract_text(cell)
+    ...     lang_team = extract_text(cell.findNext('td').findNext('a'))
+    ...     print '%s: %s' % (lang_name, lang_team)
+    Abkhazian (ab): Hoary Gnome Team
+    Welsh (cy): No Privileges Person
 

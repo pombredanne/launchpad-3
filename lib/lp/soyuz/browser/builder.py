@@ -6,12 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuilderBreadcrumbBuilder',
+    'BuilderBreadcrumb',
     'BuilderFacets',
     'BuilderOverviewMenu',
     'BuilderNavigation',
     'BuilderSetAddView',
-    'BuilderSetBreadcrumbBuilder',
+    'BuilderSetBreadcrumb',
     'BuilderSetFacets',
     'BuilderSetOverviewMenu',
     'BuilderSetNavigation',
@@ -37,12 +37,11 @@ from lp.soyuz.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets,
-    action, canonical_url, custom_widget, enabled_with_permission,
-    stepthrough)
+    LaunchpadFormView, LaunchpadView, Link, Navigation,
+    StandardLaunchpadFacets, action, canonical_url, custom_widget,
+    enabled_with_permission, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lazr.delegates import delegates
 from canonical.widgets import HiddenUserWidget
 
@@ -65,7 +64,7 @@ class BuilderSetNavigation(GetitemNavigation):
             return self.redirectSubTree(canonical_url(build))
 
 
-class BuilderSetBreadcrumbBuilder(BreadcrumbBuilder):
+class BuilderSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBuilderSet`."""
     text = 'Build Farm'
 
@@ -75,7 +74,7 @@ class BuilderNavigation(Navigation):
     usedfor = IBuilder
 
 
-class BuilderBreadcrumbBuilder(BreadcrumbBuilder):
+class BuilderBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBuilder`."""
     @property
     def text(self):
@@ -129,13 +128,8 @@ class BuilderOverviewMenu(ApplicationMenu):
         return Link('+mode', text, icon='edit')
 
 
-class CommonBuilderView:
+class CommonBuilderView(LaunchpadView):
     """Common builder methods used in this file."""
-
-    def now(self):
-        """Offers the timestamp for page rendering."""
-        return DateTimeFormatterAPI(
-            datetime.datetime.now(pytz.UTC)).datetime()
 
     def overrideHiddenBuilder(self, builder):
         """Override the builder to HiddenBuilder as necessary.
@@ -171,10 +165,26 @@ class BuilderSetView(CommonBuilderView):
         return [self.overrideHiddenBuilder(builder) for builder in builders]
 
     @property
+    def number_of_registered_builders(self):
+        return len(self.builders)
+
+    @property
+    def number_of_available_builders(self):
+        return len([b for b in self.builders if b.builderok])
+
+    @property
+    def number_of_disabled_builders(self):
+        return len([b for b in self.builders if not b.builderok])
+
+    @property
+    def number_of_building_builders(self):
+        return len([b for b in self.builders if b.currentjob is not None])
+
+    @property
     def ppa_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'PPA build machines', virtualized=True)
+            'PPA build status', virtualized=True)
         builder_category.groupBuilders(self.builders)
         return builder_category
 
@@ -182,7 +192,7 @@ class BuilderSetView(CommonBuilderView):
     def other_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'Official distribution build machines', virtualized=False)
+            'Official distributions build status', virtualized=False)
         builder_category.groupBuilders(self.builders)
         return builder_category
 
@@ -193,11 +203,15 @@ class BuilderGroup:
     Also stores the corresponding 'queue_size', the number of pending jobs
     in this context.
     """
-    def __init__(self, processor_name, queue_size, builders):
+    def __init__(self, processor_name, queue_size, duration, builders):
         self.processor_name = processor_name
         self.queue_size = queue_size
-        self.builders = builders
-
+        self.number_of_available_builders = len(
+            [b for b in builders if b.builderok])
+        if duration and self.number_of_available_builders:
+            self.duration = duration / self.number_of_available_builders
+        else:
+            self.duration = duration
 
 class BuilderCategory:
     """A category of builders.
@@ -232,10 +246,10 @@ class BuilderCategory:
 
         builderset = getUtility(IBuilderSet)
         for processor, builders in grouped_builders.iteritems():
-            queue_size = builderset.getBuildQueueSizeForProcessor(
+            queue_size, duration = builderset.getBuildQueueSizeForProcessor(
                 processor, virtualized=self.virtualized)
             builder_group = BuilderGroup(
-                processor.name, queue_size,
+                processor.name, queue_size, duration,
                 sorted(builders, key=operator.attrgetter('title')))
             self._builder_groups.append(builder_group)
 
@@ -289,7 +303,7 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     @property
     def current_build_duration(self):
         """Return the delta representing the duration of the current job."""
-        if (self.context.currentjob is None or 
+        if (self.context.currentjob is None or
             self.context.currentjob.buildstart is None):
             return None
         else:

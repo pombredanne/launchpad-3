@@ -30,8 +30,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
 from lp.blueprints.interfaces.sprintspecification import (
     SprintSpecificationStatus)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -59,7 +57,6 @@ from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.database.projectbounty import ProjectBounty
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
@@ -78,8 +75,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner,
-               IStructuralSubscriptionTarget)
+               IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -128,24 +124,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     # convenient joins
 
-    bounties = SQLRelatedJoin('Bounty', joinColumn='project',
-                            otherColumn='bounty',
-                            intermediateTable='ProjectBounty')
-
     @property
     def products(self):
         return Product.selectBy(project=self, active=True, orderBy='name')
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
-
-    def ensureRelatedBounty(self, bounty):
-        """See `IProject`."""
-        for curr_bounty in self.bounties:
-            if bounty.id == curr_bounty.id:
-                return None
-        ProjectBounty(project=self, bounty=bounty)
-        return None
 
     @property
     def drivers(self):
@@ -500,7 +484,7 @@ class ProjectSet:
         """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
-        bounties, bazaar, malone etc are hints as to whether the search
+        bazaar, malone etc are hints as to whether the search
         should be limited to projects that are active in those Launchpad
         applications.
         """

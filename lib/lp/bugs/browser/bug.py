@@ -58,6 +58,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
+from lp.bugs.interfaces.bugnomination import IBugNominationSet
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
@@ -125,6 +126,15 @@ class BugNavigation(Navigation):
             attachment = getUtility(IBugAttachmentSet)[name]
             if attachment is not None and attachment.bug == self.context:
                 return attachment
+
+    @stepthrough('nominations')
+    def traverse_nominations(self, nomination_id):
+        """Traverse to a nomination by id."""
+        if nomination_id.isdigit():
+            try:
+                return getUtility(IBugNominationSet).get(nomination_id)
+            except NotFoundError:
+                return None
 
 
 class BugFacets(StandardLaunchpadFacets):
@@ -412,7 +422,8 @@ class BugViewMixin:
     @cachedproperty
     def subscriber_ids(self):
         """Return a dictionary mapping a css_name to user name."""
-        subscribers = self.direct_subscribers.union(self.duplicate_subscribers)
+        subscribers = self.direct_subscribers.union(
+            self.duplicate_subscribers)
 
         # The current user has to be in subscribers_id so
         # in case the id is needed for a new subscription.
@@ -554,6 +565,21 @@ class BugEditView(BugEditViewBase):
     def __init__(self, context, request):
         BugEditViewBase.__init__(self, context, request)
         self.notifications = []
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit details for bug #%d' % self.context.id
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def validate(self, data):
         """Make sure new tags are confirmed."""

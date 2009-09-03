@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Unit tests for `TranslationMessage`."""
 
 __metaclass__ = type
@@ -12,15 +14,15 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.interfaces.translations import TranslationConstants
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import ZopelessDatabaseLayer
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
     """Tests for `TranslationMessage.findIdenticalMessage`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
-        """Set up test situation.
+        """Create common objects for all tests.
 
         Arranges for a `ProductSeries` with `POTemplate` and
         `POTMsgSet`, as well as a Dutch translation.  Also sets up

@@ -60,7 +60,7 @@ any 'Subscribe' links.
 He subscribes David Allouche to the bug using his Launchpad username.
 
     >>> user_browser.getControl("Person").value = 'ddaa'
-    >>> user_browser.getControl("Add").click()
+    >>> user_browser.getControl("Subscribe user").click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 
@@ -103,7 +103,7 @@ He subscribes the Landscape developers team.
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> user_browser.getLink('Subscribe someone else').click()
     >>> user_browser.getControl("Person").value = 'landscape-developers'
-    >>> user_browser.getControl("Add").click()
+    >>> user_browser.getControl("Subscribe user").click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 
@@ -147,7 +147,7 @@ private team.
     >>> foobar_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> foobar_browser.getLink('Subscribe someone else').click()
     >>> foobar_browser.getControl("Person").value = 'private-team'
-    >>> foobar_browser.getControl("Add").click()
+    >>> foobar_browser.getControl("Subscribe user").click()
     >>> foobar_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
     >>> foobar_browser.open(

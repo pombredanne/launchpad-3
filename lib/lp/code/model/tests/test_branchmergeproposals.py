@@ -21,8 +21,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from lazr.lifecycle.event import ObjectModifiedEvent
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob)
@@ -42,7 +42,7 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, WrongBranchMergeProposal)
+    IMergeProposalCreatedJob, notify_modified, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
@@ -1081,6 +1081,57 @@ class TestBranchMergeProposalDeletion(TestCaseWithFactory):
             SQLObjectNotFound, BranchMergeProposalJob.get, job_id)
 
 
+class TestBranchMergeProposalBugs(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_related_bugs_includes_source_bugs(self):
+        """related_bugs includes bugs linked to the source branch."""
+        bmp = self.factory.makeBranchMergeProposal()
+        source_branch = bmp.source_branch
+        bug = self.factory.makeBug()
+        source_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual(
+            list(source_branch.linked_bugs), list(bmp.related_bugs))
+
+    def test_related_bugs_excludes_target_bugs(self):
+        """related_bugs ignores bugs linked to the source branch."""
+        bmp = self.factory.makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.target_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual([], list(bmp.related_bugs))
+
+    def test_related_bugs_excludes_mutual_bugs(self):
+        """related_bugs ignores bugs linked to both branches."""
+        bmp = self.factory.makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        bmp.target_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual([], list(bmp.related_bugs))
+
+
+class TestNotifyModified(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_notify_modified_generates_notification(self):
+        """notify_modified generates an event.
+
+        notify_modified runs the callable with the specified args and kwargs,
+        and generates a ObjectModifiedEvent.
+        """
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.target_branch.owner)
+        # Approve branch to prevent enqueue from approving it, which would
+        # generate an undesired event.
+        bmp.approveBranch(bmp.target_branch.owner, revision_id='abc')
+        self.assertNotifies(
+            ObjectModifiedEvent, notify_modified, bmp, bmp.enqueue,
+            bmp.target_branch.owner, revision_id='abc')
+        self.assertEqual(BranchMergeProposalStatus.QUEUED, bmp.queue_status)
+        self.assertEqual('abc', bmp.queued_revision_id)
+
+
 class TestBranchMergeProposalJob(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -1523,7 +1574,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         merge_proposal.updatePreviewDiff("random text", u"junk", u"a", u"b")
         transaction.commit()
         # Extract the primary key ids for the preview diff and the diff to
-        # show that we are reusing the objects.
+        # show that we are not reusing the objects.
         preview_diff_id = removeSecurityProxy(
             merge_proposal.preview_diff).id
         diff_id = removeSecurityProxy(
@@ -1531,10 +1582,10 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
         self.assertEqual(diff_text, merge_proposal.preview_diff.text)
         self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
-        self.assertEqual(
+        self.assertNotEqual(
             preview_diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).id)
-        self.assertEqual(
+        self.assertNotEqual(
             diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).diff_id)
 

@@ -60,7 +60,6 @@ from lp.registry.model.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.person import Person
-from canonical.launchpad.database.productbounty import ProductBounty
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
@@ -88,8 +87,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
@@ -175,8 +172,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     implements(
         IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
-        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
 
     _table = 'Product'
 
@@ -560,10 +556,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 drivers.add(self.owner)
         return sorted(drivers, key=lambda driver: driver.displayname)
 
-    bounties = SQLRelatedJoin(
-        'Bounty', joinColumn='product', otherColumn='bounty',
-        intermediateTable='ProductBounty')
-
     @property
     def sourcepackages(self):
         from lp.registry.model.sourcepackage import SourcePackage
@@ -939,14 +931,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Packaging.distroseriesID == DistroSeries.id,
             DistroSeries.distributionID == Distribution.id
             ).config(distinct=True).order_by(Distribution.name)
-
-    def ensureRelatedBounty(self, bounty):
-        """See `IProduct`."""
-        for curr_bounty in self.bounties:
-            if bounty.id == curr_bounty.id:
-                return None
-        ProductBounty(product=self, bounty=bounty)
-        return None
 
     def setBugSupervisor(self, bug_supervisor, user):
         """See `IHasBugSupervisor`."""

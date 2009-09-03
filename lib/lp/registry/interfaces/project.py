@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IProject',
+    'IProjectPublic',
     'IProjectSeries',
     'IProjectSet',
     ]
@@ -38,6 +39,8 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
@@ -56,14 +59,13 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-               IHasBugs, IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon,
-               IHasLogo, IHasMentoringOffers, IHasMergeProposals,
-               IHasMilestones, IHasMugshot, IHasOwner, IHasSpecifications,
-               IHasSprints, IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext, IPillar, IRootContext):
-    """A Project."""
-    export_as_webservice_entry('project_group')
+class IProjectPublic(
+    ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
+    IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
+    IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
+    IHasOwner, IHasSpecifications, IHasSprints, IHasTranslationGroup,
+    IMakesAnnouncements, IKarmaContext, IPillar, IRootContext):
+    """Public IProject properties."""
 
     id = Int(title=_('ID'), readonly=True)
 
@@ -234,9 +236,6 @@ class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
             description=_("Whether or not this project group has been "
                           "reviewed.")))
 
-    bounties = Attribute(
-        _("The bounties that are related to this project group."))
-
     bugtracker = exported(
         Choice(title=_('Bug Tracker'), required=False,
                vocabulary='BugTracker',
@@ -265,12 +264,6 @@ class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     def getProduct(name):
         """Get a product with name `name`."""
 
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this project group.
-
-        Return None.
-        """
-
     def translatables():
         """Return an iterator over products that have resources translatables.
 
@@ -284,6 +277,12 @@ class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
 
     def getSeries(series_name):
         """Return a ProjectSeries object with name `series_name`."""
+
+
+class IProject(IProjectPublic, IStructuralSubscriptionTarget):
+    """A Project."""
+
+    export_as_webservice_entry('project_group')
 
 
 # Interfaces for set

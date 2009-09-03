@@ -53,8 +53,9 @@ generates a notification email only to Ubuntu Team administrators.
     >>> print_distinct_emails(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org
     Reply-To: robertc@robertcollins.net
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
     Subject: lifeless wants to join
     <BLANKLINE>
     Robert Collins (lifeless) wants to be a member of Ubuntu Team (ubuntu-
@@ -64,8 +65,17 @@ generates a notification email only to Ubuntu Team administrators.
     <BLANKLINE>
         http://launchpad.dev/~ubuntu-team/+member/lifeless
     <BLANKLINE>
-    Regards,
-    The Launchpad team
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Ubuntu Team team.
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: mark@example.com
+    Reply-To: robertc@robertcollins.net
+    X-Launchpad-Message-Rationale: Owner (ubuntu-team)
+    Subject: lifeless wants to join
+    ...
+    You received this email because you are the owner of the Ubuntu Team team.
     ----------------------------------------
 
 Declining a proposed member should generate notifications for both the member
@@ -181,8 +191,9 @@ other's member) email address in the 'Reply-To' header of the message sent.
     >>> print_distinct_emails(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org
     Reply-To: mark@example.com
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
     Subject: admins wants to join
     <BLANKLINE>
     Mark Shuttleworth (mark) wants to make Launchpad Administrators
@@ -192,9 +203,19 @@ other's member) email address in the 'Reply-To' header of the message sent.
     <BLANKLINE>
         http://launchpad.dev/~ubuntu-team/+member/admins
     <BLANKLINE>
-    Regards,
-    The Launchpad team
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Ubuntu Team team.
     ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: mark@example.com
+    Reply-To: mark@example.com
+    X-Launchpad-Message-Rationale: Owner (ubuntu-team)
+    Subject: admins wants to join
+     ...
+    You received this email because you are the owner of the Ubuntu Team team.
+    ----------------------------------------
+
 
 == Adding new members ==
 
@@ -211,18 +232,21 @@ member.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: marilize@hbd.com
+    X-Launchpad-Message-Rationale: Member (ubuntu-team)
     Subject: You have been added to ubuntu-team
     <BLANKLINE>
     Celso Providelo (cprov) added you as a member of Ubuntu Team (ubuntu-
     team).
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
-    Regards,
-    The Launchpad team
+    -- =
+    <BLANKLINE>
+    You received this email because you are the new member.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
     Subject: marilize joined ubuntu-team
     <BLANKLINE>
     Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
@@ -231,8 +255,16 @@ member.
     <BLANKLINE>
         http://launchpad.dev/~ubuntu-team/+member/marilize
     <BLANKLINE>
-    Regards,
-    The Launchpad team
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Ubuntu Team team.
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: mark@example.com
+    X-Launchpad-Message-Rationale: Owner (ubuntu-team)
+    Subject: marilize joined ubuntu-team
+      ...
+    You received this email because you are the owner of the Ubuntu Team team.
     ----------------------------------------
 
 By default, if the newly added member is actually a team, we'll only send
@@ -334,18 +366,15 @@ passing force_team_add=True to the addMember() method.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: foo.bar@canonical.com
+    X-Launchpad-Message-Rationale: Indirect member (ubuntu-team)
     Subject: launchpad joined ubuntu-team
-    <BLANKLINE>
-    Celso Providelo (cprov) added Launchpad Developers (launchpad) (which
-    you are a member of) as a member of Ubuntu Team (ubuntu-team).
-    <http://launchpad.dev/~ubuntu-team>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
+     ...
+    You received this email because launchpad is the new member.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com,
-        limi@plone.org, mark@example.com
+        limi@plone.org
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
     Subject: launchpad joined ubuntu-team
     <BLANKLINE>
     Launchpad Developers (launchpad) has been added as a member of Ubuntu
@@ -354,8 +383,16 @@ passing force_team_add=True to the addMember() method.
     <BLANKLINE>
         http://launchpad.dev/~ubuntu-team/+member/launchpad
     <BLANKLINE>
-    Regards,
-    The Launchpad team
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Ubuntu Team team.
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: mark@example.com
+    X-Launchpad-Message-Rationale: Owner (ubuntu-team)
+    Subject: launchpad joined ubuntu-team
+     ...
+    You received this email because you are the owner of the Ubuntu Team team.
     ----------------------------------------
 
 
@@ -750,12 +787,75 @@ sense to the members of the team reading it.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
-        foo.bar@canonical.com, karl@canonical.com, limi@plone.org, mark@example.com
+        foo.bar@canonical.com, karl@canonical.com, limi@plone.org,
+        mark@example.com
     Subject: ubuntu-mirror-admins deactivated by mark
     <BLANKLINE>
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
     the team Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth
     (mark) from Approved to Deactivated.
     <http://launchpad.dev/~ubuntu-team>
+    ----------------------------------------
+
+
+Joining a team with a mailing list
+----------------------------------
+
+When a user joins a team with a mailing list, the new member's notification
+email contain subscription information.
+
+    >>> owner = factory.makePerson(name='team-owner')
+    >>> login_person(owner)
+    >>> team_one, list_one = factory.makeTeamAndMailingList(
+    ...     'team-one', owner.name)
+    >>> dummy = pop_notifications()
+    >>> member = factory.makePerson(
+    ...     name='team-member', email='team-member@example.com')
+    >>> team_one.addMember(member, owner)
+    >>> print_distinct_emails()
+    From: Team One ...
+    ----------------------------------------
+    From: Team One ...
+    To: team-member...
+    X-Launchpad-Message-Rationale: Member (team-one)
+    Subject: You have been added to team-one
+    <BLANKLINE>
+    Team-owner (team-owner) added you as a member of Team One (team-one).
+      <http://launchpad.dev/~team-one>
+    <BLANKLINE>
+    If you would like to subscribe to the team list, use the link below
+    to update your Mailing List Subscription preferences.
+      <http://launchpad.dev/people/+me/+editemails>
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because you are the new member.
+    ----------------------------------------
+
+When a team join a team with a mailing list, the new member notification
+emails contain subscription information.
+
+    >>> team_two = factory.makeTeam(
+    ...     name='team-two', email='team-two@example.com', owner=owner)
+    >>> team_one.addMember(team_two, owner, force_team_add=True)
+    >>> print_distinct_emails()
+    From: Team One ...
+    ----------------------------------------
+    From: Team One ...
+    To: team-two...
+    X-Launchpad-Message-Rationale: Indirect member (team-one)
+    Subject: team-two joined team-one
+    <BLANKLINE>
+    Team-owner (team-owner) added Team Two (team-two) (which you are a
+    member of) as a member of Team One (team-one).
+      <http://launchpad.dev/~team-one>
+    <BLANKLINE>
+    If you would like to subscribe to the team list, use the link below
+    to update your Mailing List Subscription preferences.
+      <http://launchpad.dev/people/+me/+editemails>
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because team-two is the new member.
     ----------------------------------------
 

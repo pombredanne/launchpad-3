@@ -27,6 +27,7 @@
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
       is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+      site_message modules/canonical.config/config/launchpad/site_message;
       CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
 >
@@ -97,7 +98,12 @@
         <input type="search" id="search-text" name="field.text" />
       </form>
       <tal:hierarchy replace="structure context/@@+hierarchy" />
-
+    <div id="globalheader" xml:lang="en" lang="en" dir="ltr"
+         tal:condition="site_message">
+      <div class="sitemessage" tal:content="structure site_message">
+        This site is running pre-release code.
+      </div>
+    </div>
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu view/menu:facet"

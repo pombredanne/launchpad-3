@@ -62,9 +62,9 @@
   </class>
 
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
-      factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumbBuilder"
+      factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumb"
       permission="zope.Public"/>
 
   <!-- CodeImportMachineSet -->
@@ -112,6 +112,14 @@
       for="lp.registry.interfaces.project.IProject"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
+  <adapter
+      for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_source_package"/>
+  <adapter
+      for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_distro_source_package"/>
   <securedutility
       class="lp.code.model.branchcollection.GenericBranchCollection"
       provides="lp.code.interfaces.branchcollection.IAllBranches">
@@ -125,6 +133,26 @@
       provides="lp.code.interfaces.revisioncache.IRevisionCache">
     <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
   </securedutility>
+  <adapter
+      for="lp.registry.interfaces.person.IPerson"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_person"/>
+  <adapter
+      for="lp.registry.interfaces.product.IProduct"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_product"/>
+  <adapter
+      for="lp.registry.interfaces.project.IProject"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_project"/>
+  <adapter
+      for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_source_package"/>
+  <adapter
+      for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_distro_source_package"/>
   <securedutility
       class="lp.code.model.branchpuller.BranchPuller"
       provides="lp.code.interfaces.branchpuller.IBranchPuller">
@@ -182,6 +210,7 @@
                     votes
                     root_comment
                     all_comments
+                    related_bugs
                     isMergable
                     getComment
                     getNotificationRecipients
@@ -525,7 +554,8 @@
                     branch
                     mail_header
                     recipient
-                    max_diff_lines"/>
+                    max_diff_lines
+                    review_level"/>
   </class>
   <class class="lp.code.model.branchnamespace.PackageNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
@@ -693,9 +723,9 @@
 
   </class>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.code.interfaces.codeimport.ICodeImportSet"
-      factory="lp.code.browser.codeimport.CodeImportSetBreadcrumbBuilder"
+      factory="lp.code.browser.codeimport.CodeImportSetBreadcrumb"
       permission="zope.Public"/>
   <subscriber
       for="lp.code.interfaces.codeimport.ICodeImport

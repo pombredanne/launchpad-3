@@ -34,6 +34,8 @@ from lazr.restful.declarations import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.app.interfaces.rootcontext import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.bugs.interfaces.bugtarget import (
@@ -207,11 +209,7 @@ class IDistributionPublic(
         exported_as="series")
     architectures = List(
         title=_("DistroArchSeries inside this Distribution"))
-    bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
-    is_read_only = Attribute(
-        "True if this distro is just monitored by Launchpad, rather than "
-        "allowing you to use Launchpad to actually modify the distro.")
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))
@@ -344,11 +342,6 @@ class IDistributionPublic(
 
         :return: a dict where the key is a `IDistributionSourcePackage`
             and the value is a `IDistributionSourcePackageRelease`.
-        """
-
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this distribution. Return
-        None.
         """
 
     def getDistroSeriesAndPocket(distroseriesname):
@@ -530,7 +523,7 @@ class IDistributionPublic(
 
 
 class IDistribution(IDistributionEditRestricted, IDistributionPublic,
-                    IRootContext):
+                    IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution."""
     export_as_webservice_entry()
 
@@ -567,7 +560,7 @@ class IDistributionSet(Interface):
         """Retrieve a distribution by name"""
 
     @collection_default_content()
-    def getDistros(self):
+    def getDistros():
         """Return all distributions.
 
         Ubuntu and its flavours will always be at the top of the list, with

@@ -25,6 +25,7 @@ delete the branch.
     >>> delete_link.click()
     >>> print extract_text(find_main_content(browser.contents))
     Delete branch
+    Mozilla Firefox...
     Branch deletion is permanent.
     or Cancel
 
@@ -68,7 +69,7 @@ Even if you are an admin.
     >>> admin_browser.open(branch_location)
     >>> admin_browser.getLink('Delete branch').click()
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Delete branch
+    Delete branch...
     This branch cannot be deleted as it has 1 branch sharing revisions.
 
 However, you can delete a branch that's the official branch of a source

@@ -443,8 +443,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             poll_type=PollAlgorithm.SIMPLE)
 
     def makeTranslationGroup(
-        self, owner, name=None, title=None, summary=None, url=None):
+        self, owner=None, name=None, title=None, summary=None, url=None):
         """Create a new, arbitrary `TranslationGroup`."""
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString("translationgroup")
         if title is None:
@@ -1077,13 +1079,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None, title=None):
+    def makeSpecification(self, product=None, title=None, distribution=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
             not specified, an arbitrary product is created.
         """
-        if product is None:
+        if distribution is None and product is None:
             product = self.makeProduct()
         if title is None:
             title = self.getUniqueString('title')
@@ -1094,7 +1096,38 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary=self.getUniqueString('summary'),
             definition_status=SpecificationDefinitionStatus.NEW,
             owner=self.makePerson(),
-            product=product)
+            product=product,
+            distribution=distribution)
+
+    def makeQuestion(self, target=None, title=None):
+        """Create and return a new, arbitrary Question.
+
+        :param target: The IQuestionTarget to make the question on. If one is
+            not specified, an arbitrary product is created.
+        :param title: The question title. If one is not provided, an
+            arbitrary title is created.
+        """
+        if target is None:
+            target = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
+        return target.newQuestion(
+            owner=target.owner, title=title, description='description')
+
+    def makeFAQ(self, target=None, title=None):
+        """Create and return a new, arbitrary FAQ.
+
+        :param target: The IFAQTarget to make the FAQ on. If one is
+            not specified, an arbitrary product is created.
+        :param title: The FAQ title. If one is not provided, an
+            arbitrary title is created.
+        """
+        if target is None:
+            target = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
+        return target.newFAQ(
+            owner=target.owner, title=title, content='content')
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
@@ -1580,7 +1613,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return distroseries.getSourcePackage(sourcepackagename)
 
     def getAnyPocket(self):
-        return PackagePublishingPocket.RELEASE
+        return PackagePublishingPocket.BACKPORTS
 
     def makeSuiteSourcePackage(self, distroseries=None,
                                sourcepackagename=None, pocket=None):

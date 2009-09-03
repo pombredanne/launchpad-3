@@ -9,18 +9,60 @@ __metaclass__ = type
 from cStringIO import StringIO
 from unittest import TestLoader
 
+from bzrlib.branch import Branch
 import transaction
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
-from lp.code.model.diff import Diff, StaticDiff
+from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
+from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
 
 
-class TestDiff(TestCaseWithFactory):
+class DiffTestCase(TestCaseWithFactory):
+
+    @staticmethod
+    def commitFile(branch, path, contents):
+        """Create a commit that updates a file to specified contents.
+
+        This will create or modify the file, as needed.
+        """
+        committer = DirectBranchCommit(branch, to_mirror=True)
+        committer.writeFile(path, contents)
+        try:
+            return committer.commit('committing')
+        finally:
+            committer.unlock()
+
+    def createExampleMerge(self):
+        """Create a merge proposal with conflicts and updates."""
+        self.useBzrBranches()
+        bmp = self.factory.makeBranchMergeProposal()
+        bzr_target = self.createBzrBranch(bmp.target_branch)
+        self.commitFile(bmp.target_branch, 'foo', 'a\n')
+        self.createBzrBranch(bmp.source_branch, bzr_target)
+        source_rev_id = self.commitFile(bmp.source_branch, 'foo', 'd\na\nb\n')
+        target_rev_id = self.commitFile(bmp.target_branch, 'foo', 'c\na\n')
+        return bmp, source_rev_id, target_rev_id
+
+    def checkExampleMerge(self, diff_text):
+        """Ensure the diff text matches the values for ExampleMerge."""
+        # The source branch added a line "b".
+        self.assertIn('+b\n', diff_text)
+        # The line "a" was present before any changes were made, so it's not
+        # considered added.
+        self.assertNotIn('+a\n', diff_text)
+        # There's a conflict because the source branch added a line "d", but
+        # the target branch added the line "c" in the same place.
+        self.assertIn(
+            '+<<<<<<< TREE\n c\n+=======\n+d\n+>>>>>>> MERGE-SOURCE\n',
+            diff_text)
+
+
+class TestDiff(DiffTestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -65,6 +107,16 @@ class TestDiff(TestCaseWithFactory):
         content = "1234567890" * 10
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
+
+    def test_mergePreviewFromBranches(self):
+        # mergePreviewFromBranches generates the correct diff.
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        source_branch = Branch.open(bmp.source_branch.warehouse_url)
+        target_branch = Branch.open(bmp.target_branch.warehouse_url)
+        diff = Diff.mergePreviewFromBranches(
+            source_branch, source_rev_id, target_branch)
+        transaction.commit()
+        self.checkExampleMerge(diff.text)
 
 
 class TestStaticDiff(TestCaseWithFactory):
@@ -132,7 +184,7 @@ class TestStaticDiff(TestCaseWithFactory):
         self.assertEqual('abc', static_diff.diff.text)
 
 
-class TestPreviewDiff(TestCaseWithFactory):
+class TestPreviewDiff(DiffTestCase):
     """Test that PreviewDiff objects work."""
 
     layer = LaunchpadFunctionalLayer
@@ -171,7 +223,7 @@ class TestPreviewDiff(TestCaseWithFactory):
     def test_empty_diff(self):
         # Once the source is merged into the target, the diff between the
         # branches will be empty.
-        mp = self._createProposalWithPreviewDiff(content=None)
+        mp = self._createProposalWithPreviewDiff(content='')
         preview = mp.preview_diff
         self.assertIs(None, preview.diff_text)
         self.assertEqual(0, preview.diff_lines_count)
@@ -218,6 +270,15 @@ class TestPreviewDiff(TestCaseWithFactory):
         self.assertEqual(False, mp.preview_diff.stale)
         dep_branch.last_scanned_id = 'rev-d'
         self.assertEqual(True, mp.preview_diff.stale)
+
+    def test_fromBranchMergeProposal(self):
+        # Correctly generates a PreviewDiff from a BranchMergeProposal.
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        preview = PreviewDiff.fromBranchMergeProposal(bmp)
+        self.assertEqual(source_rev_id, preview.source_revision_id)
+        self.assertEqual(target_rev_id, preview.target_revision_id)
+        transaction.commit()
+        self.checkExampleMerge(preview.text)
 
 
 def test_suite():

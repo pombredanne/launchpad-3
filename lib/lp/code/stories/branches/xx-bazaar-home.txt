@@ -36,7 +36,7 @@ with a link to the complete listing.
     see all projects&#8230;
 
     >>> print preview.fetch('a')[-1]['href']
-    /+project-cloud
+    /projects
 
 
 == Short Listings ==

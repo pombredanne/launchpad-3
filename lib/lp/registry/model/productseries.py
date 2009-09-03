@@ -59,8 +59,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
@@ -87,9 +85,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(
-        IProductSeries, IHasTranslationTemplates,
-        IStructuralSubscriptionTarget)
+    implements(IProductSeries, IHasTranslationTemplates)
 
     _table = 'ProductSeries'
 
@@ -597,46 +593,6 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
-
-    def composeQueryString(self, text=None, importstatus=None):
-        """Build SQL "where" clause for `ProductSeries` search.
-
-        :param text: Text to search for in the product and project titles and
-            descriptions.
-        :param importstatus: If specified, limit the list to series which have
-            the given import status; if not specified or None, limit to series
-            with non-NULL import status.
-        """
-        conditions = ["ProductSeries.product = Product.id"]
-        if text == u'':
-            text = None
-
-        # First filter on text, if supplied.
-        if text is not None:
-            conditions.append("""
-                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
-                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
-
-        # Exclude deactivated products.
-        conditions.append('Product.active IS TRUE')
-
-        # Exclude deactivated projects, too.
-        conditions.append(
-            "((Product.project = Project.id AND Project.active) OR"
-            " Product.project IS NULL)")
-
-        # Now just add the filter on import status.
-        if importstatus is None:
-            conditions.append('ProductSeries.importstatus IS NOT NULL')
-        else:
-            conditions.append('ProductSeries.importstatus = %s'
-                              % sqlvalues(importstatus))
-
-        # And build the query.
-        query = " AND ".join(conditions)
-        return """productseries.id IN
-            (SELECT productseries.id FROM productseries, product, project
-             WHERE %s) AND productseries.product = product.id""" % query
 
     def getSeriesForBranches(self, branches):
         """See `IProductSeriesSet`."""
