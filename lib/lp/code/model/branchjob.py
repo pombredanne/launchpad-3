@@ -183,12 +183,12 @@ class BranchJobDerived(BaseRunnableJob):
         return (cls(job) for job in jobs)
 
     def getOopsVars(self):
-        vars =  BaseRunnableJob.getOopsVars()
+        vars =  BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('branch_job_id', self.context.id),
             ('branch_job_type', self.context.job_type.title)])
         if self.context.branch is not None:
-            vars.append('branch_name', self.context.branch.unique_name)
+            vars.append(('branch_name', self.context.branch.unique_name))
         return vars
 
 
