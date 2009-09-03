@@ -55,6 +55,7 @@ from canonical.config import config
 from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+from lp.app.interfaces.headings import IEditableContextTitle
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
@@ -63,8 +64,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
-    IEditableContextTitle, ILaunchBag, NotFoundError,
-    UnsafeFormGetSubmissionError)
+    ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductReviewSearch, License
 from lp.registry.interfaces.distroseries import DistroSeriesStatus

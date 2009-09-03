@@ -18,8 +18,8 @@ from zope.traversing.interfaces import (
 
 from canonical.lazr.canonicalurl import nearest_provides_or_adapted
 
-from lp.app.interfaces.rootcontext import IIndexView, IRootContext
-from canonical.launchpad.webapp.interfaces import IEditableContextTitle
+from lp.app.interfaces.headings import (
+    IEditableContextTitle, IIndexView, IRootContext)
 
 
 class WatermarkTalesAdapter:

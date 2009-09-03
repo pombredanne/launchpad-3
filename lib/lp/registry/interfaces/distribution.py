@@ -36,7 +36,7 @@ from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
-from lp.app.interfaces.rootcontext import IRootContext
+from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)

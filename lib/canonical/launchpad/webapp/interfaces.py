@@ -626,11 +626,11 @@ class INotificationResponse(Interface):
         instance of a Zope internationalized message will cause the
         message to be translated, then CGI escaped.
 
-        :param msg: This may be a string, an instance of
-                `zope.i18n.Message`, , or an instance of `IStructuredString`.
+        :param msg: This may be a string, an instance of `zope.i18n.Message`,
+            or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-                INFO, NOTICE, WARNING, ERROR.
+            INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -729,13 +729,6 @@ class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
 class IPrimaryContext(Interface):
     """The primary context that used to determine the tabs for the web UI."""
     context = Attribute('The primary context.')
-
-
-class IEditableContextTitle(Interface):
-    """Interface specifying that the context has an editable title."""
-
-    title_edit_widget = Attribute(
-        'The title of the context as an editable widget.')
 
 
 #

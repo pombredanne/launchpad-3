@@ -1,10 +1,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""The primary context interface."""
+"""Interfaces for headings and breadcrumbs."""
 
 __metaclass__ = type
 __all__ = [
+    'IEditableContextTitle',
     'IIndexView',
     'IRootContext',
     ]
@@ -23,3 +24,10 @@ class IIndexView(Interface):
     """The index view of the current context."""
 
     title = Attribute('The title of the context object.')
+
+
+class IEditableContextTitle(Interface):
+    """Interface specifying that the context has an editable title."""
+
+    title_edit_widget = Attribute(
+        'The title of the context as an editable widget.')
