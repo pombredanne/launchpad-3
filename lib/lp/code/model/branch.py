@@ -21,7 +21,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
+from storm.expr import And, Count, Desc, Max, Not, NamedFunc, Or, Select
 from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
@@ -261,6 +261,15 @@ class Branch(SQLBase):
         'BranchMergeProposal', joinColumn='source_branch')
 
     @property
+    def active_landing_targets(self):
+        """Merge proposals not in final states where this branch is source."""
+        store = Store.of(self)
+        return store.find(
+            BranchMergeProposal, BranchMergeProposal.source_branch == self,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    @property
     def landing_candidates(self):
         """See `IBranch`."""
         return BranchMergeProposal.select("""
@@ -354,7 +363,7 @@ class Branch(SQLBase):
         """See `IBranch`."""
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.landing_targets]
+                for target in self.active_landing_targets]
         return jobs
 
     # XXX: Tim Penhey, 2008-06-18, bug 240881
