@@ -57,8 +57,9 @@ class TestSendbranchmail(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
-        self.assertEqual('INFO    creating lockfile\n'
-                         'INFO    Ran 0 RevisionMailJobs.\n', stderr)
+        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn('INFO    Job resulted in OOPS:', stderr)
+        self.assertIn('INFO    Ran 0 RevisionMailJobs.\n', stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
 
