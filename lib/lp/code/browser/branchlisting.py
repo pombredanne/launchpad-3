@@ -70,8 +70,7 @@ from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView, PersonActiveReviewsView,
     PersonProductActiveReviewsView)
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    BranchMergeProposalStatus, BranchType)
+    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchType)
 from lp.code.interfaces.branch import (
     bazaar_identity, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchBatchNavigator)
