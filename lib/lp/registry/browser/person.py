@@ -40,6 +40,7 @@ __all__ = [
     'PersonFacets',
     'PersonGPGView',
     'PersonIndexView',
+    'PersonKarmaView',
     'PersonLanguagesView',
     'PersonLatestQuestionsView',
     'PersonNavigation',
@@ -2508,8 +2509,26 @@ class PersonLanguagesView(LaunchpadFormView):
             rootsite='answers')
 
 
+class PersonKarmaView(LaunchpadView):
+    """A view class used for ~person/+karma."""
+
+    @property
+    def label(self):
+        return 'Launchpad Karma for ' + cgi.escape(self.user.displayname)
+
+    @cachedproperty
+    def has_karma(self):
+        """Does the have karma?"""
+        return bool(self.context.karma_category_caches)
+
+    @cachedproperty
+    def has_expired_karma(self):
+        """Did the user have karma?"""
+        return self.context.latestKarma().count() > 0
+
+
 class PersonView(LaunchpadView, FeedsMixin):
-    """A View class used in almost all Person's pages."""
+    """A view class used in almost all Person's pages."""
 
     @cachedproperty
     def recently_approved_members(self):
@@ -2900,16 +2919,6 @@ class PersonView(LaunchpadView, FeedsMixin):
             return ', '.join(sorted(englishnames))
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
-
-    @cachedproperty
-    def has_karma(self):
-        """Does the have karma?"""
-        return bool(self.context.karma_category_caches)
-
-    @cachedproperty
-    def has_expired_karma(self):
-        """Did the user have karm?."""
-        return self.context.latestKarma().count() > 0
 
     @property
     def public_private_css(self):
