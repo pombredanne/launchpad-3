@@ -772,25 +772,20 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
 
     def setUpWidgets(self, context=None):
         """Setup our custom widget which depends on the filter widget values.
-
-        To create the selected sources field, we need to define a vocabulary
-        based on the currently selected sources (using self.batched_sources)
-        but this itself requires the current values of the filtering
-        widgets. So we setup the widgets, then add the extra field and
-        create its widget too.
         """
-        super(ArchiveSourceSelectionFormView, self).setUpWidgets(context)
+        # To create the selected sources field, we need to define a
+        # vocabulary based on the currently selected sources (using self
+        # batched_sources) but this itself requires the current values of
+        # the filtering widgets. So we setup the widgets, then add the
+        # extra field and create its widget too.
+        super(ArchiveSourceSelectionFormView, self).setUpWidgets()
 
-        # Add the field whose vocabulary is dependent on the value
-        # of other widgets.
         self.form_fields += self.createSelectedSourcesField()
 
-        # Note to reviewer: The only way I could get the widget added
-        # was to call super.setUpWidgets again - this doesn't seem to bad
-        # as it is exactly what Zope's FormBase.reset_form() does, but
-        # was hoping that I could instead use the singular setupWidget and
-        # simply add the widget to self.widgets, but this didn't work.
-        super(ArchiveSourceSelectionFormView, self).setUpWidgets(context)
+        self.widgets += form.setUpWidgets(
+            self.form_fields.select('selected_sources'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
 
     def focusedElementScript(self):
         """Override `LaunchpadFormView`.
@@ -1137,6 +1132,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         self.request.response.addNotification(structured(notification))
 
         self.setNextURL()
+
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     """Archive dependencies view class."""
