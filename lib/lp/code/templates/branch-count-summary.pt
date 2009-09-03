@@ -8,6 +8,11 @@
   <tal:branches replace="view/branch_text">branches</tal:branches>
   owned by
   <tal:individuals condition="view/person_owner_count">
+    <tal:comment condition="nothing">
+      The layout of the tags below may look a little strange, but this
+      is all to make sure there isn't any whitespace between the end of
+      "person" or "team" and the comma after it.
+    </tal:comment>
     <strong tal:content="view/person_owner_count">42</strong>
     <tal:people replace="view/person_text">people</tal:people
     ></tal:individuals

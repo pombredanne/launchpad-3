@@ -75,9 +75,8 @@ class GenericBranchCollection:
     def ownerCounts(self):
         """See `IBranchCollection`."""
         is_team = Person.teamowner != None
-        branch_owners = Select(
-            Branch.ownerID,
-            Branch.id.is_in(self._getBranchIdQuery()))
+        branch_owners = self._getBranchIdQuery()
+        branch_owners.columns = (Branch.ownerID,)
         counts = dict(self.store.find(
             (is_team, Count(Person.id)),
             Person.id.is_in(branch_owners)).group_by(is_team))
