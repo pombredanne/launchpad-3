@@ -54,8 +54,8 @@ question owner, No Privileges Person enters his question in the
     >>> print content.h2.renderContents()
     Can you help with this problem?
 
-    >>> print extract_text(find_tag_by_id(support_browser.contents,
-    ...     'horizontal-menu'))
+    >>> print extract_text(
+    ...     find_tag_by_id(support_browser.contents, 'horizontal-menu'))
     Link existing bug
     Create bug report
     Link to a FAQ
@@ -191,8 +191,8 @@ The confirmed answer is also highlighted.
 
 The History link should now show up.
 
-    >>> print extract_text(find_tag_by_id(support_browser.contents,
-    ...     'horizontal-menu'))
+    >>> print extract_text(
+    ...     find_tag_by_id(support_browser.contents, 'horizontal-menu'))
     History
     Link existing bug
     Create bug report
