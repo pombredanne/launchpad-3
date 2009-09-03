@@ -8,9 +8,7 @@
       <dl>
         <dt>Tracker:</dt>
         <dd>
-          <a tal:attributes="href context/bugtracker/fmt:url">
-          <span tal:replace="context/bugtracker/title">bugtracker
-          title</span></a>
+          <a tal:replace="structure context/bugtracker/fmt:link"/>
         </dd>
       </dl>
       <dl>
@@ -61,7 +59,7 @@
         </dd>
       </dl>
       <dl>
-        <dt>By:</dt>
+        <dt>Created by:</dt>
         <dd>
           <a tal:replace="structure context/owner/fmt:link" />
         </dd>

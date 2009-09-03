@@ -93,7 +93,7 @@ class BugWatchEditView(LaunchpadFormView):
     @property
     def page_title(self):
         """The page title."""
-        return 'Edit bug watch for %s in %s on bug #%d' % (
+        return 'Edit bug watch for bug %s in %s on bug #%d' % (
             self.context.remotebug, self.context.bugtracker.title,
             self.context.bug.id)
 
@@ -138,6 +138,4 @@ class BugWatchEditView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(getUtility(ILaunchBag).bug)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(getUtility(ILaunchBag).bug)
+    cancel_url = next_url
