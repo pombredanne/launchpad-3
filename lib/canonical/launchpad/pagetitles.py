@@ -396,8 +396,6 @@ distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
 
-distribution_ppa_list = ContextTitle('%s Personal Package Archives')
-
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
@@ -1152,12 +1150,6 @@ standardshipitrequests_index = 'Standard ShipIt options'
 standardshipitrequest_new = 'Create a new standard option'
 
 standardshipitrequest_edit = 'Edit standard option'
-
-team_addmember = ContextBrowsername('Add members to %s')
-
-team_add_my_teams = 'Propose/add one of your teams to another one'
-
-team_editproposed = ContextBrowsername('Proposed members of %s')
 
 team_index = ContextBrowsername('%s in Launchpad')
 
