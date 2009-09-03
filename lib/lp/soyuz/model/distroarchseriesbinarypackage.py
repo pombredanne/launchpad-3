@@ -72,7 +72,7 @@ class DistroArchSeriesBinaryPackage:
     def title(self):
         """See IDistroArchSeriesBinaryPackage."""
         return '"%s" binary package in %s' % (
-            self.binarypackagename.name, self.distroarchseries.title)
+            self.binarypackagename.name, self.distroarchseries.displayname)
 
     @cachedproperty
     def cache(self):

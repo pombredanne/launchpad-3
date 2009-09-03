@@ -8,6 +8,10 @@
 >
   <body>
 
+<tal:heading metal:fill-slot="heading">
+  <h1 tal:content="view/page_title"/>
+</tal:heading>
+
 <div metal:fill-slot="main">
 
   <div class="top-portlet">

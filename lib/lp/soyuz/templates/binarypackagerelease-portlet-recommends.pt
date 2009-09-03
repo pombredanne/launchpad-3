@@ -6,9 +6,9 @@
   tal:condition="relationships/has_items"
   class="first yui-u" id="portlet-recommends">
 
-  <div id="recommends">
+  <dl id="recommends">
     <dt>Recommends:</dt>
     <tal:block replace="structure relationships/@@+render-list"/>
-  </div>
+  </dl>
 
 </div>
