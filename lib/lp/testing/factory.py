@@ -165,6 +165,18 @@ class ObjectFactory:
         """Return an integer unique to this factory instance."""
         return self._integer.next()
 
+    def getUniqueHexString(self, digits=None):
+        """Return a unique hexadecimal string.
+
+        :param digits: The number of digits in the string. 'None' means you
+            don't care.
+        :return: A hexadecimal string, with 'a'-'f' in lower case.
+        """
+        hex_number = '%x' % self.getUniqueInteger()
+        if digits is not None:
+            hex_number.zfill(digits)
+        return hex_number
+
     def getUniqueString(self, prefix=None):
         """Return a string unique to this factory instance.
 
@@ -249,7 +261,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
         return getUtility(IGPGKeySet).new(
             owner.id,
-            keyid='DEADBEEF',
+            keyid=self.getUniqueHexString(digits=8).upper(),
             fingerprint='A' * 40,
             keysize=self.factory.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
