@@ -28,11 +28,11 @@ or more series of a `Distribution`.
 The `DistributionSourcePackageRelease` page is accessed from the
 `DistributionSourcePackage`.
 
-    # XXX cprov: enable the navigation tests when the DSP:+index
+    # XXX cprov: enable the navigation tests from  DSP:+index
     # gets fixed.
-    >>> #anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox')
-    >>> #print anon_browser.getLink('1.0').click().url
+    # >>> anon_browser.open(
+    # ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox')
+    # >>> anon_browser.getLink('1.0').click()
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntutest/+source/testing-dspr/1.0')
