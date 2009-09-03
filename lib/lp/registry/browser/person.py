@@ -3134,11 +3134,11 @@ class TeamIndexView(PersonIndexView):
         link so that the invitation can be accepted.
         """
         try:
-          return (self.context.super_teams.count() > 0
-                  or (self.context.open_membership_invitations
-                      and check_permission('launchpad.Edit', self.context)))
+            return (self.context.super_teams.count() > 0
+                    or (self.context.open_membership_invitations
+                        and check_permission('launchpad.Edit', self.context)))
         except AttributeError, e:
-          raise AssertionError(e)
+            raise AssertionError(e)
 
     @property
     def visibility(self):
