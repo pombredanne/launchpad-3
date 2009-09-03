@@ -23,6 +23,8 @@ the other releases for the series. There are no other releases yet.
     >>> view = create_initialized_view(milestone, '+addrelease')
     >>> print view.label
     Create a new release for App
+    >>> print view.page_title
+    Publish the release of App 0.1
 
 The view creates a checkbox to allow the user to keep the milestone
 active, which is normally deactivated when a release is made.
@@ -115,6 +117,10 @@ set the milestone.
     >>> [field.__name__ for field in view.form_fields]
     ['milestone_for_release', 'keep_milestone_active', 'datereleased',
      'release_notes', 'changelog']
+    >>> print view.label
+    Create a new release for App
+    >>> print view.page_title
+    Publish the release of simple
 
 The rendered template includes a script that adds a js-action link to
 show a formoverlay that updates the milestone_for_release field.
@@ -151,6 +157,12 @@ A ProductRelease can be edited using the ProductReleaseEditView.
     ...     'field.actions.change': 'Change',
     ...     }
     >>> view = create_initialized_view(release, '+edit', form=form)
+    >>> print view.label
+    Edit App 0.1 release details
+
+    >>> print view.page_title
+    Edit details of App 0.1 in Launchpad
+
     >>> print view.errors
     []
 
@@ -160,3 +172,48 @@ A ProductRelease can be edited using the ProductReleaseEditView.
     >>> print release.release_notes
     revised
 
+
+Adding a download file to a release
+-----------------------------------
+
+    >>> form = {
+    ...     'field.description': 'App 0.1 tarball',
+    ...     'field.contenttype': 'CODETARBALL',
+    ...     'field.actions.add': 'Upload',
+    ...     }
+    >>> view = create_initialized_view(release, '+adddownloadfile', form=form)
+    >>> print view.label
+    Add a download file to App 0.1
+
+    >>> print view.page_title
+    Add a file to App 0.1
+
+    >>> print view.errors
+    ['expect a required input error here']
+
+    >>> print view.widget_errors
+    {}
+
+
+Deleting a product release
+--------------------------
+
+    >>> form = {
+    ...     'field.actions.delete': 'Delete this release',
+    ...     }
+    >>> view = create_initialized_view(release, '+delete', form=form)
+    >>> print view.label
+    Delete App 0.1
+
+    >>> print view.page_title
+    Delete App 0.1 in Launchpad
+
+    >>> print view.errors
+    []
+
+    >>> print view.widget_errors
+    {}
+
+    >>> release = series.getRelease('0.1')
+    >>> print release
+    None

@@ -893,17 +893,7 @@ product_timeline = ContextTitle('Timeline Diagram for %s')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
-productrelease_add = ContextDisplayName('Publish the release of %s')
-
-productrelease_add_from_series = productrelease_add
-
-productrelease_delete = ContextTitle('Delete %s in Launchpad')
-
-productrelease_file_add = ContextDisplayName('Add a file to %s')
-
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
-
-productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
