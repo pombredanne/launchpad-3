@@ -120,14 +120,13 @@
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
             <div tal:condition="view/macro:pagehas/applicationtabs">
-              <metal:block define-slot="heading" />
-              <h1 tal:condition="view/label"
-                  tal:content="view/label">Page label</h1>
-              <div style="padding-bottom: 1em;">
-                <tal:breadcrumbs replace="structure context/@@+hierarchy">
-                  ProjectName > Branches > Merge Proposals > fix-for-navigation
-                </tal:breadcrumbs>
-              </div>
+            <h1 tal:condition="view/label"
+                tal:content="view/label"
+                metal:define-slot="heading"
+                >Page Label</h1>
+              <tal:breadcrumbs replace="structure context/@@+hierarchy">
+                ProjectName > Branches > Merge Proposals > fix-for-navigation
+              </tal:breadcrumbs>
             </div>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->

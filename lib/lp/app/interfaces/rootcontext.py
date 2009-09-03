@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'IIndexView',
     'IRootContext',
     ]
 
@@ -16,3 +17,9 @@ class IRootContext(Interface):
     """Something that is an object off the Launchpad root."""
 
     title = Attribute('The title of the root context object.')
+
+
+class IIndexView(Interface):
+    """The index view of the current context."""
+
+    title = Attribute('The title of the context object.')
