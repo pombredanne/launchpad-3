@@ -161,7 +161,8 @@ class JobCronScript(LaunchpadCronScript):
 
     def main(self):
         errorlog.globalErrorUtility.configure(self.config_name)
-        runner = JobRunner.fromReady(getUtility(self.source_interface))
+        runner = JobRunner.fromReady(
+            getUtility(self.source_interface), self.logger)
         cleanups = self.setUp()
         try:
             runner.runAll()
