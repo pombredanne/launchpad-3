@@ -410,6 +410,7 @@
                     landing_candidates
                     dependent_branches
                     addLandingTarget
+                    scheduleDiffUpdates
                     getMergeQueue
                     revisions_since
                     code_is_browseable

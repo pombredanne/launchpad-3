@@ -28,9 +28,9 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from lp.archiveuploader.permission import CannotUploadToArchive, verify_upload
+from lp.archiveuploader.permission import verify_upload
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
     ISourcePackageNameSet, NotFoundError, QueueInconsistentStateError)
