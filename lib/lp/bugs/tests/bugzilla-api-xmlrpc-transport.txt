@@ -292,7 +292,7 @@ method to print out comments for us.
     ...     for key in sorted(bugs_dict):
     ...         print "Bug %s:" % key
     ...         bug_comments = sorted(
-    ...             bugs_dict[key],
+    ...             bugs_dict[key]['comments'],
     ...             key=operator.itemgetter(sort_key))
     ...
     ...         for comment in bug_comments:

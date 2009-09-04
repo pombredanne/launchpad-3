@@ -178,8 +178,6 @@ bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
 
-bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
-
 bug_edit = ContextBugId('Bug #%d - Edit')
 
 bug_edit_confirm = ContextBugId('Bug #%d - Edit confirmation')
@@ -198,22 +196,13 @@ bug_mark_as_affecting_user = ContextBugId(
 
 bug_nominate_for_series = ViewLabel()
 
-bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
-
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
-bug_remove_question = LaunchbagBugID(
-    'Bug #%d - Convert this question back to a bug')
-
 bugbranch_delete = 'Delete bug branch link'
 
 bugbranch_edit = "Edit branch fix status"
-
-def bugcomment_index(context, view):
-    """Return the page title for a bug comment."""
-    return "Bug #%d - Comment #%d" % (context.bug.id, view.comment.index)
 
 buglinktarget_linkbug = 'Link to bug report'
 
@@ -227,22 +216,10 @@ def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
 
-bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
-
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
     return 'Manage nomination for bug #%d in %s' % (
         context.bug.id, context.target.bugtargetdisplayname)
-
-def bugwatch_editform(context, view):
-    """Return the title for the page to edit an external bug watch."""
-    return 'Bug #%d - Edit external bug watch (%s in %s)' % (
-        context.bug.id, context.remotebug, context.bugtracker.title)
-
-def bugwatch_comments(context, view):
-    """Return the title for a page of imported comments for a bug watch."""
-    return "Bug #%d - Comments imported from bug watch %s on %s" % (
-        context.bug.id, context.remotebug, context.bugtracker.title)
 
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
@@ -396,8 +373,6 @@ distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
 
-distribution_ppa_list = ContextTitle('%s Personal Package Archives')
-
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
@@ -501,10 +476,6 @@ hwdb_fingerprint_submissions = (
 
 hwdb_submit_hardware_data = (
     'Submit New Data to the Launchpad Hardware Database')
-
-karmaaction_index = 'Karma actions'
-
-karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
 language_index = ContextDisplayName("%s in Launchpad")
 
@@ -736,8 +707,6 @@ people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
-active_reviews = ContextDisplayName('Pending proposals for %s')
-
 person_archive_subscription = ContextDisplayName('%s')
 
 person_archive_subscriptions = 'Private PPA access'
@@ -760,13 +729,7 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
-
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_editircnicknames = ContextDisplayName(smartquote("%s's IRC nicknames"))
-
-person_editjabberids = ContextDisplayName(smartquote("%s's Jabber IDs"))
 
 person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
 
@@ -829,9 +792,6 @@ person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
 person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 
-person_vouchers = ContextDisplayName(
-    'Commercial subscription vouchers for %s')
-
 pofile_filter = FilteredTranslationsTitle(
     smartquote('Translations by %(person)s in "%(title)s"'))
 
@@ -888,10 +848,6 @@ def product_mergeproposals(context, view):
     """Return the view's heading."""
     return view.heading
 
-def product_new(context, view):
-    """Return the view's heading."""
-    return view.heading
-
 product_new_guided = 'Before you register your project...'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
@@ -906,8 +862,6 @@ product_series = ContextDisplayName('%s timeline')
 product_timeline = ContextTitle('Timeline Diagram for %s')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
-
-product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextDisplayName('Publish the release of %s')
 
@@ -936,9 +890,6 @@ productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
 
-productseries_translations_bzr_import = (
-    'Request translations import from Bazaar branch')
-
 project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
@@ -957,8 +908,6 @@ project_rosetta_index = ContextTitle('Launchpad Translations: %s')
 project_specs = ContextTitle('Blueprints for %s')
 
 project_translations = ContextTitle('Translatable projects for %s')
-
-project_translators = ContextTitle('Set translation group for %s')
 
 projects_request = 'Launchpad Translations: Request a project group'
 
@@ -1171,12 +1120,6 @@ standardshipitrequests_index = 'Standard ShipIt options'
 standardshipitrequest_new = 'Create a new standard option'
 
 standardshipitrequest_edit = 'Edit standard option'
-
-team_addmember = ContextBrowsername('Add members to %s')
-
-team_add_my_teams = 'Propose/add one of your teams to another one'
-
-team_editproposed = ContextBrowsername('Proposed members of %s')
 
 team_index = ContextBrowsername('%s in Launchpad')
 
