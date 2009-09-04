@@ -105,8 +105,6 @@
         </p>
       </div>
 
-
-
       <div class="portlet" tal:condition="archive_active">
         <span class="see-all"><a
               tal:replace="structure context/menu:overview/packages/fmt:link" />
@@ -125,13 +123,14 @@
           <tal:navigation_top
             replace="structure view/batchnav/@@+navigation-links-upper" />
 
-          <table class="listing" id="packages_list"
+          <table class="listing sortable" id="packages_list"
                  tal:condition="batch">
             <thead>
-              <tr class="archive_package_row">
+              <tr>
                 <th>Package</th>
                 <th>Version</th>
                 <th>Uploaded by</th>
+              </tr>
             </thead>
             <tbody>
               <tr tal:repeat="publishing batch">
@@ -147,13 +146,19 @@
                   2.0.39</td>
                 <td tal:define="spr publishing/sourcepackagerelease;
                                 signer spr/dscsigningkey/owner|nothing">
-                    <tal:has_signer condition="signer">
-                    <a tal:attributes="href spr/dscsigningkey/owner/fmt:url"
-                        tal:content="spr/dscsigningkey/owner/name"></a>
+                    <tal:has_signer
+                      condition="signer"
+                      replace="structure spr/dscsigningkey/owner/fmt:link">
                     </tal:has_signer>
                     <tal:no_signer condition="not: signer">
                     no signer
                     </tal:no_signer>
+                    <tal:date_published
+                      condition="publishing/datepublished">
+                    (<span 
+                      tal:replace="publishing/datepublished/fmt:approximatedate">
+                       2007-08-01</span>)
+                    </tal:date_published>
                 </td>
 
               </tr>
