@@ -15,10 +15,10 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.archiveuploader.tests import datadir
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
