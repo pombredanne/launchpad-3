@@ -214,7 +214,7 @@ To truncate a long string, use fmt:shorten:
     >>> test_tales('foo/fmt:shorten/8', foo='abcdefghij')
     'abcde...'
 
-To ellisize the middle of a string. use fmt:ellipsize and pass the max
+To ellipsize the middle of a string. use fmt:ellipsize and pass the max
 length.
 
     >>> print test_tales('foo/fmt:ellipsize/25',
