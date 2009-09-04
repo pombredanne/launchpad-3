@@ -2498,8 +2498,10 @@ class PersonSet:
             return person
 
         if email_address.person is None:
-            return removeSecurityProxy(
+            person = removeSecurityProxy(
                 email_address.account).createPerson(rationale)
+            person.hide_email_addresses = True
+            return person
 
         return email_address.person
 

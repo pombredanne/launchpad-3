@@ -45,7 +45,8 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
 
     def test_ensurePerson_for_existing_account(self):
         # Check if IPerson.ensurePerson can create missing Person
-        # for existing Accounts.
+        # for existing Accounts and it will have 'hide_email_addresses'
+        # set to True.
         email_address = 'sso-test@canonical.com'
         account = self.factory.makeAccount(
             'testing account', email=email_address)
@@ -53,6 +54,7 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
             email_address, 'Testing person',
             PersonCreationRationale.SOURCEPACKAGEUPLOAD)
         self.assertEquals(account.id, person.account.id)
+        self.assertTrue(person.hide_email_addresses)
 
 
 def test_suite():
