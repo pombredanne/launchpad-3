@@ -203,18 +203,13 @@
         permission="zope.Public"
         name="+index"
         template="../templates/malone-index.pt"/>
-    <browser:pages
+    <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         class="lp.bugs.browser.bug.MaloneView"
         facet="bugs"
-        permission="zope.Public">
-        <browser:page
-            name="+about"
-            template="../templates/malone-about.pt"/>
-        <browser:page
-            name="+portlet-stats"
-            template="../templates/malone-portlet-stats.pt"/>
-    </browser:pages>
+        permission="zope.Public"
+        name="+portlet-stats"
+        template="../templates/malone-portlet-stats.pt"/>
     <browser:page
         name="+filebug"
         for="lp.bugs.interfaces.malone.IMaloneApplication"
@@ -1112,12 +1107,5 @@
             module="lp.bugs.browser.bugwatch"
             classes="
                 BugWatchSetNavigation"/>
-        <browser:pages
-            for="lp.bugs.interfaces.bugwatch.IBugWatchSet"
-            permission="zope.Public">
-            <browser:page
-                name="+index"
-                template="../templates/watches-index.pt"/>
-        </browser:pages>
     </facet>
 </configure>
