@@ -214,10 +214,14 @@ IBugTracker['watches'].value_type.schema = IBugWatch
 class IBugWatchSet(Interface):
     """The set of `IBugWatch`es."""
 
+    bug = Int(title=_("Bug id"), readonly=True)
     title = Attribute('Title')
 
     def __getitem__(key):
         """Get a BugWatch"""
+
+    def __iter__():
+        """Iterate through BugWatches for a given bug."""
 
     def get(id):
         """Get an IBugWatch by its ID.
