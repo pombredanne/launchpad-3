@@ -16,7 +16,7 @@ summary and description:
     Mozilla Firefox Web Browser is .....
     Source package
     iceweasel 1.0 (source) in ubuntu warty
-    Published as
+    Published versions
     mozilla-firefox 0.9 in hppa (Release)
     mozilla-firefox 0.9 in i386 (Release)
     mozilla-firefox 1.0 in i386 (Release)
@@ -52,6 +52,6 @@ no link to any source package:
     Ubuntu 5.04 mozilla-firefox
     No summary available for mozilla-firefox in ubuntu hoary.
     No description available for mozilla-firefox in ubuntu hoary.
-    Published as
+    Published versions
     Not published at present.
 
