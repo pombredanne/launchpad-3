@@ -1324,4 +1324,4 @@ class BugTargetOnBugsVHostBreadcrumb(Breadcrumb):
 
     @property
     def text(self):
-        return 'Bugs on %s' % self.context.name
+        return 'Bugs in %s' % self.context.name
