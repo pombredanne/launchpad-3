@@ -416,7 +416,7 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.archive.IArchive"
-        factory="lp.soyuz.browser.archive.ArchiveBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
 
     <!-- ArchiveSet -->
@@ -522,7 +522,7 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.builder.IBuilder"
-        factory="lp.soyuz.browser.builder.BuilderBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

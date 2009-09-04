@@ -11,7 +11,6 @@ __all__ = [
     'ProductAddViewBase',
     'ProductAdminView',
     'ProductBrandingView',
-    'ProductBreadcrumb',
     'ProductBugsMenu',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
@@ -243,13 +242,6 @@ class ProductLicenseMixin:
                 "Launchpad is free to use for software under approved "
                 "licenses. The Launchpad team will be in contact with "
                 "you soon."))
-
-
-class ProductBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IProduct`."""
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
