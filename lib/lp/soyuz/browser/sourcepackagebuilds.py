@@ -29,7 +29,8 @@ class SourcePackageBuildsView(BuildRecordsView):
     def default_build_state(self):
         """Default build state for sourcepackage builds.
 
-        This overrides the default that is set on BuildRecordsView."""
+        This overrides the default that is set on BuildRecordsView.
+        """
         # None maps to "all states". The reason we display all states on
         # this page is because it's unlikely that there will be so
         # many builds that the listing will be overwhelming.
