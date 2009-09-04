@@ -301,7 +301,19 @@ Launchpad administrators will see the expiration information.
     Commercial subscription expires ...
 
 
-= Aliases =
+Focus of development
+--------------------
+
+The project page shows the series that is the focus of development.
+
+    >>> anon_browser.open('http://launchpad.dev/firefox')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'development-focus'))
+    Mozilla Firefox trunk series  is the current focus of development
+
+
+Aliases
+-------
 
 When a project has one or more aliases, they're shown on the project's home
 page.
