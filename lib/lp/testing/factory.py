@@ -60,7 +60,7 @@ from canonical.launchpad.interfaces.hwdb import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.translations.interfaces.translationgroup import (
@@ -1785,7 +1785,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return MergeDirective2(
             'revid', 'sha', 0, 0, target_branch_url,
             source_branch=source_branch_url, base_revision_id='base-revid',
-            patch='booga')
+            patch='')
 
     def makeMergeDirectiveEmail(self, body='Hi!\n', signing_context=None):
         """Create an email with a merge directive attached.

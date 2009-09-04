@@ -12,10 +12,13 @@ __all__ = ['JobRunner']
 
 import sys
 
+from zope.component import getUtility
+
 from canonical.config import config
 from lazr.delegates import delegates
 import transaction
 
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
 from canonical.launchpad.webapp import errorlog
@@ -147,3 +150,24 @@ class JobRunner(object):
                 job.notifyOops(oops)
                 if self.logger is not None:
                     self.logger.info('Job resulted in OOPS: %s' % oops.id)
+
+
+class JobCronScript(LaunchpadCronScript):
+    """Base class for scripts that run jobs."""
+
+    def __init__(self):
+        dbuser = getattr(config, self.config_name).dbuser
+        super(JobCronScript, self).__init__(self.config_name, dbuser)
+
+    def main(self):
+        errorlog.globalErrorUtility.configure(self.config_name)
+        runner = JobRunner.fromReady(getUtility(self.source_interface))
+        cleanups = self.setUp()
+        try:
+            runner.runAll()
+        finally:
+            for cleanup in reversed(cleanups):
+                cleanup()
+        self.logger.info(
+            'Ran %d %s jobs.',
+            len(runner.completed_jobs), self.source_interface.__name__)

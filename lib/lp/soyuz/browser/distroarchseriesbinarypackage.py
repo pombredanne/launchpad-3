@@ -13,6 +13,7 @@ from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
     IDistroArchSeriesBinaryPackage)
 from canonical.launchpad.webapp import ApplicationMenu, GetitemNavigation
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.lazr.utils import smartquote
 
 
 class DistroArchSeriesBinaryPackageBreadcrumb(Breadcrumb):
@@ -41,3 +42,6 @@ class DistroArchSeriesBinaryPackageView:
         self.context = context
         self.request = request
 
+    @property
+    def page_title(self):
+        return smartquote(self.context.title)
