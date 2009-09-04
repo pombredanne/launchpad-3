@@ -722,7 +722,27 @@ class QuestionRejectView(LaunchpadFormView):
         LaunchpadFormView.initialize(self)
 
 
-class QuestionWorkflowView(LaunchpadFormView):
+class LinkFAQMixin:
+    """Mixin that contains common functionality for views linking a FAQ."""
+
+    @cachedproperty
+    def faq_target(self):
+        """Return the `IFAQTarget` that should be use for this question."""
+        return IFAQTarget(self.context)
+
+    @property
+    def default_message(self):
+        """The default link message to use."""
+        return '%s suggests this article as an answer to your question:' % (
+            self.user.displayname)
+
+
+    def getFAQMessageReference(self, faq):
+        """Return the reference for the FAQ to use in the linking message."""
+        return smartquote('FAQ #%s: "%s".' % (faq.id, faq.title))
+
+
+class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     """View managing the question workflow action, i.e. action changing
     its status.
     """
@@ -1059,32 +1079,13 @@ class SearchAllQuestionsView(SearchQuestionsView):
                 self.request.response.redirect(canonical_url(question))
 
 
-class LinkFAQMixin:
-    """Mixin that contains common functionality for views linking a FAQ."""
-
-    @cachedproperty
-    def faq_target(self):
-        """Return the `IFAQTarget` that should be use for this question."""
-        return IFAQTarget(self.context)
-
-    @property
-    def default_message(self):
-        """The default link message to use."""
-        return '%s suggests this article as an answer to your question:' % (
-            self.user.displayname)
-
-
-    def getFAQMessageReference(self, faq):
-        """Return the reference for the FAQ to use in the linking message."""
-        return smartquote('FAQ #%s: "%s".' % (faq.id, faq.title))
-
-
 class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
     """View to create a new FAQ."""
 
     schema = IFAQ
 
-    label = _('Create a new FAQ')
+    page_title = _('Create a new FAQ')
+    label = page_title
 
     @property
     def page_title(self):

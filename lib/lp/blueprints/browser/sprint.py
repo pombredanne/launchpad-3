@@ -8,7 +8,6 @@ __all__ = [
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
-    'SprintBreadcrumb',
     'SprintEditView',
     'SprintFacets',
     'SprintMeetingExportView',
@@ -68,13 +67,6 @@ class SprintFacets(StandardLaunchpadFacets):
 class SprintNavigation(Navigation):
 
     usedfor = ISprint
-
-
-class SprintBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `ISprint`."""
-    @property
-    def text(self):
-        return self.context.title
 
 
 class SprintOverviewMenu(ApplicationMenu):
