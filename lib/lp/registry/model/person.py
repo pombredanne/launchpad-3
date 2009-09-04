@@ -2489,13 +2489,19 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        person = self.getByEmail(email)
-        if person:
+        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+
+        if email_address is None:
+            person, unused_email = self.createPersonAndEmail(
+                email, rationale, comment=comment, displayname=displayname,
+                registrant=registrant)
             return person
-        person, dummy = self.createPersonAndEmail(
-            email, rationale, comment=comment, displayname=displayname,
-            registrant=registrant)
-        return person
+
+        if email_address.person is None:
+            return removeSecurityProxy(
+                email_address.account).createPerson(rationale)
+
+        return email_address.person
 
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""

@@ -5,29 +5,26 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
+
+from zope.component import getUtility
 
 from lp.registry.model.person import PersonSet
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.registry.interfaces.person import (
+    PersonCreationRationale, IPersonSet)
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches)
 from canonical.testing import LaunchpadFunctionalLayer
 
 
-class TestPersonSetBranchCounts(TestCase):
+class TestPersonSetBranchCounts(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
+        TestCaseWithFactory.setUp(self)
         remove_all_sample_data_branches()
-        self.factory = LaunchpadObjectFactory()
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
 
     def test_no_branches(self):
         """Initially there should be no branches."""
@@ -40,6 +37,22 @@ class TestPersonSetBranchCounts(TestCase):
         self.assertEqual(5, PersonSet().getPeopleWithBranches().count())
         self.assertEqual(1, PersonSet().getPeopleWithBranches(
                 branches[0].product).count())
+
+
+class TestPersonSetEnsurePerson(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_ensurePerson_for_existing_account(self):
+        # Check if IPerson.ensurePerson can create missing Person
+        # for existing Accounts.
+        email_address = 'sso-test@canonical.com'
+        account = self.factory.makeAccount(
+            'testing account', email=email_address)
+        person = getUtility(IPersonSet).ensurePerson(
+            email_address, 'Testing person',
+            PersonCreationRationale.SOURCEPACKAGEUPLOAD)
+        self.assertEquals(account.id, person.account.id)
 
 
 def test_suite():
