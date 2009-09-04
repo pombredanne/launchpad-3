@@ -68,17 +68,17 @@
             <h2>Series information</h2>
 
             <div class="two-column-list">
-              <dl>
+              <dl id="series-project">
                 <dt>Project:</dt>
                 <dd><tal:link replace="structure context/product/fmt:link" /></dd>
               </dl>
 
-              <dl>
+              <dl id="series-name">
                 <dt>Series:</dt>
                 <dd><tal:name replace="context/name" /></dd>
               </dl>
 
-              <dl>
+              <dl id="series-drivers">
                 <dt>Project drivers:</dt>
                 <dd>
                   <tal:per_driver repeat="driver context/drivers">
@@ -88,7 +88,7 @@
                 </dd>
               </dl>
 
-              <dl>
+              <dl id="series-release-manager">
                 <dt>Release manager:</dt>
                 <dd>
                   <tal:no-driver condition="not: context/driver">None</tal:no-driver>
@@ -99,7 +99,7 @@
                  </dd>
                </dl>
 
-              <dl>
+              <dl id="series-status">
                 <dt>Status:</dt>
                 <dd>
                   <tal:status content="context/status/title" />
@@ -107,7 +107,7 @@
                 </dd>
               </dl>
 
-              <dl>
+              <dl id="series-focus">
                 <dt>Project development focus:</dt>
                 <dd>
                   is
@@ -118,7 +118,7 @@
               </dl>
             </div>
 
-            <dl style="margin-bottom: 1em;"
+            <dl id="series-releasefileglob" style="margin-bottom: 1em;"
               title="Launchpad automatically scans sites to import releases">
               <dt>Release URL pattern:</dt>
               <dd>

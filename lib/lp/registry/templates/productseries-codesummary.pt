@@ -74,8 +74,8 @@
   <p>The following branch has been registered as the mainline branch
   for this release series:</p>
 
-  <div>
-    <a class="sprite branch"
+  <div id="branch-details">
+    <a id="series-branch" class="sprite branch"
       tal:attributes="href context/branch/fmt:url"
       tal:content="context/branch/bzr_identity">Mozilla Thunderbird 0.9.1</a>
     - <a tal:replace="structure context/branch/owner/fmt:link/+ownedbranches" />
