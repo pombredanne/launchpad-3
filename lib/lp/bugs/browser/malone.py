@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'MaloneApplicationNavigation',
-    'MaloneContextMenu',
+    'MaloneRelatedPages',
     ]
 
 
@@ -16,7 +16,7 @@ from zope.security.interfaces import Unauthorized
 import canonical.launchpad.layers
 
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, Navigation, canonical_url, stepto)
+    Link, Navigation, canonical_url, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
 
@@ -67,16 +67,6 @@ class MaloneApplicationNavigation(Navigation):
         if not check_permission("launchpad.View", bug):
             raise Unauthorized("Bug %s is private" % name)
         return bug
-
-
-class MaloneContextMenu(ContextMenu):
-    # XXX mpt 2006-03-27: No longer visible on Bugs front page.
-    usedfor = IMaloneApplication
-    links = ['cvetracker']
-
-    def cvetracker(self):
-        text = 'CVE tracker'
-        return Link('cve/', text, icon='cve')
 
 
 class MaloneRelatedPages(NavigationMenu):
