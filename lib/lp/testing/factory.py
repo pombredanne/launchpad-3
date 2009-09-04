@@ -1785,7 +1785,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return MergeDirective2(
             'revid', 'sha', 0, 0, target_branch_url,
             source_branch=source_branch_url, base_revision_id='base-revid',
-            patch='booga')
+            patch='')
 
     def makeMergeDirectiveEmail(self, body='Hi!\n', signing_context=None):
         """Create an email with a merge directive attached.
