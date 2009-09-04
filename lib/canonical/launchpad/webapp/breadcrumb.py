@@ -7,6 +7,8 @@ __metaclass__ = type
 
 __all__ = [
     'Breadcrumb',
+    'DisplaynameBreadcrumb',
+    'TitleBreadcrumb',
     ]
 
 
@@ -67,3 +69,19 @@ class Breadcrumb:
 
         return "<%s url='%s' text='%s'%s>" % (
             self.__class__.__name__, self.url, self.text, icon_repr)
+
+
+class DisplaynameBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's displayname as its text."""
+
+    @property
+    def text(self):
+        return self.context.displayname
+
+
+class TitleBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's title as its text."""
+
+    @property
+    def text(self):
+        return self.context.title

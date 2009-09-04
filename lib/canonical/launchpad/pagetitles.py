@@ -204,10 +204,6 @@ bugbranch_delete = 'Delete bug branch link'
 
 bugbranch_edit = "Edit branch fix status"
 
-def bugcomment_index(context, view):
-    """Return the page title for a bug comment."""
-    return "Bug #%d - Comment #%d" % (context.bug.id, view.comment.index)
-
 buglinktarget_linkbug = 'Link to bug report'
 
 buglinktarget_unlinkbugs = 'Remove links to bug reports'
@@ -224,16 +220,6 @@ def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
     return 'Manage nomination for bug #%d in %s' % (
         context.bug.id, context.target.bugtargetdisplayname)
-
-def bugwatch_editform(context, view):
-    """Return the title for the page to edit an external bug watch."""
-    return 'Bug #%d - Edit external bug watch (%s in %s)' % (
-        context.bug.id, context.remotebug, context.bugtracker.title)
-
-def bugwatch_comments(context, view):
-    """Return the title for a page of imported comments for a bug watch."""
-    return "Bug #%d - Comments imported from bug watch %s on %s" % (
-        context.bug.id, context.remotebug, context.bugtracker.title)
 
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
@@ -815,9 +801,6 @@ person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
 person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 
-person_vouchers = ContextDisplayName(
-    'Commercial subscription vouchers for %s')
-
 pofile_filter = FilteredTranslationsTitle(
     smartquote('Translations by %(person)s in "%(title)s"'))
 
@@ -871,10 +854,6 @@ product_edit_people = "Change the roles of people"
 product_index = ContextTitle('%s in Launchpad')
 
 def product_mergeproposals(context, view):
-    """Return the view's heading."""
-    return view.heading
-
-def product_new(context, view):
     """Return the view's heading."""
     return view.heading
 
