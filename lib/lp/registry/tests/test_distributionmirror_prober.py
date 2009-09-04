@@ -23,7 +23,7 @@ from sqlobject import SQLObjectNotFound
 
 import canonical
 from canonical.config import config
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lazr.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from lp.registry.model.distributionmirror import DistributionMirror

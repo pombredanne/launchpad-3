@@ -384,7 +384,7 @@
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
-            factory="lp.bugs.browser.bugtracker.BugTrackerBreadcrumb"
+            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
         
         <!-- BugTrackerSet -->
@@ -400,6 +400,11 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
         </securedutility>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
+            factory="lp.bugs.browser.bugtracker.BugTrackerSetBreadcrumb"
+            permission="zope.Public"/>
         
         <!-- BugTrackerAlias -->
         

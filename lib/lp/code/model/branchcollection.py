@@ -8,7 +8,7 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, Desc, LeftJoin, Join, Or, Select, Union
+from storm.expr import And, Count, Desc, LeftJoin, Join, Or, Select, Union
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -71,6 +71,16 @@ class GenericBranchCollection:
     def count(self):
         """See `IBranchCollection`."""
         return self.getBranches().count()
+
+    def ownerCounts(self):
+        """See `IBranchCollection`."""
+        is_team = Person.teamowner != None
+        branch_owners = self._getBranchIdQuery()
+        branch_owners.columns = (Branch.ownerID,)
+        counts = dict(self.store.find(
+            (is_team, Count(Person.id)),
+            Person.id.is_in(branch_owners)).group_by(is_team))
+        return (counts.get(False, 0), counts.get(True, 0))
 
     @property
     def store(self):

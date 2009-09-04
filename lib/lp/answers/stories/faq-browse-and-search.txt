@@ -6,12 +6,12 @@ Miss Piggy decided to give Kubuntu a try based on the recommendations of
 Kermit. She wants to watch the wedding scene of The Muppets Take
 Manhattan but is unable to play the DVD. She goes to the Kubuntu support
 page on Launchpad to try to get some help. She clicks the
-'List all FAQs' link to obtain the list of common questions hoping to
+'All FAQs' link to obtain the list of common questions hoping to
 find her problem there (surely playing a DVD must be common thing to do
 with a computer these days).
 
     >>> browser.open('http://answers.launchpad.dev/kubuntu')
-    >>> browser.getLink('List all FAQs').click()
+    >>> browser.getLink('All FAQs').click()
 
 Unfortunately, it seems that nobody has problems or questions about
 Kubuntu:
@@ -31,7 +31,7 @@ She learns through Fozzie Bear that support for Kubuntu is really
 happening on the Ubuntu project.
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu')
-    >>> browser.getLink('List all FAQs').click()
+    >>> browser.getLink('All FAQs').click()
     >>> print browser.title
     FAQs for Ubuntu
 
@@ -152,12 +152,12 @@ Following the link will show the questions results:
 == Distribution Source Packages and FAQs ==
 
 Altough distribution source packages aren't directly associated with
-FAQs. The 'List all FAQs' link that appears in that context links to the
+FAQs. The 'All FAQs' link that appears in that context links to the
 distribution FAQs.
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/'
     ...              '+source/mozilla-firefox')
-    >>> browser.getLink('List all FAQs').click()
+    >>> browser.getLink('All FAQs').click()
     >>> print browser.title
     FAQs for Ubuntu
     >>> print browser.url
