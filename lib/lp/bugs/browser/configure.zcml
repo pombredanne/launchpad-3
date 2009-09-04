@@ -209,9 +209,6 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+about"
-            template="../templates/malone-about.pt"/>
-        <browser:page
             name="+portlet-stats"
             template="../templates/malone-portlet-stats.pt"/>
     </browser:pages>
