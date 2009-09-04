@@ -41,6 +41,9 @@ def build_mailman():
     else:
         return 0
 
+    # Clear out the cache so we can try again after building it:
+    del sys.path_importer_cache[mailman_path]
+
     # Make sure the target directories exist and have the correct
     # permissions, otherwise configure will complain.
     user, group = as_username_groupname(config.mailman.build_user_group)
