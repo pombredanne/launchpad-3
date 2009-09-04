@@ -1167,7 +1167,7 @@
             for="lp.registry.interfaces.person.ITeam"
             class="canonical.launchpad.browser.TeamMemberAddView"
             permission="launchpad.Edit"
-            template="../templates/team-addmember.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:page
             name="+editproposedmembers"
             for="lp.registry.interfaces.person.ITeam"

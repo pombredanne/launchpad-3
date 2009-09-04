@@ -7,6 +7,8 @@
 
 __metaclass__ = type
 
+
+
 __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
@@ -20,7 +22,6 @@ __all__ = [
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
-    'PersonBreadcrumb',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
@@ -660,13 +661,6 @@ class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
         return Link('+adminteammerge', text, icon='edit')
 
 
-class PersonBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IPerson`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
 class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
@@ -1189,7 +1183,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        restricted = TeamSubscriptionPolicy.RESTRICTED
+        if self.person.subscriptionpolicy == restricted:
             # This is a restricted team; users can't join.
             enabled = False
         return Link(target, text, icon='add', enabled=enabled)
@@ -1274,9 +1269,10 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
 
     def join(self):
         enabled = True
-        if userIsActiveTeamMember(self.person):
+        person = self.person
+        if userIsActiveTeamMember(person):
             enabled = False
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             # This is a restricted team; users can't join.
             enabled = False
         target = '+join'
@@ -2301,6 +2297,11 @@ class PersonVouchersView(LaunchpadFormView):
 
     custom_widget('voucher', LaunchpadDropdownWidget)
 
+    @property
+    def page_title(self):
+        return ('Commercial subscription vouchers for %s'
+                % self.context.displayname)
+
     def setUpFields(self):
         """Set up the fields for this view."""
 
@@ -3123,11 +3124,11 @@ class TeamIndexView(PersonIndexView):
         link so that the invitation can be accepted.
         """
         try:
-          return (self.context.super_teams.count() > 0
-                  or (self.context.open_membership_invitations
-                      and check_permission('launchpad.Edit', self.context)))
+            return (self.context.super_teams.count() > 0
+                    or (self.context.open_membership_invitations
+                        and check_permission('launchpad.Edit', self.context)))
         except AttributeError, e:
-          raise AssertionError(e)
+            raise AssertionError(e)
 
     @property
     def visibility(self):
@@ -3254,15 +3255,25 @@ class PersonEditWikiNamesView(LaunchpadView):
                 return
 
 
-class PersonEditIRCNicknamesView(LaunchpadView):
+class PersonEditIRCNicknamesView(LaunchpadFormView):
 
-    def initialize(self):
+    schema = Interface
+
+    @property
+    def page_title(self):
+        return smartquote("%s's IRC nicknames" % self.context.displayname)
+
+    label = page_title
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
         """Process the IRC nicknames form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
-            return
-
+        # XXX: EdwinGrubbs 2009-09-01 bug=422784
+        # This view should use schema and form validation.
         form = self.request.form
         for ircnick in self.context.ircnicknames:
             # XXX: GuilhermeSalgado 2005-08-25:
@@ -3276,7 +3287,7 @@ class PersonEditIRCNicknamesView(LaunchpadView):
                 nick = form.get('nick_%d' % ircnick.id)
                 network = form.get('network_%d' % ircnick.id)
                 if not (nick and network):
-                    self.error_message = structured(
+                    self.request.response.addErrorNotification(
                         "Neither Nickname nor Network can be empty.")
                     return
                 ircnick.nickname = nick
@@ -3290,20 +3301,28 @@ class PersonEditIRCNicknamesView(LaunchpadView):
             else:
                 self.newnick = nick
                 self.newnetwork = network
-                self.error_message = structured(
+                self.request.response.addErrorNotification(
                     "Neither Nickname nor Network can be empty.")
-                return
 
 
-class PersonEditJabberIDsView(LaunchpadView):
+class PersonEditJabberIDsView(LaunchpadFormView):
+    schema = Interface
 
-    def initialize(self):
+    @property
+    def page_title(self):
+        return smartquote("%s's Jabber IDs" % self.context.displayname)
+
+    label = page_title
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
         """Process the Jabber ID form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
-            return
-
+        # XXX: EdwinGrubbs 2009-09-01 bug=422784
+        # This view should use schema and form validation.
         form = self.request.form
         for jabber in self.context.jabberids:
             if form.get('remove_%s' % jabber.jabberid):
@@ -3311,7 +3330,7 @@ class PersonEditJabberIDsView(LaunchpadView):
             else:
                 jabberid = form.get('jabberid_%s' % jabber.jabberid)
                 if not jabberid:
-                    self.error_message = structured(
+                    self.request.response.addErrorNotification(
                         "You cannot save an empty Jabber ID.")
                     return
                 jabber.jabberid = jabberid
@@ -3323,16 +3342,15 @@ class PersonEditJabberIDsView(LaunchpadView):
             if existingjabber is None:
                 jabberset.new(self.context, jabberid)
             elif existingjabber.person != self.context:
-                self.error_message = structured(
-                    'The Jabber ID %s is already registered by '
-                    '<a href="%s">%s</a>.',
-                    jabberid, canonical_url(existingjabber.person),
-                    existingjabber.person.displayname)
-                return
+                self.request.response.addErrorNotification(
+                    structured(
+                        'The Jabber ID %s is already registered by '
+                        '<a href="%s">%s</a>.',
+                        jabberid, canonical_url(existingjabber.person),
+                        existingjabber.person.displayname))
             else:
-                self.error_message = structured(
-                    'The Jabber ID %s already belongs to you.', jabberid)
-                return
+                self.request.response.addErrorNotification(
+                    'The Jabber ID %s already belongs to you.' % jabberid)
 
 
 class PersonEditSSHKeysView(LaunchpadView):
@@ -3879,6 +3897,7 @@ class TeamJoinView(PersonView):
 class TeamAddMyTeamsView(LaunchpadFormView):
     """Propose/add to this team any team that you're an administrator of."""
 
+    page_title = 'Propose/add one of your teams to another one'
     custom_widget('teams', LabeledMultiCheckBoxWidget)
 
     def initialize(self):
@@ -3926,11 +3945,10 @@ class TeamAddMyTeamsView(LaunchpadFormView):
             candidates.append(team)
         return candidates
 
-    @action(_("Cancel"), name="cancel",
-            validator=LaunchpadFormView.validate_none)
-    def cancel_action(self, action, data):
-        """Simply redirect to the team's page."""
-        pass
+    @property
+    def cancel_url(self):
+        """The return URL."""
+        return canonical_url(self.context)
 
     def validate(self, data):
         if len(data.get('teams', [])) == 0:
@@ -5088,6 +5106,13 @@ class PersonEditLocationView(LaunchpadFormView):
 
     schema = PersonLocationForm
     custom_widget('location', LocationWidget)
+
+    @property
+    def page_title(self):
+        return smartquote(
+            "%s's location and timezone" % self.context.displayname)
+
+    label = page_title
 
     @property
     def field_names(self):

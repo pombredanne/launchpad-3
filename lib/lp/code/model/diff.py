@@ -10,8 +10,10 @@ from cStringIO import StringIO
 
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.merge import Merger, Merge3Merger
+from bzrlib.patches import parse_patches
+from bzrlib.merge import Merge3Merger
 from lazr.delegates import delegates
+import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
 from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
@@ -35,7 +37,21 @@ class Diff(SQLBase):
 
     diff_lines_count = IntCol()
 
-    diffstat = StringCol()
+    _diffstat = StringCol(dbName='diffstat')
+
+    def _get_diffstat(self):
+        if self._diffstat is None:
+            return None
+        return dict((key, tuple(value))
+                    for key, value
+                    in simplejson.loads(self._diffstat).items())
+
+    def _set_diffstat(self, diffstat):
+        # diffstats should be mappings of path to line counts.
+        assert isinstance(diffstat, dict)
+        self._diffstat = simplejson.dumps(diffstat)
+
+    diffstat = property(_get_diffstat, _set_diffstat)
 
     added_lines_count = IntCol()
 
@@ -74,14 +90,21 @@ class Diff(SQLBase):
         """
         source_branch.lock_read()
         try:
-            target_branch.lock_write()
+            target_branch.lock_read()
             try:
                 merge_target = target_branch.basis_tree()
-                merger = Merger.from_revision_ids(
-                    None, merge_target, source_revision,
-                    other_branch=source_branch, tree_branch=target_branch)
-                merger.merge_type = Merge3Merger
-                transform = merger.make_merger().make_preview_transform()
+                # Can't use bzrlib.merge.Merger because it fetches.
+                graph = target_branch.repository.get_graph(
+                    source_branch.repository)
+                base_revision = graph.find_unique_lca(
+                    source_revision, merge_target.get_revision_id())
+                repo = source_branch.repository
+                merge_source, merge_base = repo.revision_trees(
+                    [source_revision, base_revision])
+                merger = Merge3Merger(
+                    merge_target, merge_target, merge_base, merge_source,
+                    do_merge=False)
+                transform = merger.make_preview_transform()
                 try:
                     to_tree = transform.get_preview_tree()
                     return Diff.fromTrees(merge_target, to_tree)
@@ -107,15 +130,18 @@ class Diff(SQLBase):
         return klass.fromFile(diff_content, size, filename)
 
     @classmethod
-    def fromFile(klass, diff_content, size, filename=None):
+    def fromFile(cls, diff_content, size, filename=None):
         """Create a Diff from a textual diff.
 
         :diff_content: The diff text
         :size: The number of bytes in the diff text.
+        :filename: The filename to store the content with.  Randomly generated
+            if not supplied.
         """
         if size == 0:
             diff_text = None
             diff_lines_count = 0
+            diff_content_bytes = ''
         else:
             if filename is None:
                 filename = generate_uuid() + '.txt'
@@ -124,7 +150,22 @@ class Diff(SQLBase):
             diff_content.seek(0)
             diff_content_bytes = diff_content.read(size)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
-        return klass(diff_text=diff_text, diff_lines_count=diff_lines_count)
+        diffstat = cls.generateDiffstat(diff_content_bytes)
+        return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
+                   diffstat=diffstat)
+
+    @staticmethod
+    def generateDiffstat(diff_bytes):
+        """Generate statistics about the provided diff.
+
+        :param diff_bytes: A unified diff, as bytes.
+        :return: A map of {filename: (added_line_count, removed_line_count)}
+        """
+        file_stats = {}
+        for patch in parse_patches(diff_bytes.splitlines(True)):
+            path = patch.newname.split('\t')[0]
+            file_stats[path] = tuple(patch.stats_values()[:2])
+        return file_stats
 
 
 class StaticDiff(SQLBase):
@@ -218,13 +259,11 @@ class PreviewDiff(Storm):
         return preview
 
     @classmethod
-    def create(cls, diff_content, diffstat,
-               source_revision_id, target_revision_id,
+    def create(cls, diff_content, source_revision_id, target_revision_id,
                dependent_revision_id, conflicts):
         """Create a PreviewDiff with specified values.
 
         :param diff_content: The text of the dift, as bytes.
-        :param diffstat: The diffstat associated with the diff, as bytes.
         :param source_revision_id: The revision_id of the source branch.
         :param target_revision_id: The revision_id of the target branch.
         :param dependent_revision_id: The revision_id of the dependent branch.
@@ -240,7 +279,6 @@ class PreviewDiff(Storm):
         filename = generate_uuid() + '.txt'
         size = len(diff_content)
         preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
-        preview.diffstat = diffstat
         return preview
 
     @property

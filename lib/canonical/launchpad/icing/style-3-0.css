@@ -238,6 +238,9 @@ span.nolink {
     margin: 0 0 1em;
     }
 
+.warning.message {
+    margin-top: 17px;
+    }
 /*
 
 Use percentages when setting font-size.
@@ -566,7 +569,7 @@ div.watermark-apps-portlet h1 {
     padding: 6%;
     padding-right: 40px;
     color: #fff;
-    font-size: 97%;
+    font-size: 93%;
     }
 .downloads .version {
     -moz-border-radius: 5px 5px 0 0;
@@ -698,6 +701,7 @@ form.translations div.fields {
 form.translations div.actions {
   padding: 1em;
   text-align: right;
+  clear:both;
 }
 
 form.translations input {
@@ -721,26 +725,27 @@ form.translations .listbox label {
 
 /* Provide top-alignment for radio boxes and longer explanations
  * without using tables.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+ *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
  */
-form.translations div.fields div.alignment {
-  position: relative;
-}
-form.translations div.alignment div.top-alignment {
-  position: absolute;
-  top: 0px;
-}
-form.translations div.alignment .spacer {
-  visibility: hidden;
-}
 form.translations div.alignment .content {
-  display: inline-block;
-  margin-left: 0px;
+  float:left;
 }
-
+form.translations div.alignment .selector {
+  margin-right: 0.5em;
+  float: left;
+  clear: both;
+}
 form.translations div.alignment .content label {
   padding: 0px;
   margin: 0px;
   font-weight: bold;
+}
+form.translations div.alignment .secondary label {
+  font-weight: normal;
+  padding: 2px 1em 2px 2px;
 }
 
 table.narrow-listing {

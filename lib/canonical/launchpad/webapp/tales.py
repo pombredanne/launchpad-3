@@ -2836,7 +2836,7 @@ class FormattersAPI:
         if len(self._stringtoformat) > maxlength:
             length = (maxlength - 3) / 2
             return (
-                self._stringtoformat[:length] + '...' +
+                self._stringtoformat[:maxlength - length - 3] + '...' +
                 self._stringtoformat[-length:])
         else:
             return self._stringtoformat
