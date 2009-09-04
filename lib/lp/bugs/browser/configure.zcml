@@ -212,6 +212,9 @@
             name="+portlet-stats"
             template="../templates/malone-portlet-stats.pt"/>
     </browser:pages>
+    <browser:menus
+        classes="MaloneRelatedPages"
+        module="lp.bugs.browser.malone"/>
     <browser:page
         name="+filebug"
         for="lp.bugs.interfaces.malone.IMaloneApplication"

@@ -91,9 +91,11 @@
     </div>
 
     <div class="yui-g">
-      <div class="portlet">
-        <div id="application-footer"
-             tal:content="structure context/@@+portlet-stats" />
+      <div class="first yui-u">
+        <div tal:replace="structure context/@@+portlet-stats" />
+      </div>
+      <div class="yui-u">
+        <tal:menu replace="structure view/@@+related-pages" />
       </div>
     </div>
 

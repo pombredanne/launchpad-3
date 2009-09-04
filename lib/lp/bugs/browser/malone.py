@@ -18,7 +18,9 @@ import canonical.launchpad.layers
 from canonical.launchpad.webapp import (
     ContextMenu, Link, Navigation, canonical_url, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import NavigationMenu
 
+from lp.bugs.browser.bug import MaloneView
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.cve import ICveSet
@@ -71,6 +73,23 @@ class MaloneContextMenu(ContextMenu):
     # XXX mpt 2006-03-27: No longer visible on Bugs front page.
     usedfor = IMaloneApplication
     links = ['cvetracker']
+
+    def cvetracker(self):
+        text = 'CVE tracker'
+        return Link('cve/', text, icon='cve')
+
+
+class MaloneRelatedPages(NavigationMenu):
+
+    facet = 'bugs'
+    title = 'Related pages'
+    usedfor = MaloneView
+    links = ['bugtrackers', 'cvetracker']
+
+    def bugtrackers(self):
+        url = canonical_url(getUtility(IBugTrackerSet))
+        text = "Bug trackers"
+        return Link(url, text, icon='bug')
 
     def cvetracker(self):
         text = 'CVE tracker'
