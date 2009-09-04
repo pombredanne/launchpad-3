@@ -191,6 +191,11 @@ answer contacts and the project's owner).
 Since No Privileges Person isn't an answer contact for the project nor
 the project owner, he doesn't have the possibility to create a new FAQ.
 
+    >>> user_browser.getLink('Create a FAQ')
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError
+
     >>> user_browser.getLink('Link to a FAQ').click()
     >>> user_browser.getLink('create a new FAQ')
     Traceback (most recent call last):
@@ -208,6 +213,8 @@ Sample Person who is the project owner does have that ability.
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> owner_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
+    >>> owner_browser.getLink('Create a new FAQ')
+    <Link text='Create a new FAQ' url='http://.../firefox/+question/2/+createfaq'>
     >>> owner_browser.getLink('Link to a FAQ').click()
     >>> owner_browser.getLink('create a new FAQ').click()
     >>> print owner_browser.url
