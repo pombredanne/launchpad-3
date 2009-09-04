@@ -425,7 +425,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 
     The new project will automatically be a part of the project group.
     """
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     @cachedproperty
     def label(self):
@@ -442,7 +442,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 class ProjectGroupAddStepTwo(ProjectAddStepTwo):
     """Step 2 (of 2) in the +newproduct project add wizard."""
 
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     def create_product(self, data):
         """Create the product from the user data."""
