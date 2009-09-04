@@ -11,7 +11,6 @@ __all__ = [
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
-    'DistributionBreadcrumb',
     'DistributionChangeMembersView',
     'DistributionChangeMirrorAdminView',
     'DistributionCountryArchiveMirrorsView',
@@ -170,13 +169,6 @@ class DistributionSetNavigation(Navigation):
         if distribution is None:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(distribution))
-
-
-class DistributionBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IDistribution`."""
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -449,7 +441,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
-        return Link('+subscribe', text)
+        return Link('+subscribe', text, icon='edit')
 
 
 class DistributionSpecificationsMenu(ApplicationMenu):
@@ -653,12 +645,17 @@ class DistributionArchivesView(LaunchpadView):
             self.context, purposes=[ArchivePurpose.COPY], user=self.user)
         return results.order_by('date_created DESC')
 
+
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
 
     def initialize(self):
         self.name_filter = self.request.get('name_filter')
         self.show_inactive = self.request.get('show_inactive')
+
+    @property
+    def page_title(self):
+        return '%s Personal Package Archives' % self.context.title
 
     @property
     def search_results(self):

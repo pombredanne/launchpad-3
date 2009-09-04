@@ -270,11 +270,13 @@
             factory="lp.bugs.browser.bugtask.assignee_renderer"
             name="assignee"/>
         <adapter
+            factory="lp.bugs.browser.bugtask.bugtarget_renderer"
+            name="target"/>
+        <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskBreadcrumb"
             permission="zope.Public"/>
-
         
         <!-- NullBugTask -->
         
@@ -382,7 +384,7 @@
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
-            factory="lp.bugs.browser.bugtracker.BugTrackerBreadcrumb"
+            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
         
         <!-- BugTrackerSet -->

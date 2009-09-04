@@ -17,7 +17,7 @@ send notifications to that team.  The possible contact methods are:
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink(url='+contactaddress').click()
     >>> browser.title
     'Landscape Developers contact address'
 
@@ -73,7 +73,7 @@ Follow the token link, to confirm the new email address.
     ...     print msg
     Email address successfully confirmed.
 
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink(url='+contactaddress').click()
     >>> browser.title
     'Landscape Developers contact address'
     >>> control = browser.getControl(name='field.contact_method')

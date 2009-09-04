@@ -1268,8 +1268,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Make sure it failed.
         self.assertEqual(
             uploadprocessor.last_processed_upload.rejection_message,
-            u"Signer is not permitted to upload to the component 'universe'"
-                " of file 'bar_1.0-2.dsc'.")
+            u"Signer is not permitted to upload to the component 'universe'.")
 
         # Now add permission to upload "bar" for name16.
         bar_package = getUtility(ISourcePackageNameSet).queryByName("bar")
@@ -1322,8 +1321,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Make sure it failed.
         self.assertEqual(
             uploadprocessor.last_processed_upload.rejection_message,
-            u"Signer is not permitted to upload to the component 'universe'"
-                " of file 'bar_1.0-2.dsc'.")
+            "Signer is not permitted to upload to the component 'universe'.")
 
         # Now put in place a package set, add 'bar' to it and define a
         # permission for the former.
