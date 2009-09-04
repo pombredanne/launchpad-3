@@ -123,7 +123,7 @@
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
             <div tal:condition="view/macro:pagehas/applicationtabs">
-            <h1 tal:condition="view/label"
+            <h1 tal:condition="view/label|nothing"
                 tal:content="view/label"
                 metal:define-slot="heading"
                 >Page Label</h1>
