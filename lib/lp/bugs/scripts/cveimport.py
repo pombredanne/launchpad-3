@@ -11,7 +11,7 @@ import cElementTree
 import urllib2
 import gzip
 import StringIO
-import timing
+import time
 
 from zope.component import getUtility
 from zope.event import notify
@@ -218,11 +218,11 @@ class CVEUpdater(LaunchpadCronScript):
             raise LaunchpadScriptFailure('No CVE database file or URL given.')
 
         # start analysing the data
-        timing.start()
+        startts = time.time()
         self.logger.info("Processing CVE XML...")
         self.processCVEXML(cve_db)
-        timing.finish()
-        self.logger.info('%d seconds to update database.' % timing.seconds())
+        finishts = time.time()
+        self.logger.info('%d seconds to update database.' % (finishts - startts))
 
     def processCVEXML(self, cve_xml):
         """Process the CVE XML file.
