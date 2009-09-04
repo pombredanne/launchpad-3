@@ -180,6 +180,110 @@ appropriate:
     iceweasel
     pmount
 
+The context archive dependencies access is also encapsulated in
+`ArchiveView` with the following aspects:
+
+ * 'dependencies': cached `list` of `self.context.dependencies`.
+
+ * 'show_dependencies': whether or not the dependencies section in the
+   UI should be presented.
+
+ * 'has_disabled_dependencies': whether or not the context archive
+   uses disabled archives as dependencies.
+
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> print view.dependencies
+    []
+
+    >>> print view.show_dependencies
+    False
+
+    >>> print view.has_disabled_dependencies
+    False
+
+'show_dependencies' is True for the PPA users, since the link for
+adding new dependencies is part of the section controlled by this
+flag.
+
+    >>> login('celso.providelo@canonical.com')
+
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> print view.dependencies
+    []
+
+    >>> print view.show_dependencies
+    True
+
+    >>> print view.has_disabled_dependencies
+    False
+
+When there are any dependencies, 'show_dependencies' becomes True also
+for anonymous requests, since the dependencies are relevant to any
+user.
+
+    # Create a new PPA and add it as dependency of Celso's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> testing_person = factory.makePerson(name='zoing')
+    >>> testing_ppa = factory.makeArchive(
+    ...     distribution=ubuntu, name='ppa', owner=testing_person)
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> unused = cprov.archive.addArchiveDependency(
+    ...     testing_ppa, PackagePublishingPocket.RELEASE)
+    >>> login(ANONYMOUS)
+
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> for archive_dependency in view.dependencies:
+    ...     print archive_dependency.dependency.displayname
+    PPA for Zoing
+
+    >>> print view.show_dependencies
+    True
+
+    >>> print view.has_disabled_dependencies
+    False
+
+When a dependency is disabled, the 'has_disabled_dependencies' flag
+becomes True, but only if the viewer has permission to edit the PPA.
+
+    # Disable the just created testing PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> testing_ppa.enabled = False
+    >>> login(ANONYMOUS)
+
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> for archive_dependency in view.dependencies:
+    ...     print archive_dependency.dependency.displayname
+    PPA for Zoing
+
+    >>> print view.show_dependencies
+    True
+
+    >>> print view.has_disabled_dependencies
+    False
+
+    >>> login('celso.providelo@canonical.com')
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> for archive_dependency in view.dependencies:
+    ...     print archive_dependency.dependency.displayname
+    PPA for Zoing
+
+    >>> print view.show_dependencies
+    True
+
+    >>> print view.has_disabled_dependencies
+    True
+
+Remove the testing PPA dependency to not influence subsequent tests.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.removeArchiveDependency(testing_ppa)
+    >>> login(ANONYMOUS)
+
 
 == ArchivePackageDeletionView ==
 
@@ -403,6 +507,29 @@ first listed dependency.
     setFocusByName('field.selected_dependencies');
     // -->
 
+The PPA dependency element 'title' is only linkified if the viewer can
+view the target PPA. If Mark's PPA gets disabled, Celso can't view it
+anymore, so it's not rendered as a link.
+
+    # Disable Mark's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> mark.archive.enabled = False
+    >>> login('celso.providelo@canonical.com')
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+edit-dependencies")
+
+    >>> [dependency] = view.widgets.get('selected_dependencies').vocabulary
+
+    >>> print dependency.value.displayname
+    PPA for Mark Shuttleworth
+
+    >>> print dependency.token
+    mark/ppa
+
+    >>> print dependency.title
+    PPA for Mark Shuttleworth
+
 If we remove the just-added dependency, the view gets back to its
 initial/empty state.
 
@@ -582,9 +709,8 @@ with a private PPA attached to it.
 
     >>> login('foo.bar@canonical.com')
     >>> a_team = factory.makeTeam(mark, name="pirulito-team")
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     IArchiveSet, ArchivePurpose)
-    >>> team_ppa = getUtility(IArchiveSet).new(ArchivePurpose.PPA, a_team)
+    >>> team_ppa = factory.makeArchive(
+    ...     distribution=ubuntu, name='ppa', owner=a_team)
     >>> team_ppa.buildd_secret = 'boing'
     >>> team_ppa.private = True
     >>> transaction.commit()

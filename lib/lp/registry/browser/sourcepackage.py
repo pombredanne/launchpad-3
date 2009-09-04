@@ -84,7 +84,8 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['packaging', 'edit_packaging', 'changelog', 'builds']
+    links = [
+        'packaging', 'edit_packaging', 'changelog', 'builds', 'set_upstream']
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
@@ -94,6 +95,9 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
+
+    def set_upstream(self):
+        return Link("+edit-packaging", "Set upstream link", icon="add")
 
     def builds(self):
         text = 'Show builds'

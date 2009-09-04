@@ -96,8 +96,6 @@ status is returned.
 >>> check_not_found("/+groups/foos",
 ...                 host='translations.launchpad.dev')
 
->>> check("/bounties")
->>> check("/bounties/foomatic-widgets")
 
 >>> check("/codeofconduct")
 >>> check("/codeofconduct/1.0")
@@ -146,7 +144,6 @@ status is returned.
 >>> check("/distros/+add", auth=True)
 
 >>> check("/ubuntu")
->>> check("/ubuntu/+bounties")
 >>> check("/ubuntu/+bugs")
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
@@ -158,8 +155,6 @@ status is returned.
 >>> check("/ubuntu/+settings", host='translations.launchpad.dev',
 ...       auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
->>> check("/ubuntu/+linkbounty", auth=True)
->>> check("/ubuntu/+addbounty", auth=True)
 >>> check("/ubuntu/+addspec", auth=True)
 >>> check("/ubuntu/+imports", host='translations.launchpad.dev')
 >>> check("/debian/+milestone/3.1")
@@ -379,7 +374,6 @@ This is for a team:
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check("/~name18/+bounties")
 >>> check_redirect("/~name18/+translations", status=301)
 >>> check("/~name18/+translations", host='translations.launchpad.dev')
 >>> check("/~name18/+imports", host='translations.launchpad.dev')
