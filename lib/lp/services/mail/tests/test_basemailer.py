@@ -118,7 +118,7 @@ class TestBaseMailer(TestCaseWithFactory):
         self.assertEqual(2, len(ctrl.attachments))
 
     def test_generateEmail_force_no_attachments(self):
-        # If BaseMailer.getnerateEmail is called with
+        # If BaseMailer.generateEmail is called with
         # force_no_attachments=True then attachments are not added.
         fake_to = self.factory.makePerson(email='to@example.com')
         recipients = {fake_to: FakeSubscription()}
@@ -135,7 +135,7 @@ class TestBaseMailer(TestCaseWithFactory):
         self.assertEqual('inline', attachment['Content-Disposition'])
 
     def test_sendall_single_failure_doesnt_kill_all(self):
-        # A failure to send to a particular email address doesn't stop ending
+        # A failure to send to a particular email address doesn't stop sending
         # to others.
         recipients = {
             self.factory.makePerson(name='good', email='good@example.com'):
