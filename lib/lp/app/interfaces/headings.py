@@ -29,5 +29,5 @@ class IIndexView(Interface):
 class IEditableContextTitle(Interface):
     """Interface specifying that the context has an editable title."""
 
-    title_edit_widget = Attribute(
-        'The title of the context as an editable widget.')
+    def title_edit_widget():
+        """Return the HTML of the editable title widget."""
