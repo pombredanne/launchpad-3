@@ -102,9 +102,9 @@ class JobRunner(object):
         self.logger = logger
 
     @classmethod
-    def fromReady(klass, job_class, logger=None):
+    def fromReady(cls, job_class, logger=None):
         """Return a job runner for all ready jobs of a given class."""
-        return klass(job_class.iterReady(), logger)
+        return cls(job_class.iterReady(), logger)
 
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
