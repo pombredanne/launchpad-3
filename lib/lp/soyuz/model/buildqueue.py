@@ -30,7 +30,7 @@ from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 

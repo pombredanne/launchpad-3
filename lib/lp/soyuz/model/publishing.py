@@ -37,6 +37,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
@@ -50,9 +51,8 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
     IPublishingSet, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
-    ISourcePackagePublishingHistory, PackagePublishingPocket,
-    PackagePublishingPriority, PackagePublishingStatus,
-    PoolFileOverwriteError)
+    ISourcePackagePublishingHistory, PackagePublishingPriority,
+    PackagePublishingStatus, PoolFileOverwriteError)
 from lp.soyuz.interfaces.build import BuildSetStatus, BuildStatus, IBuildSet
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.components.decoratedresultset import (

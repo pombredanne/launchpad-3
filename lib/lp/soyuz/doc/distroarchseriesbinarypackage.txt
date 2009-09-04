@@ -39,7 +39,8 @@ existing builds that are in sampledata!
   >>> binpackageformat = BinaryPackageFormat.DEB
   >>> from canonical.launchpad.interfaces import (
   ...     PackagePublishingPriority, PackagePublishingStatus,
-  ...     PackagePublishingPocket, IDistributionSet)
+  ...     IDistributionSet)
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> priority = PackagePublishingPriority.STANDARD
 
 XXX: noodles 2008-11-05 bug=294585: The dependency on a database id

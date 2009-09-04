@@ -72,6 +72,20 @@ to display.
     >>> view.is_obsolete
     True
 
+The view provides access to the latest release if it has one.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+
+    >>> print view.latest_release_with_download_files
+    None
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> #login_person(firefox.owner)
+    >>> series_with_downloads = firefox.getSeries('trunk')
+    >>> view = create_initialized_view(series_with_downloads, name='+index')
+    >>> print view.latest_release_with_download_files.version
+    0.9.2
+
 
 Edit ProductSeries
 ------------------
