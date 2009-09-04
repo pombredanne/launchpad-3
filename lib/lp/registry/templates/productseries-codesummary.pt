@@ -19,42 +19,45 @@
         <em><tal:series replace="context/title">evolution MAIN</tal:series></em>.
       </p>
 
-      <p>
-        If the code is already in a Bazaar branch registered with Launchpad
-        <a href="+linkbranch">link the branch to this series</a>.
-      </p>
+      <ul class="bulleted">
+        <li>
+          If the code is already in a Bazaar branch registered with Launchpad
+          <a tal:attributes="href context/menu:overview/link_branch/fmt:url">link
+          the branch to this series</a>.
+        </li>
 
-      <p>
-        If the code is in a Bazaar branch not yet on Launchpad
-        you can either: have the branch mirrored from a remote location by
-        <a tal:attributes="href string:/${context/product/name}/+addbranch">
-          registering a mirrored branch</a>; or push the branch
-          directly to Launchpad.
-      </p>
+        <li>
+          <p>
+            If the code is in a Bazaar branch not yet on Launchpad
+            you can either
+          </p>
 
-      <tal:no-keys condition="not:view/user/sshkeys">
-        <p id="ssh-key-directions">
-          To authenticate with the Launchpad branch upload service, you need
-          to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-          register a SSH key </a>.
-        </p>
-      </tal:no-keys>
-      <tal:user-can-push condition="view/user/sshkeys">
-        <p>
-          You can push a branch to Launchpad for this project with the name
-          <em>trunk</em> using a command line like:<br/>
-          <tt><strong>bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk</strong></tt>
-        </p>
-      </tal:user-can-push>
+          <ul class="bulleted" style="margin-bottom: 0;">
+            <li>
+              Have the branch mirrored from a remote location by
+               <a tal:attributes="href string:/${context/product/name}/+addbranch">
+              registering a mirrored branch</a>
+            </li>
+            <li id="ssh-key-directions">
+              Push the branch directly to Launchpad. eg. with <br />
+              <tt><strong>
+                bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk
+              </strong></tt>
+              <tal:no-keys condition="not:view/user/sshkeys">
+                <br/>To authenticate with the Launchpad branch upload service,
+                you need to
+                <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+                  register a SSH key</a>.
+              </tal:no-keys>
+            </li>
+          </ul>
+        </li>
 
-      <p>
-        If the code is in CVS or Subversion you can
-        <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
-      </p>
-
-      <p>
-        <a tal:replace="structure context/menu:overview/link_branch/fmt:link" />
-      </p>
+        <li>
+          If the code is in CVS or Subversion you can
+          <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
+        </li>
+      </ul>
     </tal:edit-link>
 
     <tal:user-cannot-edit condition="not: context/required:launchpad.Edit">

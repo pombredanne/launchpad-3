@@ -40,7 +40,7 @@
         </tal:cannot-edit>
         <tal:can-edit condition="context/required:launchpad.Edit">
           <a title="Set the expected date the milestone will be complete"
-            tal:attributes="href milestone_menu/edit/fmt:url">Set</a>
+            tal:attributes="href milestone_menu/edit/fmt:url">Set date</a>
           <a tal:replace="structure milestone_menu/edit/fmt:icon" />
         </tal:can-edit>
       </tal:empty-date>

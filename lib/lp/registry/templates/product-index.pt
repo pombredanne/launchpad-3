@@ -151,6 +151,12 @@
             <iframe style="width: 90%"
               metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
 
+            <p>
+              <a tal:replace="structure context/development_focus/fmt:link" />
+              is the current focus of development
+              <a tal:replace="structure overview_menu/edit/fmt:icon" />
+            </p>
+
             <ul class="horizontal"
               tal:condition="overview_menu/series_add/enabled">
               <li>
