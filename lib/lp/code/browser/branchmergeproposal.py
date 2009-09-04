@@ -1028,14 +1028,11 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
             BranchMergeProposalStatus.REJECTED,
             # BranchMergeProposalStatus.QUEUED,
             BranchMergeProposalStatus.MERGED,
-            BranchMergeProposalStatus.SUPERSEDED,
             )
         terms = []
         for status in possible_next_states:
             if not self.context.isValidTransition(status, self.user):
                 continue
-            if status == BranchMergeProposalStatus.SUPERSEDED:
-                title = 'Resubmit'
             else:
                 title = status.title
             terms.append(SimpleTerm(status, status.name, title))
@@ -1067,11 +1064,9 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         if new_status == curr_status:
             return
 
-        if new_status == BranchMergeProposalStatus.SUPERSEDED:
-            # Redirect the user to the resubmit view.
-            self.next_url = canonical_url(self.context, view_name="+resubmit")
-        else:
-            self.context.setStatus(new_status, self.user, rev_id)
+        assert new_status != BranchMergeProposalStatus.SUPERSEDED, (
+            'Superseded is done via an action, not by setting status.')
+        self.context.setStatus(new_status, self.user, rev_id)
 
 
 class IAddVote(Interface):
