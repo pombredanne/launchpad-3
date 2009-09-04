@@ -1,8 +1,8 @@
-<tal:root
+<div class="portlet"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+  <h2>Code for this series</h2>
 
 <tal:block condition="not: view/user_branch_visible">
   <div id="branch-details">
@@ -52,6 +52,9 @@
         <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
       </p>
 
+      <p>
+        <a tal:replace="structure context/menu:overview/link_branch/fmt:link" />
+      </p>
     </tal:edit-link>
 
     <tal:user-cannot-edit condition="not: context/required:launchpad.Edit">
@@ -68,8 +71,18 @@
   <p>The following branch has been registered as the mainline branch
   for this release series:</p>
 
-  <ul id="branch-details"
-      tal:content="structure context/branch/@@+product-summary-listing" />
+  <div>
+    <a class="sprite branch"
+      tal:attributes="href context/branch/fmt:url"
+      tal:content="context/branch/bzr_identity">Mozilla Thunderbird 0.9.1</a>
+    - <a tal:replace="structure context/branch/owner/fmt:link/+ownedbranches" />
+    <a
+      tal:replace="structure context/menu:overview/link_branch/fmt:icon" />
+  </div>
+  <div tal:condition="context/branch/revision_count">
+    <span tal:replace="context/branch/revision_count">35</span> revisions,
+    <span talreplace="context/branch/@@+product-summary-listing/recent_revision_count">31</span> in the past month.
+  </div>
 </tal:block>
 
-</tal:root>
+</div>
