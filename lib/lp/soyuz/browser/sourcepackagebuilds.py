@@ -21,6 +21,11 @@ class SourcePackageBuildsView(BuildRecordsView):
         return smartquote("Builds for " + self.context.title)
 
     @property
+    def search_name(self):
+        """Direct the builds-list template to omit the name search field."""
+        return False
+
+    @property
     def default_build_state(self):
         """Default build state for sourcepackage builds.
 

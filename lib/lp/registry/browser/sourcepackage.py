@@ -245,7 +245,3 @@ class SourcePackageView:
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
-
-    @property
-    def search_name(self):
-        return False
