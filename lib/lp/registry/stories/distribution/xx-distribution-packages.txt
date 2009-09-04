@@ -47,8 +47,8 @@ here first:
     >>> browser.open(
     ...     'http://localhost'
     ...     '/ubuntu/breezy-autotest/+package/mozilla-firefox')
-    >>> browser.title
-    'Binary package "mozilla-firefox" in ubuntu breezy-autotest'
+    >>> print browser.title
+    Binary package “mozilla-firefox” in ubuntu breezy-autotest
 
 Now run a search for mozilla-firefox and check that it is found:
 

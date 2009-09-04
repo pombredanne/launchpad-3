@@ -834,6 +834,15 @@
     <allow interface="lp.code.interfaces.revision.IRevisionSet" />
   </securedutility>
 
+  <securedutility
+      component="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob"
+      provides="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJobSource">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJobSource"/>
+  </securedutility>
+  <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
+    <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+  </class>
+
   <!-- Linked branches -->
   <adapter factory="lp.code.model.linkedbranch.ProductSeriesLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.ProductLinkedBranch" />

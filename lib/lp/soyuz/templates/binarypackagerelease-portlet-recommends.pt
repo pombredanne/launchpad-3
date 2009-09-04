@@ -2,17 +2,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-recommends">
+  tal:define="relationships view/recommends"
+  tal:condition="relationships/has_items"
+  class="first yui-u" id="portlet-recommends">
 
-  <h2>Recommends</h2>
-
-  <div class="portletBody portletContent"
-       id="recommends"
-       tal:define="relationships view/recommends">
-
-     <tal:block condition="relationships/has_items"
-                replace="structure relationships/@@+render-list"/>
-
-  </div>
+  <dl id="recommends">
+    <dt>Recommends:</dt>
+    <tal:block replace="structure relationships/@@+render-list"/>
+  </dl>
 
 </div>

@@ -300,20 +300,20 @@ An IBugNomination.
 An IBugTrackerSet.
 
     >>> canonical_url(getUtility(IBugTrackerSet))
-    u'http://launchpad.dev/bugs/bugtrackers'
+    u'http://bugs.launchpad.dev/bugs/bugtrackers'
 
 A remote bug tracker.
 
     >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
     >>> canonical_url(mozilla_bugtracker)
-    u'http://launchpad.dev/bugs/bugtrackers/mozilla.org'
+    u'http://bugs.launchpad.dev/bugs/bugtrackers/mozilla.org'
 
 A bug from a remote bug tracker.
 
     >>> remote_bug = RemoteBug(mozilla_bugtracker, '42',
     ...                        mozilla_bugtracker.getBugsWatching('42'))
     >>> canonical_url(remote_bug)
-    u'http://launchpad.dev/bugs/bugtrackers/mozilla.org/42'
+    u'http://bugs.launchpad.dev/bugs/bugtrackers/mozilla.org/42'
 
 
 == Branches ==
