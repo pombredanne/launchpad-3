@@ -95,7 +95,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 ok = False
         return ok
 
@@ -317,14 +317,14 @@ class TestCase(unittest.TestCase):
         if result is None:
             result = self.defaultTestResult()
         result.startTest(self)
-        testMethod = getattr(self, self.__testMethodName)
+        testMethod = getattr(self, self._testMethodName)
         try:
             try:
                 self.setUp()
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 self._runCleanups(result)
                 return
 
@@ -333,11 +333,11 @@ class TestCase(unittest.TestCase):
                 testMethod()
                 ok = True
             except self.failureException:
-                result.addFailure(self, self.__exc_info())
+                result.addFailure(self, self._exc_info())
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
 
             cleanupsOk = self._runCleanups(result)
             try:
@@ -345,7 +345,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 ok = False
             if ok and cleanupsOk:
                 result.addSuccess(self)
@@ -356,6 +356,15 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
+
+
+# Python 2.4 monkeypatch:
+if not hasattr(TestCase, '_exc_info'):
+    class UnitTest24TestMethodNameAttributeAccessMonkeypatchDescriptor:
+        def __get__(self, obj, type):
+            return obj._TestCase__testMethodName
+    TestCase._exc_info = TestCase._TestCase__exc_info
+    TestCase._testMethodName = UnitTest24TestMethodNameAttributeAccessMonkeypatchDescriptor()
 
 
 class TestCaseWithFactory(TestCase):
