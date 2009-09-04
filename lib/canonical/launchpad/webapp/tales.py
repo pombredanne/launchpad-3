@@ -14,6 +14,7 @@ import math
 import os.path
 import re
 import rfc822
+import sys
 import urllib
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
@@ -203,25 +204,36 @@ class MenuAPI:
     @property
     def navigation(self):
         """Navigation menu links list."""
-        # NavigationMenus may be associated with a content object or one of
-        # its views. The context we need is the one from the TAL expression.
-        context = self._tales_context
-        if self._selectedfacetname is not None:
-            selectedfacetname = self._selectedfacetname
-        else:
-            # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
-            # facet name from the layer implemented by the request.
-            view = get_current_view(self._request)
-            selectedfacetname = get_facet(view)
         try:
-            menu = nearest_adapter(
-                context, INavigationMenu, name=selectedfacetname)
-        except NoCanonicalUrl:
-            menu = None
-        if menu is None or menu.disabled:
-            return {}
-        else:
-            return self._getMenuLinksAndAttributes(menu)
+            # NavigationMenus may be associated with a content object or one of
+            # its views. The context we need is the one from the TAL expression.
+            context = self._tales_context
+            if self._selectedfacetname is not None:
+                selectedfacetname = self._selectedfacetname
+            else:
+                # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
+                # facet name from the layer implemented by the request.
+                view = get_current_view(self._request)
+                selectedfacetname = get_facet(view)
+            try:
+                menu = nearest_adapter(
+                    context, INavigationMenu, name=selectedfacetname)
+            except NoCanonicalUrl:
+                menu = None
+            if menu is None or menu.disabled:
+                return {}
+            else:
+                return self._getMenuLinksAndAttributes(menu)
+        except AttributeError, e:
+            # If this method gets an AttributeError, we rethrow it as a
+            # AssertionError. Otherwise, zope will hide the root cause
+            # of the error and just say that "navigation" can't be traversed.
+            new_exception = AssertionError(
+                'AttributError in MenuAPI.navigation: %s' % e)
+            # We cannot use parens around the arguments to `raise`,
+            # since that will cause it to ignore the third argument,
+            # which is the original traceback.
+            raise new_exception, None, sys.exc_info()[2]
 
 
 class CountAPI:

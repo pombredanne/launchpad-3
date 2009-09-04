@@ -6,14 +6,17 @@
 __metaclass__ = type
 
 __all__ = [
+    'ProjectChangeTranslatorsView',
     'ProjectTranslationsMenu',
     'ProjectView',
     ]
 
 from canonical.launchpad.webapp import (
-    canonical_url, enabled_with_permission, Link, LaunchpadView)
+    action, canonical_url, enabled_with_permission, Link, LaunchpadView)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.interfaces.project import IProject
+from lp.registry.browser.project import ProjectEditView
+from lp.translations.browser.translations import TranslationsMixin
 
 
 class ProjectTranslationsMenu(NavigationMenu):
@@ -39,3 +42,25 @@ class ProjectTranslationsMenu(NavigationMenu):
 
 class ProjectView(LaunchpadView):
     pass
+
+
+class ProjectChangeTranslatorsView(TranslationsMixin, ProjectEditView):
+    label = "Select a new translation group"
+    field_names = ["translationgroup", "translationpermission"]
+
+    @property
+    def page_title(self):
+        return "Set translation permissions for %s" % (
+            self.context.displayname)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    @action('Change', name='change')
+    def edit(self, action, data):
+        self.updateContextFromData(data)

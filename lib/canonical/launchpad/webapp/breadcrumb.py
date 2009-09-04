@@ -7,6 +7,8 @@ __metaclass__ = type
 
 __all__ = [
     'Breadcrumb',
+    'DisplaynameBreadcrumb',
+    'TitleBreadcrumb',
     ]
 
 
@@ -27,6 +29,7 @@ class Breadcrumb:
     implements(IBreadcrumb)
 
     text = None
+    _url = None
 
     def __init__(self, context):
         self.context = context
@@ -46,7 +49,10 @@ class Breadcrumb:
 
     @property
     def url(self):
-        return canonical_url(self.context, rootsite=self.rootsite)
+        if self._url is None:
+            return canonical_url(self.context, rootsite=self.rootsite)
+        else:
+            return self._url
 
     @property
     def icon(self):
@@ -63,3 +69,19 @@ class Breadcrumb:
 
         return "<%s url='%s' text='%s'%s>" % (
             self.__class__.__name__, self.url, self.text, icon_repr)
+
+
+class DisplaynameBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's displayname as its text."""
+
+    @property
+    def text(self):
+        return self.context.displayname
+
+
+class TitleBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's title as its text."""
+
+    @property
+    def text(self):
+        return self.context.title

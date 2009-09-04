@@ -215,7 +215,7 @@ confirmation.
       --> mailto:dark-master-o-bugs@mylittlepony.com
 
     >>> print_assigned_bugtasks(user_browser)
-    GNOME Terminal -->
+    GNOME Terminal ... -->
       auto-dark-master-o-bugs
       mailto:dark-master-o-bugs@mylittlepony.com
 
@@ -232,7 +232,7 @@ not logged in.
       --> None
 
     >>> print_assigned_bugtasks(anon_browser)
-    GNOME Terminal -->
+    GNOME Terminal ... -->
       auto-dark-master-o-bugs
 
     >>> anon_browser.contents.count(

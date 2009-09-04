@@ -169,9 +169,11 @@
 
       <div class="yui-g">
         <div class="yui-u first">
-          <div tal:content="structure context/@@+portlet-listfaqs" />
+          <div tal:content="structure context/@@+portlet-listfaqs"
+            tal:condition="context/official_answers" />
 
-          <div tal:content="structure context/@@+portlet-latestbugs" />
+          <div tal:content="structure context/@@+portlet-latestbugs"
+            tal:condition="context/official_malone" />
 
           <div tal:content="structure context/@@+portlet-top-contributors" />
 
@@ -179,9 +181,11 @@
         </div>
 
         <div class="yui-u">
-          <div tal:content="structure context/@@+portlet-latestquestions" />
+          <div tal:content="structure context/@@+portlet-latestquestions"
+            tal:condition="context/official_answers" />
 
-          <div tal:content="structure context/@@+portlet-latestspecs" />
+          <div tal:content="structure context/@@+portlet-latestspecs"
+            tal:condition="context/official_blueprints" />
 
           <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>

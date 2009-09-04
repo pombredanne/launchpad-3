@@ -58,8 +58,8 @@ The bug status is Invalid for 'linux-source-2.6.15 (Ubuntu)'--It
 cannot be edited.
 
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
-    Affects                       Status   Importance  Assigned to  Milestone
-    linux-source-2.6.15 (Ubuntu)  Invalid  Medium
+    Affects                          Status   Importance  Assigned to  Milestone
+    linux-source-2.6.15 (Ubuntu) ... Invalid  Medium
 
 Nor can the bugtask be edited if No Privileges Person accesses the
 bugtask directly.
@@ -251,7 +251,7 @@ again. The bug status is sill Invalid for Jokosher, but he can edit it.
     >>> content = find_main_content(user_browser.contents)
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
     Affects                       Status   Importance  Assigned to  Milestone
-    Jokosher                      Invalid  Critical
+    Jokosher ...                  Invalid  Critical
     Affecting: Jokosher
     Filed here by: Foo Bar...
 
@@ -259,7 +259,10 @@ He reads his comment that was appended to the bug report's messages.
 
     >>> print extract_text(
     ...     find_tags_by_class(str(content), 'boardComment')[-1])
-    #6 No Privileges Person wrote ... I misunderstood.
+    No Privileges Person
+    wrote
+    ...
+    I misunderstood.
 
 When the remove question page is visited, and there is no question,
 the form is not displayed. This can happened if the URL is hacked or

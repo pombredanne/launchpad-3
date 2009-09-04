@@ -452,7 +452,7 @@ class TestCodeHandler(TestCaseWithFactory):
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source, bmp.source_branch)
         self.assertEqual(target, bmp.target_branch)
-        self.assertEqual('booga', bmp.review_diff.diff.text)
+        self.assertEqual('', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
         # No emails are sent.
