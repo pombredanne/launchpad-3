@@ -22,7 +22,6 @@ __all__ = [
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
-    'PersonBreadcrumb',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
@@ -663,13 +662,6 @@ class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
         return Link('+adminteammerge', text, icon='edit')
 
 
-class PersonBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IPerson`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
 class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
@@ -1192,7 +1184,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        restricted = TeamSubscriptionPolicy.RESTRICTED
+        if self.person.subscriptionpolicy == restricted:
             # This is a restricted team; users can't join.
             enabled = False
         return Link(target, text, icon='add', enabled=enabled)
@@ -1277,9 +1270,10 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
 
     def join(self):
         enabled = True
-        if userIsActiveTeamMember(self.person):
+        person = self.person
+        if userIsActiveTeamMember(person):
             enabled = False
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             # This is a restricted team; users can't join.
             enabled = False
         target = '+join'
@@ -2303,6 +2297,11 @@ class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
     custom_widget('voucher', LaunchpadDropdownWidget)
+
+    @property
+    def page_title(self):
+        return ('Commercial subscription vouchers for %s'
+                % self.context.displayname)
 
     def setUpFields(self):
         """Set up the fields for this view."""

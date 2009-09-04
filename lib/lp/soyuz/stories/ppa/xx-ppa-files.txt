@@ -14,8 +14,6 @@ PPA.
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     PackagePublishingPocket)
 
 Make the PPA private.
 

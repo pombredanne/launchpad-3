@@ -348,7 +348,7 @@ Using 'distroseries' filter:
 
 Using 'pocket' filter:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> cprov_archive.getPublishedSources(
     ...     distroseries=warty,
     ...     pocket=PackagePublishingPocket.RELEASE).count()

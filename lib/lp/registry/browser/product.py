@@ -11,7 +11,6 @@ __all__ = [
     'ProductAddViewBase',
     'ProductAdminView',
     'ProductBrandingView',
-    'ProductBreadcrumb',
     'ProductBugsMenu',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
@@ -244,13 +243,6 @@ class ProductLicenseMixin:
                 "Launchpad is free to use for software under approved "
                 "licenses. The Launchpad team will be in contact with "
                 "you soon."))
-
-
-class ProductBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IProduct`."""
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -1519,7 +1511,7 @@ class ProjectAddStepOne(StepView):
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
@@ -1554,7 +1546,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     product = None
 

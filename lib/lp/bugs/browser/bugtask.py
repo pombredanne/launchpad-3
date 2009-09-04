@@ -167,7 +167,9 @@ def assignee_renderer(context, field, request):
         if context.assignee is None:
             return ''
         else:
-            return PersonFormatterAPI(context.assignee).link(None)
+            return (
+                '<span>%s</span>' %
+                PersonFormatterAPI(context.assignee).link(None))
     return render
 
 @component.adapter(IBugTask, IReference, IWebServiceClientRequest)
@@ -3127,27 +3129,6 @@ class BugTaskTableRowView(LaunchpadView):
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)
-
-    @property
-    def assignee_picker_widget(self):
-        assignee_content_id = 'assignee-content-box-%s' % self.context.id
-        null_display_value = 'Nobody'
-        if self.context.assignee is None:
-            assignee_html = null_display_value
-        else:
-            assignee_html = PersonFormatterAPI(self.context.assignee).link(
-                '+assignedbugs')
-
-        return InlineEditPickerWidget(
-            context=self.context,
-            request=self.request,
-            interface_attribute=IBugTask['assignee'],
-            default_html=assignee_html,
-            id=assignee_content_id,
-            header='Change assignee',
-            step_title='Search for people or teams',
-            remove_button_text='Remove Assignee',
-            null_display_value=null_display_value)
 
     @property
     def user_can_edit_importance(self):

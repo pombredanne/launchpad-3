@@ -238,6 +238,9 @@ span.nolink {
     margin: 0 0 1em;
     }
 
+.warning.message {
+    margin-top: 17px;
+    }
 /*
 
 Use percentages when setting font-size.

@@ -60,7 +60,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     run_with_login, TestCase, TestCaseWithFactory, time_counter)
 from lp.testing.factory import LaunchpadObjectFactory

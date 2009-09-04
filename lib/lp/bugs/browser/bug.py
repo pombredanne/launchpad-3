@@ -641,7 +641,12 @@ class BugSecrecyEditView(BugEditViewBase):
     """Page for marking a bug as a private/public."""
 
     field_names = ['private', 'security_related']
-    label = "Bug visibility and security"
+
+    @property
+    def label(self):
+        return 'Bug #%i - Set visiblity and security' % self.context.bug.id
+
+    page_title = label
 
     def setUpFields(self):
         """Make the read-only version of `private` writable."""

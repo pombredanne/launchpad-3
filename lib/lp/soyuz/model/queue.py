@@ -56,9 +56,10 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.queue import (
     PackageUploadStatus, PackageUploadCustomFormat)
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.publishing import (
-    ISourcePackagePublishingHistory, PackagePublishingPocket,
-    PackagePublishingStatus, pocketsuffix)
+    ISourcePackagePublishingHistory, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
