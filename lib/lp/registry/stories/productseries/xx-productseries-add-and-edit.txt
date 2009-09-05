@@ -106,7 +106,7 @@ should get a nice error message.
     >>> browser.open('http://launchpad.dev/firefox/+addseries')
 
     >>> browser.getControl('Name').value = 'unstable'
-    >>> browser.getControl('Summary').value = 'Another series with the same name'
+    >>> browser.getControl('Summary').value = 'The same name'
     >>> browser.getControl('Register Series').click()
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):

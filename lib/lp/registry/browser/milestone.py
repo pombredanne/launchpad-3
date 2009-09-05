@@ -27,6 +27,7 @@ from canonical.launchpad import _
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from canonical.launchpad.browser.structuralsubscription import (
@@ -228,6 +229,14 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """Total downloads of files associated with this milestone."""
         return sum(
             file.libraryfile.hits for file in self.product_release_files)
+
+    @property
+    def is_distroseries_milestone(self):
+        """Is the current milestone is a distroseries milestone?
+
+        Milestones that belong to distroseries cannot have releases.
+        """
+        return IDistroSeries.providedBy(self.context.series_target)
 
     @property
     def is_project_milestone(self):
