@@ -53,6 +53,7 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.registry.browser import MilestoneOverlayMixin
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
@@ -143,7 +144,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
     usedfor = IDistroSeries
     facet = 'overview'
     links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'add_milestone', 'admin', 'builds', 'queue',
+             'add_port', 'create_milestone', 'admin', 'builds', 'queue',
              'subscribe']
 
     @enabled_with_permission('launchpad.Admin')
@@ -163,7 +164,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def add_milestone(self):
+    def create_milestone(self):
         text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
@@ -311,7 +312,8 @@ class DistroSeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView):
+class DistroSeriesView(BuildRecordsView, QueueItemsView,
+                       MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
@@ -350,6 +352,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
 
         See `BuildRecordsView` for further details."""
         return True
+
+    milestone_can_release = False
 
 
 class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
