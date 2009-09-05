@@ -161,7 +161,7 @@ A ProductRelease can be edited using the ProductReleaseEditView.
     Edit App 0.1 release details
 
     >>> print view.page_title
-    Edit details of App 0.1 in Launchpad
+    Edit App 0.1 release details
 
     >>> print view.errors
     []
@@ -188,8 +188,7 @@ Adding a download file to a release
     Add a download file to App 0.1
 
     >>> print view.page_title
-    Add a file to App 0.1
-
+    Add a download file to App 0.1
 
 
 Deleting a product release
@@ -203,7 +202,7 @@ Deleting a product release
     Delete App 0.1
 
     >>> print view.page_title
-    Delete App 0.1 in Launchpad
+    Delete App 0.1
 
     >>> print view.errors
     []
