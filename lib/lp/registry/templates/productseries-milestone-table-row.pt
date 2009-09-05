@@ -45,7 +45,7 @@
         </tal:can-edit>
       </tal:empty-date>
     </td>
-    <td>
+    <td tal:condition="not: view/is_distroseries_milestone">
       <span
         tal:define="release milestone/product_release"
         tal:condition="release"
