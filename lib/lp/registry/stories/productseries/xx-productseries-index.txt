@@ -48,7 +48,7 @@ Any user can subscribe to bug mail via the link on the page.
 
 The series page lists the milestones and releases for the series.
 
-    >>> rows = find_tag_by_id(content, 'series_trunk').findAll('tr')
+    >>> rows = find_tag_by_id(content, 'series-trunk').findAll('tr')
     >>> for row in rows[0:2]:
     ...     print extract_text(row)
     Version "Codename"               Expected   Released     Summary
@@ -58,7 +58,7 @@ The driver can see a link to set the expected date.
 
     >>> driver_content = find_main_content(driver_browser.contents)
     >>> driver_rows = find_tag_by_id(
-    ...     driver_content, 'series_trunk').findAll('tr')
+    ...     driver_content, 'series-trunk').findAll('tr')
     >>> for row in driver_rows[0:2]:
     ...     print extract_text(row)
     Version "Codename"               Expected              Released     Summary

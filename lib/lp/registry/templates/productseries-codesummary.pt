@@ -58,6 +58,12 @@
           <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
         </li>
       </ul>
+      
+      <ul class="horizontal">
+        <li>
+          <a tal:replace="structure context/menu:overview/link_branch/fmt:link" />
+        </li>
+      </ul>
     </tal:edit-link>
 
     <tal:user-cannot-edit condition="not: context/required:launchpad.Edit">
