@@ -14,7 +14,7 @@
     <script type="text/javascript"
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/registry/milestone_table.js"></script>
-    <script id='milestone-script' type='text/javascript'
+    <script id=milestone-script' type='text/javascript'
       tal:condition="context/menu:overview/create_milestone/enabled"
       tal:content="structure string:
       YUI().use(
@@ -168,18 +168,19 @@
 
             <p id="distribution-packaging-explanation">
               <tal:distro condition="sourcepackages">
-              This series is packaged in the following distribution series:
+                This series is packaged in the following distribution series:
               </tal:distro>
               <tal:no-distro condition="not: sourcepackages">
-              This series is not packaged in any distribution series.
+                This series is not packaged in any distribution series.
               </tal:no-distro>
             </p>
 
-            <ul id="distribution-packaging" class="source package"
+            <ul id="distribution-packaging"
               tal:condition="sourcepackages">
-              <li class="packages"
+              <li
                 tal:repeat="package sourcepackages">
-                <a tal:attributes="href package/fmt:url"><tal:distro
+                <a class="sprite package-source"
+                  tal:attributes="href package/fmt:url"><tal:distro
                   tal:content="package/distroseries/distribution/displayname">
                   Ubuntu</tal:distro>
                   <tal:series tal:replace="package/distroseries/displayname">
@@ -236,9 +237,7 @@
 
     <tal:side metal:fill-slot="side"
       define="overview_menu context/menu:overview">
-      <tal:menu replace="structure view/@@+global-actions" />
-
-      <div id="xxx-hack" class="portlet">
+      <div id="global-actions" class="portlet">
         <ul>
           <li tal:condition="overview_menu/edit/enabled">
             <a tal:replace="structure overview_menu/edit/fmt:link" />
@@ -262,7 +261,7 @@
         </tal:release>
 
         <p class="alternate">
-          <a class="sprint info"
+          <a class="sprite info"
             tal:define="link context/product/menu:overview/downloads"
             tal:condition="release"
             tal:attributes="href link/fmt:url;
