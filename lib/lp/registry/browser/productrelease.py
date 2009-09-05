@@ -136,6 +136,11 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
             self.context.product.displayname)
 
     @property
+    def page_title(self):
+        return ('Publish the release of %s' %
+                cgi.escape(self.context.displayname))
+
+    @property
     def cancel_url(self):
         return canonical_url(self.context)
 
@@ -232,7 +237,13 @@ class ProductReleaseEditView(LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Edit %s release details' % self.context.title
+        return ('Edit %s release details' %
+                cgi.escape(self.context.title))
+
+    @property
+    def page_title(self):
+        return ('Edit details of %s in Launchpad' %
+                cgi.escape(self.context.title))
 
     @action('Change', name='change')
     def change_action(self, action, data):
@@ -283,6 +294,11 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     def label(self):
         """The form label."""
         return 'Add a download file to %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The view page title."""
+        return ('Add a file to %s' % cgi.escape(self.context.displayname))
 
     @action('Upload', name='add')
     def add_action(self, action, data):
@@ -354,7 +370,12 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @property
     def label(self):
         """The form label."""
-        return 'Delete %s' % self.context.title
+        return 'Delete %s' % cgi.escape(self.context.title)
+
+    @property
+    def page_title(self):
+        """The view page title."""
+        return '%s in Launchpad' % self.label
 
     @action('Delete this Release', name='delete')
     def delete_action(self, action, data):
@@ -368,4 +389,3 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
