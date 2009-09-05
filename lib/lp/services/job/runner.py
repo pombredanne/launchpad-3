@@ -83,6 +83,10 @@ class BaseRunnableJob:
             return
         ctrl.send()
 
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        return [('job_id', self.job.id)]
+
     def notifyUserError(self, e):
         """See `IRunnableJob`."""
         ctrl = self.getUserErrorMailController(e)
@@ -94,15 +98,16 @@ class BaseRunnableJob:
 class JobRunner(object):
     """Runner of Jobs."""
 
-    def __init__(self, jobs):
+    def __init__(self, jobs, logger=None):
         self.jobs = jobs
         self.completed_jobs = []
         self.incomplete_jobs = []
+        self.logger = logger
 
     @classmethod
-    def fromReady(klass, job_class):
+    def fromReady(cls, job_class, logger=None):
         """Return a job runner for all ready jobs of a given class."""
-        return klass(job_class.iterReady())
+        return cls(job_class.iterReady(), logger)
 
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
@@ -139,9 +144,12 @@ class JobRunner(object):
                 job.notifyUserError(e)
             except Exception:
                 info = sys.exc_info()
-                errorlog.globalErrorUtility.raising(info)
+                request = errorlog.ScriptRequest(job.getOopsVars())
+                errorlog.globalErrorUtility.raising(info, request)
                 oops = errorlog.globalErrorUtility.getLastOopsReport()
                 job.notifyOops(oops)
+                if self.logger is not None:
+                    self.logger.info('Job resulted in OOPS: %s' % oops.id)
 
 
 class JobCronScript(LaunchpadCronScript):
@@ -153,7 +161,8 @@ class JobCronScript(LaunchpadCronScript):
 
     def main(self):
         errorlog.globalErrorUtility.configure(self.config_name)
-        runner = JobRunner.fromReady(getUtility(self.source_interface))
+        runner = JobRunner.fromReady(
+            getUtility(self.source_interface), self.logger)
         cleanups = self.setUp()
         try:
             runner.runAll()

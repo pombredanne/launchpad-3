@@ -68,5 +68,34 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
             os.path.exists(mirrored_path))
 
 
+    def test_reclaimbranchspace_script_logs_oops(self):
+        # If the job fails, an oops is logged.
+        db_branch = self.factory.makeAnyBranch()
+        mirrored_path = self.getBranchPath(
+            db_branch, config.codehosting.mirrored_branches_root)
+        if os.path.exists(mirrored_path):
+            shutil.rmtree(mirrored_path)
+        os.makedirs(mirrored_path)
+        self.addCleanup(lambda: shutil.rmtree(mirrored_path))
+        os.chmod(mirrored_path, 0)
+        self.addCleanup(lambda: os.chmod(mirrored_path, 0777))
+        db_branch.destroySelf()
+        # Now pretend that the branch was deleted 8 days ago.
+        store = getUtility(IStoreSelector).get(
+            MAIN_STORE, DEFAULT_FLAVOR)
+        reclaim_job = store.find(
+            BranchJob,
+            BranchJob.job_type == BranchJobType.RECLAIM_BRANCH_SPACE).one()
+        reclaim_job.job.scheduled_start -= datetime.timedelta(days=8)
+        transaction.commit()
+        # The script will now remove the branch from disk.
+        retcode, stdout, stderr = run_script(
+            'cronscripts/reclaimbranchspace.py', [])
+        self.assertEqual('', stdout)
+        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn('INFO    Job resulted in OOPS:', stderr)
+        self.assertIn('INFO    Reclaimed space for 0 branches.\n', stderr)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
