@@ -50,6 +50,8 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
         email_address = 'sso-test@canonical.com'
         account = self.factory.makeAccount(
             'testing account', email=email_address)
+        self.assertIs(None, account.preferredemail.person)
+
         person = getUtility(IPersonSet).ensurePerson(
             email_address, 'Testing person',
             PersonCreationRationale.SOURCEPACKAGEUPLOAD)
