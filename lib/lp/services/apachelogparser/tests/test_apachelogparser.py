@@ -5,25 +5,21 @@ from datetime import datetime
 import gzip
 import os
 from StringIO import StringIO
-import subprocess
 import tempfile
 import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.database.librarian import ParsedApacheLog
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts.librarian_apache_log_parser import (
-    create_or_update_parsedlog_entry, DBUSER,
-    get_host_date_status_and_request, get_day, get_files_to_parse,
-    get_method_and_file_id, NotALibraryFileAliasRequest, parse_file)
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.testing import TestCase
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadZopelessLayer, ZopelessLayer)
+from canonical.testing import LaunchpadZopelessLayer, ZopelessLayer
+from canonical.launchpad.scripts.librarian_apache_log_parser import DBUSER
+from lp.services.apachelogparser.base import (
+    create_or_update_parsedlog_entry, get_day, get_files_to_parse,
+    get_host_date_status_and_request, parse_file)
+from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from lp.testing import TestCase
 
 
 here = os.path.dirname(__file__)
@@ -63,53 +59,8 @@ class TestLineParsing(TestCase):
         self.assertEqual(get_day(date), datetime(2008, 6, 13))
 
 
-class TestRequestParsing(TestCase):
-    """Test parsing the request part of an apache log line."""
-
-    def assertMethodAndFileIDAreCorrect(self, request):
-        method, file_id = get_method_and_file_id(request)
-        self.assertEqual(method, 'GET')
-        self.assertEqual(file_id, '8196569')
-
-    def test_return_value(self):
-        request = 'GET /8196569/mediumubuntulogo.png HTTP/1.1'
-        self.assertMethodAndFileIDAreCorrect(request)
-
-    def test_return_value_for_http_path(self):
-        request = ('GET http://launchpadlibrarian.net/8196569/'
-                   'mediumubuntulogo.png HTTP/1.1')
-        self.assertMethodAndFileIDAreCorrect(request)
-
-    def test_extra_slashes_are_ignored(self):
-        request = 'GET http://launchpadlibrarian.net//8196569//foo HTTP/1.1'
-        self.assertMethodAndFileIDAreCorrect(request)
-
-        request = 'GET //8196569//foo HTTP/1.1'
-        self.assertMethodAndFileIDAreCorrect(request)
-
-    def test_return_value_for_https_path(self):
-        request = ('GET https://launchpadlibrarian.net/8196569/'
-                   'mediumubuntulogo.png HTTP/1.1')
-        self.assertMethodAndFileIDAreCorrect(request)
-
-    def test_return_value_for_request_missing_http_version(self):
-        # HTTP 1.0 requests might omit the HTTP version so we must cope with
-        # them.
-        request = 'GET https://launchpadlibrarian.net/8196569/foo.png'
-        self.assertMethodAndFileIDAreCorrect(request)
-
-    def test_requests_for_paths_that_are_not_of_an_lfa_raise_error(self):
-        request = 'GET https://launchpadlibrarian.net/ HTTP/1.1'
-        self.assertRaises(
-            NotALibraryFileAliasRequest, get_method_and_file_id, request)
-
-        request = 'GET /robots.txt HTTP/1.1'
-        self.assertRaises(
-            NotALibraryFileAliasRequest, get_method_and_file_id, request)
-
-        request = 'GET /@@person HTTP/1.1'
-        self.assertRaises(
-            NotALibraryFileAliasRequest, get_method_and_file_id, request)
+def get_path_download_key(path):
+    return path
 
 
 class TestLogFileParsing(TestCase):
@@ -147,14 +98,15 @@ class TestLogFileParsing(TestCase):
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_path_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         date = datetime(2008, 6, 13)
         self.assertContentEqual(
             downloads.items(),
-            [('8196569', {date: {'AR': 1, 'JP': 1}}),
-             ('9096290', {date: {'AU': 1}}),
-             ('12060796', {date: {'AU': 1}})])
+            [('/12060796/me-tv-icon-64x64.png', {date: {'AU': 1}}),
+             ('/8196569/mediumubuntulogo.png', {date: {'AR': 1, 'JP': 1}}),
+             ('/9096290/me-tv-icon-14x14.png', {date: {'AU': 1}})])
 
         # The last line is skipped, so we'll record that the file has been
         # parsed until the beginning of the last line.
@@ -168,13 +120,15 @@ class TestLogFileParsing(TestCase):
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=self._getLastLineStart(fd), logger=self.logger)
+            fd, start_position=self._getLastLineStart(fd), logger=self.logger,
+            get_download_key=get_path_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(parsed_bytes, fd.tell())
 
         self.assertContentEqual(
             downloads.items(),
-            [('15018215', {datetime(2008, 6, 13): {'US': 1}})])
+            [('/15018215/ul_logo_64x64.png',
+              {datetime(2008, 6, 13): {'US': 1}})])
 
     def test_unexpected_error_while_parsing(self):
         # When there's an unexpected error, we log it and return as if we had
@@ -182,7 +136,8 @@ class TestLogFileParsing(TestCase):
         # Here we force an unexpected error on the first line.
         fd = StringIO('Not a log')
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_path_download_key)
         self.assertIn('Error', self.logger.buffer.getvalue())
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, 0)
@@ -192,7 +147,8 @@ class TestLogFileParsing(TestCase):
         fd = StringIO(
             self.sample_line % dict(status=status, method='GET'))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_path_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
@@ -214,7 +170,8 @@ class TestLogFileParsing(TestCase):
         fd = StringIO(
             self.sample_line % dict(status='200', method=method))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_path_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
@@ -225,16 +182,19 @@ class TestLogFileParsing(TestCase):
     def test_POST_request_is_ignored(self):
         self._assertRequestWithGivenMethodIsIgnored('POST')
 
-    def test_request_to_non_lfa_is_ignored(self):
-        # A request to a path which doesn't map to a LibraryFileAlias (e.g.
-        # '/') is ignored.
+    def test_normal_request_is_not_ignored(self):
         fd = StringIO(
-            '69.233.136.42 - - [13/Jun/2008:14:55:22 +0100] "GET / HTTP/1.1" '
-            '200 2261 "https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
+            self.sample_line % dict(status=200, method='GET'))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=0, logger=self.logger)
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_path_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
-        self.assertEqual(downloads, {})
+
+        date = datetime(2008, 6, 13)
+        self.assertEqual(downloads, 
+            {'/15018215/ul_logo_64x64.png':
+                {datetime(2008, 6, 13): {'US': 1}}})
+
         self.assertEqual(parsed_bytes, fd.tell())
 
 
@@ -354,39 +314,6 @@ class Test_create_or_update_parsedlog_entry(TestCase):
         self.assertIs(entry, entry2)
         self.assertIsNot(None, entry2)
         self.assertEqual(entry2.bytes_read, len(first_line))
-
-
-class TestScriptRunning(TestCase):
-    """Run parse-librarian-apache-access-logs.py and test its outcome."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_script_run(self):
-        # Before we run the script, the LibraryFileAliases with id 1, 2 and 3
-        # will have download counts set to 0.  After the script's run, each of
-        # them will have their download counts set to 1, matching the sample
-        # log files we use for this test:
-        # scripts/tests/apache-log-files-for-sampledata.
-        login(ANONYMOUS)
-        libraryfile_set = getUtility(ILibraryFileAliasSet)
-        self.assertEqual(libraryfile_set[1].hits, 0)
-        self.assertEqual(libraryfile_set[2].hits, 0)
-        self.assertEqual(libraryfile_set[3].hits, 0)
-
-        process = subprocess.Popen(
-            'cronscripts/parse-librarian-apache-access-logs.py', shell=True,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        (out, err) = process.communicate()
-        self.assertEqual(
-            process.returncode, 0, "stdout:%s, stderr:%s" % (out, err))
-
-        # Must commit because the changes were done in another transaction.
-        import transaction
-        transaction.commit()
-        self.assertEqual(libraryfile_set[1].hits, 1)
-        self.assertEqual(libraryfile_set[2].hits, 1)
-        self.assertEqual(libraryfile_set[3].hits, 1)
 
 
 def test_suite():

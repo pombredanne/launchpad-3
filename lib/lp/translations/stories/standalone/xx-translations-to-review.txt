@@ -1,5 +1,5 @@
-Stuff to Review
----------------
+Translations to Review
+----------------------
 
 When a translations reviewer visits their own homepage, it shows a list
 of translations that they could or should be reviewing.

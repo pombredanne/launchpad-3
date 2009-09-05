@@ -473,6 +473,13 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
             '%s/+milestone/{name}/+productseries-table-row' %
             canonical_url(self.context.product, path_only_if_possible=True))
 
+    @property
+    def latest_release_with_download_files(self):
+        for release in self.context.releases:
+            if len(list(release.files)) > 0:
+                return release
+        return None
+
 
 class ProductSeriesUbuntuPackagingView(ProductSeriesView):
     """A view to show series package in Ubuntu."""

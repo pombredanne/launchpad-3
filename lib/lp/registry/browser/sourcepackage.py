@@ -19,14 +19,13 @@ from zope.app.form.interfaces import IInputWidget
 
 from canonical.launchpad import helpers
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
@@ -84,7 +83,8 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['packaging', 'edit_packaging', 'changelog', 'builds']
+    links = [
+        'packaging', 'edit_packaging', 'changelog', 'builds', 'set_upstream']
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
@@ -94,6 +94,9 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
+
+    def set_upstream(self):
+        return Link("+edit-packaging", "Set upstream link", icon="add")
 
     def builds(self):
         text = 'Show builds'
@@ -136,7 +139,8 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class SourcePackageView(BuildRecordsView):
+class SourcePackageView:
+    """A view for (distro series) source packages."""
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -241,17 +245,3 @@ class SourcePackageView(BuildRecordsView):
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
-
-    @property
-    def search_name(self):
-        return False
-
-    @property
-    def default_build_state(self):
-        """Default build state for sourcepackage builds.
-
-        This overrides the default that is set on BuildRecordsView."""
-        # None maps to "all states". The reason we display all states on
-        # this page is because it's unlikely that there will be so
-        # many builds that the listing will be overwhelming.
-        return None

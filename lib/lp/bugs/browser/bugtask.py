@@ -10,6 +10,7 @@ __all__ = [
     'BugListingBatchNavigator',
     'BugListingPortletView',
     'BugNominationsView',
+    'bugtarget_renderer',
     'BugTargetTraversalMixin',
     'BugTargetView',
     'BugTaskContextMenu',
@@ -76,7 +77,8 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IReferenceChoice, IWebServiceClientRequest)
+    IFieldHTMLRenderer, IReference, IReferenceChoice,
+    IWebServiceClientRequest)
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -137,7 +139,8 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI, FormattersAPI
+from canonical.launchpad.webapp.tales import (
+    FormattersAPI, ObjectImageDisplayAPI, PersonFormatterAPI)
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -161,7 +164,26 @@ from lp.registry.vocabularies import MilestoneVocabulary
 def assignee_renderer(context, field, request):
     """Render a bugtask assignee as a link."""
     def render(value):
-        return PersonFormatterAPI(context.assignee).link('+assignedbugs')
+        if context.assignee is None:
+            return ''
+        else:
+            return (
+                '<span>%s</span>' %
+                PersonFormatterAPI(context.assignee).link(None))
+    return render
+
+@component.adapter(IBugTask, IReference, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def bugtarget_renderer(context, field, request):
+    """Render a bugtarget as a link."""
+    def render(value):
+        html = """<span>
+          <a href="%(href)s" class="%(class)s">%(displayname)s</a>
+        </span>""" % {
+            'href': canonical_url(context.target),
+            'class': ObjectImageDisplayAPI(context.target).sprite_css(),
+            'displayname': cgi.escape(context.bugtargetdisplayname)}
+        return html
     return render
 
 def unique_title(title):
@@ -1229,7 +1251,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                 title=self.schema['milestone'].title,
                 source=milestone_source, required=False)
         else:
-            milestone_field = copy_field(IBugTask['milestone'], readonly=False)
+            milestone_field = copy_field(
+                IBugTask['milestone'], readonly=False)
 
         self.form_fields = self.form_fields.omit('milestone')
         self.form_fields += formlib.form.Fields(milestone_field)
@@ -3108,27 +3131,6 @@ class BugTaskTableRowView(LaunchpadView):
         return canonical_url(self.context)
 
     @property
-    def assignee_picker_widget(self):
-        assignee_content_id = 'assignee-content-box-%s' % self.context.id
-        null_display_value = 'Nobody'
-        if self.context.assignee is None:
-            assignee_html = null_display_value
-        else:
-            assignee_html = PersonFormatterAPI(self.context.assignee).link(
-                '+assignedbugs')
-
-        return InlineEditPickerWidget(
-            context=self.context,
-            request=self.request,
-            interface_attribute=IBugTask['assignee'],
-            default_html=assignee_html,
-            id=assignee_content_id,
-            header='Change assignee',
-            step_title='Search for people or teams',
-            remove_button_text='Remove Assignee',
-            null_display_value=null_display_value)
-
-    @property
     def user_can_edit_importance(self):
         """Can the user edit the Importance field?
 
@@ -3151,6 +3153,7 @@ class BugTaskTableRowView(LaunchpadView):
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'target_is_product': IProduct.providedBy(self.context.target),
             'status_widget_items': self.status_widget_items,
             'status_value': self.context.status.title,
             'importance_widget_items': self.importance_widget_items,
@@ -3292,6 +3295,10 @@ class BugTaskCreateQuestionView(LaunchpadFormView):
         comment = data.get('comment', None)
         self.context.bug.convertToQuestion(self.user, comment=comment)
 
+    label = 'Convert this bug to a question'
+
+    page_title = label
+
 
 class BugTaskRemoveQuestionView(LaunchpadFormView):
     """View for creating a question from a bug."""
@@ -3348,6 +3355,13 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
                 subject=self.context.bug.followup_subject(),
                 content=comment)
 
+    @property
+    def label(self):
+        return ('Bug #%i - Convert this question back to a bug'
+                % self.context.bug.id)
+
+    page_title = label
+
 
 class BugTaskExpirableListingView(LaunchpadView):
     """View for listing Incomplete bugs that can expire."""
@@ -3379,6 +3393,10 @@ class BugTaskExpirableListingView(LaunchpadView):
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
+
+    @property
+    def page_title(self):
+        return "Bugs that can expire in %s" % self.context.title
 
 
 class BugActivityItem:
