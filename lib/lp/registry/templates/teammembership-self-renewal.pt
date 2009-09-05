@@ -32,7 +32,7 @@
 
   <p tal:condition="not: context/canBeRenewedByMember">
     This membership cannot be renewed because
-    <span tal:replace="structure view/get_reason_for_denied_renewal" />
+    <span tal:replace="structure view/reason_for_denied_renewal" />
   </p>
 
 </div>

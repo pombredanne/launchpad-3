@@ -499,18 +499,18 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
         return self, ()
 
     @property
-    def get_reason_for_denied_renewal(self):
+    def reason_for_denied_renewal(self):
         """Return text describing why the membership can't be renewed."""
         context = self.context
         ondemand = TeamMembershipRenewalPolicy.ONDEMAND
         admin = TeamMembershipStatus.ADMIN
         approved = TeamMembershipStatus.APPROVED
-        date_limit = datetime.now(pytz.UTZ) - timedelta(
+        date_limit = datetime.now(pytz.UTC) - timedelta(
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
         if context.status not in (admin, approved):
             text = "it is not active."
         elif context.team.renewal_policy != ondemand:
-            text = ('<a href="%s">%s</a> is not a team which allows its '
+            text = ('<a href="%s">%s</a> is not a team that allows its '
                     'members to renew their own memberships.'
                     % (canonical_url(context.team),
                        context.team.unique_displayname))
