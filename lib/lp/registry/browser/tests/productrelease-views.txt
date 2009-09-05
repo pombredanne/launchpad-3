@@ -181,7 +181,10 @@ Adding a download file to a release
     ...     'field.contenttype': 'CODETARBALL',
     ...     'field.actions.add': 'Upload',
     ...     }
-    >>> view = create_initialized_view(release, '+adddownloadfile', form=form)
+    >>> view = create_initialized_view(
+    ...     release, '+adddownloadfile',
+    ...     server_url='https://launchpad.dev/app/simple/0.1/+adddownloadfile',
+    ...     form=form)
     >>> print view.label
     Add a download file to App 0.1
 
