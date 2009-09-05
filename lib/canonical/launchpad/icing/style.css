@@ -1492,11 +1492,16 @@ a.info {
 .boardCommentDetails table {
   margin: -0.5em -12px;
 }
+.boardCommentDetails tr {
+    width: 100%;
+}
 .boardCommentDetails td {
+    width:98%;
     padding: 0.5em 12px;
 }
 .boardCommentDetails td.bug-comment-index {
-    border-right: 1px solid #ddd;
+    width:2%;
+    border-left: 1px solid #ddd;
 }
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardBugActivityBody {

@@ -1292,6 +1292,16 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     schema = IOfficialBugTagTargetPublic
     custom_widget('official_bug_tags', LargeBugTagsWidget)
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Manage official bug tags for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     @action('Save', name='save')
     def save_action(self, action, data):
         """Action for saving new official bug tags."""

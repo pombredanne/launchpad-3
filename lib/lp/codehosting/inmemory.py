@@ -27,7 +27,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing.factory import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.xmlrpc.codehosting import (
