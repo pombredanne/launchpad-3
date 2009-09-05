@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'TranslationGroupAddTranslatorView',
     'TranslationGroupAddView',
-    'TranslationGroupBreadcrumb',
     'TranslationGroupEditView',
     'TranslationGroupNavigation',
     'TranslationGroupReassignmentView',
@@ -46,16 +45,8 @@ class TranslationGroupSetNavigation(GetitemNavigation):
 
 class TranslationGroupSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITranslationGroupSet`."""
-
     text = u"Translation groups"
 
-
-class TranslationGroupBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `ITranslationGroup`."""
-
-    @property
-    def text(self):
-        return self.context.title
 
 class TranslationGroupView:
 

@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuilderBreadcrumb',
     'BuilderFacets',
     'BuilderOverviewMenu',
     'BuilderNavigation',
@@ -72,13 +71,6 @@ class BuilderSetBreadcrumb(Breadcrumb):
 class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
     usedfor = IBuilder
-
-
-class BuilderBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IBuilder`."""
-    @property
-    def text(self):
-        return self.context.title
 
 
 class BuilderSetFacets(StandardLaunchpadFacets):
