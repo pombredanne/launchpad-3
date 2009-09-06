@@ -1,4 +1,6 @@
-= Creating mailing lists =
+======================
+Creating mailing lists
+======================
 
 When a Launchpad user creates a mailing list for a team, and that mailing list
 is approved by a special 'mailing list expert', Mailman will eventually notice
@@ -29,7 +31,8 @@ At this point, Mailman has still not created the mailing list.
     []
 
 
-== Approved requests ==
+Approved requests
+=================
 
 In order for Mailman to create the mailing list, a Launchpad 'mailing list
 expert' must approve the application.  This cannot currently be done through
@@ -41,7 +44,8 @@ the web, so we'll go behind the scenes to do this.
     ['itest-one']
 
 
-== Declined requests ==
+Declined requests
+=================
 
 Now, No Privileges Person creates another team, and requests a mailing list
 for this new team.

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The database implementation class for CodeReviewComment."""
 
@@ -54,9 +55,7 @@ class CodeReviewComment(SQLBase):
     @property
     def message_body(self):
         """See `ICodeReviewComment'."""
-        for chunk in self.message:
-            if chunk.content:
-                return chunk.content
+        return self.message.text_contents
 
     def getAttachments(self):
         """See `ICodeReviewComment`."""

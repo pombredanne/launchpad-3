@@ -3,7 +3,7 @@
 We have one page in which a team admin can review (approve/decline/hold) all
 proposed members at once.
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+members')
     >>> browser.getLink('Approve or decline members').click()
     >>> browser.url
@@ -11,11 +11,9 @@ proposed members at once.
 
 Let's have a look at the proposed members that we have.
 
-    >>> table = find_tag_by_id(browser.contents, 'member-list')
-    >>> for tag in table.findAll('a'):
-    ...     print tag.span.renderContents()
-    Andrew Bennetts
-    Sample Person
+    >>> print extract_text(find_tag_by_id(browser.contents, 'member-list'))
+    Andrew Bennetts (Applied on ...)     Approve Decline Hold
+    Sample Person (Applied on ...)       Approve Decline Hold
 
 The team admin approves Andrew Bennetts' membership and declines Sample
 Person's. A comment is also sent to the applying users and the team admins.
@@ -38,8 +36,8 @@ Person's. A comment is also sent to the applying users and the team admins.
     ['jeff.waugh@ubuntulinux.com']
     ['limi@plone.org']
     ['limi@plone.org']
-    ['mark@hbd.com']
-    ['mark@hbd.com']
+    ['mark@example.com']
+    ['mark@example.com']
     ['test@canonical.com']
     >>> print raw_msg
     Content-Type: text/plain; charset="utf-8"
@@ -60,7 +58,8 @@ as an inactive one.
 
     # Need to do this check manually because the declined members are not
     # listed anywhere.
-    >>> from canonical.launchpad.database import Person, TeamMembershipSet
+    >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.teammembership import TeamMembershipSet
     >>> membership = TeamMembershipSet().getByPersonAndTeam(
     ...     Person.byName('name12'), Person.byName('ubuntu-team'))
     >>> membership.status.title

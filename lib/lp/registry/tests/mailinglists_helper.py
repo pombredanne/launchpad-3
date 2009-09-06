@@ -1,4 +1,5 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for testing XML-RPC services."""
 
@@ -234,9 +235,8 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
         browser.getControl(
             name='field.subscriptionpolicy').displayValue = ['Open Team']
     browser.getControl('Create').click()
-    # Apply for the team's mailing list'
-    browser.open(rooturl + '~%s' % team_name)
-    browser.getLink('Configure mailing list').click()
+    # Apply for the team's mailing list.
+    browser.open('%s~%s/+mailinglist' % (rooturl, team_name))
     browser.getControl('Apply for Mailing List').click()
 
 

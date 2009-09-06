@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeReviewComment"""
 
@@ -95,7 +96,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_createCommentFromMessage(self):
         """Creating a CodeReviewComment from a message works."""
         message = self.factory.makeMessage(owner=self.submitter)
-        comment = self.bmp.createCommentFromMessage(message, None, None)
+        comment = self.bmp.createCommentFromMessage(
+            message, None, None, original_email=None, _validate=False)
         self.assertEqual(message, comment.message)
 
     def test_createCommentFromMessageNotifies(self):
@@ -103,7 +105,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         message = self.factory.makeMessage()
         self.assertNotifies(
             NewCodeReviewCommentEvent, self.bmp.createCommentFromMessage,
-            message, None, None)
+            message, None, None, original_email=None, _validate=False)
 
 
 class TestCodeReviewCommentGetAttachments(TestCaseWithFactory):

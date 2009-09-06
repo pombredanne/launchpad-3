@@ -1,4 +1,5 @@
-# Copyright Canonical Limited 2005.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import __builtin__
 import atexit
@@ -32,16 +33,12 @@ permitted_database_imports = text_lines_to_set("""
     lp.code.feed.branch
     canonical.launchpad.interfaces.person
     canonical.launchpad.scripts.garbo
-    canonical.launchpad.scripts.librarian_apache_log_parser
     canonical.launchpad.vocabularies.dbobjects
     lp.registry.vocabularies
     canonical.librarian.client
     canonical.librarian.db
     zope.testing.doctest
     """)
-# It's not worth creating a *Set utility for ParsedApacheLog, to be used only
-# in librarian_apache_log_parser, so instead we allow that module to import
-# from launchpad.database above.
 
 
 warned_database_imports = text_lines_to_set("""
@@ -49,7 +46,7 @@ warned_database_imports = text_lines_to_set("""
     canonical.launchpad.scripts.gina.handlers
     canonical.launchpad.browser.distroseries
     canonical.launchpad.scripts.builddmaster
-    canonical.launchpad.scripts.po_import
+    lp.translations.scripts.po_import
     canonical.launchpad.systemhomes
     canonical.rosetta
     """)

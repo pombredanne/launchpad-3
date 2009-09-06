@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the help system integration."""
 
@@ -49,12 +50,12 @@ class TestHelpSystemSetup(unittest.TestCase):
     def test_blueprints_help_folder(self):
         self.assertHasHelpFolderView(
             BlueprintsLayer,
-            os.path.join(ROOT, 'lib/canonical/launchpad/help/blueprints'))
+            os.path.join(ROOT, 'lib/lp/blueprints/help'))
 
     def test_bugs_help_folder(self):
         self.assertHasHelpFolderView(
             BugsLayer,
-            os.path.join(ROOT, 'lib/canonical/launchpad/help/bugs'))
+            os.path.join(ROOT, 'lib/lp/bugs/help'))
 
     def test_code_help_folder(self):
         self.assertHasHelpFolderView(
@@ -68,7 +69,7 @@ class TestHelpSystemSetup(unittest.TestCase):
     def test_translations_help_folder(self):
         self.assertHasHelpFolderView(
             TranslationsLayer,
-            os.path.join(ROOT, 'lib/canonical/launchpad/help/translations'))
+            os.path.join(ROOT, 'lib/lp/translations/help'))
 
 
 def test_suite():

@@ -24,9 +24,9 @@ First, ensure that the archives we'll be using are private:
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.buildd_secret = 'boing'
     >>> cprov.archive.private = True
-    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
-    >>> sabdfl.archive.buildd_secret = 'boing'
-    >>> sabdfl.archive.private = True
+    >>> mark = getUtility(IPersonSet).getByName("mark")
+    >>> mark.archive.buildd_secret = 'boing'
+    >>> mark.archive.private = True
     >>> transaction.commit()
     >>> logout()
 
@@ -79,7 +79,9 @@ After adding a subscriber, the view includes a relevant notification:
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    You have subscribed Andrew Bennetts to PPA for Celso Providelo.
+    You have granted access for Andrew Bennetts to install software
+    from PPA for Celso Providelo.
+    Andrew Bennetts will be notified of the access via email.
 
 The view includes a subscribers property that returns all the current
 subscribers:
@@ -109,9 +111,9 @@ In this case the view will include validation errors:
 
 But the same person can be a subscriber of other archives:
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions",
+    ...     mark.archive, name="+subscriptions",
     ...     form={
     ...         'field.subscriber': 'spiv',
     ...         'field.description': "spiv's still my friend",
@@ -128,7 +130,7 @@ subscriber, but the date_expires must be in the future:
 
     >>> transaction.commit()
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions",
+    ...     mark.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -146,7 +148,7 @@ So we try again with an expiry date in the future:
     >>> import datetime
     >>> future_date = datetime.date.today() + datetime.timedelta(30)
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions",
+    ...     mark.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -178,7 +180,7 @@ for editing, together with Update and Cancel actions:
     >>> for action in view.actions:
     ...     print action.label
     Save
-    Cancel subscription
+    Cancel access
 
 The ArchiveSubscriptionEditView has a next_url helper property.
 
@@ -254,7 +256,7 @@ PersonArchiveSubscriptions View
 The PersonArchiveSubscriptions view displays all the archive subscriptions
 for a person.
 
-    >>> view = create_initialized_view(sabdfl, name="+archivesubscriptions")
+    >>> view = create_initialized_view(mark, name="+archivesubscriptions")
     >>> view.subscriptions_with_tokens
     []
 
@@ -326,9 +328,6 @@ redirect:
     ...     spiv_subscription, name="+index", form={'activate': '1'})
     >>> view.request.response.getStatus()
     302
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
-    You have confirmed your subscription to...
 
 Now the view can then access the token and the source list entries sub-view:
 

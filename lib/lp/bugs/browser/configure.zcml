@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -98,12 +102,6 @@
         permission="zope.Public"
         template="../templates/bugtarget-macros-search.pt"/>
     <browser:page
-        name="+linkbug"
-        for="canonical.launchpad.interfaces.IBugLinkTarget"
-        class="lp.bugs.browser.buglinktarget.BugLinkView"
-        permission="launchpad.AnyPerson"
-        template="../templates/buglinktarget-linkbug.pt"/>
-    <browser:page
         name="+unlinkbug"
         for="canonical.launchpad.interfaces.IBugLinkTarget"
         class="lp.bugs.browser.buglinktarget.BugsUnlinkView"
@@ -199,18 +197,13 @@
         permission="zope.Public"
         name="+index"
         template="../templates/malone-index.pt"/>
-    <browser:pages
+    <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         class="lp.bugs.browser.bug.MaloneView"
         facet="bugs"
-        permission="zope.Public">
-        <browser:page
-            name="+about"
-            template="../templates/malone-about.pt"/>
-        <browser:page
-            name="+portlet-stats"
-            template="../templates/malone-portlet-stats.pt"/>
-    </browser:pages>
+        permission="zope.Public"
+        name="+portlet-stats"
+        template="../templates/malone-portlet-stats.pt"/>
     <browser:page
         name="+filebug"
         for="lp.bugs.interfaces.malone.IMaloneApplication"
@@ -220,7 +213,7 @@
     <browser:page
         name="+filebug-advanced"
         for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FrontPageFileBugAdvancedView"
+        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
@@ -241,6 +234,182 @@
         class="lp.bugs.browser.bug.DeprecatedAssignedBugsView"
         attribute="redirect_to_assignedbugs"
         permission="launchpad.AnyPerson"/>
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        permission="zope.Public"
+        class="lp.registry.browser.person.PersonView"
+        name="+portlet-team-assignedbugs"
+        template="../templates/person-portlet-team-assignedbugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        name="+portlet-otherpackages"
+        permission="zope.Public"
+        class="lp.registry.browser.person.BugSubscriberPackageBugsSearchListingView"
+        template="../templates/person-portlet-otherpackages.pt"/>
+    <browser:page
+        name="+bugs"
+        for="lp.registry.interfaces.person.IPerson"
+        facet="bugs"
+        class="lp.registry.browser.person.PersonRelatedBugTaskSearchListingView"
+        permission="zope.Public"
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
+    <browser:page
+        name="+assignedbugs"
+        for="lp.registry.interfaces.person.IPerson"
+        facet="bugs"
+        class="lp.registry.browser.person.PersonAssignedBugTaskSearchListingView"
+        permission="zope.Public"
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
+    <browser:page
+        name="+commentedbugs"
+        for="lp.registry.interfaces.person.IPerson"
+        facet="bugs"
+        class="lp.registry.browser.person.PersonCommentedBugTaskSearchListingView"
+        permission="zope.Public"
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
+    <browser:page
+        name="+packagebugs-search"
+        for="lp.registry.interfaces.person.IPerson"
+        facet="bugs"
+        class="lp.registry.browser.person.BugSubscriberPackageBugsSearchListingView"
+        permission="zope.Public"
+        template="../templates/person-packagebugs-search.pt"/>
+    <browser:page
+        name="+packagebugs"
+        for="lp.registry.interfaces.person.IPerson"
+        facet="bugs"
+        class="lp.registry.browser.person.BugSubscriberPackageBugsSearchListingView"
+        permission="zope.Public"
+        template="../templates/person-packagebugs-overview.pt"/>
+    <browser:page
+        name="+reportedbugs"
+        for="lp.registry.interfaces.person.IPerson"
+        facet="bugs"
+        class="lp.registry.browser.person.PersonReportedBugTaskSearchListingView"
+        permission="zope.Public"
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
+    <browser:page
+        name="+subscribedbugs"
+        for="lp.registry.interfaces.person.IPerson"
+        facet="bugs"
+        class="lp.registry.browser.person.PersonSubscribedBugTaskSearchListingView"
+        permission="zope.Public"
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.bugs.browser.cvereport.CVEReportView"
+        permission="zope.Public"
+        name="+cve"
+        facet="bugs"
+        template="../templates/product-cvereport.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        name="+upstreamreport"
+        class="lp.bugs.browser.distribution_upstream_bug_report.DistributionUpstreamBugReport"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/distribution-upstream-bug-report.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        name="+bugs-index"
+        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/bugtarget-bugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.bugs.browser.cvereport.CVEReportView"
+        permission="zope.Public"
+        name="+cve"
+        facet="bugs"
+        template="../templates/distribution-cvereport.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.bugs.browser.cvereport.CVEReportView"
+        permission="zope.Public"
+        name="+cve"
+        facet="bugs"
+        template="../templates/distroseries-cvereport.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-seriesbugs"
+        template="../templates/bugtask-portlet-seriesbugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        name="+nominations"
+        class="lp.bugs.browser.bugtask.BugNominationsView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/series-bug-nominations.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        name="+bugs-index"
+        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/bugtarget-bugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        name="+bugs-index"
+        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/bugtarget-bugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-seriesbugs"
+        template="../templates/bugtask-portlet-seriesbugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-seriesbugs"
+        template="../templates/bugtask-portlet-seriesbugs.pt"/>
+    <browser:page
+        name="+filebug"
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson"/>
+    <browser:page
+        name="+filebug-advanced"
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+filebug"
+        class="lp.registry.browser.productseries.ProductSeriesFileBugRedirect"
+        permission="zope.Public"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+bugs-index"
+        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/bugtarget-bugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-seriesbugs"
+        template="../templates/bugtask-portlet-seriesbugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+nominations"
+        class="lp.bugs.browser.bugtask.BugNominationsView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/series-bug-nominations.pt"/>
     <facet
         facet="bugs">
         <browser:menus
@@ -344,7 +513,7 @@
         <browser:page
             name="+addcomment"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="lp.bugs.browser.bug.BugView"
+            class="lp.bugs.browser.bugmessage.BugMessageAddFormView"
             permission="launchpad.Edit"
             template="../templates/bug-comment-add.pt"/>
         <browser:page
@@ -532,8 +701,8 @@
         <browser:menus
             module="lp.bugs.browser.bugtracker"
             classes="
-                BugTrackerContextMenu
-                BugTrackerSetContextMenu"/>
+                BugTrackerSetContextMenu
+                BugTrackerNavigationMenu"/>
         <browser:navigation
             module="lp.bugs.browser.bugtracker"
             classes="
@@ -545,7 +714,8 @@
         <browser:url
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             path_expression="string:${name}"
-            parent_utility="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
+            parent_utility="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
+            rootsite="bugs"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             class="lp.bugs.browser.bugtracker.BugTrackerView"
@@ -559,6 +729,9 @@
             <browser:page
                 name="+portlet-projects"
                 template="../templates/bugtracker-portlet-projects.pt"/>
+            <browser:page
+                name="+portlet-watches"
+                template="../templates/bugtracker-portlet-watches.pt"/>
         </browser:pages>
         <browser:page
             name="+edit"
@@ -572,7 +745,8 @@
         <browser:url
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
             path_expression="string:bugtrackers"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"/>
+            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
+            rootsite="bugs"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
             class="lp.bugs.browser.bugtracker.BugTrackerSetView"
@@ -586,11 +760,12 @@
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
             class="lp.bugs.browser.bugtracker.BugTrackerAddView"
             permission="launchpad.AnyPerson"
-            template="../templates/bugtrackers-add.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:url
             for="lp.bugs.interfaces.bugtracker.IRemoteBug"
             path_expression="string:${remotebug}"
-            attribute_to_parent="bugtracker"/>
+            attribute_to_parent="bugtracker"
+            rootsite="bugs"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugtracker.IRemoteBug"
             name="+index"/>
@@ -606,7 +781,7 @@
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
-        attribute="__call__"
+        template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
     <browser:url
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
@@ -926,12 +1101,5 @@
             module="lp.bugs.browser.bugwatch"
             classes="
                 BugWatchSetNavigation"/>
-        <browser:pages
-            for="lp.bugs.interfaces.bugwatch.IBugWatchSet"
-            permission="zope.Public">
-            <browser:page
-                name="+index"
-                template="../templates/watches-index.pt"/>
-        </browser:pages>
     </facet>
 </configure>

@@ -146,7 +146,7 @@ Foo Bar, and one to Ubuntu Team:
     this question.
 
 # XXX flacoste 2006-09-19: Add checks for notification of change to
-# assignee, status whiteboard, priority. For example, if a question is
+# status whiteboard, priority. For example, if a question is
 # transferred to another QuestionTarget and priority is changed,
 # the notification does not include priority.
 
@@ -171,6 +171,30 @@ Foo Bar, and one to Ubuntu Team:
     You received this question notification because you are the assignee for
     this question.
 
+Changing the assignee will trigger a notification.
+
+    >>> login('foo.bar@canonical.com')
+    >>> unmodified_question = Snapshot(
+    ...     ubuntu_question, providing=providedBy(ubuntu_question))
+    >>> ubuntu_question.assignee = no_priv
+    >>> notify(ObjectModifiedEvent(
+    ...     ubuntu_question, unmodified_question, ['assignee']))
+    >>> notifications = sorted(pop_notifications(), key=itemgetter('To'))
+    >>> [notification['To'] for notification in notifications]
+    ['no-priv@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
+
+    >>> edit_notification = notifications[0]
+    >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print notification_body
+    Question #... Ubuntu changed:
+    http://.../ubuntu/+question/...
+    <BLANKLINE>
+        Assignee: Foo Bar => No Privileges Person
+    <BLANKLINE>
+    --...
+    You received this question notification because you are the assignee for
+    this question.
+
 If we trigger a modification event when no changes worth
 notifying about was made, no notification is sent:
 
@@ -185,7 +209,6 @@ notifying about was made, no notification is sent:
 
 After receiving that notification, Foo Bar unassigned himself:
 
-    >>> login('foo.bar@canonical.com')
     >>> ubuntu_question.assignee = None
 
 == Bug Linking and Unlinking Notifications ==

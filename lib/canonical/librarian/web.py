@@ -1,12 +1,16 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime
 import time
 
-from twisted.web import resource, static, error, util, server, proxy
+from twisted.web import resource, static, util, server, proxy
+try:
+    NoResource = resource.NoResource
+except AttributeError:
+    from twisted.web.error import NoResource
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
@@ -26,7 +30,7 @@ defaultResource = static.Data("""
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
-fourOhFour = error.NoResource('No such resource')
+fourOhFour = NoResource('No such resource')
 
 
 class NotFound(Exception):

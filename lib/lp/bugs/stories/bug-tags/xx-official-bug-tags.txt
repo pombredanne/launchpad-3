@@ -115,7 +115,7 @@ All official tags are displayed, as well as 10 unofficial tags.
 
     >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
     >>> print_tags_portlet(browser.contents)
-    Official Tags
+    Official tags
     -------------
     official-tag-01   0
     official-tag-02   0
@@ -130,7 +130,7 @@ All official tags are displayed, as well as 10 unofficial tags.
     official-tag-11   0
     official-tag-12   0
     <BLANKLINE>
-    Other Tags
+    Other tags
     ----------
     unofficial-tag-01   1
     unofficial-tag-02   1
@@ -159,7 +159,7 @@ The tags are sorted by popularity.
 
     >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
     >>> print_tags_portlet(browser.contents)
-    Official Tags
+    Official tags
     -------------
     official-tag-07   2
     official-tag-05   1
@@ -174,7 +174,7 @@ The tags are sorted by popularity.
     official-tag-11   0
     official-tag-12   0
     <BLANKLINE>
-    Other Tags
+    Other tags
     ----------
     unofficial-tag-05   2
     unofficial-tag-01   1

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for translation import queue behaviour."""
 
@@ -93,10 +94,7 @@ class InlineAddMilestoneForReleaseTest:
         self.client.asserts.assertText(
             xpath=milestone_xpath, validator=milestone_name.lower())
         self.client.asserts.assertText(
-            xpath="//table[@id='series_trunk']"
-                  "//a[@href='/bzr/+milestone/%s']"
-                  % milestone_name.lower(),
-            validator=code_name)
+            xpath=milestone_xpath, validator=code_name)
 
 
 test_inline_add_milestone_for_release = InlineAddMilestoneForReleaseTest(

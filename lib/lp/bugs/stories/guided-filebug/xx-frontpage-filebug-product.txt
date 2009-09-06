@@ -19,11 +19,9 @@ Selecting a product that doesn't use Launchpad Bugs will produce a warning.
     ...     name='field.bugtarget.product').value = 'thunderbird'
     >>> user_browser.getControl('Summary').value = 'Some harry'
     >>> user_browser.getControl('Continue').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
-    Mozilla Thunderbird does not use...
-    ...
-    You can refine and resubmit your bug report.
+    Mozilla Thunderbird (Unspecified) does not use...
 
 A link will be included to take the user back to the +filebug page:
 
@@ -70,10 +68,10 @@ also matches, but is a duplicate of bug 5 so does not appear.
     >>> from lp.bugs.tests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #5 Firefox install instructions should be complete
-    Open (0 comments) last updated 2006-07-14
+    Open (0 comments) last updated 2006-07-14...
     All ways of downloading firefox should...
     #1 Firefox does not support SVG
-    Open (1 comment) last updated 2006-05-19
+    Open (1 comment) last updated 2006-05-19...
     Firefox needs to support embedded SVG images...
 
 A user can click on any of the "Yes, this is my bug" buttons to mark the
@@ -112,7 +110,7 @@ Then it no longer appears when we try the same search as before:
 
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #1 Firefox does not support SVG
-    Open (1 comment) last updated 2006-05-19
+    Open (1 comment) last updated 2006-05-19...
     Firefox needs to support embedded SVG images...
 
 Entering a description and submitting the bug takes the user to the bug
@@ -124,46 +122,3 @@ page.
     'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
     'Bug #... in Mozilla Firefox: ...SVG causes Firefox to crash...'
-
-
-== Advanced filebug page ==
-
-From the front page filebug page it's possible to go to the advanced
-filebug page and file a bug directly.
-
-    >>> user_browser.open('http://bugs.launchpad.dev/')
-    >>> user_browser.getLink('Report a bug').click()
-    >>> user_browser.getLink('Advanced reporting options').click()
-    >>> user_browser.title
-    'Report a bug'
-
-    >>> user_browser.getControl('Project').selected = True
-    >>> user_browser.getControl(
-    ...     name='field.bugtarget.product').value = 'evolution'
-    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
-    >>> user_browser.getControl('Further information').value = 'Crash.'
-
-    >>> user_browser.getControl('Submit Bug Report').click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/evolution/+bug/...'
-    >>> user_browser.title
-    'Bug #... in Evolution: ...Evolution crashes...'
-
-Once again, trying to file a bug against a product that doesn't use 
-Launchpad Bugs results in an informational page being displayed.
-
-    >>> user_browser.open('http://bugs.launchpad.dev/')
-    >>> user_browser.getLink('Report a bug').click()
-    >>> user_browser.getLink('Advanced reporting options').click()
-    >>> user_browser.getControl('Project').selected = True
-    >>> user_browser.getControl(
-    ...     name='field.bugtarget.product').value = 'thunderbird'
-    >>> user_browser.getControl('Summary').value = 'Thunderbird crashes'
-    >>> user_browser.getControl('Further information').value = 'Crash.'
-    >>> user_browser.getControl('Submit Bug Report').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
-    ...     print extract_text(message)
-    Mozilla Thunderbird does not use...
-    ...
-    You can refine and resubmit your bug report.
-

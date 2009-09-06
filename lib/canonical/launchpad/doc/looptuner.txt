@@ -445,3 +445,18 @@ time is returned.
     >>> new_time = no_cooldown_loop._coolDown(old_time)
     >>> print new_time == old_time
     True
+
+== Abort Timeout ==
+
+LoopTuner allows a timeout to be specified. If the loop runs for longer
+than this timeout, it is aborted and a WARNING logged.
+
+    >>> body = PlannedLoop([5, 7, 8, 9, 10, 11, 9, 20, 7, 10, 10])
+    >>> loop = TestTuner(body, goal_seconds, 100, abort_time=20)
+    >>> loop.run()
+    start
+    same (0.0)
+    same (0.0)
+    WARNING:root:Task aborted after 20 seconds.
+
+

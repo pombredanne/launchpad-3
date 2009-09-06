@@ -4,7 +4,6 @@ launchpad.log
 google-stub.log
 launchpad-access.log
 pagetests-access.log
-configs/+config-overrides.zcml
 +*
 sourcecode/*
 ./botmaster
@@ -50,3 +49,4 @@ dist
 ./download-cache
 ./_pythonpath.py
 ./production-configs
+bzr.dev

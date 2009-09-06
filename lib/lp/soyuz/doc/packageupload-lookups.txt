@@ -64,7 +64,7 @@ assumptions done in the lookups.
     >>> for archive in ubuntu.all_distro_archives:
     ...     check_upload_lookups(archive)
     * Primary Archive for Ubuntu Linux
-    17 of 20 sources and 8 of 8 builds missing uploads
+    17 of 20 sources and 6 of 8 builds missing uploads
     * Partner Archive for Ubuntu Linux
     0 of 1 sources and 1 of 1 builds missing uploads
     * Ubuntu DEBUG archive
@@ -134,3 +134,20 @@ The `Build` 'package_upload' and 'upload_changesfile'
 
     >>> print build_changesfile.filename
     testing-bin_1.0_i386.changes
+
+The `PackageUpload` lookups are not restricted to the status of the
+upload, i.e., new, rejected, unapproved or accepted items are returned
+as well.
+
+    # Modify the `PackageUpload` records status in place.
+    >>> login('foo.bar@canonical.com')
+    >>> original_source_upload.setRejected()
+    >>> original_build_upload.setNew()
+    >>> transaction.commit()
+    >>> login(ANONYMOUS)
+
+    >>> original_source_upload == source.sourcepackagerelease.package_upload
+    True
+
+    >>> original_build_upload == build.package_upload
+    True

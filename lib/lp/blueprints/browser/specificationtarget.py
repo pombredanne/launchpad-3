@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """ISpecificationTarget browser views."""
 
 __metaclass__ = type
@@ -27,6 +29,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
@@ -329,3 +332,18 @@ class RegisterABlueprintButtonView:
               </a>
         """ % canonical_url(target, rootsite='blueprints')
 
+
+class HasSpecificationsOnBlueprintsVHostBreadcrumb(Breadcrumb):
+    rootsite = 'blueprints'
+
+    @property
+    def text(self):
+        return 'Blueprints for %s' % self.context.title
+
+
+class PersonOnBlueprintsVHostBreadcrumb(Breadcrumb):
+    rootsite = 'blueprints'
+
+    @property
+    def text(self):
+        return 'Blueprints involving %s' % self.context.displayname

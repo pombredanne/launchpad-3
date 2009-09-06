@@ -1,4 +1,5 @@
-= Bugzilla bugtrackers with the Launchpad plugin =
+Bugzilla bugtrackers with the Launchpad plugin
+==============================================
 
 These tests cover the BugzillaLPPlugin ExternalBugTracker, which handles
 Bugzilla instances that have the Launchpad plugin installed.
@@ -16,8 +17,17 @@ so that we can avoid network traffic in tests.
     >>> bugzilla.xmlrpc_transport == test_transport
     True
 
+BugzillaLPPlugin inherits from the BugzillaAPI ExternalBugTracker, with
+which it shares some functionality.
 
-== Authentication ==
+    >>> from lp.bugs.externalbugtracker.bugzilla import (
+    ...     BugzillaAPI)
+    >>> issubclass(BugzillaLPPlugin, BugzillaAPI)
+    True
+
+
+Authentication
+--------------
 
 XML-RPC methods that modify data on the remote server require
 authentication. To authenticate, we create a LoginToken of type
@@ -146,7 +156,8 @@ This is also true if an error occurs at the protocol level:
     Protocol error: 500 "Internal server error"
 
 
-== Getting the current time ==
+Getting the current time
+------------------------
 
 The BugzillaLPPlugin ExternalBugTracker, like all other
 ExternalBugTrackers, has a getCurrentDBTime() method, which returns the
@@ -165,7 +176,8 @@ current time on the remote server.
     datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)
 
 
-== Initializing the remote bug database ==
+Initializing the remote bug database
+------------------------------------
 
 The BugzillaLPPlugin implements the standard initializeRemoteBugDB()
 method, taking a list of the bug ids that need to be updated. It uses
@@ -187,7 +199,7 @@ The bug data is stored as a list of dicts:
 
     >>> print_bugs(bugzilla._bugs)
     Bug 1:
-        alias: 
+        alias:
         assigned_to: test@canonical.com
         component: GPPSystems
         creation_time: 20080610T16:19:53
@@ -213,63 +225,20 @@ The bug data is stored as a list of dicts:
         last_change_time: 20080611T09:24:29
         priority: P1
         product: HeartOfGold
-        resolution: 
+        resolution:
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
     <BLANKLINE>
     <BLANKLINE>
 
-initializeRemoteBugDB() will only store a bug once, even if it is
-requested both by alias and ID. We'll reset the test BugzillaLPPlugin's
-_bugs and _bug_aliases dicts to demonstrate this.
-
-    >>> bugzilla._bugs = {}
-    >>> bugzilla._bug_aliases = {}
-    >>> bugzilla.initializeRemoteBugDB([2, 'bug-two'])
-    CALLED Launchpad.get_bugs({'ids': [2, 'bug-two'], 'permissive': True})
-
-    >>> for bug in sorted(bugzilla._bugs):
-    ...     print "Bug %r:" % bug
-    ...     for key in sorted(bugzilla._bugs[bug]):
-    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
-    ...     print "\n"
-    Bug 2:
-        alias: bug-two
-        assigned_to: marvin@heartofgold.ship
-        component: Crew
-        creation_time: 20080611T09:23:12
-        id: 2
-        internals:...
-        is_open: True
-        last_change_time: 20080611T09:24:29
-        priority: P1
-        product: HeartOfGold
-        resolution: 
-        severity: high
-        status: NEW
-        summary: Collect unknown persons in docking bay 2.
-    <BLANKLINE>
-    <BLANKLINE>
-
-Aliases are stored in a separate dict, which contains a mapping between
-the alias and the bug's actual ID.
-
-    >>> for alias, bug_id in bugzilla._bug_aliases.items():
-    ...     print "%s: %s" % (alias, bug_id)
-    bug-two: 2
-
-The method _getActualBugId() returns the correct bug ID for a passed bug
-ID or alias.
-
-    >>> bugzilla._getActualBugId('bug-two')
-    2
-
-    >>> bugzilla._getActualBugId(2)
-    2
+BugzillaLPPlugin.initializeRemoteBugDB() uses its _storeBugs() method to
+store bugs. See externalbugtracker-bugzilla-api.txt for details of
+_storeBugs().
 
 
-== Getting a list of changed bugs ==
+Getting a list of changed bugs
+------------------------------
 
 IExternalBugTracker defines a method, getModifiedRemoteBugs(), which
 accepts a list of bug IDs and a datetime as a parameter and returns the
@@ -283,7 +252,7 @@ remote server and passing it a 'changed_since' parameter.
     >>> changed_since = datetime(2008, 6, 11, 9, 0, 0, 0)
     >>> bug_ids = bugzilla.getModifiedRemoteBugs([1, 2], changed_since)
     CALLED Launchpad.get_bugs({'changed_since':
-        <DateTime u'20080611T09:00:00' at...>,
+        <DateTime ...'20080611T09:00:00' at...>,
         'ids': [1, 2],
         'permissive': True})
 
@@ -296,7 +265,7 @@ both bugs 1 and 2 back from getModifiedRemoteBugs()
     >>> changed_since = datetime(2008, 6, 10, 9, 0, 0, 0)
     >>> bug_ids = bugzilla.getModifiedRemoteBugs([1, 2], changed_since)
     CALLED Launchpad.get_bugs({'changed_since':
-        <DateTime u'20080610T09:00:00' at...>,
+        <DateTime ...'20080610T09:00:00' at...>,
         'ids': [1, 2],
         'permissive': True})
 
@@ -313,7 +282,7 @@ BugzillaLPPlugin instance's bugs dict.
     ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
     ...     print "\n"
     Bug 1:
-        alias: 
+        alias:
         assigned_to: test@canonical.com...
     Bug 2:
         alias: bug-two
@@ -329,63 +298,24 @@ remote system.
     CALLED Launchpad.get_bugs({'ids': [3], 'permissive': True})
 
 
-== Getting remote statuses ==
+Getting remote statuses
+-----------------------
 
-BugzillaLPPlugin.getRemoteStatus() will return the remote status of a
-given bug as a string. If the bug has a resolution, that will be
-returned too.
-
-    >>> print bugzilla.getRemoteStatus(1)
-    RESOLVED FIXED
-
-    >>> print bugzilla.getRemoteStatus(2)
-    NEW
-
-If a bug can't be found a BugNotFound error will be raised.
-
-    >>> bugzilla.getRemoteStatus('no-such-bug')
-    Traceback (most recent call last):
-      ...
-    BugNotFound: no-such-bug
-
-If the data we've imported from Bugzilla is incomplete and doesn't
-contain either the bug's status or its resolution an UnparseableBugData
-error will be raised. We can add a sample bug to demonstrate this.
-
-    >>> bugzilla._bugs[999] = {}
-    >>> bugzilla.getRemoteStatus(999)
-    Traceback (most recent call last):
-      ...
-    UnparseableBugData
-
-    >>> del bugzilla._bugs[999]
+BugzillaLPPlugin doesn't have any special functionality for getting
+remote statuses. See the "Getting remote statuses" section of 
+externalbugtracker-bugzilla-api.txt for details of getting remote
+statuses from Bugzilla APIs.
 
 
-== Getting the remote product ==
+Getting the remote product
+--------------------------
 
-getRemoteProduct() returns the product a remote bug is associated with
-in Bugzilla. 
-
-    >>> bugzilla.xmlrpc_transport.bugs[2]['product']
-    'HeartOfGold'
-    >>> bugzilla.getRemoteProduct(2)
-    'HeartOfGold'
-
-A bug alias can also be given to getRemoteProduct().
-
-    >>> bugzilla.getRemoteProduct('bug-two')
-    'HeartOfGold'
-
-If the product is requested for a bug that can't be found, BugNotFound
-is raised.
-
-    >>> bugzilla.getRemoteProduct(12345)
-    Traceback (most recent call last):
-    ...
-    BugNotFound: 12345
+See externalbugtracker-bugzilla-api.txt for details of getting remote
+products from Bugzilla APIs.
 
 
-== Retrieving remote comments ==
+Retrieving remote comments
+--------------------------
 
 BugzillaLPPlugin implments the ISupportsCommentImport interface, which
 means that we can use it to import comments from the remote Bugzilla
@@ -427,7 +357,8 @@ bugtracker and a couple of bugwatches.
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 
-=== getCommentIds() ===
+getCommentIds()
+---------------
 
 ISupportsCommentImport.getCommentIds() is the method used to get all the
 comment IDs for a given bug on a remote bugtracker.
@@ -448,7 +379,8 @@ called and the bug exists locally.
     BugNotFound: 42
 
 
-=== fetchComments() ===
+fetchComments()
+---------------
 
 ISupportsCommentImport.fetchComments() is the method used to fetch a
 given set of comments from the remote bugtracker. It takes a bug watch
@@ -480,52 +412,8 @@ comment dict mappings under the key 'comments'.
         time: 20080616T13:22:29
 
 
-=== getPosterForComment() ===
-
-ISupportsCommentImport.getPosterForComment() returns a tuple of
-(displayname, email) for the author of a remote comment.
-
-    >>> bugzilla.fetchComments(bug_watch_two, ['2', '4'])
-    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, '4')
-    >>> print displayname, email
-    Ford Prefect ford.prefect@h2g2.com
-
-If the author's name as stored in the comment isn't a valid email
-address then the method will return displayname = None and will return
-the whole of the author's name in the email field.
-
-    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, '2')
-    >>> print displayname, email
-    None trillian
-
-
-=== getMessageForComment() ===
-
-ISupportsCommentImport.getMessageForComment() returns a Launchpad
-IMessage instance for a given comment. It takes a bug watch, a comment
-ID and a Person object generated from the return value of
-getPosterForComment(), above. For the sake of this test we'll use
-Sample Person as our poster.
-
-    >>> message = bugzilla.getMessageForComment(
-    ...     bug_watch_two, '2', sample_person)
-    >>> print message.text_contents
-    Bring the passengers to the bridge please Marvin.
-
-    >>> print message.owner.displayname
-    Sample Person
-
-The datecreated attribute of the Message will be the same as the 'time'
-field on the imported comment.
-
-    >>> print bugzilla._bugs[2]['comments'][2]['time']
-    20080616T13:08:08
-
-    >>> print message.datecreated
-    2008-06-16 13:08:08+00:00
-
-
-== Pushing comments to remote systems ==
+Pushing comments to remote systems
+----------------------------------
 
 BugzillaLPPlugin implements the ISupportsCommentPushing interface, which
 defines the necessary methods for pushing comments to remote servers.
@@ -575,7 +463,8 @@ The comment will be stored on the remote server with the other comments.
     <BLANKLINE>
 
 
-== Linking remote bugs to Launchpad bugs ==
+Linking remote bugs to Launchpad bugs
+-------------------------------------
 
 BugzillaLPPlugin implements the ISupportsBackLinking interface, which
 provides methods to set and retrieve the Launchpad bug that links to a
@@ -636,7 +525,8 @@ the Launchpad bug ID has been updated for remote bug 1.
     10
 
 
-== Working with a specified set of Bugzilla products ==
+Working with a specified set of Bugzilla products
+-------------------------------------------------
 
 BugzillaLPPlugin can be instructed to only get the data for a set of
 bug IDs if those bugs belong to one of a given set of products.
@@ -664,7 +554,7 @@ bug IDs if those bugs belong to one of a given set of products.
         last_change_time: 20080611T09:24:29
         priority: P1
         product: HeartOfGold
-        resolution: 
+        resolution:
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
@@ -683,7 +573,8 @@ result in no bugs being returned.
     0
 
 
-== Getting the products for a set of remote bugs ==
+Getting the products for a set of remote bugs
+---------------------------------------------
 
 BugzillaLPPlugin provides a helper method, getProductsForRemoteBugs(),
 which takes a list of bug IDs or aliases and returns the products to

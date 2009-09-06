@@ -1,8 +1,10 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
+    'DistroArchSeriesBinaryPackageBreadcrumb',
     'DistroArchSeriesBinaryPackageNavigation',
     'DistroArchSeriesBinaryPackageView',
     ]
@@ -10,6 +12,16 @@ __all__ = [
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
     IDistroArchSeriesBinaryPackage)
 from canonical.launchpad.webapp import ApplicationMenu, GetitemNavigation
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.lazr.utils import smartquote
+
+
+class DistroArchSeriesBinaryPackageBreadcrumb(Breadcrumb):
+    """A breadcrumb for `DistroArchSeriesBinaryPackage`."""
+
+    @property
+    def text(self):
+        return self.context.name
 
 
 class DistroArchSeriesBinaryPackageOverviewMenu(ApplicationMenu):
@@ -30,3 +42,6 @@ class DistroArchSeriesBinaryPackageView:
         self.context = context
         self.request = request
 
+    @property
+    def page_title(self):
+        return smartquote(self.context.title)

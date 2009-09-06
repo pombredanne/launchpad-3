@@ -18,8 +18,8 @@ let's use 'pmount' sources.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')
 
-    >>> pmount_from = pmount['0.1-1'].sourcepackagerelease
-    >>> pmount_to = pmount['0.1-2'].sourcepackagerelease
+    >>> pmount_from = pmount.getVersion('0.1-1').sourcepackagerelease
+    >>> pmount_to = pmount.getVersion('0.1-2').sourcepackagerelease
 
 A packageDiff can be created from the two packages by calling
 requestDiffTo(). It takes two arguments: the user requesting the

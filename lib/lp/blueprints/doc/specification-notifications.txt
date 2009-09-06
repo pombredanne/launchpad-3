@@ -70,9 +70,9 @@ notifications were sent.
 Let's set a different approver and add a subscriber.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> sabdfl = getUtility(IPersonSet).getByEmail('mark@hbd.com')
+    >>> mark = getUtility(IPersonSet).getByEmail('mark@example.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> svg_support.approver = sabdfl
+    >>> svg_support.approver = mark
     >>> svg_support.subscribe(sample_person, sample_person, False)
     <...>
 
@@ -100,7 +100,7 @@ are now subscribed.
     ['carlos@canonical.com']
     ['daf@canonical.com']
     ['foo.bar@canonical.com']
-    ['mark@hbd.com']
+    ['mark@example.com']
     ['robertc@robertcollins.net']
     ['stuart.bishop@canonical.com']
     ['test@canonical.com']
@@ -163,8 +163,7 @@ Whiteboard change:
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
     Blueprint changed by Foo Bar:
     <BLANKLINE>
-    Whiteboard changed to:
-    <BLANKLINE>
+    Whiteboard set to:
     This is a long line, which will be wrapped in the email, since it's
     longer than 72 characters.
     <BLANKLINE>
@@ -206,9 +205,12 @@ Definition status and whiteboard change:
     <BLANKLINE>
         Definition Status: Pending Approval => Approved
     <BLANKLINE>
-    Whiteboard changed to:
-    <BLANKLINE>
-    Excellent work.
+    Whiteboard changed:
+    - This is a long line, which will be wrapped in the email, since it's
+    - longer than 72 characters.
+    - 
+    - Another paragraph
+    + Excellent work.
     <BLANKLINE>
     -- 
       Support Native SVG Objects
@@ -254,7 +256,7 @@ Change approver, assignee and drafter:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'field.actions.change': 'Change', 'field.assignee': 'sabdfl',
+    ...     'field.actions.change': 'Change', 'field.assignee': 'mark',
     ...     'field.approver': '', 'field.drafter': 'foo.bar@canonical.com'}
     >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> edit_view = getMultiAdapter((svg_support, request), name='+people')

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
 
@@ -39,7 +40,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
 
     def findBugDescription(self, response):
         """Find the bug description field in an XHTML document fragment."""
-        soup = BeautifulSoup(response.consumeBody())
+        soup = BeautifulSoup(response.body)
         dt = soup.find('dt', text="description").parent
         dd = dt.findNextSibling('dd')
         return str(dd.contents.pop())
@@ -48,8 +49,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
         response = self.webservice.get(
             '/bugs/' + str(self.bug_two.id),
             'application/xhtml+xml')
-
-        self.assertEqual(response.getStatus(), 200)
+        self.assertEqual(response.status, 200)
 
         self.assertEqual(
             self.findBugDescription(response),
@@ -69,7 +69,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
             dumps(dict(description=new_description)),
             headers=dict(accept='application/xhtml+xml'))
 
-        self.assertEqual(response.getStatus(), 209)
+        self.assertEqual(response.status, 209)
 
         self.assertEqual(
             self.findBugDescription(response),
@@ -117,9 +117,9 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
         response = self.webservice.get(
             self.message_path, 'application/xhtml+xml')
 
-        self.assertEqual(response.getStatus(), 200)
+        self.assertEqual(response.status, 200)
 
-        rendered_comment = response.consumeBody()
+        rendered_comment = response.body
         # XXX Bjorn Tillenius 2009-05-15 bug=377003
         # The current request is a web service request when rendering
         # the HTML, causing canonical_url to produce links pointing to the
@@ -136,4 +136,3 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

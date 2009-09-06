@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -35,6 +37,7 @@ from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces._schema_circular_imports import (
     IHasBuildRecords)
@@ -48,7 +51,7 @@ from lp.soyuz.interfaces.builder import (
     IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingStatus)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.utils import copy_and_close
 
@@ -112,7 +115,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    _defaultOrder = ['processor', 'virtualized', 'name']
+    _defaultOrder = ['id']
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
@@ -401,6 +404,10 @@ class Builder(SQLBase):
         build_queue_item.markAsBuilding(self)
         self._dispatchBuildToSlave(build_queue_item, args, buildid, logger)
 
+    # XXX cprov 2009-06-24: This code does not belong to the content
+    # class domain. Here we cannot make sensible decisions about what
+    # we are allowed to present according to the request user. Then
+    # bad things happens, see bug #391721.
     @property
     def status(self):
         """See IBuilder"""
@@ -416,12 +423,8 @@ class Builder(SQLBase):
 
         msg = 'Building %s' % currentjob.build.title
         archive = currentjob.build.archive
-        if archive.is_ppa or archive.is_copy:
-            return '%s [%s/%s]' % (
-                msg,
-                currentjob.build.archive.owner.name,
-                currentjob.build.archive.name,
-                )
+        if not archive.owner.private and (archive.is_ppa or archive.is_copy):
+            return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
         else:
             return msg
 
@@ -430,10 +433,11 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, build_state=None, name=None, user=None):
+    def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
+                        user=None):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(
-            self.id, build_state, name, user)
+            self.id, build_state, name, arch_tag, user)
 
     def slaveStatus(self):
         """See IBuilder."""
@@ -691,7 +695,8 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
-        return Builder.selectBy(active=True)
+        return Builder.selectBy(
+            active=True, orderBy=['virtualized', 'processor', 'name'])
 
     def getBuildersByArch(self, arch):
         """See IBuilderSet."""
@@ -729,7 +734,7 @@ class BuilderSet(object):
             Archive.require_virtualized == virtualized,
             )
 
-        return queue.count()
+        return (queue.count(), queue.sum(Build.estimated_build_duration))
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""

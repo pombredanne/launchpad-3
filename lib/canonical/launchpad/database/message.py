@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -422,7 +424,7 @@ class MessageSet:
                 # specified, default to latin-1 to prevent
                 # UnicodeDecodeErrors.
                 charset = part.get_content_charset()
-                if charset is None:
+                if charset is None or str(charset).lower() == 'x-unknown':
                     charset = 'latin-1'
 
                 content = content.decode(charset, 'replace')

@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """These widgets use the a YUI2 calendar widget to allow for
 date and datetime selection.
@@ -79,7 +80,7 @@ class DateTimeWidget(TextWidget):
       >>> print widget.getInputValue()  #doctest: +ELLIPSIS
       Traceback (most recent call last):
       ...
-      WidgetInputError: (... Please pick a date after 2006-05-22 17:00:00)
+      WidgetInputError: (...Please pick a date after 2006-05-22 17:00:00...)
 
     If the date provided is greater than from_date then the widget works as
     expected.
@@ -95,7 +96,7 @@ class DateTimeWidget(TextWidget):
       >>> print widget.getInputValue()  #doctest: +ELLIPSIS
       Traceback (most recent call last):
       ...
-      WidgetInputError: (... Please pick a date before 2008-01-25 16:00:00)
+      WidgetInputError: (...Please pick a date before 2008-01-25 16:00:00...)
 
     A datetime picker can be disabled initially:
 
@@ -287,7 +288,7 @@ class DateTimeWidget(TextWidget):
         value = super(DateTimeWidget, self).getInputValue()
         if value is None:
             return None
-        # Establish if the value is within the date range. 
+        # Establish if the value is within the date range.
         self._align_date_constraints_with_time_zone()
         if self.from_date is not None and value < self.from_date:
             limit = self.from_date.strftime(self.timeformat)
@@ -569,4 +570,3 @@ class DatetimeDisplayWidget(DisplayWidget):
             return u""
         value = value.astimezone(time_zone)
         return escape(value.strftime("%Y-%m-%d %H:%M:%S %Z"))
-

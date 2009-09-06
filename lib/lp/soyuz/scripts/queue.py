@@ -1,4 +1,6 @@
-# Copyright Canonical Limited 2006-2007
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0231
 """Ftpmaster queue tool libraries."""
 
@@ -114,7 +116,7 @@ class QueueAction:
 
         # Avoid circular imports.
         from lp.registry.interfaces.distribution import IDistributionSet
-        from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+        from lp.registry.interfaces.pocket import PackagePublishingPocket
 
         distroset = getUtility(IDistributionSet)
         try:
@@ -243,7 +245,7 @@ class QueueAction:
         version = queue_item.displayversion
         age = DurationFormatterAPI(
             datetime.now(pytz.timezone('UTC')) -
-            queue_item.datecreated).approximateduration()
+            queue_item.date_created).approximateduration()
 
         # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
         # are necessary simply to keep the format legaxy.

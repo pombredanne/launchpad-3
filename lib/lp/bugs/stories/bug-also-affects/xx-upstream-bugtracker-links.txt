@@ -69,6 +69,23 @@ will be displayed.
     before adding the link to Launchpad you can use the GnomeGBug
     GTracker search form...
 
+The description given in the link to the bug filing form contains a
+link back to bug 13, the place where it was originally filed.
+
+    >>> from cgi import parse_qs
+    >>> from urlparse import urlparse
+
+    >>> url = user_browser.getLink(text=u'bug filing form').url
+    >>> scheme, netloc, path, params, query, fragment = urlparse(url)
+    >>> [long_desc] = parse_qs(query)['long_desc']
+
+    >>> print long_desc
+    Originally reported at:
+      http://bugs.launchpad.dev/bugs/13
+    <BLANKLINE>
+    The messages placed on this bug are for eyeball viewing of JS and
+    CSS behaviour.
+
 If the remote bug tracker is one for which Launchpad doesn't offer a bug
 filing link, such as Debbugs, only a search link will be displayed.
 

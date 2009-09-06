@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Run the doctests and pagetests.
 """
@@ -232,6 +234,13 @@ special = {
     'externalbugtracker-bugzilla.txt':
         LayeredDocFileSuite(
         '../doc/externalbugtracker-bugzilla.txt',
+        setUp=checkwatchesSetUp,
+        tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
+    'externalbugtracker-bugzilla-api.txt':
+        LayeredDocFileSuite(
+        '../doc/externalbugtracker-bugzilla-api.txt',
         setUp=checkwatchesSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer

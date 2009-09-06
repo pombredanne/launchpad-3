@@ -1,0 +1,29 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="page-summary"
+  tal:define="menu context/menu:branches"
+  tal:condition="menu/show_summary">
+
+  <p>
+    <strong class="count" tal:content="menu/owned_branch_count">100</strong>
+    <tal:link condition="menu"
+        replace="structure menu/owned/render"
+        />,
+    <strong class="count" tal:content="menu/registered_branch_count">100</strong>
+    <tal:link condition="menu"
+        replace="structure menu/registered/render"
+        />,
+    <strong class="count" tal:content="menu/subscribed_branch_count">100</strong>
+    <tal:link condition="menu"
+        replace="structure menu/subscribed/render"
+        />
+  </p>
+  <p id="merge-counts">
+    <strong class="count" tal:content="menu/active_review_count">5</strong>
+    <tal:link condition="menu"
+        replace="structure menu/active_reviews/render"
+        />
+  </p>
+</div>

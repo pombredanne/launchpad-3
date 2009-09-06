@@ -10,7 +10,9 @@ The IBug.getBugNotificationRecipients() implementation creates and uses
 BugNotificationRecipients instances. Here's an example of this in
 action:
 
-  >>> from canonical.launchpad.database import Bug, Distribution, Product
+  >>> from canonical.launchpad.database import Bug
+  >>> from lp.registry.model.product import Product
+  >>> from lp.registry.model.distribution import Distribution
   >>> bug_one = Bug.get(1)
   >>> recipients = bug_one.getBugNotificationRecipients()
 
@@ -40,7 +42,7 @@ appropriate for an email footer.
   foo.bar@canonical.com
       Subscriber (mozilla-firefox in ubuntu)
       You received this bug notification because you are subscribed to mozilla-firefox in ubuntu.
-  mark@hbd.com
+  mark@example.com
       Assignee
       You received this bug notification because you are a bug assignee.
   support@ubuntu.com
@@ -238,7 +240,7 @@ membership is causing us to send mail.
     marilize@hbd.com
         Subscriber @shipit-admins
         You received this bug notification because you are a member of ShipIt Administrators, which is a direct subscriber.
-    mark@hbd.com
+    mark@example.com
         Subscriber of Duplicate @testing-spanish-team
         You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
     robertc@robertcollins.net

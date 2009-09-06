@@ -41,7 +41,7 @@
 
       <p class="discreet">
         The following people are all members of the
-        <span tal:replace="context/browsername">Admins</span> team in
+        <span tal:replace="context/displayname">Admins</span> team in
         Launchpad. We list each of their specification workloads so that you
         can get a sense of the overall workload balance.
       </p>

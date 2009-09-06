@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 from datetime import datetime
 import unittest
@@ -38,7 +39,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         person = self.factory.makePerson('foo.bar@example.com')
         self.failIfEqual(person.id, person.account.id)
         self.principal = LaunchpadPrincipal(
-            person.account.id, person.browsername,
+            person.account.id, person.displayname,
             person.displayname, person)
 
     def test_logging_in_and_logging_out(self):

@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Acceptance tests for the codehosting server."""
 
@@ -7,7 +8,6 @@ __metaclass__ = type
 import atexit
 import os
 import unittest
-from xml.dom.minidom import parseString
 import xmlrpclib
 
 import bzrlib.branch
@@ -22,8 +22,9 @@ from lp.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
 from lp.codehosting import get_bzr_path, get_bzr_plugins_path
 from lp.codehosting.vfs import branch_id_to_path
+from lp.registry.model.person import Person
+from lp.registry.model.product import Product
 from canonical.config import config
-from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.testing import ZopelessAppServerLayer
@@ -202,11 +203,11 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     def getDatabaseBranch(self, personName, productName, branchName):
         """Look up and return the specified branch from the database."""
-        owner = database.Person.byName(personName)
+        owner = Person.byName(personName)
         if productName is None:
             product = None
         else:
-            product = database.Product.selectOneBy(name=productName)
+            product = Product.selectOneBy(name=productName)
         namespace = get_branch_namespace(owner, product)
         return namespace.getByName(branchName)
 
@@ -299,11 +300,11 @@ class AcceptanceTests(SSHTestCase):
     def makeDatabaseBranch(self, owner_name, product_name, branch_name,
                            branch_type=BranchType.HOSTED):
         """Create a new branch in the database."""
-        owner = database.Person.selectOneBy(name=owner_name)
+        owner = Person.selectOneBy(name=owner_name)
         if product_name == '+junk':
             product = None
         else:
-            product = database.Product.selectOneBy(name=product_name)
+            product = Product.selectOneBy(name=product_name)
         if branch_type == BranchType.MIRRORED:
             url = 'http://example.com'
         else:
@@ -381,7 +382,7 @@ class AcceptanceTests(SSHTestCase):
         # rename as far as bzr is concerned: the URL changes.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        branch.product = database.Product.byName('firefox')
+        branch.setTarget(user=branch.owner, project=Product.byName('firefox'))
         LaunchpadZopelessTestSetup().txn.commit()
 
         self.assertNotBranch(
@@ -470,8 +471,8 @@ class AcceptanceTests(SSHTestCase):
         # the branch doesn't exist.
 
         # 'salgado' is a member of landscape-developers.
-        salgado = database.Person.selectOneBy(name='salgado')
-        landscape_dev = database.Person.selectOneBy(
+        salgado = Person.selectOneBy(name='salgado')
+        landscape_dev = Person.selectOneBy(
             name='landscape-developers')
         self.assertTrue(
             salgado.inTeam(landscape_dev),
@@ -515,7 +516,7 @@ class AcceptanceTests(SSHTestCase):
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.makeDatabaseBranch('sabdfl', 'firefox', 'some-branch')
+        branch = self.makeDatabaseBranch('mark', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         self.assertCantPush(
@@ -549,16 +550,16 @@ class SmartserverTests(SSHTestCase):
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
         ro_branch_url = self.createBazaarBranch(
-            'sabdfl', '+junk', 'ro-branch')
+            'mark', '+junk', 'ro-branch')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
-            self.getTransportURL('~sabdfl/+junk/ro-branch'))
+            self.getTransportURL('~mark/+junk/ro-branch'))
         self.assertEqual(revision, remote_revision)
 
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
         ro_branch_url = self.createBazaarBranch(
-            'sabdfl', '+junk', 'ro-branch')
+            'mark', '+junk', 'ro-branch')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
 
         # Create a new revision on the local branch.
@@ -566,7 +567,7 @@ class SmartserverTests(SSHTestCase):
         tree.commit('Empty commit', rev_id='rev2')
 
         # Push the local branch to the remote url
-        remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
+        remote_url = self.getTransportURL('~mark/+junk/ro-branch')
         self.assertCantPush(self.local_branch_path, remote_url)
 
     def test_can_read_mirrored_branch(self):
@@ -582,10 +583,10 @@ class SmartserverTests(SSHTestCase):
     def test_can_read_unowned_mirrored_branch(self):
         # Users should be able to read mirrored branches even if they don't
         # own those branches.
-        ro_branch_url = self.makeMirroredBranch('sabdfl', 'firefox', 'mirror')
+        ro_branch_url = self.makeMirroredBranch('mark', 'firefox', 'mirror')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
-            self.getTransportURL('~sabdfl/firefox/mirror'))
+            self.getTransportURL('~mark/firefox/mirror'))
         self.assertEqual(revision, remote_revision)
 
     def test_authserver_error_propagation(self):
@@ -593,7 +594,7 @@ class SmartserverTests(SSHTestCase):
         # sensibly by the client.  We test this by pushing to a product that
         # does not exist (the other error message possibilities are covered by
         # unit tests).
-        remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
+        remote_url = self.getTransportURL('~mark/no-such-product/branch')
         message = "Project 'no-such-product' does not exist."
         last_line = self.assertCantPush(self.local_branch_path, remote_url)
         self.assertTrue(

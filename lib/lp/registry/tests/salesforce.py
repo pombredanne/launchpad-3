@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0231
 
 """Helper classes for testing clients of the external Salesforce proxy."""
@@ -94,13 +96,13 @@ class SalesforceXMLRPCTestTransport(Transport):
 
     def __init__(self):
         self.vouchers = [
-            # Test vouchers owned by sabdfl.
+            # Test vouchers owned by mark.
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000001',
-                    'sabdfl_oid'),
+                    'mark_oid'),
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000002',
-                    'sabdfl_oid'),
+                    'mark_oid'),
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000003',
-                    'sabdfl_oid'),
+                    'mark_oid'),
             # Test vouchers owned by cprov.
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000004',
                     'cprov_oid'),

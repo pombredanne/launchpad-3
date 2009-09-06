@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=F0401
 
 """Unit tests for SourceListEntriesView."""
@@ -23,7 +25,8 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.distribution = self.factory.makeDistribution(name='ibuntu')
+        self.distribution = self.factory.makeDistribution(
+            name='ibuntu', displayname="Ibuntu")
         self.series = [
             self.factory.makeDistroRelease(name="feasty", version='9.04'),
             self.factory.makeDistroRelease(name="getsy", version='10.09'),
@@ -62,17 +65,17 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
         self.assertEqual(u'feasty', view.default_series_name)
 
     def testDefaultWithoutUserAgent(self):
-        # If there is no user-agent setting, then the first distroseries
-        # will be the default.
+        # If there is no user-agent setting, then we force the user
+        # to make a selection.
         view = SourcesListEntriesView(self.entries, LaunchpadTestRequest())
         view.initialize()
 
-        self.assertEqual(u'feasty', view.default_series_name)
+        self.assertEqual('YOUR_IBUNTU_VERSION_HERE', view.default_series_name)
 
     def testNonRecognisedSeries(self):
         # If the supplied series in the user-agent is not recognized as a
-        # valid distroseries for the distro, then we default to the
-        # first distroseries.
+        # valid distroseries for the distro, then we force the user
+        # to make a selection.
         view = SourcesListEntriesView(self.entries, LaunchpadTestRequest(
                 HTTP_USER_AGENT='Mozilla/5.0 '
                                 '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
@@ -81,12 +84,12 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
 
         view.initialize()
 
-        self.assertEqual(u'feasty', view.default_series_name)
+        self.assertEqual('YOUR_IBUNTU_VERSION_HERE', view.default_series_name)
 
     def testNonRecognisedDistro(self):
         # If the supplied series in the user-agent is not recognized as a
-        # valid distroseries for the distro, then we default to the
-        # first distroseries.
+        # valid distroseries for the distro, then we force the user to
+        # make a selection.
         view = SourcesListEntriesView(self.entries, LaunchpadTestRequest(
                 HTTP_USER_AGENT='Mozilla/5.0 '
                                 '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
@@ -95,7 +98,7 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
 
         view.initialize()
 
-        self.assertEqual(u'feasty', view.default_series_name)
+        self.assertEqual('YOUR_IBUNTU_VERSION_HERE', view.default_series_name)
 
 
 class TestSourcesListComment(TestCaseWithFactory):
@@ -127,6 +130,37 @@ class TestSourcesListComment(TestCaseWithFactory):
         self.assertTrue('#' + my_comment in html,
             "The comment was not included in the sources.list snippet.")
 
+
+class TestOneDistroSeriesOnly(TestCaseWithFactory):
+    """Ensure the correct behaviour when only one distro series is present.
+    """
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.distribution = self.factory.makeDistribution(name='ibuntu')
+
+        # Ensure there is only one series available.
+        self.series = [
+            self.factory.makeDistroRelease(name="feasty", version='9.04'),
+            ]
+        self.entries = SourcesListEntries(
+            self.distribution, 'http://example.com/my/archive',
+            self.series)
+
+        self.view = SourcesListEntriesView(
+            self.entries, LaunchpadTestRequest())
+        self.view.initialize()
+
+    def testNoSelectorForOneSeries(self):
+        # The selector should not be presented when there is only one series
+
+        self.failUnless(self.view.sources_in_more_than_one_series is False)
+
+    def testDefaultDistroSeries(self):
+        # When there is only one distro series it should always be the
+        # default.
+        self.failUnless(self.view.default_series == self.series[0])
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

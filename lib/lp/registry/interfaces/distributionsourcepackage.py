@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Source package in Distribution interfaces."""
@@ -22,6 +24,7 @@ from canonical.launchpad import _
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.distribution import IDistribution
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
@@ -67,6 +70,11 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         "The list of all releases of this source package "
         "in this distribution.")
 
+    development_version = Attribute(
+        "The development version of this source package. 'None' if there is "
+        "no such package -- this occurs when there is no current series for "
+        "the distribution.")
+
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this
         distribution and their correspodning publishing history.
@@ -84,9 +92,6 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         "Return a list of CURRENT publishing records for this source "
         "package in this distribution.")
 
-    def __getitem__(version):
-        """Should map to getVersion."""
-
     def getVersion(version):
         """Return the a DistributionSourcePackageRelease with the given
         version, or None if there has never been a release with that
@@ -102,6 +107,24 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         distroseries only. You can set only_active=False to return a
         source package for EVERY series where this source package was
         published.
+        """
+
+    def findRelatedArchives(exclude_archive=None,
+                            archive_purpose=ArchivePurpose.PPA,
+                            required_karma=0):
+        """Return Archives which publish this source package.
+
+        :param exclude_archive: an archive to exclude from the results,
+            used to exclude the current context from which the method
+            is called.
+        :param archive_purpose: used to filter the results to certain
+            archive purposes. Defaults to PPA.
+        :param required_karma: if non-zero then the results will be
+            limited to archives where the creator of the related source
+            package release in that archive has karma greater than the
+            specified value.
+        :returns: A `ResultSet` of non-unique `IArchive` with the
+            results ordered by the descending package karma.
         """
 
     latest_overall_publication = Attribute(

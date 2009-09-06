@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
 
@@ -38,10 +39,10 @@ from lp.soyuz.model.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -53,6 +54,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
+from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
@@ -97,11 +99,13 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
         raise Exception("Exception raised by BrokenUploadPolicy for testing.")
 
 
-class TestUploadProcessorBase(unittest.TestCase):
+class TestUploadProcessorBase(TestCaseWithFactory):
     """Base class for functional tests over uploadprocessor.py."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
+
         self.queue_folder = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
 
@@ -1264,8 +1268,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Make sure it failed.
         self.assertEqual(
             uploadprocessor.last_processed_upload.rejection_message,
-            u"Signer is not permitted to upload to the component 'universe'"
-                " of file 'bar_1.0-2.dsc'.")
+            u"Signer is not permitted to upload to the component 'universe'.")
 
         # Now add permission to upload "bar" for name16.
         bar_package = getUtility(ISourcePackageNameSet).queryByName("bar")
@@ -1318,8 +1321,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Make sure it failed.
         self.assertEqual(
             uploadprocessor.last_processed_upload.rejection_message,
-            u"Signer is not permitted to upload to the component 'universe'"
-                " of file 'bar_1.0-2.dsc'.")
+            "Signer is not permitted to upload to the component 'universe'.")
 
         # Now put in place a package set, add 'bar' to it and define a
         # permission for the former.
@@ -1331,11 +1333,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
 
         foo_ps.add((bar_package,))
-        ap_set.newPackagesetUploader(uploader, foo_ps)
+        ap_set.newPackagesetUploader(
+            self.ubuntu.main_archive, uploader, foo_ps)
 
         # The uploader now does have a package set based upload permissions
         # to 'bar'.
-        self.assertTrue(ap_set.isSourceUploadAllowed('bar', uploader))
+        self.assertTrue(
+            ap_set.isSourceUploadAllowed(
+                self.ubuntu.main_archive, 'bar', uploader))
 
         # Upload the package again.
         self.processUpload(uploadprocessor, upload_dir)
@@ -1345,6 +1350,50 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             status, PackageUploadStatus.DONE,
             "Expected DONE status, got %s" % status.value)
+
+    def testUploadPathErrorIntendedForHumans(self):
+        # Distribution upload path errors are augmented with a hint
+        # to fix the current dput/dupload configuration.
+        # This information gets included in the rejection email along
+        # with pointer to the Soyuz questions in Launchpad and the
+        # reason why the message was sent to the current recipients.
+        self.setupBreezy()
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        upload_dir = self.queueUpload("bar_1.0-1", "boing")
+        self.processUpload(uploadprocessor, upload_dir)
+        rejection_message = (
+            uploadprocessor.last_processed_upload.rejection_message)
+        self.assertEqual(
+            ["Launchpad failed to process the upload path 'boing':",
+             '',
+             "Could not find distribution 'boing'.",
+             '',
+             'It is likely that you have a configuration problem with '
+                'dput/dupload.',
+             'Please update your dput/dupload configuration and then '
+                're-upload.',
+             '',
+             'Further error processing not possible because of a critical '
+                'previous error.',
+             ],
+            rejection_message.splitlines())
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Could not find distribution 'boing'",
+            "If you don't understand why your files were rejected",
+            "http://answers.launchpad.net/soyuz",
+            "You are receiving this email because you are the "
+               "uploader, maintainer or",
+            "signer of the above package.",
+            ]
+        recipients = [
+            'Foo Bar <foo.bar@canonical.com>',
+            'Daniel Silverstone <daniel.silverstone@canonical.com>',
+            ]
+        self.assertEmail(contents, recipients=recipients)
 
 
 def test_suite():

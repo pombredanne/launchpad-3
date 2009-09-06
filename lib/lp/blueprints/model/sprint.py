@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -333,7 +335,7 @@ class SprintSet:
         return Sprint.select(orderBy='-time_starts')
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
-            summary=None, address=None, driver=None, home_page=None,
+            summary, address=None, driver=None, home_page=None,
             mugshot=None, logo=None, icon=None):
         """See `ISprintSet`."""
         return Sprint(owner=owner, name=name, title=title,

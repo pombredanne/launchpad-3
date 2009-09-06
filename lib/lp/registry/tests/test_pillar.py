@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of PillarName and PillarNameSet."""
 
@@ -19,7 +20,7 @@ class TestPillarNameSet(TestCaseWithFactory):
         """When we use a pillar's alias to search, that pillar will be the
         first one on the list.
         """
-        login('mark@hbd.com')
+        login('mark@example.com')
         lz_foo = self.factory.makeProduct(name='lz-foo')
         lz_bar = self.factory.makeProduct(name='lz-bar')
         launchzap = self.factory.makeProduct(name='launchzap')

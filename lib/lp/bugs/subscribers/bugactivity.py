@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -138,7 +139,7 @@ def record_bugsubscription_added(bugsubscription_added, object_created_event):
         person=IPerson(object_created_event.user),
         whatchanged='bug',
         message='added subscriber %s' % (
-            bugsubscription_added.person.browsername))
+            bugsubscription_added.person.displayname))
 
 
 @block_implicit_flushes
@@ -153,7 +154,7 @@ def record_bugsubscription_edited(bugsubscription_edited,
                 datechanged=UTC_NOW,
                 person=IPerson(sqlobject_modified_event.user),
                 whatchanged="subscriber %s" % (
-                    bugsubscription_edited.person.browsername),
+                    bugsubscription_edited.person.displayname),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 

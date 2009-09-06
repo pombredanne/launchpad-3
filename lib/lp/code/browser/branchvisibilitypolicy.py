@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The view classes for handling branch visibility policies."""
 
@@ -46,7 +47,7 @@ class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
 class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """Simple form view to add branch visibility policy items."""
 
-    pagetitle = "Set branch visibility policy for team"
+    page_title = label = "Set branch visibility policy for team"
 
     initial_values = {'rule': TeamBranchVisibilityRule.PRIVATE}
     custom_widget('rule', LaunchpadRadioWidgetWithDescription)
@@ -90,7 +91,7 @@ class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
 class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """The view to remove zero or more branch visibility policy items."""
 
-    pagetitle = "Remove branch visibility policy for teams"
+    page_title = label = "Remove branch visibility policy for teams"
 
     def _policyDescription(self, item):
         """The text visible to the user displayed by the widget."""
@@ -140,6 +141,11 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
 
 class BranchVisibilityPolicyView(LaunchpadView):
     """Simple view for displaying branch visibility policies."""
+
+    @property
+    def page_title(self):
+        name = self.context.displayname
+        return 'Set branch visibility policy for %s' % name
 
     @cachedproperty
     def items(self):

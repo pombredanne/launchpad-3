@@ -1,7 +1,7 @@
 = Claiming a person =
 
-Matsubara was browsing through Launchpad and found a page for himself,
-even though he has never used Launchpad (what a lie!).
+Matsubara was browsing through Launchpad anonymously and found a page
+for himself, even though he has never used Launchpad (what a lie!).
 
     >>> browser.open('http://launchpad.dev/~matsubara')
     >>> browser.url
@@ -45,7 +45,7 @@ Then he tries with Sample Person's email address.
     ...     print tag.renderContents()
     This email address is associated with yet another Launchpad profile, which
     you seem to have used at some point. If that's the case, you can <a
-    href="/people/+requestmerge?field.dupeaccount=matsubara">combine this
+    href="/people/+requestmerge?field.dupe_person=matsubara">combine this
     profile with the other one</a> (you'll have to log in with the other
     profile first, though). If that's not the case, please try with a
     different email address.
@@ -147,4 +147,3 @@ expect it to (we shouldn't be linking to from anywhere):
     Traceback (most recent call last):
     ...
     NotFound:...
-

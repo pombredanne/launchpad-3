@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for IBugLinkTarget."""
 
@@ -34,6 +35,14 @@ class BugLinkView(LaunchpadFormView):
     schema = IBugLinkForm
 
     focused_element_id = 'bug'
+
+    @property
+    def page_title(self):
+        return 'Link question #%s to a bug report' % self.context.id
+
+    @property
+    def label(self):
+        return 'Link question to a bug report'
 
     @action(_('Link'))
     def linkBug(self, action, data):
@@ -92,6 +101,14 @@ class BugsUnlinkView(LaunchpadFormView):
 
     schema = IUnlinkBugsForm
     custom_widget('bugs', LabeledMultiCheckBoxWidget)
+
+    @property
+    def page_title(self):
+        return 'Remove bug links from question #%s' % self.context.id
+
+    @property
+    def label(self):
+        return 'Remove links to bug reports'
 
     @action(_('Remove'))
     def unlinkBugs(self, action, data):

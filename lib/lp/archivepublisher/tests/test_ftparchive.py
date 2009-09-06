@@ -1,5 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ftparchive.py"""
 
@@ -14,18 +14,14 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.testing import LaunchpadZopelessLayer
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.tests.util import (
-    FakeSourcePublishing, FakeSourceFilePublishing,
-    FakeBinaryPublishing, FakeBinaryFilePublishing, FakeLogger)
+from lp.archivepublisher.ftparchive import FTPArchiveHandler, f_touch
+from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingPocket)
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from canonical.librarian.client import LibrarianClient
-from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 def sanitize_feisty_apt_ftparchive_output(text):
@@ -70,7 +66,6 @@ class TestFTPArchive(unittest.TestCase):
     def setUp(self):
         self.layer.switchDbUser(config.archivepublisher.dbuser)
 
-        self.library = LibrarianClient()
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
         self._archive = self._distribution.main_archive
         self._config = Config(self._distribution)
@@ -84,7 +79,7 @@ class TestFTPArchive(unittest.TestCase):
         self._overdir = self._config.overrideroot
         self._listdir = self._config.overrideroot
         self._tempdir = self._config.temproot
-        self._logger = FakeLogger()
+        self._logger = QuietFakeLogger()
         self._dp = DiskPool(self._pooldir, self._tempdir, self._logger)
         self._publisher = SamplePublisher(self._archive)
 
@@ -110,11 +105,8 @@ class TestFTPArchive(unittest.TestCase):
             sample_text.splitlines(), result_text.splitlines())
         self.assertEqual(result_text, sample_text, '\n'.join(diff_lines))
 
-    def _addMockFile(self, component, sourcename, leafname):
-        """Add a mock file in Librarian.
-
-        Returns a ILibraryFileAlias corresponding to the file uploaded.
-        """
+    def _addRepositoryFile(self, component, sourcename, leafname):
+        """Create a repository file."""
         fullpath = self._dp.pathFor(component, sourcename, leafname)
         dirname = os.path.dirname(fullpath)
         if not os.path.exists(dirname):
@@ -123,190 +115,77 @@ class TestFTPArchive(unittest.TestCase):
         leafcontent = file(leaf).read()
         file(fullpath, "w").write(leafcontent)
 
-        alias_id = self.library.addFile(
-            leafname, len(leafcontent), file(leaf), 'application/text')
-        self.layer.txn.commit()
-        return getUtility(ILibraryFileAliasSet)[alias_id]
-
-    def _getFakePubSource(self, sourcename, component, leafname, section, dr):
-        """Return a mock source publishing record."""
-        alias = self._addMockFile(component, sourcename, leafname)
-        return FakeSourcePublishing(sourcename, component, alias, section, dr)
-
-    def _getFakePubBinary(self, binaryname, sourcename, component, leafname,
-                         section, dr, priority, archtag):
-        """Return a mock binary publishing record."""
-        alias = self._addMockFile(component, sourcename, leafname)
-        return FakeBinaryPublishing(binaryname, sourcename, component, alias,
-                                    section, dr, priority, archtag)
-
-    def _getFakePubSourceFile(self, sourcename, component, leafname,
-                              section, dr):
-        """Return a mock source publishing record."""
-        alias = self._addMockFile(component, sourcename, leafname)
-        return FakeSourceFilePublishing(sourcename, component, leafname,
-                                        alias, section, dr)
-
-    def _getFakePubBinaryFile(self, binaryname, sourcename, component,
-                              leafname, section, dr, archtag,):
-        """Return a mock binary publishing record."""
-        alias = self._addMockFile(component, sourcename, leafname)
-        # Yes, it's the sourcename. There's nothing much related to
-        # binary packages in BinaryPackageFilePublishing apart from the
-        # binarypackagepublishing link it has.
-        return FakeBinaryFilePublishing(sourcename, component, leafname,
-                                        alias, section, dr, archtag)
-
     def _setUpFTPArchiveHandler(self):
-        from lp.archivepublisher.ftparchive import FTPArchiveHandler
         fa = FTPArchiveHandler(
             self._logger, self._config, self._dp, self._distribution,
             self._publisher)
         return fa
 
-    def testInstantiate(self):
-        """lp.archivepublisher.FTPArchive should be instantiatable"""
-        from lp.archivepublisher.ftparchive import FTPArchiveHandler
-        FTPArchiveHandler(self._logger, self._config, self._dp,
-                   self._distribution, self._publisher)
+    def test_getSourcesForOverrides(self):
+        # getSourcesForOverrides returns a list of tuples containing:
+        # (sourcename, suite, component, section)
 
-    def testGetSourcesForOverridesForPrimary(self):
-        """Ensure Publisher.getSourcesForOverrides works for PRIMARY archive.
-
-        FTPArchiveHandler.getSourcesForOverride should be returning
-        PUBLISHED SourcePackagePublishingHistory rows that match the
-        distroseries, its primary-archive and the supplied pocket.
-        """
+        # Reconfigure FTPArchiveHandler to retrieve sampledata overrides.
         fa = self._setUpFTPArchiveHandler()
-        ubuntuwarty = getUtility(IDistributionSet)['ubuntu']['hoary']
-        # Override the current SamplePublisher archive (ubuntutest primary)
-        # to 'ubuntu primary archive'.
-        fa.publisher.archive = ubuntuwarty.main_archive
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        fa.publisher.archive = hoary.main_archive
 
         published_sources = fa.getSourcesForOverrides(
-            ubuntuwarty, PackagePublishingPocket.RELEASE)
+            hoary, PackagePublishingPocket.RELEASE)
 
         # For the above query, we are depending on the sample data to
         # contain seven rows of SourcePackagePublishghistory data.
         expectedSources = [
-            ('evolution', '1.0'),
-            ('netapplet', '1.0-1'),
-            ('pmount', '0.1-2'),
-            ('alsa-utils', '1.0.9a-4ubuntu1'),
-            ('cnews', 'cr.g7-37'),
-            ('libstdc++', 'b8p'),
-            ('linux-source-2.6.15', '2.6.15.3')
+            ('linux-source-2.6.15', 'hoary', 'main', 'base'),
+            ('libstdc++', 'hoary', 'main', 'base'),
+            ('cnews', 'hoary', 'universe', 'base'),
+            ('alsa-utils', 'hoary', 'main', 'base'),
+            ('pmount', 'hoary', 'main', 'editors'),
+            ('netapplet', 'hoary', 'main', 'web'),
+            ('evolution', 'hoary', 'main', 'editors'),
             ]
-        actualSources = [
-            (spph.sourcepackagerelease.name,
-             spph.sourcepackagerelease.version)
-            for spph in published_sources]
+        self.assertEqual(expectedSources, list(published_sources))
 
-        self.assertEqual(expectedSources, actualSources)
+    def test_getBinariesForOverrides(self):
+        # getBinariesForOverrides returns a list of tuples containing:
+        # (sourcename, suite, component, section, priority)
 
-    def testGetSourcesForOverridesForPartner(self):
-        """Ensure Publisher.getSourcesForOverrides works for PARTNER archive.
-
-        FTPArchiveHandler.getSourcesForOverride should be returning
-        PUBLISHED SourcePackagePublishingHistory rows that match the
-        distroseries, its partner-archive and the supplied pocket.
-        """
+        # Reconfigure FTPArchiveHandler to retrieve sampledata overrides.
         fa = self._setUpFTPArchiveHandler()
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
-        breezy_autotest = ubuntu['breezy-autotest']
-        # Override the current SamplePublisher archive (ubuntutest primary)
-        # to 'ubuntu partner archive'.
-        fa.publisher.archive = getUtility(IArchiveSet).getByDistroPurpose(
-            ubuntu, ArchivePurpose.PARTNER)
-
-        published_sources = fa.getSourcesForOverrides(
-            breezy_autotest, PackagePublishingPocket.RELEASE)
-
-        expectedSources = [
-            ('commercialpackage', '1.0-1')
-            ]
-        actualSources = [
-            (spph.sourcepackagerelease.name,
-             spph.sourcepackagerelease.version)
-            for spph in published_sources]
-
-        self.assertEqual(expectedSources, actualSources)
-
-    def testGetBinariesForOverridesForPrimary(self):
-        """Ensure Publisher.getBinariesForOverrides works for PRIMARY archive.
-
-        FTPArchiveHandler.getBinariesForOverride should be returning
-        PUBLISHED BinaryPackagePublishingHistory rows that match the
-        distroseries, its primary-archive and the supplied pocket.
-        """
-        fa = self._setUpFTPArchiveHandler()
-        ubuntuwarty = getUtility(IDistributionSet)['ubuntu']['hoary']
-        # Override the current SamplePublisher archive (ubuntutest primary)
-        # to 'ubuntu primary archive'.
-        fa.publisher.archive = ubuntuwarty.main_archive
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        fa.publisher.archive = hoary.main_archive
 
         published_binaries = fa.getBinariesForOverrides(
-            ubuntuwarty, PackagePublishingPocket.RELEASE)
-
-        # The above query depends on the sample data containing two rows
-        # of BinaryPackagePublishingHistory with these IDs:
+            hoary, PackagePublishingPocket.RELEASE)
         expectedBinaries = [
-            ('pmount', '0.1-1'),
-            ('pmount', '2:1.9-1'),
+            ('pmount', 'hoary', 'main', 'base', 'extra'),
+            ('pmount', 'hoary', 'universe', 'editors', 'important')
             ]
-        actualBinaries = [
-            (bpph.binarypackagerelease.name,
-             bpph.binarypackagerelease.version)
-            for bpph in published_binaries]
+        self.assertEqual(expectedBinaries, list(published_binaries))
 
-        self.assertEqual(expectedBinaries, actualBinaries)
-
-    def testGetBinariesForOverridesForPartner(self):
-        """Ensure Publisher.getBinariesForOverrides works for PARTNER archive.
-
-        FTPArchiveHandler.getBinariesForOverride should be returning
-        PUBLISHED BinaryPackagePublishingHistory rows that match the
-        distroseries, its partner-archive and the supplied pocket.
-        """
+    def test_getBinariesForOverrides_with_no_architectures(self):
+        # getBinariesForOverrides() copes with uninitiazed distroseries
+        # (no architectures), returning an empty ResultSet.
         fa = self._setUpFTPArchiveHandler()
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
-        breezy_autotest = ubuntu['breezy-autotest']
-        # Override the current SamplePublisher archive (ubuntutest primary)
-        # to 'ubuntu partner archive'.
-        fa.publisher.archive = getUtility(IArchiveSet).getByDistroPurpose(
-            ubuntu, ArchivePurpose.PARTNER)
+
+        breezy_autotest = self._distribution.getSeries('breezy-autotest')
+        self.assertEquals([], list(breezy_autotest.architectures))
 
         published_binaries = fa.getBinariesForOverrides(
             breezy_autotest, PackagePublishingPocket.RELEASE)
+        self.assertEqual([], list(published_binaries))
 
-        # The above query depends on the sample data containing two rows
-        # of BinaryPackagePublishingHistory with these IDs:
-        expectedBinaries = [
-            (u'commercialpackage', u'1.0-1')
-            ]
-        actualBinaries = [
-            (bpph.binarypackagerelease.name,
-             bpph.binarypackagerelease.version)
-            for bpph in published_binaries]
-
-        self.assertEqual(expectedBinaries, actualBinaries)
-
-    def testPublishOverrides(self):
-        """Verify FtpArchive.publishOverrides working on disk."""
+    def test_publishOverrides(self):
+        # publishOverrides write the expected files on disk.
         fa = self._setUpFTPArchiveHandler()
-        src_result = [
-            self._getFakePubSource(
-                "foo", "main", "foo.dsc", "misc", "hoary-test"),
-            ]
-        src = FakeSelectResult(src_result)
-        bin_result = [
-            self._getFakePubBinary(
-                "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
-                PackagePublishingPriority.EXTRA, "i386"),
-            ]
-        bin = FakeSelectResult(bin_result)
 
-        fa.publishOverrides(src, bin)
+        source_overrides = FakeSelectResult(
+            [('foo', 'hoary-test', 'main', 'misc')])
+        binary_overrides = FakeSelectResult(
+            [('foo', 'hoary-test', 'main', 'misc', 'extra')])
+        fa.publishOverrides(source_overrides, binary_overrides)
 
         # Check that the overrides lists generated by LP exist and have the
         # expected contents.
@@ -314,67 +193,86 @@ class TestFTPArchive(unittest.TestCase):
         self._verifyFile("override.hoary-test.main.src", self._overdir)
         self._verifyFile("override.hoary-test.extra.main", self._overdir)
 
-    def testPublishFileLists(self):
-        """Verify FtpArchive.publishFileLists working on disk."""
-        fa = self._setUpFTPArchiveHandler()
-        src_result = [
-            self._getFakePubSourceFile(
-                "foo", "main", "foo.dsc", "misc", "hoary-test"),
-            ]
-        src = FakeSelectResult(src_result)
-        bin_result = [
-            self._getFakePubBinaryFile(
-                "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
-                "i386"),
-            ]
-        bin = FakeSelectResult(bin_result)
+    def test_getSourceFiles(self):
+        # getSourceFiles returns a list of tuples containing:
+        # (sourcename, suite, filename, component)
 
-        fa.publishFileLists(src, bin)
+        # Reconfigure FTPArchiveHandler to retrieve sampledata records.
+        fa = self._setUpFTPArchiveHandler()
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        fa.distro = ubuntu
+        fa.publisher.archive = hoary.main_archive
+
+        sources_files = fa.getSourceFiles(
+            hoary, PackagePublishingPocket.RELEASE)
+        expected_files = [
+            ('alsa-utils', 'hoary', 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'main'),
+            ('evolution', 'hoary', 'evolution-1.0.tar.gz', 'main'),
+            ('netapplet', 'hoary', 'netapplet_1.0.0.orig.tar.gz', 'main'),
+            ]
+        self.assertEqual(expected_files, list(sources_files))
+
+    def test_getBinaryFiles(self):
+        # getBinaryFiles returns a list of tuples containing:
+        # (sourcename, suite, filename, component, architecture)
+
+        # Reconfigure FTPArchiveHandler to retrieve sampledata records.
+        fa = self._setUpFTPArchiveHandler()
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        fa.distro = ubuntu
+        fa.publisher.archive = hoary.main_archive
+
+        binary_files = fa.getBinaryFiles(
+            hoary, PackagePublishingPocket.RELEASE)
+        expected_files = [
+            ('pmount', 'hoary', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa')
+            ]
+        self.assertEqual(expected_files, list(binary_files))
+
+    def test_publishFileLists(self):
+        # publishFileLists writes the expected files on disk.
+        fa = self._setUpFTPArchiveHandler()
+
+        source_files = FakeSelectResult(
+            [('foo', 'hoary-test',  'foo.dsc', 'main')])
+        binary_files = FakeSelectResult(
+            [('foo', 'hoary-test', 'foo.deb', 'main', 'binary-i386')])
+        fa.publishFileLists(source_files, binary_files)
 
         # Check that the file lists generated by LP exist and have the
         # expected contents.
         self._verifyFile("hoary-test_main_source", self._listdir)
         self._verifyFile("hoary-test_main_binary-i386", self._listdir)
 
-    def testGenerateConfig(self):
-        """Generate apt-ftparchive config"""
-        from lp.archivepublisher.ftparchive import FTPArchiveHandler
-        from lp.archivepublisher.publishing import Publisher
+    def test_generateConfig(self):
+        # Generate apt-ftparchive configuration file and run it.
+
+        # Setup FTPArchiveHandler with a real Publisher for Ubuntutest.
         publisher = Publisher(
             self._logger, self._config, self._dp, self._archive)
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,
                                self._distribution, publisher)
-
-        src_result = [
-            self._getFakePubSource(
-                "foo", "main", "foo.dsc", "misc", "hoary-test"),
-            ]
-        src = FakeSelectResult(src_result)
-        bin_result = [
-            self._getFakePubBinary(
-                "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
-                PackagePublishingPriority.EXTRA, "i386"),
-            ]
-        bin = FakeSelectResult(bin_result)
-
         fa.createEmptyPocketRequests(fullpublish=True)
-        fa.publishOverrides(src, bin)
 
+        # Calculate overrides.
+        source_overrides = FakeSelectResult(
+            [('foo', 'hoary-test', 'main', 'misc'),])
+        binary_overrides = FakeSelectResult(
+            [('foo', 'hoary-test', 'main', 'misc', 'extra')])
+        fa.publishOverrides(source_overrides, binary_overrides)
 
-        src_result = [
-            self._getFakePubSourceFile(
-                "foo", "main", "foo.dsc", "misc", "hoary-test"),
-            ]
-        src = FakeSelectResult(src_result)
+        # Calculate filelists.
+        source_files = FakeSelectResult(
+            [('foo', 'hoary-test',  'foo.dsc', 'main')])
+        binary_files = FakeSelectResult(
+            [('foo', 'hoary-test', 'foo.deb', 'main', 'binary-i386')])
+        fa.publishFileLists(source_files, binary_files)
 
-        bin_result = [
-            self._getFakePubBinaryFile(
-                "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
-                "i386"),
-            ]
-        bin = FakeSelectResult(bin_result)
-
-        fa.publishFileLists(src, bin)
+        # Add mentioned files in the repository pool/.
+        self._addRepositoryFile('main', 'foo', 'foo.dsc')
+        self._addRepositoryFile('main', 'foo', 'foo.deb')
 
         # XXX cprov 2007-03-21: Relying on byte-to-byte configuration file
         # comparing is weak. We should improve this methodology to avoid
@@ -413,23 +311,19 @@ class TestFTPArchive(unittest.TestCase):
         # XXX cprov 2007-03-21: see above, do not run a-f on dev machines.
         assert fa.runApt(apt_conf) == 0
 
-    def testGenerateConfigEmptyCareful(self):
-        """Generate apt-ftparchive config for an specific empty suite.
-
-        By passing 'careful_apt' option associated with 'allowed_suite'
-        we can publish only a specific group of the suites even if they
-        are still empty. It makes APT clients happier during development
-        cycle.
-
-        This test should check:
-
-          * if apt.conf was generated correctly.
-          * a-f runs based on this config without any errors
-          * a-f *only* creates the wanted archive indexes.
-        """
-        from lp.archivepublisher.ftparchive import FTPArchiveHandler
-        from lp.archivepublisher.publishing import Publisher
-
+    def test_generateConfig_empty_and_careful(self):
+        # Generate apt-ftparchive config for an specific empty suite.
+        #
+        # By passing 'careful_apt' option associated with 'allowed_suite'
+        # we can publish only a specific group of the suites even if they
+        # are still empty. It makes APT clients happier during development
+        # cycle.
+        #
+        # This test should check:
+        #
+        #  * if apt.conf was generated correctly.
+        #  * a-f runs based on this config without any errors
+        #  * a-f *only* creates the wanted archive indexes.
         allowed_suites = set()
         allowed_suites.add(('hoary-test', PackagePublishingPocket.UPDATES))
 
@@ -478,17 +372,13 @@ class TestFTouch(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_folder)
 
-    def testNewFile(self):
-        """Test f_touch correctly creates a new file."""
-        from lp.archivepublisher.ftparchive import f_touch
-
+    def test_f_touch_new_file(self):
+        # Test f_touch correctly creates a new file.
         f_touch(self.test_folder, "file_to_touch")
         self.assertTrue(os.path.exists("%s/file_to_touch" % self.test_folder))
 
-    def testExistingFile(self):
-        """Test f_touch truncates existing files."""
-        from lp.archivepublisher.ftparchive import f_touch
-
+    def test_f_touch_existing_file(self):
+        # Test f_touch truncates existing files.
         f = open("%s/file_to_truncate" % self.test_folder, "w")
         test_contents = "I'm some test contents"
         f.write(test_contents)

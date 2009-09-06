@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for the checkwatches.py cronscript."""
 
@@ -23,7 +24,7 @@ from lp.bugs.externalbugtracker import (
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 from lp.bugs.externalbugtracker.bugzilla import (
-    BugzillaLPPlugin)
+    BugzillaAPI)
 from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
@@ -291,9 +292,9 @@ class BugWatchUpdater(object):
         # We special-case the Gnome Bugzilla.
         gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
         if (bug_tracker == gnome_bugzilla and
-            isinstance(remotesystem_to_use, BugzillaLPPlugin)):
+            isinstance(remotesystem_to_use, BugzillaAPI)):
 
-            lp_plugin_watches = []
+            api_watches = []
             normal_watches = []
 
             bug_ids = [bug_watch.remotebug for bug_watch in bug_watches]
@@ -302,17 +303,17 @@ class BugWatchUpdater(object):
 
             # For bug watches on remote bugs that are against products
             # in the _syncable_gnome_products list - i.e. ones with which
-            # we want to sync comments - we return a BugzillaLPPlugin
+            # we want to sync comments - we return a BugzillaAPI
             # instance. Otherwise we return a normal Bugzilla instance.
             for bug_watch in bug_watches:
                 if (remote_products[bug_watch.remotebug] in
                     self._syncable_gnome_products):
-                    lp_plugin_watches.append(bug_watch)
+                    api_watches.append(bug_watch)
                 else:
                     normal_watches.append(bug_watch)
 
             trackers_and_watches = [
-                (remotesystem_to_use, lp_plugin_watches),
+                (remotesystem_to_use, api_watches),
                 (remotesystem, normal_watches),
                 ]
         else:

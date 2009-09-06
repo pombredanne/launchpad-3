@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker views."""
 
@@ -6,10 +7,11 @@ __metaclass__ = type
 
 __all__ = [
     'BugTrackerAddView',
-    'BugTrackerBreadcrumbBuilder',
-    'BugTrackerContextMenu',
+    'BugTrackerBreadcrumb',
     'BugTrackerEditView',
     'BugTrackerNavigation',
+    'BugTrackerNavigationMenu',
+    'BugTrackerSetBreadcrumb',
     'BugTrackerSetContextMenu',
     'BugTrackerSetNavigation',
     'BugTrackerSetView',
@@ -40,7 +42,9 @@ from canonical.launchpad.webapp import (
     redirection, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.lazr.utils import smartquote
 from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
 
 
@@ -62,17 +66,6 @@ class BugTrackerSetNavigation(GetitemNavigation):
     usedfor = IBugTrackerSet
 
 
-class BugTrackerContextMenu(ContextMenu):
-
-    usedfor = IBugTracker
-
-    links = ['edit']
-
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
-
-
 class BugTrackerSetContextMenu(ContextMenu):
 
     usedfor = IBugTrackerSet
@@ -86,8 +79,9 @@ class BugTrackerSetContextMenu(ContextMenu):
 
 class BugTrackerAddView(LaunchpadFormView):
 
+    page_title = u"Register an external bug tracker"
     schema = IBugTracker
-    label = "Register an external bug tracker"
+    label = page_title
     field_names = ['name', 'bugtrackertype', 'title', 'summary',
                    'baseurl', 'contactdetails']
 
@@ -124,10 +118,16 @@ class BugTrackerAddView(LaunchpadFormView):
             owner=getUtility(ILaunchBag).user)
         self.next_url = canonical_url(bugtracker)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class BugTrackerSetView(LaunchpadView):
     """View for actions on the bugtracker index pages."""
-    PILLAR_LIMIT = 3
+
+    page_title = u"Bug trackers registered in Launchpad"
+    pillar_limit = 3
 
     def initialize(self):
         # Sort the bug trackers into active and inactive lists so that
@@ -151,19 +151,19 @@ class BugTrackerSetView(LaunchpadView):
 
         In more detail, the dictionary holds a list of products/projects
         and a boolean determining whether or not there we omitted
-        pillars by truncating to PILLAR_LIMIT.
+        pillars by truncating to pillar_limit.
 
         If no pillars are mapped to this bugtracker, returns {}.
         """
         if bugtracker not in self._pillar_cache:
             return {}
         pillars = self._pillar_cache[bugtracker]
-        if len(pillars) > self.PILLAR_LIMIT:
+        if len(pillars) > self.pillar_limit:
             has_more_pillars = True
         else:
             has_more_pillars = False
         return {
-            'pillars': pillars[:self.PILLAR_LIMIT],
+            'pillars': pillars[:self.pillar_limit],
             'has_more_pillars': has_more_pillars
         }
 
@@ -171,6 +171,11 @@ class BugTrackerSetView(LaunchpadView):
 class BugTrackerView(LaunchpadView):
 
     usedfor = IBugTracker
+
+    @property
+    def page_title(self):
+        return smartquote(
+            u'The "%s" bug tracker in Launchpad' % self.context.title)
 
     def initialize(self):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
@@ -187,19 +192,21 @@ class BugTrackerView(LaunchpadView):
 
 
 BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
-    [('on', True), ('off', False)])
+    [('On', True), ('Off', False)])
 
 
 class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
-    field_names = ['name', 'title', 'bugtrackertype',
-                   'summary', 'baseurl', 'aliases', 'contactdetails',
-                   'active']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
     custom_widget('aliases', DelimitedListWidget, height=3)
     custom_widget('active', LaunchpadRadioWidget, orientation='vertical')
+
+    @property
+    def page_title(self):
+        return smartquote(
+            u'Change details for the "%s" bug tracker' % self.context.title)
 
     @cachedproperty
     def field_names(self):
@@ -360,6 +367,10 @@ class BugTrackerEditView(LaunchpadEditFormView):
         # Go back to the bug tracker listing.
         self.next_url = canonical_url(getUtility(IBugTrackerSet))
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class BugTrackerNavigation(Navigation):
 
@@ -378,8 +389,21 @@ class BugTrackerNavigation(Navigation):
             return RemoteBug(self.context, remotebug, bugs)
 
 
-class BugTrackerBreadcrumbBuilder(BreadcrumbBuilder):
+class BugTrackerSetBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for the `IBugTrackerSet`."""
+
+    rootsite = None
+
+    @property
+    def text(self):
+        return u"Bug trackers"
+
+
+class BugTrackerBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBugTracker`."""
+
+    rootsite = None
+
     @property
     def text(self):
         return self.context.title
@@ -400,3 +424,13 @@ class RemoteBug:
         return 'Remote Bug #%s in %s' % (self.remotebug,
                                          self.bugtracker.title)
 
+
+class BugTrackerNavigationMenu(NavigationMenu):
+
+    usedfor = BugTrackerView
+    facet = 'bugs'
+    links = ['edit']
+
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')

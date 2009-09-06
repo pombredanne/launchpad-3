@@ -1,4 +1,6 @@
-= Basic integration =
+=================
+Basic integration
+=================
 
 The basic integration between Launchpad and Mailman allows us to run Mailman's
 'withlist' script to check for the existence of the unused (but mandatory)

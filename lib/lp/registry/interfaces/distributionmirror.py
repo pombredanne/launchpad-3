@@ -1,4 +1,6 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -184,7 +186,7 @@ class MirrorFreshness(DBEnumeratedType):
         """)
 
     UNKNOWN = DBItem(8, """
-        Unknown freshness
+        Last update unknown
 
         We couldn't determine when this mirror's content was last updated.
         """)
@@ -608,4 +610,3 @@ class IMirrorProbeRecord(Interface):
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     log_file = Attribute(_("The log of this probing."))
-

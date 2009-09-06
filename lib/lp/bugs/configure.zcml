@@ -1,11 +1,20 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+
+    <lp:help-folder
+        folder="help" type="canonical.launchpad.layers.BugsLayer" />
+
     <class
         class="canonical.launchpad.database.BugActivity">
         <allow
@@ -225,6 +234,7 @@
                     transitionToImportance
                     transitionToStatus
                     transitionToAssignee
+                    transitionToMilestone
                     transitionToTarget"/>
             
             <!-- XXX Brad Bollenbach 2006-09-29
@@ -259,6 +269,14 @@
         <adapter
             factory="lp.bugs.browser.bugtask.assignee_renderer"
             name="assignee"/>
+        <adapter
+            factory="lp.bugs.browser.bugtask.bugtarget_renderer"
+            name="target"/>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            factory="lp.bugs.browser.bugtask.BugTaskBreadcrumb"
+            permission="zope.Public"/>
         
         <!-- NullBugTask -->
         
@@ -364,9 +382,9 @@
                 set_attributes="active"/>
         </class>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
-            factory="lp.bugs.browser.bugtracker.BugTrackerBreadcrumbBuilder"
+            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
         
         <!-- BugTrackerSet -->
@@ -382,6 +400,11 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
         </securedutility>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
+            factory="lp.bugs.browser.bugtracker.BugTrackerSetBreadcrumb"
+            permission="zope.Public"/>
         
         <!-- BugTrackerAlias -->
         
@@ -513,32 +536,6 @@
             set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
     </class>
     <facet
-        facet="overview">
-        
-        <!-- MentoringOffer -->
-        
-        <class
-            class="canonical.launchpad.database.MentoringOffer">
-            <allow
-                interface="canonical.launchpad.interfaces.IMentoringOffer"/>
-        </class>
-        
-        <!-- IHasMentoringOffers -->
-        
-        
-        <!-- ICanBeMentored -->
-        
-        
-        <!-- MentoringOfferSet -->
-        
-        <securedutility
-            class="canonical.launchpad.database.MentoringOfferSet"
-            provides="canonical.launchpad.interfaces.IMentoringOfferSet">
-            <allow
-                interface="canonical.launchpad.interfaces.IMentoringOfferSet"/>
-        </securedutility>
-    </facet>
-    <facet
         facet="bugs">
         
         <!-- Bug -->
@@ -559,9 +556,12 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getBugTask
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
+                    linkBranch
+                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -589,7 +589,7 @@
                     displayname
                     activity
                     initial_message
-                    bug_branches
+                    linked_branches
                     watches
                     cves
                     cve_links
@@ -611,7 +611,6 @@
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
-                    getBugTask
                     canBeNominatedFor
                     getNominationFor
                     getNominations
@@ -642,8 +641,6 @@
                     findCvesInText
                     newMessage
                     linkMessage
-                    addBranch
-                    removeBranch
                     addAttachment
                     unsubscribeFromDupes
                     subscribe
@@ -887,4 +884,10 @@
         <allow
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationSet"/>
     </securedutility>
+    <adapter
+        name="bugs"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.bugs.interfaces.bugtarget.IBugTarget"
+        factory="lp.bugs.browser.bugtarget.BugTargetOnBugsVHostBreadcrumb"
+        permission="zope.Public"/>
 </configure>

@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
 
@@ -30,15 +31,12 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
-from zope.event import notify
 from zope import formlib
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.cachedproperty import cachedproperty
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -58,6 +56,7 @@ from canonical.launchpad.interfaces._schema_circular_imports import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IFrontPageBugAddForm, IProjectBugAddForm)
@@ -69,13 +68,15 @@ from lp.registry.interfaces.product import IProduct, IProject
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    canonical_url, custom_widget, safe_action, urlappend)
+    canonical_url, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
-from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
-from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
+from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
+from canonical.widgets.bugtask import NewLineToSpacesWidget
+from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
@@ -463,7 +464,6 @@ class FileBugViewBase(LaunchpadFormView):
         security_related = data.get("security_related", False)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
-        product = getUtility(ILaunchBag).product
 
         context = self.context
         if distribution is not None:
@@ -657,18 +657,6 @@ class FileBugViewBase(LaunchpadFormView):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
 
-    @property
-    def advanced_filebug_url(self):
-        """The URL to the advanced bug filing form.
-
-        If a token was passed to this view, it will be be passed through
-        to the advanced bug filing form via the returned URL.
-        """
-        url = urlappend(canonical_url(self.context), '+filebug-advanced')
-        if self.extra_data_token is not None:
-            url = urlappend(url, self.extra_data_token)
-        return url
-
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
         if self.extra_data_token is not None:
@@ -803,24 +791,13 @@ class FileBugViewBase(LaunchpadFormView):
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
 
-    This view skips searching for duplicates.
+    This view exists only to redirect from +filebug-advanced to +filebug.
     """
-    schema = IBugAddForm
-    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
-    # hack to make the action decorator Just Work across
-    # inheritance. Technically, this isn't needed for this class,
-    # because it defines no further actions, but I've added it just to
-    # preclude mysterious bugs if/when another action is defined in this
-    # class!
-    actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('tags', BugTagsWidget)
-    template = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-advanced.pt")
-    advanced_form = True
-
-    def showFileBugForm(self):
-        return self.template()
+    def initialize(self):
+        filebug_url = canonical_url(
+            self.context, rootsite='bugs', view_name='+filebug')
+        self.request.response.redirect(filebug_url,
+        status=HTTP_MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -920,20 +897,6 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
 
         return search_context
 
-    @cachedproperty
-    def most_common_bugs(self):
-        """Return a list of the most duplicated bugs."""
-        search_context = self.search_context
-        if search_context is None:
-            return []
-        else:
-            return search_context.getMostCommonBugs(
-                self.user, limit=self._MATCHING_BUGS_LIMIT)
-
-    @property
-    def found_possible_duplicates(self):
-        return self.similar_bugs or self.most_common_bugs
-
     @property
     def search_text(self):
         """Return the search string entered by the user."""
@@ -995,30 +958,9 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
             " product the user selected.")
         return self.widgets['product'].getInputValue()
 
-    @cachedproperty
-    def most_common_bugs(self):
-        """Return a list of the most duplicated bugs."""
-        # We can only discover the most common bugs when a product has
-        # been selected.
-        if self.widgets['product'].hasValidInput():
-            selected_product = self._getSelectedProduct()
-            return selected_product.getMostCommonBugs(
-                self.user, limit=self._MATCHING_BUGS_LIMIT)
-        else:
-            return []
-
     def getSecurityContext(self):
         """See FileBugViewBase."""
         return self._getSelectedProduct()
-
-
-class ProjectFileBugAdvancedView(FileBugAdvancedView):
-    """Advanced filebug page for IProject."""
-
-    # Make inheriting the base class' actions work.
-    actions = FileBugAdvancedView.actions
-    schema = IProjectBugAddForm
-    can_decide_security_contact = False
 
 
 class FrontPageFileBugMixin:
@@ -1130,7 +1072,7 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
         """See FileBugViewBase."""
         try:
             bugtarget = self.widgets['bugtarget'].getInputValue()
-        except InputErrors, error:
+        except InputErrors:
             return None
         if IDistributionSourcePackage.providedBy(bugtarget):
             return bugtarget.distribution
@@ -1140,39 +1082,6 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
                 IDistribution.providedBy(bugtarget)), (
                 "Unknown bug target: %r" % bugtarget)
             return bugtarget
-
-
-class FrontPageFileBugAdvancedView(FrontPageFileBugMixin,
-                                   FileBugAdvancedView):
-    """Browser view class for the top-level +filebug-advanced page."""
-    schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', LaunchpadTargetWidget)
-
-    # Make inheriting the base class' actions work.
-    actions = FileBugAdvancedView.actions
-    can_decide_security_contact = False
-
-    @property
-    def initial_values(self):
-        return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    def validate(self, data):
-        """Ensures that the target uses Malone for its bug tracking.
-
-        If the target does use Malone, further validation is carried out by
-        FileBugViewBase.validate()
-        """
-        product_or_distro = self.getProductOrDistroFromContext()
-
-        # If we have a context that we can test for Malone use, we do so.
-        if (product_or_distro is not None and
-            not product_or_distro.official_malone):
-            self.setFieldError(
-                'bugtarget',
-                "%s does not use Launchpad as its bug tracker" %
-                product_or_distro.displayname)
-        else:
-            return super(FrontPageFileBugAdvancedView, self).validate(data)
 
 
 class BugTargetBugListingView:
@@ -1201,11 +1110,13 @@ class BugTargetBugListingView:
 
         series_buglistings = []
         for series in serieses:
-            series_buglistings.append(
-                dict(
-                    title=series.name,
-                    url=canonical_url(series) + "/+bugs",
-                    count=series.open_bugtasks.count()))
+            series_bug_count = series.open_bugtasks.count()
+            if series_bug_count > 0:
+                series_buglistings.append(
+                    dict(
+                        title=series.name,
+                        url=canonical_url(series) + "/+bugs",
+                        count=series_bug_count))
 
         return series_buglistings
 
@@ -1224,6 +1135,10 @@ class BugCountDataItem:
 
 class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     """View for the Bugs front page."""
+
+    # We have a custom searchtext widget here so that we can set the
+    # width of the search box properly.
+    custom_widget('searchtext', NewLineToSpacesWidget, displayWidth=36)
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
@@ -1377,6 +1292,16 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     schema = IOfficialBugTagTargetPublic
     custom_widget('official_bug_tags', LargeBugTagsWidget)
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Manage official bug tags for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     @action('Save', name='save')
     def save_action(self, action, data):
         """Action for saving new official bug tags."""
@@ -1403,3 +1328,10 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         """The URL the user is sent to when clicking the "cancel" link."""
         return canonical_url(self.context)
 
+
+class BugTargetOnBugsVHostBreadcrumb(Breadcrumb):
+    rootsite = 'bugs'
+
+    @property
+    def text(self):
+        return 'Bugs on %s' % self.context.name

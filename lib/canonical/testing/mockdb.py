@@ -1,4 +1,5 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A self maintaining mock database for tests.
 
@@ -24,7 +25,7 @@ import os.path
 import urllib
 
 import psycopg2
-from zope.testing.testrunner import RetryTest
+# from zope.testing.testrunner import RetryTest
 
 from canonical.config import config
 
@@ -385,7 +386,8 @@ class ScriptPlayer:
         if os.path.exists(self.script_filename):
             os.unlink(self.script_filename)
         self.invalid = True
-        raise RetryTest(reason)
+        raise RetryTest(reason) # Leaving this as a name error: this should
+        # not be called unless we reinstate the retry behavior in zope.testing.
 
 
 class MockDbConnection:

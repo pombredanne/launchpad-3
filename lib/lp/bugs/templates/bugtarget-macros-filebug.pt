@@ -144,14 +144,15 @@
     <tal:has-context define="product_or_distro view/getProductOrDistroFromContext"
                      condition="product_or_distro">
 
-      <p class="warning message">
-        <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use
-        Launchpad as its bug tracker.
-        <br />
-        <span tal:condition="view/frontpage_form">
-          You can <a href="+filebug">refine and resubmit</a> your bug report.
-        </span>
-      </p>
+      <div class="highlight-message"><a tal:replace="structure product_or_distro/fmt:link">Alsa Utils</a>
+      <strong>does not use</strong> Launchpad as its bug tracker.
+      <a tal:attributes="href context/menu:overview/edit/fmt:url"
+         tal:condition="context/required:launchpad.Edit"> Change this&nbsp;
+         <span class="sprite edit"></span></a>
+      </div>
+      <span tal:condition="view/frontpage_form">
+        You can <a href="+filebug">refine and resubmit</a> your bug report.
+      </span>
 
       <tal:upstream condition="view/contextIsProduct">
 
@@ -161,7 +162,7 @@
                                 title="the original developer of the software">upstream</acronym>
                                 <span tal:replace="product_or_distro/displayname" />?</h3>
 
-          <ul class="info">
+          <ul>
             <li tal:condition="product_or_distro/distrosourcepackages">
               If you are using a package installed by your Linux
               distribution, <b>the bug should be reported in that
@@ -406,7 +407,7 @@
                        style="font-weight: normal">
                   #<tal:bug-id replace="bug/id">4</tal:bug-id>
                   <a tal:attributes="href bug/fmt:url; id string:bug-${bug/id}-title"
-                     tal:content="bug/title"
+                     tal:content="bug/title" class="duplicate-bug-link"
                      >Bug title here</a>
                 </label>
               </div>
@@ -435,12 +436,14 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
+
+                  <a class="view-bug-link" tal:attributes="href bug/fmt:url"
+                  >view this bug</a>
                 </span>
               </div>
 
               <div class="duplicate-details"
-                  tal:attributes="id string:details-for-bug-${bug/id}"
-                  style="display: block;">
+                  tal:attributes="id string:details-for-bug-${bug/id}">
 
                 <div class="lesser" style="margin-bottom: 0.5em;"
                     tal:define="description bug/description/fmt:shorten/500/fmt:obfuscate-email/fmt:text-to-html"

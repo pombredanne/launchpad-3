@@ -73,12 +73,13 @@ a name for the import branch, and a subversion branch location.
     ...     "git://example.com/firefox.git")
     >>> browser.getControl('Request Import').click()
 
-When the user clicks continue, the import branch is created
+When the user clicks continue, the approved import branch is created
 
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
-    Import Status: Pending Review
+    Import Status: Reviewed
     This branch is an import of the MASTER branch from the Git repo at
     git://example.com/firefox.git.
+    The next import is scheduled to run as soon as possible.
 
 
 == Requesting a CVS import ==
@@ -170,3 +171,20 @@ then an error is shown to the user.
     ...     print extract_text(message)
     There is 1 error.
     You are not allowed to register imports for Launchpad.
+
+
+== Requesting an import for a product that does not exist ==
+
+If there are privacy policies that disallow the user from creating branches
+then an error is shown to the user.
+
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Project').value = "no-such-product"
+    >>> browser.getControl('Branch Name').value = "imported"
+    >>> browser.getControl('Branch URL').value = (
+    ...     "http://svn.example.com/launchpage/fake")
+    >>> browser.getControl('Request Import').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    Invalid value

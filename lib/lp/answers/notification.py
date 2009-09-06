@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Notifications for the Answers system."""
 
@@ -230,6 +231,18 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             info_fields.append(
                 indent + 'Project: %s => %s' % (
                 old_question.target.displayname, question.target.displayname))
+
+        if question.assignee != old_question.assignee:
+            if old_question.assignee is None:
+                old_assignee = None
+            else:
+                old_assignee = old_question.assignee.displayname
+            if question.assignee is None:
+                assignee = None
+            else:
+                assignee = question.assignee.displayname
+            info_fields.append(indent + 'Assignee: %s => %s' % (
+               old_assignee, assignee))
 
         old_bugs = set(old_question.bugs)
         bugs = set(question.bugs)

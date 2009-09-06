@@ -3,44 +3,51 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
-<style type="text/css" metal:fill-slot="head_epilogue">
-  .logtail {
-    padding-left: 2em;
-  }
-  #merge-summary {
-    margin: 1em 0;
-  }
-</style>
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    .logtail {
+      padding-left: 2em;
+    }
+    #merge-summary {
+      margin: 1em 0;
+    }
+  </style>
+  <script type="text/javascript"
+      tal:condition="devmode"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchsubscription.js">
+  </script>
+  <script type="text/javascript"
+      tal:condition="devmode"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchlinks.js">
+  </script>
+</metal:block>
 
 <body>
 
-<metal:heading fill-slot="before_nav_menu"
-               tal:content="structure context/@@+heading"/>
-
-<div metal:fill-slot="main"
-     tal:define="context_menu context/menu:context">
-
+<metal:side fill-slot="side">
   <tal:public condition="not: context/private">
-    <div id="privacy" class="aside public">
+    <div id="privacy" class="portlet public">
       This branch is public
     </div>
   </tal:public>
   <tal:public condition="context/private">
-    <div id="privacy" class="aside private">
+    <div id="privacy" class="portlet private">
       This branch is private
     </div>
   </tal:public>
 
-  <div class="aside">
-    <aside tal:content="structure context/@@+portlet-subscribers" />
-  </div>
+  <tal:subscribers replace="structure context/@@+portlet-subscribers" />
+
+</metal:side>
+
+<div metal:fill-slot="main"
+     tal:define="context_menu context/menu:context">
 
     <h1>
       <tal:branch replace="context/bzr_identity" />
@@ -103,15 +110,15 @@
             <td id="upload-directions" tal:condition="not:context/owner/isTeam">
               Only
               <a tal:attributes="href context/owner/fmt:url"
-                 tal:content="context/owner/browsername">Person</a>
+                 tal:content="context/owner/displayname">Person</a>
               can upload to this branch. If you are
-              <tal:branch-owner replace="context/owner/browsername"/>
+              <tal:branch-owner replace="context/owner/displayname"/>
               please <a href="+login">log in</a> for upload directions.
             </td>
             <td id="upload-directions" tal:condition="context/owner/isTeam">
               Members of
               <a tal:attributes="href context/owner/fmt:url"
-                 tal:content="context/owner/browsername">Team</a>
+                 tal:content="context/owner/displayname">Team</a>
               can upload to this branch. <a href="+login">Log in</a> for directions.
             </td>
           </tr>
@@ -127,13 +134,13 @@
               <td id="upload-directions" tal:condition="not:context/owner/isTeam">
                 You cannot upload to this branch. Only
                 <a tal:attributes="href context/owner/fmt:url"
-                   tal:content="context/owner/browsername">Person</a>
+                   tal:content="context/owner/displayname">Person</a>
                 can upload to this branch.
               </td>
               <td id="upload-directions" tal:condition="context/owner/isTeam">
                 You cannot upload to this branch. Members of
                 <a tal:attributes="href context/owner/fmt:url"
-                   tal:content="context/owner/browsername">Team</a>
+                   tal:content="context/owner/displayname">Team</a>
                 can upload to this branch.
               </td>
             </tr>
@@ -387,18 +394,26 @@
 
   <div id="related-bugs-and-blueprints">
     <h2>Linked bug reports and blueprints</h2>
-    <div class="actions">
-      <tal:bugs tal:define="branch context;
-                            show_edit python:True;">
-        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
-      </tal:bugs>
+    <div id="buglinks" class="actions">
+      <div id="buglink-list">
+        <tal:bugs tal:define="branch context;
+                              show_edit python:True;">
+          <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+        </tal:bugs>
+      </div>
+
       <div
         tal:define="link context_menu/link_bug"
         tal:condition="link/enabled"
-        tal:content="structure link/render">
-        Link to a bug
+        >
+        <a id="linkbug"
+           class="sprite add"
+           tal:attributes="href link/url"
+           tal:content="link/text" />
       </div>
+
     </div>
+
     <div class="actions">
       <tal:blueprints tal:define="branch context;
                                   show_edit python:True;">
@@ -412,8 +427,38 @@
         Link to a blueprint
       </div>
     </div>
+    <tal:script
+      replace="structure
+      string:&lt;script id='branchlink-script' type='text/javascript'&gt;" />
+      <!--
+
+      YUI().use('io-base', 'code.branchlinks', function(Y) {
+
+      if(Y.UA.ie) {
+          return;
+      }
+
+      Y.on('domready', function() {
+          Y.code.branchlinks.connect_branchlinks();
+      });
+
+      });
+      -->
+    <tal:script replace="structure string:&lt;/script&gt;" />
+
   </div>
 
+  <div
+    id="translations-sources"
+    tal:define="translations_sources view/translations_sources"
+    tal:condition="translations_sources">
+    <h2>Automatic translations commits</h2>
+    <ul>
+      <tal:sources-list repeat="source translations_sources">
+        <li tal:content="structure source/fmt:link">~foo/example/branch</li>
+      </tal:sources-list>
+    </ul>
+  </div>
 
   <div id="recent-revisions">
   <h2 style="clear: both">Recent revisions</h2>

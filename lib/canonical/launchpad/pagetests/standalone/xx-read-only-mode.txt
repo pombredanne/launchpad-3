@@ -33,13 +33,6 @@ Anonymous users are also warned, or they might try to signup.
     Launchpad is undergoing maintenance
     ...
 
-There is no warning on the SSO server, as it is not affected by this mode.
-
-    >>> user_browser.open('http://openid.launchpad.dev')
-    >>> print first_tag_by_class(
-    ...     user_browser.contents, 'warning message')
-    None
-
 There is no warning when Launchpad is running normally.
 
     >>> push_read_only_mode(False)

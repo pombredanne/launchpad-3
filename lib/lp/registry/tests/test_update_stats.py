@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test updates to Distroseries stats."""
 
@@ -14,7 +15,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from canonical.testing import LaunchpadZopelessLayer

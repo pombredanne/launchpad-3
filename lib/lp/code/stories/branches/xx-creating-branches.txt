@@ -141,12 +141,10 @@ matching for the angle brackets of an enclosing tag.
     >>> user_browser.url
     'http://code.launchpad.dev/~no-priv/applets/main'
 
-    >>> print extract_text(find_main_content(user_browser.contents))
-    Created by ...
-    ...
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'privacy'))
     This branch is public
-    ...
-    lp://dev/~no-priv/applets/main
+    >>> print extract_text(find_main_content(user_browser.contents))
+    lp://dev/~no-priv/applets/main ...
     ...http://example.com/applets/main...
 
 
@@ -187,6 +185,7 @@ the user is a member of, or to themselves.
     >>> for option in browser.getControl('Owner').displayOptions:
     ...     print option
     Sample Person (name12)
+    HWDB Team (hwdb-team)
     Landscape Developers (landscape-developers)
     Launchpad Users (launchpad-users)
     Ubuntu Gnome Team (name18)

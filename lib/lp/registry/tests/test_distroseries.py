@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution."""
 
@@ -14,11 +15,11 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingPocket,
-    PackagePublishingStatus)
+    active_publishing_status, PackagePublishingStatus)
 from lp.testing import TestCase, TestCaseWithFactory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (

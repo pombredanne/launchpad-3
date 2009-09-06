@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0401,C0301
 
 __metaclass__ = type
@@ -12,6 +14,9 @@ import subprocess
 import tempfile
 import unittest
 
+from bzrlib.branch import Branch as BzrBranch
+from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.errors import InvalidURLJoin
 from bzrlib.transport import get_transport
 
 import pytz
@@ -24,6 +29,7 @@ from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from canonical.launchpad.webapp import errorlog
 from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
@@ -121,16 +127,7 @@ class TestCase(unittest.TestCase):
         self.addCleanup(fixture.tearDown)
 
     def assertProvides(self, obj, interface):
-        """Assert 'obj' provides 'interface'.
-
-        You should probably be using `assertCorrectlyProvides`.
-        """
-        self.assertTrue(
-            interface.providedBy(obj),
-            "%r does not provide %r" % (obj, interface))
-
-    def assertCorrectlyProvides(self, obj, interface):
-        """Assert 'obj' may correctly provides 'interface'."""
+        """Assert 'obj' correctly provides 'interface'."""
         self.assertTrue(
             interface.providedBy(obj),
             "%r does not provide %r." % (obj, interface))
@@ -182,6 +179,14 @@ class TestCase(unittest.TestCase):
                                  ', '.join([repr(event) for event in events]))
         return result
 
+    def assertNoNewOops(self, old_oops):
+        """Assert that no oops has been recorded since old_oops."""
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        if old_oops is None:
+            self.assertIs(None, oops)
+        else:
+            self.assertEqual(oops.id, old_oops.id)
+
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
 
@@ -230,10 +235,11 @@ class TestCase(unittest.TestCase):
         self.assertTrue(expected is observed,
                         "%r is not %r" % (expected, observed))
 
-    def assertIsNot(self, expected, observed):
+    def assertIsNot(self, expected, observed, msg=None):
         """Assert that `expected` is not the same object as `observed`."""
-        self.assertTrue(expected is not observed,
-                        "%r is %r" % (expected, observed))
+        if msg is None:
+            msg = "%r is %r" % (expected, observed)
+        self.assertTrue(expected is not observed, msg)
 
     def assertIn(self, needle, haystack):
         """Assert that 'needle' is in 'haystack'."""
@@ -386,6 +392,23 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
+    def createBranchAtURL(self, branch_url, format=None):
+        """Create a branch at the supplied URL.
+
+        The branch will be scheduled for deletion when the test terminates.
+        :param branch_url: The URL to create the branch at.
+        :param format: The format of branch to create.
+        """
+        if format is not None and isinstance(format, basestring):
+            format = format_registry.get(format)()
+        transport = get_transport(branch_url)
+        if not self.real_bzr_server:
+            # for real bzr servers, the prefix always exists.
+            transport.create_prefix()
+        self.addCleanup(transport.delete_tree, '.')
+        return BzrDir.create_branch_convenience(
+            branch_url, format=format)
+
     def create_branch_and_tree(self, tree_location='.', product=None,
                                hosted=False, db_branch=None, format=None,
                                **kwargs):
@@ -399,9 +422,6 @@ class TestCaseWithFactory(TestCase):
         :param format: Override the default bzrdir format to create.
         :return: a `Branch` and a workingtree.
         """
-        from bzrlib.bzrdir import BzrDir, format_registry
-        if format is not None and isinstance(format, basestring):
-            format = format_registry.get(format)()
         if db_branch is None:
             if product is None:
                 db_branch = self.factory.makeAnyBranch(**kwargs)
@@ -413,15 +433,20 @@ class TestCaseWithFactory(TestCase):
             branch_url = db_branch.warehouse_url
         if self.real_bzr_server:
             transaction.commit()
-        transport = get_transport(branch_url)
-        if not self.real_bzr_server:
-            transport.clone('../..').ensure_base()
-            transport.clone('..').ensure_base()
-        self.addCleanup(transport.delete_tree, '.')
-        bzr_branch = BzrDir.create_branch_convenience(
-            branch_url, format=format)
+        bzr_branch = self.createBranchAtURL(branch_url, format=format)
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
+
+    def createBzrBranch(self, db_branch, parent=None):
+        """Create a bzr branch for a database branch.
+
+        :param db_branch: The database branch to create the branch for.
+        :param parent: If supplied, the bzr branch to use as a parent.
+        """
+        bzr_branch = self.createBranchAtURL(db_branch.warehouse_url)
+        if parent:
+            bzr_branch.pull(parent)
+        return bzr_branch
 
     @staticmethod
     def getBranchPath(branch, base):
@@ -451,19 +476,9 @@ class TestCaseWithFactory(TestCase):
 
         :return: a `Branch` and a workingtree.
         """
-        from bzrlib.bzrdir import BzrDir
         db_branch = self.factory.makeAnyBranch()
-        transport = get_transport(
-            self.getBranchPath(
+        bzr_branch = self.createBranchAtURL(self.getBranchPath(
                 db_branch, config.codehosting.internal_branch_by_id_root))
-        # Ensure the parent directories exist so that we can stick a branch
-        # in them.
-        transport.clone('../../..').ensure_base()
-        transport.clone('../..').ensure_base()
-        transport.clone('..').ensure_base()
-        bzr_branch = BzrDir.create_branch_convenience(
-            transport.base, possible_transports=[transport])
-        self.addCleanup(lambda: transport.delete_tree('.'))
         return db_branch, bzr_branch.bzrdir.open_workingtree()
 
     def useTempBzrHome(self):
@@ -614,3 +629,37 @@ def run_script(cmd_line):
         stderr=subprocess.PIPE, env=env)
     (out, err) = process.communicate()
     return out, err, process.returncode
+
+
+def normalize_whitespace(string):
+    """Replace all sequences of whitespace with a single space."""
+    # In Python 2.4, splitting and joining a string to normalize
+    # whitespace is roughly 6 times faster than using an uncompiled
+    # regex (for the expression \s+), and 4 times faster than a
+    # compiled regex.
+    return " ".join(string.split())
+
+
+def map_branch_contents(branch_url):
+    """Return all files in branch at `branch_url`.
+
+    :param branch_url: the URL for an accessible branch.
+    :return: a dict mapping file paths to file contents.  Only regular
+        files are included.
+    """
+    contents = {}
+    branch = BzrBranch.open(branch_url)
+    tree = branch.basis_tree()
+    tree.lock_read()
+    try:
+        for dir, entries in tree.walkdirs():
+            dirname, id = dir
+            for entry in entries:
+                file_path, file_name, file_type = entry[:3]
+                if file_type == 'file':
+                    stored_file = tree.get_file_by_path(file_path)
+                    contents[file_path] = stored_file.read()
+    finally:
+        tree.unlock()
+
+    return contents

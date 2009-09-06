@@ -1,4 +1,5 @@
-# Copyright 2005,2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
 
@@ -10,8 +11,10 @@ __all__ = [
 
 from zope.event import notify
 
+from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectCreatedEvent
 
+from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
@@ -30,7 +33,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
         super(BugSubscriptionAddView, self).setUpFields()
         self.form_fields['person'].for_input = True
 
-    @action('Add', name='add')
+    @action('Subscribe user', name='add')
     def add_action(self, action, data):
         person = data['person']
         subscription = self.context.bug.subscribe(person, self.user)
@@ -48,11 +51,14 @@ class BugSubscriptionAddView(LaunchpadFormView):
 
     cancel_url = next_url
 
-    def validate_widgets(self, data, names=None):
-        super(BugSubscriptionAddView, self).validate_widgets(data, names)
+    @property
+    def label(self):
+        return 'Subscribe someone else to bug #%i' % self.context.bug.id
+
+    page_title = label
 
 
-class BugPortletSubcribersContents(LaunchpadView):
+class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
 
     def getSortedDirectSubscriptions(self):
@@ -61,7 +67,9 @@ class BugPortletSubcribersContents(LaunchpadView):
         The list is sorted such that subscriptions you can unsubscribe appear
         before all other subscriptions.
         """
-        direct_subscriptions = self.context.getDirectSubscriptions()
+        direct_subscriptions = [
+            SubscriptionAttrDecorator(subscription)
+            for subscription in self.context.getDirectSubscriptions()]
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
@@ -77,4 +85,18 @@ class BugPortletSubcribersContents(LaunchpadView):
 
     def getSortedSubscriptionsFromDuplicates(self):
         """Get the list of subscriptions to duplicates of this bug."""
-        return self.context.getSubscriptionsFromDuplicates()
+        return [
+            SubscriptionAttrDecorator(subscription)
+            for subscription in self.context.getSubscriptionsFromDuplicates()]
+
+
+class SubscriptionAttrDecorator:
+    """A BugSubscription with added attributes for HTML/JS."""
+    delegates(IBugSubscription, 'subscription')
+
+    def __init__(self, subscription):
+        self.subscription = subscription
+
+    @property
+    def css_name(self):
+        return 'subscriber-%s' % self.subscription.person.id

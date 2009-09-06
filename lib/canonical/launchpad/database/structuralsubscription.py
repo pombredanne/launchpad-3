@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = ['StructuralSubscription',
@@ -18,7 +19,9 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
     IProduct, IProductSeries, IProject, IStructuralSubscription,
     IStructuralSubscriptionTarget)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_public_person, validate_person_not_private_membership)
+
 
 class StructuralSubscription(SQLBase):
     """A subscription to a Launchpad structure."""
@@ -48,7 +51,7 @@ class StructuralSubscription(SQLBase):
         notNull=False, default=None)
     subscriber = ForeignKey(
         dbName='subscriber', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership, notNull=True)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -83,7 +86,7 @@ class StructuralSubscription(SQLBase):
                 #   here because importing it from the top
                 #   doesn't play well with the loading
                 #   sequence.
-                from canonical.launchpad.database import (
+                from lp.registry.model.distributionsourcepackage import (
                     DistributionSourcePackage)
                 return DistributionSourcePackage(
                     self.distribution, self.sourcepackagename)

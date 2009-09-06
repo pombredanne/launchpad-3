@@ -37,7 +37,7 @@ to access those other objects:
     >>> bugset = getUtility(IBugSet)
     >>> personset = getUtility(IPersonSet)
     >>> bug_one = bugset.get(1)
-    >>> sabdfl = personset.getByEmail('mark@hbd.com')
+    >>> mark = personset.getByEmail('mark@example.com')
 
 Next, we need to grab some values to provide for importance and status.
 
@@ -52,7 +52,7 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> evolution = productset.get(5)
     >>> upstream_task = bugtaskset.createTask(
-    ...     bug=bug_one, product=evolution, owner=sabdfl,
+    ...     bug=bug_one, product=evolution, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.product == evolution
     True
@@ -65,7 +65,7 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> ubuntu = distroset.get(1)
     >>> distro_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=ubuntu, owner=sabdfl,
+    ...     bug=bug_one, distribution=ubuntu, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_task.distribution == ubuntu
     True
@@ -79,7 +79,7 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> warty = distoseriesset.get(1)
     >>> distro_series_task = bugtaskset.createTask(
-    ...     bug=bug_one, distroseries=warty, owner=sabdfl,
+    ...     bug=bug_one, distroseries=warty, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_series_task.distroseries == warty
     True
@@ -124,7 +124,7 @@ list.
     >>> firefox_1_0 = firefox.getSeries("1.0")
 
     >>> productseries_task = bugtaskset.createTask(
-    ...     owner=sabdfl, bug=bug_one, productseries=firefox_1_0)
+    ...     owner=mark, bug=bug_one, productseries=firefox_1_0)
     >>> IProductSeriesBugTask.providedBy(productseries_task)
     True
 
@@ -165,7 +165,7 @@ list.
 
   * a distroseries sourcepackage
 
-    >>> from canonical.launchpad.database import SourcePackage
+    >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> from canonical.launchpad.interfaces import ISourcePackage
     >>> distro_series_sp_task = bugtaskset.get(16)
     >>> expected_target = SourcePackage(
@@ -595,6 +595,7 @@ is passed to transitionToImportance an exception is raised.
 4. Milestone
 
     >>> test_milestone = alsa_utils.development_focus.newMilestone("test")
+    >>> noway_milestone = alsa_utils.development_focus.newMilestone("noway")
     >>> Store.of(test_milestone).flush()
 
     >>> generic_alsa_utils_task.milestone is None
@@ -602,10 +603,23 @@ is passed to transitionToImportance an exception is raised.
     >>> devel_focus_alsa_utils_task.milestone is None
     True
 
-    >>> devel_focus_alsa_utils_task.milestone = test_milestone
+    >>> devel_focus_alsa_utils_task.transitionToMilestone(
+    ...     test_milestone, alsa_utils.owner)
 
     >>> print generic_alsa_utils_task.milestone.name
     test
+    >>> print devel_focus_alsa_utils_task.milestone.name
+    test
+
+But a normal unprivileged user can't set the milestone.
+
+    >>> devel_focus_alsa_utils_task.transitionToMilestone(
+    ...     noway_milestone, no_priv)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskMilestone:
+      User does not have sufficient permissions to edit the bug task milestone.
+
     >>> print devel_focus_alsa_utils_task.milestone.name
     test
 
@@ -918,7 +932,7 @@ will also have it added to the count.
 Now, we'll log in as Mark Shuttleworth, who was assigned to this bug
 when it was marked private:
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
 
 And note that he can access and set the bugtask attributes:
 
@@ -944,7 +958,7 @@ No Privileges Person can't see the private bug, because he's not a subscriber:
 But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
 Team *is* subscribed to the bug, No Privileges Person will see the private bug.
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
     >>> ubuntu_team.addMember(no_priv, reviewer=ubuntu_team.teamowner)
 
     >>> login("no-priv@canonical.com")
@@ -1059,7 +1073,7 @@ the latter is not exposed in `IBugTask`, so the `bugtargetdisplayname`
 is used here.
 
     >>> upstream_task = bugtaskset.createTask(
-    ...     bug=bug_one, product=netapplet, owner=sabdfl,
+    ...     bug=bug_one, product=netapplet, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.bugtargetdisplayname
     u'NetApplet'
@@ -1114,17 +1128,16 @@ to the same series. The nominations are implicitly accepted and have
 targetnamecache updated.
 
     >>> new_bug, new_bug_event = bugset.createBugWithoutTarget(
-    ...     CreateBugParams(sabdfl, 'New Bug', comment='New Bug'))
+    ...     CreateBugParams(mark, 'New Bug', comment='New Bug'))
 
     >>> bugtaskset.createTask(
-    ...     bug=new_bug, owner=sabdfl,
+    ...     bug=new_bug, owner=mark,
     ...     distribution=ubuntu,
     ...     sourcepackagename=(
     ...         sourcepackagenameset.queryByName('mozilla-firefox')))
     <BugTask at ...>
 
-    >>> new_bug.addNomination(sabdfl, ubuntu.currentseries)
-    <BugNomination at ...>
+    >>> new_bug.addNomination(mark, ubuntu.currentseries).approve(mark)
 
 The first task has been created and successfully nominated to Hoary.
 
@@ -1134,7 +1147,7 @@ The first task has been created and successfully nominated to Hoary.
     mozilla-firefox (Ubuntu Hoary)
 
     >>> bugtaskset.createTask(
-    ...     bug=new_bug, owner=sabdfl,
+    ...     bug=new_bug, owner=mark,
     ...     distribution=ubuntu,
     ...     sourcepackagename=(
     ...         sourcepackagenameset.queryByName('alsa-utils')))
@@ -1155,6 +1168,7 @@ it can also be invoked directly.
 
     >>> thunderbird.name = 'thunderbird'
     >>> thunderbird.displayname = 'Mozilla Thunderbird'
+    >>> transaction.commit()
 
     >>> upstream_task.bugtargetdisplayname
     u'Mozilla Thunderbird NG'
@@ -1242,7 +1256,7 @@ If a mentoring offer gets made...
 ... or a branch gets linked to the bug...
 
     >>> branch = factory.makeAnyBranch()
-    >>> bug_three.addBranch(branch, no_priv)
+    >>> bug_three.linkBranch(branch, no_priv)
     <BugBranch at ...>
 
 ... the properties for the bugtasks reflect this.
@@ -1265,7 +1279,6 @@ If a mentoring offer gets made...
 It's possible to get a list of bugs similar to the current bug by
 accessing the similar_bugs property of its bug tasks.
 
-    >>> from operator import attrgetter
     >>> new_ff_bug = factory.makeBug(product=firefox, title="Firefox")
     >>> ff_bugtask = new_ff_bug.bugtasks[0]
 
@@ -1338,7 +1351,7 @@ constraints will be violated.
 
     >>> bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distroseries=warty,
-    ...     owner=sabdfl, status=STATUS_NEW,
+    ...     owner=mark, status=STATUS_NEW,
     ...     importance=IMPORTANCE_MEDIUM)
     Traceback (most recent call last):
     ...

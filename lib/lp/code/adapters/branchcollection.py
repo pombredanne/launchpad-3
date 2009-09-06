@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Adapters for different objects to branch collections."""
 
@@ -7,6 +8,8 @@ __all__ = [
     'branch_collection_for_person',
     'branch_collection_for_product',
     'branch_collection_for_project',
+    'branch_collection_for_source_package',
+    'branch_collection_for_distro_source_package',
     ]
 
 
@@ -28,3 +31,14 @@ def branch_collection_for_project(project):
 def branch_collection_for_person(person):
     """Adapt a person to a branch collection."""
     return getUtility(IAllBranches).ownedBy(person)
+
+
+def branch_collection_for_source_package(source_package):
+    """Adapt a source_package to a branch collection."""
+    return getUtility(IAllBranches).inSourcePackage(source_package)
+
+
+def branch_collection_for_distro_source_package(distro_source_package):
+    """Adapt a distro_source_package to a branch collection."""
+    return getUtility(IAllBranches).inDistributionSourcePackage(
+        distro_source_package)

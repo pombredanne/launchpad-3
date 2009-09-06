@@ -118,7 +118,7 @@
           <ul>
             <li tal:repeat="driver context/drivers" class="person">
               <a tal:attributes="href driver/fmt:url"
-                 tal:content="driver/browsername">Foo Bar</a>
+                 tal:content="driver/displayname">Foo Bar</a>
             </li>
           </ul>
         </blockquote>
@@ -211,7 +211,7 @@
           <td tal:condition="view/show_assignee">
             <a tal:condition="spec/assignee"
                tal:attributes="href spec/assignee/fmt:url"
-               tal:content="spec/assignee/browsername">
+               tal:content="spec/assignee/displayname">
               Carlos Perello Marin
             </a>
           </td>

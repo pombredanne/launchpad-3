@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 '''
 Configuration information pulled from launchpad.conf.
 
@@ -14,6 +16,7 @@ import logging
 import sys
 from urlparse import urlparse, urlunparse
 
+import pkg_resources
 import ZConfig
 
 from lazr.config import ImplicitTypeSchema
@@ -109,6 +112,7 @@ class CanonicalConfig:
             process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
         self._instance_name = instance_name
         self._process_name = process_name
+        self.root = TREE_ROOT
 
     @property
     def instance_name(self):
@@ -119,6 +123,11 @@ class CanonicalConfig:
         loaded from.
         """
         return self._instance_name
+
+    @property
+    def config_dir(self):
+        """Return the directory containing this instance configuration."""
+        return find_config_dir(self._instance_name)
 
     def setInstance(self, instance_name):
         """Set the instance name where the conf files are stored.
@@ -165,7 +174,7 @@ class CanonicalConfig:
             return
 
         schema_file = os.path.join(PACKAGE_DIR, 'schema-lazr.conf')
-        config_dir = find_config_dir(self.instance_name)
+        config_dir = self.config_dir
         config_file = os.path.join(
             config_dir, '%s-lazr.conf' % self.process_name)
         if not os.path.isfile(config_file):
@@ -177,17 +186,20 @@ class CanonicalConfig:
         except ConfigErrors, error:
             message = '\n'.join([str(e) for e in error.errors])
             raise ConfigErrors(message)
-        self._setZConfig(config_dir)
+        self._setZConfig()
 
-    def _setZConfig(self, config_dir):
+    @property
+    def zope_config_file(self):
+        """Return the path to the ZConfig file for this instance."""
+        return os.path.join(self.config_dir, 'launchpad.conf')
+
+    def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
-        self.root = TREE_ROOT
-
-        schemafile = os.path.join(
-            self.root, 'lib/zope/app/server/schema.xml')
-        configfile = os.path.join(config_dir, 'launchpad.conf')
+        schemafile = pkg_resources.resource_filename(
+            'zope.app.server', 'schema.xml')
         schema = ZConfig.loadSchema(schemafile)
-        root_options, handlers = ZConfig.loadConfig(schema, configfile)
+        root_options, handlers = ZConfig.loadConfig(
+            schema, self.zope_config_file)
 
         # Devmode from the zope.app.server.main config, copied here for
         # ease of access.
@@ -198,6 +210,22 @@ class CanonicalConfig:
 
         # The number of configured threads.
         self.threads = root_options.threads
+
+    def generate_overrides(self):
+        """Ensure correct config .zcml overrides will be called.
+
+        Call this method before letting any ZCML processing occur.
+        """
+        loader_file = os.path.join(self.root, '+config-overrides.zcml')
+        loader = open(loader_file, 'w')
+
+        print >> loader, """<configure xmlns="http://namespaces.zope.org/zope">
+                <!-- This file automatically generated using
+                     canonical.config.CanonicalConfig.generate_overrides.
+                     DO NOT EDIT. -->
+                <include files="%s/*.zcml" />
+                </configure>""" % self.config_dir
+        loader.close()
 
     def __getattr__(self, name):
         self._getConfig()
@@ -382,7 +410,7 @@ class DatabaseConfig:
         'main_master', 'main_slave', 'auth_master', 'auth_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'randomise_select_results',
-        'soft_request_timeout'])
+        'soft_request_timeout', 'storm_cache', 'storm_cache_size'])
     _db_config_required_attrs = frozenset([
         'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave'])
 

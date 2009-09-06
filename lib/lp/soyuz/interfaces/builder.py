@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Builder interfaces."""
@@ -21,7 +23,7 @@ from zope.schema import Choice, TextLine, Text, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
 
@@ -93,7 +95,7 @@ class IBuilder(IHasOwner):
         description=_('The builder slave title. Should be just a few words.'))
 
     description = Description(
-        title=_('Description'), required=True,
+        title=_('Description'), required=False,
         description=_('The builder slave description, may be several '
                       'paragraphs of text, giving the highlights and '
                       'details.'))
@@ -332,7 +334,9 @@ class IBuilderSet(Interface):
         :param virtualized: boolean, controls which queue to check,
             'virtualized' means PPA.
 
-        :return the size of the queue, integer.
+        :return: a tuple containing the size of the queue, as an integer,
+            and the sum of the jobs 'estimated_build_duration' in queue,
+            as a timedelta or None for empty queues.
         """
 
     def pollBuilders(logger, txn):

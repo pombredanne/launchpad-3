@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -178,6 +179,15 @@ class TestReadiness(TestCase):
         future = datetime.fromtimestamp(
             time.time() + 1000, pytz.timezone('UTC'))
         job = Job(lease_expires=future)
+        self.assertEqual([], list(Store.of(job).execute(Job.ready_jobs)))
+
+    def test_ready_jobs_not_jobs_scheduled_in_future(self):
+        """Job.ready_jobs does not included jobs scheduled for a time in the
+        future.
+        """
+        future = datetime.fromtimestamp(
+            time.time() + 1000, pytz.timezone('UTC'))
+        job = Job(scheduled_start=future)
         self.assertEqual([], list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_acquireLease(self):

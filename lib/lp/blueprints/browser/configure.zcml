@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -71,7 +75,7 @@
         class="lp.blueprints.browser.sprint.SprintBrandingView"
         permission="launchpad.Edit"
         facet="overview"
-        template="../../../canonical/launchpad/templates/object-branding.pt"/>
+        template="../../../lp/registry/templates/object-branding.pt"/>
     <browser:page
         name="+attend"
         for="lp.blueprints.interfaces.sprint.ISprint"
@@ -143,9 +147,6 @@
         <browser:page
             name="+all"
             template="../templates/sprints-all.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/sprints-portlet-details.pt"/>
     </browser:pages>
     <browser:page
         name="+new"
@@ -164,9 +165,10 @@
         classes="
             SprintFacets
             SprintOverviewMenu
+            SprintSetFacets
+            SprintSetNavigationMenu
             SprintSpecificationsMenu
-            SprintSetContextMenu
-            SprintSetFacets"
+            "
         module="lp.blueprints.browser.sprint"/>
     <browser:defaultView
         for="lp.blueprints.interfaces.sprintspecification.ISprintSpecification"

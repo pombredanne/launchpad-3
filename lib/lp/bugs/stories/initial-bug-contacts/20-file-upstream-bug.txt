@@ -1,14 +1,13 @@
-(We will use the advanced filebug form in the examples below, to skip
-searching for dupes.)
-
 Filing a public bug on an upstream will subscribe the bug supervisor, as
 well.
 
-    >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
+    >>> browser.addHeader("Authorization", "Basic mark@example.com:test")
 
-    >>> browser.open("http://launchpad.dev/firefox/+filebug-advanced")
+    >>> browser.open("http://launchpad.dev/firefox/+filebug")
 
     >>> browser.getControl(name="field.title").value = "bug supervisor test"
+    >>> browser.getControl('Continue').click()
+
     >>> browser.getControl(name="field.comment").value = "a public bug"
     >>> browser.getControl("Submit Bug Report").click()
 
@@ -16,7 +15,7 @@ well.
     >>> print browser.url.replace(bug_id, "BUG-ID")
     http://bugs.launchpad.dev/firefox/+bug/BUG-ID
 
-Now sabdfl (because he's the bug reporter), guadamen (because they are
+Now mark (because he's the bug reporter), guadamen (because they are
 the product bug supervisor), and lifeless (because he is a subscriber to
 mozilla) are subscribed to this bug:
 
@@ -46,9 +45,11 @@ subscribed, because Firefox does not have a security contact.
     True
     >>> logout()
 
-    >>> browser.open("http://launchpad.dev/firefox/+filebug-advanced")
+    >>> browser.open("http://launchpad.dev/firefox/+filebug")
 
     >>> browser.getControl(name="field.title").value = "bug supervisor test"
+    >>> browser.getControl('Continue').click()
+
     >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
     >>> browser.getControl(
     ...     "This bug is a security vulnerability").selected = True
@@ -59,7 +60,7 @@ subscribed, because Firefox does not have a security contact.
     http://bugs.launchpad.dev/firefox/+bug/BUG-ID
 
     >>> logout()
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
 
     >>> subscriber_names(bugset.get(other_bug_id))
     [u'Mark Shuttleworth', u'Sample Person']

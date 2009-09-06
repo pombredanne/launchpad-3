@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to branches."""
 
@@ -9,7 +10,8 @@ from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail.basemailer import BaseMailer
 
@@ -31,7 +33,8 @@ class RecipientReason:
     def __init__(self, subscriber, recipient, branch, mail_header,
                  reason_template, merge_proposal=None,
                  max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF,
-                 branch_identity_cache=None):
+                 branch_identity_cache=None,
+                 review_level=CodeReviewNotificationLevel.FULL):
         self.subscriber = subscriber
         self.recipient = recipient
         self.branch = branch
@@ -42,6 +45,7 @@ class RecipientReason:
         if branch_identity_cache is None:
             branch_identity_cache = {}
         self.branch_identity_cache = branch_identity_cache
+        self.review_level = review_level
 
     def _getBranchIdentity(self, branch):
         """Get the branch identity out of the cache, or generate it."""
@@ -61,7 +65,8 @@ class RecipientReason:
             subscription.person, recipient, subscription.branch, rationale,
             '%(entity_is)s subscribed to branch %(branch_name)s.',
             merge_proposal, subscription.max_diff_lines,
-            branch_identity_cache=branch_identity_cache)
+            branch_identity_cache=branch_identity_cache,
+            review_level=subscription.review_level)
 
     @classmethod
     def forReviewer(cls, vote_reference, recipient,
@@ -169,6 +174,10 @@ class BranchMailer(BaseMailer):
                             notification_type)
         self.contents = contents
         self.diff = diff
+        if diff is None:
+            self.diff_size = 0
+        else:
+            self.diff_size = self.diff.count('\n') + 1
         self.revno = revno
 
     @classmethod
@@ -249,30 +258,6 @@ class BranchMailer(BaseMailer):
             return subject
         return '[Branch %s]' % (db_branch.unique_name)
 
-    def _diffText(self, max_diff):
-        """Determine the text to use for the diff.
-
-        If the diff's length exceeds the user preferences, a message
-        about this is returned.  Otherwise, the diff is returned.
-        """
-        if self.diff is None:
-            return self.contents or ''
-        diff_size = self.diff.count('\n') + 1
-        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
-            if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                contents = self.contents
-            elif diff_size > max_diff.value:
-                diff_msg = (
-                    'The size of the diff (%d lines) is larger than your '
-                    'specified limit of %d lines' % (
-                    diff_size, max_diff.value))
-                contents = "%s\n%s" % (self.contents, diff_msg)
-            else:
-                contents = "%s\n%s" % (self.contents, self.diff)
-        else:
-            contents = "%s\n%s" % (self.contents, self.diff)
-        return contents
-
     def _getHeaders(self, email):
         headers = BaseMailer._getHeaders(self, email)
         reason, rationale = self._recipients.getReason(email)
@@ -295,9 +280,56 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params['diff'] = self._diffText(reason.max_diff_lines)
+        params['diff'] = self.contents or ''
+        if not self._includeDiff(email):
+            params['diff'] += self._explainNotPresentDiff(email)
         params.setdefault('delta', '')
         return params
+
+    def _includeDiff(self, email):
+        """Determine whether to include a diff, and explanation.
+
+        Explanation is provided if the diff is wanted and present, but is
+        too large.
+        """
+        if self.diff_size == 0:
+            return False
+        reason, rationale = self._recipients.getReason(email)
+        if reason.max_diff_lines == BranchSubscriptionDiffSize.NODIFF:
+            return False
+        if (reason.max_diff_lines != BranchSubscriptionDiffSize.WHOLEDIFF and
+            self.diff_size > reason.max_diff_lines.value):
+            return False
+        return True, ''
+
+    def _explainNotPresentDiff(self, email):
+        """Provide an explanation why the diff is not being included.
+
+        No explanation is provided where the diff is empty or where the
+        user has requested to never have diffs sent.
+        """
+        if self.diff_size == 0:
+            return ''
+        reason, rationale = self._recipients.getReason(email)
+        if reason.max_diff_lines == BranchSubscriptionDiffSize.NODIFF:
+            return ''
+        return (
+            'The size of the diff (%d lines) is larger than your '
+            'specified limit of %d lines' % (
+            self.diff_size, reason.max_diff_lines.value))
+
+    def _addAttachments(self, ctrl, email):
+        """Attach the diff, if present and not too large.
+
+        :param ctrl: The MailController to attach the diff to.
+        :param email: Email address of the recipient.
+        """
+        if not self._includeDiff(email):
+            return
+        # Using .txt as a file extension makes Gmail display it inline.
+        ctrl.addAttachment(
+            self.diff, content_type='text/x-diff', inline=True,
+                filename='revision-diff.txt')
 
     @staticmethod
     def _format_user_address(user):

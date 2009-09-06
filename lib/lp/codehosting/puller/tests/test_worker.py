@@ -1,4 +1,6 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0231
 
 """Unit tests for worker.py."""
@@ -23,13 +25,14 @@ from bzrlib.transport import get_transport
 
 from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.puller.worker import (
-    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchLoopError,
-    BranchMirrorer, BranchPolicy, BranchReferenceForbidden,
-    HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy,
+    BranchLoopError, BranchMirrorer, BranchReferenceForbidden,
     PullerWorkerProtocol, StackedOnBranchNotFound, get_vfs_format_classes,
     install_worker_ui_factory, WORKER_ACTIVITY_NETWORK)
 from lp.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
+from lp.codehosting.vfs.branchfs import (
+    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchPolicy,
+    HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy)
 from lp.code.enums import BranchType
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
@@ -474,7 +477,10 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         # checkSource raises StackingLoopError if a branch is stacked on
         # itself. This avoids infinite recursion errors.
         a = self.make_branch('a', format='1.6')
-        a.set_stacked_on_url(a.base)
+        # Bazaar 1.17 and up make it harder to create branches like this.
+        # It's still worth testing that we don't blow up in the face of them,
+        # so we grovel around a bit to create one anyway.
+        a.get_config().set_user_option('stacked_on_location', a.base)
         opener = self.makeBranchMirrorer([a.base])
         self.assertRaises(BranchLoopError, opener.open, a.base)
 

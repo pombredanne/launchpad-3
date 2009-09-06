@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test the expire-ppa-binaries.py script. """
 
 import pytz
@@ -52,8 +54,8 @@ class TestPPABinaryExpiry(unittest.TestCase):
         # Prepare two PPAs for the tests to use.
         cprov = getUtility(IPersonSet).getByName('cprov')
         self.ppa = cprov.archive
-        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-        self.ppa2 = sabdfl.archive
+        mark = getUtility(IPersonSet).getByName('mark')
+        self.ppa2 = mark.archive
 
     def getScript(self, test_args=None):
         """Return a PPABinaryExpirer instance."""

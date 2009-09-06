@@ -3,46 +3,78 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
+
+<h1 metal:fill-slot="heading">
+  Download project files
+</h1>
 
 <body>
 
 <div metal:fill-slot="main"
      tal:define="has_edit context/required:launchpad.Edit">
-  <h1>Download project files</h1>
+
+  <p tal:condition="view/has_download_files">
+    After you've downloaded a file, you can verify its authenticity using
+    <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
+    either </tal:hasdownloadfiles>its MD5 sum
+    <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
+    or signature</tal:hasdownloadfiles>. (<a
+    href="/+help/verify-downloads.html" target="help">How do I verify a
+    download?</a>)
+  </p>
+  <br />
 
   <form id="project-downloads" method="POST"
         tal:attributes="action request/URL">
 
-    <p tal:condition="not: view/has_download_files">
-       No download files exist for this project.
-    </p>
+    <div tal:condition="not: view/has_download_files" id="no-downloads">
+      <p>No download files exist for this project.</p>
+      <p>You might want to check
+        <a tal:attributes="href context/fmt:url:code">this project's Bazaar
+          branches</a>
+        <span tal:condition="context/homepageurl">or its
+          <a tal:attributes="href context/homepageurl">home page</a>
+        </span>.
+      </p>
+    </div>
 
     <div
       tal:repeat="series view/sorted_series_list"
       tal:attributes="id string:series_${series/name}">
 
-      <h2 tal:condition="python: has_edit or series.has_release_files">
-        &#8220;<tal:name replace="series/name">main</tal:name>&#8221; series
-      </h2>
-
       <tal:seriesfilesexist condition="series/has_release_files">
-        <div
-          tal:condition="series/summary"
-          tal:content="series/summary/fmt:shorten/80" />
-
         <tal:releases repeat="release series/releases">
           <div tal:condition="release/files">
-            <h3 style="font-size: 1.2em">
+            <h2 style="font-size: 1.2em">
               <a tal:attributes="href release/fmt:url">
-                <span tal:replace="release/version" /> release
-              </a>
-            </h3>
+                <span tal:replace="release/name_with_codename" /> release</a>,
+              from the
+              <a tal:attributes="href series/fmt:url"
+                 tal:content="series/name">name</a> series.
+            </h2>
+
+            <div id="release_notes">
+              <h3>Release notes:</h3>
+              <tal:notes condition="release/release_notes"
+                  define="notes release/release_notes/fmt:shorten/800">
+                <div tal:content="structure notes/fmt:text-to-html">
+                  Release notes
+                </div>
+              </tal:notes>
+              <div tal:condition="not: release/release_notes">
+                <em>This release does not have release notes.</em>
+              </div>
+              <div>
+                <strong>Released:</strong>
+                <span
+                  tal:attributes="title release/datereleased/fmt:datetime"
+                  tal:content="release/datereleased/fmt:approximatedate" />
+              </div>
+            </div>
+
             <table class="listing">
               <thead>
                 <tr>
@@ -78,7 +110,7 @@
 
       </tal:seriesfilesexist>
 
-      <p tal:condition="has_edit">
+      <p tal:condition="has_edit" class="add-files">
         <tal:releases condition="series/releases">
           Add download file for release:
           <tal:release repeat="release series/releases">
@@ -96,16 +128,6 @@
         value="Delete Files" />
 
   </form>
-  <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
-  <p>
-    If a file has a signature associated with it, download both the file and
-    the signature file.  You can then verify the file by
-    doing the following:
-  </p>
-  <p>
-    <code> % gpg --verify &lt;filename.asc&gt;</code>
-  </p>
-  </tal:hasdownloadfiles>
 </div>
 </body>
 </html>

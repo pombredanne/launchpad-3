@@ -48,7 +48,7 @@ If such distribution doesn't exist, parse_upload_path() raises
     >>> check_upload('does-not-exist')
     Traceback (most recent call last):
     ...
-    UploadPathError: Could not find distribution 'does-not-exist'
+    UploadPathError: Could not find distribution 'does-not-exist'.
 
 Upload to a distribution can have their 'changesfile' suite target
 overridden by including a specific suite name in the upload path.
@@ -69,7 +69,7 @@ is raised.
     >>> check_upload('debian/imaginary')
     Traceback (most recent call last):
     ...
-    UploadPathError: Could not find suite 'imaginary'
+    UploadPathError: Could not find suite 'imaginary'.
 
 
 == PPA uploads ==
@@ -86,7 +86,8 @@ up as a Person in Launchpad.
     >>> check_upload('~does-not-exist/ppa/ubuntu')
     Traceback (most recent call last):
     ...
-    PPAUploadPathError: Could not find person 'does-not-exist'
+    PPAUploadPathError: Could not find person or team named
+    'does-not-exist'.
 
 The second path term is assumed to be a PPA name. Since for a long
 time named-PPA was not supported and uploads didn't need to consider
@@ -122,7 +123,7 @@ valid. It's also supported for uploads omitting the PPA name.
     >>> check_upload('~cprov/ppa/ubuntu/boing')
     Traceback (most recent call last):
     ...
-    PPAUploadPathError: Could not find suite 'boing'
+    PPAUploadPathError: Could not find suite 'boing'.
 
 A PPA upload for an conflicting distribution results in an
 error. Currently all PPAs in Launchpad are targeted to 'ubuntu'.
@@ -131,7 +132,7 @@ error. Currently all PPAs in Launchpad are targeted to 'ubuntu'.
     Traceback (most recent call last):
     ...
     PPAUploadPathError: PPA for Celso Providelo only supports uploads
-    to 'ubuntu'
+    to 'ubuntu' distribution.
 
 We will disable Celso's default PPA and uploads to it will result in
 an error.
@@ -149,19 +150,19 @@ an error.
     >>> check_upload('~cprov/ppa/ubuntu')
     Traceback (most recent call last):
     ...
-    PPAUploadPathError: PPA for Celso Providelo is disabled
+    PPAUploadPathError: PPA for Celso Providelo is disabled.
 
     >>> check_upload('~cprov/ubuntu')
     Traceback (most recent call last):
     ...
-    PPAUploadPathError: PPA for Celso Providelo is disabled
+    PPAUploadPathError: PPA for Celso Providelo is disabled.
 
 Uploading to named PPA that does not exist fails.
 
     >>> check_upload('~cprov/beta/ubuntu')
     Traceback (most recent call last):
     ...
-    PPAUploadPathError: Could not find PPA named 'beta' for 'cprov'
+    PPAUploadPathError: Could not find a PPA named 'beta' for 'cprov'.
 
 We will create a 'beta' PPA for Celso.
 
@@ -188,9 +189,7 @@ An extra path part that cannot be processed for distribution uploads.
     >>> check_upload('ubuntu/warty/ding-dong')
     Traceback (most recent call last):
     ...
-    UploadPathError: Path mismatch 'ubuntu/warty/ding-dong'. Use
-    ~<person>/<ppa_name>/<distro>[/distroseries]/[files] for PPAs and
-    <distro>/[files] for normal uploads.
+    UploadPathError: Path format mismatch.
 
 A distribution specific uploads starting with '~' as if it was a
 person name. Note that users can't be named like distribution anyways.
@@ -198,34 +197,28 @@ person name. Note that users can't be named like distribution anyways.
     >>> check_upload('~ubuntu')
     Traceback (most recent call last):
     ...
-    UploadPathError: Path mismatch '~ubuntu'. Use
-    ~<person>/<ppa_name>/<distro>[/distroseries]/[files] for PPAs and
-    <distro>/[files] for normal uploads.
+    UploadPathError: Path format mismatch.
 
 An extra path part that cannot be processed for PPA uploads.
 
     >>> check_upload('~cprov/ppa/ubuntu/warty/ding-dong')
     Traceback (most recent call last):
     ...
-    UploadPathError: Path mismatch '~cprov/ppa/ubuntu/warty/ding-dong'. Use
-    ~<person>/<ppa_name>/<distro>[/distroseries]/[files] for PPAs and
-    <distro>/[files] for normal uploads.
+    UploadPathError: Path format mismatch.
 
 A old-style PPA upload missing '~':
 
     >>> check_upload('cprov/ubuntu')
     Traceback (most recent call last):
     ...
-    UploadPathError: Could not find distribution 'cprov'
+    UploadPathError: Could not find distribution 'cprov'.
 
 A named PPA upload missing '~'.
 
     >>> check_upload('cprov/ppa/ubuntu')
     Traceback (most recent call last):
     ...
-    UploadPathError: Path mismatch 'cprov/ppa/ubuntu'. Use
-    ~<person>/<ppa_name>/<distro>[/distroseries]/[files] for PPAs and
-    <distro>/[files] for normal uploads.
+    UploadPathError: Path format mismatch.
 
 
 == Binary uploads from build slaves ==
@@ -268,4 +261,4 @@ is raised.
     >>> check_upload('1234567890/ubuntu')
     Traceback (most recent call last):
     ...
-    UploadPathError: Could not find archive with id=1234567890
+    UploadPathError: Could not find archive with id=1234567890.

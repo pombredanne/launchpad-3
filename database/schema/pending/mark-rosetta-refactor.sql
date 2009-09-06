@@ -1,3 +1,5 @@
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
 
 /* Allow the model to distinguish between translations that have been seen
  * recently and those that have been active recently. Also, allow us to have

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Bug attachment views."""
 
 __metaclass__ = type
@@ -22,6 +24,8 @@ from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
+
+from canonical.lazr.utils import smartquote
 
 
 class BugAttachmentSetNavigation(GetitemNavigation):
@@ -114,3 +118,10 @@ class BugAttachmentEditView(LaunchpadFormView):
         self.context.libraryfile = filealiasset.create(
             name=old_filealias.filename, size=len(old_content),
             file=StringIO(old_content), contentType=new_content_type)
+
+    @property
+    def label(self):
+        return smartquote('Bug #%d - Edit attachment "%s"') % (
+            self.context.bug.id, self.context.title)
+
+    page_title = label

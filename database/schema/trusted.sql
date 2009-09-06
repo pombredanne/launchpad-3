@@ -1,4 +1,5 @@
--- Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
 
 CREATE OR REPLACE FUNCTION assert_patch_applied(
     major integer, minor integer, patch integer) RETURNS boolean
@@ -408,13 +409,13 @@ BEGIN
 
     IF v_trash_old THEN
         -- Was this somebody's most-recently-changed message?
+        -- If so, delete the entry for that change.
         DELETE FROM POFileTranslator
         WHERE latest_message = OLD.id;
-
         IF FOUND THEN
-            -- Delete old records.
-
-            -- Insert a past record if there is one.
+            -- We deleted the entry for somebody's latest contribution.
+            -- Find that person's latest remaining contribution and
+            -- create a new record for that.
             INSERT INTO POFileTranslator (
                 person, pofile, latest_message, date_last_touched
                 )
@@ -426,25 +427,24 @@ BEGIN
                          new_latest_message.date_reviewed)
               FROM POFile
               JOIN TranslationTemplateItem AS old_template_item
-                ON (OLD.potmsgset =
-                     old_template_item.potmsgset) AND
-                   (old_template_item.potemplate = pofile.potemplate) AND
-                   (pofile.language
-                     IS NOT DISTINCT FROM OLD.language) AND
-                   (pofile.variant
-                     IS NOT DISTINCT FROM OLD.variant)
+                ON OLD.potmsgset = old_template_item.potmsgset AND
+                   old_template_item.potemplate = pofile.potemplate AND
+                   pofile.language = OLD.language AND
+                   pofile.variant IS NOT DISTINCT FROM OLD.variant
               JOIN TranslationTemplateItem AS new_template_item
                 ON (old_template_item.potemplate =
                      new_template_item.potemplate)
               JOIN TranslationMessage AS new_latest_message
-                ON (new_latest_message.potmsgset =
-                     new_template_item.potmsgset) AND
-                   (new_latest_message.language
-                     IS NOT DISTINCT FROM OLD.language AND
-                   (new_latest_message.variant)
-                     IS NOT DISTINCT FROM OLD.variant)
+                ON new_latest_message.potmsgset =
+                       new_template_item.potmsgset AND
+                   new_latest_message.language = OLD.language AND
+                   new_latest_message.variant IS NOT DISTINCT FROM OLD.variant
+              LEFT OUTER JOIN POfileTranslator AS ExistingEntry
+                ON ExistingEntry.person = OLD.submitter AND
+                   ExistingEntry.pofile = POFile.id
               WHERE
-                new_latest_message.submitter=OLD.submitter
+                new_latest_message.submitter = OLD.submitter AND
+                ExistingEntry IS NULL
               ORDER BY new_latest_message.submitter, pofile.id,
                        new_latest_message.date_created DESC,
                        new_latest_message.id DESC;

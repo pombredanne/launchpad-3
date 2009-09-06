@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
 
@@ -8,7 +9,6 @@ __all__ = [
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBadges',
-    'ArchiveBreadcrumbBuilder',
     'ArchiveBuildsView',
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
@@ -32,6 +32,8 @@ from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+
+from sqlobject import SQLObjectNotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -60,22 +62,21 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.person import IPersonSet, PersonVisibility
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, active_publishing_status,
-    inactive_publishing_status, IPublishingSet)
+    active_publishing_status, inactive_publishing_status, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation)
-from lp.soyuz.scripts.packagecopier import (
-    check_copy, do_copy)
+from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.widgets import (
@@ -242,28 +243,68 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         user.item
         where item is a component or a source package name,
         """
-        username, item = name.split(".", 1)
-        user = getUtility(IPersonSet).getByName(username)
+        def get_url_param(param_name):
+            """Return the URL parameter with the given name or None."""
+            param_seq = self.request.query_string_params.get(param_name)
+            if param_seq is None or len(param_seq) == 0:
+                return None
+            else:
+                # Return whatever value was specified last in the URL.
+                return param_seq.pop()
+
+        # Look up the principal first.
+        user = getUtility(IPersonSet).getByName(name)
         if user is None:
             return None
 
-        # See if "item" is a component name.
-        try:
-            component = getUtility(IComponentSet)[item]
-        except NotFoundError:
-            pass
-        else:
-            return getUtility(IArchivePermissionSet).checkAuthenticated(
-                user, self.context, permission_type, component)[0]
+        # Obtain the item type and name from the URL parameters.
+        item_type = get_url_param('type')
+        item = get_url_param('item')
 
-        # See if "item" is a source package name.
-        package = getUtility(ISourcePackageNameSet).queryByName(item)
-        if package is not None:
+        if item_type is None or item is None:
+            return None
+
+        if item_type == 'component':
+            # See if "item" is a component name.
+            try:
+                the_item = getUtility(IComponentSet)[item]
+            except NotFoundError:
+                pass
+        elif item_type == 'packagename':
+            # See if "item" is a source package name.
+            the_item = getUtility(ISourcePackageNameSet).queryByName(item)
+        elif item_type == 'packageset':
+            # See if "item" is a package set.
+            the_item = getUtility(IPackagesetSet).getByName(item)
+        else:
+            the_item = None
+
+        if the_item is not None:
             return getUtility(IArchivePermissionSet).checkAuthenticated(
-                user, self.context, permission_type, package)[0]
+                user, self.context, permission_type, the_item)[0]
         else:
             return None
 
+    @stepthrough('+dependency')
+    def traverse_dependency(self, id):
+        """Traverse to an archive dependency by archive ID.
+
+        We use IArchive.getArchiveDependency here, which is protected by
+        launchpad.View, so you cannot get to a dependency of a private
+        archive that you can't see.
+        """
+        try:
+            id = int(id)
+        except ValueError:
+            # Not a number.
+            return None
+
+        try:
+            archive = getUtility(IArchiveSet).get(id)
+        except SQLObjectNotFound:
+            return None
+
+        return self.context.getArchiveDependency(archive)
 
 class ArchiveContextMenu(ContextMenu):
     """Overview Menu for IArchive."""
@@ -276,14 +317,14 @@ class ArchiveContextMenu(ContextMenu):
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')
 
     @enabled_with_permission('launchpad.Append')
     def manage_subscribers(self):
-        text = 'Manage subscriptions'
+        text = 'Manage access'
         link = Link('+subscriptions', text, icon='edit')
 
         # This link should only be available for private archives:
@@ -337,14 +378,6 @@ class ArchiveNavigationMenu(NavigationMenu):
     usedfor = IArchive
     facet = 'overview'
     links = []
-
-
-class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `IArchive`."""
-
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class ArchiveViewBase(LaunchpadView):
@@ -435,6 +468,35 @@ class ArchiveViewBase(LaunchpadView):
     def build_counters(self):
         """Return a dict representation of the build counters."""
         return self.context.getBuildCounters()
+
+    @cachedproperty
+    def dependencies(self):
+        return list(self.context.dependencies)
+
+    @property
+    def show_dependencies(self):
+        """Whether or not to present the archive-dependencies section.
+
+        The dependencies section is presented if there are any dependency set
+        or if the user has permission to change it.
+        """
+        can_edit = check_permission('launchpad.Edit', self.context)
+        return can_edit or len(self.dependencies) > 0
+
+    @property
+    def has_disabled_dependencies(self):
+        """Whether this archive has disabled archive dependencies or not.
+
+        Although, it will be True only if the requester has permission
+        to edit the context archive (i.e. if the user can do something
+        about it).
+        """
+        disabled_dependencies = [
+            archive_dependency
+            for archive_dependency in self.dependencies
+            if not archive_dependency.dependency.enabled]
+        can_edit = check_permission('launchpad.Edit', self.context)
+        return can_edit and len(disabled_dependencies) > 0
 
 
 class ArchiveSourcePackageListViewBase(ArchiveViewBase):
@@ -772,7 +834,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             self.setFieldError('selected_sources', 'No sources selected.')
 
     @action(_("Request Deletion"), name="delete", validator="validate_delete")
-    def action_delete(self, action, data):
+    def delete_action(self, action, data):
         """Perform the deletion of the selected packages.
 
         The deletion will be performed upon the 'selected_sources' contents
@@ -850,17 +912,27 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     @cachedproperty
     def ppas_for_user(self):
         """Return all PPAs for which the user accessing the page can copy."""
-        return getUtility(IArchiveSet).getPPAsForUser(self.user)
+        return list(
+            ppa
+            for ppa in getUtility(IArchiveSet).getPPAsForUser(self.user)
+            if check_permission('launchpad.Append', ppa))
 
     @cachedproperty
     def can_copy(self):
         """Whether or not the current user can copy packages to any PPA."""
-        return self.ppas_for_user.count() > 0
+        return len(self.ppas_for_user) > 0
 
     @cachedproperty
     def can_copy_to_context_ppa(self):
-        """Whether or not the current user can copy to the context PPA."""
-        return self.user.inTeam(self.context.owner)
+        """Whether or not the current user can copy to the context PPA.
+
+        It's always False for non-PPA archives, copies to non-PPA archives
+        are explicitly denied in the UI.
+        """
+        # XXX cprov 2009-07-17 bug=385503: copies cannot be properly traced
+        # that's why we explicitly don't allow them do be done via the UI
+        # in main archives, only PPAs.
+        return self.context.is_ppa and self.context.canUpload(self.user)
 
     def createDestinationArchiveField(self):
         """Create the 'destination_archive' field."""
@@ -936,23 +1008,24 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    required=True))
 
     @action(_("Update"), name="update")
-    def action_update(self, action, data):
+    def update_action(self, action, data):
         """Simply re-issue the form with the new values."""
         pass
 
-    def validate_copy(self, action, data):
-        """Validate copy parameters.
+    @action(_("Copy Packages"), name="copy")
+    def copy_action(self, action, data):
+        """Perform the copy of the selected packages.
 
-        Ensure we have:
+        Ensure that at least one source is selected. Executes `do_copy`
+        for all the selected sources.
 
-         * At least, one source selected;
-         * The default series input is not given when copying to the
-           context PPA;
-         * The select destination fits all selected sources.
+        If `do_copy` raises `CannotCopy` the error content is set as
+        the 'selected_sources' field error.
+
+        if `do_copy` succeeds, an informational messages is set containing
+        the copied packages.
         """
-        form.getWidgetsData(self.widgets, 'field', data)
-
-        selected_sources = data.get('selected_sources', [])
+        selected_sources = data.get('selected_sources')
         destination_archive = data.get('destination_archive')
         destination_series = data.get('destination_series')
         include_binaries = data.get('include_binaries')
@@ -962,47 +1035,27 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             self.setFieldError('selected_sources', 'No sources selected.')
             return
 
-        broken_copies = []
-        for source in selected_sources:
-            if destination_series is None:
-                destination_series = source.distroseries
-            try:
-                check_copy(
-                    source, destination_archive, destination_series,
-                    destination_pocket, include_binaries)
-            except CannotCopy, reason:
-                broken_copies.append(
-                    "%s (%s)" % (source.displayname, reason))
+        try:
+            copies = do_copy(
+                selected_sources, destination_archive, destination_series,
+                destination_pocket, include_binaries)
+        except CannotCopy, error:
+            messages = []
+            error_lines = str(error).splitlines()
+            if len(error_lines) == 1:
+                messages.append(
+                    "<p>The following source cannot be copied:</p>")
+            else:
+                messages.append(
+                    "<p>The following sources cannot be copied:</p>")
+            messages.append('<ul>')
+            messages.append(
+                "\n".join('<li>%s</li>' % line for line in error_lines))
+            messages.append('</ul>')
 
-        if len(broken_copies) == 0:
+            self.setFieldError(
+                'selected_sources', structured('\n'.join(messages)))
             return
-
-        if len(broken_copies) == 1:
-            error_message = (
-                "The following source cannot be copied: %s"
-                % broken_copies[0])
-        else:
-            error_message = (
-                "The following sources cannot be copied:\n%s" %
-                ",\n".join(broken_copies))
-
-        self.setFieldError('selected_sources', error_message)
-
-    @action(_("Copy Packages"), name="copy", validator="validate_copy")
-    def action_copy(self, action, data):
-        """Perform the copy of the selected packages."""
-        if len(self.errors) != 0:
-            return
-
-        selected_sources = data.get('selected_sources')
-        destination_archive = data.get('destination_archive')
-        destination_series = data.get('destination_series')
-        include_binaries = data.get('include_binaries')
-        destination_pocket = self.default_pocket
-
-        copies = do_copy(
-            selected_sources, destination_archive, destination_series,
-            destination_pocket, include_binaries)
 
         # Present a page notification describing the action.
         messages = []
@@ -1084,8 +1137,11 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             dependency = archive_dependency.dependency
             if not dependency.is_ppa:
                 continue
-            dependency_label = '<a href="%s">%s</a>' % (
-                canonical_url(dependency), archive_dependency.title)
+            if check_permission('launchpad.View', dependency):
+                dependency_label = '<a href="%s">%s</a>' % (
+                    canonical_url(dependency), archive_dependency.title)
+            else:
+                dependency_label = archive_dependency.title
             dependency_token = '%s/%s' % (
                 dependency.owner.name, dependency.name)
             term = SimpleTerm(
@@ -1337,7 +1393,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 "Public PPAs cannot depend on private ones.")
 
     @action(_("Save"), name="save")
-    def action_save(self, action, data):
+    def save_action(self, action, data):
         """Save dependency configuration changes.
 
         See `_remove_dependencies`, `_add_ppa_dependencies` and
@@ -1366,6 +1422,10 @@ class ArchiveActivateView(LaunchpadFormView):
 
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
+
+    @property
+    def ubuntu(self):
+        return getUtility(ILaunchpadCelebrities).ubuntu
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.
@@ -1399,8 +1459,7 @@ class ArchiveActivateView(LaunchpadFormView):
         # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
         # for Ubuntu distribution. This check should be revisited when we
         # start supporting PPAs for other distribution (debian, mainly).
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if proposed_name is not None and proposed_name == ubuntu.name:
+        if proposed_name is not None and proposed_name == self.ubuntu.name:
             self.setFieldError(
                 'name',
                 "Archives cannot have the same name as its distribution.")
@@ -1420,7 +1479,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 "PPA Terms of Service must be accepted to activate a PPA.")
 
     @action(_("Activate"), name="activate")
-    def action_save(self, action, data):
+    def save_action(self, action, data):
         """Activate a PPA and moves to its page."""
 
         # 'name' field is omitted from the form data for default PPAs and
@@ -1471,12 +1530,12 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
     field_names = []
 
     @action(_("Save"), name="save", validator="validate_save")
-    def action_save(self, action, data):
+    def save_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
+    def cancel_action(self, action, data):
         self.next_url = canonical_url(self.context)
 
     def validate_save(self, action, data):

@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Librarian garbage collection tests"""
 
 __metaclass__ = type
@@ -94,7 +96,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Connect to the database as a user with file upload privileges,
         # in this case the PostgreSQL default user who happens to be an
         # administrator on launchpad development boxes.
-        self.layer.switchDbUser(dbuser='launchpad')
+        self.layer.switchDbUser(dbuser='testadmin')
         ztm = self.layer.txn
 
         ztm.begin()
@@ -119,6 +121,10 @@ class TestLibrarianGarbageCollection(TestCase):
         past = past.replace(tzinfo=utc)
         f1.last_accessed = past
         f2.last_accessed = past
+        f1.date_created = past
+        f2.date_created = past
+        f1.content.datecreated = past
+        f2.content.datecreated = past
 
         del f1, f2
 
@@ -159,7 +165,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # This should have committed
         self.ztm.begin()
 
-        # Confirm that the LibaryFileContents are still there
+        # Confirm that the LibaryFileContents are still there.
         c1 = LibraryFileContent.get(c1_id)
         c2 = LibraryFileContent.get(c2_id)
 

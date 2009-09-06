@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug comment browser view classes."""
 
@@ -218,6 +219,10 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
+
+    def page_title(self):
+        return 'Comment %d for bug %d' % (
+            self.comment.index, self.context.bug.id)
 
 
 class BugCommentBoxView(LaunchpadView):

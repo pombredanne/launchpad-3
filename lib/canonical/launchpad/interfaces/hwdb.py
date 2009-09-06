@@ -1,4 +1,6 @@
-# Copyright 2007, 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces related to the hardware database."""
@@ -7,10 +9,9 @@ __metaclass__ = type
 
 __all__ = [
     'HWBus',
-    'HWMainClass',
-    'HWSubClass',
     'HWSubmissionFormat',
     'HWSubmissionKeyNotUnique',
+    'HWSubmissionMissingFields',
     'HWSubmissionProcessingStatus',
     'IHWDBApplication',
     'IHWDevice',
@@ -54,6 +55,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
@@ -61,11 +63,12 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import ITopLevelEntryLink
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_collection_of, webservice_error)
+    export_destructor_operation, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_collection_of, operation_returns_entry,
+    webservice_error)
 
 
 def validate_new_submission_key(submission_key):
@@ -92,6 +95,10 @@ def validate_email_address(emailaddress):
 
 class HWSubmissionKeyNotUnique(Exception):
     """Prevent two or more submission with identical submission_key."""
+
+
+class HWSubmissionMissingFields(Exception):
+    """Indicate that the HWDB client sent incomplete data."""
 
 
 class HWSubmissionProcessingStatus(DBEnumeratedType):
@@ -121,7 +128,7 @@ class HWSubmissionFormat(DBEnumeratedType):
     VERSION_1 = DBItem(1, "Version 1")
 
 
-class IHWSubmission(Interface):
+class IHWSubmission(Interface, IPrivacy):
     """Raw submission data for the hardware database.
 
     See doc/hwdb.txt for details about the attributes.
@@ -142,6 +149,8 @@ class IHWSubmission(Interface):
         Choice(
             title=_(u'Submission Status'), required=True,
             vocabulary=HWSubmissionProcessingStatus, readonly=True))
+    # This is redefined from IPrivacy.private because the attribute is
+    # is required.
     private = exported(
         Bool(
             title=_(u'Private Submission'), required=True))
@@ -272,18 +281,19 @@ class IHWSubmissionSet(Interface):
         Only one of :distribution: or :distroseries: may be supplied.
         """
 
-    def numSubmissionsWithDevice(bus, vendor_id, product_id, driver_name=None,
-                                 package_name=None, distro_target=None):
-        """Count the number of submissions mentioning a device.
+    def numSubmissionsWithDevice(bus=None, vendor_id=None, product_id=None,
+                                 driver_name=None, package_name=None,
+                                 distro_target=None):
+        """Count the number of submissions mentioning a device or a driver.
 
         :return: A tuple (submissions_with_device, all_submissions)
-           where submissions_with_device is the number of submissions having
-           the given device and matching the distro_target criterion and where
-           all_submissions is the number of submissions matching the
-           distro_target criterion.
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+            where submissions_with_device is the number of submissions having
+            the given device or driver and matching the distro_target
+            criterion and where all_submissions is the number of submissions
+            matching the distro_target criterion.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: The name of the driver used for the device
             (optional).
         :param package_name: The name of the package the driver is a part of.
@@ -291,24 +301,26 @@ class IHWSubmissionSet(Interface):
         :param distro_target: Limit the count to submissions made for the
             given distribution, distroseries or distroarchseries.
             (optional).
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
-    def numOwnersOfDevice(bus, vendor_id, product_id, driver_name=None,
-                          package_name=None, distro_target=None):
-        """Count the number who subitted hardware reports mentioning a device.
+    def numOwnersOfDevice(bus=None, vendor_id=None, product_id=None,
+                          driver_name=None, package_name=None,
+                          distro_target=None):
+        """The number of people owning a device or using a driver.
 
         :return: A tuple (device_owners, all_hardware_reporters)
-           where device_owners is the number of people who made a HWDB
-           submission containing the given device, optionally limited
-           to submissions where the device is controlled by a given
-           driver from the given package, and/or limited to submissions
-           made for the given distro_target.
-           all_hardware_reporters is the number of persons who made
-           a HWDB submission, optionally limited to submission made
-           on the given distro_target installation.
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+            where device_owners is the number of people who made a HWDB
+            submission containing the given device or driver, optionally
+            limited to submissions made for the given distro_target.
+            all_hardware_reporters is the number of persons who made
+            a HWDB submission, optionally limited to submission made
+            on the given distro_target installation.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: The name of the driver used for the device
             (optional).
         :param package_name: The name of the package the driver is a part of.
@@ -316,6 +328,9 @@ class IHWSubmissionSet(Interface):
         :param distro_target: Limit the count to submissions made for the
             given distribution, distroseries or distroarchseries.
             (optional).
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
     def deviceDriverOwnersAffectedByBugs(
@@ -594,66 +609,6 @@ class HWBus(DBEnumeratedType):
     PCMCIA = DBItem(14, 'PCMCIA (16 bit)')
 
 
-class HWMainClass(HWBus):
-    """The device classes.
-
-    This enumeration describes the capabilities of a device.
-    """
-
-    NETWORK = DBItem(10000, 'Network')
-
-    STORAGE = DBItem(11000, 'Storage')
-
-    DISPLAY = DBItem(12000, 'Display')
-
-    VIDEO = DBItem(13000, 'Video')
-
-    AUDIO = DBItem(14000, 'Audio')
-
-    MODEM = DBItem(15000, 'Modem')
-
-    INPUT = DBItem(16000, 'Input') # keyboard, mouse tetc.
-
-    PRINTER = DBItem(17000, 'Printer')
-
-    SCANNER = DBItem(18000, 'Scanner')
-
-
-class HWSubClass(DBEnumeratedType):
-    """The device subclasses.
-
-    This enumeration gives more details for the "coarse" device class
-    specified by HWDeviceClass.
-    """
-    NETWORK_ETHERNET = DBItem(10001, 'Ethernet')
-
-    STORAGE_HARDDISK = DBItem(11001, 'Hard Disk')
-
-    STORAGE_FLASH = DBItem(11002, 'Flash Memory')
-
-    STORAGE_FLOPPY = DBItem(11003, 'Floppy')
-
-    STORAGE_CDROM = DBItem(11004, 'CDROM Drive')
-
-    STORAGE_CDWRITER = DBItem(11005, 'CD Writer')
-
-    STORAGE_DVD = DBItem(11006, 'DVD Drive')
-
-    STORAGE_DVDWRITER = DBItem(11007, 'DVD Writer')
-
-    PRINTER_INKJET = DBItem(17001, 'Inkjet Printer')
-
-    PRINTER_LASER = DBItem(17002, 'Laser Printer')
-
-    PRINTER_MATRIX = DBItem(17003, 'Matrix Printer')
-
-    SCANNER_FLATBED = DBItem(18001, 'Flatbed Scanner')
-
-    SCANNER_ADF = DBItem(18002, 'Scanner with Automatic Document Feeder')
-
-    SCANNER_TRANSPARENCY = DBItem(18003, 'Scanner for Transparent Documents')
-
-
 class IHWVendorName(Interface):
     """A list of vendor names."""
     name = TextLine(title=u'Vendor Name', required=True)
@@ -731,6 +686,37 @@ class IHWVendorIDSet(Interface):
 
         :param bus: A HWBus instance.
         :return: A sequence of IHWVendorID instances.
+        """
+
+
+class IHWDeviceClass(Interface):
+    """The capabilities of a device."""
+    export_as_webservice_entry()
+
+    id = Int(title=u'Device class ID', required=True, readonly=True)
+    device = Reference(schema=Interface)
+    main_class = exported(
+        Int(
+            title=u'The main class of this device', required=True,
+            readonly=True))
+    sub_class = exported(
+        Int(
+            title=u'The sub class of this device', required=False,
+            readonly=True))
+
+    @export_destructor_operation()
+    def delete():
+        """Delete this record."""
+
+
+class IHWDeviceClassSet(Interface):
+    """The set of IHWDeviceClass records."""
+
+    def get(id):
+        """Return an `IHWDeviceClass` record with the given database ID.
+
+        :param id: The database ID.
+        :return: An `IHWDeviceClass` instance.
         """
 
 
@@ -854,6 +840,47 @@ class IHWDevice(Interface):
             title=_(u"The IHWDriver records related to this device."),
             value_type=Reference(schema=IHWDriver)))
 
+    classes = exported(
+        CollectionField(
+            title=_(u"The device classes this device belongs to."),
+            value_type=Reference(schema=IHWDeviceClass)))
+
+    @operation_parameters(
+        main_class=copy_field(IHWDeviceClass['main_class']),
+        sub_class=copy_field(IHWDeviceClass['sub_class']))
+    @export_write_operation()
+    @operation_returns_entry(IHWDeviceClass)
+    def getOrCreateDeviceClass(main_class, sub_class=None):
+        """Return an `IHWDeviceClass` record or create a new one.
+
+        :param main_class: The main class to be added.
+        :param sub_class: The sub-class to added (otpional).
+        :return: An `IHWDeviceClass` record.
+
+        main_class and sub_class are integers specifying the class
+        of the device, or, in the case of USB devices, the class
+        of an interface.
+
+        `IHWDeviceClass` records must be unique; if this method is called
+        to create a new record with data of an already existing record,
+        the existing record is returned.
+        """
+
+    @operation_parameters(
+        main_class=copy_field(IHWDeviceClass['main_class']),
+        sub_class=copy_field(IHWDeviceClass['sub_class']))
+    @export_write_operation()
+    def removeDeviceClass(main_class, sub_class=None):
+        """Add an `IHWDeviceClass` record.
+
+        :param main_class: The main class to be added.
+        :param sub_class: The sub-class to added.
+        """
+
+
+# Fix cyclic reference.
+IHWDeviceClass['device'].schema = IHWDevice
+
 
 class IHWDeviceSet(Interface):
     """The set of devices."""
@@ -912,29 +939,6 @@ class IHWDeviceSet(Interface):
         :return: A sequence of IHWDevice instances.
         """
 
-
-class IHWDeviceClass(Interface):
-    """The capabilities of a device."""
-    device = Attribute(u'The Device')
-    main_class = Choice(
-        title=u'The main class of this device', required=True,
-        readonly=True, vocabulary=HWMainClass)
-    sub_class = Choice(
-        title=u'The sub class of this device', required=False,
-        readonly=True, vocabulary=HWSubClass)
-
-
-class IHWDeviceClassSet(Interface):
-    """The set of device capabilities."""
-
-    def create(device, main_class, sub_class=None):
-        """Create a new IHWDevice record.
-
-        :param device: The device described by the new record.
-        :param main_class: A HWMainClass instance.
-        :param sub_class: A HWSubClass instance.
-        :return: An IHWDeviceClass instance.
-        """
 
 class IHWDeviceNameVariant(Interface):
     """Variants of a device name.
@@ -1078,15 +1082,15 @@ class IHWSubmissionDeviceSet(Interface):
         """
 
     def numDevicesInSubmissions(
-        bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distro_target=None):
-        """Count how often a device appears in HWDB submissions.
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distro_target=None):
+        """Count how often a device or a driver appears in HWDB submissions.
 
         :return: The number how often the given device appears in HWDB
             submissions.
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: Limit the count to devices controlled by the given
             driver (optional).
         :param package_name: Limit the count to devices controlled by a driver
@@ -1094,6 +1098,9 @@ class IHWSubmissionDeviceSet(Interface):
         :param distro_target: Limit the count to devices appearing in HWDB
             submissions made for the given distribution, distroseries
             or distroarchseries (optional).
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
 
@@ -1136,7 +1143,7 @@ class IHWSubmissionBugSet(Interface):
         """
 
 
-class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
+class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""
 
     export_as_webservice_entry('hwdb')
@@ -1206,13 +1213,13 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
     @operation_parameters(
         bus=Choice(
-            title=u'The device bus', vocabulary=HWBus, required=True),
+            title=u'The device bus', vocabulary=HWBus, required=False),
         vendor_id=TextLine(
             title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
-             required=True),
+             required=False),
         product_id=TextLine(
             title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
-            required=True),
+            required=False),
         driver_name=TextLine(
             title=u'A driver name', required=False,
             description=u'If specified, the count is limited to devices '
@@ -1244,19 +1251,20 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
             required=False))
     @export_read_operation()
     def numSubmissionsWithDevice(
-        bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
-        """Count the number of submissions mentioning a device.
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """Count the number of submissions mentioning a device  or a driver.
 
         Returns a dictionary {'submissions_with_device: n1,
         'all_submissions': n2}, where submissions_with_device is the number
-        of submissions having the given device and matching the
+        of submissions having the given device or driver and matching the
         distro target criterion and where all_submissions is the number of
         submissions matching the distro target criterion.
 
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: The name of the driver used for the device
             (optional).
         :param package_name: The name of the package the driver is a part of.
@@ -1273,17 +1281,20 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
         You may specify at most one of the parameters distribution,
         distroseries or distroarchseries.
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
     @operation_parameters(
         bus=Choice(
-            title=u'The device bus', vocabulary=HWBus, required=True),
+            title=u'The device bus', vocabulary=HWBus, required=False),
         vendor_id=TextLine(
             title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
-             required=True),
+             required=False),
         product_id=TextLine(
             title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
-            required=True),
+            required=False),
         driver_name=TextLine(
             title=u'A driver name', required=False,
             description=u'If specified, the count is limited to devices '
@@ -1315,23 +1326,22 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
             required=False))
     @export_read_operation()
     def numOwnersOfDevice(
-        bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
-        """Count the number who subitted hardware reports mentioning a device.
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """The number of people owning a device or using a driver.
 
         Returns a dictionary {'owners': n1, 'all_submitters': n2}
         where owners is the number of people who made a HWDB
-        submission containing the given device, optionally limited
-        to submissions where the device is controlled by a given
-        driver from the given package, and/or limited to submissions
-        made for the given distro target.
+        submission containing the given device or driver, optionally
+        limited to submissions made for the given distro target.
         all_submitters is the number of persons who made
         a HWDB submission, optionally limited to submission made
         on the given distro target installation.
 
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: The name of the driver used for the device
             (optional).
         :param package_name: The name of the package the driver is a part of.
@@ -1348,17 +1358,20 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
         You may specify at most one of the parameters distribution,
         distroseries or distroarchseries.
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
     @operation_parameters(
         bus=Choice(
-            title=u'The device bus', vocabulary=HWBus, required=True),
+            title=u'The device bus', vocabulary=HWBus, required=False),
         vendor_id=TextLine(
             title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
-             required=True),
+             required=False),
         product_id=TextLine(
             title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
-            required=True),
+            required=False),
         driver_name=TextLine(
             title=u'A driver name', required=False,
             description=u'If specified, the count is limited to devices '
@@ -1390,15 +1403,16 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
             required=False))
     @export_read_operation()
     def numDevicesInSubmissions(
-        bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
-        """Count how often a device appears in HWDB submissions.
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """Count how often a device or a driver appears in HWDB submissions.
 
-        Returns The number how often the given device appears in HWDB
-
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+        :return: The number how often the given device appears in HWDB
+            submissions.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: Limit the count to devices controlled by the given
             driver (optional).
         :param package_name: Limit the count to devices controlled by a driver
@@ -1415,6 +1429,9 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
         You may specify at most one of the parameters distribution,
         distroseries or distroarchseries.
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
     @operation_parameters(

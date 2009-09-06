@@ -1,4 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
 
@@ -9,10 +10,12 @@ __all__ = [
     'BugListingBatchNavigator',
     'BugListingPortletView',
     'BugNominationsView',
+    'bugtarget_renderer',
     'BugTargetTraversalMixin',
     'BugTargetView',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
+    'BugTaskBreadcrumb',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
     'BugTaskListingItem',
@@ -52,7 +55,8 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
-from zope.component import getAdapter, getUtility, getMultiAdapter
+from zope.component import (
+    ComponentLookupError, getAdapter, getUtility, getMultiAdapter)
 from zope.event import notify
 from zope import formlib
 from zope.interface import implementer, implements, providedBy
@@ -60,6 +64,7 @@ from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.traversing.interfaces import IPathAdapter
@@ -70,8 +75,10 @@ from lazr.enum import EnumeratedType, Item
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IReferenceChoice, IWebServiceClientRequest)
+    IFieldHTMLRenderer, IReference, IReferenceChoice,
+    IWebServiceClientRequest)
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -114,6 +121,7 @@ from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnexpectedFormData)
 
@@ -121,7 +129,7 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
 
-from lp.bugs.browser.bug import BugContextMenu, BugTextView
+from lp.bugs.browser.bug import BugContextMenu, BugViewMixin, BugTextView
 from lp.bugs.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
@@ -131,8 +139,8 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
-from canonical.launchpad.webapp.vocabulary import vocab_factory
+from canonical.launchpad.webapp.tales import (
+    FormattersAPI, ObjectImageDisplayAPI, PersonFormatterAPI)
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -144,7 +152,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, TextLineEditorWidget)
+    InlineEditPickerWidget, TextAreaEditorWidget,
+    TextLineEditorWidget, vocabulary_to_choice_edit_items)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -155,7 +164,26 @@ from lp.registry.vocabularies import MilestoneVocabulary
 def assignee_renderer(context, field, request):
     """Render a bugtask assignee as a link."""
     def render(value):
-        return PersonFormatterAPI(context.assignee).link('+assignedbugs')
+        if context.assignee is None:
+            return ''
+        else:
+            return (
+                '<span>%s</span>' %
+                PersonFormatterAPI(context.assignee).link(None))
+    return render
+
+@component.adapter(IBugTask, IReference, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def bugtarget_renderer(context, field, request):
+    """Render a bugtarget as a link."""
+    def render(value):
+        html = """<span>
+          <a href="%(href)s" class="%(class)s">%(displayname)s</a>
+        </span>""" % {
+            'href': canonical_url(context.target),
+            'class': ObjectImageDisplayAPI(context.target).sprite_css(),
+            'displayname': cgi.escape(context.bugtargetdisplayname)}
+        return html
     return render
 
 def unique_title(title):
@@ -460,7 +488,7 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
+class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     def __init__(self, context, request):
@@ -605,7 +633,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         # unsubscribe(), because if the bug is private, the current user
         # will be prevented from calling methods on the main bug after
         # they unsubscribe from it!
-        unsubed_dupes = self.context.bug.unsubscribeFromDupes(self.user)
+        unsubed_dupes = self.context.bug.unsubscribeFromDupes(
+            self.user, self.user)
         self.context.bug.unsubscribe(self.user, self.user)
 
         self.request.response.addNotification(
@@ -631,7 +660,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         # We'll also unsubscribe the other user from dupes of this bug,
         # otherwise they'll keep getting this bug's mail.
         self.context.bug.unsubscribe(user, self.user)
-        unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
+        unsubed_dupes = self.context.bug.unsubscribeFromDupes(user, user)
         self.request.response.addNotification(
             structured(
                 self._getUnsubscribeNotification(user, unsubed_dupes)))
@@ -918,13 +947,13 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         return self.comments[0].text_contents != self.context.bug.description
 
     @cachedproperty
-    def bug_branches(self):
+    def linked_branches(self):
         """Filter out the bug_branch links to non-visible private branches."""
-        bug_branches = []
-        for bug_branch in self.context.bug.bug_branches:
-            if check_permission('launchpad.View', bug_branch.branch):
-                bug_branches.append(bug_branch)
-        return bug_branches
+        linked_branches = []
+        for linked_branch in self.context.bug.linked_branches:
+            if check_permission('launchpad.View', linked_branch.branch):
+                linked_branches.append(linked_branch)
+        return linked_branches
 
     @property
     def days_to_expiration(self):
@@ -997,6 +1026,20 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         """Is the user a Launchpad admin?"""
         return check_permission('launchpad.Admin', self.context)
 
+    @property
+    def bug_description_html(self):
+        """The bug's description as HTML."""
+        formatter = FormattersAPI
+        hide_email = formatter(self.context.bug.description).obfuscate_email()
+        description = formatter(hide_email).text_to_html()
+        return TextAreaEditorWidget(
+            self.context.bug,
+            'description',
+            canonical_url(self.context, view_name='+edit'),
+            id="edit-description",
+            title="Bug Description",
+            value=description)
+
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
@@ -1010,6 +1053,39 @@ class BugTaskPortletView:
         return [
             task for task in self.context.bug.bugtasks
             if task.id is not self.context.id]
+
+
+def get_prefix(bugtask):
+    """Return a prefix that can be used for this form.
+
+    The prefix is constructed using the name of the bugtask's target so as
+    to ensure that it's unique within the context of a bug. This is needed
+    in order to included multiple edit forms on the bug page, while still
+    keeping the field ids unique.
+    """
+    parts = []
+    if IUpstreamBugTask.providedBy(bugtask):
+        parts.append(bugtask.product.name)
+
+    elif IProductSeriesBugTask.providedBy(bugtask):
+        parts.append(bugtask.productseries.name)
+        parts.append(bugtask.productseries.product.name)
+
+    elif IDistroBugTask.providedBy(bugtask):
+        parts.append(bugtask.distribution.name)
+        if bugtask.sourcepackagename is not None:
+            parts.append(bugtask.sourcepackagename.name)
+
+    elif IDistroSeriesBugTask.providedBy(bugtask):
+        parts.append(bugtask.distroseries.distribution.name)
+        parts.append(bugtask.distroseries.name)
+
+        if bugtask.sourcepackagename is not None:
+            parts.append(bugtask.sourcepackagename.name)
+
+    else:
+        raise AssertionError("Unknown IBugTask: %r" % bugtask)
+    return '_'.join(parts)
 
 
 class BugTaskEditView(LaunchpadEditFormView):
@@ -1125,29 +1201,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         in order to included multiple edit forms on the bug page, while still
         keeping the field ids unique.
         """
-        parts = []
-        if IUpstreamBugTask.providedBy(self.context):
-            parts.append(self.context.product.name)
-
-        elif IProductSeriesBugTask.providedBy(self.context):
-            parts.append(self.context.productseries.name)
-            parts.append(self.context.productseries.product.name)
-
-        elif IDistroBugTask.providedBy(self.context):
-            parts.append(self.context.distribution.name)
-            if self.context.sourcepackagename is not None:
-                parts.append(self.context.sourcepackagename.name)
-
-        elif IDistroSeriesBugTask.providedBy(self.context):
-            parts.append(self.context.distroseries.distribution.name)
-            parts.append(self.context.distroseries.name)
-
-            if self.context.sourcepackagename is not None:
-                parts.append(self.context.sourcepackagename.name)
-
-        else:
-            raise AssertionError("Unknown IBugTask: %r" % self.context)
-        return '_'.join(parts)
+        return get_prefix(self.context)
 
     def setUpFields(self):
         """Sets up the fields for the bug task edit form.
@@ -1173,12 +1227,17 @@ class BugTaskEditView(LaunchpadEditFormView):
                 # The user has to be able to see the current value.
                 status_noshow.remove(self.context.status)
 
-            status_vocab_factory = vocab_factory(
-                BugTaskStatus, noshow=status_noshow)
+            # We shouldn't have to build our vocabulary out of (item.title,
+            # item) tuples -- iterating over an EnumeratedType gives us
+            # ITokenizedTerms that we could use. However, the terms generated
+            # by EnumeratedType have their name as the token and here we need
+            # the title as the token for backwards compatibility.
+            status_items = [
+                (item.title, item) for item in BugTaskStatus.items
+                if item not in status_noshow]
             status_field = Choice(
-                __name__='status',
-                title=self.schema['status'].title,
-                vocabulary=status_vocab_factory(self.context))
+                __name__='status', title=self.schema['status'].title,
+                vocabulary=SimpleVocabulary.fromItems(status_items))
 
             self.form_fields = self.form_fields.omit('status')
             self.form_fields += formlib.form.Fields(status_field)
@@ -1191,8 +1250,12 @@ class BugTaskEditView(LaunchpadEditFormView):
                 __name__='milestone',
                 title=self.schema['milestone'].title,
                 source=milestone_source, required=False)
-            self.form_fields = self.form_fields.omit('milestone')
-            self.form_fields += formlib.form.Fields(milestone_field)
+        else:
+            milestone_field = copy_field(
+                IBugTask['milestone'], readonly=False)
+
+        self.form_fields = self.form_fields.omit('milestone')
+        self.form_fields += formlib.form.Fields(milestone_field)
 
         for field in read_only_field_names:
             self.form_fields[field].for_display = True
@@ -2901,13 +2964,15 @@ class BugTasksAndNominationsView(LaunchpadView):
         return self.context.isUserAffected(self.user)
 
     @property
-    def affects_form_value(self):
-        """The value to use in the inline me too form."""
-        affected = self.context.isUserAffected(self.user)
-        if affected is None or affected == False:
-            return 'YES'
+    def current_user_affected_js_status(self):
+        """A javascript literal indicating if the user is affected."""
+        affected = self.current_user_affected_status
+        if affected is None:
+            return 'null'
+        elif affected:
+            return 'true'
         else:
-            return 'NO'
+            return 'false'
 
 
 class BugTaskTableRowView(LaunchpadView):
@@ -2994,30 +3059,117 @@ class BugTaskTableRowView(LaunchpadView):
         return self.request.getNearest(ICveSet) == (None, None)
 
     @property
+    def status_widget_items(self):
+        """The available status items as JSON."""
+        if self.user is not None:
+            # We shouldn't have to build our vocabulary out of (item.title,
+            # item) tuples -- iterating over an EnumeratedType gives us
+            # ITokenizedTerms that we could use. However, the terms generated
+            # by EnumeratedType have their name as the token and here we need
+            # the title as the token for backwards compatibility.
+            status_items = [
+                (item.title, item) for item in BugTaskStatus.items
+                if item != BugTaskStatus.UNKNOWN]
+
+            disabled_items = [status for status in BugTaskStatus.items
+                if not self.context.canTransitionToStatus(status, self.user)]
+
+            items = vocabulary_to_choice_edit_items(
+                SimpleVocabulary.fromItems(status_items),
+                css_class_prefix='status',
+                disabled_items=disabled_items)
+        else:
+            items = '[]'
+
+        return items
+
+    @property
+    def importance_widget_items(self):
+        """The available status items as JSON."""
+        if self.user is not None:
+            # We shouldn't have to build our vocabulary out of (item.title,
+            # item) tuples -- iterating over an EnumeratedType gives us
+            # ITokenizedTerms that we could use. However, the terms generated
+            # by EnumeratedType have their name as the token and here we need
+            # the title as the token for backwards compatibility.
+            importance_items = [
+                (item.title, item) for item in BugTaskImportance.items
+                if item != BugTaskImportance.UNKNOWN]
+
+            items = vocabulary_to_choice_edit_items(
+                SimpleVocabulary.fromItems(importance_items),
+                css_class_prefix='importance')
+        else:
+            items = '[]'
+
+        return items
+
+    @property
+    def milestone_widget_items(self):
+        """The available milestone items as JSON."""
+        if self.user is not None:
+            items = vocabulary_to_choice_edit_items(
+                MilestoneVocabulary(self.context),
+                value_fn=lambda item: canonical_url(
+                    item, request=IWebServiceClientRequest(self.request)))
+            items.append({
+                "name": "Remove milestone",
+                "disabled": False,
+                "value": None})
+        else:
+            items = '[]'
+
+        return items
+
+    @property
+    def target_has_milestones(self):
+        """Are there any milestones we can target?"""
+        return list(MilestoneVocabulary(self.context)) != []
+
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)
 
     @property
-    def assignee_picker_widget(self):
-        assignee_content_id = 'assignee-content-box-%s' % self.context.id
-        null_display_value = 'Nobody'
-        if self.context.assignee is None:
-            assignee_html = null_display_value
-        else:
-            assignee_html = PersonFormatterAPI(self.context.assignee).link(
-                '+assignedbugs')
+    def user_can_edit_importance(self):
+        """Can the user edit the Importance field?
 
-        return InlineEditPickerWidget(
-            context=self.context,
-            request=self.request,
-            interface_attribute=IBugTask['assignee'],
-            default_html=assignee_html,
-            id=assignee_content_id,
-            header='Change assignee',
-            step_title='Search for people or teams',
-            remove_button_text='Remove Assignee',
-            null_display_value=null_display_value)
+        If yes, return True, otherwise return False.
+        """
+        return self.context.userCanEditImportance(self.user)
+
+    @property
+    def user_can_edit_milestone(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        return self.context.userCanEditMilestone(self.user)
+
+    def js_config(self):
+        """Configuration for the JS widgets on the row, JSON-serialized."""
+        return dumps({
+            'row_id': 'tasksummary%s' % self.context.id,
+            'bugtask_path': '/'.join(
+                [''] + canonical_url(self.context).split('/')[3:]),
+            'prefix': get_prefix(self.context),
+            'target_is_product': IProduct.providedBy(self.context.target),
+            'status_widget_items': self.status_widget_items,
+            'status_value': self.context.status.title,
+            'importance_widget_items': self.importance_widget_items,
+            'importance_value': self.context.importance.title,
+            'milestone_widget_items': self.milestone_widget_items,
+            'milestone_value': (self.context.milestone and
+                                canonical_url(
+                                    self.context.milestone,
+                                    request=IWebServiceClientRequest(
+                                        self.request)) or
+                                None),
+            'user_can_edit_milestone': self.user_can_edit_milestone,
+            'user_can_edit_status': not self.context.bugwatch,
+            'user_can_edit_importance': (
+                self.user_can_edit_importance and
+                not self.context.bugwatch)})
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
@@ -3143,6 +3295,10 @@ class BugTaskCreateQuestionView(LaunchpadFormView):
         comment = data.get('comment', None)
         self.context.bug.convertToQuestion(self.user, comment=comment)
 
+    label = 'Convert this bug to a question'
+
+    page_title = label
+
 
 class BugTaskRemoveQuestionView(LaunchpadFormView):
     """View for creating a question from a bug."""
@@ -3199,6 +3355,13 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
                 subject=self.context.bug.followup_subject(),
                 content=comment)
 
+    @property
+    def label(self):
+        return ('Bug #%i - Convert this question back to a bug'
+                % self.context.bug.id)
+
+    page_title = label
+
 
 class BugTaskExpirableListingView(LaunchpadView):
     """View for listing Incomplete bugs that can expire."""
@@ -3230,6 +3393,10 @@ class BugTaskExpirableListingView(LaunchpadView):
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
+
+    @property
+    def page_title(self):
+        return "Bugs that can expire in %s" % self.context.title
 
 
 class BugActivityItem:
@@ -3360,3 +3527,20 @@ class BugActivityItem:
                 return_dict[key] = cgi.escape(return_dict[key])
 
         return "%(old_value)s &#8594; %(new_value)s" % return_dict
+
+
+class BugTaskBreadcrumb(Breadcrumb):
+    """Breadcrumb for an `IBugTask`."""
+
+    def __init__(self, context):
+        super(BugTaskBreadcrumb, self).__init__(context)
+        # If the user does not have permission to view the bug for
+        # whatever reason, raise ComponentLookupError.
+        try:
+            name = context.bug.displayname
+        except Unauthorized:
+            raise ComponentLookupError()
+
+    @property
+    def text(self):
+        return self.context.bug.displayname

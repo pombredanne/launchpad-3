@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for feeds generation."""
@@ -131,14 +133,7 @@ class IFeed(Interface):
     def getItems():
         """Get the individual items for the feed.
 
-        For instance, get all announcements for a project.  Each item should
-        be converted to a feed entry using itemToFeedEntry.
-        """
-
-    def itemToFeedEntry(item):
-        """Convert a single item to a formatted feed entry.
-
-        An individual entry will be an instance providing `IFeedEntry`.
+        Individual items will provide `IFeedEntry`.
         """
 
     def renderAtom():

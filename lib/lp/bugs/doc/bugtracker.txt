@@ -554,3 +554,25 @@ trackers.
     >>> print_links(mozilla_bugzilla.getBugFilingAndSearchLinks(None))
     bug_filing_url: None
     bug_search_url: None
+
+
+== Custom bug tracker bug filing links ==
+
+Some bug trackers are heavily customised, so their bug filing URLs may
+be different from the default URL form for that type of bug tracker.
+getBugFilingAndSearchLinks() will handle these cases too, returning the
+custom version of the bug filing URL for those bug trackers that don't
+use the default setup.
+
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
+
+    >>> links = gnome_bugzilla.getBugFilingAndSearchLinks(
+    ...     remote_product='testproduct', summary="Foo", description="Bar")
+
+    >>> print_links(links)
+    bug_filing_url:
+    http://.../enter_bug.cgi?product=testproduct&short_desc=Foo&comment=Bar
+    bug_search_url:
+    http://.../query.cgi?product=testproduct&short_desc=Foo

@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """ArchiveSubscriber interface."""
@@ -9,13 +11,12 @@ __all__ = [
     'ArchiveSubscriberStatus',
     'ArchiveSubscriptionError',
     'IArchiveSubscriber',
-    'IArchiveSubscriberUI',
     'IArchiveSubscriberSet',
     'IPersonalArchiveSubscription'
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Date, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
@@ -163,26 +164,6 @@ class IArchiveSubscriberSet(Interface):
         :param current_only: Whether the result should only include current
             subscriptions (which is the default).
         """
-
-
-class IArchiveSubscriberUI(Interface):
-    """A custom interface for user interaction with archive subscriptions.
-
-    IArchiveSubscriber uses a datetime field for date_expires, whereas
-    we simply want to use a date field when users create or edit new
-    subscriptions.
-    """
-    subscriber = ParticipatingPersonChoice(
-        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
-        description=_("The person or team to subscribe."))
-
-    date_expires = Date(
-        title=_("Date of Expiration"), required=False,
-        description=_("The date when the subscription will expire."))
-
-    description = Text(
-        title=_("Description"), required=False,
-        description=_("Optional notes about this subscription."))
 
 
 class IPersonalArchiveSubscription(Interface):

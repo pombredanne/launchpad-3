@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Script run from test_isolation.py to confirm transaction isolation
 settings work. Note we need to use a non-default isolation level to
@@ -15,7 +16,7 @@ execute_zcml_for_scripts()
 
 def check():
     cur = cursor()
-    cur.execute("UPDATE Person SET country=61 WHERE name='sabdfl'")
+    cur.execute("UPDATE Person SET country=61 WHERE name='mark'")
     cur.execute("SHOW transaction_isolation")
     print cur.fetchone()[0]
 
@@ -23,7 +24,7 @@ def check():
     txn.begin()
 
     cur = cursor()
-    cur.execute("UPDATE Person SET country=66 WHERE name='sabdfl'")
+    cur.execute("UPDATE Person SET country=66 WHERE name='mark'")
     cur.execute("SHOW transaction_isolation")
     print cur.fetchone()[0]
 

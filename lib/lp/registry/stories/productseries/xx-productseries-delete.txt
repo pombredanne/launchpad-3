@@ -34,7 +34,7 @@ of development.
     >>> owner_browser.getLink('Cancel').click()
     >>> owner_browser.open('http://launchpad.dev/firefox/+edit')
     >>> print owner_browser.title
-    Change project details
+    Change Mozilla Firefox's details
 
     >>> owner_browser.getControl('Development focus').value = ['2']
     >>> owner_browser.getControl('Change').click()
@@ -45,6 +45,7 @@ Then he returns to delete trunk. He is informed that deletion is permanent,
 and that the milestones, releases, and files will also be deleted. The
 milestones and releases are linked.
 
+    >>> owner_browser.getLink('View full history').click()
     >>> owner_browser.getLink('trunk').click()
     >>> owner_browser.getLink('Delete series').click()
     >>> print owner_browser.title

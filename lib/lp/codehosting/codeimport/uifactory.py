@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A UIFactory useful for code imports."""
 
@@ -19,14 +20,9 @@ class LoggingUIFactory(TextUIFactory):
     (by default).
     """
 
-    def __init__(self, bar_type=None, stdin=None, stdout=None, stderr=None,
-                 time_source=time.time, writer=None, interval=60.0):
+    def __init__(self, time_source=time.time, writer=None, interval=60.0):
         """Construct a `LoggingUIFactory`.
 
-        :param bar_type: See `TextUIFactory.__init__`.
-        :param stdin: See `TextUIFactory.__init__`.
-        :param stdout: See `TextUIFactory.__init__`.
-        :param stderr: See `TextUIFactory.__init__`.
         :param time_source: A callable that returns time in seconds since the
             epoch.  Defaults to ``time.time`` and should be replaced with
             something deterministic in tests.
@@ -35,7 +31,7 @@ class LoggingUIFactory(TextUIFactory):
         :param interval: Don't produce output more often than once every this
             many seconds.  Defaults to 60 seconds.
         """
-        TextUIFactory.__init__(self, bar_type, stdin, stdout, stderr)
+        TextUIFactory.__init__(self)
         self.interval = interval
         self._progress_view = LoggingTextProgressView(
             time_source, writer, interval)
@@ -110,7 +106,7 @@ class LoggingTextProgressView(TextProgressView):
         self._last_repaint = now
         self._repaint()
 
-    def _show_transport_activity(self, transport, direction, byte_count):
+    def show_transport_activity(self, transport, direction, byte_count):
         """Called by transports via the ui_factory, as they do IO.
 
         This may update a progress bar, spinner, or similar display.
@@ -143,3 +139,7 @@ class LoggingTextProgressView(TextProgressView):
             self._bytes_since_update = 0
             self._last_transport_msg = msg
             self._repaint()
+
+    # bzr 1.17 renamed _show_transport_activity to show_transport_activity.
+    # When we have upgraded to bzr 1.17, this compatibility hack can go away.
+    _show_transport_activity = show_transport_activity

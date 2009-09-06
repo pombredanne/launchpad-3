@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugWatch-related browser views."""
 
@@ -38,6 +39,12 @@ class BugWatchView(LaunchpadView):
     """View for displaying a bug watch."""
 
     schema = IBugWatch
+
+    @property
+    def page_title(self):
+        return 'Comments imported to bug #%d from %s bug #%s' % (
+            self.context.bug.id, self.context.bugtracker.title,
+            self.context.remotebug)
 
     @property
     def comments(self):
@@ -84,6 +91,13 @@ class BugWatchEditView(LaunchpadFormView):
     custom_widget('url', URIWidget)
 
     @property
+    def page_title(self):
+        """The page title."""
+        return 'Edit bug watch for bug %s in %s on bug #%d' % (
+            self.context.remotebug, self.context.bugtracker.title,
+            self.context.bug.id)
+
+    @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
         return {'url' : self.context.url}
@@ -123,3 +137,5 @@ class BugWatchEditView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(getUtility(ILaunchBag).bug)
+
+    cancel_url = next_url

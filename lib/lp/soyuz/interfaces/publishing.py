@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Publishing interfaces."""
@@ -17,14 +19,12 @@ __all__ = [
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
     'NotInPool',
-    'PackagePublishingPocket',
     'PackagePublishingPriority',
     'PackagePublishingStatus',
     'PoolFileOverwriteError',
     'active_publishing_status',
     'inactive_publishing_status',
     'name_priority_map',
-    'pocketsuffix'
     ]
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
@@ -34,6 +34,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
@@ -113,57 +114,6 @@ class PackagePublishingStatus(DBEnumeratedType):
         """)
 
 
-class PackagePublishingPocket(DBEnumeratedType):
-    """Package Publishing Pocket
-
-    A single distroseries can at its heart be more than one logical
-    distroseries as the tools would see it. For example there may be a
-    distroseries called 'hoary' and a SECURITY pocket subset of that would
-    be referred to as 'hoary-security' by the publisher and the distro side
-    tools.
-    """
-
-    RELEASE = DBItem(0, """
-        Release
-
-        The package versions that were published
-        when the distribution release was made.
-        For releases that are still under development,
-        packages are published here only.
-        """)
-
-    SECURITY = DBItem(10, """
-        Security
-
-        Package versions containing security fixes for the released
-        distribution.
-        It is a good idea to have security updates turned on for your system.
-        """)
-
-    UPDATES = DBItem(20, """
-        Updates
-
-        Package versions including new features after the distribution
-        release has been made.
-        Updates are usually turned on by default after a fresh install.
-        """)
-
-    PROPOSED = DBItem(30, """
-        Proposed
-
-        Package versions including new functions that should be widely
-        tested, but that are not yet part of a default installation.
-        People who "live on the edge" will test these packages before they
-        are accepted for use in "Updates".
-        """)
-
-    BACKPORTS = DBItem(40, """
-        Backports
-
-        Backported packages.
-        """)
-
-
 class PackagePublishingPriority(DBEnumeratedType):
     """Package Publishing Priority
 
@@ -219,13 +169,14 @@ name_priority_map = {
     'standard': PackagePublishingPriority.STANDARD,
     'optional': PackagePublishingPriority.OPTIONAL,
     'extra': PackagePublishingPriority.EXTRA,
-    '': None
+    '': None,
     }
 
 
 #
 # Base Interfaces
 #
+
 
 class ICanPublishPackages(Interface):
     """Denotes the ability to publish associated publishing records."""
@@ -341,6 +292,34 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
+    def getAncestry(archive=None, distroseries=None, pocket=None,
+                    status=None):
+        """Return the most recent publication of the same source or binary.
+
+        If a suitable ancestry could not be found, None is returned.
+
+        It optionally accepts parameters for adjusting the publishing
+        context, if not given they default to the current context.
+
+        :param archive: optional `IArchive`, defaults to the context archive.
+        :param distroseries: optional `IDistroSeries`, defaults to the
+            context distroseries.
+        :param pocket: optional `PackagePublishingPocket`, defaults to any
+            pocket.
+        :param status: optional `PackagePublishingStatus` or a collection of
+            them, defaults to `PackagePublishingStatus.PUBLISHED`
+        """
+
+    def overrideFromAncestry():
+        """Set the right published component from publishing ancestry.
+
+        Start with the publishing records and fall back to the original
+        uploaded package if necessary.
+
+        :raise: AssertionError if the context publishing record is not in
+            PENDING status.
+        """
+
 
 class IFilePublishing(Interface):
     """Base interface for *FilePublishing classes"""
@@ -389,6 +368,7 @@ class IFilePublishing(Interface):
 #
 # Source package publishing
 #
+
 
 class ISourcePackageFilePublishing(IFilePublishing):
     """Source package release files and their publishing status"""
@@ -452,7 +432,7 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             title=_('Pocket'),
             description=_('The pocket into which this entry is published'),
             vocabulary=PackagePublishingPocket,
-            required=True, readonly=True
+            required=True, readonly=True,
             ))
     archive = exported(
         Reference(
@@ -543,6 +523,28 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             title=_("Changes File URL"),
             description=_("A URL for this source publication's changes file "
                           "for the source upload.")))
+
+    package_creator = exported(
+        Reference(
+            IPerson,
+            title=_('Package Creator'),
+            description=_('The IPerson who created the source package.'),
+            required=False, readonly=True,
+        ))
+    package_maintainer = exported(
+        Reference(
+            IPerson,
+            title=_('Package Maintainer'),
+            description=_('The IPerson who maintains the source package.'),
+            required=False, readonly=True,
+        ))
+    package_signer = exported(
+        Reference(
+            IPerson,
+            title=_('Package Signer'),
+            description=_('The IPerson who signed the source package.'),
+            required=False, readonly=True,
+        ))
 
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
@@ -656,6 +658,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
 # Binary package publishing
 #
 
+
 class IBinaryPackageFilePublishing(IFilePublishing):
     """Binary package files and their publishing status"""
     # Note that it is really /source/ package name below, and not a
@@ -730,7 +733,7 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             title=_('Pocket'),
             description=_('The pocket into which this entry is published'),
             vocabulary=PackagePublishingPocket,
-            required=True, readonly=True
+            required=True, readonly=True,
             ))
     supersededby = Int(
             title=_('The build which superseded this one'),
@@ -1043,15 +1046,6 @@ class IPublishingSet(Interface):
         the source_package_pub, allowing the use of the cached results.
         """
 
-pocketsuffix = {
-    PackagePublishingPocket.RELEASE: "",
-    PackagePublishingPocket.SECURITY: "-security",
-    PackagePublishingPocket.UPDATES: "-updates",
-    PackagePublishingPocket.PROPOSED: "-proposed",
-    PackagePublishingPocket.BACKPORTS: "-backports",
-}
-
-
 active_publishing_status = (
     PackagePublishingStatus.PENDING,
     PackagePublishingStatus.PUBLISHED,
@@ -1066,4 +1060,3 @@ inactive_publishing_status = (
 
 
 # Circular import problems fixed in _schema_circular_imports.py
-

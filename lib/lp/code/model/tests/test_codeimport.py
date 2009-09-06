@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of CodeImport and CodeImportSet."""
 
@@ -21,7 +22,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
-from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from lp.testing import (
     login, login_person, logout, TestCaseWithFactory, time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
@@ -98,6 +98,21 @@ class TestCodeImportCreation(unittest.TestCase):
             cvs_root=self.factory.getUniqueURL(),
             cvs_module='module',
             review_status=CodeImportReviewStatus.REVIEWED)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # A job is created for the import.
+        self.assertTrue(code_import.import_job is not None)
+
+    def test_git_import_reviewed(self):
+        """A new git import is always reviewed by default."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            product=self.factory.makeProduct(),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.GIT,
+            git_repo_url=self.factory.getUniqueURL(),
+            review_status=None)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
@@ -543,9 +558,10 @@ def make_import_active(factory, code_import, last_update=None):
     """Make `code_import` active as per `ICodeImportSet.getActiveImports`."""
     from zope.security.proxy import removeSecurityProxy
     naked_import = removeSecurityProxy(code_import)
-    naked_import.updateFromData(
-        {'review_status': CodeImportReviewStatus.REVIEWED},
-        factory.makePerson())
+    if naked_import.review_status != CodeImportReviewStatus.REVIEWED:
+        naked_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            factory.makePerson())
     if last_update is None:
         # If last_update is not specfied, presumably we don't care what it is
         # so we just use some made up value.

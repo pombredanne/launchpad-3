@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 __metaclass__ = type
 
 __all__ = [
@@ -6,21 +9,26 @@ __all__ = [
     'CodeReviewCommentPrimaryContext',
     'CodeReviewCommentSummary',
     'CodeReviewCommentView',
+    'CodeReviewDisplayComment',
     ]
 from textwrap import TextWrapper
 
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, DropdownWidget
 from zope.interface import Interface, implements
 from zope.schema import Text
 
 from canonical.cachedproperty import cachedproperty
+from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
-from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
     LaunchpadView, Link)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.services.comments.interfaces.conversation import IComment
 
 
 def quote_text_as_email(text, width=80):
@@ -55,6 +63,26 @@ def quote_text_as_email(text, width=80):
     return '\n'.join(result)
 
 
+class CodeReviewDisplayComment:
+    """A code review comment or activity or both.
+
+    The CodeReviewComment itself does not implement the IComment interface as
+    this is purely a display interface, and doesn't make sense to have display
+    only code in the model itself.
+    """
+
+    implements(IComment)
+
+    delegates(ICodeReviewComment, 'comment')
+
+    def __init__(self, comment):
+        self.comment = comment
+        self.has_body = bool(self.comment.message_body)
+        self.has_footer = self.comment.vote is not None
+        # The date attribute is used to sort the comments in the conversation.
+        self.date = self.comment.message.datecreated
+
+
 class CodeReviewCommentPrimaryContext:
     """The primary context is the comment is that of the source branch."""
 
@@ -79,6 +107,33 @@ class CodeReviewCommentContextMenu(ContextMenu):
 class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
     __used_for__ = ICodeReviewComment
+
+    page_title = "Code review comment"
+
+    @cachedproperty
+    def comment(self):
+        """The decorated code review comment."""
+        return CodeReviewDisplayComment(self.context)
+
+    @cachedproperty
+    def comment_author(self):
+        """The author of the comment."""
+        return self.context.message.owner
+
+    @cachedproperty
+    def has_body(self):
+        """Is there body text?"""
+        return bool(self.body_text)
+
+    @cachedproperty
+    def body_text(self):
+        """Get the body text for the message."""
+        return self.context.message_body
+
+    @cachedproperty
+    def comment_date(self):
+        """The date of the comment."""
+        return self.context.message.datecreated
 
     # Should the comment be shown in full?
     full_comment = True
@@ -135,15 +190,26 @@ class CodeReviewCommentSummary(CodeReviewCommentView):
 class IEditCodeReviewComment(Interface):
     """Interface for use as a schema for CodeReviewComment forms."""
 
-    comment = Text(title=_('Comment'), required=True)
+    vote = copy_field(ICodeReviewComment['vote'], required=False)
+
+    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+
+    comment = Text(title=_('Comment'), required=False)
 
 
 class CodeReviewCommentAddView(LaunchpadFormView):
     """View for adding a CodeReviewComment."""
 
+    class MyDropWidget(DropdownWidget):
+        "Override the default no-value display name to -Select-."
+        _messageNoValue = '-Select-'
+
     schema = IEditCodeReviewComment
 
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('vote', MyDropWidget)
+
+    page_title = 'Reply to code review comment'
 
     @property
     def initial_values(self):
@@ -172,11 +238,11 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             return self.context
 
-    @property
+    @cachedproperty
     def reply_to(self):
         """The comment being replied to, or None."""
         if self.is_reply:
-            return self.context
+            return CodeReviewDisplayComment(self.context)
         else:
             return None
 
@@ -185,7 +251,8 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         """Create the comment..."""
         comment = self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
-            parent=self.reply_to)
+            parent=self.reply_to, vote=data['vote'],
+            review_type=data['review_type'])
 
     @property
     def next_url(self):

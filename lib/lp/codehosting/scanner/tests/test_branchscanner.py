@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the branch scanner script."""
 
@@ -235,6 +236,7 @@ class TestErrorHandling(TestCaseWithFactory):
         self.scanner.logScanFailure(failing_branch, 'message')
         self.assertLogged(
             [(logging.ERROR, "Couldn't get unique_name"),
+             (logging.ERROR, "Couldn't get canonical_url"),
              (logging.INFO, 'OOPS-FOO: message (UNKNOWN)')])
 
     def test_branch_url_fail(self):

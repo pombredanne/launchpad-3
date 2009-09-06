@@ -13,11 +13,11 @@ team.
     >>> response = user_webservice.get(
     ...     member['memberships_details_collection_link'])
     >>> print sorted(response.jsonBody().items())
-    [(u'entries', []),
+    [(u'entries', [{...}]),
      (u'resource_type_link',
       u'http://.../#team_membership-page-resource'),
      (u'start', 0),
-     (u'total_size', 1)]
+     (u'total_size', 2)]
 
 Salgado can, though, because he's a Launchpad admin.
 
@@ -30,7 +30,7 @@ Salgado can, though, because he's a Launchpad admin.
      (u'resource_type_link',
       u'http://.../#team_membership-page-resource'),
      (u'start', 0),
-     (u'total_size', 1)]
+     (u'total_size', 2)]
 
 Similarly, when a public team is a sub-team of a private team, non-members
 cannot see the private team in the public team's super_team's attribute.
@@ -101,7 +101,8 @@ method to do it, but it can be changed via a patch.
     ...                    simplejson.dumps(representation),
     ...                    headers)
 
-    >>> print modify_team('~my-new-team', {'visibility' : 'Private Membership'},
+    >>> print modify_team(
+    ...     '/~my-new-team', {'visibility' : 'Private Membership'},
     ...     'PATCH', comm_webservice)
     HTTP/1.1 209 Content Returned
     ...
@@ -116,7 +117,8 @@ method to do it, but it can be changed via a patch.
 
 As an admin, Salgado can also change the team's visibility.
 
-    >>> print modify_team('~my-new-team', {'visibility' : 'Public'},
+    >>> print modify_team(
+    ...     '/~my-new-team', {'visibility' : 'Public'},
     ...     'PATCH', webservice)
     HTTP/1.1 209 Content Returned
     ...
@@ -131,7 +133,7 @@ As an admin, Salgado can also change the team's visibility.
 
 An unprivileged user is not able to change the visibility.
 
-    >>> print modify_team('~my-new-team', {'visibility' : 'Private Membership'},
+    >>> print modify_team('/~my-new-team', {'visibility' : 'Private Membership'},
     ...     'PATCH', user_webservice)
     HTTP/1.1 401 Unauthorized
     ...

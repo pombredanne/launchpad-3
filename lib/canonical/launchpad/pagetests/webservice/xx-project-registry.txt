@@ -169,6 +169,16 @@ Projects are available at their canonical URL on the API virtual host.
     title: u'Mozilla Firefox'
     wiki_url: None
 
+In Launchpad project names may not have uppercase letters in their
+name.  As a convenience, requests for projects using the wrong case
+are redirected to the correct location.
+
+    >>> print webservice.get('/FireFox')
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/firefox
+    ...
+
 Some entries for projects are only available to admins.  Here we see
 several that are not available to non-privileged users marked as
 'redacted'.
@@ -301,7 +311,7 @@ Attributes can be edited via the webservice.patch() method.
 
     >>> from simplejson import dumps
     >>> patch = {
-    ...     u'driver_link': webservice.getAbsoluteUrl('/~sabdfl'),
+    ...     u'driver_link': webservice.getAbsoluteUrl('/~mark'),
     ...     u'homepage_url': u'http://sf.net/firefox',
     ...     u'licenses': [u'Python License', u'GNU GPL v2'],
     ...     u'bug_tracker_link':
@@ -314,13 +324,13 @@ Attributes can be edited via the webservice.patch() method.
 
     >>> firefox = webservice.get('/firefox').jsonBody()
     >>> firefox['driver_link']
-    u'http://.../~sabdfl'
+    u'http://.../~mark'
 
     >>> firefox['homepage_url']
     u'http://sf.net/firefox'
 
     >>> webservice.get(firefox['driver_link']).jsonBody()['self_link']
-    u'http://.../~sabdfl'
+    u'http://.../~mark'
 
     >>> webservice.get(firefox['owner_link']).jsonBody()['self_link']
     u'http://.../~name12'
@@ -332,7 +342,7 @@ Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 
     >>> patch = {
-    ...     u'registrant_link': webservice.getAbsoluteUrl('/~sabdfl'),
+    ...     u'registrant_link': webservice.getAbsoluteUrl('/~mark'),
     ...     }
     >>> print webservice.patch(
     ...     '/firefox', 'application/json', dumps(patch))
@@ -363,8 +373,14 @@ Similarly the date_created attribute cannot be modified.
 "get_timeline" returns a lightweight representation of the project's
 hierarchy of series, milestones, and releases.
 
+    >>> patch = {'status': 'Obsolete'}
+    >>> print webservice.patch(
+    ...     '/firefox/trunk', 'application/json', dumps(patch))
+    HTTP/1.1 209 Content Returned...
     >>> timeline = webservice.named_get(
-    ...     firefox['self_link'], "get_timeline").jsonBody()
+    ...     firefox['self_link'],
+    ...     "get_timeline",
+    ...     include_inactive=True).jsonBody()
     >>> print pretty(timeline)
     [{u'is_development_focus': False,
       u'landmarks': [{u'code_name': u'First Stable Release',
@@ -560,15 +576,17 @@ All of the projects of a given license can be found.
     Mega Money Maker
 
 The use of "licensing_search" is restricted to commercial admins.
-Attempting to access it as a normal users results in an exception.
+Attempting to access it as a normal users is unauthorized.
 
-    >>> proprietary = user_webservice.named_get(
+    >>> print user_webservice.named_get(
     ...     "/projects", "licensing_search",
-    ...     licenses=["Other/Proprietary"]).jsonBody()
+    ...     licenses=["Other/Proprietary"])
+    HTTP/1.1 401 Unauthorized
+    ...
     Traceback (most recent call last):
     ...
-    ValueError: HTTP/1.1 401 Unauthorized
-    ...
+    Unauthorized: (...)
+    <BLANKLINE>
 
 The project collection has a method for creating a new project.
 
@@ -978,14 +996,14 @@ to put new content will result in a ForbiddenAttribute error.
     >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
     >>> response = webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
     >>> print response
-    HTTP/1.1 405 Method Not Allowed
+    HTTP/1.1 405 Method Not Allowed...
     Allow: GET
     ...
 
     >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
     >>> response = webservice.put(url, 'pgpapplication/data', 'signaturedata')
     >>> print response
-    HTTP/1.1 405 Method Not Allowed
+    HTTP/1.1 405 Method Not Allowed...
     Allow: GET
     ...
 

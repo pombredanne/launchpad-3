@@ -5,14 +5,12 @@
   omit-tag="">
 
 <tr>
-  <td class="icon left">
-    <img src="/@@/blueprint" tal:replace="structure context/image:icon" />
-  </td>
-  <td>
+  <td colspan="2">
     <div>
       <strong><a tal:attributes="
            href context/fmt:url;
-           title context/name"
+           title context/name;
+           class context/image:sprite_css"
          tal:content="context/title">Spec Title Here</a></strong>
       for <strong tal:content="context/target/displayname" />
     </div>

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Publisher of objects as web pages.
 
 """
@@ -12,6 +14,7 @@ __all__ = [
     'canonical_url',
     'canonical_url_iterator',
     'get_current_browser_request',
+    'HTTP_MOVED_PERMANENTLY',
     'nearest',
     'Navigation',
     'rootObject',
@@ -36,7 +39,7 @@ from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
@@ -44,6 +47,10 @@ from canonical.launchpad.webapp.interfaces import (
     NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
+
+
+# HTTP Status code constants - define as appropriate.
+HTTP_MOVED_PERMANENTLY = 301
 
 
 class DecoratorAdvisor:
@@ -461,6 +468,21 @@ def canonical_url(
         # Look for a request from the interaction.
         current_request = get_current_browser_request()
         if current_request is not None:
+            if WebServiceLayer.providedBy(current_request):
+                from canonical.launchpad.webapp.publication import (
+                    LaunchpadBrowserPublication)
+                from canonical.launchpad.webapp.servers import (
+                    LaunchpadBrowserRequest)
+                current_request = LaunchpadBrowserRequest(
+                    current_request.bodyStream.getCacheStream(),
+                    dict(current_request.environment))
+                current_request.setPublication(
+                    LaunchpadBrowserPublication(None))
+                current_request.setVirtualHostRoot(names=[])
+                main_root_url = current_request.getRootURL(
+                    'mainsite')
+                current_request._app_server = main_root_url.rstrip('/')
+
             request = current_request
 
     if view_name is not None:
@@ -482,10 +504,10 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    if request is None and rootsite is not None:
+    if request is None:
+        if rootsite is None:
+            rootsite = 'mainsite'
         root_url = allvhosts.configs[rootsite].rooturl
-    elif request is None:
-        root_url = allvhosts.configs['mainsite'].rooturl
     else:
         root_url = request.getRootURL(rootsite)
 
@@ -520,13 +542,17 @@ def nearest(obj, *interfaces):
     The object returned might be the object given as an argument, if that
     object provides one of the given interfaces.
 
-    Return None is no suitable object is found.
+    Return None is no suitable object is found or if there is no canonical_url
+    defined for the object.
     """
-    for current_obj in canonical_url_iterator(obj):
-        for interface in interfaces:
-            if interface.providedBy(current_obj):
-                return current_obj
-    return None
+    try:
+        for current_obj in canonical_url_iterator(obj):
+            for interface in interfaces:
+                if interface.providedBy(current_obj):
+                    return current_obj
+        return None
+    except NoCanonicalUrl:
+        return None
 
 
 class RootObject:

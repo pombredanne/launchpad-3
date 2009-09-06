@@ -49,10 +49,11 @@ We use the webservice as an unrelated, unprivileged user.
     preview_diff_link: None
     queue_position: None
     queue_status: u'Work in progress'
-    queued_revision_id: None
+    queued_revno: None
     queuer_link: None
     registrant_link: u'http://.../~person-name13'
     resource_type_link: u'http://.../#branch_merge_proposal'
+    reviewed_revno: None
     reviewer_link: None
     self_link: u'http://.../~source/fooix/fix-it/+merge/...'
     source_branch_link: u'http://.../~source/fooix/fix-it'
@@ -116,18 +117,12 @@ The votes on a branch merge proposal can be checked through the API.
 
 A review can be performed through the API.
 
-    >>> person = webservice.get('/~target').jsonBody()
-    >>> is_valid = webservice.named_get(
-    ...     merge_proposal['self_link'], 'isPersonValidReviewer',
-    ...     reviewer=person['self_link']).jsonBody()
-    >>> print is_valid
-    True
-
-A review can be requested of the person 'target', since he's a valid reviewer.
+A review can be requested of the person 'target'.
 
     >>> reviewer_webservice = webservice_for_person(
     ...     target_owner, permission=OAuthPermission.WRITE_PUBLIC)
 
+    >>> person = webservice.get('/~target').jsonBody()
     >>> reviewer = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'nominateReviewer',
     ...     reviewer=person['self_link'], review_type='code')
@@ -165,6 +160,35 @@ Now the code review should be made.
     vote_tag: u'code'
 
 
+In fact, now that the votes indicate approval, we might as well set the merge
+proposal status to "Approved" as well.
+
+    >>> _unused = reviewer_webservice.named_post(
+    ...     merge_proposal['self_link'], 'setStatus',
+    ...     status=u'Approved', revno=u'25')
+    >>> merge_proposal = reviewer_webservice.get(
+    ...     merge_proposal['self_link']).jsonBody()
+
+    >>> print merge_proposal['queue_status']
+    Approved
+    >>> print merge_proposal['reviewed_revno']
+    25
+
+However, there may have been breakage in the branch, and we need to revert back
+to "Work In Progress" and not specify the revision_id.
+
+    >>> _unused = reviewer_webservice.named_post(
+    ...     merge_proposal['self_link'], 'setStatus',
+    ...     status=u'Work in progress')
+    >>> merge_proposal = reviewer_webservice.get(
+    ...     merge_proposal['self_link']).jsonBody()
+
+    >>> print merge_proposal['queue_status']
+    Work in progress
+    >>> print merge_proposal['reviewed_revno']
+    None
+
+
 == Updating the preview diff ==
 
 The merge proposal can now be updated with the diff that reflects what the
@@ -172,9 +196,9 @@ merge would look like if the source branch was merged into the target branch.
 
     >>> diff_content = '''\
     ... === modified file 'fooix.txt'
-    ... --- fooix.txt 2009-01-01 12:00:00 +0000
-    ... +++ fooix.txt 2009-02-02 12:34:56 +0000
-    ... @@ some numbers @@
+    ... --- fooix.txt\t2009-01-01 12:00:00 +0000
+    ... +++ fooix.txt\t2009-02-02 12:34:56 +0000
+    ... @@ -206,7 +206,7 @@
     ...  original
     ... -removed
     ... +added
@@ -182,11 +206,11 @@ merge would look like if the source branch was merged into the target branch.
     >>> response = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'updatePreviewDiff',
     ...     diff_content=diff_content,
-    ...     diff_stat='M fooix.txt', source_revision_id='rev-a',
+    ...     source_revision_id='rev-a',
     ...     target_revision_id='rev-b', conflicts='oh, no conflicts')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
-    Content-Length: ...
+    ...
     Content-Type: application/json
     Vary: ...
     ...
@@ -205,7 +229,7 @@ The diff is now visible through the merge proposal.
     diff_lines_count: 7
     diff_text_link:
       u'http://.../~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
-    diffstat: u'M fooix.txt'
+    diffstat: {u'fooix.txt': [0, 0]}
     removed_lines_count: None
     resource_type_link: u'http://.../#preview_diff'
     self_link:
@@ -221,9 +245,9 @@ It is possible that the diff will be empty.
     ...     diff_content='',
     ...     diff_stat='', source_revision_id='rev-c',
     ...     target_revision_id='rev-d', conflicts=None)
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
-    Content-Length: ...
+    ...
     Content-Type: application/json
     Vary: ...
     ...
