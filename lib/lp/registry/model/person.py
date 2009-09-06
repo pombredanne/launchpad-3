@@ -2499,24 +2499,24 @@ class PersonSet:
         # There is no IEmailAddress for this text address, so we need to
         # create both the IPerson and IEmailAddress here, now.
         if email_address is None:
-            person, unused_email = self.createPersonAndEmail(
+            person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
-                registrant=registrant)
+                registrant=registrant, hide_email_addresses=True)
             return person
 
         # There is an IEmailAddress for this text address, but there is no
         # associated IPerson record.  This is likely because the account
         # was created externally to Launchpad.  Create just the IPerson
-        # now and associate it with the IEmailAddress.  However, because
-        # nobody has explicitly verified that they use Launchpad yet, hide
-        # their email address from prying eyes.
-        if email_address.person is None:
-            person = removeSecurityProxy(
-                email_address.account).createPerson(rationale)
-            person.hide_email_addresses = True
+        # now and associate it with the IEmailAddress.
+        if email_address.personID is None:
+            name = generate_nick(email)
+            person = self._newPerson(
+                name, displayname, hide_email_addresses=True,
+                rationale=rationale, comment=comment, registrant=registrant,
+                account=email_address.account)
             return person
 
-        return email_address.person
+        return IMasterStore(Person).get(Person, email_address.personID)
 
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""

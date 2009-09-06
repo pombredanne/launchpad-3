@@ -42,21 +42,45 @@ class TestPersonSetBranchCounts(TestCaseWithFactory):
 class TestPersonSetEnsurePerson(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
+    email_address = 'testing.ensure.person@example.com'
+    displayname = 'Testing ensurePerson'
+    rationale = PersonCreationRationale.SOURCEPACKAGEUPLOAD
+
+    def test_ensurePerson_returns_existing_person(self):
+        # IPerson.ensurePerson returns existing person and does not
+        # override its details.
+        testing_displayname = 'will not be modified'
+        testing_person = self.factory.makePerson(
+            email=self.email_address, displayname=testing_displayname)
+
+        ensured_person = getUtility(IPersonSet).ensurePerson(
+            self.email_address, self.displayname, self.rationale)
+        self.assertEquals(testing_person.id, ensured_person.id)
+        self.assertIsNot(
+            ensured_person.displayname, self.displayname,
+            'Person.displayname should not be overridden.')
+        self.assertIsNot(
+            ensured_person.creation_rationale, self.rationale,
+            'Person.creation_rationale should not be overridden.')
+
+    def test_ensurePerson_hides_new_person_email(self):
+        # IPersonSet.ensurePerson creates new person with
+        # 'hide_email_addresses' set.
+        ensured_person = getUtility(IPersonSet).ensurePerson(
+            self.email_address, self.displayname, self.rationale)
+        self.assertTrue(ensured_person.hide_email_addresses)
 
     def test_ensurePerson_for_existing_account(self):
-        # Check if IPerson.ensurePerson can create missing Person
-        # for existing Accounts and it will have 'hide_email_addresses'
-        # set to True.
-        email_address = 'sso-test@canonical.com'
-        account = self.factory.makeAccount(
-            'testing account', email=email_address)
-        self.assertIs(None, account.preferredemail.person)
+        # IPerson.ensurePerson creates missing Person for existing
+        # Accounts.
+        test_account = self.factory.makeAccount(
+            self.displayname, email=self.email_address)
+        self.assertIs(None, test_account.preferredemail.person)
 
-        person = getUtility(IPersonSet).ensurePerson(
-            email_address, 'Testing person',
-            PersonCreationRationale.SOURCEPACKAGEUPLOAD)
-        self.assertEquals(account.id, person.account.id)
-        self.assertTrue(person.hide_email_addresses)
+        ensured_person = getUtility(IPersonSet).ensurePerson(
+            self.email_address, self.displayname, self.rationale)
+        self.assertEquals(test_account.id, ensured_person.account.id)
+        self.assertTrue(ensured_person.hide_email_addresses)
 
 
 def test_suite():
