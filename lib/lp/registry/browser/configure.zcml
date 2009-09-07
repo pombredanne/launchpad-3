@@ -87,9 +87,6 @@
             facet="overview"
             template="../templates/distroseries-index.pt"/>
         <browser:page
-            name="+portlet-aboutcve"
-            template="../templates/portlet-aboutcve.pt"/>
-        <browser:page
             name="+portlet-details"
             facet="overview"
             template="../templates/distroseries-details.pt"/>
@@ -1420,9 +1417,6 @@
             facet="overview"
             template="../templates/object-portlet-summary.pt"/>
         <browser:page
-            name="+portlet-aboutcve"
-            template="../templates/portlet-aboutcve.pt"/>
-        <browser:page
             name="+purchase-subscription"
             template="../templates/product-purchase-subscription.pt"/>
     </browser:pages>
@@ -1839,9 +1833,6 @@
             name="+milestones"
             facet="overview"
             template="../templates/object-milestones.pt"/>
-        <browser:page
-            name="+portlet-aboutcve"
-            template="../templates/portlet-aboutcve.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
