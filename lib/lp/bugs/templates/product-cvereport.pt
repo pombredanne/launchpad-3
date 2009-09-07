@@ -10,10 +10,6 @@
     <h1>CVEs related to bugs in <span tal:replace="context/displayname" /></h1>
   </metal:heading>
 
-  <metal:portlets fill-slot="portlets">
-    <div tal:replace="structure context/@@+portlet-aboutcve" />
-  </metal:portlets>
-
   <div metal:fill-slot="main">
     <div class="top-portlet">
       <tal:open-issues define="bugtaskcves view/open_cve_bugtasks">

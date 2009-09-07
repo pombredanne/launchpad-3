@@ -6,10 +6,6 @@
     metal:use-macro="view/macro:page/main_only"
     i18n:domain="launchpad">
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-aboutcve" />
-  </metal:leftportlets>
-
   <div metal:fill-slot="heading"
        tal:define="serieses context/serieses">
     <h1 tal:condition="not: serieses">
