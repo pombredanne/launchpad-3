@@ -42,7 +42,8 @@ from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
+    get_distroseries_version_from_user_agent_string, SourcesListEntries,
+    SourcesListEntriesView)
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name, default_pocket_dependency)
@@ -556,7 +557,7 @@ class IPPAPackageFilter(Interface):
         title=_("Package name contains"), required=False)
 
     series_filter = Choice(
-        source=ArchiveSeriesVocabularyFactory(), required=False)
+        source=ArchiveSeriesVocabularyFactory(), required=True)
 
     status_filter = Choice(vocabulary=SimpleVocabulary((
         SimpleTerm(active_publishing_status, 'published', 'Published'),
@@ -619,11 +620,22 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
     @property
     def selected_series_filter(self):
         """Return the currently selected filter or None."""
-        series_filter = self.request.query_string_params.get(
-            'field.series_filter', ['any'])
+        requested_series_filter = self.request.query_string_params.get(
+            'field.series_filter')
 
-        series_vocabulary = self.widgets['series_filter'].vocabulary
-        return series_vocabulary.getTermByToken(series_filter[0])
+        # If the request included a series filter, try to use it:
+        selected_series_filter = None
+        if requested_series_filter is not None:
+            series_vocabulary = self.widgets['series_filter'].vocabulary
+            selected_series_filter = series_vocabulary.getTermByToken(
+                requested_series_filter[0])
+
+        # If the request didn't include a series, or it was invalid, use
+        # the default:
+        if selected_series_filter is None:
+            selected_series_filter = self.default_series_filter
+
+        return selected_series_filter
 
     @property
     def plain_series_filter_widget(self):
@@ -647,6 +659,14 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         """
         return self.widgets['status_filter'].vocabulary.getTermByToken(
             'published')
+
+    @property
+    def default_series_filter(self):
+        """Return the default series_filter value.
+
+        Subclasses of ArchiveViewBase can override this when required.
+        """
+        return self.widgets['series_filter'].vocabulary.getTermByToken('any')
 
     @cachedproperty
     def batchnav(self):
@@ -750,6 +770,23 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         # This property enables menu items to be shared between
         # context and view menues.
         return self.context.is_copy
+
+    @property
+    def default_series_filter(self):
+        """Return the distroseries identified by the user-agent."""
+        version_number = get_distroseries_version_from_user_agent_string(
+            self.request.getHeader('HTTP_USER_AGENT'))
+
+        # Check if this version is one of the available
+        # distroseries for this archive:
+        vocabulary = self.widgets['series_filter'].vocabulary
+        for term in vocabulary:
+            if (term.value is not None and
+                term.value.version == version_number):
+                return term
+
+        # Otherwise we default to 'any'
+        return vocabulary.getTermByToken('any')
 
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):

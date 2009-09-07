@@ -16,6 +16,26 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 
 
+def get_distroseries_version_from_user_agent_string(user_agent_string):
+    """Return the `DistroSeries` version number from the user-agent."""
+    if user_agent_string is None:
+        return None
+
+    ubuntu_index = 0
+    ubuntu_index = user_agent_string.find('Ubuntu/')
+
+    if ubuntu_index > 0:
+        # Great, the browser is telling us the platform is Ubuntu.
+        # Now grab the Ubuntu series/version number:
+        version_index_start = ubuntu_index + 7
+        version_index_end = user_agent_string.find(' ', version_index_start)
+        version_number = user_agent_string[
+            version_index_start:version_index_end]
+        return version_number
+    else:
+        return None
+
+
 class SourcesListEntries:
     """For rendering sources.list entries.
 
@@ -99,19 +119,10 @@ class SourcesListEntriesView(LaunchpadView):
         # Otherwise, if the request's user-agent includes the Ubuntu version
         # number, we check for a corresponding valid distroseries and, if one
         # is found, return it's name.
-        user_agent = self.request.getHeader('HTTP_USER_AGENT')
+        version_number = get_distroseries_version_from_user_agent_string(
+            self.request.getHeader('HTTP_USER_AGENT'))
 
-        ubuntu_index = 0
-        if user_agent is not None:
-            ubuntu_index = user_agent.find('Ubuntu/')
-
-        if ubuntu_index > 0:
-            # Great, the browser is telling us the platform is Ubuntu.
-            # Now grab the Ubuntu series/version number:
-            version_index_start = ubuntu_index + 7
-            version_index_end = user_agent.find(' ', version_index_start)
-            version_number = user_agent[
-                version_index_start:version_index_end]
+        if version_number is not None:
 
             # Finally, check if this version is one of the available
             # distroseries for this archive:

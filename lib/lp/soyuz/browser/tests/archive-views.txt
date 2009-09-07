@@ -347,7 +347,7 @@ from the browser's user-agent, when applicable.
     ...                     'Firefox/3.0.10')
     >>> ppa_archive_view_warty.initialize()
     >>> print ppa_archive_view_warty.default_series_filter.token
-    '4.10'
+    warty
 
 
 == ArchivePackageDeletionView ==
