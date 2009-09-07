@@ -117,7 +117,7 @@ def main():
 
 def run_gina(options, ztm, target_section):
     # Avoid circular imports.
-    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     package_root = target_section.root
     keyrings_root = target_section.keyrings

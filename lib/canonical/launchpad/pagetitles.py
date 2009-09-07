@@ -270,15 +270,6 @@ bugtask_view = BugTaskPageTitle()
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
-bugtracker_edit = ContextTitle(
-    smartquote('Change details for "%s" bug tracker'))
-
-bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
-
-bugtrackers_add = 'Register an external bug tracker'
-
-bugtrackers_index = 'Bug trackers registered in Launchpad'
-
 build_buildlog = ContextTitle('Build log for %s')
 
 build_changes = ContextTitle('Changes in %s')
@@ -427,8 +418,6 @@ distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 distroseries_builds = ContextTitle('%s builds')
 
 distroseries_queue = ContextTitle('Queue for %s')
-
-distroseriesbinarypackage_index = ContextTitle('%s')
 
 distroserieslanguage_index = ContextTitle('%s')
 
@@ -697,8 +686,6 @@ openidrpconfig_edit = ContextDisplayName(
     'Edit Relying Party Configuration for %s')
 
 openidrpconfigset_index = 'OpenID Relying Party Configurations'
-
-official_bug_target_manage_tags = 'Manage Official Bug Tags'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""
@@ -1134,10 +1121,6 @@ team_index = ContextBrowsername('%s in Launchpad')
 
 team_invitations = ContextBrowsername("Invitations sent to %s")
 
-team_join = ContextBrowsername('Join %s')
-
-team_leave = ContextBrowsername('Leave %s')
-
 team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
@@ -1159,11 +1142,6 @@ def teammembership_index(context, view):
 def teammembership_invitation(context, view):
     """Return the page title to invite a person to become a team member."""
     return "Make %s a member of %s" % (
-        context.person.displayname, context.team.displayname)
-
-def teammembership_self_renewal(context, view):
-    """Return the page title renew membership in a team."""
-    return "Renew membership of %s in %s" % (
         context.person.displayname, context.team.displayname)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
