@@ -870,7 +870,7 @@ class CommonMenuLinks:
     def summary(self):
         target = '+related-software'
         text = 'Summary'
-        return Link(target, text)
+        return Link(target, text, icon='info')
 
     def maintained(self):
         target = '+maintained-packages'
@@ -881,17 +881,17 @@ class CommonMenuLinks:
     def uploaded(self):
         target = '+uploaded-packages'
         text = 'Uploaded Packages'
-        return Link(target, text)
+        return Link(target, text, icon='info')
 
     def ppa(self):
         target = '+ppa-packages'
         text = 'PPA Packages'
-        return Link(target, text)
+        return Link(target, text, icon='info')
 
     def projects(self):
         target = '+related-projects'
         text = 'Related Projects'
-        return Link(target, text)
+        return Link(target, text, icon='info')
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
