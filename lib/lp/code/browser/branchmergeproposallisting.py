@@ -23,7 +23,7 @@ from lazr.enum import EnumeratedType, Item, use_template
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import custom_widget, LaunchpadView
+from canonical.launchpad.webapp import custom_widget, LaunchpadFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -156,7 +156,7 @@ class BranchMergeProposalFilterSchema(Interface):
         default=FilterableStatusValues.ACTIVE,)
 
 
-class BranchMergeProposalListingView(LaunchpadView):
+class BranchMergeProposalListingView(LaunchpadFormView):
     """A base class for views of branch merge proposal listings."""
 
     schema = BranchMergeProposalFilterSchema
@@ -167,6 +167,11 @@ class BranchMergeProposalListingView(LaunchpadView):
     _queue_status = None
 
     @property
+    def page_title(self):
+        return "Merge Proposals for %s" % self.context.displayname
+    heading = page_title
+
+    @property
     def initial_values(self):
         return {
             'status': FilterableStatusValues.ACTIVE,
@@ -175,7 +180,6 @@ class BranchMergeProposalListingView(LaunchpadView):
     @cachedproperty
     def selected_status(self):
         widget = self.widgets['status']
-
         if widget.hasValidInput():
             filter = widget.getInputValue()
         else:
