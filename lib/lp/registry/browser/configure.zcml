@@ -1972,6 +1972,10 @@
             name="+gethelp"
             facet="answers"
             template="../templates/sourcepackage-gethelp.pt"/>
+        <browser:page
+            name="+packaging"
+            facet="overview"
+            template="../templates/sourcepackage-packaging.pt"/>
         <!-- SourcePackage Portlets -->
         <browser:page
             name="+portlet-details"

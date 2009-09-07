@@ -724,15 +724,6 @@
         <browser:pages
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
             permission="zope.Public"
-            class="lp.registry.browser.sourcepackage.SourcePackageView">
-            <browser:page
-                name="+packaging"
-                facet="overview"
-                template="../templates/sourcepackage-packaging.pt"/>
-        </browser:pages>
-        <browser:pages
-            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-            permission="zope.Public"
             class=
               "lp.soyuz.browser.sourcepackagebuilds.SourcePackageBuildsView">
             <browser:page
