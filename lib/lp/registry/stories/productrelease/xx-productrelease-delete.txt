@@ -39,9 +39,10 @@ Salgado has the necessary rights, so he sees the link and the +delete page.
 The 0.9.2 release has some files associated with it. Salgado reads that
 they will be deleted too.
 
-    >>> print extract_text(find_main_content(salgados_browser.contents))
+    >>> text = extract_text(find_main_content(salgados_browser.contents))
+    >>> print text.encode('ASCII', 'backslashreplace')
     Mozilla Firefox...
-    Delete Mozilla Firefox 0.9.2 "One (secure) Tree Hill"...
+    Delete Mozilla Firefox 0.9.2 \u201cOne (secure) Tree Hill\u201d...
     Are you sure you want to delete the 0.9.2 release of
     Mozilla Firefox trunk series?
     The following files must be deleted:
@@ -60,6 +61,6 @@ Milestone 0.9.2 no longer has a release. The release column explains that
 the milestone is inactive.
 
     >>> print extract_text(
-    ...     find_tag_by_id(salgados_browser.contents, 'series_trunk'))
+    ...     find_tag_by_id(salgados_browser.contents, 'series-trunk'))
     Version "Codename"        Expected              Released      Summary
-    Mozilla Firefox 0.9.2...  Set  Change details   This is an inactive ...
+    Mozilla Firefox 0.9.2...  Set date  Change details   This is an inactive ...
