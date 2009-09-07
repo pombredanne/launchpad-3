@@ -20,7 +20,7 @@ The PPA packages page uses the 'Overview' application button and displays
 a descriptive main heading.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Celso Providelo > PPA for Celso Providelo
+    Hierarchy: Celso Providelo > PPA for Celso Providelo > +packages
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov

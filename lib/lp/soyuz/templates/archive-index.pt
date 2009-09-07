@@ -145,14 +145,8 @@
                     tal:content="version_name">
                   2.0.39</td>
                 <td tal:define="spr publishing/sourcepackagerelease;
-                                signer spr/dscsigningkey/owner|nothing">
-                    <tal:has_signer
-                      condition="signer"
-                      replace="structure spr/dscsigningkey/owner/fmt:link">
-                    </tal:has_signer>
-                    <tal:no_signer condition="not: signer">
-                    no signer
-                    </tal:no_signer>
+                                signer spr/dscsigningkey/owner/fmt:link|string:no signer">
+                    <span tal:replace="structure signer">Joe Bloggs</span>
                     <tal:date_published
                       condition="publishing/datepublished">
                     (<span 
