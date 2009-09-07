@@ -1900,7 +1900,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
         bug_target = self.context.context
         if IDistribution.providedBy(bug_target):
             return (
-                'filebug',
                 'bugsupervisor',
                 'securitycontact',
                 'cve',
@@ -1914,12 +1913,10 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 )
         elif IDistributionSourcePackage.providedBy(bug_target):
             return (
-                'filebug',
                 'subscribe',
                 )
         elif IProduct.providedBy(bug_target):
             return (
-                'filebug',
                 'bugsupervisor',
                 'securitycontact',
                 'cve',
@@ -1927,14 +1924,11 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 )
         elif IProductSeries.providedBy(bug_target):
             return (
-                'filebug',
                 'nominations',
                 'subscribe',
                 )
         elif IProject.providedBy(bug_target):
-            return (
-                'filebug',
-                )
+            return ()
         else:
             return ()
 
