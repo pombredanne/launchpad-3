@@ -40,10 +40,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
+from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.browser.sourceslist import (
-    get_distroseries_version_from_user_agent_string, SourcesListEntries,
-    SourcesListEntriesView)
+    SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name, default_pocket_dependency)
@@ -774,7 +774,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     @property
     def default_series_filter(self):
         """Return the distroseries identified by the user-agent."""
-        version_number = get_distroseries_version_from_user_agent_string(
+        version_number = get_user_agent_distroseries(
             self.request.getHeader('HTTP_USER_AGENT'))
 
         # Check if this version is one of the available

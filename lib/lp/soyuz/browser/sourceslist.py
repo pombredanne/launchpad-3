@@ -14,26 +14,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
-
-
-def get_distroseries_version_from_user_agent_string(user_agent_string):
-    """Return the `DistroSeries` version number from the user-agent."""
-    if user_agent_string is None:
-        return None
-
-    ubuntu_index = 0
-    ubuntu_index = user_agent_string.find('Ubuntu/')
-
-    if ubuntu_index > 0:
-        # Great, the browser is telling us the platform is Ubuntu.
-        # Now grab the Ubuntu series/version number:
-        version_index_start = ubuntu_index + 7
-        version_index_end = user_agent_string.find(' ', version_index_start)
-        version_number = user_agent_string[
-            version_index_start:version_index_end]
-        return version_number
-    else:
-        return None
+from lp.services.browser_helpers import get_user_agent_distroseries
 
 
 class SourcesListEntries:
@@ -119,7 +100,7 @@ class SourcesListEntriesView(LaunchpadView):
         # Otherwise, if the request's user-agent includes the Ubuntu version
         # number, we check for a corresponding valid distroseries and, if one
         # is found, return it's name.
-        version_number = get_distroseries_version_from_user_agent_string(
+        version_number = get_user_agent_distroseries(
             self.request.getHeader('HTTP_USER_AGENT'))
 
         if version_number is not None:
