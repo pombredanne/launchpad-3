@@ -397,7 +397,7 @@
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
-            factory="lp.translations.browser.translationgroup.TranslationGroupBreadcrumb"
+            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
 
         <!-- TranslationGroupSet -->
