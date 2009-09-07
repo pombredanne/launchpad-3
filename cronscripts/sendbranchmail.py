@@ -31,7 +31,7 @@ class RunRevisionMailJobs(LaunchpadCronScript):
         globalErrorUtility.configure('sendbranchmail')
         jobs = list(getUtility(IRevisionMailJobSource).iterReady())
         jobs.extend(getUtility(IRevisionsAddedJobSource).iterReady())
-        runner = JobRunner(jobs)
+        runner = JobRunner(jobs, self.logger)
         server = get_scanner_server()
         server.setUp()
         try:

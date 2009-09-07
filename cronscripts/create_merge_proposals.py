@@ -26,7 +26,7 @@ class RunCreateMergeProposalJobs(LaunchpadCronScript):
     def main(self):
         globalErrorUtility.configure('create_merge_proposals')
         job_source = getUtility(ICreateMergeProposalJobSource)
-        runner = JobRunner.fromReady(job_source)
+        runner = JobRunner.fromReady(job_source, self.logger)
         runner.runAll()
         self.logger.info(
             'Ran %d CreateMergeProposalJobs.' % len(runner.completed_jobs))

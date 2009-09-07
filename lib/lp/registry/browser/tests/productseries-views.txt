@@ -22,11 +22,12 @@ update the milestones and releases table.
         YUI().use(... 'lp.milestoneoverlay', 'lp.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
-            var milestone_row_uri_template =
+            var milestone_row_uri =
                 '/app/+milestone/{name}/+productseries-table-row';
             var milestone_rows_id = '#milestone-rows';...
             Y.on('domready', function () {
-                var create_milestone_link = Y.get('.menu-link-create_milestone');
+                var create_milestone_link = Y.get(
+                    '.menu-link-create_milestone');
                 create_milestone_link.addClass('js-action');...
                 Y.lp.milestoneoverlay.attach_widget(config);...
                 Y.lp.milestonetable.setup(table_config);...
@@ -71,6 +72,20 @@ to display.
     >>> view = create_view(series, '+index')
     >>> view.is_obsolete
     True
+
+The view provides access to the latest release if it has one.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+
+    >>> print view.latest_release_with_download_files
+    None
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> #login_person(firefox.owner)
+    >>> series_with_downloads = firefox.getSeries('trunk')
+    >>> view = create_initialized_view(series_with_downloads, name='+index')
+    >>> print view.latest_release_with_download_files.version
+    0.9.2
 
 
 Edit ProductSeries
