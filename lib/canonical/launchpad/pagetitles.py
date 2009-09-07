@@ -747,8 +747,6 @@ def person_index(context, view):
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
-person_maintained_packages = ContextDisplayName('Software maintained by %s')
-
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
 
 def person_mergeproposals(context, view):
@@ -765,12 +763,6 @@ person_packagebugs_search = person_packagebugs
 
 person_participation = ContextTitle("Team participation by %s")
 
-person_ppa_packages = ContextDisplayName('PPA packages related to %s')
-
-person_related_projects = ContextDisplayName('Projects related to %s')
-
-person_related_software = ContextDisplayName('Software related to %s')
-
 person_review = ContextDisplayName("Review %s")
 
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
@@ -785,8 +777,6 @@ person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
-
-person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 
 pofile_filter = FilteredTranslationsTitle(
     smartquote('Translations by %(person)s in "%(title)s"'))

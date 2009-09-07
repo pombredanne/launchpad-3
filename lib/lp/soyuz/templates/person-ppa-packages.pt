@@ -11,13 +11,12 @@
 <body>
 
 <div metal:fill-slot="heading">
-  <h1>Related PPA Packages</h1>
+  <h1 tal:content="view/page_title"/>
 </div>
 
 <div metal:fill-slot="main">
   <div class="top-portlet">
     <ul class="horizontal">
-      See also:
       <li><a tal:replace="structure view/menu:navigation/summary/render"/>
       <li><a tal:replace="structure view/menu:navigation/uploaded/render"/>
       <li><a tal:replace="structure view/menu:navigation/maintained/render"/>

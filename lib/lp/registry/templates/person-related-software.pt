@@ -10,7 +10,7 @@
 <body>
 
 <div metal:fill-slot="heading">
-  <h1>Summary of related software</h1>
+  <h1 tal:content="view/page_title"/>
 </div>
 
 <div metal:fill-slot="main">
