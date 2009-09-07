@@ -184,7 +184,8 @@ class DirectBranchCommit:
             if rev_id == NULL_REVISION:
                 if list(self.transform_preview.iter_changes()) == []:
                     return
-            self.transform_preview.commit(self.bzrbranch, commit_message)
+            new_rev_id = self.transform_preview.commit(
+                self.bzrbranch, commit_message)
             IMasterObject(self.db_branch).requestMirror()
 
         finally:
