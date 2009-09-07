@@ -10,9 +10,9 @@
 <body>
 
 <div metal:fill-slot="main">
+    <h1 tal:content="view/label"/>
 
     <tal:block condition="context/distinctreleases">
-      <p>Change logs for this package:</p>
 
     <div id="changelogs">
       <ul tal:condition="context/distinctreleases">

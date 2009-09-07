@@ -18,4 +18,4 @@ class SourcePackageChangelogView:
     @property
     def label(self):
         """<h1> for the change log page."""
-        return smartquote(context.title + " change logs")
+        return smartquote("Change logs for " + self.context.title)
