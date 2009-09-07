@@ -29,6 +29,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
@@ -41,8 +43,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFileType)
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,
     IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,

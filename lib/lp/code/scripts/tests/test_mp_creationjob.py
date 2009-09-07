@@ -49,6 +49,20 @@ class TestDiffBMPs(TestCaseWithFactory):
             'INFO    Ran 1 MergeProposalCreatedJobs.\n', stderr)
         self.assertIsNot(None, bmp.review_diff)
 
+    def test_mpcreationjobs_records_oops(self):
+        """Ensure mpcreationjobs logs an oops if the job fails."""
+        bmp = self.factory.makeBranchMergeProposal()
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        job = MergeProposalCreatedJob.create(bmp)
+        transaction.commit()
+        retcode, stdout, stderr = run_script(
+            'cronscripts/mpcreationjobs.py', [])
+        self.assertEqual(0, retcode)
+        self.assertEqual('', stdout)
+        self.assertIn(
+            'INFO    Ran 0 MergeProposalCreatedJobs.\n', stderr)
+        self.assertIn(
+            'INFO    Job resulted in OOPS:', stderr)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

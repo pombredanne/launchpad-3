@@ -31,7 +31,7 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
     def main(self):
         globalErrorUtility.configure('mpcreationjobs')
         job_source = getUtility(IMergeProposalCreatedJobSource)
-        runner = JobRunner.fromReady(job_source)
+        runner = JobRunner.fromReady(job_source, self.logger)
         server = get_scanner_server()
         server.setUp()
         try:

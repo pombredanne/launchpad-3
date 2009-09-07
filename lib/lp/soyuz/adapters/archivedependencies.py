@@ -37,10 +37,10 @@ __all__ = [
     ]
 
 from canonical.config import config
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, ALLOW_RELEASE_BUILDS)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
+from lp.soyuz.interfaces.archive import ArchivePurpose, ALLOW_RELEASE_BUILDS
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lazr.uri import URI
 
 

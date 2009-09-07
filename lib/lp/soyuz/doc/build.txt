@@ -496,7 +496,7 @@ Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
 Checking optional 'pocket' restriction:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> bs.getBuildsByArchIds(arch_ids,
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
@@ -746,7 +746,7 @@ Using the optional name argument to filter build results:
 
 or using optional pocket argument:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     >>> ubuntu.getBuildRecords(
     ...    build_state=BuildStatus.NEEDSBUILD,

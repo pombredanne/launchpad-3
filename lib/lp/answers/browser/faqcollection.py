@@ -41,7 +41,7 @@ class FAQCollectionMenu(ApplicationMenu):
         # which an adapter exists that gives the proper context.
         collection = IFAQCollection(self.context)
         url = canonical_url(collection, rootsite='answers') + '/+faqs'
-        return Link(url, 'List all FAQs', icon='info')
+        return Link(url, 'All FAQs', icon='info')
 
     @enabled_with_permission('launchpad.Moderate')
     def create_faq(self):

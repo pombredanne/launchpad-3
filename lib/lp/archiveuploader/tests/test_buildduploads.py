@@ -10,10 +10,11 @@ import unittest
 from lp.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.ftests import import_public_test_keys
+
 
 class TestBuilddUploads(TestStagedBinaryUploadBase):
     """Test how buildd uploads behave inside Soyuz.

@@ -414,7 +414,7 @@ But it works with the right substring 'net' from 'netapplet.tar.gz'
 
 Also check the optional argument pocket:
 
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.RELEASE).count()
