@@ -373,15 +373,6 @@
       permission="zope.Public"
       />
 
-  <!-- hierarchy -->
-  <browser:page
-      for="zope.interface.Interface"
-      name="+hierarchy"
-      class="canonical.launchpad.browser.launchpad.Hierarchy"
-      attribute="__call__"
-      permission="zope.Public"
-      />
-
   <!-- Test page for soft timeouts. The permission checking is done in
        the view class, only Launchpad developers have access to the
        page -->

@@ -19,7 +19,7 @@ also have a Translations page.)
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -27,11 +27,11 @@ also have a Translations page.)
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: ...alsa-utils... source package in Ubuntu
+    Main heading: ...alsa-utils... package in Ubuntu
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package > Bugs on alsa-utils
+    Hierarchy: Ubuntu > ?alsa-utils? package > Bugs on alsa-utils
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -52,7 +52,7 @@ source package.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -74,7 +74,7 @@ source package release, but that's more than I can chew off for now.)
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -93,7 +93,7 @@ and Answers.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04 > ?alsa-utils? package
+    Hierarchy: Ubuntu > 5.04 > ?alsa-utils? package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
@@ -109,7 +109,7 @@ Ubuntu Hoary".)
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04 > ?alsa-utils? package >
+    Hierarchy: Ubuntu > 5.04 > ?alsa-utils? package >
         Questions for alsa-utils in Ubuntu Hoary
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
@@ -132,7 +132,7 @@ series source package.
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04 > ?alsa-utils? package
+    Hierarchy: Ubuntu > 5.04 > ?alsa-utils? package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
@@ -151,7 +151,7 @@ hierarchy. Instead, the hierarchy stops at the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04
+    Hierarchy: Ubuntu > 5.04 > i386
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     * Code - http://code.launchpad.dev/ubuntu/hoary
@@ -170,7 +170,7 @@ Instead, the hierarchy stops at the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386/pmount')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04
+    Hierarchy: Ubuntu > 5.04 > i386 > pmount
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     ...
@@ -196,7 +196,7 @@ themselves. Instead, the hierarchy stops at the distribution series.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04
+    Hierarchy: Ubuntu > 5.04 > i386 > pmount > 0.1-1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     ...

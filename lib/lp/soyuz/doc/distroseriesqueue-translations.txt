@@ -90,7 +90,6 @@ queue:
   DEBUG: Finding and applying overrides.
   DEBUG: Checking for pmount/0.9.7-2ubuntu2/amd64 binary ancestry
   DEBUG: pmount: (binary) NEW
-  DEBUG: No signer, therefore ACL not processed
   DEBUG: Finished checking upload.
 
   # It was not rejected.

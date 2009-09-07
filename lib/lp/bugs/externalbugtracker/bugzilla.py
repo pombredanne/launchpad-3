@@ -375,7 +375,7 @@ def needs_authentication(func):
 class BugzillaAPI(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -558,7 +558,10 @@ class BugzillaAPI(Bugzilla):
 
         # Store the bugs we've imported and return only their IDs.
         self._storeBugs(remote_bugs)
-        bug_ids = [remote_bug['id'] for remote_bug in remote_bugs]
+
+        # Marshal the bug IDs into strings before returning them since
+        # the remote Bugzilla may return ints rather than strings.
+        bug_ids = [str(remote_bug['id']) for remote_bug in remote_bugs]
 
         return bug_ids
 
@@ -602,14 +605,16 @@ class BugzillaAPI(Bugzilla):
 
         # Get only the remote comment IDs and store them in the
         # 'comments' field of the bug.
-        bug_comments_dict = self.xmlrpc_proxy.Bug.comments({
+        return_dict = self.xmlrpc_proxy.Bug.comments({
             'ids': [actual_bug_id],
             'include_fields': ['id'],
             })
 
         # We need to convert bug and comment ids to strings (see bugs
         # 248662 amd 248938).
-        bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
+        bug_comments_dict = return_dict['bugs']
+        bug_comments = bug_comments_dict[str(actual_bug_id)]['comments']
+
         return [str(comment['id']) for comment in bug_comments]
 
     def fetchComments(self, bug_watch, comment_ids):
@@ -633,7 +638,10 @@ class BugzillaAPI(Bugzilla):
             if int(comment['bug_id']) != actual_bug_id:
                 del comments[comment_id]
 
-        self._bugs[actual_bug_id]['comments'] = return_dict['comments']
+        # Ensure that comment IDs are converted to ints.
+        comments_with_int_ids = dict(
+            (int(id), comments[id]) for id in comments)
+        self._bugs[actual_bug_id]['comments'] = comments_with_int_ids
 
     def getPosterForComment(self, bug_watch, comment_id):
         """See `ISupportsCommentImport`."""
@@ -679,6 +687,24 @@ class BugzillaAPI(Bugzilla):
             datecreated=comment_datetime)
 
         return message
+
+    @needs_authentication
+    def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
+        """Add a comment to the remote bugtracker.
+
+        See `ISupportsCommentPushing`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
+        request_params = {
+            'id': actual_bug_id,
+            'comment': comment_body,
+            }
+        return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
+
+        # We cast the return value to string, since that's what
+        # BugWatchUpdater will expect (see bug 248938).
+        return str(return_dict['id'])
 
 
 class BugzillaLPPlugin(BugzillaAPI):

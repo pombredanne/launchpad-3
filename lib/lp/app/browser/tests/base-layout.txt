@@ -54,7 +54,6 @@ functions are called.
       <body id="document" class="tab-overview main_side public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar"> ...
-             <div id="lp-hierarchy" class="home">...
           <div class="watermark-apps-portlet top-portlet">
             <img ...
             <h1>Waffles</h1>
@@ -66,7 +65,7 @@ functions are called.
               <div class="yui-b" dir="ltr">
                 <div>
                   <h2>Heading</h2>
-                  <!-- future breadcrumb rule -->
+                  <ol class="breadcrumbs"...
                 </div>
                 <div class="top-portlet">
                   <p class="registered">
@@ -125,7 +124,6 @@ content to take up all the horizontal space.
       <body id="document" class="tab-overview main_only public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar"> ...
-             <div id="lp-hierarchy" class="home">...
           <div class="watermark-apps-portlet top-portlet">
             <img ...
             <h1>Waffles</h1>
@@ -136,7 +134,7 @@ content to take up all the horizontal space.
             <div class="yui-b" dir="ltr">
               <div>
                 <h2>Waffles</h2>
-                <!-- future breadcrumb rule -->
+                <ol class="breadcrumbs"...
               </div>
               <div class="top-portlet">
                 <h1>Heading</h1>
@@ -192,7 +190,6 @@ slots are rendered, as are the application tabs.
         <div class="yui-d0">
           <div id="locationbar">
             <div id="logincontrol"><a href="...">Log in / Register</a></div>
-            <div id="lp-hierarchy" class="home">...
           </div><!--id="locationbar"-->
           <div class="watermark-apps-portlet top-portlet">
             <img ...
@@ -204,7 +201,7 @@ slots are rendered, as are the application tabs.
             <div class="yui-b" dir="ltr">
               <div>
                 <h2>Waffles</h2>
-                <!-- future breadcrumb rule -->
+                <ol class="breadcrumbs"...
               </div>
               <div class="top-portlet">
                 <h1>Heading</h1>
@@ -262,8 +259,6 @@ or breadcrumbs; the template must provide its own h1 element.
         <div class="yui-d0">
           <div id="locationbar">
             <div id="logincontrol"><a href="...">Log in / Register</a></div>
-            <div id="lp-hierarchy" class="home">...<div
-              class="apps-separator"><!-- --></div>
           </div><!--id="locationbar"-->
           <div id="maincontent" class="yui-main">
             <div class="yui-b" dir="ltr">

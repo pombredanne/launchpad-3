@@ -292,7 +292,7 @@ method to print out comments for us.
     ...     for key in sorted(bugs_dict):
     ...         print "Bug %s:" % key
     ...         bug_comments = sorted(
-    ...             bugs_dict[key],
+    ...             bugs_dict[key]['comments'],
     ...             key=operator.itemgetter(sort_key))
     ...
     ...         for comment in bug_comments:
@@ -415,3 +415,57 @@ returned for each comment.
         author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4
     <BLANKLINE>
+
+
+Bug.add_comment()
+-----------------------
+
+The Bug.add_comment() method is used to add comments to a remote bug. It
+takes at least two arguments: the ID of the remote comment and the body
+of the comment to be added to it.
+
+add_comment() requires authentication.
+
+    >>> bugzilla_transport.expireCookie(bugzilla_transport.auth_cookie)
+    >>> server.Bug.add_comment({'id': 1, 'comment': "This won't work"})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 410: 'Login Required'>
+
+Bug.add_comment() will return the integer comment ID of the new comment
+on the remote server.
+
+    >>> comment = "I'm supposed to write something apposite here."
+    >>> bugzilla_transport.auth_cookie = 'open sesame'
+    >>> return_dict = server.Bug.add_comment({'id': 1, 'comment': comment})
+    >>> return_dict
+    {'id': 5}
+
+The comment will be stored with the other comments on the remote server.
+
+    >>> return_dict = server.Bug.comments({
+    ...     'id': [1], 'comment_ids': [5]})
+    >>> comments_dict = return_dict['comments']
+
+    >>> for comment_id, comment in comments_dict.items():
+    ...     print "Comment %s:" % comment_id
+    ...     for comment_key in sorted(comment):
+    ...         print "    %s: %s" % (
+    ...             comment_key, comment[comment_key])
+    Comment 5:
+        author: launchpad
+        bug_id: 1
+        id: 5
+        is_private: False
+        text: I'm supposed to write something apposite here.
+        time: ...
+
+If add_comment is called on a bug that doesn't exist a fault will be
+raised.
+
+    >>> server.Bug.add_comment({'id': 42, 'comment': "This breaks"})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 101: 'Bug #42 does not exist.'>
+
+

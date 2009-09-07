@@ -7,6 +7,7 @@ __all__ = [
     'DistroArchSeriesActionMenu',
     'DistroArchSeriesAddView',
     'DistroArchSeriesAdminView',
+    'DistroArchSeriesBreadcrumb',
     'DistroArchSeriesPackageSearchView',
     'DistroArchSeriesNavigation',
     'DistroArchSeriesView',
@@ -20,6 +21,7 @@ from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadEditFormView)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
@@ -31,6 +33,14 @@ from canonical.lazr.utils import smartquote
 class DistroArchSeriesNavigation(GetitemNavigation):
 
     usedfor = IDistroArchSeries
+
+
+class DistroArchSeriesBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for `DistroArchSeries`."""
+
+    @property
+    def text(self):
+        return self.context.architecturetag
 
 
 class IDistroArchSeriesActionMenu(Interface):

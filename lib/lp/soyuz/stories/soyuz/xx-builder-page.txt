@@ -9,6 +9,7 @@ builder state. In the sampledata, the builder 'bob' is building
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Bob The Builder
+    ...
     Bob The Builder builds Intel 386 binaries and is owned by
     Launchpad Buildd Admins.
     ...
@@ -100,7 +101,7 @@ Edit page:
     ''
 
     >>> cprov_browser.getControl(name="field.builderok").value
-    False
+    True
 
     >>> cprov_browser.getControl(name="field.failnotes").value
     ''
@@ -213,13 +214,19 @@ Farm list. Celso cannot see the link to it.
     >>> cprov_browser.getLink("Build Farm").click()
 
     >>> print extract_text(find_main_content(cprov_browser.contents))
-    Launchpad build machines
+    The Launchpad build farm
     Register a new build machine
-    PPA build machines
-    386    0 builds waiting in queue
-    frog   AUTO   Disabled
-    Official distribution build machines
-    Generated at ...
+    0 available build machines, 1 disabled and 0 building of a total
+    of 1 registered.
+    Builders
+    Name  Processor Status
+    frog  386       Disabled
+    Updated on ...
+    Official distributions build status
+    Processor Builders Queue
+    PPA build status
+    Processor Builders Queue
+    386       0        empty
 
     >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):

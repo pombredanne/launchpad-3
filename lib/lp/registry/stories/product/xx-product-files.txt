@@ -14,6 +14,7 @@ Any user can see that a project with no releases has no downloads.
     >>> content = find_tag_by_id(anon_browser.contents, 'project-downloads')
     >>> print extract_text(content)
     No download files exist for this project.
+    You might want to check this project's Bazaar branches...
 
 Any user can see a project with a release without files has no downlaod files.
 
@@ -24,6 +25,7 @@ Any user can see a project with a release without files has no downlaod files.
     >>> content = find_tag_by_id(anon_browser.contents, 'project-downloads')
     >>> print extract_text(content)
     No download files exist for this project.
+    ...
 
 Any user can see a projects download files organised by series. For each
 series, the owner sees a heading, summary, table of files, and links to each
@@ -32,8 +34,11 @@ release to add download files.
     >>> anon_browser.open('http://launchpad.dev/firefox/+download')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'project-downloads'))
-    &#8220;trunk&#8221; series
-    The "trunk" series represents the primary line of development rather ...
+    0.9.2 (One (secure) Tree Hill) release, from the trunk series.
+    Release notes:
+    Security fixes
+     * 250180 - [Windows] Disallow access to insecure shell: protocol.
+    Released: 2004-10-15
     File                            Description   Downloads
     firefox-0.9.2.orig.tar.gz (md5)               -
 
@@ -90,16 +95,12 @@ A project owner should not see the delete button when there are no files.
     >>> tbird_owner.getLink('Downloads').click()
     >>> tbird_owner.title
     'Mozilla Thunderbird project files'
-    >>> content = find_main_content(tbird_owner.contents)
-    >>> form = content('form')[0]
-    >>> para = form('p')
-    >>> print para[0].string.strip()
-    No download files exist for this project.
-    >>> h2 = form('h2')[0]
-    >>> print h2.string.strip()
-    &#8220;trunk&#8221; series
-    >>> print para[1].contents[0].string.strip()
-    Add download file for release:...
+    >>> main_content = find_main_content(tbird_owner.contents)
+    >>> print extract_text(main_content)
+    Download project files
+    Mozilla Thunderbird...
+    No download files exist for this project...
+    Add download file for release: 0.8
     >>> tbird_owner.getControl('Delete Files')
     Traceback (most recent call last):
     ...
@@ -111,58 +112,31 @@ A project owner should not see the delete button when there are no files.
 When a project has a series with one or more releases, an option to
 add download files for each release in that series is presented.
 
-Define a helper function for examining the series and
-release output.
-    >>> def extract_series_release(contents, action_url):
-    ...     form = find_main_content(contents).find('form',
-    ...                action="%s" % action_url)
-    ...     for heading in form('h2'):
-    ...         releases = heading.findNext('p')
-    ...         print heading.string.strip()
-    ...         print releases.contents[0].strip()
-    ...         for link in releases('a'):
-    ...             print link.contents[0]
-
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
-    >>> extract_series_release(firefox_owner.contents,
-    ...                        firefox_owner.url)
-    &#8220;trunk&#8221; series
-    Add download file for release:
-    0.9.2
-    0.9.1
-    0.9
-    &#8220;1.0&#8221; series
-    Add download file for release:
-    1.0.0
+    >>> for tag in find_tags_by_class(firefox_owner.contents, 'add-files'):
+    ...     print extract_text(tag)
+    Add download file for release: 0.9.2, 0.9.1, 0.9
+    Add download file for release: 1.0.0
 
 If a project has a series with no releases associated with it, that
 series should not show up in the list.
 
-    >>> # Create an empty series.
+    # Create an empty series.
     >>> firefox_owner.open('http://launchpad.dev/firefox')
     >>> firefox_owner.getLink('Register a series').click()
     >>> firefox_owner.getControl('Name').value="3.0"
     >>> firefox_owner.getControl('Summary').value="pi series"
     >>> firefox_owner.getControl('Register Series').click()
-    >>> # Ensure it does not get listed.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
-    >>> extract_series_release(firefox_owner.contents,
-    ...                        firefox_owner.url)
-    &#8220;trunk&#8221; series
-    Add download file for release:
-    0.9.2
-    0.9.1
-    0.9
-    &#8220;3.0&#8221; series
-    <BLANKLINE>
-    &#8220;1.0&#8221; series
-    Add download file for release:
-    1.0.0
+    >>> for tag in find_tags_by_class(firefox_owner.contents, 'add-files'):
+    ...     print extract_text(tag)
+    Add download file for release: 0.9.2, 0.9.1, 0.9
+    Add download file for release: 1.0.0
 
 If a release is added to the new series the series will appear in
 the list.
 
-    >>> # Add a release to the empty series.
+    # Add a release to the empty series.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+series')
     >>> firefox_owner.getLink('3.0').click()
     >>> firefox_owner.getLink('Create milestone').click()
@@ -174,21 +148,12 @@ the list.
     >>> firefox_owner.getControl('Create release').click()
     >>> print firefox_owner.url
     http://launchpad.dev/firefox/+milestone/3.14159
-    >>> # See that it now appears in the list.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
-    >>> extract_series_release(firefox_owner.contents,
-    ...                        firefox_owner.url)
-    &#8220;trunk&#8221; series
-    Add download file for release:
-    0.9.2
-    0.9.1
-    0.9
-    &#8220;3.0&#8221; series
-    Add download file for release:
-    3.14159
-    &#8220;1.0&#8221; series
-    Add download file for release:
-    1.0.0
+    >>> for tag in find_tags_by_class(firefox_owner.contents, 'add-files'):
+    ...     print extract_text(tag)
+    Add download file for release: 0.9.2, 0.9.1, 0.9
+    Add download file for release: 3.14159
+    Add download file for release: 1.0.0
 
 
 == Adding new files ==

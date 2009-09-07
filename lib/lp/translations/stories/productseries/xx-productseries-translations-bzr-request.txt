@@ -57,7 +57,7 @@ The request is made by clicking on a button labeled
     <input type="submit"...value="Request one-time import"...
     >>> browser.getControl('Request one-time import').click()
     >>> print browser.url
-    http://translations.l...d.dev/evolution/trunk/+request-bzr-import
+    http://translations.launchpad.dev/evolution/trunk
     >>> print "\n".join(get_feedback_messages(browser.contents))
     The import has been requested.
 

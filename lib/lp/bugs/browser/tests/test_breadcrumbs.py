@@ -35,9 +35,11 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         url = canonical_url(
             self.bug.default_bugtask, rootsite='bugs', view_name='+activity')
         urls = self._getBreadcrumbsURLs(url, self.traversed_objects)
-        self.assertEquals(urls[-1], self.bugtask_url)
+        self.assertEquals(urls[-1], "%s/+activity" % self.bugtask_url)
+        self.assertEquals(urls[-2], self.bugtask_url)
         texts = self._getBreadcrumbsTexts(url, self.traversed_objects)
-        self.assertEquals(texts[-1], "Bug #%d" % self.bug.id)
+        self.assertEquals(texts[-1], "+activity")
+        self.assertEquals(texts[-2], "Bug #%d" % self.bug.id)
 
     def test_bugtask_private_bug(self):
         # A breadcrumb is not generated for a bug that the user does
@@ -45,8 +47,7 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         login('foo.bar@canonical.com')
         self.bug.setPrivate(True, self.bug.owner)
         login(ANONYMOUS)
-        url = canonical_url(
-            self.bug.default_bugtask, rootsite='bugs', view_name='+activity')
+        url = canonical_url(self.bug.default_bugtask, rootsite='bugs')
         self.assertEquals(
             ['http://launchpad.dev/crumb-tester',
              'http://bugs.launchpad.dev/crumb-tester'],

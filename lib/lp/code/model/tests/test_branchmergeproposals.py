@@ -1587,7 +1587,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         merge_proposal.updatePreviewDiff("random text", u"junk", u"a", u"b")
         transaction.commit()
         # Extract the primary key ids for the preview diff and the diff to
-        # show that we are reusing the objects.
+        # show that we are not reusing the objects.
         preview_diff_id = removeSecurityProxy(
             merge_proposal.preview_diff).id
         diff_id = removeSecurityProxy(
@@ -1595,10 +1595,10 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
         self.assertEqual(diff_text, merge_proposal.preview_diff.text)
         self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
-        self.assertEqual(
+        self.assertNotEqual(
             preview_diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).id)
-        self.assertEqual(
+        self.assertNotEqual(
             diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).diff_id)
 
