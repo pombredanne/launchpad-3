@@ -654,13 +654,13 @@ class BranchMergeProposal(SQLBase):
                     code_review_message, original_email))
         return code_review_message
 
-    def updatePreviewDiff(self, diff_content, diff_stat,
-                          source_revision_id, target_revision_id,
-                          dependent_revision_id=None, conflicts=None):
+    def updatePreviewDiff(self, diff_content, source_revision_id,
+                          target_revision_id, dependent_revision_id=None,
+                          conflicts=None):
         """See `IBranchMergeProposal`."""
         # Create the PreviewDiff.
         self.preview_diff = PreviewDiff.create(
-            diff_content, diff_stat, source_revision_id, target_revision_id,
+            diff_content, source_revision_id, target_revision_id,
             dependent_revision_id, conflicts)
 
         # XXX: TimPenhey 2009-02-19 bug 324724

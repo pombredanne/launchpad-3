@@ -214,6 +214,19 @@ To truncate a long string, use fmt:shorten:
     >>> test_tales('foo/fmt:shorten/8', foo='abcdefghij')
     'abcde...'
 
+To ellipsize the middle of a string. use fmt:ellipsize and pass the max
+length.
+
+    >>> print test_tales('foo/fmt:ellipsize/25',
+    ...     foo='foo-bar-baz-bazoo_22.443.tar.gz')
+    foo-bar-baz....443.tar.gz
+
+The string is not ellipsized if it is less than the max length.
+
+    >>> print test_tales('foo/fmt:ellipsize/25',
+    ...     foo='firefox-0.9.2.orig.tar.gz')
+    firefox-0.9.2.orig.tar.gz
+
 To preserve newlines in text when displaying as HTML, use fmt:nl_to_br:
 
     >>> test_tales('foo/fmt:nl_to_br',
@@ -650,7 +663,7 @@ Bug Trackers
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
-    u'/bugs/bugtrackers/email'
+    u'http://bugs.launchpad.dev/bugs/bugtrackers/email'
 
 (The url is relative if possible, and our test request claims to be from
 launchpad.dev, so the url is relative.)

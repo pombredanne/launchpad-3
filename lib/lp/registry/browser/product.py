@@ -11,7 +11,6 @@ __all__ = [
     'ProductAddViewBase',
     'ProductAdminView',
     'ProductBrandingView',
-    'ProductBreadcrumb',
     'ProductBugsMenu',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
@@ -245,13 +244,6 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IProduct`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
@@ -345,6 +337,10 @@ class ProductEditLinksMixin:
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
+
 
 class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
@@ -369,7 +365,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer')
+    links = ('edit', 'review_license', 'administer', 'subscribe')
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
@@ -1518,7 +1514,7 @@ class ProjectAddStepOne(StepView):
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
@@ -1553,7 +1549,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     product = None
 

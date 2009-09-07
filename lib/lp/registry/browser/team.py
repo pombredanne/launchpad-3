@@ -918,8 +918,14 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
                 comment=self.request.form.get('comment'))
 
     @property
+    def page_title(self):
+        return 'Proposed members of %s' % self.context.displayname
+
+    @property
     def next_url(self):
         return '%s/+members' % canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class TeamBrandingView(BrandingChangeView):
@@ -942,6 +948,14 @@ class TeamMemberAddView(LaunchpadFormView):
 
     schema = ITeamMember
     label = "Select the new member"
+
+    @property
+    def page_title(self):
+        return 'Add members to %s' % self.context.displayname
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def validate(self, data):
         """Verify new member.

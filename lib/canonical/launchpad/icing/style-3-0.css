@@ -7,7 +7,7 @@ Remove this section when the old templates and these declarations are gone.
 #maincontent {
     float: left;
     width: 100%;
-    margin-right: -25em;
+    margin-right: -25%;
     }
 #maincontent ol, #maincontent ul {
     padding-left: auto;
@@ -238,6 +238,9 @@ span.nolink {
     margin: 0 0 1em;
     }
 
+.warning.message {
+    margin-top: 17px;
+    }
 /*
 
 Use percentages when setting font-size.
@@ -397,6 +400,9 @@ span.see-all {
     color: #666;
     font-style: italic;
     }
+li .registered {
+    font-style: normal;
+    }
 .description {
     clear: both;
     font-size: 100%;
@@ -546,9 +552,6 @@ div.watermark-apps-portlet h1 {
     background: #fbfbfb;
     }
 
-.downloads a {
-    color: #4f843c;
-    }
 .downloads li {
     margin: 0;
     padding: 2px 0 0;
@@ -564,17 +567,20 @@ div.watermark-apps-portlet h1 {
     border-radius: 3px;
     background: #4f843c url(/@@/bg-project-downloads.png) center right no-repeat;
     padding: 6%;
-    padding-right: 50px;
+    padding-right: 40px;
     color: #fff;
-    font-size: 108%;
-    text-decoration: underline;
+    font-size: 93%;
+    }
+.downloads .version {
+    -moz-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    -khtml-border-radius: 5px 5px 0 0;
+    border-radius: 5px 5px 0 0;
+    background: #d3e3c7;
+    padding: 0.2em 1em;
     }
 .downloads .released {
-    margin: .3em 0 1em 0;
-    padding: 0 .2em 0 0;
-    text-align: right;
-    }
-.downloads .released span {
+    margin: .3em 0 .5em 0;
     -moz-border-radius: 0 0 5px 5px;
     -webkit-border-radius: 0 0 5px 5px;
     -khtml-border-radius: 0 0 5px 5px;
@@ -583,7 +589,7 @@ div.watermark-apps-portlet h1 {
     padding: 0.2em 1em;
     }
 .downloads .alternate {
-    text-align: right;
+    padding: 0 0 0 1em;
     }
 
 ul.super-add-action {
@@ -610,11 +616,8 @@ ul.super-add-action li a {
     text-decoration: underline;
     }
 
-.involvement ul {
-    border-top: 1px solid #d0d0d0;
-    }
 .involvement li {
-    border-bottom: 1px solid #d0d0d0;
+    border-top: 1px solid #d0d0d0;
     padding: 0;
     font-size: 108%;
     font-weight: bold;
@@ -642,6 +645,10 @@ ul.super-add-action li a {
 .involvement a.blueprints {
     color: #5ba4c6;
     background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
+    }
+.involvement a:hover {
+    text-decoration: none;
+    background-color: #eee;
     }
 
 .announcements li {
@@ -694,6 +701,7 @@ form.translations div.fields {
 form.translations div.actions {
   padding: 1em;
   text-align: right;
+  clear:both;
 }
 
 form.translations input {
@@ -717,26 +725,27 @@ form.translations .listbox label {
 
 /* Provide top-alignment for radio boxes and longer explanations
  * without using tables.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+ *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
  */
-form.translations div.fields div.alignment {
-  position: relative;
-}
-form.translations div.alignment div.top-alignment {
-  position: absolute;
-  top: 0px;
-}
-form.translations div.alignment .spacer {
-  visibility: hidden;
-}
 form.translations div.alignment .content {
-  display: inline-block;
-  margin-left: 0px;
+  float:left;
 }
-
+form.translations div.alignment .selector {
+  margin-right: 0.5em;
+  float: left;
+  clear: both;
+}
 form.translations div.alignment .content label {
   padding: 0px;
   margin: 0px;
   font-weight: bold;
+}
+form.translations div.alignment .secondary label {
+  font-weight: normal;
+  padding: 2px 1em 2px 2px;
 }
 
 table.narrow-listing {

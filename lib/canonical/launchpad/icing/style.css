@@ -141,7 +141,7 @@ span.invisible {left:-9999em;display:block;}
 .bullet {background:url(icon-sprites-2) 0 -1024px no-repeat;}
 .zoom-in {background:url(icon-sprites-2) 0 -1056px no-repeat;}
 .zoom-out {background:url(icon-sprites-2) 0 -1088px no-repeat;}
-.arquitecture {background:url(icon-sprites-2) 0 -1120px no-repeat;}
+.architecture {background:url(icon-sprites-2) 0 -1120px no-repeat;}
 .ppa-icon {background:url(icon-sprites-2) 0 -1147px no-repeat;}
 .ppa-icon-inactive {background:url(icon-sprites-2) 0 -1171px no-repeat;}
 
@@ -1492,11 +1492,16 @@ a.info {
 .boardCommentDetails table {
   margin: -0.5em -12px;
 }
+.boardCommentDetails tr {
+    width: 100%;
+}
 .boardCommentDetails td {
+    width:98%;
     padding: 0.5em 12px;
 }
 .boardCommentDetails td.bug-comment-index {
-    border-right: 1px solid #ddd;
+    width:2%;
+    border-left: 1px solid #ddd;
 }
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardBugActivityBody {

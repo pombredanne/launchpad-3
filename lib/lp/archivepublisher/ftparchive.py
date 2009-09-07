@@ -15,12 +15,12 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.webapp.interfaces import (
      DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from lp.archivepublisher.utils import process_in_batches
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.section import Section
-
 
 
 def package_name(filename):

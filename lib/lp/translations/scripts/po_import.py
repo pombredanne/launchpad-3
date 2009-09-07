@@ -116,23 +116,26 @@ class ImportProcess:
                         else:
                             to_email = helpers.get_contact_email_addresses(
                                 entry_to_import.importer)
-                        text = MailWrapper().format(mail_body)
 
-                        # XXX: JeroenVermeulen 2007-11-29 bug=29744: email
-                        # isn't transactional in zopeless mode.  That
-                        # means that our current transaction can fail
-                        # after we already sent out a success notification.
-                        # To prevent that, we commit the import (attempt)
-                        # before sending out the email.  That way, the worst
-                        # that can happen is that an email goes missing.
-                        # Once bug 29744 is fixed, this commit must die so
-                        # the email and the import will be in a single
-                        # atomic operation.
-                        self.ztm.commit()
-                        self.ztm.begin()
+                        if to_email:
+                            text = MailWrapper().format(mail_body)
 
-                        simple_sendmail(
-                            from_email, to_email, mail_subject, text)
+                            # XXX: JeroenVermeulen 2007-11-29 bug=29744: email
+                            # isn't transactional in zopeless mode.  That
+                            # means that our current transaction can fail
+                            # after we already sent out a success
+                            # notification.  To prevent that, we commit the
+                            # import (attempt) before sending out the email.
+                            # That way the worst that can happen is that an
+                            # email goes missing.
+                            # Once bug 29744 is fixed, this commit must die so
+                            # the email and the import will be in a single
+                            # atomic operation.
+                            self.ztm.commit()
+                            self.ztm.begin()
+
+                            simple_sendmail(
+                                from_email, to_email, mail_subject, text)
 
                 except KeyboardInterrupt:
                     self.ztm.abort()
