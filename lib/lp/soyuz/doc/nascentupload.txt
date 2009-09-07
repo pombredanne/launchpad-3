@@ -635,7 +635,7 @@ simplicity and claim 'build from ACCEPTED' feature.
 
 Build creation is done based on the SourcePackageRelease object, step 5:
 
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
   ...     hoary['i386'], PackagePublishingPocket.RELEASE,
   ...     multibar_src_queue.archive)

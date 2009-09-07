@@ -39,10 +39,10 @@ from lp.soyuz.model.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -1268,8 +1268,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Make sure it failed.
         self.assertEqual(
             uploadprocessor.last_processed_upload.rejection_message,
-            u"Signer is not permitted to upload to the component 'universe'"
-                " of file 'bar_1.0-2.dsc'.")
+            u"Signer is not permitted to upload to the component 'universe'.")
 
         # Now add permission to upload "bar" for name16.
         bar_package = getUtility(ISourcePackageNameSet).queryByName("bar")
@@ -1322,8 +1321,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Make sure it failed.
         self.assertEqual(
             uploadprocessor.last_processed_upload.rejection_message,
-            u"Signer is not permitted to upload to the component 'universe'"
-                " of file 'bar_1.0-2.dsc'.")
+            "Signer is not permitted to upload to the component 'universe'.")
 
         # Now put in place a package set, add 'bar' to it and define a
         # permission for the former.

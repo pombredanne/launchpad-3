@@ -80,7 +80,7 @@ changed.
     >>> print edit_link.url
     http://translations.launchpad.dev/.../trunk/+link-translations-branch
 
-    >>> branch_link = owner_browser.getLink(id='translations-branch-link')
+    >>> branch_link = owner_browser.getLink(url=branch_name)
     >>> print branch_link.url
     http://code.launchpad.dev/~.../.../...
 

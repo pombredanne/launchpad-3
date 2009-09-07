@@ -30,7 +30,7 @@ Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.pocket import (
     ...    PackagePublishingPocket)
     >>> pocket_release = PackagePublishingPocket.RELEASE
 
