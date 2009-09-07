@@ -646,6 +646,13 @@
         name="+branches"
         template="../templates/sourcepackage-branches.pt"/>
     <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        class="lp.code.browser.branchmergeproposallisting.ActiveReviewsView"
+        permission="zope.Public"
+        facet="branches"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
+    <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.code.browser.branchlisting.DistributionBranchListingView"
         permission="zope.Public"
@@ -674,12 +681,26 @@
         name="+code-index"
         template="../templates/distributionsourcepackage-branches-grouped.pt"/>
     <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.branchmergeproposallisting.ActiveReviewsView"
+        permission="zope.Public"
+        facet="branches"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
+    <browser:page
         for="lp.registry.interfaces.project.IProject"
         class="lp.code.browser.branchlisting.ProjectBranchesView"
         facet="branches"
         permission="zope.Public"
         name="+branches"
         template="../templates/project-branches.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.code.browser.branchmergeproposallisting.ActiveReviewsView"
+        permission="zope.Public"
+        facet="branches"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
     <facet
         facet="overview">
         <browser:menus
@@ -733,20 +754,6 @@
             name="+activereviews"
             template="../templates/active-reviews.pt"/>
         <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchmergeproposallisting.PersonRequestedReviewsView"
-            permission="zope.Public"
-            facet="branches"
-            name="+requestedreviews"
-            template="../templates/person-mergeproposals.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchmergeproposallisting.PersonApprovedMergesView"
-            permission="zope.Public"
-            facet="branches"
-            name="+approvedmerges"
-            template="../templates/person-mergeproposals.pt"/>
-        <browser:page
             name="+addbranch"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branch.BranchAddView"
@@ -788,18 +795,11 @@
         template="../templates/product-branches.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchmergeproposallisting.ProductActiveReviewsView"
+        class="lp.code.browser.branchmergeproposallisting.ActiveReviewsView"
         permission="zope.Public"
         facet="branches"
         name="+activereviews"
         template="../templates/active-reviews.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchmergeproposallisting.ProductApprovedMergesView"
-        permission="zope.Public"
-        facet="branches"
-        name="+approvedmerges"
-        template="../templates/product-mergeproposals.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductCodeIndexView"
@@ -846,6 +846,10 @@
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
 
+    <browser:menus
+        module="lp.code.browser.branchlisting"
+        classes="PersonProductBranchesMenu"/>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
         layer="canonical.launchpad.layers.CodeLayer"
@@ -859,6 +863,29 @@
         name="+branches"
         template="../templates/personproduct-branches.pt"
         />
+    <browser:page
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.branchlisting.PersonProductSubscribedBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+subscribedbranches"
+        template="../templates/personproduct-branches.pt"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.branchlisting.PersonProductRegisteredBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+registeredbranches"
+        template="../templates/personproduct-branches.pt"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.branchmergeproposallisting.PersonProductActiveReviewsView"
+        permission="zope.Public"
+        facet="branches"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
 
     <browser:page
         for="canonical.launchpad.interfaces.personproduct.IPersonProduct"

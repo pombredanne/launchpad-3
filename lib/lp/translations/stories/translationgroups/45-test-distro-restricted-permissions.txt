@@ -14,12 +14,11 @@ he is not a designated translator.
     ...     'Translation permissions policy').value = ['RESTRICTED']
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/+settings
+    http://translations.launchpad.dev/ubuntu
 
-    >>> for tag in find_tags_by_class(
-    ...     admin_browser.contents, 'informational message'):
-    ...     print tag.renderContents()
-    Updated on ...
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'translation-permissions'))
+    Ubuntu is translated by ... with Restricted permissions...
 
 The translation group does not assign anyone to tend to the Southern
 Sotho translation, so for that language, No Privileges can't even make

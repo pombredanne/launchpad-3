@@ -18,7 +18,7 @@ translations.
     >>> import os.path
     >>> test_file_name = os.path.join(
     ...     os.path.dirname(lp.translations.__file__),
-    ...     'stories/standalone/xx-translation-import-queue.tar.gz')
+    ...     'stories/importqueue/xx-translation-import-queue.tar.gz')
     >>> tarball = open(test_file_name, "rb")
     >>> upload = ff_owner_browser.getControl('File')
     >>> upload
@@ -166,6 +166,12 @@ So we'd better specify a valid name.
 
 Open the edit form for the fourth entry.
 
+XXX DaniloSegan 2009-09-01: it seems we are hitting Zope testbrowser
+bug, so we need to reopen the page we are currently at to set 'referer'
+header properly.  This seems similar to #98437 but the fix proposed
+there doesn't help.
+
+  >>> browser.open('http://translations.launchpad.dev/+imports')
   >>> browser.getLink(url='imports/4').click()
 
 And provide information for this IPOFile to be newly created.
@@ -193,7 +199,7 @@ imported assigned.
   po/es.po in
   Mozilla Firefox 1.0 series
   Approved
-  ...    
+  ...
   Spanish (es) translation of pkgconf-mozilla in Mozilla Firefox 1.0
   ...
 
@@ -335,7 +341,7 @@ Let's check tar.bz2 uploads. They work ;-)
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(lp.translations.__file__),
-  ...     'stories/standalone/xx-translation-import-queue.tar.bz2')
+  ...     'stories/importqueue/xx-translation-import-queue.tar.bz2')
   >>> tarball = open(test_file_name)
 
   >>> evo_owner_browser.getControl('File').add_file(
@@ -368,7 +374,7 @@ Let's try now a tarball upload. Should work:
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(lp.translations.__file__),
-  ...     'stories/standalone/xx-translation-import-queue.tar')
+  ...     'stories/importqueue/xx-translation-import-queue.tar')
   >>> tarball = open(test_file_name)
 
   >>> evo_owner_browser.getControl('File').add_file(
@@ -389,7 +395,7 @@ We can handle an empty file disguised as a bzipped tarfile:
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(lp.translations.__file__),
-  ...     'stories/standalone/empty.tar.bz2')
+  ...     'stories/importqueue/empty.tar.bz2')
   >>> tarball = open(test_file_name)
 
   >>> evo_owner_browser.getControl('File').add_file(
@@ -409,7 +415,7 @@ And also a truncated tarball inside a bzip2 wrapper:
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(lp.translations.__file__),
-  ...     'stories/standalone/truncated.tar.bz2')
+  ...     'stories/importqueue/truncated.tar.bz2')
   >>> tarball = open(test_file_name)
 
   >>> evo_owner_browser.getControl('File').add_file(

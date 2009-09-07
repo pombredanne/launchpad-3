@@ -69,6 +69,8 @@ class BugNominationView(LaunchpadFormView):
         else:
             return "Nominate bug #%d for series" % self.context.bug.id
 
+    page_title = label
+
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
         current_bugtask = getUtility(ILaunchBag).bugtask

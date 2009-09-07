@@ -249,6 +249,9 @@ class PersonTranslationView(LaunchpadView):
         pofiles = person.suggestTranslatableFiles(
             no_older_than=self.history_horizon)
 
+        if max_fetch is not None:
+            pofiles = pofiles[:max_fetch]
+
         return TranslateLinksAggregator().aggregate(pofiles)
 
     @cachedproperty

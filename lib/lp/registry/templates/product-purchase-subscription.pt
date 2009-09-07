@@ -3,18 +3,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
+<h1 metal:fill-slot="heading">Purchase Project Subscription</h1>
 
 <div metal:fill-slot="main">
-  <h1>Purchase Project Subscription</h1>
   <div class="error message" id="free-hosting-error"
        tal:condition="context/qualifies_for_free_hosting">
     This project does not require a commercial subscription to be purchased.

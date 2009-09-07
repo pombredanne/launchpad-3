@@ -17,8 +17,8 @@ from canonical.database.sqlbase import flush_database_updates
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingStatus, PackagePublishingPocket)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 

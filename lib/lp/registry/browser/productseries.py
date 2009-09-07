@@ -457,21 +457,13 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
 
-    @property
-    def milestone_table_class(self):
-        """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
-            return 'listing'
-        else:
-            # The page can remove the 'unseen' class to make the table
-            # visible.
-            return 'listing unseen'
 
     @property
-    def milestone_row_uri_template(self):
-        return (
-            '%s/+milestone/{name}/+productseries-table-row' %
-            canonical_url(self.context.product, path_only_if_possible=True))
+    def latest_release_with_download_files(self):
+        for release in self.context.releases:
+            if len(list(release.files)) > 0:
+                return release
+        return None
 
 
 class ProductSeriesUbuntuPackagingView(ProductSeriesView):

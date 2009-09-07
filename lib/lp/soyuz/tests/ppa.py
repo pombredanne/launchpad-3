@@ -20,11 +20,11 @@ from lp.soyuz.model.sourcepackagerelease import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingPriority,
-    PackagePublishingStatus)
+    PackagePublishingPriority, PackagePublishingStatus)
 
 
 def publishToTeamPPA(team_name=None, distroseries_name=None,
