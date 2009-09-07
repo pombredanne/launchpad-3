@@ -71,6 +71,10 @@
         class="lp.registry.browser.distroseries.DistroSeriesView"
         permission="zope.Public">
         <browser:page
+            name="+table-milestones"
+            facet="overview"
+            template="../templates/productseries-table-releases.pt"/>
+        <browser:page
             name="+packaging"
             facet="overview"
             template="../templates/distroseries-packaging.pt"/>

@@ -577,7 +577,7 @@ div.watermark-apps-portlet h1 {
     -khtml-border-radius: 5px 5px 0 0;
     border-radius: 5px 5px 0 0;
     background: #d3e3c7;
-    padding: 0 1em;
+    padding: 0.2em 1em;
     }
 .downloads .released {
     margin: .3em 0 .5em 0;
