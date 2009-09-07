@@ -426,7 +426,8 @@
         <browser:menus
             module="lp.bugs.browser.bugtask"
             classes="
-                BugTaskContextMenu"/>
+                BugTaskContextMenu
+                BugTaskSearchListingMenu"/>
         <browser:page
             for="*"
             name="+bugtask-macros-tableview"
