@@ -48,6 +48,21 @@ class TestSendbranchmail(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
 
+    def test_sendbranchmail_handles_oops(self):
+        """Ensure sendbranchmail runs and sends email."""
+        self.useTempBzrHome()
+        branch = self.factory.makeBranch()
+        job_1 = RevisionMailJob.create(
+            branch, 1, 'from@example.org', 'body', True, 'foo')
+        transaction.commit()
+        retcode, stdout, stderr = run_script(
+            'cronscripts/sendbranchmail.py', [])
+        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn('INFO    Job resulted in OOPS:', stderr)
+        self.assertIn('INFO    Ran 0 RevisionMailJobs.\n', stderr)
+        self.assertEqual('', stdout)
+        self.assertEqual(0, retcode)
+
     def test_revision_added_job(self):
         """RevisionsAddedJobs are run by sendbranchmail."""
         self.useTempBzrHome()

@@ -20,7 +20,7 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.codehosting.scanner.buglinks import got_new_revision, BugBranchLinker
 from lp.codehosting.scanner.fixture import make_zope_event_fixture
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCase
 
 

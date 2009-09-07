@@ -33,8 +33,8 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from lp.testing import get_lsb_information

@@ -86,9 +86,9 @@ the series.
     >>> print driver_browser.title
     Mozilla Firefox trunk series
     >>> print extract_text(find_tag_by_id(
-    ...     driver_browser.contents, 'series_trunk'))
+    ...     driver_browser.contents, 'series-trunk'))
     Version "Codename"        Expected  Released                   Summary
-    Mozilla Firefox 0.9.2...  Set       Change details 2004-10-16
+    Mozilla Firefox 0.9.2...  Set date  Change details 2004-10-16
     ...
     Mozilla Firefox 0.9.1...
     ...
@@ -126,7 +126,7 @@ successful.
     ...     print message
     Milestone 0.9.2 deleted.
     >>> print extract_text(find_tag_by_id(
-    ...     driver_browser.contents, 'series_trunk'))
+    ...     driver_browser.contents, 'series-trunk'))
     Version "Codename"         Expected   Released     Summary
     Mozilla Firefox 0.9.1 ...
     Mozilla Firefox 0.9 ...
