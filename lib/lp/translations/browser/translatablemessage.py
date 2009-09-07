@@ -66,7 +66,7 @@ class TranslatableMessageView(LaunchpadView):
         """Information about the current translation prepared for display.
 
         :returns: A dictionary with the following keys:
-          translator - The IPerson object or the translator or None.
+          translator - The IPerson object of the translator or None.
           translations - A list of dictionaries with the following keys:
             plural - The plural label to explain this form or an empty string
             text - The actual translation text as HTML
