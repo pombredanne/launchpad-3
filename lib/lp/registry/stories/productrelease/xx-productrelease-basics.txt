@@ -22,11 +22,11 @@ release in the series.
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
     >>> browser.getLink('Create release').click()
-    >>> browser.url
-    'http://launchpad.dev/firefox/+milestone/1.0/+addrelease'
+    >>> print browser.url
+    http://launchpad.dev/firefox/+milestone/1.0/+addrelease
 
-    >>> browser.title
-    'Publish the release of Mozilla Firefox 1.0'
+    >>> print browser.title
+    Create a new release for Mozilla Firefox
 
 Links to previous releases from the series are listed.
 

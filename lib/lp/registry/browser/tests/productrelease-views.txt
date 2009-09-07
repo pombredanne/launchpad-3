@@ -24,7 +24,7 @@ the other releases for the series. There are no other releases yet.
     >>> print view.label
     Create a new release for App
     >>> print view.page_title
-    Publish the release of App 0.1
+    Create a new release for App
 
 The view creates a checkbox to allow the user to keep the milestone
 active, which is normally deactivated when a release is made.
@@ -120,7 +120,7 @@ set the milestone.
     >>> print view.label
     Create a new release for App
     >>> print view.page_title
-    Publish the release of simple
+    Create a new release for App
 
 The rendered template includes a script that adds a js-action link to
 show a formoverlay that updates the milestone_for_release field.
