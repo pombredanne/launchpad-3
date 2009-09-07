@@ -233,14 +233,12 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             source_branch.repository._format,
             mirrored_branch.repository._format)
 
-
     def testRaisesStackedOnBranchNotFoundInitialMirror(self):
         # If the stacked-on branch cannot be found in the mirrored area on an
         # initial mirror, then raise StackedOnBranchNotFound. This will ensure
         # the puller will mirror the stacked branch as soon as the stacked-on
         # branch has been mirrored.
-        stacked_on_branch = self.make_branch(
-            'stacked-on-branch', format='1.6')
+        self.make_branch('stacked-on-branch', format='1.6')
         stacked_branch = self.make_branch('source-branch', format='1.6')
         stacked_branch.set_stacked_on_url('../stacked-on-branch')
         # Make a sub-directory so that the relative URL cannot be found.
@@ -269,8 +267,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('mirrored-area/destdir'))
         to_mirror.mirrorWithoutChecks()
-        stacked_on_branch = self.make_branch(
-            'stacked-on-branch', format='1.6')
+        self.make_branch('stacked-on-branch', format='1.6')
         stacked_branch.set_stacked_on_url('../stacked-on-branch')
         self.assertRaises(
             StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
