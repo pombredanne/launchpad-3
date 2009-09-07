@@ -27,7 +27,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing.factory import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.xmlrpc.codehosting import (
@@ -468,7 +468,8 @@ class FakeBranchPuller:
     def acquireBranchToPull(self):
         branches = sorted(
             [branch for branch in self._branch_set
-            if branch.next_mirror_time is not None],
+             if branch.next_mirror_time is not None
+             and branch.branch_type != BranchType.REMOTE],
             key=operator.attrgetter('next_mirror_time'))
         if branches:
             branch = branches[-1]

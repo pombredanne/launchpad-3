@@ -58,7 +58,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
-from canonical.launchpad.database.account import Account
+from canonical.launchpad.database.account import Account, AccountPassword
 from lp.bugs.model.bugtarget import HasBugsBase
 from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
@@ -298,7 +298,6 @@ class Person(
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
         # this method is scheduled for demolition -- StuartBishop 20080514
-        from canonical.launchpad.database.account import AccountPassword
         password = IStore(AccountPassword).find(
             AccountPassword, accountID=self.accountID).one()
         if password is None:
@@ -384,18 +383,6 @@ class Person(
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
-    ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
-        orderBy='id')
-    reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
-        orderBy='id')
-    # XXX: matsubara 2006-03-06 bug=33935:
-    # Is this really needed? There's no attribute 'claimant' in the Bounty
-    # database class or interface, but the column exists in the database.
-    claimedBounties = SQLMultipleJoin('Bounty', joinColumn='claimant',
-        orderBy='id')
-    subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
-        otherColumn='bounty', intermediateTable='BountySubscription',
-        orderBy='id')
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -952,7 +939,7 @@ class Person(
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
         # Import here to work around a circular import problem.
-        from canonical.launchpad.database import Product
+        from lp.registry.model.product import Product
 
         clauses = ["""
             SELECT DISTINCT Product.id
@@ -1737,7 +1724,6 @@ class Person(
 
         # Nuke all subscriptions of this person.
         removals = [
-            ('BountySubscription', 'person'),
             ('BranchSubscription', 'person'),
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
@@ -2873,6 +2859,11 @@ class PersonSet:
             ''' % vars())
 
     def _mergeBountySubscriptions(self, cur, from_id, to_id):
+        # XXX: JonathanLange 2009-08-31: Even though all of the other bounty
+        # code has been removed from Launchpad, the merging code has to stay
+        # until the tables themselves are removed. Otherwise, the person
+        # merging code raises consistency errors (and rightly so).
+        #
         # Update only the BountySubscriptions that will not conflict.
         cur.execute('''
             UPDATE BountySubscription
@@ -3304,7 +3295,7 @@ class PersonSet:
 
         # These rows are in a UNIQUE index, and we can only move them
         # to the new Person if there is not already an entry. eg. if
-        # the destination and source persons are both subscribed to a bounty,
+        # the destination and source persons are both subscribed to a bug,
         # we cannot change the source persons subscription. We just leave them
         # as noise for the time being.
 
@@ -3334,11 +3325,11 @@ class PersonSet:
         self._mergeBranchSubscription(cur, from_id, to_id)
         skip.append(('branchsubscription', 'person'))
 
-        self._mergeBountySubscriptions(cur, from_id, to_id)
-        skip.append(('bountysubscription', 'person'))
-
         self._mergeBugAffectsPerson(cur, from_id, to_id)
         skip.append(('bugaffectsperson', 'person'))
+
+        self._mergeBountySubscriptions(cur, from_id, to_id)
+        skip.append(('bountysubscription', 'person'))
 
         self._mergeAnswerContact(cur, from_id, to_id)
         skip.append(('answercontact', 'person'))

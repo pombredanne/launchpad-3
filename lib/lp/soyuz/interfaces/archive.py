@@ -30,7 +30,6 @@ __all__ = [
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
     'PocketNotFound',
-    'SourceNotFound',
     'AlreadySubscribed',
     'ArchiveNotPrivate',
     'default_name_by_purpose',
@@ -44,6 +43,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
@@ -55,8 +55,9 @@ from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, exported,
     export_read_operation, export_factory_operation, export_operation_as,
     export_write_operation, operation_parameters,
-    operation_returns_collection_of, rename_parameters_as, webservice_error)
-from lazr.restful.fields import Reference
+    operation_returns_collection_of, operation_returns_entry,
+    rename_parameters_as, webservice_error)
+from lazr.restful.fields import CollectionField, Reference
 
 
 class ArchiveDependencyError(Exception):
@@ -88,11 +89,6 @@ class DistroSeriesNotFound(Exception):
     webservice_error(400) #Bad request.
 
 
-class SourceNotFound(Exception):
-    """Invalid source name."""
-    webservice_error(400) #Bad request.
-
-
 class AlreadySubscribed(Exception):
     """Raised when creating a subscription for a subscribed person."""
     webservice_error(400) # Bad request.
@@ -118,7 +114,7 @@ class NoSuchPPA(NameLookupFailed):
     _message_prefix = "No such ppa"
 
 
-class IArchivePublic(IHasOwner):
+class IArchivePublic(IHasOwner, IPrivacy):
     """An Archive interface for publicly available operations."""
     id = Attribute("The archive ID.")
 
@@ -146,6 +142,8 @@ class IArchivePublic(IHasOwner):
         title=_("Publish"), required=False,
         description=_("Whether the archive is to be published or not."))
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by a validator.
     private = exported(
         Bool(
             title=_("Private"), required=False,
@@ -186,10 +184,6 @@ class IArchivePublic(IHasOwner):
 
     signing_key = Object(
         title=_('Repository sigining key.'), required=False, schema=IGPGKey)
-
-    dependencies = Attribute(
-        "Archive dependencies recorded for this archive and ordered by owner "
-        "displayname.")
 
     expanded_archive_dependencies = Attribute(
         "The expanded list of archive dependencies. It includes the implicit "
@@ -311,15 +305,6 @@ class IArchivePublic(IHasOwner):
 
         Return the PublishedPackage record by binarypackagename or None if
         not found.
-        """
-
-    def getArchiveDependency(dependency):
-        """Return the `IArchiveDependency` object for the given dependency.
-
-        :param dependency: is an `IArchive` object.
-
-        :return: `IArchiveDependency` or None if a corresponding object
-            could not be found.
         """
 
     def removeArchiveDependency(dependency):
@@ -691,8 +676,8 @@ class IArchivePublic(IHasOwner):
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
 
-        :raises SourceNotFound: if a source package with the given
-            name could not be found.
+        :raises NoSuchSourcePackageName: if a source package with the
+            given name could not be found.
         :return: `ArchivePermission` records for the package sets that
             include the given source package name and to which the given
             person may upload.
@@ -721,8 +706,8 @@ class IArchivePublic(IHasOwner):
         :param direct_permissions: If set only package sets that directly
             include the given source will be considered.
 
-        :raises SourceNotFound: if a source package with the given
-            name could not be found.
+        :raises NoSuchSourcePackageName: if a source package with the
+            given name could not be found.
         :return: `ArchivePermission` records for the package sets that
             include the given source package name and apply to the
             archive in question.
@@ -750,8 +735,8 @@ class IArchivePublic(IHasOwner):
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
 
-        :raises SourceNotFound: if a source package with the given
-            name could not be found.
+        :raises NoSuchSourcePackageName: if a source package with the
+            given name could not be found.
         :return: True if the person is allowed to upload the source package.
         """
 
@@ -763,6 +748,12 @@ class IArchiveView(IHasBuildRecords):
         title=_("Buildd Secret"), required=False,
         description=_("The password used by the builder to access the "
                       "archive."))
+
+    dependencies = exported(
+        CollectionField(
+            title=_("Archive dependencies recorded for this archive."),
+            value_type=Reference(schema=Interface), #Really IArchiveDependency
+            readonly=True))
 
     description = exported(
         Text(
@@ -923,6 +914,19 @@ class IArchiveView(IHasBuildRecords):
             given ids that belong in the archive.
         """
 
+    @operation_parameters(
+        dependency=Reference(schema=Interface)) #Really IArchive. See below.
+    @operation_returns_entry(schema=Interface) #Really IArchiveDependency.
+    @export_read_operation()
+    def getArchiveDependency(dependency):
+        """Return the `IArchiveDependency` object for the given dependency.
+
+        :param dependency: is an `IArchive` object.
+
+        :return: `IArchiveDependency` or None if a corresponding object
+            could not be found.
+        """
+
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
@@ -962,7 +966,7 @@ class IArchiveAppend(Interface):
             the published binaries for each given source should also be
             copied along with the source.
 
-        :raises SourceNotFound: if the source name is invalid
+        :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
         :raises DistroSeriesNotFound: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
@@ -1001,7 +1005,7 @@ class IArchiveAppend(Interface):
             the published binaries for each given source should also be
             copied along with the source.
 
-        :raises SourceNotFound: if the source name is invalid
+        :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
         :raises DistroSeriesNotFound: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.

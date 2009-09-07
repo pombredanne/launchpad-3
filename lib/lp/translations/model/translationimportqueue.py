@@ -145,7 +145,7 @@ class TranslationImportQueueEntry(SQLBase):
     @property
     def sourcepackage(self):
         """See ITranslationImportQueueEntry."""
-        from canonical.launchpad.database import SourcePackage
+        from lp.registry.model.sourcepackage import SourcePackage
 
         if self.sourcepackagename is None or self.distroseries is None:
             return None
@@ -345,8 +345,13 @@ class TranslationImportQueueEntry(SQLBase):
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
 
-        if (potemplate is None and (sourcepackagename is None or
-            self.sourcepackagename.name != sourcepackagename.name)):
+        is_for_distro = self.distroseries is not None
+        know_package = (
+            sourcepackagename is not None and
+            self.sourcepackagename is not None and
+            self.sourcepackagename.name == sourcepackagename.name)
+
+        if potemplate is None and is_for_distro and not know_package:
             # The source package from where this translation doesn't have the
             # template that this translation needs it, and thus, we look for
             # it in a different source package as a second try. To do it, we
@@ -1036,9 +1041,6 @@ class TranslationImportQueue:
             status_clause = (
                 "TranslationImportQueueEntry.status = %s" % sqlvalues(status))
 
-        def product_sort_key(product):
-            return product.name
-
         def distroseries_sort_key(distroseries):
             return (distroseries.distribution.name, distroseries.name)
 
@@ -1049,11 +1051,10 @@ class TranslationImportQueue:
         if status is not None:
             query.append(status_clause)
 
-        products = shortlist(Product.select(
+        products = list(Product.select(
             ' AND '.join(query),
             clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
-            distinct=True))
-        products.sort(key=product_sort_key)
+            distinct=True, orderBy='Product.name'))
 
         distroseriess = shortlist(DistroSeries.select("""
             defer_translation_imports IS FALSE AND

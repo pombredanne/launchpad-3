@@ -76,6 +76,8 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
 from lp.soyuz.model.section import Section
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.sourcepackagerelease import (
@@ -88,7 +90,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
@@ -102,8 +104,7 @@ from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
-    PackagePublishingStatus, pocketsuffix)
+    active_publishing_status, ICanPublishPackages, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import IHasQueueItems, IPackageUploadSet
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
@@ -112,8 +113,6 @@ from lp.registry.interfaces.sourcepackagename import (
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationGoalStatus,
     SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
@@ -142,7 +141,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates, IStructuralSubscriptionTarget)
+        IHasTranslationTemplates)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -850,19 +849,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getSourcesPublishedForAllArchives(self):
         """See `IDistroSeries`."""
-        # Both, PENDING and PUBLISHED sources will be considered for
-        # as PUBLISHED. It's part of the assumptions made in:
-        # https://launchpad.net/soyuz/+spec/build-unpublished-source
-        pend_build_statuses = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED,
-            )
-
         query = """
             SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.status in %s
-         """ % sqlvalues(self, pend_build_statuses)
+            SourcePackagePublishingHistory.status in %s AND
+            Archive.purpose != %s
+         """ % sqlvalues(self, active_publishing_status, ArchivePurpose.COPY)
 
         if not self.isUnstable():
             # Stable distroseries don't allow builds for the release
@@ -1056,17 +1048,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            Archive.id = %s AND
+            BinaryPackagePublishingHistory.archive = Archive.id AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
+            BinaryPackagePublishingHistory.dateremoved is NULL AND
+            Archive.enabled = TRUE
             """ % sqlvalues(self, archive),
             distinct=True,
-            clauseTables=['BinaryPackagePublishingHistory',
-                          'DistroArchSeries',
-                          'BinaryPackageRelease']))
+            clauseTables=[
+                'Archive',
+                'DistroArchSeries',
+                'BinaryPackagePublishingHistory',
+                'BinaryPackageRelease']))
 
         # remove the cache entries for binary packages we no longer want
         for cache in self.getBinaryPackageCaches(archive):
@@ -1078,6 +1074,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def updateCompletePackageCache(self, archive, log, ztm, commit_chunk=500):
         """See `IDistroSeries`."""
+        # Do not create cache entries for disabled archives.
+        if not archive.enabled:
+            return
+
         # Get the set of package names to deal with.
         bpns = IStore(BinaryPackageName).find(
             BinaryPackageName,

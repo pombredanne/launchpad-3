@@ -595,7 +595,7 @@ that is matched by each term. Term matching 50% or more of the total
 rows will be excluded from the final search.
 
     >>> from canonical.database.nl_search import nl_phrase_search
-    >>> from canonical.launchpad.database import Question
+    >>> from lp.answers.model.question import Question
     >>> from canonical.database.sqlbase import quote
 
 More than 50% of the questions matches firefox:

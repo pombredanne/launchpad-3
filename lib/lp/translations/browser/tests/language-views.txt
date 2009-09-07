@@ -1,0 +1,75 @@
+Language Views
+==================
+
+Admin Language
+------------------
+
+    >>> from zope.component import getUtility
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from canonical.launchpad.layers import TranslationsLayer
+
+    >>> language_set = getUtility(ILanguageSet)
+    >>> language = language_set.getLanguageByCode('pt_BR')
+    >>> language_admin_view = create_view(
+    ...     language, '+admin', layer=TranslationsLayer)
+    >>> language_admin_view.initialize()
+
+The language +admin view provides a label and a page_title for the page.
+
+    >>> print language_admin_view.label
+    Edit Portuguese (Brazil) in Launchpad
+
+    >>> print language_admin_view.page_title
+    Edit Portuguese (Brazil) (pt_BR)
+
+The view provides also a cancel_url and a next_url, but they're the same because
+the previous and next steps of editing a language are returning to its index.
+
+    >>> print language_admin_view.cancel_url
+    http://translations.launchpad.dev/+languages/pt_BR
+
+    >>> print language_admin_view.next_url
+    http://translations.launchpad.dev/+languages/pt_BR
+
+
+Add Language
+------------------
+
+    >>> language_add_view = create_view(language_set, '+add', 
+    ...     layer=TranslationsLayer)
+
+    >>> print language_add_view.label
+    Register a language in Launchpad
+
+    >>> print language_add_view.page_title
+    Add a new language to Launchpad
+
+The view provides also a cancel_url and a next_url:
+
+    >>> print language_add_view.cancel_url
+    http://translations.launchpad.dev/+languages
+
+    >>> print language_add_view.field_names
+    ['code', 'englishname', 'nativename', 'pluralforms', 'pluralexpression', 'visible', 'direction']
+
+    >>> login("admin@canonical.com")
+    >>> form = {
+    ...     'field.code': 'lp_US',
+    ...     'field.englishname': 'Launchpad English',
+    ...     'field.nativename': '',
+    ...     'field.pluralforms': '',
+    ...     'field.pluralexpression': '',
+    ...     'field.visible': True,
+    ...     'field.direction': 'LTR',
+    ...     'field.actions.add': 'Add',
+    ...     }
+
+    >>> language_add_view = create_initialized_view(
+    ...     language_set, '+add', form=form,
+    ...     layer=TranslationsLayer)
+    >>> language_add_view.errors
+    []
+
+    >>> print language_add_view.next_url
+    http://translations.launchpad.dev/+languages/lp_US
+

@@ -13,16 +13,16 @@ him to appoint a translator.
     >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
     >>> browser.open(
     ...   'http://translations.launchpad.dev/+groups/polyglot/')
-    >>> print find_portlet(browser.contents, 'Translation Teams')
+    >>> print find_tag_by_id(browser.contents, "translation-teams-listing")
     <...
-    No translation teams or supervisors have been appointed yet in this
-    group.
+    No translation teams or supervisors have been appointed in this
+    group yet.
     ...
 
 Verify that the appointments form displays, and offers the option to
 appoint a translator.
 
-    >>> browser.getLink('Appoint').click()
+    >>> browser.getLink('Appoint a new translation team').click()
     >>> browser.url
     'http://translations.launchpad.dev/+groups/polyglot/+appoint'
 
@@ -30,14 +30,14 @@ Appoint a translator. Hoary Gnome Team will translate into Abkhazian.
 
     >>> browser.getControl('Language').value=['ab']
     >>> browser.getControl('Translator').value='name21'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Appoint').click()
 
 We should get redirected back to the group page.
 
     >>> browser.url
     'http://translations.launchpad.dev/+groups/polyglot'
 
-    >>> browser.getLink('Appoint').click()
+    >>> browser.getLink('Appoint a new translation team').click()
     >>> browser.url
     'http://translations.launchpad.dev/+groups/polyglot/+appoint'
 
@@ -45,7 +45,7 @@ And let's appoint No Privileges user for Afrikaans too.
 
     >>> browser.getControl('Language').value=['af']
     >>> browser.getControl('Translator').value='no-priv'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Appoint').click()
 
 Now we should see both of those appointments on the polyglot page:
 
@@ -59,10 +59,10 @@ Now we should see both of those appointments on the polyglot page:
 Appointing a new Abkhazian translator must fail gracefully, not crash as
 it used to do (Bug #52991).
 
-    >>> browser.getLink('Appoint').click()
+    >>> browser.getLink('Appoint a new translation team').click()
     >>> browser.getControl('Language').value=['ab']
     >>> browser.getControl('Translator').value='name12'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Appoint').click()
 
 The error means we stay on the appoint page:
 
@@ -79,7 +79,7 @@ membership.
 
     >>> admin_browser.open(
     ...   'http://translations.launchpad.dev/+groups/polyglot/')
-    >>> admin_browser.getLink('Appoint').click()
+    >>> admin_browser.getLink('Appoint a new translation team').click()
     >>> admin_browser.url
     'http://translations.launchpad.dev/+groups/polyglot/+appoint'
 
@@ -87,7 +87,7 @@ Even to edit details of the translation group.
 
     >>> admin_browser.open(
     ...   'http://translations.launchpad.dev/+groups/polyglot/')
-    >>> admin_browser.getLink('Edit translation group details').click()
+    >>> admin_browser.getLink('Change details').click()
     >>> admin_browser.url
     'http://translations.launchpad.dev/+groups/polyglot/+edit'
 
@@ -98,18 +98,18 @@ Normal users, however, are not.
     >>> user_browser.url
     'http://translations.launchpad.dev/+groups/polyglot/'
 
-    >>> user_browser.getLink('Appoint').click()
+    >>> user_browser.getLink('Appoint a new translation team')
     Traceback (most recent call last):
     ...
-    Unauthorized:...
+    LinkNotFoundError
 
     >>> user_browser.open(
     ...   'http://translations.launchpad.dev/+groups/polyglot/')
     >>> user_browser.url
     'http://translations.launchpad.dev/+groups/polyglot/'
 
-    >>> user_browser.getLink('Edit translation group details').click()
+    >>> user_browser.getLink('Change details').click()
     Traceback (most recent call last):
     ...
-    Unauthorized:...
+    LinkNotFoundError
 

@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesAddView',
     'DistroSeriesAdminView',
-    'DistroSeriesBreadcrumbBuilder',
+    'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesPackageSearchView',
@@ -37,12 +37,14 @@ from lp.registry.interfaces.distroseries import (
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
@@ -53,7 +55,8 @@ from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
-class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistroSeries
 
@@ -121,7 +124,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return getUtility(IPackageUploadSet).get(id)
 
 
-class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
     @property
     def text(self):
@@ -267,6 +270,47 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
         return self.context.searchPackages(self.text)
 
 
+class DistroSeriesStatusMixin:
+    """A mixin that provides status field support."""
+
+    def createStatusField(self):
+        """Create the 'status' field.
+
+        Create the status vocabulary according the current distroseries
+        status:
+         * stable   -> CURRENT, SUPPORTED, OBSOLETE
+         * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
+        """
+        stable_status = (
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED,
+            DistroSeriesStatus.OBSOLETE,
+            )
+
+        if self.context.status not in stable_status:
+            terms = [status for status in DistroSeriesStatus.items
+                     if status not in stable_status]
+            terms.append(DistroSeriesStatus.CURRENT)
+        else:
+            terms = stable_status
+
+        status_vocabulary = SimpleVocabulary(
+            [SimpleTerm(item, item.name, item.title) for item in terms])
+
+        return form.Fields(
+            Choice(__name__='status',
+                   title=_('Status'),
+                   vocabulary=status_vocabulary,
+                   description=_("Select the distroseries status."),
+                   required=True))
+
+    def updateDateReleased(self, status):
+        """Update the datereleased field if the status is set to CURRENT."""
+        if (self.context.datereleased is None and
+            status == DistroSeriesStatus.CURRENT):
+            self.context.datereleased = UTC_NOW
+
+
 class DistroSeriesView(BuildRecordsView, QueueItemsView):
 
     def initialize(self):
@@ -308,33 +352,54 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         return True
 
 
-class DistroSeriesEditView(LaunchpadEditFormView):
+class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
     """
     schema = IDistroSeries
     field_names = ['displayname', 'title', 'summary', 'description']
+    custom_widget('status', LaunchpadDropdownWidget)
 
-    def initialize(self):
-        """See `LaunchpadEditFormView`.
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Edit %s details' % self.context.title
 
-        Additionally set the 'label' attribute which will be used in the
-        template.
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        In addition to setting schema fields, also initialize the
+        'status' field. See `createStatusField` method.
         """
-        LaunchpadEditFormView.initialize(self)
-        self.label = 'Change %s details' % self.context.title
+        LaunchpadEditFormView.setUpFields(self)
+        if not self.context.distribution.full_functionality:
+            # This is an IDerivativeDistribution which may set its status.
+            self.form_fields = (
+                self.form_fields + self.createStatusField())
 
     @action("Change")
     def change_action(self, action, data):
         """Update the context and redirects to its overviw page."""
+        if not self.context.distribution.full_functionality:
+            self.updateDateReleased(data.get('status'))
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
         self.next_url = canonical_url(self.context)
 
 
-class DistroSeriesAdminView(LaunchpadEditFormView):
+class DistroSeriesAdminView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     """View class for administering a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
@@ -343,14 +408,20 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
     field_names = ['name', 'version', 'changeslist']
     custom_widget('status', LaunchpadDropdownWidget)
 
-    def initialize(self):
-        """See `LaunchpadEditFormView`.
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Administer %s' % self.context.title
 
-        Additionally set the 'label' attribute which will be used in the
-        template.
-        """
-        LaunchpadEditFormView.initialize(self)
-        self.label = 'Administer %s' % self.context.title
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.
@@ -362,37 +433,6 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
         self.form_fields = (
             self.form_fields + self.createStatusField())
 
-    def createStatusField(self):
-        """Create the 'status' field.
-
-        Create the status vocabulary according the current distroseries
-        status:
-         * stable   -> CURRENT, SUPPORTED, OBSOLETE
-         * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
-        """
-        stable_status = (
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED,
-            DistroSeriesStatus.OBSOLETE,
-            )
-
-        if self.context.status not in stable_status:
-            terms = [status for status in DistroSeriesStatus.items
-                     if status not in stable_status]
-            terms.append(DistroSeriesStatus.CURRENT)
-        else:
-            terms = stable_status
-
-        status_vocabulary = SimpleVocabulary(
-            [SimpleTerm(item, item.name, item.title) for item in terms])
-
-        return form.Fields(
-            Choice(__name__='status',
-                   title=_('Status'),
-                   vocabulary=status_vocabulary,
-                   description=_("Select the distroseries status."),
-                   required=True))
-
     @action("Change")
     def change_action(self, action, data):
         """Update the context and redirects to its overviw page.
@@ -400,11 +440,7 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
         Also, set 'datereleased' when a unstable distroseries is made
         CURRENT.
         """
-        status = data.get('status')
-        if (self.context.datereleased is None and
-            status == DistroSeriesStatus.CURRENT):
-            self.context.datereleased = UTC_NOW
-
+        self.updateDateReleased(data.get('status'))
         self.updateContextFromData(data)
 
         self.request.response.addInfoNotification(
@@ -418,12 +454,16 @@ class DistroSeriesAddView(LaunchpadFormView):
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description', 'version',
         'parent_series']
-    label = "Register a new series"
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Register a series in %s' % self.context.displayname
 
     @property
     def page_title(self):
         """The page title."""
-        return 'Register a series in %s' % self.context.displayname
+        return self.label
 
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):

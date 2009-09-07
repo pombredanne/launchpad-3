@@ -228,7 +228,7 @@ method.
 
 Verify that empty packages have a size of zero.
 
-    >>> from canonical.launchpad.database import SourcePackageName
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> linux_src = SourcePackageName.selectOneBy(
     ...     name="linux-source-2.6.15")
     >>> spr = SourcePackageRelease.selectOneBy(
@@ -301,7 +301,7 @@ Once the SourcePackageRelease in question gets copied to a public
 archive, let's say Ubuntu primary archive, it will become publicly
 available.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
 
     >>> public_publication = private_publication.copyTo(

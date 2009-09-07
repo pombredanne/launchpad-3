@@ -288,7 +288,7 @@ class TestTemplatePrecedence(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestTemplatePrecedence, self).setUp(user='mark@hbd.com')
+        super(TestTemplatePrecedence, self).setUp(user='mark@example.com')
         self.product = self.factory.makeProduct()
         self.product.official_rosetta = True
         self.trunk = self.product.getSeries('trunk')

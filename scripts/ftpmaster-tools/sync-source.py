@@ -31,19 +31,19 @@ import urllib
 
 import _pythonpath
 import dak_utils
-from syncorigins import origins
+from _syncorigins import origins
 
 from zope.component import getUtility
 from contrib.glock import GlobalLock
 
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, PackagePublishingStatus,
-    PackagePublishingPocket)
+    IDistributionSet, IPersonSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 reject_message = ""

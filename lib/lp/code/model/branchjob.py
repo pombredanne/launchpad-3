@@ -46,6 +46,7 @@ from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import BaseRunnableJob
 from lp.registry.model.productseries import ProductSeries
 from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
@@ -54,8 +55,8 @@ from lp.code.enums import (
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
     IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
-    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRevisionMailJobSource,
-    IRosettaUploadJob, IRosettaUploadJobSource)
+    IReclaimBranchSpaceJobSource, IRevisionsAddedJob, IRevisionMailJob,
+    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.translations.interfaces.translationimportqueue import (
@@ -154,7 +155,7 @@ class BranchJob(SQLBase):
         self.job.destroySelf()
 
 
-class BranchJobDerived(object):
+class BranchJobDerived(BaseRunnableJob):
 
     delegates(IBranchJob)
 
@@ -180,6 +181,16 @@ class BranchJobDerived(object):
                 BranchJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
+
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars =  BaseRunnableJob.getOopsVars(self)
+        vars.extend([
+            ('branch_job_id', self.context.id),
+            ('branch_job_type', self.context.job_type.title)])
+        if self.context.branch is not None:
+            vars.append(('branch_name', self.context.branch.unique_name))
+        return vars
 
 
 class BranchDiffJob(BranchJobDerived):
@@ -336,6 +347,7 @@ class RevisionMailJob(BranchDiffJob):
 
 class RevisionsAddedJob(BranchJobDerived):
     """A job for sending emails about added revisions."""
+    implements(IRevisionsAddedJob)
 
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
@@ -550,6 +562,10 @@ class RevisionsAddedJob(BranchJobDerived):
                 outf.write('  proposed by: %s\n' %
                            proposer.unique_displayname)
                 for review in bmp.votes:
+                    # If comment is None, this is a request for a review, not
+                    # a completed review.
+                    if review.comment is None:
+                        continue
                     outf.write('  review: %s - %s\n' %
                         (review.comment.vote.title,
                          review.reviewer.unique_displayname))
@@ -809,7 +825,7 @@ class RosettaUploadJob(BranchJobDerived):
         """See `IRosettaUploadJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.using(BranchJob, Job).find((BranchJob), And(
-            Job.id == BranchJob.id,
+            Job.id == BranchJob.jobID,
             BranchJob.branch == branch,
             BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
             Job._status != JobStatus.COMPLETED,

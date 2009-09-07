@@ -23,10 +23,11 @@ from sqlobject import SQLObjectNotFound
 
 import canonical
 from canonical.config import config
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lazr.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.database import DistributionMirror, DistroSeries
+from lp.registry.model.distributionmirror import DistributionMirror
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.scripts import distributionmirror_prober
 from lp.registry.scripts.distributionmirror_prober import (
     ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,

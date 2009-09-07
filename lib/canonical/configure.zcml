@@ -19,6 +19,7 @@
     <include package="lp.services.inlinehelp" file="meta.zcml" />
     <include package="lp.services.openid" />
     <include package="lp.services.job" />
+    <include package="lp.services.scripts" />
     <include package="lp.services.worlddata" />
     <include package="lazr.uri" />
     <include package="canonical.librarian" />
@@ -82,7 +83,7 @@
          virtual host layers.  The directives come in pairs.
          The separate registration for the resources namespace (@@) is needed
          because otherwise the lookup for /@@/ will fail because the
-         layer-specifif defaultView directive also registers the 
+         layer-specific defaultView directive also registers the 
          default view name as an unnamed adapter.
          -->
       -->

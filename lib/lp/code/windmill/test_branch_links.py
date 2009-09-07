@@ -19,7 +19,7 @@ def test_inline_branch_bug_link_unlink():
     lpuser.FOO_BAR.ensure_login(client)
 
     client.open(
-        url=windmill.settings['TEST_URL'] + '/~sabdfl/firefox/release--0.9.1')
+        url=windmill.settings['TEST_URL'] + '/~mark/firefox/release--0.9.1')
     client.waits.forElement(id=u'linkbug', timeout=u'10000')
     client.click(id=u'linkbug')
 

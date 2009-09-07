@@ -77,10 +77,10 @@ tiny 2-column content classes and force the users to retrieve those.
 Other properties are shortcuts to the source package's properties:
 
     >>> print spph.package_creator
-    <Person at ... sabdfl (Mark Shuttleworth)>
+    <Person at ... mark (Mark Shuttleworth)>
 
     >>> print spph.package_maintainer
-    <Person at ... sabdfl (Mark Shuttleworth)>
+    <Person at ... mark (Mark Shuttleworth)>
 
     >>> print spph.package_signer
     <Person at ... name16 (Foo Bar)>
@@ -216,8 +216,8 @@ There are no longer any unpublished builds for the source package:
 If a build is deleted, it does not cause the build status summary to change:
 
     >>> from lp.soyuz.interfaces.publishing import IPublishingSet
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> ignored = getUtility(IPublishingSet).requestDeletion([spph], sabdfl)
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> ignored = getUtility(IPublishingSet).requestDeletion([spph], mark)
     >>> import transaction
     >>> transaction.commit()
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
@@ -303,7 +303,7 @@ The archive index is also available in in compressed formats.
     Binary: alsa-mixer
     Version: 1.0.8-1ubuntu1
     Section: base
-    Maintainer: Mark Shuttleworth <sabdfl@hbd.com>
+    Maintainer: Mark Shuttleworth <mark@example.com>
     Architecture: all
     Standards-Version: 3.6.2
     Format: 1.0
@@ -339,8 +339,8 @@ requestDeletion requires a removed_by (IPerson) and optionally a
 removal_comment argument.
 
     >>> from zope.component import getUtility
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> modified_spph = spph.requestDeletion(sabdfl, "testing deletion")
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> modified_spph = spph.requestDeletion(mark, "testing deletion")
 
 Inspecting the modified record shows it's ready for domination:
 
@@ -354,7 +354,7 @@ Inspecting the modified record shows it's ready for domination:
     True
 
     >>> print modified_spph.removed_by.name
-    sabdfl
+    mark
 
     >>> print modified_spph.removal_comment
     testing deletion
@@ -384,7 +384,7 @@ We will use SoyuzTestPublisher to generate coherent publications to
 test this feature. We will create a publication for a source (foo) and
 two architecture-specific binaries in ubuntu/breezy-autotest.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> source = test_publisher.getPubSource(
     ...     architecturehintlist='any',
     ...     status=PackagePublishingStatus.PUBLISHED,
@@ -531,7 +531,7 @@ The same happens when we delete the i386 binary, so no binaries are
 published in the original location.
 
     >>> deleted = source.getPublishedBinaries()[0].requestDeletion(
-    ...     sabdfl, "go")
+    ...     mark, "go")
     >>> syncUpdate(deleted)
 
     >>> len(source.getPublishedBinaries())

@@ -53,7 +53,7 @@ Let's click on the first "Read more..." link.
 The whole comment is visible on this page:
 
     >>> browser.title
-    'Bug #2 - Comment #1'
+    'Comment 1 for bug 2'
 
     >>> print_comments(browser.contents) #doctest: -ELLIPSIS
     <div class="boardCommentBody">
@@ -107,7 +107,7 @@ changes to that test.
     ...     "T2PIWy0CUJsX8RXSt/M51WE=\n"
     ...     "=J2S5\n"
     ...     "-----END PGP SIGNATURE-----\n")
-    >>> user_browser.getControl('Save Changes', index=-1).click()
+    >>> user_browser.getControl('Post Comment', index=-1).click()
 
 No Privileges Person is authenticated in user_browser, so he can see
 email addresses in messages.

@@ -9,8 +9,7 @@ from windmill.authoring import WindmillTestClient
 
 BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/%s'
 SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'
-SAMPLE_PERSON_CLASS = u'subscriber-name12'
-FOO_BAR_CLASS = u'subscriber-name16'
+PERSON_LINK = u'//div[@id="subscribers-links"]/div/a[@name="%s"]'
 
 def test_inline_subscriber():
     """Test inline subscribing on bugs pages.
@@ -42,10 +41,10 @@ def test_inline_subscriber():
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
-    client.asserts.assertNode(classname=SAMPLE_PERSON_CLASS)
+    client.asserts.assertNode(xpath=PERSON_LINK % u'Sample Person')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator=u'style.backgroundImage|url(/@@/remove)')
+        validator=u'className|remove')
 
     # Make sure the unsubscribe link also works, that
     # the person's named is removed from the subscriber's list,
@@ -56,8 +55,8 @@ def test_inline_subscriber():
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator=u'style.backgroundImage|url(/@@/add)')
-    client.asserts.assertNotNode(classname=SAMPLE_PERSON_CLASS)
+        validator=u'className|add')
+    client.asserts.assertNotNode(xpath=PERSON_LINK % u'Sample Person')
 
     # Subscribe again in order to check that the minus icon
     # next to the subscriber's name works as an inline unsubscribe link.
@@ -65,14 +64,14 @@ def test_inline_subscriber():
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
-    client.click(id=u'unsubscribe-icon-name12')
+    client.click(id=u'unsubscribe-icon-subscriber-12')
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator=u'style.backgroundImage|url(/@@/add)')
-    client.asserts.assertNotNode(classname=SAMPLE_PERSON_CLASS)
+        validator=u'className|add')
+    client.asserts.assertNotNode(xpath=PERSON_LINK % u'Sample Person')
 
     # Test inline subscribing of others by subscribing Ubuntu Team.
     # To confirm, look for the Ubuntu Team element after subscribing.
@@ -92,7 +91,7 @@ def test_inline_subscriber():
     client.click(xpath=search_result_xpath)
     client.waits.forElement(
         id=u'subscribers-links', timeout=FOR_ELEMENT)
-    client.asserts.assertNode(classname=u'subscriber-ubuntu-team')
+    client.asserts.assertNode(xpath=PERSON_LINK % u'Ubuntu Team')
 
     # The same team cannot be subscribed again.
     client.click(link=u'Subscribe someone else')
@@ -119,10 +118,18 @@ def test_inline_subscriber():
     client.click(
         xpath=u'//div[@class="yui-lazr-formoverlay-actions"]/button[2]')
 
+    # If we subscribe the user again, the icon should still be the person icon.
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertProperty(
+        xpath=(PERSON_LINK % u'Sample Person') + '/span',
+        validator=u'className|person')
+
+
     # Sample Person is logged in currently. She is not a
     # member of Ubuntu Team, and so, does not have permission
     # to unsubscribe the team.
-    client.asserts.assertNotNode(id=u'unsubscribe-icon-ubuntu-team')
+    client.asserts.assertNotNode(id=u'unsubscribe-icon-subscriber-17')
 
     # Login Foo Bar who is a member of Ubuntu Team.
     # After login, wait for the page load and subscribers portlet.
@@ -133,9 +140,14 @@ def test_inline_subscriber():
 
     # Now test inline unsubscribing of a team, by ensuring
     # that Ubuntu Team is removed from the subscribers list.
-    client.click(id=u'unsubscribe-icon-ubuntu-team')
+    client.click(id=u'unsubscribe-icon-subscriber-17')
     client.waits.sleep(milliseconds=SLEEP)
-    client.asserts.assertNotNode(classname=u'subscriber-ubuntu-team')
+    client.asserts.assertNotNode(xpath=PERSON_LINK % u'Ubuntu Team')
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
+    client.asserts.assertProperty(
+        xpath=SUBSCRIPTION_LINK,
+        validator=u'className|remove')
 
     # Test unsubscribing via the remove icon for duplicates.
     # First, go to bug 6 and subscribe.
@@ -147,17 +159,17 @@ def test_inline_subscriber():
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
-    client.asserts.assertNode(classname=FOO_BAR_CLASS)
+    client.asserts.assertNode(xpath=PERSON_LINK % u'Foo Bar')
     # Bug 6 is a dupe of bug 5, so go to bug 5 to unsubscribe.
     client.open(url=BUG_URL % 5)
     client.waits.forPageLoad(timeout=PAGE_LOAD)
     client.waits.forElement(
         id=u'subscribers-links', timeout=FOR_ELEMENT)
-    client.click(id=u'unsubscribe-icon-name16')
+    client.click(id=u'unsubscribe-icon-subscriber-16')
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
-    client.asserts.assertNotNode(classname=FOO_BAR_CLASS)
+    client.asserts.assertNotNode(xpath=PERSON_LINK % u'Foo Bar')
     # Then back to bug 6 to confirm the duplicate is also unsubscribed.
     client.open(url=BUG_URL % 6)
     client.waits.forPageLoad(timeout=PAGE_LOAD)
@@ -165,16 +177,49 @@ def test_inline_subscriber():
         id=u'subscribers-links', timeout=FOR_ELEMENT)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
-    client.asserts.assertNotNode(classname=FOO_BAR_CLASS)
+    client.asserts.assertNotNode(xpath=PERSON_LINK % u'Foo Bar')
 
-    # A bit of a corner case here, but make sure that when
-    # a user is subscribed to both the main bug and the dupe
-    # that the user is unsubscribed correctly.
+    # Subscribe/Unsubscribe link handling when dealing
+    # with duplicates...
+    #
+    # First test case, ensure unsubscribing works when
+    # dealing with a duplicate and an indirect subscription.
+    lpuser.SAMPLE_PERSON.ensure_login(client)
+    # Go to bug 6, the dupe, and subscribe.
+    client.open(url=BUG_URL % 6)
+    client.waits.forPageLoad(timeout=PAGE_LOAD)
+    client.waits.forElement(
+        id=u'subscribers-links', timeout=FOR_ELEMENT)
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
+    # Now back to bug 5.
     client.open(url=BUG_URL % 5)
     client.waits.forPageLoad(timeout=PAGE_LOAD)
     client.waits.forElement(
         id=u'subscribers-links', timeout=FOR_ELEMENT)
-    # Subscribe to the main bug, bug 5.
+    # Confirm there are 2 subscriber links: one in duplicate subscribers,
+    # and one in indirect subscribers.
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-from-duplicates"]'
+               '/div/a[@name="Sample Person"]'))
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-indirect"]'
+               '/div/a[text() = "Sample Person"]'))
+    # Clicking "Unsubscribe" successfully removes the duplicate subscription,
+    # but the indirect subscription remains.
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertNotNode(
+        xpath=(u'//div[@id="subscribers-from-duplicates"]'
+               '/div/a[@name="Sample Person"]'))
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-indirect"]'
+               '/div/a[text() = "Sample Person"]'))
+
+    # Second test case, confirm duplicate handling is correct between direct
+    # and duplicate subscriptions.  Subscribe directly to bug 5.
     client.click(xpath=SUBSCRIPTION_LINK)
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
@@ -185,34 +230,30 @@ def test_inline_subscriber():
     client.waits.forElement(
         id=u'subscribers-links', timeout=FOR_ELEMENT)
     client.click(xpath=SUBSCRIPTION_LINK)
-    # Now back to bug 5.  The first unsubscribe should remove
-    # the current bug direct subscription.
-    client.open(url=BUG_URL % 5)
-    client.waits.forPageLoad(timeout=PAGE_LOAD)
-    client.waits.forElement(
-        id=u'subscribers-links', timeout=FOR_ELEMENT)
+    client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
-    # Confirm there are 2 subscriber links: one in direct subscribers,
-    # and one in duplicate subscribers.
+    # Now back to bug 5. Confirm there are 2 subscriptions.
+    client.open(url=BUG_URL % 5)
     client.asserts.assertNode(
         xpath=(u'//div[@id="subscribers-links"]'
-               '/div/a[@name="Foo Bar"]'))
+               '/div/a[@name="Sample Person"]'))
     client.asserts.assertNode(
         xpath=(u'//div[@id="subscribers-from-duplicates"]'
-               '/div/a[@name="Foo Bar"]'))
-    # The first click unsubscribes the direct subscription, leaving the dupe.
+               '/div/a[@name="Sample Person"]'))
+    # The first click unsubscribes the direct subscription, leaving
+    # the duplicate subscription.
     client.click(xpath=SUBSCRIPTION_LINK)
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertNotNode(
         xpath=(u'//div[@id="subscribers-links"]'
-               '/div/a[@name="Foo Bar"]'))
+               '/div/a[@name="Sample Person"]'))
     client.asserts.assertNode(
         xpath=(u'//div[@id="subscribers-from-duplicates"]'
-               '/div/a[@name="Foo Bar"]'))
-    # The second unsubscribe removes the dupe/
+               '/div/a[@name="Sample Person"]'))
+    # The second unsubscribe removes the duplicate, too.
     client.click(xpath=SUBSCRIPTION_LINK)
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertNotNode(
         xpath=(u'//div[@id="subscribers-from-duplicates"]'
-               '/div/a[@name="Foo Bar"]'))
+               '/div/a[@name="Sample Person"]'))

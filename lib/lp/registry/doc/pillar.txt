@@ -45,7 +45,7 @@ use the special getByName() method which returns active/inactive pillars..
     True
     >>> IProject.providedBy(pillar_set['gimp'])
     True
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> pillar_set['gimp'].active = False
     >>> 'gimp' in pillar_set
     False
@@ -169,7 +169,7 @@ And the same is true for Colin Watson on the Guadalinex distribution.
     Unauthorized:...
 
     # Login as Mark again, to not upset remaining tests.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
 
 
 == Searching for Pillars ==
@@ -229,7 +229,7 @@ by that pillar name
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProjectSet)
-    >>> from canonical.launchpad.database import PillarName
+    >>> from lp.registry.model.pillar import PillarName
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> gnome = getUtility(IProjectSet).getByName('gnome')

@@ -135,9 +135,6 @@ helpful message.
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been mirrored yet.
-    >>> print_navigation_links(browser.contents)
-    Details
-    Merge Proposals: http://code.launchpad.dev/~name12/firefox/main/+merges
 
 We don't want to use the word 'mirrored' for hosted or imported branches,
 because those branches are only mirrored internally.
@@ -146,17 +143,11 @@ because those branches are only mirrored internally.
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been pushed to yet.
-    >>> print_navigation_links(browser.contents)
-    Details
-    Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/pushed/+merges
 
     >>> browser.open('http://code.launchpad.dev/~vcs-imports/evolution/main')
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been imported yet.
-    >>> print_navigation_links(browser.contents)
-    Details
-    Merge Proposals: http://code.launchpad.dev/~vcs-imports/evolution/main/+merges
 
 If a branch has been mirrored, but not scanned, we display a different message.
 This is helpful particularly for hosted and imported branches, which are
@@ -166,10 +157,6 @@ available for download as soon as they are published.
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been scanned yet.
-    >>> print_navigation_links(browser.contents)
-    Details
-    Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/mirrored/+merges
-    Source Code: http://bazaar.launchpad.dev/~name12/gnome-terminal/mirrored/files
 
 If a branch has been mirrored and scanned, and has no revisions, then it is
 empty.
@@ -178,10 +165,6 @@ empty.
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch is empty.
-    >>> print_navigation_links(browser.contents)
-    Details
-    Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges
-    Source Code: http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned/files
 
 Since this branch's product has more than one branch, the links to propose
 it for merging are shown.
@@ -297,13 +280,9 @@ The codebrowse link only appears for branches that have revisions.
     ...     browser.contents, "recent-revisions"))
     Recent revisions
     This branch is empty.
-    >>> browser.getLink('Browse code')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
 
-Sample Person's junk branch has some revisions, so the 'Browse code'
-link is shown.
+Sample Person's junk branch has some revisions, so the revisions are linked to
+the revisions are linked to the code.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/+junk/junk.dev')
@@ -311,8 +290,8 @@ link is shown.
     ...     browser.contents, "recent-revisions").dl)
     11. By author1 on ...
     6. By foo... fix bug in bar...
-    >>> print browser.getLink('Source Code').url
-    http://bazaar.launchpad.dev/~name12/+junk/junk.dev/files
+    >>> print browser.getLink('11').url
+    http://bazaar.launchpad.dev/~name12/+junk/junk.dev/revision/11
 
 In addition, there is a "All revisions" link that links to the
 changelog view in codebrowse.
@@ -327,10 +306,6 @@ is able to see the branch.
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open(
     ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
-    >>> browser.getLink('Browse code')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
 
 
 == Download URL ==
@@ -433,7 +408,7 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print_location(browser.contents)
-    Hierarchy: Launchpad > GNOME Terminal
+    Hierarchy: None displayed
     Tabs:
     * Overview - http://launchpad.dev/gnome-terminal
     * Code (selected) - http://code.launchpad.dev/gnome-terminal
@@ -445,7 +420,7 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
 
     >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print_location(browser.contents)
-    Hierarchy: Launchpad > Sample Person
+    Hierarchy: None displayed
     Tabs:
     * Overview - http://launchpad.dev/~name12
     * Code (selected) - http://code.launchpad.dev/~name12

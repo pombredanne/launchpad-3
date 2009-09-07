@@ -10,7 +10,8 @@ from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail.basemailer import BaseMailer
 
@@ -32,7 +33,8 @@ class RecipientReason:
     def __init__(self, subscriber, recipient, branch, mail_header,
                  reason_template, merge_proposal=None,
                  max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF,
-                 branch_identity_cache=None):
+                 branch_identity_cache=None,
+                 review_level=CodeReviewNotificationLevel.FULL):
         self.subscriber = subscriber
         self.recipient = recipient
         self.branch = branch
@@ -43,6 +45,7 @@ class RecipientReason:
         if branch_identity_cache is None:
             branch_identity_cache = {}
         self.branch_identity_cache = branch_identity_cache
+        self.review_level = review_level
 
     def _getBranchIdentity(self, branch):
         """Get the branch identity out of the cache, or generate it."""
@@ -62,7 +65,8 @@ class RecipientReason:
             subscription.person, recipient, subscription.branch, rationale,
             '%(entity_is)s subscribed to branch %(branch_name)s.',
             merge_proposal, subscription.max_diff_lines,
-            branch_identity_cache=branch_identity_cache)
+            branch_identity_cache=branch_identity_cache,
+            review_level=subscription.review_level)
 
     @classmethod
     def forReviewer(cls, vote_reference, recipient,
@@ -322,9 +326,10 @@ class BranchMailer(BaseMailer):
         """
         if not self._includeDiff(email):
             return
+        # Using .txt as a file extension makes Gmail display it inline.
         ctrl.addAttachment(
             self.diff, content_type='text/x-diff', inline=True,
-                filename='revision.diff')
+                filename='revision-diff.txt')
 
     @staticmethod
     def _format_user_address(user):

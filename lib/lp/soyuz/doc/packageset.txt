@@ -557,32 +557,15 @@ use, which enforces the user to be an admin or a member of the "techboard"
 (Ubuntu Technical Board) team.
 
     >>> from zope.security.checker import canAccess
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     TeamMembershipStatus)
     >>> restricted_methods = ('new',)
-
-If, for some reason, the techboard team is missing, the security adapter
-will not allow access and generates an OOPS.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, TeamSubscriptionPolicy)
-    >>> personset = getUtility(IPersonSet)
-    >>> login('js@example.com')
-    >>> from zope.app.error.interfaces import IErrorReportingUtility
-    >>> report = getUtility(IErrorReportingUtility).getLastOopsReport()
-    >>> canAccess(ps_factory, 'new')
-    False
-    >>> report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
-    >>> print report.id == report2.id
-    False
-    >>> print report2.value
-    'techboard' team is missing, has it been renamed?
-
-Set up the techboard team:
-
-    >>> login("foo.bar@canonical.com")
-    >>> owner = personset.getByName("name16")
-    >>> techboard = personset.newTeam(
-    ...     owner, "techboard", "techboard",
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
+    >>> techboard = removeSecurityProxy(techboard)
 
 Ordinary users have no access:
 
@@ -598,7 +581,9 @@ Admins have access:
 
 Now add "test@canonical.com" to the techboard team and log in as him.
 
-    >>> person2.join(techboard)
+    >>> techboard.addMember(
+    ...     person2, reviewer=person2, status=TeamMembershipStatus.APPROVED,
+    ...     force_team_add=True)
     >>> login_person(person2)
 
 Create a new package set.
@@ -837,29 +822,29 @@ an uploader for 'firefox'.
 Ulploaders with explicit permissions will be listed along with the other
 uploaders.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
+    >>> mark = getUtility(IPersonSet).getByName("mark")
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     ubuntu_archive, sabdfl, firefox_ps, True)
+    ...     ubuntu_archive, mark, firefox_ps, True)
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(ubuntu_archive, firefox_ps))
-    primary     sabdfl:      firefox ->           UPLOAD (explicit)
+    primary     mark:      firefox ->           UPLOAD (explicit)
     primary    juergen:      firefox ->           UPLOAD (implicit)
 
 Persons can have both explicit or non-explicit permissions for package sets.
 
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     ubuntu_archive, sabdfl, thunderbird_ps)
+    ...     ubuntu_archive, mark, thunderbird_ps)
     >>> print_permission(
-    ...     ap_set.packagesetsForUploader(ubuntu_archive, sabdfl))
-    primary     sabdfl:      firefox ->           UPLOAD (explicit)
-    primary     sabdfl:  thunderbird ->           UPLOAD (implicit)
+    ...     ap_set.packagesetsForUploader(ubuntu_archive, mark))
+    primary     mark:      firefox ->           UPLOAD (explicit)
+    primary     mark:  thunderbird ->           UPLOAD (implicit)
 
 Sometimes it's handy to know what permissions apply for a given source
 package irrespective of the person.
 
     >>> print_permission(
     ...     ap_set.packagesetsForSource(ubuntu_archive, 'mozilla-firefox'))
-    primary     sabdfl:      firefox ->           UPLOAD (explicit)
+    primary     mark:      firefox ->           UPLOAD (explicit)
     primary    juergen:      firefox ->           UPLOAD (implicit)
 
 If we make the 'mozilla' package set include 'firefox' again and ask the same
@@ -872,7 +857,7 @@ source package (directly)).
     >>> print_permission(
     ...     ap_set.packagesetsForSource(
     ...         ubuntu_archive, 'mozilla-firefox', direct_permissions=False))
-    primary     sabdfl:      firefox ->           UPLOAD (explicit)
+    primary     mark:      firefox ->           UPLOAD (explicit)
     primary     hacker:      mozilla ->           UPLOAD (implicit)
     primary    juergen:      firefox ->           UPLOAD (implicit)
 
@@ -880,34 +865,34 @@ Attempting to create an explicit permission when a non-explicit one exists
 already will fail.
 
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     ubuntu_archive, sabdfl, thunderbird_ps, True)
+    ...     ubuntu_archive, mark, thunderbird_ps, True)
     Traceback (most recent call last):
     ...
     ValueError: Permission for package set 'thunderbird' already exists for
-    sabdfl but with a different 'explicit' flag value (False).
+    mark but with a different 'explicit' flag value (False).
 
 And the other way around:
 
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     ubuntu_archive, sabdfl, firefox_ps)
+    ...     ubuntu_archive, mark, firefox_ps)
     Traceback (most recent call last):
     ...
     ValueError: Permission for package set 'firefox' already exists for
-    sabdfl but with a different 'explicit' flag value (True).
+    mark but with a different 'explicit' flag value (True).
 
 Removing package set based permissions is straight-forward.
 
     >>> ap_set.deletePackagesetUploader(
-    ...     ubuntu_archive, sabdfl, firefox_ps, True)
+    ...     ubuntu_archive, mark, firefox_ps, True)
     >>> print_permission(
-    ...     ap_set.packagesetsForUploader(ubuntu_archive, sabdfl))
-    primary     sabdfl:  thunderbird ->           UPLOAD (implicit)
+    ...     ap_set.packagesetsForUploader(ubuntu_archive, mark))
+    primary     mark:  thunderbird ->           UPLOAD (implicit)
 
 
     >>> ap_set.deletePackagesetUploader(
-    ...     ubuntu_archive, sabdfl, thunderbird_ps)
+    ...     ubuntu_archive, mark, thunderbird_ps)
     >>> print_permission(ap_set.packagesetsForUploader(
-    ...     ubuntu_archive, sabdfl))
+    ...     ubuntu_archive, mark))
 
 An attempt to look up package set based permission by something else than
 by a package set (name) results in a failure.
@@ -959,8 +944,8 @@ the 'techboard' team).
 
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(ubuntu_archive, kde_ps))
-    primary    juergen:          kde ->           UPLOAD (implicit)
     primary  techboard:          kde ->           UPLOAD (implicit)
+    primary    juergen:          kde ->           UPLOAD (implicit)
 
 
 == Checking package set based upload permissions ==
@@ -1019,7 +1004,7 @@ as follows:
     ...         ubuntu_archive, 'vapour-ware', person2))
     Traceback (most recent call last):
     ...
-    SourceNotFound: No such source package: 'vapour-ware'.
+    NoSuchSourcePackageName: No such source package: 'vapour-ware'.
 
 Now for the verdict: is 'hacker' allowed to upload 'mozilla-firefox'?
 

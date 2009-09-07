@@ -1,3 +1,39 @@
+launchpad-buildd (50) dapper-cat; urgency=low
+
+  * sbuild: Change all invocations of apt and dpkg to occur inside
+    the build chroot, rather than happening outside the chroot with
+    a bunch of flags to operate on data files in the chroot.  This
+    should clear up issues we see with mismatched host toolchains.
+  * sbuild: Revert the above in the case of "apt-get source" which
+    doesn't require any fancy features in the chroot and, frankly,
+    is much easier to manage if it's executed externally.
+  * scan-for-processes: Bring in a change from production to make
+    sure that we follow symlinks in our search for process roots.
+  * sbuild-package: Output NR_PROCESSORS in the build logs, for
+    sightly easier debugging of possible parallel build bugs.
+  * update-debian-chroot: Stop using chapt-get, and instead chroot
+    into the build chroot and call the native apt-get there.
+  * update-debian-chroot: Cargo-cult the linux32 magic from the
+    sbuild wrapper to set our personality on chroot upgrades.
+  * mount-chroot: Mount sys in the chroot too.  While it shouldn't
+    be, strictly-speaking, required for anything, it's nice to have.
+  * chapt-get, slave_chroot_tool.py: Delete both as obsolete cruft.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Fri, 24 Jul 2009 07:21:30 -0600
+
+launchpad-buildd (49) dapper-cat; urgency=low
+
+  * sbuild.conf: bump default automake from automake1.8 to automake1.9
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Fri, 12 Sep 2008 08:54:24 -0600
+
+launchpad-buildd (48) dapper-cat; urgency=low
+
+  * sbuild-package: If we're an amd64 host system, but being used
+    to build i386 or lpia, use linux32 to pretend to be i686.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Fri, 12 Sep 2008 08:12:34 -0600
+
 launchpad-buildd (47) dapper-cat; urgency=low
 
   * slave.py: If the logfile doesn't currently exist on disk when

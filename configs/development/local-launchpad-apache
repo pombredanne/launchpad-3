@@ -97,6 +97,21 @@ RewriteLock /var/tmp/rewrite-lock
   </Directory>
 </VirtualHost>
 
+<VirtualHost 127.0.0.88:80>
+  ServerName ppa.launchpad.dev
+  ServerAlias private-ppa.launchpad.dev
+  LogLevel debug
+
+  DocumentRoot /var/tmp/ppa
+  <Directory /var/tmp/ppa/>
+    Order Deny,Allow
+    Deny from all
+    Allow from 127.0.0.0/255.0.0.0
+    AllowOverride AuthConfig
+    Options Indexes
+  </Directory>
+</VirtualHost>
+
 <VirtualHost 127.0.0.88:443>
   ServerName launchpad.dev
   ServerAlias *.launchpad.dev

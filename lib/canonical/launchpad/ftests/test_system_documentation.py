@@ -273,6 +273,12 @@ special = {
             tearDown=updateRemoteProductTeardown,
             layer=LaunchpadZopelessLayer
             ),
+    'canonical_url.txt': LayeredDocFileSuite(
+            '../doc/canonical_url.txt',
+            setUp=setUp,
+            tearDown=tearDown,
+            layer=FunctionalLayer,
+            ),
     }
 
 

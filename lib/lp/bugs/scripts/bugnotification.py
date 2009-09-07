@@ -11,8 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import rollback, begin
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
+from canonical.launchpad.helpers import emailPeople, get_email_template
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
@@ -41,8 +40,8 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for address in get_contact_email_addresses(recipient.person):
-                recipients[address] = recipient
+            for email_person in emailPeople(recipient.person):
+                recipients[email_person] = recipient
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
@@ -108,11 +107,14 @@ def construct_email_notifications(bug_notifications):
         if (is_initial_import_notification or
             (bug_message is not None and bug_message.bugwatch is not None)):
             recipients = dict(
-                (address, recipient)
-                for address, recipient in recipients.items()
+                (email_person, recipient)
+                for email_person, recipient in recipients.items()
                 if recipient.person.inTeam(comment_syncing_team))
     bug_notification_builder = BugNotificationBuilder(bug)
-    for address, recipient in recipients.items():
+    sorted_recipients = sorted(
+        recipients.items(), key=lambda t: t[0].preferredemail.email)
+    for email_person, recipient in sorted_recipients:
+        address = str(email_person.preferredemail.email)
         reason = recipient.reason_body
         rationale = recipient.reason_header
 
@@ -125,8 +127,7 @@ def construct_email_notifications(bug_notifications):
         # If the person we're sending to receives verbose notifications
         # we include the description and status of the bug in the email
         # footer.
-        person = recipient.person
-        if person.verbose_bugnotifications:
+        if email_person.verbose_bugnotifications:
             email_template = 'bug-notification-verbose.txt'
             body_data['bug_description'] = bug.description
 

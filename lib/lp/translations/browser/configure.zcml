@@ -62,12 +62,6 @@
             name="+portlet-preflangs"
             template="../templates/object-portlet-preflangs.pt"/>
         <browser:page
-            name="+portlet-countrylangs"
-            template="../templates/object-portlet-countrylangs.pt"/>
-        <browser:page
-            name="+portlet-browserlangs"
-            template="../templates/object-portlet-browserlangs.pt"/>
-        <browser:page
             name="+rosetta-status-legend"
             template="../templates/rosetta-status-legend.pt"/>
     </browser:pages>
@@ -95,21 +89,21 @@
             for="lp.translations.interfaces.translator.ITranslator"
             permission="launchpad.Admin"
             class="lp.translations.browser.translator.TranslatorAdminView"
-            template="../templates/translator-admin.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+edit"
             for="lp.translations.interfaces.translator.IEditTranslator"
             permission="launchpad.Edit"
             class="lp.translations.browser.translator.TranslatorEditView"
-            template="../templates/translator-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+remove"
             for="lp.translations.interfaces.translator.ITranslator"
             permission="launchpad.Edit"
             class="lp.translations.browser.translator.TranslatorRemoveView"
-            template="../templates/translator-remove.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
     </facet>
     <facet
@@ -301,7 +295,7 @@
             module="lp.translations.browser.language"
             classes="
                 LanguageSetContextMenu
-                LanguageContextMenu"/>
+                LanguageNavigationMenu"/>
         <browser:url
             for="canonical.launchpad.interfaces.ILanguage"
             path_expression="code"
@@ -317,7 +311,7 @@
             for="canonical.launchpad.interfaces.ILanguage"
             class="lp.translations.browser.language.LanguageAdminView"
             permission="launchpad.Admin"
-            template="../templates/language-admin.pt"
+            template="../../app/templates/generic-edit.pt"
             name="+admin"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:pages
@@ -351,7 +345,7 @@
             for="canonical.launchpad.interfaces.ILanguageSet"
             class="lp.translations.browser.language.LanguageAddView"
             permission="launchpad.Admin"
-            template="../templates/language-add.pt"
+            template="../../app/templates/generic-edit.pt"
             name="+add"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:navigation
@@ -397,21 +391,21 @@
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             permission="launchpad.Edit"
             template="../templates/potemplate-upload.pt"
-            class="lp.translations.browser.potemplate.POTemplateView"
+            class="lp.translations.browser.potemplate.POTemplateUploadView"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+edit"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateEditView"
             permission="launchpad.Edit"
-            template="../templates/potemplate-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+admin"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateAdminView"
             permission="launchpad.Admin"
-            template="../templates/potemplate-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+export"
@@ -454,6 +448,7 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
             path_expression="name"
+            rootsite="translations"
             parent_utility="lp.translations.interfaces.translationgroup.ITranslationGroupSet"/>
         <browser:pages
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
@@ -463,29 +458,26 @@
             <browser:page
                 template="../templates/translationgroup-index.pt"
                 name="+index"/>
-            
+
             <!-- TranslationGroup portlets -->
-            
+
             <browser:page
-                name="+portlet-relateds"
-                template="../templates/translationgroup-portlet-relateds.pt"/>
-            <browser:page
-                name="+portlet-details"
-                template="../templates/translationgroup-portlet-details.pt"/>
+                name="+portlet-projects"
+                template="../templates/translationgroup-portlet-projects.pt"/>
         </browser:pages>
         <browser:page
             name="+edit"
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
             permission="launchpad.Edit"
             class="lp.translations.browser.translationgroup.TranslationGroupEditView"
-            template="../templates/translationgroup-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+appoint"
             for="lp.translations.interfaces.translationgroup.ITranslationGroup"
             permission="launchpad.Edit"
             class="lp.translations.browser.translationgroup.TranslationGroupAddTranslatorView"
-            template="../templates/translationgroup-appoint.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+reassign"
@@ -503,7 +495,8 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             path_expression="string:+groups"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            rootsite="translations" />
         <browser:defaultView
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             name="+index"
@@ -513,7 +506,7 @@
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             class="lp.translations.browser.translationgroup.TranslationGroupAddView"
             permission="launchpad.Admin"
-            template="../templates/translationgroup-add.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
@@ -581,7 +574,7 @@
         name="+export"
         layer="canonical.launchpad.layers.TranslationsLayer"
         permission="launchpad.ExpensiveRequest"
-        template="../templates/sourcepackage-export.pt"
+        template="../templates/translations-export.pt"
         class="
             lp.translations.browser.sourcepackage.SourcePackageTranslationsExportView"/>
     <browser:page
@@ -680,9 +673,15 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         for="lp.registry.interfaces.productseries.IProductSeries"
         permission="launchpad.AnyPerson"
-        template="../templates/productseries-export.pt"
+        template="../templates/translations-export.pt"
         class="lp.translations.browser.productseries.ProductSeriesTranslationsExportView"/>
-
+    <browser:page
+        name="+link-translations-branch"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        permission="launchpad.Edit"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.translations.browser.productseries.LinkTranslationsBranchView"/>
 
 <!-- Person views -->
 
@@ -724,6 +723,27 @@
             permission="zope.Public"
             template="../templates/hastranslationimports-index.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-review"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-review.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-review-table"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-review-table.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-complete-table"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-complete-table.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 
 <!-- Product views -->
@@ -758,7 +778,7 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.translations.browser.product.ProductChangeTranslatorsView"
         permission="launchpad.Edit"
-        template="../templates/product-translators.pt"
+        template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
@@ -802,14 +822,12 @@
         for="lp.registry.interfaces.project.IProject"
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
-    <browser:editform
+    <browser:page
         name="+changetranslators"
         for="lp.registry.interfaces.project.IProject"
-        schema="lp.registry.interfaces.project.IProject"
-        fields="translationgroup translationpermission"
+        class="lp.translations.browser.project.ProjectChangeTranslatorsView"
         permission="launchpad.Edit"
-        label="Select a new translation group"
-        template="../templates/project-translators.pt"
+        template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 <!-- Distribution -->
@@ -839,13 +857,12 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
-    <browser:editform
+    <browser:page
         name="+settings"
         for="lp.registry.interfaces.distribution.IDistribution"
-        schema="lp.registry.interfaces.distribution.IDistribution"
-        fields="translationgroup translationpermission"
+        class="lp.translations.browser.distribution.DistributionSettingsView"
         permission="launchpad.Edit"
-        template="../templates/distribution-translation-settings.pt"
+        template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -859,7 +876,7 @@
         name="+select-language-pack-admin"
         class="lp.translations.browser.distribution.DistributionLanguagePackAdminView"
         permission="launchpad.TranslationsAdmin"
-        template="../templates/distribution-language-pack-admin.pt"
+        template="../../app/templates/generic-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 <!-- DistroSeries -->
@@ -910,7 +927,7 @@
         permission="launchpad.TranslationsAdmin"
         class="lp.translations.browser.distroseries.DistroSeriesTranslationsAdminView"
         name="+admin"
-        template="../templates/distroseries-translationsadmin.pt"
+        template="../../app/templates/generic-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"

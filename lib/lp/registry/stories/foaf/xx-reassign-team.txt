@@ -12,14 +12,14 @@ launchpad user or team.
     Unauthorized: ...
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.open('http://launchpad.dev/~landscape-developers/+edit')
     >>> browser.getLink('Change owner').click()
     >>> browser.url
     'http://launchpad.dev/~landscape-developers/+reassign'
 
     >>> browser.getControl(name='field.owner').value = 'cprov'
-    >>> browser.getControl(name='existing').value = ['existing']
-    >>> browser.getControl('Change owner').click()
+    >>> browser.getControl(name='field.existing').value = ['existing']
+    >>> browser.getControl('Change').click()
 
 Now we can see the new owner and also the old owner which has been made an
 administrator of the team.
@@ -27,8 +27,9 @@ administrator of the team.
     >>> browser.url
     'http://launchpad.dev/~landscape-developers'
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'team-details'))
-    Team owned by Celso Providelo, created on 2006-07-12
+    ...     find_tag_by_id(browser.contents, 'team-owner'))
+    Owner:
+    Celso Providelo
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))
@@ -51,20 +52,21 @@ Now Sample Person can't change the owner anymore.
 But cprov can.
 
     >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
-    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.open('http://launchpad.dev/~landscape-developers/+edit')
     >>> browser.getLink('Change owner').click()
     >>> browser.url
     'http://launchpad.dev/~landscape-developers/+reassign'
 
     >>> browser.getControl(name='field.owner').value = 'ubuntu-team'
-    >>> browser.getControl(name='existing').value = ['existing']
-    >>> browser.getControl('Change owner').click()
+    >>> browser.getControl(name='field.existing').value = ['existing']
+    >>> browser.getControl('Change').click()
 
     >>> browser.url
     'http://launchpad.dev/~landscape-developers'
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'team-details'))
-    Team owned by Ubuntu Team...
+    ...     find_tag_by_id(browser.contents, 'team-owner'))
+    Owner:
+    Ubuntu Team
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))

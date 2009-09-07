@@ -21,7 +21,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
+from storm.expr import And, Count, Desc, Max, Not, NamedFunc, Or, Select
 from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
@@ -36,6 +36,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
 from lp.services.job.model.job import Job
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
@@ -57,7 +58,7 @@ from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTypeError, CannotDeleteBranch,
+    BranchTargetError, BranchTypeError, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet)
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -113,6 +114,12 @@ class Branch(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_person_not_private_membership, notNull=True)
+
+    def setOwner(self, new_owner, user):
+        """See `IBranch`."""
+        new_namespace = self.target.getNamespace(new_owner)
+        new_namespace.moveBranch(self, user, rename_if_necessary=True)
+
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
@@ -161,6 +168,29 @@ class Branch(SQLBase):
         else:
             target = self.product
         return IBranchTarget(target)
+
+    def setTarget(self, user, project=None, source_package=None):
+        """See `IBranch`."""
+        if project is not None:
+            if source_package is not None:
+                raise BranchTargetError(
+                    'Cannot specify both a project and a source package.')
+            else:
+                target = IBranchTarget(project)
+                if target is None:
+                    raise BranchTargetError(
+                        '%r is not a valid project target' % project)
+        elif source_package is not None:
+            target = IBranchTarget(source_package)
+            if target is None:
+                raise BranchTargetError(
+                    '%r is not a valid source package target' %
+                    source_package)
+        else:
+            target = IBranchTarget(self.owner)
+            # Person targets are always valid.
+        namespace = target.getNamespace(self.owner)
+        namespace.moveBranch(self, user, rename_if_necessary=True)
 
     @property
     def namespace(self):
@@ -229,6 +259,15 @@ class Branch(SQLBase):
 
     landing_targets = SQLMultipleJoin(
         'BranchMergeProposal', joinColumn='source_branch')
+
+    @property
+    def active_landing_targets(self):
+        """Merge proposals not in final states where this branch is source."""
+        store = Store.of(self)
+        return store.find(
+            BranchMergeProposal, BranchMergeProposal.source_branch == self,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
     @property
     def landing_candidates(self):
@@ -319,6 +358,13 @@ class Branch(SQLBase):
 
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
+
+    def scheduleDiffUpdates(self):
+        """See `IBranch`."""
+        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
+        jobs = [UpdatePreviewDiffJob.create(target)
+                for target in self.active_landing_targets]
+        return jobs
 
     # XXX: Tim Penhey, 2008-06-18, bug 240881
     merge_queue = ForeignKey(
@@ -411,6 +457,20 @@ class Branch(SQLBase):
             return self.reviewer
         else:
             return self.owner
+
+    def isPersonTrustedReviewer(self, reviewer):
+        """See `IBranch`."""
+        if reviewer is None:
+            return False
+        # We trust Launchpad admins.
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        # Both the branch owner and the review team are checked.
+        owner = self.owner
+        review_team = self.code_reviewer
+        return (
+            reviewer.inTeam(owner) or
+            reviewer.inTeam(review_team) or
+            reviewer.inTeam(lp_admins))
 
     def latest_revisions(self, quantity=10):
         """See `IBranch`."""

@@ -95,7 +95,7 @@ class IBuilder(IHasOwner):
         description=_('The builder slave title. Should be just a few words.'))
 
     description = Description(
-        title=_('Description'), required=True,
+        title=_('Description'), required=False,
         description=_('The builder slave description, may be several '
                       'paragraphs of text, giving the highlights and '
                       'details.'))
@@ -334,7 +334,9 @@ class IBuilderSet(Interface):
         :param virtualized: boolean, controls which queue to check,
             'virtualized' means PPA.
 
-        :return the size of the queue, integer.
+        :return: a tuple containing the size of the queue, as an integer,
+            and the sum of the jobs 'estimated_build_duration' in queue,
+            as a timedelta or None for empty queues.
         """
 
     def pollBuilders(logger, txn):

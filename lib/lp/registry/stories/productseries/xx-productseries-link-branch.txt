@@ -1,4 +1,5 @@
-= Linking a product series to a branch =
+Linking a product series to a branch
+====================================
 
 To make it a bit more obvious to the newer Launchpad user,
 there is an action item for product series to link to an existing
@@ -6,7 +7,7 @@ bazaar branch.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open('http://launchpad.dev/firefox/trunk')
-    >>> link = sample_browser.getLink('Link to branch')
+    >>> link = sample_browser.getLink('link the branch to this series')
     >>> link
     <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
     >>> link.click()
@@ -33,7 +34,7 @@ Updating the branch takes the user back to the product series page.
     Mozilla Firefox trunk series
     >>> branch = find_tag_by_id(sample_browser.contents, 'branch-details')
     >>> print extract_text(branch)
-    lp://dev/firefox - Sample Person
+    lp://dev/firefox - Sample Person ...
 
 A helpful informational message is also shown to the user.
 

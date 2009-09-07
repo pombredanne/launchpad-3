@@ -26,7 +26,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
     ISeriesSourcePackageBranch)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class SeriesSourcePackageBranch(Storm):
@@ -131,4 +131,5 @@ class SeriesSourcePackageBranchSet:
             SeriesSourcePackageBranch,
             SeriesSourcePackageBranch.distroseries == distroseries.id,
             SeriesSourcePackageBranch.sourcepackagename ==
-            sourcepackagename.id).remove()
+            sourcepackagename.id,
+            SeriesSourcePackageBranch.pocket == pocket).remove()

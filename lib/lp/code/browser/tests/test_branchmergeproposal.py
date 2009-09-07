@@ -8,10 +8,12 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from difflib import unified_diff
 import unittest
 
 import transaction
 from zope.component import getMultiAdapter
+from zope.security.interfaces import Unauthorized
 
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
@@ -148,6 +150,64 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertEqual(
             [charles, bob, albert],
             [review.reviewer for review in requested_reviews])
+
+    def test_user_can_claim_self(self):
+        """Someone cannot claim a review already assigned to them."""
+        albert = self.factory.makePerson()
+        owner = self.bmp.source_branch.owner
+        self._nominateReviewer(albert, owner)
+        login_person(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.requested_reviews[0].user_can_claim)
+
+    def test_user_can_claim_member(self):
+        """Someone can claim a review already assigned to their team."""
+        albert = self.factory.makePerson()
+        review_team = self.factory.makeTeam()
+        albert.join(review_team)
+        owner = self.bmp.source_branch.owner
+        self._nominateReviewer(review_team, owner)
+        login_person(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertTrue(view.requested_reviews[0].user_can_claim)
+
+    def test_user_can_claim_nonmember(self):
+        """A non-member cannot claim a team's review."""
+        albert = self.factory.makePerson()
+        review_team = self.factory.makeTeam()
+        owner = self.bmp.source_branch.owner
+        self._nominateReviewer(review_team, owner)
+        login_person(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.requested_reviews[0].user_can_claim)
+
+    def makeReviewRequest(self, viewer=None, registrant=None):
+        albert = self.factory.makePerson()
+        if registrant is None:
+            registrant = self.bmp.source_branch.owner
+        self._nominateReviewer(albert, registrant)
+        if viewer is None:
+            viewer = albert
+        login_person(viewer)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        return view.requested_reviews[0]
+
+    def test_user_can_reassign_assignee(self):
+        """The user can reassign if they are the assignee."""
+        review_request = self.makeReviewRequest()
+        self.assertTrue(review_request.user_can_reassign)
+
+    def test_user_can_reassign_registrant(self):
+        """The user can reassign if they are the registrant."""
+        registrant = self.factory.makePerson()
+        review_request = self.makeReviewRequest(registrant, registrant)
+        self.assertTrue(review_request.user_can_reassign)
+
+    def test_user_cannot_reassign_random_person(self):
+        """Random people cannot reassign reviews."""
+        viewer = self.factory.makePerson()
+        review_request = self.makeReviewRequest(viewer)
+        self.assertFalse(review_request.user_can_reassign)
 
     def testCurrentReviewOrdering(self):
         # Most recent first.
@@ -371,6 +431,30 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view.initialize()
         return view
 
+    def makeTeamReview(self):
+        owner = self.bmp.source_branch.owner
+        review_team = self.factory.makeTeam()
+        return self.bmp.nominateReviewer(review_team, owner)
+
+    def test_claim_action_team_member(self):
+        """Claiming a review works for members of the requested team."""
+        review = self.makeTeamReview()
+        albert = self.factory.makePerson()
+        albert.join(review.reviewer)
+        login_person(albert)
+        view = self._createView()
+        view.claim_action.success({'review_id': review.id})
+        self.assertEqual(albert, review.reviewer)
+
+    def test_claim_action_non_member(self):
+        """Claiming a review does not work for non-members."""
+        review = self.makeTeamReview()
+        albert = self.factory.makePerson()
+        login_person(albert)
+        view = self._createView()
+        self.assertRaises(Unauthorized, view.claim_action.success,
+                          {'review_id': review.id})
+
     def test_review_diff_with_no_diff(self):
         """review_diff should be None when there is no context.review_diff."""
         view = self._createView()
@@ -379,19 +463,29 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def test_review_diff_utf8(self):
         """A review_diff in utf-8 should be converted to utf-8."""
         text = ''.join(unichr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text.encode('utf-8'))
+        diff_bytes = ''.join(unified_diff('', text)).encode('utf-8')
+        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
-        self.assertEqual(text, self._createView().review_diff)
+        self.assertEqual(diff_bytes.decode('utf-8'),
+                         self._createView().review_diff)
 
     def test_review_diff_all_chars(self):
         """review_diff should work on diffs containing all possible bytes."""
         text = ''.join(chr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text)
+        diff_bytes = ''.join(unified_diff('', text))
+        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
-        self.assertEqual(text.decode('windows-1252', 'replace'),
+        self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          self._createView().review_diff)
+
+    def test_linked_bugs_excludes_mutual_bugs(self):
+        """List bugs that are linked to the source only."""
+        bug = self.factory.makeBug()
+        self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
+        self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
+        self.assertEqual([], self._createView().linked_bugs)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

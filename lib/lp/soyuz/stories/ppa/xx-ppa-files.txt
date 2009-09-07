@@ -14,8 +14,6 @@ PPA.
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     PackagePublishingPocket)
 
 Make the PPA private.
 
@@ -116,8 +114,8 @@ Links to files accessible via +files/ proxy in the Build page.
 
     >>> build_links = [
     ...     ('test-bin_1.0_i386.changes', build.upload_changesfile),
-    ...     (buildlog_name, build.buildlog),
-    ...     (upload_log_name, build.upload_log),
+    ...     ('buildlog', build.buildlog),
+    ...     ('uploadlog', build.upload_log),
     ...     ]
 
     >>> logout()
@@ -174,7 +172,7 @@ builds list is presented.
     >>> no_priv_browser.getLink('PPA').click()
     >>> no_priv_browser.getLink('View build records').click()
     >>> no_priv_browser.getControl(name="build_state").value = ['built']
-    >>> no_priv_browser.getControl("Update").click()
+    >>> no_priv_browser.getControl("Filter").click()
 
     >>> check_urls(no_priv_browser, builds_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')

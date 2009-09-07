@@ -16,7 +16,7 @@ from lp.code.model.branchtarget import (
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
@@ -45,6 +45,24 @@ class BaseBranchTargetTests:
         branch = self.makeBranchForTarget()
         branches = self.target.collection.getBranches()
         self.assertEqual([branch], list(branches))
+
+    def test_retargetBranch_packageBranch(self):
+        # Retarget an existing package branch to this target.
+        branch = self.factory.makePackageBranch()
+        self.target._retargetBranch(removeSecurityProxy(branch))
+        self.assertEqual(self.target, branch.target)
+
+    def test_retargetBranch_productBranch(self):
+        # Retarget an existing product branch to this target.
+        branch = self.factory.makeProductBranch()
+        self.target._retargetBranch(removeSecurityProxy(branch))
+        self.assertEqual(self.target, branch.target)
+
+    def test_retargetBranch_personalBranch(self):
+        # Retarget an existing personal branch to this target.
+        branch = self.factory.makePersonalBranch()
+        self.target._retargetBranch(removeSecurityProxy(branch))
+        self.assertEqual(self.target, branch.target)
 
 
 class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -211,6 +229,33 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_default_merge_target(self):
         # The default merge target is always None.
         self.assertIs(None, self.target.default_merge_target)
+
+    def test_retargetBranch_packageBranch(self):
+        # Retarget an existing package branch to this target.  Override the
+        # mixin tests, and specify the owner of the branch.  This is needed to
+        # match the target as the target is the branch owner for a personal
+        # branch.
+        branch = self.factory.makePackageBranch(owner=self.original)
+        self.target._retargetBranch(removeSecurityProxy(branch))
+        self.assertEqual(self.target, branch.target)
+
+    def test_retargetBranch_productBranch(self):
+        # Retarget an existing product branch to this target.  Override the
+        # mixin tests, and specify the owner of the branch.  This is needed to
+        # match the target as the target is the branch owner for a personal
+        # branch.
+        branch = self.factory.makeProductBranch(owner=self.original)
+        self.target._retargetBranch(removeSecurityProxy(branch))
+        self.assertEqual(self.target, branch.target)
+
+    def test_retargetBranch_personalBranch(self):
+        # Retarget an existing personal branch to this target.  Override the
+        # mixin tests, and specify the owner of the branch.  This is needed to
+        # match the target as the target is the branch owner for a personal
+        # branch.
+        branch = self.factory.makePersonalBranch(owner=self.original)
+        self.target._retargetBranch(removeSecurityProxy(branch))
+        self.assertEqual(self.target, branch.target)
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):

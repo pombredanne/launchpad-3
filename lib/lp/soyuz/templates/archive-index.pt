@@ -182,13 +182,28 @@ tr#package-counters p{
                 </p>
             </td>
           </tr>
-          <tr id="archive-dependencies" tal:condition="archive_active">
+          <tr id="archive-dependencies"
+              tal:condition="view/show_dependencies">
             <th>Build dependencies:</th>
             <td>
+              <p tal:condition="view/has_disabled_dependencies"
+                 class="message warning">
+                This PPA depends on disabled archives. it may cause
+                spurious build failures or binaries with unexpected
+                contents.
+              </p>
               <ul>
                 <li tal:repeat="dependency context/dependencies">
                   <a tal:attributes="href dependency/dependency/fmt:url"
+                     tal:condition="
+                     dependency/dependency/required:launchpad.View"
                      tal:content="dependency/title" />
+                  <span tal:replace="dependency/title"
+                        tal:condition="
+                        not: dependency/dependency/required:launchpad.View" />
+                  <span style="color: red"
+                        tal:condition="not: dependency/dependency/enabled"
+                    >[disabled]</span>
                   (included <span
                    tal:replace="dependency/date_created/fmt:displaydate" />)
                 </li>

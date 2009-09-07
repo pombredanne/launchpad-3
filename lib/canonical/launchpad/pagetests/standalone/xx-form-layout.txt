@@ -21,10 +21,8 @@ The new team form contains an example of a normal text widget.
     >>> print content
     <...
     <tr>
-    <th>
-    <label for="field.name">Name:</label><br />
-    </th>
-    <td>
+    <td colspan="2">
+    <label for="field.name">Name:</label>
     <div>
     <input ... name="field.name" ... />
     </div>
@@ -38,11 +36,9 @@ If the text field is optional, then that is noted after the widget.
     >>> print content
     <...
     <tr>
-    <th>
-    <label for="field.contactemail">Contact Email Address:</label><br />
+    <td colspan="2">
+    <label for="field.contactemail">Contact Email Address:</label>
     <span class="fieldRequired">(Optional)</span>
-    </th>
-    <td>
     <div>
     <input ... id="field.contactemail" ... />
     </div>
@@ -99,8 +95,7 @@ specifying whether your project uses Launchpad Translations.
     >>> print content
     <...
     <tr>
-      <th></th>
-      <td width="100%">
+      <td colspan="2">
         ...
         <input ... name="field.official_rosetta" type="checkbox" ... />
         <label for="field.official_rosetta">Translations...</label>

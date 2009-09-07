@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
@@ -20,10 +17,12 @@
     }
   </style>
   <script type="text/javascript"
+      tal:condition="devmode"
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/branchsubscription.js">
   </script>
   <script type="text/javascript"
+      tal:condition="devmode"
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/branchlinks.js">
   </script>
@@ -31,26 +30,24 @@
 
 <body>
 
-<metal:heading fill-slot="before_nav_menu"
-               tal:content="structure context/@@+heading"/>
-
-<div metal:fill-slot="main"
-     tal:define="context_menu context/menu:context">
-
+<metal:side fill-slot="side">
   <tal:public condition="not: context/private">
-    <div id="privacy" class="aside public">
+    <div id="privacy" class="portlet public">
       This branch is public
     </div>
   </tal:public>
   <tal:public condition="context/private">
-    <div id="privacy" class="aside private">
+    <div id="privacy" class="portlet private">
       This branch is private
     </div>
   </tal:public>
 
-  <div class="aside">
-    <aside tal:content="structure context/@@+portlet-subscribers" />
-  </div>
+  <tal:subscribers replace="structure context/@@+portlet-subscribers" />
+
+</metal:side>
+
+<div metal:fill-slot="main"
+     tal:define="context_menu context/menu:context">
 
     <h1>
       <tal:branch replace="context/bzr_identity" />
@@ -398,10 +395,12 @@
   <div id="related-bugs-and-blueprints">
     <h2>Linked bug reports and blueprints</h2>
     <div id="buglinks" class="actions">
-      <tal:bugs tal:define="branch context;
-                            show_edit python:True;">
-        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
-      </tal:bugs>
+      <div id="buglink-list">
+        <tal:bugs tal:define="branch context;
+                              show_edit python:True;">
+          <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+        </tal:bugs>
+      </div>
 
       <div
         tal:define="link context_menu/link_bug"

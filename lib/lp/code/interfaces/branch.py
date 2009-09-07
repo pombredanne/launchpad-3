@@ -19,6 +19,7 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
     'BranchExists',
+    'BranchTargetError',
     'BranchTypeError',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
@@ -67,7 +68,8 @@ from lp.code.enums import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
@@ -89,7 +91,7 @@ class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
 
     def __init__(self, existing_branch):
-        # XXX: JonathanLange 2008-12-04 spec=package-branches: This error
+        # XXX: TimPenhey 2009-07-12 bug=405214: This error
         # message logic is incorrect, but the exact text is being tested
         # in branch-xmlrpc.txt.
         params = {'name': existing_branch.name}
@@ -105,6 +107,10 @@ class BranchExists(BranchCreationException):
             'for %(context)s.' % params)
         self.existing_branch = existing_branch
         BranchCreationException.__init__(self, message)
+
+
+class BranchTargetError(Exception):
+    """Raised when there is an error determining a branch target."""
 
 
 class CannotDeleteBranch(Exception):
@@ -199,7 +205,8 @@ class BranchURIField(URIField):
     # is removed.
     def normalize(self, input):
         """Be extra-strict about trailing slashes."""
-        input = super(BranchURIField, self).normalize(input)
+        # Can't use super-- this derives from an old-style class
+        input = URIField.normalize(self, input)
         if self.trailing_slash == False and input[-1] == '/':
             # ensureNoSlash() doesn't trim the slash if the path
             # is empty (eg. http://example.com/). Due to the database
@@ -213,7 +220,8 @@ class BranchURIField(URIField):
         from canonical.launchpad.webapp import canonical_url
         from lazr.uri import URI
 
-        super(BranchURIField, self)._validate(value)
+        # Can't use super-- this derives from an old-style class
+        URIField._validate(self, value)
 
         # XXX thumper 2007-06-12:
         # Move this validation code into IBranchSet so it can be
@@ -303,7 +311,7 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner, IHasBranchTarget):
+class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
@@ -380,6 +388,8 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by setPrivate().
     private = exported(
         Bool(
             title=_("Keep branch confidential"), required=False,
@@ -399,17 +409,48 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_("The user that registered the branch."),
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
+
     owner = exported(
         ParticipatingPersonChoice(
             title=_('Owner'),
-            required=True,
+            required=True, readonly=True,
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("Either yourself or a team you are a member of. "
                           "This controls who can modify the branch.")))
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        new_owner=Reference(
+            title=_("The new owner of the branch."),
+            schema=IPerson))
+    @export_write_operation()
+    def setOwner(new_owner, user):
+        """Set the owner of the branch to be `new_owner`."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        project=Reference(
+            title=_("The project the branch belongs to."),
+            schema=Interface, required=False), # Really IProduct
+        source_package=Reference(
+            title=_("The source package the branch belongs to."),
+            schema=Interface, required=False)) # Really ISourcePackage
+    @export_write_operation()
+    def setTarget(user, project=None, source_package=None):
+        """Set the target of the branch to be `project` or `source_package`.
+
+        Only one of `project` or `source_package` can be set, and if neither
+        is set, the branch gets moved into the junk namespace of the branch
+        owner.
+
+        :raise: `BranchTargetError` if both project and source_package are set,
+          or if either the project or source_package fail to be adapted to an
+          IBranchTarget.
+        """
+
     reviewer = exported(
         PublicPersonChoice(
-            title=_('Default Review Team'),
+            title=_('Review Team'),
             required=False,
             vocabulary='ValidPersonOrTeam',
             description=_("The reviewer of a branch is the person or team "
@@ -443,6 +484,19 @@ class IBranch(IHasOwner, IHasBranchTarget):
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A person for which the reviewer status is in question."),
+            schema=IPerson))
+    @export_read_operation()
+    def isPersonTrustedReviewer(reviewer):
+        """Return true if the `reviewer` is a trusted reviewer.
+
+        The reviewer is trusted if they are either own the branch, or are in
+        the team that owns the branch, or they are in the review team for the
+        branch.
+        """
+
     namespace = Attribute(
         "The namespace of this branch, as an `IBranchNamespace`.")
 
@@ -453,7 +507,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
     product = exported(
         ReferenceChoice(
             title=_('Project'),
-            required=False,
+            required=False, readonly=True,
             vocabulary='Product',
             schema=Interface,
             description=_("The project this branch belongs to.")),
@@ -694,6 +748,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
             when adding the new target.
         :param review_requests: An optional list of (`Person`, review_type).
         """
+
+    def scheduleDiffUpdates():
+        """Create UpdatePreviewDiffJobs for this branch's targets."""
 
     def getStackedBranches():
         """The branches that are stacked on this one."""

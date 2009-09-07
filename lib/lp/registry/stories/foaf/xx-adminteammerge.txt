@@ -67,15 +67,15 @@ merged, though.
 
 We also can't (for obvious reasons) merge any person/team into itself.
 
-    >>> admin_browser.getControl('Duplicated Team').value = 'ubuntu-team'
-    >>> admin_browser.getControl('Target Team').value = 'ubuntu-team'
+    >>> admin_browser.getControl('Duplicated Team').value = 'shipit-admins'
+    >>> admin_browser.getControl('Target Team').value = 'shipit-admins'
     >>> admin_browser.getControl('Merge').click()
 
     >>> admin_browser.url
     'http://launchpad.dev/people/+adminteammerge'
 
     >>> print get_feedback_messages(admin_browser.contents)
-    [u'There is 1 error.', u"You can't merge ubuntu-team into itself."]
+    [u'There is 1 error.', u"You can't merge shipit-admins into itself."]
 
 Nor can we merge a person into a team or a team into a person.
 

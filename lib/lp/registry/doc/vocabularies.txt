@@ -738,13 +738,13 @@ as teams:
     >>> [(p.name, p.is_valid_person) for p in vocab.search('matsubara')]
     [(u'matsubara', False)]
 
-    >>> [(p.name, p.is_valid_person) for p in vocab.search('mark@hbd.com')]
-    [(u'sabdfl', True)]
+    >>> [(p.name, p.is_valid_person) for p in vocab.search('mark@example.com')]
+    [(u'mark', True)]
 
     >>> [(p.name, getattr(p.teamowner, 'name', None))
     ...  for p in vocab.search('ubuntu-team')]
-    [(u'doc', None), (u'name18', u'sabdfl'),
-     (u'ubuntu-security', u'kamion'), (u'ubuntu-team', u'sabdfl')]
+    [(u'doc', None), (u'name18', u'mark'),
+     (u'ubuntu-security', u'kamion'), (u'ubuntu-team', u'mark')]
 
 But it doesn't include merged accounts:
 
@@ -967,6 +967,7 @@ returned.
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Security Team', u'Colin Watson'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Technical Board', u'Techboard Owner'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
      (u'Ubuntu branches', u'Ubuntu-branches-owner'),
      (u'VCS imports', u'Robert Collins'),
@@ -987,6 +988,7 @@ text to match against the team name.  Still, you only get teams back.
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Security Team', u'Colin Watson'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Technical Board', u'Techboard Owner'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
      (u'Ubuntu branches', u'Ubuntu-branches-owner'),
      (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
@@ -1185,7 +1187,7 @@ They can be looked up by their aliases too.
 
     >>> vocab.getTermByToken('firefox').token
     'firefox'
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> product_set['firefox'].setAliases(['iceweasel'])
     >>> current_user = launchbag.user
     >>> login_person(current_user)
@@ -1248,7 +1250,7 @@ They can be looked up by their aliases too.
     'ubuntu'
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> getUtility(IDistributionSet)['ubuntu'].setAliases(['ubantoo'])
     >>> login_person(current_user)
     >>> vocab.getTermByToken('ubantoo').token

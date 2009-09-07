@@ -24,17 +24,20 @@ __all__ = [
     'WrongBranchMergeProposal',
     ]
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from zope.event import notify
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bytes, Choice, Datetime, Int, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.interfaces import IBug
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
-from lp.services.job.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
@@ -241,6 +244,10 @@ class IBranchMergeProposal(Interface):
             value_type=Reference(schema=Interface), # ICodeReviewComment
             readonly=True))
 
+    related_bugs = CollectionField(
+        title=_("Bugs related to this merge proposal."),
+        value_type=Reference(schema=IBug), readonly=True)
+
     address = exported(
         TextLine(
             title=_('The email address for this proposal.'),
@@ -395,21 +402,6 @@ class IBranchMergeProposal(Interface):
         user-entered data like the whiteboard.
         """
 
-    @operation_parameters(
-        reviewer=Reference(
-            title=_("A person for which the reviewer status is in question."),
-            schema=IPerson))
-    @export_read_operation()
-    def isPersonValidReviewer(reviewer):
-        """Return true if the `reviewer` is able to review the proposal.
-
-        There is an attribute on branches called `reviewer` which allows
-        a specific person or team to be set for a branch as an authorised
-        person to approve merges for a branch.  If a reviewer is not set
-        on the target branch, then the owner of the target branch is used
-        as the authorised user.
-        """
-
     def isMergable():
         """Is the proposal in a state that allows it to being merged?
 
@@ -431,6 +423,7 @@ class IBranchMergeProposal(Interface):
             title=_("A reviewer."), schema=IPerson),
         review_type=Text())
     @call_with(registrant=REQUEST_USER)
+    @operation_returns_entry(Interface) # Really ICodeReviewVoteReference
     @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
@@ -464,26 +457,26 @@ class IBranchMergeProposal(Interface):
         """
 
     def createCommentFromMessage(message, vote, review_type,
-                                 original_email=None):
+                                 original_email):
         """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
         :param vote: A CodeReviewVote (or None).
         :param review_type: A string (or None).
-        :param original_email: Optional original email message.
+        :param original_email: Original email message.
         """
 
     def deleteProposal():
         """Delete the proposal to merge."""
 
     @operation_parameters(
-        diff_content=Bytes(), diff_stat=Text(),
-        source_revision_id=TextLine(), target_revision_id=TextLine(),
-        dependent_revision_id=TextLine(), conflicts=Text())
+        diff_content=Bytes(), source_revision_id=TextLine(),
+        target_revision_id=TextLine(), dependent_revision_id=TextLine(),
+        conflicts=Text())
     @export_write_operation()
-    def updatePreviewDiff(diff_content, diff_stat,
-                        source_revision_id, target_revision_id,
-                        dependent_revision_id=None, conflicts=None):
+    def updatePreviewDiff(diff_content, source_revision_id,
+                          target_revision_id, dependent_revision_id=None,
+                          conflicts=None):
         """Update the preview diff for this proposal.
 
         If there is not an existing preview diff, one will be created.
@@ -580,14 +573,11 @@ for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
 
-class ICreateMergeProposalJob(Interface):
+class ICreateMergeProposalJob(IRunnableJob):
     """A Job that creates a branch merge proposal.
 
     It uses a Message, which must contain a merge directive.
     """
-
-    def run():
-        """Run this job and create the merge proposals."""
 
 
 class ICreateMergeProposalJobSource(Interface):
@@ -600,11 +590,8 @@ class ICreateMergeProposalJobSource(Interface):
         """Iterate through jobs that are ready to run."""
 
 
-class IMergeProposalCreatedJob(Interface):
+class IMergeProposalCreatedJob(IRunnableJob):
     """Interface for review diffs."""
-
-    def run():
-        """Perform the diff and email specified by this job."""
 
 
 class IMergeProposalCreatedJobSource(Interface):
@@ -615,3 +602,29 @@ class IMergeProposalCreatedJobSource(Interface):
 
     def iterReady():
         """Iterate through all ready MergeProposalCreatedJobs."""
+
+
+class IUpdatePreviewDiffJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
+
+    def create(bmp):
+        """Create a job to update the diff for this merge proposal."""
+
+    def iterReady():
+        """Iterate through jobs ready to update preview diffs."""
+
+
+def notify_modified(proposal, func, *args, **kwargs):
+    """Call func, then notify about the changes it made.
+
+    :param proposal: the merge proposal to notify about.
+    :param func: The callable that will modify the merge proposal.
+    :param args: Additional arguments for the method.
+    :param kwargs: Keyword arguments for the method.
+    :return: The return value of the method.
+    """
+    from lp.code.adapters.branch import BranchMergeProposalDelta
+    snapshot = BranchMergeProposalDelta.snapshot(proposal)
+    result = func(*args, **kwargs)
+    notify(ObjectModifiedEvent(proposal, snapshot, []))
+    return result

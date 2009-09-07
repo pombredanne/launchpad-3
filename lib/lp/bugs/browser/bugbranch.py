@@ -11,19 +11,15 @@ __all__ = [
     'BugBranchPrimaryContext',
     ]
 
-from zope.event import notify
 from zope.interface import implements
 
-from lazr.lifecycle.event import ObjectDeletedEvent
+from canonical.lazr.utils import smartquote
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadEditFormView,
-    LaunchpadFormView)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-
-from canonical.widgets.link import LinkWidget
+from lp.bugs.interfaces.bugbranch import IBugBranch
 
 
 class BugBranchPrimaryContext:
@@ -58,6 +54,10 @@ class BugBranchAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def label(self):
+        return 'Add a branch to bug #%i' % self.context.bug.id
+
     cancel_url = next_url
 
 
@@ -80,6 +80,8 @@ class BugBranchDeleteView(LaunchpadEditFormView):
     def delete_action(self, action, data):
         self.context.bug.unlinkBranch(self.context.branch, self.user)
 
+    label = 'Remove bug branch link'
+
 
 class BranchLinkToBugView(LaunchpadFormView):
     """The view to create bug-branch links."""
@@ -92,22 +94,22 @@ class BranchLinkToBugView(LaunchpadFormView):
     field_names = ['bug']
 
     @property
+    def label(self):
+        return "Link to a bug report"
+
+    @property
+    def page_title(self):
+        return smartquote(
+            'Link branch "%s" to a bug report' % self.context.displayname)
+
+    @property
     def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         bug = data['bug']
         bug_branch = bug.linkBranch(
             branch=self.context, registrant=self.user)
-
-    @action(_('Cancel'), name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the branch page."""
-
-    def validate(self, data):
-        """Make sure that this bug isn't already linked to the branch."""
-        if 'bug' not in data:
-            return
-
-        link_bug = data['bug']

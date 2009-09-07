@@ -37,6 +37,7 @@ from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.code.bzr import (
     BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, RepositoryFormat,
     REPOSITORY_FORMAT_UPGRADE_PATH)
@@ -47,9 +48,9 @@ from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
     IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, BranchUpgradeJob,
-    ReclaimBranchSpaceJob, RevisionMailJob, RevisionsAddedJob,
-    RosettaUploadJob)
+    BranchDiffJob, BranchJob, BranchJobDerived, BranchJobType,
+    BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
+    RevisionsAddedJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
@@ -73,6 +74,18 @@ class TestBranchJob(TestCaseWithFactory):
         job_id = branch_job.job.id
         branch_job.destroySelf()
         self.assertRaises(SQLObjectNotFound, BranchJob.get, job_id)
+
+
+class TestBranchJobDerived(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_getOopsMailController(self):
+        """By default, no mail is sent about failed BranchJobs."""
+        branch = self.factory.makeAnyBranch()
+        job = BranchJob(branch, BranchJobType.STATIC_DIFF, {})
+        derived = BranchJobDerived(job)
+        self.assertIs(None, derived.getOopsMailController('x'))
 
 
 class TestBranchDiffJob(TestCaseWithFactory):
@@ -614,14 +627,47 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'message:\n'
         '  rev2d\n', message)
 
-    def test_getRevisionMessage_with_related_BMP(self):
-        """Information about related proposals is displayed."""
+    def makeJobAndBMP(self):
         job = self.makeRevisionsAddedWithMergeCommit()
         hacker = self.factory.makePerson(displayname='J. Random Hacker',
                                          name='jrandom')
         bmp = self.factory.makeBranchMergeProposal(target_branch=job.branch,
                                                    registrant=hacker)
         bmp.source_branch.last_scanned_id = 'rev3-id'
+        return job, bmp
+
+    def test_getRevisionMessage_with_related_BMP(self):
+        """Information about related proposals is displayed."""
+        job, bmp = self.makeJobAndBMP()
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
+        message = job.getRevisionMessage('rev2d-id', 1)
+        self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
+        'Related merge proposals:\n'
+        '  %s\n'
+        '  proposed by: J. Random Hacker (jrandom)\n'
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n' % canonical_url(bmp), message)
+
+    def test_getRevisionMessage_with_BMP_with_requested_review(self):
+        """Information about incomplete reviews is omitted.
+
+        If there is a related branch merge proposal, and it has
+        requested reviews which have not been completed, they are ignored.
+        """
+        job, bmp = self.makeJobAndBMP()
+        reviewer = self.factory.makePerson()
+        bmp.nominateReviewer(reviewer, bmp.registrant)
         transaction.commit()
         self.layer.switchDbUser(config.sendbranchmail.dbuser)
         message = job.getRevisionMessage('rev2d-id', 1)
@@ -804,6 +850,25 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.branch, self.tree = self.create_branch_and_tree()
         return self._commitFilesToTree(files, 'First commit')
 
+    def _makeRosettaUploadJob(self):
+        """Create a `RosettaUploadJob`."""
+        # RosettaUploadJob's parent BranchJob is joined to Job through
+        # BranchJob.job, but in tests those two ids can also be the same.
+        # This may hide broken joins, so make sure that the ids are not
+        # identical.
+        # There are at least as many Jobs as BranchJobs, so we can whack
+        # the two out of any accidental sync by advancing the Job.id
+        # sequence.
+        dummy = Job()
+        dummy.sync()
+        dummy.destroySelf()
+
+        # Now create the RosettaUploadJob.
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job.job.sync()
+        job.context.sync()
+        return job
+
     def _commitFilesToTree(self, files, commit_message=None):
         """Add files to the tree.
 
@@ -868,7 +933,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.branch = self.factory.makeAnyBranch()
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job = self._makeRosettaUploadJob()
         verifyObject(IRosettaUploadJob, job)
 
     def test_upload_pot(self):
@@ -1034,7 +1099,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Add a job and complete it -> not in ready state.
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job = self._makeRosettaUploadJob()
         job.job.start()
         job.job.complete()
         ready_jobs = list(RosettaUploadJob.iterReady())
@@ -1048,9 +1113,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Put the job in ready state.
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
-        job.context.sync()
+        job = self._makeRosettaUploadJob()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([], ready_jobs)
 
@@ -1060,9 +1123,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Put the job in ready state.
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
-        job.context.sync()
+        job = self._makeRosettaUploadJob()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([job], ready_jobs)
 
@@ -1071,9 +1132,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
-        job.context.sync()
+        job = self._makeRosettaUploadJob()
         unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
             self.branch))
         self.assertEqual([job.context], unfinished_jobs)
@@ -1083,8 +1142,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
+        job = self._makeRosettaUploadJob()
         job.job.start()
         job.job.complete()
         unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
@@ -1096,8 +1154,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
+        job = self._makeRosettaUploadJob()
         job.job.start()
         job.job.complete()
         job.job._status = JobStatus.FAILED

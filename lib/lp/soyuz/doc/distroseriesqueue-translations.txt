@@ -3,17 +3,18 @@
 This test covers the use case when a package includes translations and is
 uploaded into the system.
 
-  >>> from canonical.launchpad.database import (
-  ...     ProcessorFamily, GPGKey)
+  >>> from canonical.launchpad.database import ProcessorFamily
+  >>> from lp.registry.model.gpgkey import GPGKey
   >>> from lp.soyuz.model.component import Component
   >>> from lp.soyuz.model.section import Section
   >>> from lp.soyuz.model.publishing import (
   ...     SecureSourcePackagePublishingHistory)
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> from lp.soyuz.interfaces.component import IComponentSet
   >>> from lp.soyuz.interfaces.publishing import (
-  ...     PackagePublishingPocket, PackagePublishingStatus)
+  ...     PackagePublishingStatus)
   >>> from lp.registry.interfaces.sourcepackagename import (
   ...     ISourcePackageNameSet)
 
@@ -90,7 +91,6 @@ queue:
   DEBUG: Finding and applying overrides.
   DEBUG: Checking for pmount/0.9.7-2ubuntu2/amd64 binary ancestry
   DEBUG: pmount: (binary) NEW
-  DEBUG: No signer, therefore ACL not processed
   DEBUG: Finished checking upload.
 
   # It was not rejected.
@@ -140,16 +140,16 @@ As we can see from the translation import queue content.
   ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
   ...         entry.importer.name, entry.path)
-  dapper/pmount by sabdfl: po/es_ES.po
-  dapper/pmount by sabdfl: po/ca.po
-  dapper/pmount by sabdfl: po/de.po
-  dapper/pmount by sabdfl: po/cs.po
-  dapper/pmount by sabdfl: po/es.po
-  dapper/pmount by sabdfl: po/fr.po
-  dapper/pmount by sabdfl: po/hr.po
-  dapper/pmount by sabdfl: po/nb.po
-  dapper/pmount by sabdfl: po/pmount.pot
-  dapper/pmount by sabdfl: po/it_IT.po
+  dapper/pmount by mark: po/es_ES.po
+  dapper/pmount by mark: po/ca.po
+  dapper/pmount by mark: po/de.po
+  dapper/pmount by mark: po/cs.po
+  dapper/pmount by mark: po/es.po
+  dapper/pmount by mark: po/fr.po
+  dapper/pmount by mark: po/hr.po
+  dapper/pmount by mark: po/nb.po
+  dapper/pmount by mark: po/pmount.pot
+  dapper/pmount by mark: po/it_IT.po
 
   # Abort the transaction so we can check the same upload in a different
   # pocket.
@@ -190,16 +190,16 @@ As we can see from the translation import queue content.
   ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
   ...         entry.importer.name, entry.path)
-  dapper/pmount by sabdfl: po/es_ES.po
-  dapper/pmount by sabdfl: po/ca.po
-  dapper/pmount by sabdfl: po/de.po
-  dapper/pmount by sabdfl: po/cs.po
-  dapper/pmount by sabdfl: po/es.po
-  dapper/pmount by sabdfl: po/fr.po
-  dapper/pmount by sabdfl: po/hr.po
-  dapper/pmount by sabdfl: po/nb.po
-  dapper/pmount by sabdfl: po/pmount.pot
-  dapper/pmount by sabdfl: po/it_IT.po
+  dapper/pmount by mark: po/es_ES.po
+  dapper/pmount by mark: po/ca.po
+  dapper/pmount by mark: po/de.po
+  dapper/pmount by mark: po/cs.po
+  dapper/pmount by mark: po/es.po
+  dapper/pmount by mark: po/fr.po
+  dapper/pmount by mark: po/hr.po
+  dapper/pmount by mark: po/nb.po
+  dapper/pmount by mark: po/pmount.pot
+  dapper/pmount by mark: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
@@ -223,16 +223,16 @@ As we can see from the translation import queue content.
   ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
   ...         entry.importer.name, entry.path)
-  dapper/pmount by sabdfl: po/es_ES.po
-  dapper/pmount by sabdfl: po/ca.po
-  dapper/pmount by sabdfl: po/de.po
-  dapper/pmount by sabdfl: po/cs.po
-  dapper/pmount by sabdfl: po/es.po
-  dapper/pmount by sabdfl: po/fr.po
-  dapper/pmount by sabdfl: po/hr.po
-  dapper/pmount by sabdfl: po/nb.po
-  dapper/pmount by sabdfl: po/pmount.pot
-  dapper/pmount by sabdfl: po/it_IT.po
+  dapper/pmount by mark: po/es_ES.po
+  dapper/pmount by mark: po/ca.po
+  dapper/pmount by mark: po/de.po
+  dapper/pmount by mark: po/cs.po
+  dapper/pmount by mark: po/es.po
+  dapper/pmount by mark: po/fr.po
+  dapper/pmount by mark: po/hr.po
+  dapper/pmount by mark: po/nb.po
+  dapper/pmount by mark: po/pmount.pot
+  dapper/pmount by mark: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # component.
@@ -301,7 +301,7 @@ different interpretations of "importer" in attachTranslationFiles.
   >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.interfaces.sourcepackagerelease import (
   ...     ISourcePackageRelease)
-  >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
   >>> class MockSourcePackageRelease:
   ...       implements(ISourcePackageRelease)

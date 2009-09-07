@@ -71,12 +71,13 @@ from canonical.launchpad.fields import (
     is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.app.interfaces.rootcontext import IRootContext
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.location import (
     IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -474,7 +475,7 @@ class IHasStanding(Interface):
 
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation):
+                    IHasLocation, IObjectWithLocation, IPrivacy):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -591,12 +592,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     # which contains valid people but not teams, and we don't really need one
     # apart from here.
     registrant = Attribute('The user who created this profile.')
-    # bounty relations
-    ownedBounties = Attribute('Bounties issued by this person.')
-    reviewerBounties = Attribute('Bounties reviewed by this person.')
-    claimedBounties = Attribute('Bounties claimed by this person.')
-    subscribedBounties = Attribute(
-        'Bounties to which this person subscribes.')
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
@@ -830,6 +825,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             readonly=True, required=False,
             value_type=Reference(schema=Interface))) # HWSubmission
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. It is a summary of the team's visibility.
     private = exported(Bool(
             title=_("This team is private"),
             readonly=True, required=False,
@@ -1497,7 +1494,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IHasStanding, ISetLocation):
+              IHasStanding, ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -1936,7 +1933,7 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner',
+    owner = PublicPersonChoice(title=_('New'), vocabulary='ValidOwner',
                                required=True)
 
 
@@ -1944,7 +1941,7 @@ class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
     owner = PublicPersonChoice(
-        title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+        title=_('New'), vocabulary='ValidTeamOwner', required=True)
 
 
 class ITeamCreation(ITeam):

@@ -60,7 +60,7 @@ def re_upload_file(libraryfile, restricted=False):
     # having to download to a temp file but there are no guarantees
     # how large the files are, so using StringIO would be dangerous.
     fd, filepath = tempfile.mkstemp()
-    temp_file = open(filepath, "w")
+    temp_file = os.fdopen(fd, 'wb')
 
     # Read the old library file into the temp file.
     copy_and_close(libraryfile, temp_file)

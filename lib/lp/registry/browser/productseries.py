@@ -7,8 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
-    'LinkTranslationsBranchView',
-    'ProductSeriesBreadcrumbBuilder',
+    'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
     'ProductSeriesEditView',
@@ -23,6 +22,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
+    'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
     ]
 
@@ -48,14 +48,15 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser import StatusCount
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView,
@@ -63,13 +64,14 @@ from canonical.launchpad.webapp import (
     stepthrough, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -79,7 +81,8 @@ def quote(text):
     return cgi.escape(text, quote=True)
 
 
-class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
+class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
     """A class to navigate `IProductSeries` URLs."""
     usedfor = IProductSeries
 
@@ -121,11 +124,11 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
         return self.context.getRelease(name)
 
 
-class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProductSeries`."""
     @property
     def text(self):
-        """See `IBreadcrumbBuilder`."""
+        """See `IBreadcrumb`."""
         return 'Series ' + self.context.name
 
 
@@ -418,6 +421,17 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         return (branch is not None and
                 check_permission('launchpad.View', branch))
 
+    @property
+    def is_obsolete(self):
+        """Return True if the series is OBSOLETE"
+
+        Obsolete series do not need to display as much information as other
+        series. Accessing private bugs is an expensive operation and showing
+        them for obsolete series can be a problem if many series are being
+        displayed.
+        """
+        return self.context.status == DistroSeriesStatus.OBSOLETE
+
     @cachedproperty
     def bugtask_status_counts(self):
         """A list StatusCounts summarising the targeted bugtasks."""
@@ -443,21 +457,22 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
 
-    @property
-    def milestone_table_class(self):
-        """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
-            return 'listing'
-        else:
-            # The page can remove the 'unseen' class to make the table
-            # visible.
-            return 'listing unseen'
 
     @property
-    def milestone_row_uri_template(self):
-        return (
-            '%s/+milestone/{name}/+productseries-table-row' %
-            canonical_url(self.context.product, path_only_if_possible=True))
+    def latest_release_with_download_files(self):
+        for release in self.context.releases:
+            if len(list(release.files)) > 0:
+                return release
+        return None
+
+
+class ProductSeriesUbuntuPackagingView(ProductSeriesView):
+    """A view to show series package in Ubuntu."""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Ubuntu source packaging'
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -467,6 +482,17 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         'name', 'summary', 'status', 'branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
@@ -486,6 +512,11 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
 
 class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     """A view to remove a productseries from a product."""
@@ -495,8 +526,13 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Delete %s series %s' % (
+        return 'Delete %s %s series' % (
             self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @cachedproperty
     def milestones(self):
@@ -564,6 +600,17 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     field_names = ['branch']
 
     @property
+    def label(self):
+        """The form label."""
+        return 'Link an existing branch to %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -581,30 +628,10 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the product series page."""
-
-
-class LinkTranslationsBranchView(LaunchpadEditFormView):
-    """View to set the series' translations export branch."""
-
-    schema = IProductSeries
-    field_names = ['translations_branch']
-
     @property
-    def next_url(self):
-        return canonical_url(self.context) + '/+translations-settings'
-
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
-        self.updateContextFromData(data)
-        self.request.response.addInfoNotification(
-            'Translations export branch updated.')
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the settings page."""
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
@@ -620,8 +647,23 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""
     schema = IProductSeries
     field_names = ['product', 'name']
-    label = 'Review product series details'
     custom_widget('name', TextWidget, width=20)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Administer %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):

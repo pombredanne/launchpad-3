@@ -26,25 +26,8 @@ def test_filebug_extra_options():
 
     # No duplicates were found.
     client.asserts.assertText(
-        xpath=u"//form[@name='launchpadform']//p",
+        xpath=u"//div[@id='container']//p",
         validator=u'No similar bug reports were found.')
-
-    # Check out the expander.
-    _test_expander(client)
-
-
-def test_advanced_filebug_extra_options():
-    """Test the extra options area on +filebug-advanced pages.
-
-    See `test_filebug_extra_options`.
-    """
-    client = WindmillTestClient("File bug extra options test")
-    lpuser.SAMPLE_PERSON.ensure_login(client)
-
-    # Open a +filebug-advanced page and wait for it to finish loading.
-    client.open(
-        url=u'http://bugs.launchpad.dev:8085/firefox/+filebug-advanced')
-    client.waits.forPageLoad(timeout=u'20000')
 
     # Check out the expander.
     _test_expander(client)
@@ -55,30 +38,27 @@ def _test_expander(client):
     collapsible_area_xpath = (
         u"//form[@name='launchpadform']"
         u"//fieldset[contains(.//legend,'Extra options')]")
+    closed_area_xpath = (
+        collapsible_area_xpath +
+        u"/div[@class='collapseWrapper lazr-closed']")
+    opened_area_xpath = (
+        collapsible_area_xpath +
+        u"/div[@class='collapseWrapper lazr-opened']")
     client.asserts.assertProperty(
         xpath=collapsible_area_xpath,
         validator="className|collapsible")
-    client.asserts.assertNode(
-        xpath=collapsible_area_xpath + u"/div[@class='collapsed']")
+    client.asserts.assertNode(xpath=closed_area_xpath)
 
     # The extra options are not visible.
-    extra_options_ids = (
-        u"field.tags",
-        u"field.filecontent",
-        u"field.patch",
-        u"field.attachment_description",
-        )
-    for extra_option_id in extra_options_ids:
-        client.asserts.assertElemJS(
-            id=extra_option_id, js=u"element.clientWidth == 0")
-
+    client.asserts.assertProperty(
+        xpath=closed_area_xpath,
+        validator='style.height|0px')
     # Click on the legend and it expands.
     client.click(
         xpath=collapsible_area_xpath + u"/legend/a")
-    client.waits.forElement(
-        xpath=collapsible_area_xpath + u"/div[@class='expanded']")
+    client.waits.forElement(xpath=opened_area_xpath)
 
     # The extra options are visible now.
-    for extra_option_id in extra_options_ids:
-        client.asserts.assertElemJS(
-            id=extra_option_id, js=u"element.clientWidth > 0")
+    client.asserts.assertElemJS(
+        xpath=opened_area_xpath,
+        js='element.style.height != "0px"')

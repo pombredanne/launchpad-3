@@ -19,11 +19,11 @@ able to:
 Import the bunch of required database classes:
 
     >>> from canonical.launchpad.database import (
-    ...      Build, BuildQueue, DistroArchSeries, DistroSeries,
-    ...      PocketChroot)
-
+    ...      Build, BuildQueue, DistroArchSeries, PocketChroot)
+    >>> from lp.registry.model.distroseries import DistroSeries
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from canonical.launchpad.interfaces import (
-    ...      PackagePublishingPocket, PackagePublishingStatus)
+    ...      PackagePublishingStatus)
 
 The Master side of Buildd requires access to Launchpad Database, the
 user designed for this kind of access is 'fiera', see

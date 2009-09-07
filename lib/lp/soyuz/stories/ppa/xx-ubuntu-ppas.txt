@@ -3,7 +3,7 @@
 The Ubuntu Linux page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
-    >>> anon_browser.getLink("PPAs").click()
+    >>> anon_browser.getLink("Personal Package Archives").click()
     >>> anon_browser.title
     'Ubuntu Linux Personal Package Archives'
 
@@ -16,7 +16,8 @@ published) and a list of context series and corresponding architectures
 supported for PPA.
 
     >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'supports_virtualized_archs'))
+    ...    find_tag_by_id(anon_browser.contents,
+    ...                   'supports_virtualized_architectures'))
     PPA supported series
     5.04
     "Hoary"
@@ -36,11 +37,14 @@ published across all ubuntu PPAs.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
     Statistics
-    3 registered PPAs
-    2 active PPAs
-    4 published sources
-    4 published binaries
-
+    Registered PPAs:
+    3
+    Active PPAs:
+    2
+    Published sources:
+    4
+    Published binaries:
+    4
 
 Up to 5 latest source publications are also presented in the 'Latest
 sources' section.
@@ -71,7 +75,7 @@ Currently we only support PPAs for ubuntu, although the '+ppas' page
 is presented for other distribution.
 
     >>> anon_browser.open("http://launchpad.dev/debian")
-    >>> anon_browser.getLink("PPAs").click()
+    >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print anon_browser.title
     Debian GNU/Linux Personal Package Archives
 
@@ -80,7 +84,8 @@ Those pages present coherent data for a distribution with no PPAs.
 PPA supported architectures reflects what we have in sampledata.
 
     >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'supports_virtualized_archs'))
+    ...    find_tag_by_id(anon_browser.contents,
+    ...                   'supports_virtualized_architectures'))
     PPA supported series
     3.1 "Sarge" - frozen
     3.0 "Woody" - current
@@ -120,7 +125,7 @@ The default search shows only active (those with, at least one,
 PENDING or PUBLISHED source record) PPAs.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
-    >>> anon_browser.getLink("PPAs").click()
+    >>> anon_browser.getLink("Personal Package Archives").click()
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
@@ -146,7 +151,7 @@ When a search is requested the information sections are not rendered.
     None
 
     >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'supports_virtualized_archs')
+    ...     anon_browser.contents, 'supports_virtualized_architectures')
     None
 
 The information section will be only rendered if the page is reloaded
@@ -168,7 +173,8 @@ request.
     True
 
     >>> find_tag_by_id(
-    ...     anon_browser.contents, 'supports_virtualized_archs') is not None
+    ...     anon_browser.contents,
+    ...     'supports_virtualized_architectures') is not None
     True
 
 Back to the search form again anonymous users can click on a checkbox
@@ -185,14 +191,14 @@ to allow inactive PPA results.
     packages to help my friends.
     3
     3
-    PPA for No Privileges Person
-    I am not allowed to say, I have no privs.
-    0
-    0
     PPA for Mark Shuttleworth
     packages to help the humanity (you know, ubuntu)
     1
     1
+    PPA for No Privileges Person
+    I am not allowed to say, I have no privs.
+    0
+    0
 
 This checkbox value is propagated to subsequent searches:
 
@@ -369,13 +375,13 @@ The package was copied from a PPA. The archive title will hence link
 back to the source PPA.
 
     >>> anon_browser.getLink("PPA for Mark Shuttleworth").url
-    'http://launchpad.dev/~sabdfl/+archive/ppa'
+    'http://launchpad.dev/~mark/+archive/ppa'
 
 This link is not present if the user does not have permission to view
-the PPA.  If we make sabdfl's PPA private and then browse back as
+the PPA.  If we make mark's PPA private and then browse back as
 an anonymous user, the link will be gone.
 
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~mark/+archive/ppa/+admin")
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
@@ -390,16 +396,16 @@ While we are there, we can also see that Mark's PPA 'repository-size'
 pagelet isn't publicly available once the PPA was marked private.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~sabdfl/+archive/ppa/+repository-size")
+    ...     "http://launchpad.dev/~mark/+archive/ppa/+repository-size")
     Traceback (most recent call last):
     ...
     Unauthorized: (..., 'launchpad.View')
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
 
-Set sabdfl's archive back to public before continuing.
+Set mark's archive back to public before continuing.
 
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~mark/+archive/ppa/+admin")
     >>> admin_browser.getControl(name="field.private").value = False
     >>> admin_browser.getControl(name="field.buildd_secret").value = ""
     >>> admin_browser.getControl("Save").click()
@@ -694,7 +700,7 @@ status in the PPA workflow.
 Just quickly check if the singular form of this section is handled
 properly.
 
-    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa")
+    >>> anon_browser.open("http://launchpad.dev/~mark/+archive/ppa")
     >>> anon_browser.title
     'PPA for Mark Shuttleworth'
 
@@ -709,8 +715,8 @@ And the sources.list entries point to the right distribution release:
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
+    deb http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
 
 The repository size information is available in a separate page,
 '+repository-size', which is going be to added to the index page using
@@ -722,7 +728,7 @@ javascript.
     Package counters and estimated archive size temporarily unavailable.
 
     >>> anon_browser.open(
-    ...    "http://launchpad.dev/~sabdfl/+archive/ppa/+repository-size")
+    ...    "http://launchpad.dev/~mark/+archive/ppa/+repository-size")
     >>> print extract_text(anon_browser.contents)
     1 source package (9.5 MiB)
     1 binary package (0 bytes)
@@ -735,7 +741,7 @@ PPAs are targeted to a specific distribution and currently we only
 allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntutest")
-    >>> anon_browser.getLink("PPAs").click()
+    >>> anon_browser.getLink("Personal Package Archives").click()
     >>> anon_browser.title
     'Ubuntu Test Personal Package Archives'
 
@@ -873,7 +879,7 @@ quickly 'retry' the failure.
 At this point anyone can also visualise that 'cdrkit' source is being
 built in Celso's PPA.
 
-    >>> anon_browser.getLink('View PPA').click()
+    >>> anon_browser.getLink('PPA for Celso Providelo').click()
     >>> print_build_status(anon_browser.contents)
     Source                    Build Status
     cdrkit - 1.0              /@@/build-needed i386
@@ -898,9 +904,9 @@ can check how it looks.
     >>> publishToPPA("cprov", "hoary", "commercialpackage", "1.0-1")
     >>> publishToPPA("cprov", "warty", "cdrkit", "1.0")
 
-    >>> publishToPPA("sabdfl", "warty", "commercialpackage", "1.0-1")
+    >>> publishToPPA("mark", "warty", "commercialpackage", "1.0-1")
     >>> publishToPPA(
-    ...     "sabdfl", "breezy-autotest", "commercialpackage", "1.0-1")
+    ...     "mark", "breezy-autotest", "commercialpackage", "1.0-1")
 
     >>> publishToTeamPPA(team_name="ubuntu-team")
 
@@ -916,15 +922,15 @@ the 'Most active' section.
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
     PPAs with the highest number of uploads in the last 7 days.
-    Celso Providelo        4 uploads
-    Mark Shuttleworth      2 uploads
-    Ubuntu Team            2 uploads
-    No Privileges Person   1 uploads
+    PPA for Celso Providelo       4 uploads
+    PPA for Mark Shuttleworth     2 uploads
+    PPA for Ubuntu team           2 uploads
+    PPA for No Privileges Person  1 uploads
 
 The user can also in any PPA title listed in that section to visit the
 PPA itself.
 
-    >>> anon_browser.getLink('Celso Providelo').click()
+    >>> anon_browser.getLink('PPA for Celso Providelo').click()
     >>> print anon_browser.title
     PPA for Celso Providelo
 

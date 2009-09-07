@@ -7,7 +7,7 @@
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
 
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 from zope.component import getUtility
 
 from sqlobject import (
@@ -38,11 +38,10 @@ from lp.bugs.model.bugtarget import (
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
 from lp.translations.model.customlanguagecode import CustomLanguageCode
-from canonical.launchpad.database.distributionbounty import DistributionBounty
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
-from lp.registry.model.distributionsourcepackagecache import (
+from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -82,7 +81,8 @@ from lp.bugs.interfaces.bugtask import (
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.distribution import (
-    IDistribution, IDistributionSet)
+    IBaseDistribution, IDerivativeDistribution, IDistribution,
+    IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
 from lp.registry.interfaces.distroseries import (
@@ -99,8 +99,6 @@ from lp.registry.interfaces.sourcepackagename import (
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.validators.name import sanitize_name, valid_name
@@ -125,8 +123,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -174,14 +171,23 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(
         dbName='lucilleconfig', notNull=False, default=None)
-    bounties = SQLRelatedJoin(
-        'Bounty', joinColumn='distribution', otherColumn='bounty',
-        intermediateTable='DistributionBounty')
     official_answers = BoolCol(dbName='official_answers', notNull=True,
         default=False)
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
     active = True # Required by IPillar interface.
+
+
+    def _init(self, *args, **kw):
+        """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
+        SQLBase._init(self, *args, **kw)
+        # Add a marker interface to set permissions for this kind
+        # of distribution.
+        if self == getUtility(ILaunchpadCelebrities).ubuntu:
+            alsoProvides(self, IBaseDistribution)
+        else:
+            alsoProvides(self, IDerivativeDistribution)
+
 
     @property
     def uploaders(self):
@@ -291,7 +297,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def full_functionality(self):
         """See `IDistribution`."""
-        if self == getUtility(ILaunchpadCelebrities).ubuntu:
+        if IBaseDistribution.providedBy(self):
             return True
         return False
 
@@ -302,11 +308,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return [self.driver]
         else:
             return [self.owner]
-
-    @property
-    def is_read_only(self):
-        """See `IDistribution`."""
-        return self.name in ['debian', 'redhat', 'gentoo']
 
     @property
     def _sort_key(self):
@@ -726,13 +727,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             search_text=search_text, owner=owner, sort=sort,
             distribution=self).getResults()
 
-    def ensureRelatedBounty(self, bounty):
-        """See `IDistribution`."""
-        for curr_bounty in self.bounties:
-            if bounty.id == curr_bounty.id:
-                return None
-        DistributionBounty(distribution=self, bounty=bounty)
-
     def getDistroSeriesAndPocket(self, distroseries_name):
         """See `IDistribution`."""
         from lp.archivepublisher.publishing import suffixpocket
@@ -816,15 +810,20 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            Archive.id = %s AND
+            SourcePackagePublishingHistory.archive = Archive.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL
+            SourcePackagePublishingHistory.dateremoved is NULL AND
+            Archive.enabled = TRUE
             """ % sqlvalues(self, archive),
             distinct=True,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
+            clauseTables=[
+                'Archive',
+                'DistroSeries',
+                'SourcePackagePublishingHistory',
                 'SourcePackageRelease']))
 
         # Remove the cache entries for packages we no longer publish.
@@ -838,6 +837,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def updateCompleteSourcePackageCache(self, archive, log, ztm,
                                          commit_chunk=500):
         """See `IDistribution`."""
+        # Do not create cache entries for disabled archives.
+        if not archive.enabled:
+            return
+
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
             SourcePackagePublishingHistory.distroseries =
@@ -1219,7 +1222,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 clauses.append("""
-                (Archive.private = FALSE OR
+                ((Archive.private = FALSE AND Archive.enabled = TRUE) OR
                  Archive.owner = %s OR
                  %s IN (SELECT TeamParticipation.person
                         FROM TeamParticipation
@@ -1228,7 +1231,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
                 """ % sqlvalues(user, user, user))
         else:
-            clauses.append("Archive.private = FALSE")
+            clauses.append(
+                "Archive.private = FALSE AND Archive.enabled = TRUE")
 
 
         query = ' AND '.join(clauses)
@@ -1479,7 +1483,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def newSeries(self, name, displayname, title, summary,
                   description, version, parent_series, owner):
         """See `IDistribution`."""
-        return DistroSeries(
+        series = DistroSeries(
             distribution=self,
             name=name,
             displayname=displayname,
@@ -1490,6 +1494,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             status=DistroSeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
             owner=owner)
+        if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
+            # This driver is a release manager.
+            series.driver = owner
+        return series
 
     @property
     def has_published_binaries(self):

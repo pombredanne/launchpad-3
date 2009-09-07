@@ -6,7 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageBreadcrumbBuilder',
+    'SourcePackageBreadcrumb',
+    'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
     'SourcePackageNavigation',
     'SourcePackageView',
@@ -18,22 +19,22 @@ from zope.app.form.interfaces import IInputWidget
 
 from canonical.launchpad import helpers
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
-    NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
+    action, ApplicationMenu, GetitemNavigation, LaunchpadEditFormView, Link,
+    redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr.utils import smartquote
@@ -65,7 +66,7 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
 
 
-class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     @property
     def text(self):
@@ -82,7 +83,8 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['packaging', 'edit_packaging', 'changelog', 'builds']
+    links = [
+        'packaging', 'edit_packaging', 'changelog', 'builds', 'set_upstream']
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
@@ -92,6 +94,9 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
+
+    def set_upstream(self):
+        return Link("+edit-packaging", "Set upstream link", icon="add")
 
     def builds(self):
         text = 'Show builds'
@@ -109,7 +114,33 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
         return Link('+gethelp', 'Help and support options', icon='info')
 
 
-class SourcePackageView(BuildRecordsView):
+class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
+    schema = ISourcePackage
+    field_names = ['productseries']
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Define upstream link for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Change"), name="change")
+    def change(self, action, data):
+        self.context.setPackaging(data['productseries'], self.user)
+        self.request.response.addNotification('Upstream link updated.')
+        self.next_url = canonical_url(self.context)
+
+
+class SourcePackageView:
+    """A view for (distro series) source packages."""
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -214,17 +245,3 @@ class SourcePackageView(BuildRecordsView):
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
-
-    @property
-    def search_name(self):
-        return False
-
-    @property
-    def default_build_state(self):
-        """Default build state for sourcepackage builds.
-
-        This overrides the default that is set on BuildRecordsView."""
-        # None maps to "all states". The reason we display all states on
-        # this page is because it's unlikely that there will be so
-        # many builds that the listing will be overwhelming.
-        return None
