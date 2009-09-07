@@ -301,7 +301,7 @@ Once the SourcePackageRelease in question gets copied to a public
 archive, let's say Ubuntu primary archive, it will become publicly
 available.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
 
     >>> public_publication = private_publication.copyTo(

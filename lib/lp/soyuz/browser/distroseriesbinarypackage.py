@@ -15,6 +15,7 @@ from lp.soyuz.interfaces.distroseriesbinarypackage import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Navigation)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.lazr.utils import smartquote
 
 
 class DistroSeriesBinaryPackageFacets(StandardLaunchpadFacets):
@@ -50,4 +51,6 @@ class DistroSeriesBinaryPackageView:
         self.context = context
         self.request = request
 
-
+    @property
+    def page_title(self):
+        return smartquote(self.context.title)

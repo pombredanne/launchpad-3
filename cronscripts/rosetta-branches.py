@@ -29,7 +29,8 @@ class RunRosettaBranchJobs(LaunchpadCronScript):
 
     def main(self):
         globalErrorUtility.configure('rosettabranches')
-        runner = JobRunner.fromReady(getUtility(IRosettaUploadJobSource))
+        runner = JobRunner.fromReady(
+            getUtility(IRosettaUploadJobSource), self.logger)
         server = get_scanner_server()
         server.setUp()
         try:
