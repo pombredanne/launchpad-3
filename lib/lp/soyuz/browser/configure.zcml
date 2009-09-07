@@ -713,6 +713,14 @@
             permission="zope.Public"
             name="+portlet-ppa-architectures"
             template="../templates/distribution-portlet-ppa-architectures.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+            class=
+                "lp.soyuz.browser.sourcepackage.SourcePackageChangelogView"
+            permission="zope.Public"
+            name="+changelog"
+            facet="overview"
+            template="../templates/sourcepackage-changelog.pt"/>
         <browser:pages
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
             permission="zope.Public"
@@ -721,10 +729,6 @@
                 name="+packaging"
                 facet="overview"
                 template="../templates/sourcepackage-packaging.pt"/>
-            <browser:page
-                name="+changelog"
-                facet="overview"
-                template="../templates/sourcepackage-changelog.pt"/>
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
