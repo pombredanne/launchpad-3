@@ -216,6 +216,11 @@ def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
 
+def bugnomination_edit(context, view):
+    """Return the title for the page to manage bug nominations."""
+    return 'Manage nomination for bug #%d in %s' % (
+        context.bug.id, context.target.bugtargetdisplayname)
+
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
     if view.user:

@@ -8,13 +8,9 @@
 >
 
 <body>
-  <metal:heading metal:fill-slot="heading">
-    <h2 tal:content="view/current_bugtask/title" />
-  </metal:heading>
-
   <metal:main metal:fill-slot="main">
     <div class="top-portlet">
-      <h1 tal:content="view/page_title">
+      <h1 tal:content="view/title">
         Manage nomination for bug #1 in Ubuntu Hoary
       </h1>
       <p>

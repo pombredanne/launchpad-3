@@ -240,7 +240,7 @@ class BugNominationEditView(LaunchpadView):
         return canonical_url(getUtility(ILaunchBag).bugtask)
 
     @property
-    def page_title(self):
+    def title(self):
         return 'Approve or decline nomination for bug #%d in %s' % (
             self.context.bug.id, self.context.target.bugtargetdisplayname)
 
