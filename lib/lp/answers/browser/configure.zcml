@@ -248,7 +248,9 @@
   <!-- IQuestionSet -->
   <browser:navigation
     module=".question"
-    classes="QuestionSetNavigation"
+    classes="
+      QuestionNavigation
+      QuestionSetNavigation"
     />
 
   <browser:url

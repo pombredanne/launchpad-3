@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'CodeReviewCommentAddView',
     'CodeReviewCommentContextMenu',
+    'CodeReviewCommentNavigation',
     'CodeReviewCommentPrimaryContext',
     'CodeReviewCommentSummary',
     'CodeReviewCommentView',
@@ -24,7 +25,7 @@ from lazr.restful.interface import copy_field
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
-    LaunchpadView, Link)
+    LaunchpadView, Link, Navigation)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
@@ -61,6 +62,11 @@ def quote_text_as_email(text, width=80):
         else:
             result.extend(wrapper.wrap(line))
     return '\n'.join(result)
+
+
+class CodeReviewCommentNavigation(Navigation):
+    """Navigation for the `ICodeReviewComment`."""
+    usedfor = ICodeReviewComment
 
 
 class CodeReviewDisplayComment:

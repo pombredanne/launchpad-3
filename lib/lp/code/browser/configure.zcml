@@ -85,6 +85,9 @@
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:navigation
+        module="lp.code.browser.codereviewvote"
+        classes="CodeReviewVoteReferenceNavigation"/>
     <facet
         facet="branches">
         <browser:url
@@ -597,6 +600,9 @@
     <browser:menus
         classes="
             CodeReviewCommentContextMenu"
+        module="lp.code.browser.codereviewcomment"/>
+    <browser:navigation
+        classes="CodeReviewCommentNavigation"
         module="lp.code.browser.codereviewcomment"/>
     <facet
         facet="branches">

@@ -13,7 +13,14 @@ from zope.interface import Interface
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView)
+    action, canonical_url, LaunchpadFormView, Navigation)
+
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+
+
+class CodeReviewVoteReferenceNavigation(Navigation):
+    """Navigation for the `ICodeReviewVoteReference`."""
+    usedfor = ICodeReviewVoteReference
 
 
 class ReassignSchema(Interface):
