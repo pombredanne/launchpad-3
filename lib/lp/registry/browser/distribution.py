@@ -11,7 +11,6 @@ __all__ = [
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
-    'DistributionBreadcrumb',
     'DistributionChangeMembersView',
     'DistributionChangeMirrorAdminView',
     'DistributionCountryArchiveMirrorsView',
@@ -170,13 +169,6 @@ class DistributionSetNavigation(Navigation):
         if distribution is None:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(distribution))
-
-
-class DistributionBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IDistribution`."""
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):

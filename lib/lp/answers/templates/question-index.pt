@@ -110,7 +110,7 @@
           </p>
         </div>
         <div class="yui-g">
-          <ul class="horizontal">
+          <ul class="horizontal" id="horizontal-menu">
             <li tal:define="link context/menu:answers/history"
                 tal:content="structure link/render" />
             <li tal:define="link context/menu:answers/linkbug"
@@ -121,7 +121,8 @@
                 tal:content="structure link/render" />
             <li tal:define="link context/menu:answers/linkfaq"
                 tal:content="structure link/render" />
-            <li tal:define="link context/menu:answers/createfaq"
+            <li tal:condition="view/faq_target/required:launchpad.Moderate"
+                tal:define="link context/menu:answers/createfaq"
                 tal:content="structure link/render" />
           </ul>
         </div>

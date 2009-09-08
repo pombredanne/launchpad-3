@@ -21,7 +21,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
+from storm.expr import And, Count, Desc, Max, Not, NamedFunc, Or, Select
 from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
@@ -72,7 +72,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
-    IPerson, validate_person_not_private_membership, validate_public_person)
+    validate_person_not_private_membership, validate_public_person)
 
 
 class Branch(SQLBase):
@@ -184,7 +184,8 @@ class Branch(SQLBase):
             target = IBranchTarget(source_package)
             if target is None:
                 raise BranchTargetError(
-                    '%r is not a valid source package target' % source_package)
+                    '%r is not a valid source package target' %
+                    source_package)
         else:
             target = IBranchTarget(self.owner)
             # Person targets are always valid.
@@ -258,6 +259,15 @@ class Branch(SQLBase):
 
     landing_targets = SQLMultipleJoin(
         'BranchMergeProposal', joinColumn='source_branch')
+
+    @property
+    def active_landing_targets(self):
+        """Merge proposals not in final states where this branch is source."""
+        store = Store.of(self)
+        return store.find(
+            BranchMergeProposal, BranchMergeProposal.source_branch == self,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
     @property
     def landing_candidates(self):
@@ -348,6 +358,13 @@ class Branch(SQLBase):
 
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
+
+    def scheduleDiffUpdates(self):
+        """See `IBranch`."""
+        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
+        jobs = [UpdatePreviewDiffJob.create(target)
+                for target in self.active_landing_targets]
+        return jobs
 
     # XXX: Tim Penhey, 2008-06-18, bug 240881
     merge_queue = ForeignKey(

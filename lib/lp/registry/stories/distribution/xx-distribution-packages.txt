@@ -47,8 +47,8 @@ here first:
     >>> browser.open(
     ...     'http://localhost'
     ...     '/ubuntu/breezy-autotest/+package/mozilla-firefox')
-    >>> browser.title
-    'Binary package "mozilla-firefox" in ubuntu breezy-autotest'
+    >>> print browser.title
+    Binary package “mozilla-firefox” in ubuntu breezy-autotest
 
 Now run a search for mozilla-firefox and check that it is found:
 
@@ -296,7 +296,6 @@ menu, a "Latest release" portlet and a "Bug subscriptions" portlet.
     Get Involved
     Report a bug
     Ask a question
-    Help translate
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'latest-release'))

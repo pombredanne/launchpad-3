@@ -9,7 +9,6 @@ __all__ = [
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBadges',
-    'ArchiveBreadcrumb',
     'ArchiveBuildsView',
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
@@ -65,9 +64,9 @@ from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.person import IPersonSet, PersonVisibility
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, active_publishing_status,
-    inactive_publishing_status, IPublishingSet)
+    active_publishing_status, inactive_publishing_status, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
@@ -78,7 +77,6 @@ from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.widgets import (
@@ -380,14 +378,6 @@ class ArchiveNavigationMenu(NavigationMenu):
     usedfor = IArchive
     facet = 'overview'
     links = []
-
-
-class ArchiveBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IArchive`."""
-
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class ArchiveViewBase(LaunchpadView):

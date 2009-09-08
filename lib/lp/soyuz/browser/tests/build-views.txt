@@ -177,7 +177,7 @@ not even have a package upload, so will return False:
 First lets create a package upload for this build:
 XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
     >>> from lp.soyuz.model.queue import PackageUploadBuild
     >>> build = cprov_failed_build_view.context
