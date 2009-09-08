@@ -222,7 +222,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Resubmit proposal'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.SUPERSEDED)
-        return Link('+resubmit', text, enabled=enabled)
+        return Link('+resubmit', text, enabled=enabled, icon='edit')
 
 
 class UnmergedRevisionsMixin:
