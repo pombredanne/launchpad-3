@@ -43,7 +43,15 @@
     </div>
   </div>
   <tal:side metal:fill-slot="side">
-    <div tal:replace="structure context/@@+get-involved" />
+    <div id="involvement" class="portlet involvement">
+      <ul>
+        <li>
+          <a href="+filebug" class="menu-link-filebug sprite bugs">
+            Report a bug
+          </a>
+        </li>
+      </ul>
+    </div>
     <tal:menu replace="structure view/@@+related-pages" />
     <tal:do_not_show_portlets_advanced_form
       condition="not: view/shouldShowAdvancedForm">

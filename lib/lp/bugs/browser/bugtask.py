@@ -1932,9 +1932,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
         else:
             return ()
 
-    def filebug(self):
-        return Link('+filebug', 'Report a bug', icon='bug')
-
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
 
