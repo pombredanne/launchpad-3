@@ -311,66 +311,29 @@
   </div>
 
 
-
-
   <div class="yui-g">
+
     <div class="yui-u first">
       <div id="branch-info" class="portlet">
         <h2>Branch information</h2>
-
         <tal:branch-info replace="structure context/@@++branch-information" />
-
       </div>
     </div>
 
     <div class="yui-u">
       <div id="branch-download" class="portlet">
         <h2>Branch management</h2>
-
         <tal:branch-info replace="structure context/@@++branch-management" />
-
       </div>
     </div>
 
   </div>
+
+
   <div id="branch-merges" class="yui-g">
-    <h2>Branch Merges</h2>
-    <div id="merge-links" tal:condition="view/show_merge_links">
-      <div id="merge-summary">
-
-        <div id="landing-candidates"
-             tal:condition="view/landing_candidates">
-          <img src="/@@/merge-proposal-icon" />
-          <a href="+merges" tal:content="structure view/landing_candidate_count_text">
-            1 branch
-          </a>
-          proposed for merging into this one.
-
-        </div>
-
-        <div id="dependent-branches" tal:condition="context/dependent_branches">
-          <img src="/@@/merge-proposal-icon" />
-          <a href="+merges" tal:content="structure view/dependent_branch_count_text">
-            1 branch
-          </a>
-          dependent on this one.
-        </div>
-
-        <div id="landing-targets" tal:condition="view/landing_targets">
-          <tal:landing-candidates repeat="mergeproposal view/landing_targets">
-            <div>
-              <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
-            </div>
-          </tal:landing-candidates>
-        </div>
-
-      </div>
-      <div
-        tal:define="link context_menu/register_merge"
-        tal:condition="link/enabled"
-        tal:replace="structure link/render"
-        />
-    </div>
+    <h2>Branch Pending Merges</h2>
+    <tal:branch-pending-merges
+        replace="structure context/@@++branch-pending-merges" />
   </div>
 
   <div id="whiteboard" class="yui-g" tal:condition="view/show_whiteboard">
