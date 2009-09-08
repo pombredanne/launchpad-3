@@ -17,6 +17,7 @@ that this page has information about relicensing.
     Translations licensing by Karl Tilbury
     >>> print extract_text(find_main_content(browser.contents))
     Karl Tilbury
+    ...
     Sorry to interrupt...
 
 Karl is asked whether he wants to license his translations.
