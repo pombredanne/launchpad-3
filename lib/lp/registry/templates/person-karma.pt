@@ -43,8 +43,7 @@
       <tal:total_karma tal:replace="context/karma">34</tal:total_karma>
 
       <tal:latest_events condition="latest_karma">
-        <p class="application-summary"
-           style="padding-top: 2em;" >
+        <p class="application-summary" style="padding-top: 2em;">
           These are the latest actions which have contributed to the Launchpad
           karma earned by <span tal:replace="context/displayname" /> and the
           dates on which the action occurred.

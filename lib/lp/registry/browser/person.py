@@ -2523,12 +2523,12 @@ class PersonKarmaView(LaunchpadView):
 
     @cachedproperty
     def has_karma(self):
-        """Does the have karma?"""
+        """Does the person have karma?"""
         return bool(self.context.karma_category_caches)
 
     @cachedproperty
     def has_expired_karma(self):
-        """Did the user have karma?"""
+        """Did the person have karma?"""
         return self.context.latestKarma().count() > 0
 
 
