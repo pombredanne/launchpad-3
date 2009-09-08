@@ -11,9 +11,7 @@ __all__ = [
     'ProjectAddQuestionView',
     'ProjectAddView',
     'ProjectAnswersMenu',
-    'ProjectBountiesMenu',
     'ProjectBrandingView',
-    'ProjectBreadcrumbBuilder',
     'ProjectBugsMenu',
     'ProjectEditView',
     'ProjectFacets',
@@ -23,7 +21,7 @@ __all__ = [
     'ProjectRdfView',
     'ProjectReviewView',
     'ProjectSeriesSpecificationsMenu',
-    'ProjectSetBreadcrumbBuilder',
+    'ProjectSetBreadcrumb',
     'ProjectSetContextMenu',
     'ProjectSetNavigation',
     'ProjectSetNavigationMenu',
@@ -54,7 +52,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.registry.browser.product import (
     ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
@@ -69,7 +67,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
     canonical_url, custom_widget, enabled_with_permission, stepthrough,
     structured)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 
 class ProjectNavigation(Navigation,
@@ -105,14 +103,7 @@ class ProjectSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(project))
 
 
-class ProjectBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `IProject`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
-class ProjectSetBreadcrumbBuilder(BreadcrumbBuilder):
+class ProjectSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProjectSet`."""
     text = 'Project Groups'
 
@@ -285,21 +276,6 @@ class ProjectEditNavigationMenu(NavigationMenu, ProjectEditMenuMixin):
     links = ('branding', 'reassign', 'driver', 'administer')
 
 
-class ProjectBountiesMenu(ApplicationMenu):
-
-    usedfor = IProject
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register a bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
-
-
 class ProjectSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProject
@@ -441,7 +417,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 
     The new project will automatically be a part of the project group.
     """
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     @cachedproperty
     def label(self):
@@ -458,7 +434,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 class ProjectGroupAddStepTwo(ProjectAddStepTwo):
     """Step 2 (of 2) in the +newproduct project add wizard."""
 
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     def create_product(self, data):
         """Create the product from the user data."""
@@ -493,8 +469,13 @@ class ProjectAddProductView(ProductAddView):
 class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for project group index."""
     usedfor = IProjectSet
-    links = ['register_team', 'register_project', 'create_account',
-             'register_project_group', 'view_all_project_groups']
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        'register_project_group',
+        'view_all_project_groups',
+        ]
 
     @enabled_with_permission('launchpad.ProjectReview')
     def register_project_group(self):

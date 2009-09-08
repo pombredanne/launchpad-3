@@ -23,7 +23,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.code.model.branch import Branch
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCase, TestCaseWithFactory, time_counter
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer

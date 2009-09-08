@@ -125,10 +125,11 @@ are done here.
 
 == Ubuntu sources ==
 
-All diffs are visible in the 'biscuit source in ubuntu' page, right
-below the changelog text for each uploaded version.
+All diffs are visible in the 'biscuit source in ubuntu' change log page, right
+below the text for each uploaded version.
 
-    >>> anon_browser.open('http://launchpad.dev/ubuntu/+source/biscuit')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/biscuit/+changelog')
     >>> changes = find_tags_by_class(anon_browser.contents, 'boardComment')
     >>> for change in changes:
     ...     print 30 * '='

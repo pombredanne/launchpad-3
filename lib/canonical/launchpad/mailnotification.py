@@ -854,6 +854,17 @@ def notify_invitation_to_join_team(event):
         simple_sendmail(from_addr, address, subject, msg)
 
 
+def send_team_email(from_addr, address, subject, template, replacements,
+                    rationale, headers=None):
+    """Send a team message with a rationale."""
+    if headers is None:
+        headers = {}
+    body = MailWrapper().format(template % replacements, force_wrap=True)
+    footer = "-- \n%s" % rationale
+    message = '%s\n\n%s' % (body, footer)
+    simple_sendmail(from_addr, address, subject, message, headers)
+
+
 @block_implicit_flushes
 def notify_team_join(event):
     """Notify team admins that someone has asked to join the team.
@@ -881,24 +892,42 @@ def notify_team_join(event):
         # notification to the person too.
         member_addrs = get_contact_email_addresses(person)
 
-        subject = 'You have been added to %s' % team.name
-        templatename = 'new-member-notification.txt'
+        headers = {}
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
             subject = '%s joined %s' % (person.name, team.name)
+            header_rational = "Indirect member (%s)" % team.name
+            footer_rationale = (
+                "You received this email because "
+                "%s is the new member." % person.name)
+        else:
+            templatename = 'new-member-notification.txt'
+            subject = 'You have been added to %s' % team.name
+            header_rational = "Member (%s)" % team.name
+            footer_rationale = (
+                "You received this email because you are the new member.")
+
+        if team.mailing_list is not None:
+            list_instructions = get_email_template(
+                'team-list-subscribe-block.txt')
+        else:
+            list_instructions = ''
 
         template = get_email_template(templatename)
         replacements = {
             'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
             'team_url': canonical_url(team),
             'member': '%s (%s)' % (person.displayname, person.name),
-            'team': '%s (%s)' % (team.displayname, team.name)}
+            'team': '%s (%s)' % (team.displayname, team.name),
+            'list_instructions': list_instructions,
+            }
+        headers = {'X-Launchpad-Message-Rationale': header_rational}
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(
-                template % replacements, force_wrap=True)
-            simple_sendmail(from_addr, address, subject, msg)
+            send_team_email(
+                from_addr, address, subject, template, replacements,
+                footer_rationale, headers)
 
         # The member's email address may be in admin_addrs too; let's remove
         # it so the member don't get two notifications.
@@ -935,9 +964,26 @@ def notify_team_join(event):
     for address in admin_addrs:
         recipient = getUtility(IPersonSet).getByEmail(address)
         replacements['recipient_name'] = recipient.displayname
-        msg = MailWrapper().format(
-            template % replacements, force_wrap=True)
-        simple_sendmail(from_addr, address, subject, msg, headers=headers)
+        if recipient.isTeam():
+            header_rationale = 'Admin (%s via %s)' % (
+                team.name, recipient.name)
+            footer_rationale = (
+                "you are an admin of the %s team\n"
+                "via the %s team." % (
+                team.displayname, recipient.displayname))
+        elif recipient == team.teamowner:
+            header_rationale = 'Owner (%s)' % team.name
+            footer_rationale = (
+                "you are the owner of the %s team." % team.displayname)
+        else:
+            header_rationale = 'Admin (%s)' % team.name
+            footer_rationale = (
+                "you are an admin of the %s team." % team.displayname)
+        footer = 'You received this email because %s' % footer_rationale
+        headers['X-Launchpad-Message-Rationale'] = header_rationale
+        send_team_email(
+            from_addr, address, subject, template, replacements,
+            footer, headers)
 
 
 def specification_notification_subject(spec):

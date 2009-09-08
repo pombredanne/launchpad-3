@@ -231,20 +231,20 @@
       folder="help" type="canonical.launchpad.layers.AnswersLayer" />
   <adapter
       name="answers"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.answers.interfaces.questiontarget.IQuestionTarget"
-      factory="lp.answers.browser.questiontarget.QuestionTargetOnAnswersVHostBreadcrumbBuilder"
+      factory="lp.answers.browser.questiontarget.QuestionTargetOnAnswersVHostBreadcrumb"
       permission="zope.Public"/>
   <adapter
       name="answers"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.registry.interfaces.project.IProject"
-      factory="lp.answers.browser.questiontarget.QuestionTargetOnAnswersVHostBreadcrumbBuilder"
+      factory="lp.answers.browser.questiontarget.QuestionTargetOnAnswersVHostBreadcrumb"
       permission="zope.Public"/>
   <adapter
       name="answers"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.registry.interfaces.person.IPerson"
-      factory="lp.answers.browser.questiontarget.PersonOnAnswersVHostBreadcrumbBuilder"
+      factory="lp.answers.browser.questiontarget.PersonOnAnswersVHostBreadcrumb"
       permission="zope.Public"/>
 </configure>

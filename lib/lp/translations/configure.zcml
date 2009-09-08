@@ -394,6 +394,11 @@
                 permission="launchpad.Edit"
                 set_schema="lp.translations.interfaces.translationgroup.ITranslationGroup"/>
         </class>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.translations.interfaces.translationgroup.ITranslationGroup"
+            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+            permission="zope.Public"/>
 
         <!-- TranslationGroupSet -->
 
@@ -403,6 +408,11 @@
             <allow
                 interface="lp.translations.interfaces.translationgroup.ITranslationGroupSet"/>
         </securedutility>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
+            factory="lp.translations.browser.translationgroup.TranslationGroupSetBreadcrumb"
+            permission="zope.Public"/>
     </facet>
     <class
         class="lp.translations.model.potmsgset.POTMsgSet">
@@ -415,6 +425,11 @@
         <require
             permission="launchpad.Admin"
             set_attributes="commenttext sourcecomment filereferences flagscomment"/>
+    </class>
+    <class
+        class="lp.translations.model.translatablemessage.TranslatableMessage">
+        <allow
+            interface="lp.translations.interfaces.translatablemessage.ITranslatableMessage"/>
     </class>
     <facet
         facet="translations">

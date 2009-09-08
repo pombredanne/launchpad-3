@@ -28,6 +28,7 @@ from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -35,8 +36,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingPriority,
-    PackagePublishingStatus)
+    PackagePublishingPriority, PackagePublishingStatus)
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory

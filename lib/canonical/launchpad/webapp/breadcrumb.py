@@ -7,7 +7,8 @@ __metaclass__ = type
 
 __all__ = [
     'Breadcrumb',
-    'BreadcrumbBuilder',
+    'DisplaynameBreadcrumb',
+    'TitleBreadcrumb',
     ]
 
 
@@ -17,17 +18,48 @@ from zope.interface import implements
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, IBreadcrumbBuilder)
+    IBreadcrumb, ICanonicalUrlData)
 
 
 class Breadcrumb:
-    """See `IBreadcrumb`."""
+    """See `IBreadcrumb`.
+
+    This class is intended for use as an adapter.
+    """
     implements(IBreadcrumb)
 
-    def __init__(self, url, text, icon=None):
-        self.url = url
-        self.text = text
-        self.icon = icon
+    text = None
+    _url = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def rootsite(self):
+        """The rootsite of this breadcrumb's URL.
+
+        If the `ICanonicalUrlData` for our context defines a rootsite, we
+        return that, otherwise we return 'mainsite'.
+        """
+        url_data = ICanonicalUrlData(self.context)
+        if url_data.rootsite:
+            return url_data.rootsite
+        else:
+            return 'mainsite'
+
+    @property
+    def url(self):
+        if self._url is None:
+            return canonical_url(self.context, rootsite=self.rootsite)
+        else:
+            return self._url
+
+    @property
+    def icon(self):
+        """See `IBreadcrumb`."""
+        # Get the <img> tag from the path adapter.
+        return queryAdapter(
+            self.context, IPathAdapter, name='image').icon()
 
     def __repr__(self):
         if self.icon is not None:
@@ -39,41 +71,17 @@ class Breadcrumb:
             self.__class__.__name__, self.url, self.text, icon_repr)
 
 
-# XXX: salgado, 2009-08-17: Since this adapter now provides a default
-# value for the 'url' attribute, we could easily convert it into an
-# adapter for IBreadcrumb, just changing the Hierarchy view.
-class BreadcrumbBuilder:
-    """See `IBreadcrumbBuilder`.
-
-    This class is intended for use as an adapter.
-    """
-    implements(IBreadcrumbBuilder)
-
-    rootsite = 'mainsite'
-    text = None
-
-    def __init__(self, context):
-        self.context = context
+class DisplaynameBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's displayname as its text."""
 
     @property
-    def url(self):
-        return canonical_url(self.context, rootsite=self.rootsite)
+    def text(self):
+        return self.context.displayname
+
+
+class TitleBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's title as its text."""
 
     @property
-    def icon(self):
-        """See `IBreadcrumb`."""
-        # Get the <img> tag from the path adapter.
-        return queryAdapter(
-            self.context, IPathAdapter, name='image').icon()
-
-    def make_breadcrumb(self):
-        """See `IBreadcrumbBuilder.`"""
-        if self.text is None:
-            raise AssertionError(
-                "The builder has not been given valid text for the "
-                "breadcrumb.")
-        if self.url is None:
-            raise AssertionError(
-               "The builder has not been given a valid breadcrumb URL.")
-
-        return Breadcrumb(self.url, self.text, icon=self.icon)
+    def text(self):
+        return self.context.title

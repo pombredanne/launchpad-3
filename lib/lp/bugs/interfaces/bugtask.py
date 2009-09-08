@@ -37,6 +37,7 @@ __all__ = [
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
+    'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url']
 
@@ -325,6 +326,16 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+
+class UserCannotEditBugTaskMilestone(Unauthorized):
+    """User not permitted to change milestone.
+
+    Raised when a user tries to transition to a milestone who doesn't have
+    the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
     webservice_error(400) #Bad request.
@@ -351,6 +362,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     milestone = exported(ReferenceChoice(
         title=_('Milestone'),
         required=False,
+        readonly=True,
         vocabulary='Milestone',
         schema=Interface)) # IMilestone
 
@@ -547,6 +559,18 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         no longer useful.
         """
 
+    @mutator_for(milestone)
+    @rename_parameters_as(new_milestone='milestone')
+    @operation_parameters(new_milestone=copy_field(milestone))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def transitionToMilestone(new_milestone, user):
+        """Set the BugTask milestone.
+
+        Set the bugtask milestone, making sure that the user is
+        authorised to do so.
+        """
+
     @mutator_for(importance)
     @rename_parameters_as(new_importance='importance')
     @operation_parameters(new_importance=copy_field(importance))
@@ -610,6 +634,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         value is set to None, date_assigned is also set to None.
         """
 
+    @mutator_for(target)
     @operation_parameters(
         target=copy_field(target))
     @export_write_operation()

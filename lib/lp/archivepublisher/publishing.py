@@ -1,7 +1,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-__all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
+__all__ = [
+    'Publisher',
+    'suffixpocket',
+    'getPublisher',
+    ]
 
 __metaclass__ = type
 
@@ -24,12 +28,13 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
 from lp.archivepublisher.utils import (
     RepositoryIndexFile, get_ppa_reference)
 from canonical.database.sqlbase import sqlvalues
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import (
-    pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from canonical.librarian.client import LibrarianClient
 

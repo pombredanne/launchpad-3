@@ -205,7 +205,8 @@ class BranchURIField(URIField):
     # is removed.
     def normalize(self, input):
         """Be extra-strict about trailing slashes."""
-        input = super(BranchURIField, self).normalize(input)
+        # Can't use super-- this derives from an old-style class
+        input = URIField.normalize(self, input)
         if self.trailing_slash == False and input[-1] == '/':
             # ensureNoSlash() doesn't trim the slash if the path
             # is empty (eg. http://example.com/). Due to the database
@@ -219,7 +220,8 @@ class BranchURIField(URIField):
         from canonical.launchpad.webapp import canonical_url
         from lazr.uri import URI
 
-        super(BranchURIField, self)._validate(value)
+        # Can't use super-- this derives from an old-style class
+        URIField._validate(self, value)
 
         # XXX thumper 2007-06-12:
         # Move this validation code into IBranchSet so it can be
@@ -746,6 +748,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
             when adding the new target.
         :param review_requests: An optional list of (`Person`, review_type).
         """
+
+    def scheduleDiffUpdates():
+        """Create UpdatePreviewDiffJobs for this branch's targets."""
 
     def getStackedBranches():
         """The branches that are stacked on this one."""

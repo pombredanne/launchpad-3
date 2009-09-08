@@ -7,16 +7,14 @@ __metaclass__ = type
 
 __all__ = [
     "BugTargetBugListingView",
-    "BugTargetBugsView",
     "BugTargetBugTagsView",
-    "FileBugViewBase",
+    "BugTargetBugsView",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FrontPageFileBugAdvancedView",
+    "FileBugViewBase",
     "FrontPageFileBugGuidedView",
     "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
-    "ProjectFileBugAdvancedView",
     ]
 
 import cgi
@@ -56,7 +54,7 @@ from canonical.launchpad.interfaces._schema_circular_imports import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IFrontPageBugAddForm, IProjectBugAddForm)
@@ -796,8 +794,8 @@ class FileBugAdvancedView(FileBugViewBase):
     def initialize(self):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
-        self.request.response.redirect(filebug_url,
-        status=HTTP_MOVED_PERMANENTLY)
+        self.request.response.redirect(
+            filebug_url, status=HTTP_MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -1292,6 +1290,16 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     schema = IOfficialBugTagTargetPublic
     custom_widget('official_bug_tags', LargeBugTagsWidget)
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Manage official bug tags for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     @action('Save', name='save')
     def save_action(self, action, data):
         """Action for saving new official bug tags."""
@@ -1319,7 +1327,7 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BugTargetOnBugsVHostBreadcrumbBuilder(BreadcrumbBuilder):
+class BugTargetOnBugsVHostBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
 
     @property

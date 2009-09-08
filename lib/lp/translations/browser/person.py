@@ -26,6 +26,9 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadRadioWidget
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.translations.browser.translationlinksaggregator import (
+    TranslationLinksAggregator)
 from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
 from lp.translations.interfaces.translationrelicensingagreement import (
@@ -33,14 +36,71 @@ from lp.translations.interfaces.translationrelicensingagreement import (
     TranslationRelicensingAgreementOptions)
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
-from lp.translations.model.productserieslanguage import ProductSeriesLanguage
+
+
+class WorkListLinksAggregator(TranslationLinksAggregator):
+    """Aggregate translation links for translation or review.
+
+    Here, all files are actually `POFile`s, never `POTemplate`s.
+    """
+
+    def countStrings(self, pofile):
+        """Count number of strings that need work."""
+        raise NotImplementedError()
+
+    def describe(self, target, link, covered_files):
+        """See `TranslationLinksAggregator.describe`."""
+        strings_count = sum(
+            [self.countStrings(pofile) for pofile in covered_files])
+
+        if strings_count == 1:
+            strings_wording = "%d string"
+        else:
+            strings_wording = "%d strings"
+
+        return {
+            'target': target,
+            'count': strings_count,
+            'count_wording': strings_wording % strings_count,
+            'is_product': not ISourcePackage.providedBy(target),
+            'link': link,
+        }
+
+
+class ReviewLinksAggregator(WorkListLinksAggregator):
+    """A `TranslationLinksAggregator` for translations to review."""
+    # Link to unreviewed suggestions.
+    pofile_link_suffix = '/+translate?show=new_suggestions'
+
+    # Strings that need work are ones with unreviewed suggestions.
+    def countStrings(self, pofile):
+        """See `WorkListLinksAggregator.countStrings`."""
+        return pofile.unreviewedCount()
+
+
+class TranslateLinksAggregator(WorkListLinksAggregator):
+    """A `TranslationLinksAggregator` for translations to complete."""
+    # Link to untranslated strings.
+    pofile_link_suffix = '/+translate?show=untranslated'
+
+    # Strings that need work are untranslated ones.
+    def countStrings(self, pofile):
+        """See `WorkListLinksAggregator.countStrings`."""
+        return pofile.untranslatedCount()
+
+
+def person_is_reviewer(person):
+    """Is `person` a translations reviewer?"""
+    groups = ITranslationsPerson(person).translation_groups
+    return groups.any() is not None
 
 
 class PersonTranslationsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'translations'
-    links = ('overview', 'licensing', 'imports')
+    links = ('overview', 'licensing', 'imports', 'translations_to_review')
+    title = "Related pages"
 
     def overview(self):
         text = 'Overview'
@@ -55,13 +115,21 @@ class PersonTranslationsMenu(NavigationMenu):
         enabled = (self.context == self.user)
         return Link('+licensing', text, enabled=enabled)
 
+    def translations_to_review(self):
+        text = 'Translations to review'
+        enabled = person_is_reviewer(self.context)
+        return Link('+translations-to-review', text, enabled=enabled)
+
 
 class PersonTranslationView(LaunchpadView):
     """View for translation-related Person pages."""
 
     _pofiletranslator_cache = None
 
-    history_horizon = None
+    def __init__(self, *args, **kwargs):
+        super(PersonTranslationView, self).__init__(*args, **kwargs)
+        now = datetime.now(pytz.timezone('UTC'))
+        self.history_horizon = now - timedelta(90, 0, 0)
 
     @cachedproperty
     def batchnav(self):
@@ -96,7 +164,23 @@ class PersonTranslationView(LaunchpadView):
     @property
     def person_is_reviewer(self):
         """Is this person in a translation group?"""
-        return len(self.translation_groups) != 0
+        return person_is_reviewer(self.context)
+
+    @property
+    def person_is_translator(self):
+        """Is this person active in translations?"""
+        person = ITranslationsPerson(self.context)
+        history = person.getTranslationHistory(self.history_horizon).any()
+        return history is not None
+
+    @property
+    def person_includes_me(self):
+        """Is the current user (a member of) this person?"""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+        else:
+            return user.inTeam(self.context)
 
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
@@ -111,196 +195,129 @@ class PersonTranslationView(LaunchpadView):
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
 
-    def _composeReviewLinks(self, pofiles):
-        """Compose URLs for reviewing given `POFile`s."""
-        return [
-            canonical_url(pofile) + '/+translate?show=new_suggestions'
-            for pofile in pofiles
-            ]
+    def _getTargetsForReview(self, max_fetch=None):
+        """Query and aggregate the top targets for review.
 
-    def _findBestCommonReviewLinks(self, pofiles):
-        """Find best links to a bunch of related `POFile`s.
-
-        The `POFile`s must either be in the same `Product`, or in the
-        same `DistroSeries` and `SourcePackageName`.
-        
-        This method finds the greatest common denominators between them,
-        and returns a list of links to them: the individual translation
-        if there is only one, the template if multiple translations of
-        one template are involved, and so on.
+        :param max_fetch: Maximum number of `POFile`s to fetch while
+            looking for these.
+        :return: a list of at most `max_fetch` translation targets.
+            Multiple `POFile`s may be aggregated together into a single
+            target.
         """
-        assert pofiles, "Empty POFiles list in reviewable target."
-        first_pofile = pofiles[0]
+        person = ITranslationsPerson(self.context)
+        pofiles = person.getReviewableTranslationFiles(
+            no_older_than=self.history_horizon)
 
-        if len(pofiles) == 1:
-            # Simple case: one translation file.  Go straight to
-            # translation page for its unreviewed strings.
-            return self._composeReviewLinks(pofiles)
+        if max_fetch is not None:
+            pofiles = pofiles[:max_fetch]
 
-        templates = set(pofile.potemplate for pofile in pofiles)
+        return ReviewLinksAggregator().aggregate(pofiles)
 
-        productseries = set(
-            template.productseries
-            for template in templates
-            if template.productseries)
+    def _suggestTargetsForReview(self, max_fetch):
+        """Find random translation targets for review.
 
-        products = set(series.product for series in productseries)
-
-        sourcepackagenames = set(
-            template.sourcepackagename
-            for template in templates
-            if template.sourcepackagename)
-        
-        distroseries = set(
-            template.distroseries
-            for template in templates
-            if template.distroseries)
-
-        assert len(products) <= 1, "Got more than one product."
-        assert len(sourcepackagenames) <= 1, "Got more than one package."
-        assert len(distroseries) <= 1, "Got more than one distroseries."
-        assert len(products) + len(sourcepackagenames) == 1, (
-            "Didn't get POFiles for exactly one package or one product.")
-        
-        first_template = first_pofile.potemplate
-
-        if len(templates) == 1:
-            # Multiple translations for one template.  Link to the
-            # template.
-            return [canonical_url(first_template)]
-
-        if sourcepackagenames:
-            # Multiple POFiles for a source package.  Show its template
-            # listing.
-            distroseries = first_template.distroseries
-            packagename = first_template.sourcepackagename
-            return [canonical_url(distroseries.getSourcePackage(packagename))]
-
-        if len(productseries) == 1:
-            series = first_template.productseries
-            # All for the same ProductSeries.
-            languages = set(pofile.language for pofile in pofiles)
-            if len(languages) == 1:
-                # All for the same language in the same ProductSeries,
-                # but apparently for different templates.  Link to
-                # ProductSeriesLanguage.
-                productserieslanguage = ProductSeriesLanguage(
-                    series, pofiles[0].language)
-                return [canonical_url(productserieslanguage)]
-            else:
-                # Multiple templates and languages in the same product
-                # series.  Show its templates listing.
-                return [canonical_url(series)]
-
-        # Different release series of the same product.  Link to each of
-        # the individual POFiles.
-        return self._composeReviewLinks(pofiles)
-
-    def _describeReviewableTarget(self, target, link, strings_count):
-        """Produce dict to describe a reviewable target.
-
-        The target may be a `Product` or a tuple of `SourcePackageName`
-        and `DistroSeries`.
+        :param max_fetch: Maximum number of `POFile`s to fetch while
+            looking for these.
+        :return: a list of at most `max_fetch` translation targets.
+            Multiple `POFile`s may be aggregated together into a single
+            target.
         """
-        if isinstance(target, tuple):
-            (name, distroseries) = target
-            target = distroseries.getSourcePackage(name)
-            is_product = False
-        else:
-            is_product = True
+        person = ITranslationsPerson(self.context)
+        pofiles = person.suggestReviewableTranslationFiles(
+            no_older_than=self.history_horizon)[:max_fetch]
 
-        if strings_count == 1:
-            strings_wording = '%d string'
-        else:
-            strings_wording = '%d strings'
+        return ReviewLinksAggregator().aggregate(pofiles)
 
-        return {
-            'target': target,
-            'count': strings_count,
-            'link': link,
-            'count_wording': strings_wording % strings_count,
-            'is_product': is_product,
-        }
+    def _getTargetsForTranslation(self, max_fetch=None):
+        """Get translation targets for this person to translate.
 
-    def _setHistoryHorizon(self):
-        """If not already set, set `self.history_horizon`."""
-        if self.history_horizon is None:
-            now = datetime.now(pytz.timezone('UTC'))
-            self.history_horizon = now - timedelta(90, 0, 0)
-
-    def _aggregateTranslationTargets(self, pofiles):
-        """Aggregate list of `POFile`s into sensible targets.
-
-        Returns a list of target descriptions as returned by
-        `_describeReviewableTarget` after going through
-        `_findBestCommonReviewLinks`.
+        Results are ordered from most to fewest untranslated messages.
         """
-        targets = {}
-        for pofile in pofiles:
-            template = pofile.potemplate
-            if template.productseries:
-                target = template.productseries.product
-            else:
-                target = (template.sourcepackagename, template.distroseries)
+        person = ITranslationsPerson(self.context)
+        urgent_first = (max_fetch >= 0)
+        pofiles = person.getTranslatableFiles(
+            no_older_than=self.history_horizon, urgent_first=urgent_first)
 
-            if target in targets:
-                (count, target_pofiles) = targets[target]
-            else:
-                count = 0
-                target_pofiles = []
+        if max_fetch is not None:
+            pofiles = pofiles[:abs(max_fetch)]
 
-            count += pofile.unreviewedCount()
-            target_pofiles.append(pofile)
+        return TranslateLinksAggregator().aggregate(pofiles)
 
-            targets[target] = (count, target_pofiles)
+    def _suggestTargetsForTranslation(self, max_fetch=None):
+        """Suggest translations this person could be helping complete."""
+        person = ITranslationsPerson(self.context)
+        pofiles = person.suggestTranslatableFiles(
+            no_older_than=self.history_horizon)
 
-        result = []
-        for target, stats in targets.iteritems():
-            (count, target_pofiles) = stats
-            links = self._findBestCommonReviewLinks(target_pofiles)
-            for link in links:
-                result.append(
-                    self._describeReviewableTarget(target, link, count))
+        if max_fetch is not None:
+            pofiles = pofiles[:max_fetch]
 
-        return result
+        return TranslateLinksAggregator().aggregate(pofiles)
 
     @cachedproperty
     def all_projects_and_packages_to_review(self):
         """Top projects and packages for this person to review."""
-        self._setHistoryHorizon()
-        person = ITranslationsPerson(self.context)
-        return self._aggregateTranslationTargets(
-            person.getReviewableTranslationFiles(
-                no_older_than=self.history_horizon))
+        return self._getTargetsForReview()
+
+    def _addToTargetsList(self, existing_targets, new_targets, max_items,
+                          max_overall):
+        """Add `new_targets` to `existing_targets` list.
+
+        This is for use in showing top-10 ists of translations a user
+        should help review or complete.
+
+        :param existing_targets: Translation targets that are already
+            being listed.
+        :param new_targets: Translation targets to add.  Ones that were
+            already in `existing_targets` will not be added again.
+        :param max_items: Maximum number of targets from `new_targets`
+            to add.
+        :param max_overall: Maximum overall size of the resulting list.
+            What happens if `existing_targets` already exceeds this size
+            is none of your business.
+        :return: A list of translation targets containing all of
+            `existing_targets`, followed by as many from `new_targets`
+            as there is room for.
+        """
+        remaining_slots = max_overall - len(existing_targets)
+        maximum_addition = min(max_items, remaining_slots)
+        if remaining_slots <= 0:
+            return existing_targets
+
+        known_targets = set([item['target'] for item in existing_targets])
+        really_new = [
+            item
+            for item in new_targets
+            if item['target'] not in known_targets
+            ]
+
+        return existing_targets + really_new[:maximum_addition]
 
     @property
     def top_projects_and_packages_to_review(self):
         """Suggest translations for this person to review."""
-        self._setHistoryHorizon()
-
         # Maximum number of projects/packages to list that this person
         # has recently worked on.
-        max_old_targets = 9
+        max_known_targets = 9
         # Length of overall list to display.
         list_length = 10
 
         # Start out with the translations that the person has recently
         # worked on.  Aggregation may reduce the number we get, so ask
         # the database for a few extra.
-        fetch = 5 * max_old_targets
-        recent = self.all_projects_and_packages_to_review[:fetch]
+        fetch = 5 * max_known_targets
+        recent = self._getTargetsForReview(fetch)
+        overall = self._addToTargetsList(
+            [], recent, max_known_targets, list_length)
 
-        # Fill out the list with other translations that the person
-        # could also be reviewing.
-        empty_slots = list_length - min(len(recent), max_old_targets)
-        fetch = 5 * empty_slots
+        # Fill out the list with other, randomly suggested translations
+        # that the person could also be reviewing.
+        fetch = 5 * (list_length - len(overall))
+        suggestions = self._suggestTargetsForReview(fetch)
+        overall = self._addToTargetsList(
+            overall, suggestions, list_length, list_length)
 
-        person = ITranslationsPerson(self.context)
-        random_suggestions = self._aggregateTranslationTargets(
-            person.suggestReviewableTranslationFiles(
-                no_older_than=self.history_horizon)[:fetch])
-
-        return recent[:max_old_targets] + random_suggestions[:empty_slots]
+        return overall
 
     @cachedproperty
     def num_projects_and_packages_to_review(self):
@@ -308,13 +325,34 @@ class PersonTranslationView(LaunchpadView):
         return len(self.all_projects_and_packages_to_review)
 
     @property
-    def person_includes_me(self):
-        """Is the current user (a member of) this person?"""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-        else:
-            return user.inTeam(self.context)
+    def top_projects_and_packages_to_translate(self):
+        """Suggest translations for this person to help complete."""
+        # Maximum number of translations to list that need the most work
+        # done.
+        max_urgent_targets = 3
+        # Maximum number of translations to list that are almost
+        # complete.
+        max_almost_complete_targets = 3
+        # Length of overall list to display.
+        list_length = 10
+
+        fetch = 5 * max_urgent_targets
+        urgent = self._getTargetsForTranslation(fetch)
+        overall = self._addToTargetsList(
+            [], urgent, max_urgent_targets, list_length)
+
+        fetch = 5 * max_almost_complete_targets
+        almost_complete = self._getTargetsForTranslation(-fetch)
+        overall = self._addToTargetsList(
+            overall, almost_complete, max_almost_complete_targets,
+            list_length)
+
+        fetch = 5 * (list_length - len(overall))
+        suggestions = self._suggestTargetsForTranslation(fetch)
+        overall = self._addToTargetsList(
+            overall, suggestions, list_length, list_length)
+
+        return overall
 
 
 class PersonTranslationRelicensingView(LaunchpadFormView):
