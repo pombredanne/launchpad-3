@@ -354,6 +354,7 @@
 
     <div class="yui-u">
       <div id="branch-download" class="portlet">
+        <h2>Branch management</h2>
 
         <div id="browse-url"
           tal:condition="context/code_is_browseable">
