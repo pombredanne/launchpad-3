@@ -377,7 +377,7 @@
 
         <!-- NEW STUFFS GOES HERES -->
         <browser:page
-            name="+branch-information"
+            name="++branch-information"
             template="../templates/branch-information.pt" />
 
     </browser:pages>

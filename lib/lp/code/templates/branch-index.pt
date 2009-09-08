@@ -318,7 +318,7 @@
       <div id="branch-info" class="portlet">
         <h2>Branch information</h2>
 
-        <tal:branch-info replace="structure context/@@+branch-information" />
+        <tal:branch-info replace="structure context/@@++branch-information" />
 
       </div>
     </div>
