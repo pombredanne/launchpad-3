@@ -1672,7 +1672,7 @@ class ProductAddView(MultiStepView):
     """The controlling view for product/+new."""
 
     # XXX: This is a hack to make breadcrumbs work.
-    heading = ProjectAddStepOne.heading
+    page_title = ProjectAddStepOne.page_title
     total_steps = 2
 
     @property
