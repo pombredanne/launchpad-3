@@ -34,6 +34,7 @@ packages are being displayed.
 
     >>> browser.open("http://launchpad.dev/~mark/+related-software")
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
+    Maintained packages
     Displaying first 5 packages out of 7 total
     ...
     Uploaded packages
@@ -96,6 +97,20 @@ to the page that lists maintained packages in batches.
     Name        Uploaded to  Version   When        Failures   Bugs  Questions
     alsa-utils  Debian Sid   1.0.9a-4  2005-07-01  None       0     0
     ...
+
+The Maintained Packages page only has data if the person or team has
+maintained packages to show. No-priv does not maintain packages.
+
+    >>> anon_browser.open("http://launchpad.dev/~no-priv")
+    >>> print_tag_with_id(anon_browser.contents, 'ppas')
+    Personal package archives
+    PPA for No Privileges Person
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+maintained-packages")
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'packages'))
+    Name...
+    No Privileges Person does not maintain any packages.
 
 The navigation link to "Uploaded Packages" takes the user to the
 page that lists uploaded packages in batches.
