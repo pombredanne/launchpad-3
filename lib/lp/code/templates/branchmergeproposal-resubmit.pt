@@ -14,7 +14,7 @@
     <div metal:fill-slot="extra_info">
       <p>
         Resubmitting this proposal to merge will cause this proposal to be
-        marked as <strong>superseded</strong> another proposal to merge with
+        marked as <strong>superseded</strong>.  Another proposal to merge with
         the same source and target branches will be created.
       </p>
       <p>
