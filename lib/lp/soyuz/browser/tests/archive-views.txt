@@ -290,6 +290,33 @@ Remove the testing PPA dependency to not influence subsequent tests.
     >>> cprov.archive.removeArchiveDependency(testing_ppa)
     >>> login(ANONYMOUS)
 
+The ArchiveView also provides the latest updates ordered by the date
+they were published:
+
+    >>> def print_latest_updates(latest_updates):
+    ...     for update in latest_updates:
+    ...         print "%s - %s" % (
+    ...             update['pub'].displayname,
+    ...             update['status'].title
+    ...             )
+    >>> latest_updates = view.latest_updates
+    >>> print_latest_updates(latest_updates)
+    cdrkit 1.0 in breezy-autotest - FAILEDTOBUILD
+    pmount 0.1-1 in warty - FULLYBUILT
+    iceweasel 1.0 in warty - FULLYBUILT_PENDING
+
+Let's now update the datepublished for iceweasel to show that the ordering
+is from most-recent.
+
+    >>> from canonical.database.constants import UTC_NOW
+    >>> login('foo.bar@canonical.com')
+    >>> latest_updates[2]['pub'].secure_record.datepublished = UTC_NOW
+    >>> login(ANONYMOUS)
+    >>> print_latest_updates(view.latest_updates)
+    iceweasel 1.0 in warty - FULLYBUILT_PENDING
+    cdrkit 1.0 in breezy-autotest - FAILEDTOBUILD
+    pmount 0.1-1 in warty - FULLYBUILT
+
 
 == ArchivePackageView ==
 
