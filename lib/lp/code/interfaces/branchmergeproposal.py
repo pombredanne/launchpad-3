@@ -399,7 +399,9 @@ class IBranchMergeProposal(Interface):
         """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
-        user-entered data like the whiteboard.
+        user-entered data like the whiteboard.  All the current proposal's
+        reviewers, including those who have only been nominated, are requested
+        to review the new proposal.
         """
 
     def isMergable():
