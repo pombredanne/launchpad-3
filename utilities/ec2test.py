@@ -52,19 +52,6 @@ readline.parse_and_bind('tab: complete')
 
 #############################################################################
 # Try to guide users past support problems we've encountered before
-if boto.Version != '1.5b':
-    msg = [
-        'Your version of python-boto (%s) is not supported.' %(boto.Version,),
-        'See https://wiki.canonical.com/Launchpad/Experiments/FiveMinutesPQM '
-        'for instructions, or search for "python-boto" among the PPAs at '
-        'https://launchpad.net/~launchpad/+archive/ppa.']
-    if not re.match('/var/lib/python-support/python2.[56]/boto',
-                    os.path.dirname(boto.__file__)):
-        # Was this boto supplied by a deb?
-        msg.append('WARNING: it looks like your version of python-boto '
-                   'might not be from a debian package.  It may be masking '
-                   'the version installed by the package manager.')
-    raise RuntimeError(' '.join(msg))
 if not paramiko.__version__.startswith('1.7.4'):
     raise RuntimeError('Your version of paramiko (%s) is not supported.  '
                        'Please use 1.7.4.' % (paramiko.__version__,))
