@@ -339,4 +339,39 @@ div.package-details {
 
 </metal:package_filter_form>
 
+<metal:latest_updates_portlet define-macro="latest-updates-portlet">
+  <tal:comment replace="nothing">
+    Present the latest updates for a PPA in a portlet.
+  </tal:comment>
+
+  <tal:latest_updates define="updates view/latest_updates">
+  <div id="portlet-latest-updates" class="portlet">
+    <h2>Latest updates</h2>
+
+    <p tal:condition="not: updates">
+      <tal:name replace="context/displayname" /> has no updates.
+    </p>
+
+    <tal:updates condition="updates">
+      <ul class="latest-ppa-updates">
+        <li tal:repeat="update updates"
+            tal:attributes="class update/status_class">
+          <strong tal:content="update/title">Firefox-3.5</strong>
+          <span class="duration">
+            <span tal:replace="update/duration/fmt:approximateduration">
+              3 minutes
+            </span>
+            ago
+          </span><br />
+          <span tal:replace="update/status">Successful</span>
+        </li>
+      </ul>
+      <div class="see-all"
+        tal:content="string: update me" />
+    </tal:updates>
+    </div>
+  </tal:latest_updates>
+</metal:latest_updates_portlet>
+
+
 </tal:root>

@@ -26,6 +26,9 @@ __all__ = [
     ]
 
 
+from datetime import datetime
+import pytz
+
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -746,11 +749,29 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
         # We want to return a list of dicts for easy template rendering.
         latest_updates_list = []
+
+        # The token is not presentable and the description for each status
+        # is too long for use here, so define a dict of concise status
+        # descriptions.
+        status_names = {
+            'FULLYBUILT': 'Successfully built',
+            'FULLYBUILT_PENDING': 'Successfully built',
+            'NEEDSBUILD': 'Waiting to build',
+            'FAILEDTOBUILD': 'Failed to build',
+            'BUILDING': 'Currently building',
+            }
+
         for result_tuple in result_tuples:
             source_pub = result_tuple[0]
             current_status = source_pub.getStatusSummaryForBuilds()['status']
-            latest_updates_list.append(
-                {'pub': source_pub, 'status': current_status})
+            duration = datetime.now(tz=pytz.UTC) - source_pub.datepublished
+
+            latest_updates_list.append({
+                'title': source_pub.source_package_name,
+                'status': status_names[current_status.title],
+                'status_class': current_status.title,
+                'duration': duration,
+                })
 
         return latest_updates_list
 

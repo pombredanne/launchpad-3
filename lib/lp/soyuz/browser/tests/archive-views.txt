@@ -296,26 +296,25 @@ they were published:
     >>> def print_latest_updates(latest_updates):
     ...     for update in latest_updates:
     ...         print "%s - %s" % (
-    ...             update['pub'].displayname,
-    ...             update['status'].title
+    ...             update['title'],
+    ...             update['status']
     ...             )
-    >>> latest_updates = view.latest_updates
-    >>> print_latest_updates(latest_updates)
-    cdrkit 1.0 in breezy-autotest - FAILEDTOBUILD
-    pmount 0.1-1 in warty - FULLYBUILT
-    iceweasel 1.0 in warty - FULLYBUILT_PENDING
+    >>> print_latest_updates(view.latest_updates)
+    cdrkit - Failed to build
+    pmount - Successfully built
+    iceweasel - Successfully built
 
 Let's now update the datepublished for iceweasel to show that the ordering
 is from most-recent.
 
     >>> from canonical.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')
-    >>> latest_updates[2]['pub'].secure_record.datepublished = UTC_NOW
+    >>> view.filtered_sources[1].secure_record.datepublished = UTC_NOW
     >>> login(ANONYMOUS)
     >>> print_latest_updates(view.latest_updates)
-    iceweasel 1.0 in warty - FULLYBUILT_PENDING
-    cdrkit 1.0 in breezy-autotest - FAILEDTOBUILD
-    pmount 0.1-1 in warty - FULLYBUILT
+    iceweasel - Successfully built
+    cdrkit - Failed to build
+    pmount - Successfully built
 
 
 == ArchivePackageView ==

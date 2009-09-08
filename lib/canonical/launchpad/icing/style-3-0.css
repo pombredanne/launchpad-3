@@ -669,6 +669,27 @@ ul.super-add-action li a {
     margin-top: -2px;
     }
 
+ul.latest-ppa-updates .duration {
+    font-size: 85%;
+}
+ul.latest-ppa-updates li {
+    padding-right: 16px;
+}
+ul.latest-ppa-updates li.FULLYBUILT {
+    background: url('/@@/yes') right top no-repeat;
+}
+ul.latest-ppa-updates li.FULLYBUILT_PENDING {
+    background: url('/@@/build-success-publishing') right top no-repeat;
+}
+ul.latest-ppa-updates li.NEEDSBUILD {
+    background: url('/@@/build-needed') right top no-repeat;
+}
+ul.latest-ppa-updates li.FAILEDTOBUILD {
+    background: url('/@@/build-failed') right top no-repeat;
+}
+ul.latest-ppa-updates li.BUILDING {
+    background: url('/@@/processing') right top no-repeat;
+}
 /* From nice_pre in tales.py */
 pre.wrap {
   white-space: -moz-pre-wrap;
