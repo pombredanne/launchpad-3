@@ -12,7 +12,7 @@ First make sure it uses Launchpad for translations.
 
     >>> netapplet_owner_browser.getLink('Change details').click()
     >>> print netapplet_owner_browser.title
-    Change Network Applet's details
+    +edit : NetApplet
 
     >>> netapplet_owner_browser.getControl(
     ...     'Translations for this project are done in Launchpad'
@@ -46,7 +46,7 @@ group and permissions.
     >>> change_translators_url = netapplet_owner_browser.url
 
     >>> print netapplet_owner_browser.title
-    Set translation permissions for NetApplet
+    +changetranslators : NetApplet
 
     >>> print netapplet_owner_browser.getControl(
     ...     'Translation group').displayOptions
