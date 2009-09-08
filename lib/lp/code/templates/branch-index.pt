@@ -357,26 +357,7 @@
   <div class="yui-g">
     <div class="yui-u first">
       <h2>Recent revisions</h2>
-      <p tal:condition="not:context/revision_count"
-         tal:define="branch context">
-        <metal:no-revision-message use-macro="context/@@+macros/no-revision-message" />
-      </p>
-
-      <tal:history-available condition="context/revision_count"
-                             define="branch context;
-                                     revisions branch/latest_revisions">
-        <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
-
-        <div tal:define="link context_menu/browse_revisions"
-             tal:condition="link/enabled">
-          &raquo;
-          <span class="actions"
-              tal:content="structure link/render">
-            All revisions
-          </span>
-        </div>
-
-      </tal:history-available>
+      <tal:branch-management replace="structure context/@@++branch-revisions" />
     </div>
 
     <div class="yui-u">

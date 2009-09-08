@@ -385,6 +385,9 @@
         <browser:page
             name="++branch-pending-merges"
             template="../templates/branch-pending-merges.pt" />
+        <browser:page
+            name="++branch-revisions"
+            template="../templates/branch-revisions.pt" />
 
     </browser:pages>
     <browser:pages
