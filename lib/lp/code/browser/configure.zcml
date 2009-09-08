@@ -388,6 +388,9 @@
         <browser:page
             name="++branch-revisions"
             template="../templates/branch-revisions.pt" />
+        <browser:page
+            name="++branch-metadata"
+            template="../templates/branch-metadata.pt" />
 
     </browser:pages>
     <browser:pages
