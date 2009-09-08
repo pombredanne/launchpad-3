@@ -37,9 +37,9 @@ Filing bugs with Apport also allows us to get to the bug filing interface.
     >>> extra_filebug_data = open(
     ...     os.path.join(testfiles, 'extra_filebug_data.msg'))
     >>> anon_browser.open('http://launchpad.dev/+storeblob')
-    >>> anon_browser.getControl(name='field.blob').add_file( # Don't change!
+    >>> anon_browser.getControl(name='field.blob').add_file(
     ...     extra_filebug_data, 'not/important', 'not.important')
-    >>> anon_browser.getControl(name='FORM_SUBMIT').click() # Don't change!
+    >>> anon_browser.getControl(name='FORM_SUBMIT').click()
     >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
     >>> filebug_url = (
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
