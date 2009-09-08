@@ -4,11 +4,13 @@
 """Launchpad specific tests of bzrlib behavior."""
 
 __metaclass__ = type
-__all__ = []
 
 import unittest
 
-class TestBzrlib(unittest.TestCase):
+from lp.testing import TestCase
+
+
+class TestBzrlib(TestCase):
     def test_has_cextensions(self):
         """Ensure Bazaar C extensions are being used."""
         try:
@@ -17,5 +19,5 @@ class TestBzrlib(unittest.TestCase):
             self.fail("Bzr not built with C extensions.")
 
 
-def testsuite():
+def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

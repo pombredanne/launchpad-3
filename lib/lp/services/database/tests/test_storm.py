@@ -4,18 +4,21 @@
 """Launchpad specific tests of Storm behavior."""
 
 __metaclass__ = type
-__all__ = []
 
 import unittest
 
 import storm
 
+from lp.testing import TestCase
 
-class TestStorm(unittest.TestCase):
+
+class TestStorm(TestCase):
     def test_has_cextensions(self):
         """Ensure Storm C extensions are being used."""
-        self.assert_(storm.has_cextensions)
+        self.assert_(
+            storm.has_cextensions,
+            'Storm not running with C extensions')
 
 
-def testsuite():
+def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
