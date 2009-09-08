@@ -5,8 +5,7 @@ When so configured, Launchpad blocks users from filing Ubuntu bugs directly
 from the web interface.
 
 We set the `ubuntu_disable_filebug` flag to true, and set the URL to redirect
-to to a local page (the default configuration is for a page on the Ubuntu
-wiki).
+to a local page (the default configuration is for a page on the Ubuntu wiki).
 
     >>> from canonical.config import config
     >>> config.push('malone', '''
