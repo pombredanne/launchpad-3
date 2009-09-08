@@ -513,10 +513,11 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
             sorted(tokens), vocab_tokens)
 
     def assertAllStatusesAvailable(self, user, except_for=None):
-        # All options should be available to the user.
+        # All options should be available to the user, except for SUPERSEDED,
+        # which is only provided through resubmit.
         desired_statuses = set([
             'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
-            'REJECTED', 'SUPERSEDED'])
+            'REJECTED'])
         if except_for is not None:
             desired_statuses -= set(except_for)
         self.assertStatusVocabTokens(desired_statuses, user)
@@ -526,7 +527,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         # able to approve or reject their own code (assuming they don't have
         # rights on the target branch).
         status_options = [
-            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'SUPERSEDED']
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED']
         self.assertStatusVocabTokens(
             status_options, user=self.proposal.source_branch.owner)
         self.assertStatusVocabTokens(
@@ -544,8 +545,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.proposal.approveBranch(
             self.proposal.target_branch.owner, 'some-revision')
         status_options = [
-            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED',
-            'SUPERSEDED']
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED']
         self.assertStatusVocabTokens(
             status_options, user=self.proposal.source_branch.owner)
         self.assertStatusVocabTokens(
