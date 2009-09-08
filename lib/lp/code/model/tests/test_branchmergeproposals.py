@@ -1275,7 +1275,8 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_MergeProposalCreateJob_with_sourcepackage_branch(self):
         """Jobs for merge proposals with sourcepackage branches work."""
-        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
+        diff_bytes = ''.join(unified_diff('', 'foo'))
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', diff_bytes)
         bmp = self.factory.makeBranchMergeProposal(
             target_branch=self.factory.makePackageBranch(),
             review_diff=review_diff)
