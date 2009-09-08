@@ -338,6 +338,10 @@ class ProductEditLinksMixin:
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
+
 
 class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
@@ -362,7 +366,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer')
+    links = ('edit', 'review_license', 'administer', 'subscribe')
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
