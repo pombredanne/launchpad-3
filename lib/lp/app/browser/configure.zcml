@@ -38,15 +38,6 @@
         permission="zope.Public"
         />
 
-    <!-- Page title reversed breadcrumbs -->
-    <browser:page
-        for="*"
-        name="+page-title"
-        class="canonical.launchpad.browser.launchpad.PageTitleView"
-        template="../templates/launchpad-page-title.pt"
-        permission="zope.Public"
-        />
-
     <!-- TALES watermark: namespace -->
     <adapter
         for="*"

@@ -27,12 +27,7 @@
     yui string:${icingroot}/yui/3.0.0pr2/build;
     lazr_js string:${icingroot}/lazr/build;
     lp_js string:${icingroot}/build">
-    <title tal:condition="context/@@+page-title/has_custom_title"
-           i18n:translate=""
-           tal:content="view/page_title|CONTEXTS/fmt:pagetitle"
-           >Launchpad</title>
-    <title tal:condition="not: context/@@+page-title/has_custom_title"
-           tal:replace="structure context/@@+page-title">The Title</title>
+    <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
 
     <tal:atomfeeds define="feed_links view/feed_links | nothing">

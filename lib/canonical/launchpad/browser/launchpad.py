@@ -19,15 +19,11 @@ __all__ = [
     'MaintenanceMessage',
     'MenuBox',
     'NavigationMenuTabs',
-    'PageTitleView',
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
     'get_launchpad_views',
     ]
-
-
-COLON = ' : '
 
 
 import cgi
@@ -40,7 +36,7 @@ from datetime import timedelta, datetime
 
 from zope.app import zapi
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getMultiAdapter, getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -287,28 +283,6 @@ class Hierarchy(LaunchpadView):
         # If there is only one breadcrumb then it does not make sense
         # to display it as it will simply repeat the context.title.
         return len(self.items) > 1
-
-
-class PageTitleView(LaunchpadView):
-    """View for page <title>."""
-
-    def __init__(self, context, request):
-        super(PageTitleView, self).__init__(context, request)
-        self.hierarchy_view = getMultiAdapter(
-            (self.context, self.request), name='+hierarchy')
-
-    @cachedproperty
-    def page_title(self):
-        """The page title, constructed from the reversed breadcrumbs."""
-        return COLON.join(
-            breadcrumb.text for breadcrumb
-            in reversed(self.hierarchy_view.items))
-
-    @property
-    def has_custom_title(self):
-        """True if a custom title is used, otherwise standard breadcrumbs."""
-        return not self.hierarchy_view.display_breadcrumbs
-
 
 
 class MaintenanceMessage:
