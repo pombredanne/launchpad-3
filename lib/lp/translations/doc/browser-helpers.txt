@@ -5,7 +5,7 @@ helper functions exist. The following sections cover them in detail.
 
 == contract_rosetta_escapes ==
 
-    >>> from lp.translations.browser.translationmessage import (
+    >>> from lp.translations.browser.browser_helpers import (
     ...     contract_rosetta_escapes)
 
 Normal strings get passed through unmodified.
@@ -48,7 +48,7 @@ The string '\[nbsp]' gets converted to a literal '[nbsp]'.
 
 == expand_rosetta_escapes ==
 
-    >>> from lp.translations.browser.translationmessage import (
+    >>> from lp.translations.browser.browser_helpers import (
     ...     expand_rosetta_escapes)
 
 Normal strings get passed through unmodified.
@@ -96,7 +96,7 @@ as below:
 
 == parse_cformat_string ==
 
-    >>> from lp.translations.browser.translationmessage import (
+    >>> from lp.translations.browser.browser_helpers import (
     ...     parse_cformat_string)
     >>> parse_cformat_string('')
     []
@@ -114,7 +114,7 @@ as below:
 
 == text_to_html ==
 
-    >>> from lp.translations.browser.translationmessage import (
+    >>> from lp.translations.browser.browser_helpers import (
     ...     text_to_html)
 
 First, do no harm.
@@ -180,7 +180,7 @@ And '\r' should be also handled:
 
 == convert_newlines_to_web_form ==
 
-    >>> from lp.translations.browser.translationmessage import (
+    >>> from lp.translations.browser.browser_helpers import (
     ...     convert_newlines_to_web_form)
     >>> convert_newlines_to_web_form(u'foo')
     u'foo'
@@ -196,7 +196,7 @@ And '\r' should be also handled:
 
 == count_lines ==
 
-    >>> from lp.translations.browser.translationmessage import count_lines
+    >>> from lp.translations.browser.browser_helpers import count_lines
     >>> count_lines("foo")
     1
     >>> count_lines(
