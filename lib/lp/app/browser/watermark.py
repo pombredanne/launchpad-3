@@ -19,7 +19,7 @@ from zope.traversing.interfaces import (
 from canonical.lazr.canonicalurl import nearest_provides_or_adapted
 
 from lp.app.interfaces.headings import (
-    IEditableContextTitle, IIndexView, IRootContext)
+    IEditableContextTitle, IMajorHeadingView, IRootContext)
 
 
 class WatermarkTalesAdapter:
@@ -48,8 +48,8 @@ class WatermarkTalesAdapter:
         # Check the view; is the title editable?
         if IEditableContextTitle.providedBy(self._view):
             return self._view.title_edit_widget()
-        # The title is static, but only the root context gets an H1.
-        if IIndexView.providedBy(self._view):
+        # The title is static, but only the context's index view gets an H1.
+        if IMajorHeadingView.providedBy(self._view):
             heading = 'h1'
         else:
             heading = 'h2'

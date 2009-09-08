@@ -103,14 +103,14 @@ H2.
     >>> print test_tales('view/watermark:heading', view=view(widget))
     <h2>Widget</h2>
 
-If the view class implements IIndexView, then this is the index page for the
-context and the heading is rendered in H1.
+If the view class implements IMajorHeadingView, then this is the index page
+for the context and the heading is rendered in H1.
 
     >>> from zope.interface import implements
-    >>> from lp.app.interfaces.headings import IIndexView
+    >>> from lp.app.interfaces.headings import IMajorHeadingView
 
     >>> class view:
-    ...     implements(IIndexView)
+    ...     implements(IMajorHeadingView)
     ...     def __init__(self, context):
     ...         self.context = context
 
@@ -121,7 +121,7 @@ context and the heading is rendered in H1.
 Editable headings
 =================
 
-Some index pages also allow for editing the context's description.  To specify
+Some index pages also allow for editing the context's title.  To specify
 this, the view must implement IEditableContextTitle and provide an method
 that returns all the HTML necessary to edit the context, including the
 appropriate H tag.

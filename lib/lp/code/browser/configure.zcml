@@ -159,12 +159,6 @@
         class="lp.code.browser.branch.BranchHierarchy"
         template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
-    <browser:page
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        name="+page-title"
-        class="lp.code.browser.branch.BranchHierarchy"
-        template="../../app/templates/launchpad-page-title.pt"
-        permission="zope.Public"/>
     <browser:navigation
         module="lp.code.browser.branchmergeproposal"
         classes="
@@ -329,12 +323,6 @@
         class="lp.code.browser.branch.BranchHierarchy"
         template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
-    <browser:page
-        for="lp.code.interfaces.branchsubscription.IBranchSubscription"
-        name="+page-title"
-        class="lp.code.browser.branch.BranchHierarchy"
-        template="../../app/templates/launchpad-page-title.pt"
-        permission="zope.Public"/>
     <browser:defaultView
         for="lp.code.interfaces.branchsubscription.IBranchSubscription"
         name="+index"/>
@@ -355,12 +343,6 @@
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
         template="../../app/templates/launchpad-hierarchy.pt"
-        permission="zope.Public"/>
-    <browser:page
-        for="lp.code.interfaces.branch.IBranch"
-        name="+page-title"
-        class="lp.code.browser.branch.BranchHierarchy"
-        template="../../app/templates/launchpad-page-title.pt"
         permission="zope.Public"/>
     <browser:defaultView
         for="lp.code.interfaces.branch.IBranch"
@@ -578,12 +560,6 @@
         name="+hierarchy"
         class="lp.code.browser.branch.BranchHierarchy"
         template="../../app/templates/launchpad-hierarchy.pt"
-        permission="zope.Public"/>
-    <browser:page
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        name="+page-title"
-        class="lp.code.browser.branch.BranchHierarchy"
-        template="../../app/templates/launchpad-page-title.pt"
         permission="zope.Public"/>
     <browser:url
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"

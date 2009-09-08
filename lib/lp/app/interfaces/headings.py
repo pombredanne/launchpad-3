@@ -1,12 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Interfaces for headings and breadcrumbs."""
+"""Marker interfaces that define how to generate headings for a view."""
 
 __metaclass__ = type
 __all__ = [
     'IEditableContextTitle',
-    'IIndexView',
+    'IMajorHeadingView',
     'IRootContext',
     ]
 
@@ -20,10 +20,8 @@ class IRootContext(Interface):
     title = Attribute('The title of the root context object.')
 
 
-class IIndexView(Interface):
-    """The index view of the current context."""
-
-    title = Attribute('The title of the context object.')
+class IMajorHeadingView(Interface):
+    """This view's page should get a major heading (i.e. H1)."""
 
 
 class IEditableContextTitle(Interface):

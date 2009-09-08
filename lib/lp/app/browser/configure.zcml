@@ -40,9 +40,9 @@
 
     <!-- Page title reversed breadcrumbs -->
     <browser:page
-        for="zope.interface.Interface"
+        for="*"
         name="+page-title"
-        class="canonical.launchpad.browser.launchpad.Hierarchy"
+        class="canonical.launchpad.browser.launchpad.PageTitleView"
         template="../templates/launchpad-page-title.pt"
         permission="zope.Public"
         />

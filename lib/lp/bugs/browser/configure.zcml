@@ -786,12 +786,6 @@
         class="lp.code.browser.branch.BranchHierarchy"
         template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
-    <browser:page
-        for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        name="+page-title"
-        class="lp.code.browser.branch.BranchHierarchy"
-        template="../../app/templates/launchpad-page-title.pt"
-        permission="zope.Public"/>
     <browser:url
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
         path_expression="string:+bug/${bug/id}"
