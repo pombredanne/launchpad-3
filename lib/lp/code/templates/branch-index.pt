@@ -323,7 +323,6 @@
     <div id="branch-management" class="yui-u">
       <h2>Branch management</h2>
       <tal:branch-management replace="structure context/@@++branch-management" />
-      </div>
     </div>
 
   </div>
