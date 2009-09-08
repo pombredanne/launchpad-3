@@ -318,36 +318,7 @@
       <div id="branch-info" class="portlet">
         <h2>Branch information</h2>
 
-        <div class="two-column-list">
-          <dl id="partof" tal:condition="context/product">
-            <dt>Project:</dt>
-            <dd tal:content="structure context/product/fmt:link" />
-          </dl>
-
-          <dl id="status">
-            <dt>Status:</dt>
-            <dd
-              id="branch-details-status-value"
-              tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
-              tal:content="structure context/lifecycle_status/title" />
-          </dl>
-
-          <dl id="mirror-location"
-              tal:condition="context/branch_type/enumvalue:MIRRORED">
-            <dt>Location:</dt>
-            <dd tal:content="structure context/@@+mirror-status" />
-          </dl>
-
-          <dl id="remote-location"
-              tal:condition="context/branch_type/enumvalue:REMOTE">
-            <dt>Location:</dt>
-            <dd
-              tal:condition="context/url"
-              tal:content="view/mirror_location" />
-            <dd
-              tal:condition="not: context/url">Not specified</dd>
-          </dl>
-        </div>
+        <tal:branch-info replace="structure context/@@+branch-information" />
 
       </div>
     </div>

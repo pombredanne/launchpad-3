@@ -374,6 +374,12 @@
         <browser:page
             name="++bug-links"
             template="../templates/branch-bug-links.pt"/>
+
+        <!-- NEW STUFFS GOES HERES -->
+        <browser:page
+            name="+branch-information"
+            template="../templates/branch-information.pt" />
+
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branch.IBranch"
