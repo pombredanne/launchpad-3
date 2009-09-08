@@ -7,16 +7,14 @@ __metaclass__ = type
 
 __all__ = [
     "BugTargetBugListingView",
-    "BugTargetBugsView",
     "BugTargetBugTagsView",
-    "FileBugViewBase",
+    "BugTargetBugsView",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FrontPageFileBugAdvancedView",
+    "FileBugViewBase",
     "FrontPageFileBugGuidedView",
     "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
-    "ProjectFileBugAdvancedView",
     ]
 
 import cgi
@@ -39,6 +37,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
@@ -266,6 +265,15 @@ class FileBugViewBase(LaunchpadFormView):
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
+
+        if (config.malone.ubuntu_disable_filebug and
+            self.targetIsUbuntu() and
+            self.extra_data_token is None and
+            not self.no_ubuntu_redirect):
+            # The user is trying to file a new Ubuntu bug via the web
+            # interface and without using apport. Redirect to a page
+            # explaining the preferred bug-filing procedure.
+            self.request.response.redirect(config.malone.ubuntu_bug_filing_url)
         if self.extra_data_token is not None:
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
@@ -322,6 +330,22 @@ class FileBugViewBase(LaunchpadFormView):
 
     def contextIsProject(self):
         return IProject.providedBy(self.context)
+
+    def targetIsUbuntu(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return (self.context == ubuntu or
+                (IMaloneApplication.providedBy(self.context) and
+                 self.request.form.get('field.bugtarget.distribution') ==
+                 ubuntu.name) or
+                (IDistributionSourcePackage.providedBy(self.context) and
+                 self.context.distribution == ubuntu))
+
+    @property
+    def no_ubuntu_redirect(self):
+        return (
+            self.request.form.get('no-redirect') is not None or
+            [key for key in self.request.form.keys()
+             if 'field.actions' in key] != [])
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -796,8 +820,8 @@ class FileBugAdvancedView(FileBugViewBase):
     def initialize(self):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
-        self.request.response.redirect(filebug_url,
-        status=HTTP_MOVED_PERMANENTLY)
+        self.request.response.redirect(
+            filebug_url, status=HTTP_MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
