@@ -4836,7 +4836,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     @property
     def page_title(self):
-        return "Software related to " + self.context.title
+        return "Software related to " + self.context.displayname
 
     @cachedproperty
     def related_projects(self):
@@ -5063,7 +5063,7 @@ class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Software maintained by " + self.context.title
+        return "Software maintained by " + self.context.displayname
 
 
 class PersonUploadedPackagesView(PersonRelatedSoftwareView):
@@ -5076,7 +5076,7 @@ class PersonUploadedPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Software uploaded by " + self.context.title
+        return "Software uploaded by " + self.context.displayname
 
 
 class PersonPPAPackagesView(PersonRelatedSoftwareView):
@@ -5096,7 +5096,7 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "PPA packages related to " + self.context.title
+        return "PPA packages related to " + self.context.displayname
 
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
@@ -5110,7 +5110,7 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Projects related to " + self.context.title
+        return "Projects related to " + self.context.displayname
 
 
 class PersonOAuthTokensView(LaunchpadView):
