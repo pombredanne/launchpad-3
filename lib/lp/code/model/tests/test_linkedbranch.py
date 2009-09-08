@@ -201,5 +201,44 @@ class TestProjectLinkedBranch(TestCaseWithFactory):
             CannotHaveLinkedBranch, get_linked_branch, project)
 
 
+class TestLinkedBranchSorting(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_sorting_different_types(self):
+        # The different types can be sorted together, and sort so that the
+        # results are ordered like:
+        #   Product Link
+        #   Distribution Source Package Link
+        #   Product Series Link
+        #   Package Link
+        product_link = ICanHasLinkedBranch(self.factory.makeProduct())
+        product_series_link = ICanHasLinkedBranch(
+            self.factory.makeProductSeries())
+        distro_sp_link = ICanHasLinkedBranch(
+            self.factory.makeDistributionSourcePackage())
+        package_link = ICanHasLinkedBranch(
+            self.factory.makeSuiteSourcePackage())
+
+        links = sorted(
+            [package_link, product_series_link, distro_sp_link, product_link])
+        self.assertIs(product_link, links[0])
+        self.assertIs(distro_sp_link, links[1])
+        self.assertIs(product_series_link, links[2])
+        self.assertIs(package_link, links[3])
+
+    def test_product_sort(self):
+        # If in the extremely unlikely event we have one branch linked as the
+        # trunk of two different products (you never know), then the sorting
+        # reverts to the name of the product.
+        aardvark_link = ICanHasLinkedBranch(
+            self.factory.makeProduct(name='aardvark'))
+        zebra_link = ICanHasLinkedBranch(
+            self.factory.makeProduct(name='zebra'))
+        self.assertEqual(1, cmp(zebra_link, aardvark_link))
+        self.assertEqual(0, cmp(zebra_link, zebra_link))
+        self.assertEqual(-1, cmp(aardvark_link, zebra_link))
+
+        
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
