@@ -320,10 +320,9 @@
       </div>
     </div>
 
-    <div class="yui-u">
-      <div id="branch-download" class="portlet">
-        <h2>Branch management</h2>
-        <tal:branch-info replace="structure context/@@++branch-management" />
+    <div id="branch-management" class="yui-u">
+      <h2>Branch management</h2>
+      <tal:branch-management replace="structure context/@@++branch-management" />
       </div>
     </div>
 
