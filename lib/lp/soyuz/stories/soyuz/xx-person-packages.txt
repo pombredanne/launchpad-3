@@ -14,7 +14,7 @@ has more links that take the user to batched listings in each category
 where all items can be perused.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'navlinks'))
-    Full listings:
+    Summary
     Maintained Packages
     Uploaded Packages
     PPA Packages
