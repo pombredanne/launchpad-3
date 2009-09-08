@@ -357,12 +357,12 @@
   <div class="yui-g">
     <div class="yui-u first">
       <h2>Recent revisions</h2>
-      <tal:branch-management replace="structure context/@@++branch-revisions" />
+      <tal:branch-revisions replace="structure context/@@++branch-revisions" />
     </div>
 
     <div class="yui-u">
       <h2>Branch metadata</h2>
-      <tal:branch-management replace="structure context/@@++branch-metadata" />
+      <tal:branch-metadata replace="structure context/@@++branch-metadata" />
     </div>
   </div>
 
