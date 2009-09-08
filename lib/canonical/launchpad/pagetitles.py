@@ -423,8 +423,6 @@ distroserieslanguage_index = ContextTitle('%s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
-edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
-
 errorservice_config = 'Configure error log'
 
 errorservice_entry = 'Error log entry'
