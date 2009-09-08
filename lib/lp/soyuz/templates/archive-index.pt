@@ -24,7 +24,7 @@
                      archive_label  view/archive_label;"
          tal:attributes="class string:archive">
 
-      <div class="top-portlet">
+      <div class="top-portlet" style="padding-top:0.5em;">
 
         <p tal:condition="not: context/enabled"
            style="clear: right;" class="warning message">
