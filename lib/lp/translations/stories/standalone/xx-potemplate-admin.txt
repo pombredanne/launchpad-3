@@ -163,6 +163,7 @@ autonomously.
 
     >>> from lp.registry.model.distribution import Distribution
     >>> from lp.translations.model.potemplate import POTemplateSet
+    >>> login('admin@canonical.com')
     >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
     >>> hoary = ubuntu['hoary']
     >>> templateset = POTemplateSet()

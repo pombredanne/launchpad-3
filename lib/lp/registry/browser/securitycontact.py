@@ -21,6 +21,16 @@ class SecurityContactEditView(LaunchpadFormView):
     field_names = ['security_contact']
 
     @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Edit %s security contact' % self.context.displayname
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
     def initial_values(self):
         return {
             'security_contact': self.context.security_contact}
@@ -42,7 +52,8 @@ class SecurityContactEditView(LaunchpadFormView):
                 # The security contact doesn't have a preferred email address,
                 # so it must be a team.
                 assert security_contact.isTeam(), (
-                    "Expected security contact with no email address to be a team.")
+                    "Expected security contact with no email address "
+                    "to be a team.")
                 security_contact_display_value = security_contact.displayname
 
             self.request.response.addNotification(
@@ -55,3 +66,5 @@ class SecurityContactEditView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url

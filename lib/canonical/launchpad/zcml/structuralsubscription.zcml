@@ -32,4 +32,9 @@
 	permission="zope.Public"
 	template="../templates/structural-subscription-target-portlet-subscribers.pt" />
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IStructuralSubscription"
+        path_expression="string:+subscription/${subscriber/name}"
+        attribute_to_parent="target" />
+
 </configure>

@@ -60,7 +60,6 @@ from lp.registry.model.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.person import Person
-from canonical.launchpad.database.productbounty import ProductBounty
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
@@ -88,8 +87,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
@@ -175,19 +172,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     implements(
         IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
-        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
 
     _table = 'Product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
     owner = ForeignKey(
-        foreignKey="Person",
-        storm_validator=validate_public_person, dbName="owner", notNull=True)
+        dbName="owner", foreignKey="Person",
+        storm_validator=validate_person_not_private_membership,
+        notNull=True)
     registrant = ForeignKey(
-        foreignKey="Person",
-        storm_validator=validate_public_person, dbName="registrant",
+        dbName="registrant", foreignKey="Person",
+        storm_validator=validate_public_person,
         notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
@@ -200,7 +197,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership,
+        notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -558,10 +556,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 drivers.add(self.owner)
         return sorted(drivers, key=lambda driver: driver.displayname)
 
-    bounties = SQLRelatedJoin(
-        'Bounty', joinColumn='product', otherColumn='bounty',
-        intermediateTable='ProductBounty')
-
     @property
     def sourcepackages(self):
         from lp.registry.model.sourcepackage import SourcePackage
@@ -897,8 +891,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # XXX: jamesh 2008-04-11
         # Set the ID of the new ProductSeries to avoid flush order
         # loops in ProductSet.createProduct()
-        return ProductSeries(productID=self.id, owner=owner, name=name,
+        series = ProductSeries(productID=self.id, owner=owner, name=name,
                              summary=summary, branch=branch)
+        if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
+            # The user is a product driver, and should be the driver of this
+            # series to make him the release manager.
+            series.driver = owner
+        return series
+
 
     def getRelease(self, version):
         """See `IProduct`."""
@@ -931,14 +931,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Packaging.distroseriesID == DistroSeries.id,
             DistroSeries.distributionID == Distribution.id
             ).config(distinct=True).order_by(Distribution.name)
-
-    def ensureRelatedBounty(self, bounty):
-        """See `IProduct`."""
-        for curr_bounty in self.bounties:
-            if bounty.id == curr_bounty.id:
-                return None
-        ProductBounty(product=self, bounty=bounty)
-        return None
 
     def setBugSupervisor(self, bug_supervisor, user):
         """See `IHasBugSupervisor`."""

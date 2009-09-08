@@ -34,7 +34,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.cachedproperty import cachedproperty
@@ -169,6 +169,13 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     """View for editing team details."""
     schema = ITeam
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit "%s" team' % self.context.displayname
+
+    page_title = label
+
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
@@ -200,8 +207,12 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
             # XXX: BradCrittenden 2009-04-13 bug=360540: Remove the call to
             # abort if it is moved up to updateContextFromData.
             self._abort()
-        else:
-            self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
@@ -307,9 +318,15 @@ class TeamContactAddressView(MailingListTeamBaseView):
     """A view for manipulating the team's contact address."""
 
     schema = ITeamContactAddressForm
-    label = "Contact address"
+
     custom_widget(
         'contact_method', LaunchpadRadioWidget, orientation='vertical')
+
+    @property
+    def label(self):
+        return "%s contact address" % self.context.displayname
+
+    page_title = label
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
@@ -444,7 +461,11 @@ class TeamContactAddressView(MailingListTeamBaseView):
             raise UnexpectedFormData(
                 "Unknown contact_method: %s" % contact_method)
 
-        self.next_url = canonical_url(self.context)
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class TeamMailingListConfigurationView(MailingListTeamBaseView):
@@ -810,8 +831,10 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
 
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
+
+    page_title = 'Register a new team in Launchpad'
+    label = page_title
     schema = ITeamCreation
-    label = ''
 
     custom_widget('teamowner', HiddenUserWidget)
     custom_widget(
@@ -828,7 +851,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         super(TeamAddView, self).setUpFields()
         self.conditionallyOmitVisibility()
 
-    @action('Create', name='create')
+    @action('Create Team', name='create')
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
@@ -895,8 +918,14 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
                 comment=self.request.form.get('comment'))
 
     @property
+    def page_title(self):
+        return 'Proposed members of %s' % self.context.displayname
+
+    @property
     def next_url(self):
         return '%s/+members' % canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class TeamBrandingView(BrandingChangeView):
@@ -919,6 +948,14 @@ class TeamMemberAddView(LaunchpadFormView):
 
     schema = ITeamMember
     label = "Select the new member"
+
+    @property
+    def page_title(self):
+        return 'Add members to %s' % self.context.displayname
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def validate(self, data):
         """Verify new member.

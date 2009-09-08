@@ -7,7 +7,7 @@ Remove this section when the old templates and these declarations are gone.
 #maincontent {
     float: left;
     width: 100%;
-    margin-right: -25em;
+    margin-right: -25%;
     }
 #maincontent ol, #maincontent ul {
     padding-left: auto;
@@ -28,6 +28,7 @@ Remove this section when the old templates and these declarations are gone.
     -moz-border-radius: 0;
     -o-border-radius: 0;
     -webkit-border-radius: 0;
+    -khtml-border-radius: 0;
     font-size: inherit !important;
     }
 #portlets .portlet h2, div.aside h2 {
@@ -176,10 +177,22 @@ div.columns div.right div.portlet {
     border: none;
     padding: 0;
     }
+span.nolink {
+    font-weight: bold;
+    }
 #colophon {
     float: none;
     }
+#globalsearch {
+  float: none;
+  display: auto;
+  font-weight: inherit;
+  margin-right: auto;
+}
 
+#globalsearch input {
+  font-size: inherit;
+}
 
 /* Page layout */
 .yui-d0 {
@@ -195,8 +208,25 @@ div.columns div.right div.portlet {
 .footer {
     clear: both;
     margin-top: 2em;
-    border-top: 1px solid #cdd3dd;
     padding-top: 0.5em;
+    }
+.footer .lp-arcana {
+    background: url(/@@/footer-background.png) top left repeat-x;
+    padding: 0.8em;
+    -moz-border-radius: 3px 3px 0 0;
+    -webkit-border-radius: 3px 3px 0 0;
+    -khtml-border-radius: 3px 3px 0 0;
+    border-radius: 3px 3px 0 0;
+    }
+.footer .lp-arcana img {
+    vertical-align: middle;
+    }
+.footer .lp-arcana .search-icon {
+    background: url(icon-sprites) 100% -191px no-repeat;
+    }
+.footer .colophon {
+    margin: 3em 3em 1em 3em;
+    text-align: center;
     }
 .portlet, .aside {
     clear: both;
@@ -208,6 +238,9 @@ div.columns div.right div.portlet {
     margin: 0 0 1em;
     }
 
+.warning.message {
+    margin-top: 17px;
+    }
 /*
 
 Use percentages when setting font-size.
@@ -233,6 +266,38 @@ Pixels  Percent
 
 */
 
+/*
+
+Use the following 'application' colors for table column headings,
+app stats etc.
+
+Answers: #3840BE
+Blueprints: #3594BB
+Bugs: #9F2B33
+Code: #D18B39
+Registry: default (i.e. black)
+Translations: #BB3A84
+
+*/
+
+strong.answers-stat {
+    color: #3840BE;
+    }
+strong.blueprints-stat {
+    color: #3594BB;
+    }
+strong.bugs-stat {
+    color: #9F2B33;
+    }
+strong.code-stat {
+    color: #D18B39;
+    }
+strong.registry-stat {
+    }
+strong.translations-stat {
+    color: #BB3A84;
+    }
+
 
 /* Default text presentation */
 html, body {
@@ -251,6 +316,7 @@ h1 {
     }
 h2 {
     margin-bottom: 0.3em;
+    margin-top: 0.3em;
     font-size: 123.1%;
     color: #5a5a5a;
     }
@@ -263,13 +329,14 @@ p, li, dt, dd, blockquote {
     }
 pre, code, samp, tt, .console {
   font-size: 116%;
+  margin-bottom: 0.8em;
     }
 ol {
-	margin-left: 1.8em;
+       margin-left: 1.8em;
     }
 ol li {
-	list-style: decimal outside;
-	}
+       list-style: decimal outside;
+       }
 li {
     padding-bottom: .3em;
     }
@@ -286,6 +353,11 @@ thead th, tr.thead th {
     text-align: center;
     vertical-align: bottom;
     }
+
+form h1 {
+    margin-bottom: 1em;
+    }
+
 form table th, form table td {
     padding: 2px;
     }
@@ -309,9 +381,8 @@ span.see-all {
     }
 .see-all a {
     padding-left: 8px;
-    background: url(/@@/link-grey-arrow.png) left center no-repeat;
+    background: inherit;
     font-size: 72%;
-    color: #484848;
     text-decoration: underline;
     }
 .rss-right {
@@ -329,15 +400,20 @@ span.see-all {
     color: #666;
     font-style: italic;
     }
+li .registered {
+    font-style: normal;
+    }
 .description {
     clear: both;
     font-size: 100%;
     }
-.summary {
+.top-portlet .summary {
     margin: 0 0 1em 0;
     font-size: 138.5%;
     }
-
+.main-portlet {
+    margin: 1em 0 1em 0;
+    }
 
 /* Common list presentations. */
 .bulleted {
@@ -371,7 +447,7 @@ span.see-all {
     clear: both;
     visibility: hidden;
 }
-.portlet dt {
+dt {
     font-weight: bold;
     }
 .portlet dd {
@@ -383,6 +459,15 @@ span.see-all {
     color: #000;
     font-weight: normal;
     }
+.application-summary {
+    font-size: 123.1%;
+}
+.search-results {
+    margin-top: 1em;
+}
+p.search-results {
+    font-size: 116%;
+}
 
 
 /* Exceptions they may be common. */
@@ -390,57 +475,57 @@ span.see-all {
     padding-left: 1em;
     }
 
-/* == Location portlet heading styles */
-div.location-portlet {
+/* == Watermark heading styles */
+div.watermark-apps-portlet {
     padding-bottom:1em;
     border-bottom: 1px solid #d6d6d6;
 }
-div.location-portlet img {
+div.watermark-apps-portlet img {
     float: left;
     margin: 0 1.5em 0 0;
 }
-div.location-portlet h1, div.location-portlet h2 {
+div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
     padding-top: 0.1em;
     margin-bottom: 0.8em;
     color: #000000;
     font-weight: bold;
     clear: none;
 }
-div.location-portlet h1 {
+div.watermark-apps-portlet h1 {
     margin-bottom: 0.2em;
     padding-top: 0;
 }
 
-/* === Location portlet tabs === */
-/* In most pages, we present a list of six application facets: */
-.location-portlet li {
+/* === Application buttons === */
+/* In most pages, we present a list of six application buttons: */
+.watermark-apps-portlet li {
     display:inline;
     list-style-type: none;
 }
-.location-portlet li a, .location-portlet li span {
+.watermark-apps-portlet li a, .watermark-apps-portlet li span {
     padding: 0.3em 0.5em;
     margin-right: 0.4em;
 }
 /* The text of the first tab should align with the heading directly
    above it */
-.location-portlet li:first-child a, .location-portlet li:first-child span {
-    margin-left: -0.5em; 
+.watermark-apps-portlet li:first-child a, .watermark-apps-portlet li:first-child span {
+    margin-left: -0.5em;
 }
-.location-portlet li a:link, .location-portlet li a:visited {
+.watermark-apps-portlet li a:link, .watermark-apps-portlet li a:visited {
     color: #000;
     background-color: #fff;
     text-decoration: none;
 }
-.location-portlet li.active a, .location-portlet li.active span {
+.watermark-apps-portlet li.active a, .watermark-apps-portlet li.active span {
     font-weight: bold;
     color: #fff;
     background-color: #747474;
 }
-.location-portlet li a:hover {
+.watermark-apps-portlet li a:hover {
     color: #000;
     background-color: #f3f3f3;
 }
-.location-portlet li.disabled-tab {
+.watermark-apps-portlet li.disabled-tab {
     color: #747474;
 }
 
@@ -456,6 +541,7 @@ div.location-portlet h1 {
     border: 1px solid #dedede;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
+    -khtml-border-radius: 5px;
     border-radius: 5px;
     padding: 0.5em;
     color: #484848;
@@ -466,9 +552,6 @@ div.location-portlet h1 {
     background: #fbfbfb;
     }
 
-.downloads a {
-    color: #4f843c;
-    }
 .downloads li {
     margin: 0;
     padding: 2px 0 0;
@@ -480,35 +563,61 @@ div.location-portlet h1 {
     border: 1px solid #4f843c;
     -moz-border-radius: 3px;
     -webkit-border-radius: 3px;
+    -khtml-border-radius: 3px;
     border-radius: 3px;
     background: #4f843c url(/@@/bg-project-downloads.png) center right no-repeat;
     padding: 6%;
-    padding-right: 50px;
+    padding-right: 40px;
     color: #fff;
-    font-size: 108%;
-    text-decoration: underline;
+    font-size: 93%;
+    }
+.downloads .version {
+    -moz-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    -khtml-border-radius: 5px 5px 0 0;
+    border-radius: 5px 5px 0 0;
+    background: #d3e3c7;
+    padding: 0.2em 1em;
     }
 .downloads .released {
-    margin: .3em 0 1em 0;
-    padding: 0 .2em 0 0;
-    text-align: right;
-    }
-.downloads .released span {
+    margin: .3em 0 .5em 0;
     -moz-border-radius: 0 0 5px 5px;
     -webkit-border-radius: 0 0 5px 5px;
+    -khtml-border-radius: 0 0 5px 5px;
     border-radius: 0 0 5px 5px;
     background: #d3e3c7;
     padding: 0.2em 1em;
     }
 .downloads .alternate {
-    text-align: right;
+    padding: 0 0 0 1em;
     }
 
-.involvement ul {
-    border-top: 1px solid #d0d0d0;
+ul.super-add-action {
+    margin: 0 auto 1em;
+}
+
+ul.super-add-action li {
+    padding: 0;
+}
+
+ul.super-add-action li a {
+    display: block;
+    border: 1px solid black;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -khtml-border-radius: 3px;
+    background: #4f843c url(/@@/bg-action-add) center left no-repeat;
+    border-radius: 3px;
+    padding: 6%;
+    padding-left: 45px;
+    color: #fff;
+    font-size: 108%;
+    font-weight: bold;
+    text-decoration: underline;
     }
+
 .involvement li {
-    border-bottom: 1px solid #d0d0d0;
+    border-top: 1px solid #d0d0d0;
     padding: 0;
     font-size: 108%;
     font-weight: bold;
@@ -521,21 +630,25 @@ div.location-portlet h1 {
     color: #b9413e;
     background: url(/@@/bugs-arrow-right.png) right center no-repeat;
     }
-.involvement a.question {
+.involvement a.answers {
     color: #5265b2;
     background: url(/@@/answers-arrow-right.png) right center no-repeat;
     }
-.involvement a.translate {
+.involvement a.translations {
     color: #c5458e;
     background: url(/@@/translations-arrow-right.png) right center no-repeat;
     }
 .involvement a.code {
     color: #d39f57;
-    background: url(/@@/images/code-arrow-right.png) right center no-repeat;
+    background: url(/@@/code-arrow-right.png) right center no-repeat;
     }
-.involvement a.blueprint {
+.involvement a.blueprints {
     color: #5ba4c6;
-    background: url(/@@/images/blueprints-arrow-right.png) right center no-repeat;
+    background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
+    }
+.involvement a:hover {
+    text-decoration: none;
+    background-color: #eee;
     }
 
 .announcements li {
@@ -551,6 +664,10 @@ div.location-portlet h1 {
     border-top: 1px solid #d0d0d0;
     border-bottom: 1px solid #d0d0d0;
     }
+.announcement .registered {
+    font-size: 93%;
+    margin-top: -2px;
+    }
 
 /* From nice_pre in tales.py */
 pre.wrap {
@@ -560,3 +677,77 @@ pre.wrap {
   word-wrap: break-word;
 }
 
+/* ==== Listing tables ==== */
+
+table.listing thead {
+  font-size: 116%;
+}
+table.listing th {
+  font-weight: bold;
+}
+
+ul.language, li.language             {
+  list-style-image: url(/@@/language);
+  /* Disable .language sprite. */
+  background: inherit;
+}
+
+/* ==== Translations hand-made forms ==== */
+
+form.translations div.fields {
+  padding: 1em;
+}
+
+form.translations div.actions {
+  padding: 1em;
+  text-align: right;
+  clear:both;
+}
+
+form.translations input {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+form.translations select {
+  margin-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+form.translations label {
+  padding-left: 0.5em;
+  padding-right: 1em;
+}
+
+form.translations .listbox label {
+  padding: 2px 1em 2px 2px;
+}
+
+/* Provide top-alignment for radio boxes and longer explanations
+ * without using tables.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+ *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
+ */
+form.translations div.alignment .content {
+  float:left;
+}
+form.translations div.alignment .selector {
+  margin-right: 0.5em;
+  float: left;
+  clear: both;
+}
+form.translations div.alignment .content label {
+  padding: 0px;
+  margin: 0px;
+  font-weight: bold;
+}
+form.translations div.alignment .secondary label {
+  font-weight: normal;
+  padding: 2px 1em 2px 2px;
+}
+
+table.narrow-listing {
+  width: 45em;
+}

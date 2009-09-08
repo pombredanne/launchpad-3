@@ -55,8 +55,9 @@ from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, exported,
     export_read_operation, export_factory_operation, export_operation_as,
     export_write_operation, operation_parameters,
-    operation_returns_collection_of, rename_parameters_as, webservice_error)
-from lazr.restful.fields import Reference
+    operation_returns_collection_of, operation_returns_entry,
+    rename_parameters_as, webservice_error)
+from lazr.restful.fields import CollectionField, Reference
 
 
 class ArchiveDependencyError(Exception):
@@ -184,10 +185,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
     signing_key = Object(
         title=_('Repository sigining key.'), required=False, schema=IGPGKey)
 
-    dependencies = Attribute(
-        "Archive dependencies recorded for this archive and ordered by owner "
-        "displayname.")
-
     expanded_archive_dependencies = Attribute(
         "The expanded list of archive dependencies. It includes the implicit "
         "PRIMARY archive dependency for PPAs.")
@@ -308,15 +305,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
         Return the PublishedPackage record by binarypackagename or None if
         not found.
-        """
-
-    def getArchiveDependency(dependency):
-        """Return the `IArchiveDependency` object for the given dependency.
-
-        :param dependency: is an `IArchive` object.
-
-        :return: `IArchiveDependency` or None if a corresponding object
-            could not be found.
         """
 
     def removeArchiveDependency(dependency):
@@ -761,6 +749,12 @@ class IArchiveView(IHasBuildRecords):
         description=_("The password used by the builder to access the "
                       "archive."))
 
+    dependencies = exported(
+        CollectionField(
+            title=_("Archive dependencies recorded for this archive."),
+            value_type=Reference(schema=Interface), #Really IArchiveDependency
+            readonly=True))
+
     description = exported(
         Text(
             title=_("Archive contents description"), required=False,
@@ -918,6 +912,19 @@ class IArchiveView(IHasBuildRecords):
         :type source_ids: ``list``
         :return: A dict consisting of the overall status summaries for the
             given ids that belong in the archive.
+        """
+
+    @operation_parameters(
+        dependency=Reference(schema=Interface)) #Really IArchive. See below.
+    @operation_returns_entry(schema=Interface) #Really IArchiveDependency.
+    @export_read_operation()
+    def getArchiveDependency(dependency):
+        """Return the `IArchiveDependency` object for the given dependency.
+
+        :param dependency: is an `IArchive` object.
+
+        :return: `IArchiveDependency` or None if a corresponding object
+            could not be found.
         """
 
 

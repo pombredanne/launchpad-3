@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'get_status_count',
     'MilestoneOverlayMixin',
+    'RegistryEditFormView',
     'RegistryDeleteViewMixin',
     'StatusCount',
     ]
@@ -16,9 +17,13 @@ __all__ = [
 from operator import attrgetter
 
 from zope.component import getUtility
+
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.launchpadform import (
+    action, LaunchpadEditFormView)
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class StatusCount:
@@ -50,6 +55,8 @@ def get_status_counts(workitems, status_attr):
 class MilestoneOverlayMixin:
     """A mixin that provides the data for the milestoneoverlay script."""
 
+    milestone_can_release = True
+
     @property
     def milestone_form_uri(self):
         """URI for form displayed by the formoverlay widget."""
@@ -59,6 +66,63 @@ class MilestoneOverlayMixin:
     def series_api_uri(self):
         """The series URL for API access."""
         return canonical_url(self.context, path_only_if_possible=True)
+
+    @property
+    def milestone_table_class(self):
+        """The milestone table will be unseen if there are no milestones."""
+        if len(self.context.all_milestones) > 0:
+            return 'listing'
+        else:
+            # The page can remove the 'unseen' class to make the table
+            # visible.
+            return 'listing unseen'
+
+    @property
+    def milestone_row_uri_template(self):
+        if IProductSeries.providedBy(self.context):
+            pillar = self.context.product
+        else:
+            pillar = self.context.distribution
+        uri = canonical_url(pillar, path_only_if_possible=True)
+        return '%s/+milestone/{name}/+productseries-table-row' % uri
+
+    @property
+    def register_milestone_script(self):
+        """Return the script to enable milestone creation via AJAX."""
+        uris = {
+            'series_api_uri': self.series_api_uri,
+            'milestone_form_uri': self.milestone_form_uri,
+            'milestone_row_uri': self.milestone_row_uri_template,
+            }
+        return """
+            YUI().use(
+                'node', 'lp.milestoneoverlay', 'lp.milestonetable',
+                function (Y) {
+
+                var series_uri = '%(series_api_uri)s';
+                var milestone_form_uri = '%(milestone_form_uri)s';
+                var milestone_row_uri = '%(milestone_row_uri)s';
+                var milestone_rows_id = '#milestone-rows';
+
+                Y.on('domready', function () {
+                    var create_milestone_link = Y.get(
+                        '.menu-link-create_milestone');
+                    create_milestone_link.addClass('js-action');
+                    var config = {
+                        milestone_form_uri: milestone_form_uri,
+                        series_uri: series_uri,
+                        next_step: Y.lp.milestonetable.get_milestone_row,
+                        activate_node: create_milestone_link
+                        };
+                    Y.lp.milestoneoverlay.attach_widget(config);
+                    var table_config = {
+                        milestone_row_uri_template: milestone_row_uri,
+                        milestone_rows_id: milestone_rows_id
+                        }
+                    Y.lp.milestonetable.setup(table_config);
+                });
+            });
+            """ % uris
 
 
 class RegistryDeleteViewMixin:
@@ -120,3 +184,22 @@ class RegistryDeleteViewMixin:
             for release_file in release.files:
                 release_file.destroySelf()
             release.destroySelf()
+
+
+class RegistryEditFormView(LaunchpadEditFormView):
+    """A base class that provides consistent edit form behaviour."""
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    next_url = cancel_url
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)

@@ -210,6 +210,8 @@ class ILink(ILinkData):
         "The full url this link points to.  Set by the menus infrastructure. "
         "None before it is set.")
 
+    path = Attribute("The path portion of the URL.")
+
     linked = Attribute(
         "A boolean value saying whether this link should appear as a "
         "clickable link in the UI.  The general rule is that a link to "
@@ -255,14 +257,6 @@ class IBreadcrumb(Interface):
     text = Attribute('Text of this breadcrumb.')
 
     icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
-
-
-class IBreadcrumbBuilder(IBreadcrumb):
-    """An object that builds `IBreadcrumb` objects."""
-    # We subclass IBreadcrumb to minimize interface drift.
-
-    def make_breadcrumb():
-        """Return an object implementing the `IBreadcrumb` interface."""
 
 
 #

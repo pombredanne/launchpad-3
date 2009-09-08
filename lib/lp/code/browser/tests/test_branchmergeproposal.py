@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from difflib import unified_diff
 import unittest
 
 import transaction
@@ -160,7 +161,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertFalse(view.requested_reviews[0].user_can_claim)
 
     def test_user_can_claim_member(self):
-        """Someone can claim a review already assigned their team."""
+        """Someone can claim a review already assigned to their team."""
         albert = self.factory.makePerson()
         review_team = self.factory.makeTeam()
         albert.join(review_team)
@@ -192,15 +193,18 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         return view.requested_reviews[0]
 
     def test_user_can_reassign_assignee(self):
+        """The user can reassign if they are the assignee."""
         review_request = self.makeReviewRequest()
         self.assertTrue(review_request.user_can_reassign)
 
     def test_user_can_reassign_registrant(self):
+        """The user can reassign if they are the registrant."""
         registrant = self.factory.makePerson()
         review_request = self.makeReviewRequest(registrant, registrant)
         self.assertTrue(review_request.user_can_reassign)
 
-    def test_user_can_reassign_random_person(self):
+    def test_user_cannot_reassign_random_person(self):
+        """Random people cannot reassign reviews."""
         viewer = self.factory.makePerson()
         review_request = self.makeReviewRequest(viewer)
         self.assertFalse(review_request.user_can_reassign)
@@ -459,19 +463,29 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def test_review_diff_utf8(self):
         """A review_diff in utf-8 should be converted to utf-8."""
         text = ''.join(unichr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text.encode('utf-8'))
+        diff_bytes = ''.join(unified_diff('', text)).encode('utf-8')
+        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
-        self.assertEqual(text, self._createView().review_diff)
+        self.assertEqual(diff_bytes.decode('utf-8'),
+                         self._createView().review_diff)
 
     def test_review_diff_all_chars(self):
         """review_diff should work on diffs containing all possible bytes."""
         text = ''.join(chr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text)
+        diff_bytes = ''.join(unified_diff('', text))
+        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
-        self.assertEqual(text.decode('windows-1252', 'replace'),
+        self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          self._createView().review_diff)
+
+    def test_linked_bugs_excludes_mutual_bugs(self):
+        """List bugs that are linked to the source only."""
+        bug = self.factory.makeBug()
+        self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
+        self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
+        self.assertEqual([], self._createView().linked_bugs)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

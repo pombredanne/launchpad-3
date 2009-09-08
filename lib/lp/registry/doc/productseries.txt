@@ -75,9 +75,14 @@ owner or driver can call Product.newSeries().
     >>> login_person(firefox.owner)
     >>> emacs_series = firefox.newSeries(firefox.owner , 'emacs', summary)
 
+When a driver creates a series, he is also the driver of the new series
+to make him the release manager.
+
     >>> firefox.driver = series_driver
     >>> login_person(series_driver)
     >>> emacs2 = firefox.newSeries(series_driver , 'emacs2', summary)
+    >>> print emacs2.driver.name
+    driver
 
 A newly created series is assumed to be in the development state.
 
@@ -344,14 +349,14 @@ checks when setting and resetting the driver attributes.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> jblack = getUtility(IPersonSet).getByName('jblack')
 
     >>> project = factory.makeProject(name='testproj',
     ...     displayname='Test Project',
     ...     title='Test Project Title', homepageurl='http://foo.com/url',
     ...     summary='summary', description='description', owner=carlos)
-    >>> product = factory.makeProduct(owner=sabdfl, name='testprod',
+    >>> product = factory.makeProduct(owner=mark, name='testprod',
     ...     displayname='Test Product', title='Test product title',
     ...     summary='summary', project=project)
     >>> series = factory.makeProductSeries(owner=jblack, name='1.0', product=product,
@@ -375,7 +380,7 @@ If there is NO project on the product, then we expect the product owner:
     >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
-    sabdfl
+    mark
 
 Now lets put the project back:
 
@@ -423,14 +428,14 @@ OK, now let's test pairs of drivers:
     cprov
     edgar
 
-    >>> project.driver = sabdfl
+    >>> project.driver = mark
     >>> product.driver = danner
     >>> series.driver = None
     >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     danner
-    sabdfl
+    mark
 
     >>> project.driver = jdub
     >>> product.driver = None

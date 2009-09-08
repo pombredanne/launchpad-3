@@ -12,9 +12,10 @@ __all__ = [
 
 import os.path
 
+from bzrlib.branch import Branch
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
-from bzrlib.transform import TransformPreview
+from bzrlib.transform import TransformPreview, ROOT_PARENT
 
 from canonical.launchpad.interfaces import IMasterObject
 from lp.codehosting.vfs import make_branch_mirrorer
@@ -48,7 +49,7 @@ class DirectBranchCommit:
     is_locked = False
     commit_builder = None
 
-    def __init__(self, db_branch, committer=None):
+    def __init__(self, db_branch, committer=None, to_mirror=False):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
@@ -67,8 +68,11 @@ class DirectBranchCommit:
 
         :param db_branch: a Launchpad `Branch` object.
         :param committer: the `Person` writing to the branch.
+        :param to_mirror: If True, write to the mirrored copy of the branch
+            instead of the hosted copy.  (Mainly useful for tests)
         """
         self.db_branch = db_branch
+        self.to_mirror = to_mirror
 
         if committer is None:
             committer = db_branch.owner
@@ -77,8 +81,11 @@ class DirectBranchCommit:
         # Directories we create on the branch, and their ids.
         self.path_ids = {}
 
-        mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
-        self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
+        if to_mirror:
+            self.bzrbranch = Branch.open(self.db_branch.warehouse_url)
+        else:
+            mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
+            self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
         self.bzrbranch.lock_write()
         self.is_locked = True
 
@@ -111,7 +118,7 @@ class DirectBranchCommit:
         if dirname:
             parent_id = self._getDir(parent_dir)
         else:
-            parent_id = None
+            parent_id = ROOT_PARENT
 
         # Create new directory.
         dirfile_id = gen_file_id(path)
@@ -153,6 +160,10 @@ class DirectBranchCommit:
 
         If it does, raise `ConcurrentUpdateError`.
         """
+        # A different last_scanned_id does not indicate a race for mirrored
+        # branches -- last_scanned_id is a proxy for the mirrored branch.
+        if self.to_mirror:
+            return
         assert self.is_locked, "Getting revision on un-locked branch."
         last_revision = None
         last_revision = self.bzrbranch.last_revision()
@@ -169,34 +180,18 @@ class DirectBranchCommit:
         try:
             self._checkForRace()
 
-            preview_tree = self.transform_preview.get_preview_tree()
-
             rev_id = self.revision_tree.get_revision_id()
             if rev_id == NULL_REVISION:
-                parents = []
-            else:
-                parents = [rev_id]
-
-            builder = self.bzrbranch.get_commit_builder(parents)
-
-            list(builder.record_iter_changes(
-                preview_tree, rev_id, self.transform_preview.iter_changes()))
-
-            builder.finish_inventory()
-
-            new_rev_id = builder.commit(commit_message)
-            builder = None
-
-            revno, old_rev_id = self.bzrbranch.last_revision_info()
-            self.bzrbranch.set_last_revision_info(revno + 1, new_rev_id)
-
+                if list(self.transform_preview.iter_changes()) == []:
+                    return
+            new_rev_id = self.transform_preview.commit(
+                self.bzrbranch, commit_message)
             IMasterObject(self.db_branch).requestMirror()
 
         finally:
-            if builder:
-                builder.abort()
             self.unlock()
             self.is_open = False
+        return new_rev_id
 
     def unlock(self):
         """Release commit lock, if held."""

@@ -17,7 +17,7 @@ from zope.security.proxy import isinstance as zisinstance
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import time_counter
 
 

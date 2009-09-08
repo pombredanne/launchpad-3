@@ -10,11 +10,8 @@ __all__ = [
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
-    'ProductBountiesMenu',
     'ProductBrandingView',
-    'ProductBreadcrumbBuilder',
     'ProductBugsMenu',
-    'ProductChangeTranslatorsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditNavigationMenu',
@@ -26,8 +23,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSetBreadcrumbBuilder',
-    'ProductSetContextMenu',
+    'ProductSetBreadcrumb',
     'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
@@ -77,26 +73,30 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from lp.registry.browser.distribution import UsesLaunchpadMixin
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
-    canonical_url, custom_widget, enabled_with_permission,
-    sorted_version_numbers, stepthrough, stepto, structured)
+    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    custom_widget, enabled_with_permission, sorted_version_numbers,
+    stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
@@ -114,7 +114,8 @@ SPACE = ' '
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
-    FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
+    FAQTargetNavigationMixin, QuestionTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -243,13 +244,6 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `IProduct`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
@@ -269,12 +263,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
         return Link('', text, summary)
-
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'Bounties related to %s' % self.context.displayname
-        return Link(target, text, summary)
 
     def branches(self):
         text = 'Code'
@@ -320,6 +308,7 @@ class ProductNavigationMenu(NavigationMenu):
         text = 'Branch Visibility Policy'
         return Link('+branchvisibility', text)
 
+
 class ProductEditLinksMixin:
     """A mixin class for menus that need Product edit links."""
 
@@ -348,6 +337,10 @@ class ProductEditLinksMixin:
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
+
 
 class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
@@ -362,6 +355,19 @@ class ProductEditNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     links = ('edit', 'branding', 'reassign', 'review_license', 'administer')
 
 
+class IProductActionMenu(Interface):
+    """A marker interface for the global action navigation menu."""
+
+
+class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
+    """A sub-menu for acting upon a Product."""
+
+    usedfor = IProductActionMenu
+    facet = 'overview'
+    title = 'Actions'
+    links = ('edit', 'review_license', 'administer', 'subscribe')
+
+
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
 
     usedfor = IProduct
@@ -373,17 +379,20 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'mentorship',
         'distributions',
         'packages',
+        'series',
         'series_add',
+        'downloads',
         'announce',
         'announcements',
         'administer',
         'review_license',
+        'branchvisibility',
         'rdf',
         ]
 
     def top_contributors(self):
-        text = u'\u00BB More contributors'
-        return Link('+topcontributors', text)
+        text = 'More contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def distributions(self):
         text = 'Packaging information'
@@ -397,6 +406,10 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
+    def series(self):
+        text = 'View full history'
+        return Link('+series', text, icon='info')
+
     @enabled_with_permission('launchpad.Driver')
     def series_add(self):
         text = 'Register a series'
@@ -409,15 +422,24 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = u'\u00BB More announcements'
+        text = 'Read all announcements'
         enabled = bool(self.context.getAnnouncements())
-        return Link('+announcements', text, enabled=enabled)
+        return Link('+announcements', text, icon='info', enabled=enabled)
 
     def rdf(self):
         text = structured(
             '<abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
+
+    def downloads(self):
+        text = 'Downloads'
+        return Link('+download', text, icon='info')
+
+    @enabled_with_permission('launchpad.Admin')
+    def branchvisibility(self):
+        text = 'Branch Visibility Policy'
+        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
@@ -482,21 +504,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, summary, icon='add')
 
 
-class ProductBountiesMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
-
-
 def _sort_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""
     if a['name'] == 'ubuntu':
@@ -504,7 +511,7 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
-class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSetBreadcrumb(Breadcrumb):
     """Return a breadcrumb for an `IProductSet`."""
     text = "Projects"
 
@@ -514,46 +521,7 @@ class ProductSetFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSet
 
-    enable_only = ['overview']
-
-
-class ProductSetContextMenu(ContextMenu):
-
-    usedfor = IProductSet
-
-    links = ['products', 'distributions', 'people', 'meetings',
-             'all', 'register', 'register_team', 'review_licenses']
-
-    def register(self):
-        text = 'Register a project'
-        # We link to the guided form, though people who know the URL can
-        # just jump to +new directly. That might be considered a
-        # feature!
-        return Link('+new', text, icon='add')
-
-    def register_team(self):
-        text = 'Register a team'
-        return Link('/people/+newteam', text, icon='add')
-
-    def all(self):
-        text = 'List all projects'
-        return Link('+all', text, icon='list')
-
-    def products(self):
-        return Link('/projects/', 'View projects')
-
-    def distributions(self):
-        return Link('/distros/', 'View distributions')
-
-    def people(self):
-        return Link('/people/', 'View people')
-
-    def meetings(self):
-        return Link('/sprints/', 'View meetings')
-
-    @enabled_with_permission('launchpad.ProjectReview')
-    def review_licenses(self):
-        return Link('+review-licenses', 'Review projects')
+    enable_only = ['overview', 'branches']
 
 
 class SortSeriesMixin:
@@ -693,6 +661,14 @@ class ReleaseWithFiles:
     def addFile(self, file):
         self.files.append(file)
 
+    @property
+    def name_with_codename(self):
+        milestone = self.release.milestone
+        if milestone.code_name:
+            return "%s (%s)" % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
+
     @cachedproperty
     def total_downloads(self):
         """Total downloads of files associated with this release."""
@@ -790,12 +766,6 @@ class ProductDownloadFileMixin:
                     "%d files have been deleted." %
                     del_count)
 
-    def seriesHasDownloadFiles(self, series):
-        """Determine whether a series has any download files."""
-        for release in series.releases:
-            if len(release.files) > 0:
-                return True
-
     @cachedproperty
     def latest_release_with_download_files(self):
         """Return the latest release with download files."""
@@ -810,6 +780,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                   ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
+    implements(IProductActionMenu)
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)
@@ -865,6 +836,30 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 self.context.wikiurl or
                 self.context.screenshotsurl or
                 self.context.downloadurl)
+
+    @property
+    def external_links(self):
+        """The project's external links.
+
+        The home page link is not included because its link must have the
+        rel=nofollow attribute.
+        """
+        from canonical.launchpad.webapp.menu import MenuLink
+        urls = [
+            ('Sourceforge project', self.sourceforge_url),
+            ('Freshmeat record', self.freshmeat_url),
+            ('Wiki', self.context.wikiurl),
+            ('Screenshots', self.context.screenshotsurl),
+            ('External downloads', self.context.downloadurl),
+            ]
+        links = []
+        for (text, url) in urls:
+            if url is not None:
+                menu_link = MenuLink(
+                    Link(url, text, icon='external-link', enabled=True))
+                menu_link.url = url
+                links.append(menu_link)
+        return links
 
     @property
     def should_display_homepage(self):
@@ -970,6 +965,10 @@ class ProductDownloadFilesView(LaunchpadView,
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
 
+    @property
+    def page_title(self):
+        return "%s project files" % self.context.displayname
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         self.form = self.request.form
@@ -987,7 +986,7 @@ class ProductDownloadFilesView(LaunchpadView,
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
         for series in self.product.serieses:
-            if self.seriesHasDownloadFiles(series):
+            if series.has_release_files:
                 return True
         return False
 
@@ -1270,6 +1269,17 @@ class ProductAddSeriesView(LaunchpadFormView):
 
     series = None
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Register a new %s release series' % (
+            self.context.displayname)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     def validate(self, data):
         """See `LaunchpadFormView`."""
         branch = data.get('branch')
@@ -1335,33 +1345,56 @@ class Icon:
         return self.library_alias.getURL()
 
 
-class ProductSetView(LaunchpadView):
+class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for products index."""
+    usedfor = IProductSet
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        'review_licenses',
+        'view_all_projects',
+        ]
 
-    __used_for__ = IProductSet
+    @enabled_with_permission('launchpad.ProjectReview')
+    def review_licenses(self):
+        return Link('+review-licenses', 'Review projects', icon='edit')
+
+    def view_all_projects(self):
+        return Link('+all', 'Show all projects', icon='list')
+
+
+class ProductSetView(LaunchpadView):
+    """View for products index page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'Projects registered in Launchpad'
 
     max_results_to_display = config.launchpad.default_batch_size
     results = None
-    searchrequested = False
+    search_requested = False
 
     def initialize(self):
-        """See `LaunchpadFormView`."""
+        """See `LaunchpadView`."""
         form = self.request.form_ng
         self.search_string = form.getOne('text')
         if self.search_string is not None:
-            self.searchrequested = True
+            self.search_requested = True
 
+    @cachedproperty
     def all_batched(self):
         return BatchNavigator(self.context.all_active, self.request)
 
     @cachedproperty
     def matches(self):
-        if not self.searchrequested:
+        if not self.search_requested:
             return None
         pillarset = getUtility(IPillarNameSet)
         return pillarset.count_search_matches(self.search_string)
 
     @cachedproperty
-    def searchresults(self):
+    def search_results(self):
         search_string = self.search_string.lower()
         limit = self.max_results_to_display
         return getUtility(IPillarNameSet).search(search_string, limit)
@@ -1481,7 +1514,7 @@ class ProjectAddStepOne(StepView):
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
@@ -1516,7 +1549,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     product = None
 

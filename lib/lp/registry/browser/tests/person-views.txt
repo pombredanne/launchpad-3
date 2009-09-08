@@ -22,9 +22,9 @@ the world.
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> person_set = getUtility(IPersonSet)
-    >>> mark = person_set.getByEmail('mark@hbd.com')
+    >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
-    u'mark@hbd.com'
+    u'mark@example.com'
     >>> mark.hide_email_addresses
     False
 
@@ -51,7 +51,7 @@ email addresses.
     >>> view.visible_email_address_description
     'This email address is only visible to Launchpad users.'
     >>> view.visible_email_addresses
-    [u'mark@hbd.com']
+    [u'mark@example.com']
 
 As for Sample Person, he has chosen not to disclose his email addresses.
 
@@ -430,7 +430,7 @@ than we're willing to display.
     >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
     >>> name16 = person_set.getByName('name16')
-    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> mark = person_set.getByName('mark')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
     >>> from lp.soyuz.tests.test_publishing import (
@@ -446,7 +446,7 @@ than we're willing to display.
     ...     discard = test_pub.getPubSource(
     ...         sourcename=source_name,
     ...         status=PackagePublishingStatus.PUBLISHED,
-    ...         archive=sabdfl.archive,
+    ...         archive=mark.archive,
     ...         distroseries=warty)
     ...     # Add the maintained packages.
     ...     discard = test_pub.getPubSource(
@@ -455,7 +455,7 @@ than we're willing to display.
     ...         distroseries=warty)
     ...     # Add the uploaded packages.
     ...     discard = test_pub.getPubSource(
-    ...         maintainer=sabdfl,
+    ...         maintainer=mark,
     ...         sourcename=source_name,
     ...         status=PackagePublishingStatus.PUBLISHED,
     ...         distroseries=warty)
@@ -587,7 +587,7 @@ address.
     >>> login('test@canonical.com')
     >>> view = create_initialized_view(landscape_developers, '+index')
     >>> print view.contact_link_title
-    Send an email to your team through Launchpad
+    Send an email to your team's members through Launchpad
 
 The EmailToPersonView can be used by members to contact their team.
 

@@ -8,7 +8,7 @@ details of that team.
     ...
     Unauthorized:...
 
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser.addHeader('Authorization', 'Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> browser.getLink('Change details').click()
     >>> browser.url
@@ -55,7 +55,7 @@ URL since we changed its name.
 If we try to use a name which is already in use, we'll get an error
 message explaining it.
 
-    >>> browser.getControl('Name', index=0).value = 'sabdfl'
+    >>> browser.getControl('Name', index=0).value = 'mark'
     >>> browser.getControl('Save').click()
 
     >>> browser.url
@@ -63,7 +63,7 @@ message explaining it.
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print extract_text(tag)
     There is 1 error.
-    sabdfl is already in use by another person or team.
+    mark is already in use by another person or team.
 
 We also get an error message if we attempt to create a team with a renewal
 policy other than None and don't specify a default renewal period.
@@ -88,7 +88,7 @@ with mailing lists is prohibited.  This is done by making the 'name' field of
 such team pages read-only.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
     # Approval of mailing lists is not yet exposed through the web.

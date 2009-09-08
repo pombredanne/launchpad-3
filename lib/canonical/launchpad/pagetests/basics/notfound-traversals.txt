@@ -96,8 +96,6 @@ status is returned.
 >>> check_not_found("/+groups/foos",
 ...                 host='translations.launchpad.dev')
 
->>> check("/bounties")
->>> check("/bounties/foomatic-widgets")
 
 >>> check("/codeofconduct")
 >>> check("/codeofconduct/1.0")
@@ -105,7 +103,6 @@ status is returned.
 
 >>> check("/projectgroups", auth=True)
 >>> check("/projectgroups/+all", auth=True)
->>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
@@ -147,7 +144,6 @@ status is returned.
 >>> check("/distros/+add", auth=True)
 
 >>> check("/ubuntu")
->>> check("/ubuntu/+bounties")
 >>> check("/ubuntu/+bugs")
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
@@ -159,8 +155,6 @@ status is returned.
 >>> check("/ubuntu/+settings", host='translations.launchpad.dev',
 ...       auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
->>> check("/ubuntu/+linkbounty", auth=True)
->>> check("/ubuntu/+addbounty", auth=True)
 >>> check("/ubuntu/+addspec", auth=True)
 >>> check("/ubuntu/+imports", host='translations.launchpad.dev')
 >>> check("/debian/+milestone/3.1")
@@ -243,7 +237,6 @@ is still pointing to this old URL (see bug #138090).
 >>> check("/ubuntu/hoary/+bugs")
 
 >>> check("/ubuntu/hoary/i386")
->>> check("/ubuntu/hoary/i386/+search")
 
 >>> check("/bugs")
 >>> check_redirect("/bugs/assigned")
@@ -368,7 +361,6 @@ Test /people traversals.
 >>> check("/people/")
 >>> check("/people/+requestmerge", auth=True)
 >>> check_redirect("/people/+mergerequest-sent", auth=True)
->>> check("/people/+portlet-about")
 
 This is for a team:
 
@@ -382,7 +374,6 @@ This is for a team:
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check("/~name18/+bounties")
 >>> check_redirect("/~name18/+translations", status=301)
 >>> check("/~name18/+translations", host='translations.launchpad.dev')
 >>> check("/~name18/+imports", host='translations.launchpad.dev')
@@ -422,10 +413,10 @@ And this is for a person:
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 
-sabdfl owns many packages, so he's a better test for some pages:
+mark owns many packages, so he's a better test for some pages:
 
->>> check("/~sabdfl/+packagebugs")
->>> check("/~sabdfl/+related-software")
+>>> check("/~mark/+packagebugs")
+>>> check("/~mark/+related-software")
 
 >>> check("/+code")
 
@@ -433,7 +424,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/builders/bob/")
 >>> check_redirect("/+builds", status=301)
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
->>> check("/ubuntu/+source/pmount/0.1-1/+build/7/pmount/")
 
 >>> check_redirect("/support/", status=301)
 

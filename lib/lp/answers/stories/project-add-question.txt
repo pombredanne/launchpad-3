@@ -150,7 +150,7 @@ non-English languages. Dafydd speaks Japanese, so we will use him.
     >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> daf_browser.title
-    "Dafydd Harries's preferred languages"
+    'Your language preferences'
     
     >>> daf_browser.getControl('Japanese').selected
     True
@@ -177,7 +177,7 @@ behaviour.
     >>> user_browser.open(
     ...     'http://launchpad.dev/~no-priv/+editlanguages')
     >>> user_browser.title 
-    "No Privileges Person's preferred languages"
+    'Your language preferences'
     
     >>> user_browser.getControl('Japanese').selected = True
     >>> user_browser.getControl('Save').click()

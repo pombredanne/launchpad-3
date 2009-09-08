@@ -21,7 +21,7 @@ from lp.soyuz.adapters.archivedependencies import (
     component_dependencies)
 from lp.soyuz.interfaces.archivedependency import (
     IArchiveDependency)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class ArchiveDependency(SQLBase):
@@ -46,6 +46,14 @@ class ArchiveDependency(SQLBase):
 
     component = ForeignKey(
         foreignKey='Component', dbName='component')
+
+    @property
+    def component_name(self):
+        """See `IArchiveDependency`"""
+        if self.component:
+            return self.component.name
+        else:
+            return None
 
     @property
     def title(self):

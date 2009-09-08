@@ -14,6 +14,7 @@ import math
 import os.path
 import re
 import rfc822
+import sys
 import urllib
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
@@ -25,7 +26,8 @@ from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
-from zope.traversing.interfaces import ITraversable, IPathAdapter
+from zope.traversing.interfaces import (
+    ITraversable, IPathAdapter, TraversalError)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -68,12 +70,6 @@ def escape(text, quote=True):
     return cgi.escape(text, quote)
 
 
-class TraversalError(NotFoundError):
-    """Remove this when we upgrade to a more recent Zope x3."""
-    # XXX: Steve Alexander 2004-12-14:
-    # Remove this when we upgrade to a more recent Zope x3.
-
-
 class MenuAPI:
     """Namespace to give access to the facet menus.
 
@@ -101,7 +97,7 @@ class MenuAPI:
             self.view = None
             self._selectedfacetname = None
 
-    def __getattr__(self, facet):
+    def __getattribute__(self, facet):
         """Retrieve the links associated with a facet.
 
         It's used with expressions like context/menu:bugs/subscribe.
@@ -111,22 +107,43 @@ class MenuAPI:
         :raise AttributeError: when there is no application menu for the
             facet.
         """
-        if not self._has_facet(facet):
+        # Use __getattribute__ instead of __getattr__, since __getattr__
+        # gets called if any of the other properties raise an AttributeError,
+        # which makes troubleshooting confusing. The has_facet can't easily
+        # be placed first, since all the properties it uses would need to
+        # be retrieved with object.__getattribute().
+        missing = object()
+        if (getattr(MenuAPI, facet, missing) is not missing
+            or facet in object.__getattribute__(self, '__dict__')):
+            return object.__getattribute__(self, facet)
+
+        has_facet = object.__getattribute__(self, '_has_facet')
+        if not has_facet(facet):
             raise AttributeError(facet)
         menu = queryAdapter(self._context, IApplicationMenu, facet)
         if menu is None:
             menu = queryAdapter(self._context, INavigationMenu, facet)
         if menu is not None:
-            menu.request = self._request
-            links_map = dict(
-                (link.name, link)
-                for link in menu.iterlinks(request_url=self._request_url()))
+            links_map = self._getMenuLinksAndAttributes(menu)
         else:
             # The object has the facet, but does not have a menu, this
             # is probably the overview menu with is the default facet.
             links_map = {}
         object.__setattr__(self, facet, links_map)
         return links_map
+
+    def _getMenuLinksAndAttributes(self, menu):
+        """Return a dict of the links and attributes of the menu."""
+        menu.request = self._request
+        request_url = self._request_url()
+        result = dict(
+            (link.name, link)
+            for link in menu.iterlinks(request_url=request_url))
+        extras = menu.extra_attributes
+        if extras is not None:
+            for attr in extras:
+                result[attr] = getattr(menu, attr, None)
+        return result
 
     def _has_facet(self, facet):
         """Does the object have the named facet?"""
@@ -182,34 +199,42 @@ class MenuAPI:
         if menu is None:
             return  {}
         else:
-            menu.request = self._request
-            links = list(menu.iterlinks(request_url=self._request_url()))
-            return dict((link.name, link) for link in links)
+            return self._getMenuLinksAndAttributes(menu)
 
     @property
     def navigation(self):
         """Navigation menu links list."""
-        # NavigationMenus may be associated with a content object or one of
-        # its views. The context we need is the one from the TAL expression.
-        context = self._tales_context
-        if self._selectedfacetname is not None:
-            selectedfacetname = self._selectedfacetname
-        else:
-            # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
-            # facet name from the layer implemented by the request.
-            view = get_current_view(self._request)
-            selectedfacetname = get_facet(view)
         try:
-            menu = nearest_adapter(
-                context, INavigationMenu, name=selectedfacetname)
-        except NoCanonicalUrl:
-            menu = None
-        if menu is None or menu.disabled:
-            return {}
-        else:
-            menu.request = self._request
-            links = list(menu.iterlinks(request_url=self._request_url()))
-            return dict((link.name, link) for link in links)
+            # NavigationMenus may be associated with a content object or one
+            # of its views. The context we need is the one from the TAL
+            # expression.
+            context = self._tales_context
+            if self._selectedfacetname is not None:
+                selectedfacetname = self._selectedfacetname
+            else:
+                # XXX sinzui 2008-05-09 bug=226917: We should be retrieving
+                # the facet name from the layer implemented by the request.
+                view = get_current_view(self._request)
+                selectedfacetname = get_facet(view)
+            try:
+                menu = nearest_adapter(
+                    context, INavigationMenu, name=selectedfacetname)
+            except NoCanonicalUrl:
+                menu = None
+            if menu is None or menu.disabled:
+                return {}
+            else:
+                return self._getMenuLinksAndAttributes(menu)
+        except AttributeError, e:
+            # If this method gets an AttributeError, we rethrow it as a
+            # AssertionError. Otherwise, zope will hide the root cause
+            # of the error and just say that "navigation" can't be traversed.
+            new_exception = AssertionError(
+                'AttributError in MenuAPI.navigation: %s' % e)
+            # We cannot use parens around the arguments to `raise`,
+            # since that will cause it to ignore the third argument,
+            # which is the original traceback.
+            raise new_exception, None, sys.exc_info()[2]
 
 
 class CountAPI:
@@ -419,7 +444,6 @@ class ObjectFormatterAPI:
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
         'public-private-css': 'public_private_css',
-        'location_heading': 'location_heading',
         }
 
     def __init__(self, context):
@@ -450,10 +474,31 @@ class ObjectFormatterAPI:
         version number. It's the same as 'url', but without any view
         name.
         """
-        return self.url()
+
+        # Some classes override the rootsite. We always want a path-only
+        # URL, so we override it to nothing.
+        return self.url(rootsite=None)
 
     def traverse(self, name, furtherPath):
-        if name in self.traversable_names:
+        if name.startswith('link:') or name.startswith('url:'):
+            rootsite = name.split(':')[1]
+            extra_path = None
+            if len(furtherPath) > 0:
+                extra_path = '/'.join(reversed(furtherPath))
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
+            if name.startswith('link:'):
+                if rootsite is None:
+                    return self.link(extra_path)
+                else:
+                    return self.link(extra_path, rootsite=rootsite)
+            else:
+                if rootsite is None:
+                    self.url(extra_path)
+                else:
+                    return self.url(extra_path, rootsite=rootsite)
+        elif name in self.traversable_names:
             if len(furtherPath) >= 1:
                 extra_path = '/'.join(reversed(furtherPath))
                 del furtherPath[:]
@@ -467,13 +512,16 @@ class ObjectFormatterAPI:
         else:
             raise TraversalError, name
 
-    def link(self, view_name):
+    def link(self, view_name, rootsite=None):
         """Return an HTML link to the object's page.
 
         The link consists of an icon followed by the object's name.
 
         :param view_name: If not None, the link will point to the page with
             that name on this object.
+        :param rootsite: If not None, return the URL to the page on the
+            specified rootsite.  Note this is available only for subclasses
+            that allow specifying the rootsite.
         """
         raise NotImplementedError(
             "No link implementation for %r, IPathAdapter implementation "
@@ -486,24 +534,6 @@ class ObjectFormatterAPI:
         else:
             return 'public'
 
-    def location_heading(self):
-        """Return a heading for the nearest object supporting a logo."""
-        context = self._context
-        if not IHasLogo.providedBy(context):
-            context = nearest(context, IHasLogo)
-            heading = 'h2'
-        else:
-            heading = 'h1'
-
-        if context is None:
-            title = 'Launchpad.net'
-        else:
-            title = context.title
-
-        return "<%(heading)s>%(title)s</%(heading)s>" % {
-            'heading': heading,
-            'title': title
-            }
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
@@ -953,23 +983,6 @@ class PersonFormatterAPI(ObjectFormatterAPI):
     final_traversable_names = {'local-time': 'local_time'}
     final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
-    def traverse(self, name, furtherPath):
-        """Special-case traversal for links with an optional rootsite."""
-        if name.startswith('link:') or name.startswith('url:'):
-            rootsite = name.split(':')[1]
-            extra_path = None
-            if len(furtherPath) > 0:
-                extra_path = '/'.join(reversed(furtherPath))
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
-            del furtherPath[:]
-            if name.startswith('link:'):
-                return self.link(extra_path, rootsite=rootsite)
-            else:
-                return self.url(extra_path, rootsite=rootsite)
-        else:
-            return super(PersonFormatterAPI, self).traverse(name, furtherPath)
-
     def local_time(self):
         """Return the local time for this person."""
         time_zone = 'UTC'
@@ -977,12 +990,22 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             time_zone = self._context.time_zone
         return datetime.now(pytz.timezone(time_zone)).strftime('%T %Z')
 
-    def link(self, view_name, rootsite=None):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+    def url(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a person is to the mainsite.
+        """
+        return super(PersonFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        Return an HTML link to the person's page containing an icon
+        followed by the person's name. The default URL for a person is to
+        the mainsite.
         """
         person = self._context
-        url = canonical_url(person, rootsite=rootsite, view_name=view_name)
+        url = self.url(view_name, rootsite)
         custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
         if custom_icon is None:
             css_class = ObjectImageDisplayAPI(person).sprite_css()
@@ -1019,12 +1042,16 @@ class TeamFormatterAPI(PersonFormatterAPI):
 
     hidden = u'<hidden>'
 
-    def url(self, view_name=None):
-        """See `ObjectFormatterAPI`."""
+    def url(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a team is to the mainsite. None is returned
+        when the user does not have permission to review the team.
+        """
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
             return None
-        return super(TeamFormatterAPI, self).url(view_name)
+        return super(TeamFormatterAPI, self).url(view_name, rootsite)
 
     def api_url(self, context):
         """See `ObjectFormatterAPI`."""
@@ -1033,8 +1060,12 @@ class TeamFormatterAPI(PersonFormatterAPI):
             return None
         return super(TeamFormatterAPI, self).api_url(context)
 
-    def link(self, view_name, rootsite=None):
-        """See `ObjectFormatterAPI`."""
+    def link(self, view_name, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a team is to the mainsite. None is returned
+        when the user does not have permission to review the team.
+        """
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
@@ -1111,7 +1142,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
         """
         return queryAdapter(self._context, IPathAdapter, 'image').sprite_css()
 
-    def link(self, view_name):
+    def link(self, view_name, rootsite=None):
         """Return html including a link, description and icon.
 
         Icon and link are optional, depending on type and permissions.
@@ -1127,7 +1158,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
 
         summary = self._make_link_summary()
         if check_permission(self._link_permission, self._context):
-            url = self.url(view_name)
+            url = self.url(view_name, rootsite)
         else:
             url = ''
         if url:
@@ -1147,33 +1178,40 @@ class PillarFormatterAPI(CustomizableFormatter):
         displayname = self._context.displayname
         return {'displayname': displayname}
 
-    def link(self, view_name):
+    def url(self, view_name=None, rootsite=None):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a pillar is to the mainsite.
+        """
+        return super(PillarFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='mainsite'):
         """The html to show a link to a Product, Project or distribution.
 
         In the case of Products or Project groups we display the custom
-        icon, if one exists."""
+        icon, if one exists. The default URL for a pillar is to the mainsite.
+        """
 
         html = super(PillarFormatterAPI, self).link(view_name)
         context = self._context
-        if IProduct.providedBy(context) or IProject.providedBy(context):
-            custom_icon = ObjectImageDisplayAPI(
-                context)._get_custom_icon_url()
-            url = canonical_url(context, view_name=view_name)
-            summary = self._make_link_summary()
-            if custom_icon is None:
-                css_class = ObjectImageDisplayAPI(context).sprite_css()
-                html = (u'<a href="%s" class="%s">%s</a>') % (
-                    url, css_class, summary)
-            else:
-                html = (u'<a href="%s" class="bg-image" '
-                         'style="background-image: url(%s)">%s</a>') % (
-                    url, custom_icon, summary)
-            if IProduct.providedBy(context):
-                license_status = context.license_status
-                if license_status != LicenseStatus.OPEN_SOURCE:
-                    html = '<span title="%s">%s (%s)</span>' % (
-                            license_status.description, html,
-                            license_status.title)
+        custom_icon = ObjectImageDisplayAPI(
+            context)._get_custom_icon_url()
+        url = self.url(view_name, rootsite)
+        summary = self._make_link_summary()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(context).sprite_css()
+            html = (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, summary)
+        else:
+            html = (u'<a href="%s" class="bg-image" '
+                     'style="background-image: url(%s)">%s</a>') % (
+                url, custom_icon, summary)
+        if IProduct.providedBy(context):
+            license_status = context.license_status
+            if license_status != LicenseStatus.OPEN_SOURCE:
+                html = '<span title="%s">%s (%s)</span>' % (
+                        license_status.description, html,
+                        license_status.title)
         return html
 
 
@@ -1226,7 +1264,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
             html += ')'
         return html % replacements
 
-    def url(self, view_name):
+    def url(self, view_name=None, rootsite=None):
         """Return the URL to download the file."""
         return self._getDownloadURL(self._context.libraryfile)
 
@@ -1289,7 +1327,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 class PreviewDiffFormatterAPI(ObjectFormatterAPI):
     """Formatter for preview diffs."""
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """Use the url of the librarian file containing the diff.
         """
         librarian_alias = self._context.diff_text
@@ -1418,7 +1456,7 @@ class CodeImportFormatterAPI(CustomizableFormatter):
                 'branch': self._context.branch.bzr_identity,
                }
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """See `ObjectFormatterAPI`."""
         # The url of a code import is the associated branch.
         # This is still here primarily for supporting branch deletion,
@@ -2059,7 +2097,7 @@ class LinkFormatterAPI(ObjectFormatterAPI):
         """Return the default representation of the link."""
         return self._context.render()
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """Return the URL representation of the link."""
         if self._context.enabled:
             return self._context.url
@@ -2793,6 +2831,16 @@ class FormattersAPI:
         else:
             return self._stringtoformat
 
+    def ellipsize(self, maxlength):
+        """Use like tal:content="context/foo/fmt:ellipsize/60"."""
+        if len(self._stringtoformat) > maxlength:
+            length = (maxlength - 3) / 2
+            return (
+                self._stringtoformat[:maxlength - length - 3] + '...' +
+                self._stringtoformat[-length:])
+        else:
+            return self._stringtoformat
+
     def format_diff(self):
         """Format the string as a diff in a table with line numbers."""
         # Trim off trailing carriage returns.
@@ -2881,6 +2929,12 @@ class FormattersAPI:
                     "you need to traverse a number after fmt:shorten")
             maxlength = int(furtherPath.pop())
             return self.shorten(maxlength)
+        elif name == 'ellipsize':
+            if len(furtherPath) == 0:
+                raise TraversalError(
+                    "you need to traverse a number after fmt:ellipsize")
+            maxlength = int(furtherPath.pop())
+            return self.ellipsize(maxlength)
         elif name == 'diff':
             return self.format_diff()
         elif name == 'css-id':

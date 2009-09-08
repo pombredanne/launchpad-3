@@ -182,6 +182,16 @@ class BranchJobDerived(BaseRunnableJob):
                 Job.id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars =  BaseRunnableJob.getOopsVars(self)
+        vars.extend([
+            ('branch_job_id', self.context.id),
+            ('branch_job_type', self.context.job_type.title)])
+        if self.context.branch is not None:
+            vars.append(('branch_name', self.context.branch.unique_name))
+        return vars
+
 
 class BranchDiffJob(BranchJobDerived):
     """A Job that calculates the a diff related to a Branch."""
@@ -815,7 +825,7 @@ class RosettaUploadJob(BranchJobDerived):
         """See `IRosettaUploadJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.using(BranchJob, Job).find((BranchJob), And(
-            Job.id == BranchJob.id,
+            Job.id == BranchJob.jobID,
             BranchJob.branch == branch,
             BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
             Job._status != JobStatus.COMPLETED,

@@ -147,9 +147,6 @@
         <browser:page
             name="+all"
             template="../templates/sprints-all.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/sprints-portlet-details.pt"/>
     </browser:pages>
     <browser:page
         name="+new"
@@ -168,9 +165,10 @@
         classes="
             SprintFacets
             SprintOverviewMenu
+            SprintSetFacets
+            SprintSetNavigationMenu
             SprintSpecificationsMenu
-            SprintSetContextMenu
-            SprintSetFacets"
+            "
         module="lp.blueprints.browser.sprint"/>
     <browser:defaultView
         for="lp.blueprints.interfaces.sprintspecification.ISprintSpecification"

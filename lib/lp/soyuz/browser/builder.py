@@ -6,12 +6,11 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuilderBreadcrumbBuilder',
     'BuilderFacets',
     'BuilderOverviewMenu',
     'BuilderNavigation',
     'BuilderSetAddView',
-    'BuilderSetBreadcrumbBuilder',
+    'BuilderSetBreadcrumb',
     'BuilderSetFacets',
     'BuilderSetOverviewMenu',
     'BuilderSetNavigation',
@@ -29,18 +28,19 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
 
 from canonical.cachedproperty import cachedproperty
+from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link, Navigation,
+    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lazr.delegates import delegates
 from canonical.widgets import HiddenUserWidget
 
@@ -63,7 +63,7 @@ class BuilderSetNavigation(GetitemNavigation):
             return self.redirectSubTree(canonical_url(build))
 
 
-class BuilderSetBreadcrumbBuilder(BreadcrumbBuilder):
+class BuilderSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBuilderSet`."""
     text = 'Build Farm'
 
@@ -71,13 +71,6 @@ class BuilderSetBreadcrumbBuilder(BreadcrumbBuilder):
 class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
     usedfor = IBuilder
-
-
-class BuilderBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `IBuilder`."""
-    @property
-    def text(self):
-        return self.context.title
 
 
 class BuilderSetFacets(StandardLaunchpadFacets):
@@ -110,10 +103,10 @@ class BuilderOverviewMenu(ApplicationMenu):
     """Overview Menu for IBuilder."""
     usedfor = IBuilder
     facet = 'overview'
-    links = ['history', 'edit', 'mode', 'cancel', 'admin']
+    links = ['history', 'edit', 'mode']
 
     def history(self):
-        text = 'Show build history'
+        text = 'View full history'
         return Link('+history', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -126,24 +119,9 @@ class BuilderOverviewMenu(ApplicationMenu):
         text = 'Change mode'
         return Link('+mode', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def cancel(self):
-        text = 'Cancel current job'
-        return Link('+cancel', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def admin(self):
-        text = 'Administer builder'
-        return Link('+admin', text, icon='edit')
-
-
-class CommonBuilderView:
+class CommonBuilderView(LaunchpadView):
     """Common builder methods used in this file."""
-
-    def now(self):
-        """Offers the timestamp for page rendering."""
-        return DateTimeFormatterAPI(
-            datetime.datetime.now(pytz.UTC)).datetime()
 
     def overrideHiddenBuilder(self, builder):
         """Override the builder to HiddenBuilder as necessary.
@@ -179,10 +157,26 @@ class BuilderSetView(CommonBuilderView):
         return [self.overrideHiddenBuilder(builder) for builder in builders]
 
     @property
+    def number_of_registered_builders(self):
+        return len(self.builders)
+
+    @property
+    def number_of_available_builders(self):
+        return len([b for b in self.builders if b.builderok])
+
+    @property
+    def number_of_disabled_builders(self):
+        return len([b for b in self.builders if not b.builderok])
+
+    @property
+    def number_of_building_builders(self):
+        return len([b for b in self.builders if b.currentjob is not None])
+
+    @property
     def ppa_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'PPA build machines', virtualized=True)
+            'PPA build status', virtualized=True)
         builder_category.groupBuilders(self.builders)
         return builder_category
 
@@ -190,7 +184,7 @@ class BuilderSetView(CommonBuilderView):
     def other_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'Official distribution build machines', virtualized=False)
+            'Official distributions build status', virtualized=False)
         builder_category.groupBuilders(self.builders)
         return builder_category
 
@@ -201,11 +195,15 @@ class BuilderGroup:
     Also stores the corresponding 'queue_size', the number of pending jobs
     in this context.
     """
-    def __init__(self, processor_name, queue_size, builders):
+    def __init__(self, processor_name, queue_size, duration, builders):
         self.processor_name = processor_name
         self.queue_size = queue_size
-        self.builders = builders
-
+        self.number_of_available_builders = len(
+            [b for b in builders if b.builderok])
+        if duration and self.number_of_available_builders:
+            self.duration = duration / self.number_of_available_builders
+        else:
+            self.duration = duration
 
 class BuilderCategory:
     """A category of builders.
@@ -240,10 +238,10 @@ class BuilderCategory:
 
         builderset = getUtility(IBuilderSet)
         for processor, builders in grouped_builders.iteritems():
-            queue_size = builderset.getBuildQueueSizeForProcessor(
+            queue_size, duration = builderset.getBuildQueueSizeForProcessor(
                 processor, virtualized=self.virtualized)
             builder_group = BuilderGroup(
-                processor.name, queue_size,
+                processor.name, queue_size, duration,
                 sorted(builders, key=operator.attrgetter('title')))
             self._builder_groups.append(builder_group)
 
@@ -284,19 +282,6 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         context = self.overrideHiddenBuilder(context)
         super(BuilderView, self).__init__(context, request)
 
-    def cancelBuildJob(self):
-        """Cancel curent job in builder."""
-        builder_id = self.request.form.get('BUILDERID')
-        if not builder_id:
-            return
-        # XXX cprov 2005-10-14
-        # The 'self.context.slave.abort()' seems to work with the new
-        # BuilderSlave class added by dsilvers, but I won't release it
-        # until we can test it properly, since we can only 'abort' slaves
-        # in BUILDING state it does depends of the major issue for testing
-        # Auto Build System, getting slave building something sane.
-        return '<p>Cancel (%s). Not implemented yet.</p>' % builder_id
-
     @property
     def default_build_state(self):
         """Present all jobs by default."""
@@ -310,13 +295,37 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     @property
     def current_build_duration(self):
         """Return the delta representing the duration of the current job."""
-        if (self.context.currentjob is None or 
+        if (self.context.currentjob is None or
             self.context.currentjob.buildstart is None):
             return None
         else:
             UTC = pytz.timezone('UTC')
-            return (
-                datetime.datetime.now(UTC) - self.context.currentjob.buildstart)
+            buildstart = self.context.currentjob.buildstart
+            return datetime.datetime.now(UTC) - buildstart
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Builder "%s"' % self.context.title)
+
+    @property
+    def toggle_mode_text(self):
+        """Return the text to use on the toggle mode button."""
+        if self.context.manual:
+            return "Switch to auto-mode"
+        else:
+            return "Switch to manual-mode"
+
+
+class BuilderHistoryView(BuilderView):
+    """This class exists only to override the page_title."""
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Build history for "%s"' % self.context.title)
 
 
 class BuilderSetAddView(LaunchpadFormView):
@@ -352,3 +361,58 @@ class BuilderSetAddView(LaunchpadFormView):
             )
         notify(ObjectCreatedEvent(builder))
         self.next_url = canonical_url(builder)
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """Canceling the add action should go back to the build farm."""
+        return canonical_url(self.context)
+
+
+class BuilderEditView(LaunchpadEditFormView):
+    """View class for changing builder details."""
+
+    schema = IBuilder
+
+    field_names = [
+        'name', 'title', 'description', 'processor', 'url', 'manual',
+        'owner', 'virtualized', 'builderok', 'failnotes', 'vm_host',
+        'active',
+        ]
+
+    @action(_('Change'), name='update')
+    def change_details(self, action, data):
+        """Update the builder with the data from the form."""
+        builder_was_modified = self.updateContextFromData(data)
+
+        if builder_was_modified:
+            notification = 'The builder "%s" was updated successfully.' % (
+                self.context.title)
+            self.request.response.addNotification(notification)
+
+        return builder_was_modified
+
+    @property
+    def next_url(self):
+        """Redirect back to the builder-index page."""
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """Return the url to which we want to go to if user cancels."""
+        return self.next_url
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Change details for builder "%s"' % self.context.title)
+
+    @property
+    def label(self):
+        """The form label should be the same as the pagetitle."""
+        return self.page_title

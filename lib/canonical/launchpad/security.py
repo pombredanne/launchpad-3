@@ -50,7 +50,7 @@ from lp.translations.interfaces.distroserieslanguage import (
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import (
-    IHWDBApplication, IHWDevice, IHWDriver, IHWDriverName,
+    IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
     IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
@@ -63,7 +63,7 @@ from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
-from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
@@ -195,6 +195,7 @@ class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
         return (user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
 
+
 class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProduct
 
@@ -209,8 +210,6 @@ class ReviewProject(ReviewByRegistryExpertsOrAdmins):
 
 class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectSet
-
-
 
 
 class ViewPillar(AuthorizationBase):
@@ -385,8 +384,7 @@ class AdminSpecification(AuthorizationBase):
             if user.inTeam(driver):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
-        return (user.inTeam(self.obj.target.owner) or
-                user.inTeam(admins))
+        return (user.inTeam(targetowner) or user.inTeam(admins))
 
 
 class DriverSpecification(AuthorizationBase):
@@ -513,6 +511,7 @@ class EditProjectMilestoneNever(AuthorizationBase):
     def checkAuthenticated(self, user):
         """IProjectMilestone is a fake content object."""
         return False
+
 
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
@@ -765,6 +764,25 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
+    """Distribution drivers, owners, and admins may plan releases.
+
+    Drivers of `IDerivativeDistribution`s can create series. Owners and
+    admins can create series for all `IDistribution`s.
+    """
+    permission = 'launchpad.Append'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        if user.inTeam(self.obj.driver) and not self.obj.full_functionality:
+            # Drivers of derivative distributions can create a series that
+            # they will be the release manager for.
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(admins))
+
+
 class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
@@ -803,6 +821,11 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
+        if (user.inTeam(self.obj.driver)
+            and not self.obj.distribution.full_functionality):
+            # The series driver (release manager) may edit a series if the
+            # distribution is an `IDerivativeDistribution`
+            return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.owner) or
                 user.inTeam(self.obj.distribution.owner) or
@@ -1888,6 +1911,10 @@ class ViewHWDBApplication(ViewHWDBBase):
     usedfor = IHWDBApplication
 
 
+class ViewHWDeviceClass(ViewHWDBBase):
+    usedfor = IHWDeviceClass
+
+
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
@@ -2237,6 +2264,18 @@ class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (
             user.inTeam(celebrities.ubuntu_branches)
+            or user.inTeam(celebrities.admin))
+
+
+class EditPackageset(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPackageset
+
+    def checkAuthenticated(self, user):
+        """The owner of a package set can edit the object."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(self.obj.owner)
             or user.inTeam(celebrities.admin))
 
 
