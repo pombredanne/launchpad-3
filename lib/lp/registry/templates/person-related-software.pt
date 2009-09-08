@@ -17,10 +17,14 @@
   <div class="top-portlet" id="navlinks">
     <ul class="horizontal">
       Full listings:
-      <li><a tal:replace="structure view/menu:navigation/maintained/render"/>
-      <li><a tal:replace="structure view/menu:navigation/uploaded/render"/>
-      <li><a tal:replace="structure view/menu:navigation/ppa/render"/>
-      <li><a tal:replace="structure view/menu:navigation/projects/render"/>
+      <li>
+        <a tal:replace="structure view/menu:navigation/maintained/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/uploaded/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/ppa/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/projects/render"/></li>
     </ul>
   </div>
 

@@ -17,10 +17,14 @@
 <div metal:fill-slot="main">
   <div class="top-portlet" id="navlinks">
     <ul class="horizontal">
-      <li><a tal:replace="structure view/menu:navigation/summary/render"/>
-      <li><a tal:replace="structure view/menu:navigation/uploaded/render"/>
-      <li><a tal:replace="structure view/menu:navigation/maintained/render"/>
-      <li><a tal:replace="structure view/menu:navigation/projects/render"/>
+      <li>
+        <a tal:replace="structure view/menu:navigation/summary/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/uploaded/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/maintained/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/projects/render"/></li>
     </ul>
   </div>
 
