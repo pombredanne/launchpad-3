@@ -313,6 +313,20 @@ The source packages list is presented publicly.
     iceweasel           1.0             no signer (2007-07-09)
     pmount              0.1-1           no signer (2007-07-09)
 
+A Latest updates portlet is included on the index page indicating the
+latest published sources with their states.
+
+    >>> latest_updates = find_portlet(
+    ...     anon_browser.contents, "Latest updates")
+    >>> print extract_text(latest_updates)
+    Latest updates
+    cdrkit ... ago
+    Failed to build
+    pmount ... ago
+    Successfully built
+    iceweasel ... ago
+    Successfully built
+
 
 == Filtering an archive ==
 

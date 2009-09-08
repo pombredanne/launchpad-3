@@ -669,26 +669,38 @@ ul.super-add-action li a {
     margin-top: -2px;
     }
 
+/* For the Latest updates portlet 
+ * at https://launchpad.dev/~cprov/+archive/ppa */
 ul.latest-ppa-updates .duration {
-    font-size: 85%;
+    font-size: 75%;
 }
 ul.latest-ppa-updates li {
-    padding-right: 16px;
+    padding: 3px;
+    background-repeat: no-repeat;
+    background-position:right center;
+}
+/* The following could be generalised for use to the following selector:
+ * .side .portlet li.even
+ * if needed. */
+ul.latest-ppa-updates li.even {
+    border-top: 1px solid #dedede;
+    border-bottom: 1px solid #dedede;
+    background-color: #eeeeff;
 }
 ul.latest-ppa-updates li.FULLYBUILT {
-    background: url('/@@/yes') right top no-repeat;
+    background-image: url('/@@/yes');
 }
 ul.latest-ppa-updates li.FULLYBUILT_PENDING {
-    background: url('/@@/build-success-publishing') right top no-repeat;
+    background-image: url('/@@/build-success-publishing');
 }
 ul.latest-ppa-updates li.NEEDSBUILD {
-    background: url('/@@/build-needed') right top no-repeat;
+    background-image: url('/@@/build-needed');
 }
 ul.latest-ppa-updates li.FAILEDTOBUILD {
-    background: url('/@@/build-failed') right top no-repeat;
+    background-image: url('/@@/build-failed');
 }
 ul.latest-ppa-updates li.BUILDING {
-    background: url('/@@/processing') right top no-repeat;
+    background-image: url('/@@/processing');
 }
 /* From nice_pre in tales.py */
 pre.wrap {

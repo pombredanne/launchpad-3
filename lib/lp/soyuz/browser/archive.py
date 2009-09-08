@@ -750,9 +750,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         # We want to return a list of dicts for easy template rendering.
         latest_updates_list = []
 
-        # The token is not presentable and the description for each status
-        # is too long for use here, so define a dict of concise status
-        # descriptions.
+        # The status.title is not presentable and the description for
+        # each status is too long for use here, so define a dict of
+        # concise status descriptions that will fit in a small area.
         status_names = {
             'FULLYBUILT': 'Successfully built',
             'FULLYBUILT_PENDING': 'Successfully built',
@@ -761,17 +761,27 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             'BUILDING': 'Currently building',
             }
 
+        count = 0
         for result_tuple in result_tuples:
             source_pub = result_tuple[0]
             current_status = source_pub.getStatusSummaryForBuilds()['status']
             duration = datetime.now(tz=pytz.UTC) - source_pub.datepublished
+
+            # Determine whether this update is odd or even here in the view
+            # as it is much easier than conditionally adding attributes
+            # in tals using the repeat/item/odd syntax.
+            even_class = ''
+            if count % 2 == 0:
+                even_class = 'even'
 
             latest_updates_list.append({
                 'title': source_pub.source_package_name,
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,
                 'duration': duration,
+                'even_class': even_class,
                 })
+            count += 1
 
         return latest_updates_list
 

@@ -351,11 +351,10 @@ div.package-details {
     <p tal:condition="not: updates">
       <tal:name replace="context/displayname" /> has no updates.
     </p>
-
     <tal:updates condition="updates">
       <ul class="latest-ppa-updates">
         <li tal:repeat="update updates"
-            tal:attributes="class update/status_class">
+            tal:attributes="class string:${update/status_class} ${update/even_class}">
           <strong tal:content="update/title">Firefox-3.5</strong>
           <span class="duration">
             <span tal:replace="update/duration/fmt:approximateduration">
@@ -366,8 +365,6 @@ div.package-details {
           <span tal:replace="update/status">Successful</span>
         </li>
       </ul>
-      <div class="see-all"
-        tal:content="string: update me" />
     </tal:updates>
     </div>
   </tal:latest_updates>
