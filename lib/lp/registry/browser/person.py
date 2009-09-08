@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 
+
 __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
@@ -20,7 +21,6 @@ __all__ = [
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
-    'PersonBreadcrumb',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
@@ -475,9 +475,15 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
 
     schema = ITeamMembership
     field_names = []
-    label = 'Renew team membership'
     template = ViewPageTemplateFile(
         '../templates/teammembership-self-renewal.pt')
+
+    @property
+    def label(self):
+        return "Renew membership of %s in %s" % (
+            self.context.person.displayname, self.context.team.displayname)
+
+    page_title = label
 
     def __init__(self, context, request):
         # Only the member himself or admins of the member (in case it's a
@@ -485,24 +491,26 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
         # about to expire.
         if not check_permission('launchpad.Edit', context.person):
             raise Unauthorized(
-                "Only the member himself can renew his memberships.")
+                "You may not renew the membership for %s." %
+                context.person.displayname)
         LaunchpadFormView.__init__(self, context, request)
 
     def browserDefault(self, request):
         return self, ()
 
-    def getReasonForDeniedRenewal(self):
+    @property
+    def reason_for_denied_renewal(self):
         """Return text describing why the membership can't be renewed."""
         context = self.context
         ondemand = TeamMembershipRenewalPolicy.ONDEMAND
         admin = TeamMembershipStatus.ADMIN
         approved = TeamMembershipStatus.APPROVED
-        date_limit = datetime.now(pytz.timezone('UTC')) - timedelta(
+        date_limit = datetime.now(pytz.UTC) - timedelta(
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
         if context.status not in (admin, approved):
             text = "it is not active."
         elif context.team.renewal_policy != ondemand:
-            text = ('<a href="%s">%s</a> is not a team which accepts its '
+            text = ('<a href="%s">%s</a> is not a team that allows its '
                     'members to renew their own memberships.'
                     % (canonical_url(context.team),
                        context.team.unique_displayname))
@@ -529,6 +537,10 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context.person)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
     @action(_("Renew"), name="renew")
     def renew_action(self, action, data):
         member = self.context.person
@@ -536,11 +548,6 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
         self.request.response.addInfoNotification(
             _("Membership renewed until ${date}.", mapping=dict(
                     date=self.context.dateexpires.strftime('%Y-%m-%d'))))
-
-    @action(_("Let it Expire"), name="nothing")
-    def do_nothing_action(self, action, data):
-        # Redirect back and wait for the membership to expire automatically.
-        pass
 
 
 class ITeamMembershipInvitationAcknowledgementForm(Interface):
@@ -658,13 +665,6 @@ class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
     def adminteammerge(self):
         text = 'Admin merge teams'
         return Link('+adminteammerge', text, icon='edit')
-
-
-class PersonBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IPerson`."""
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class PersonFacets(StandardLaunchpadFacets):
@@ -892,7 +892,6 @@ class CommonMenuLinks:
         target = '+related-projects'
         text = 'Related Projects'
         return Link(target, text)
-
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -1189,7 +1188,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        restricted = TeamSubscriptionPolicy.RESTRICTED
+        if self.person.subscriptionpolicy == restricted:
             # This is a restricted team; users can't join.
             enabled = False
         return Link(target, text, icon='add', enabled=enabled)
@@ -1274,9 +1274,11 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
 
     def join(self):
         enabled = True
-        if userIsActiveTeamMember(self.person):
+        person = self.person
+        if userIsActiveTeamMember(person):
             enabled = False
-        if self.person.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        elif (self.person.subscriptionpolicy ==
+              TeamSubscriptionPolicy.RESTRICTED):
             # This is a restricted team; users can't join.
             enabled = False
         target = '+join'
@@ -1964,7 +1966,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         if extra_params is not None:
             # We must UTF-8 encode searchtext to play nicely with
             # urllib.urlencode, because it may contain non-ASCII characters.
-            if extra_params.has_key("field.searchtext"):
+            if 'field.searchtext' in extra_params:
                 extra_params["field.searchtext"] = (
                     extra_params["field.searchtext"].encode("utf8"))
 
@@ -2301,6 +2303,11 @@ class PersonVouchersView(LaunchpadFormView):
 
     custom_widget('voucher', LaunchpadDropdownWidget)
 
+    @property
+    def page_title(self):
+        return ('Commercial subscription vouchers for %s'
+                % self.context.displayname)
+
     def setUpFields(self):
         """Set up the fields for this view."""
 
@@ -2470,7 +2477,7 @@ class PersonLanguagesView(LaunchpadFormView):
         new_languages = []
 
         for key in all_languages.keys():
-            if self.request.has_key(key) and self.request.get(key) == u'on':
+            if self.request.get(key, None) == u'on':
                 new_languages.append(all_languages[key])
 
         if self.is_current_user:
@@ -2506,7 +2513,67 @@ class PersonLanguagesView(LaunchpadFormView):
             rootsite='answers')
 
 
-class PersonView(LaunchpadView, FeedsMixin):
+class TeamJoinMixin:
+    """Mixin class for views related to joining teams."""
+
+    @property
+    def user_can_subscribe_to_list(self):
+        """Can the user subscribe to this team's mailing list?
+
+        A user can subscribe to the list if the team has an active
+        mailing list, and if they do not already have a subscription.
+        """
+        if self.team_has_mailing_list:
+            # If we are already subscribed, then we can not subscribe again.
+            return not self.user_is_subscribed_to_list
+        else:
+            return False
+
+    @property
+    def user_is_subscribed_to_list(self):
+        """Is the user subscribed to the team's mailing list?
+
+        Subscriptions hang around even if the list is deactivated, etc.
+
+        It is an error to ask if the user is subscribed to a mailing list
+        that doesn't exist.
+        """
+        if self.user is None:
+            return False
+
+        mailing_list = self.context.mailing_list
+        assert mailing_list is not None, "This team has no mailing list."
+        has_subscription = bool(mailing_list.getSubscription(self.user))
+        return has_subscription
+
+    @property
+    def team_has_mailing_list(self):
+        """Is the team mailing list available for subscription?"""
+        mailing_list = self.context.mailing_list
+        return mailing_list is not None and mailing_list.is_usable
+
+    @property
+    def user_is_active_member(self):
+        """Return True if the user is an active member of this team."""
+        return userIsActiveTeamMember(self.context)
+
+    @property
+    def user_is_proposed_member(self):
+        """Return True if the user is a proposed member of this team."""
+        if self.user is None:
+            return False
+        return self.user in self.context.proposedmembers
+
+    @property
+    def user_can_request_to_leave(self):
+        """Return true if the user can request to leave this team.
+
+        A given user can leave a team only if he's an active member.
+        """
+        return self.user_is_active_member
+
+
+class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
     """A View class used in almost all Person's pages."""
 
     @cachedproperty
@@ -2616,42 +2683,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             raise AssertionError('Unknown subscription policy.')
         return description
-
-    @property
-    def user_can_subscribe_to_list(self):
-        """Can the user subscribe to this team's mailing list?
-
-        A user can subscribe to the list if the team has an active
-        mailing list, and if they do not already have a subscription.
-        """
-        if self.team_has_mailing_list:
-            # If we are already subscribed, then we can not subscribe again.
-            return not self.user_is_subscribed_to_list
-        else:
-            return False
-
-    @property
-    def user_is_subscribed_to_list(self):
-        """Is the user subscribed to the team's mailing list?
-
-        Subscriptions hang around even if the list is deactivated, etc.
-
-        It is an error to ask if the user is subscribed to a mailing list
-        that doesn't exist.
-        """
-        if self.user is None:
-            return False
-
-        mailing_list = self.context.mailing_list
-        assert mailing_list is not None, "This team has no mailing list."
-        has_subscription = bool(mailing_list.getSubscription(self.user))
-        return has_subscription
-
-    @property
-    def team_has_mailing_list(self):
-        """Is the team mailing list available for subscription?"""
-        mailing_list = self.context.mailing_list
-        return mailing_list is not None and mailing_list.is_usable
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
@@ -2786,23 +2817,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         if self.user is None:
             return False
         return self.user.inTeam(self.context)
-
-    def userIsActiveMember(self):
-        """Return True if the user is an active member of this team."""
-        return userIsActiveTeamMember(self.context)
-
-    def userIsProposedMember(self):
-        """Return True if the user is a proposed member of this team."""
-        if self.user is None:
-            return False
-        return self.user in self.context.proposedmembers
-
-    def userCanRequestToLeave(self):
-        """Return true if the user can request to leave this team.
-
-        A given user can leave a team only if he's an active member.
-        """
-        return self.userIsActiveMember()
 
     @cachedproperty
     def email_address_visibility(self):
@@ -3123,11 +3137,11 @@ class TeamIndexView(PersonIndexView):
         link so that the invitation can be accepted.
         """
         try:
-          return (self.context.super_teams.count() > 0
-                  or (self.context.open_membership_invitations
-                      and check_permission('launchpad.Edit', self.context)))
+            return (self.context.super_teams.count() > 0
+                    or (self.context.open_membership_invitations
+                        and check_permission('launchpad.Edit', self.context)))
         except AttributeError, e:
-          raise AssertionError(e)
+            raise AssertionError(e)
 
     @property
     def visibility(self):
@@ -3254,15 +3268,25 @@ class PersonEditWikiNamesView(LaunchpadView):
                 return
 
 
-class PersonEditIRCNicknamesView(LaunchpadView):
+class PersonEditIRCNicknamesView(LaunchpadFormView):
 
-    def initialize(self):
+    schema = Interface
+
+    @property
+    def page_title(self):
+        return smartquote("%s's IRC nicknames" % self.context.displayname)
+
+    label = page_title
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
         """Process the IRC nicknames form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
-            return
-
+        # XXX: EdwinGrubbs 2009-09-01 bug=422784
+        # This view should use schema and form validation.
         form = self.request.form
         for ircnick in self.context.ircnicknames:
             # XXX: GuilhermeSalgado 2005-08-25:
@@ -3276,7 +3300,7 @@ class PersonEditIRCNicknamesView(LaunchpadView):
                 nick = form.get('nick_%d' % ircnick.id)
                 network = form.get('network_%d' % ircnick.id)
                 if not (nick and network):
-                    self.error_message = structured(
+                    self.request.response.addErrorNotification(
                         "Neither Nickname nor Network can be empty.")
                     return
                 ircnick.nickname = nick
@@ -3290,20 +3314,28 @@ class PersonEditIRCNicknamesView(LaunchpadView):
             else:
                 self.newnick = nick
                 self.newnetwork = network
-                self.error_message = structured(
+                self.request.response.addErrorNotification(
                     "Neither Nickname nor Network can be empty.")
-                return
 
 
-class PersonEditJabberIDsView(LaunchpadView):
+class PersonEditJabberIDsView(LaunchpadFormView):
+    schema = Interface
 
-    def initialize(self):
+    @property
+    def page_title(self):
+        return smartquote("%s's Jabber IDs" % self.context.displayname)
+
+    label = page_title
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
         """Process the Jabber ID form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
-            return
-
+        # XXX: EdwinGrubbs 2009-09-01 bug=422784
+        # This view should use schema and form validation.
         form = self.request.form
         for jabber in self.context.jabberids:
             if form.get('remove_%s' % jabber.jabberid):
@@ -3311,7 +3343,7 @@ class PersonEditJabberIDsView(LaunchpadView):
             else:
                 jabberid = form.get('jabberid_%s' % jabber.jabberid)
                 if not jabberid:
-                    self.error_message = structured(
+                    self.request.response.addErrorNotification(
                         "You cannot save an empty Jabber ID.")
                     return
                 jabber.jabberid = jabberid
@@ -3323,16 +3355,15 @@ class PersonEditJabberIDsView(LaunchpadView):
             if existingjabber is None:
                 jabberset.new(self.context, jabberid)
             elif existingjabber.person != self.context:
-                self.error_message = structured(
-                    'The Jabber ID %s is already registered by '
-                    '<a href="%s">%s</a>.',
-                    jabberid, canonical_url(existingjabber.person),
-                    existingjabber.person.displayname)
-                return
+                self.request.response.addErrorNotification(
+                    structured(
+                        'The Jabber ID %s is already registered by '
+                        '<a href="%s">%s</a>.',
+                        jabberid, canonical_url(existingjabber.person),
+                        existingjabber.person.displayname))
             else:
-                self.error_message = structured(
-                    'The Jabber ID %s already belongs to you.', jabberid)
-                return
+                self.request.response.addErrorNotification(
+                    'The Jabber ID %s already belongs to you.' % jabberid)
 
 
 class PersonEditSSHKeysView(LaunchpadView):
@@ -3760,12 +3791,40 @@ class PersonBrandingView(BrandingChangeView):
     schema = IPerson
 
 
-class TeamJoinView(PersonView):
+class TeamJoinForm(Interface):
+    """Schema for team join."""
+    mailinglist_subscribe = Bool(
+        title=_("Subscribe me to this team's mailing list"),
+        required=True, default=True)
 
-    def initialize(self):
-        super(TeamJoinView, self).initialize()
-        if self.request.method == "POST":
-            self.processForm()
+
+class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
+    """A view class for joining a team."""
+    schema = TeamJoinForm
+
+    @property
+    def label(self):
+        return 'Join ' + cgi.escape(self.context.displayname)
+
+    page_title = label
+
+    def setUpWidgets(self):
+        super(TeamJoinView, self).setUpWidgets()
+        if 'mailinglist_subscribe' in self.field_names:
+            widget = self.widgets['mailinglist_subscribe']
+            widget.setRenderedValue(self.user_wants_list_subscriptions)
+
+    @property
+    def field_names(self):
+        """See `LaunchpadFormView`.
+
+        If the user can subscribe to the mailing list then include the
+        mailinglist subscription checkbox otherwise remove it.
+        """
+        if self.user_can_subscribe_to_list:
+            return ['mailinglist_subscribe']
+        else:
+            return []
 
     @property
     def join_allowed(self):
@@ -3797,7 +3856,8 @@ class TeamJoinView(PersonView):
         """
         if not self.join_allowed:
             return False
-        return not (self.userIsActiveMember() or self.userIsProposedMember())
+        return not (self.user_is_active_member or
+                    self.user_is_proposed_member)
 
     @property
     def user_wants_list_subscriptions(self):
@@ -3814,46 +3874,42 @@ class TeamJoinView(PersonView):
         policy = self.context.subscriptionpolicy
         return policy == TeamSubscriptionPolicy.MODERATED
 
-    def processForm(self):
-        request = self.request
-        user = self.user
-        context = self.context
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Join"), name="join")
+    def action_save(self, action, data):
         response = self.request.response
 
-        notification = None
-        if 'join' in request.form and self.user_can_request_to_join:
+        if self.user_can_request_to_join:
             # Shut off mailing list auto-subscription - we want direct
             # control over it.
-            user.join(context, may_subscribe_to_list=False)
+            self.user.join(self.context, may_subscribe_to_list=False)
 
             if self.team_is_moderated:
                 response.addInfoNotification(
                     _('Your request to join ${team} is awaiting '
                       'approval.',
-                      mapping={'team': context.displayname}))
+                      mapping={'team': self.context.displayname}))
             else:
                 response.addInfoNotification(
                     _('You have successfully joined ${team}.',
-                      mapping={'team': context.displayname}))
+                      mapping={'team': self.context.displayname}))
+            if data.get('mailinglist_subscribe', False):
+                self._subscribeToList(response)
 
-            if 'mailinglist_subscribe' in request.form:
-                self._subscribeToList()
-
-        elif 'join' in request.form:
+        else:
             response.addErrorNotification(
                 _('You cannot join ${team}.',
-                  mapping={'team': context.displayname}))
-        elif 'goback' in request.form:
-            # User clicked on the 'Go back' button, so we'll simply redirect.
-            pass
-        else:
-            raise UnexpectedFormData(
-                "Couldn't find any of the expected actions.")
-        self.request.response.redirect(canonical_url(context))
+                  mapping={'team': self.context.displayname}))
 
-    def _subscribeToList(self):
+    def _subscribeToList(self, response):
         """Subscribe the user to the team's mailing list."""
-        response = self.request.response
 
         if self.user_can_subscribe_to_list:
             # 'user_can_subscribe_to_list' should have dealt with
@@ -3879,6 +3935,7 @@ class TeamJoinView(PersonView):
 class TeamAddMyTeamsView(LaunchpadFormView):
     """Propose/add to this team any team that you're an administrator of."""
 
+    page_title = 'Propose/add one of your teams to another one'
     custom_widget('teams', LabeledMultiCheckBoxWidget)
 
     def initialize(self):
@@ -3926,11 +3983,10 @@ class TeamAddMyTeamsView(LaunchpadFormView):
             candidates.append(team)
         return candidates
 
-    @action(_("Cancel"), name="cancel",
-            validator=LaunchpadFormView.validate_none)
-    def cancel_action(self, action, data):
-        """Simply redirect to the team's page."""
-        pass
+    @property
+    def cancel_url(self):
+        """The return URL."""
+        return canonical_url(self.context)
 
     def validate(self, data):
         if len(data.get('teams', [])) == 0:
@@ -3960,17 +4016,27 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         self.request.response.addInfoNotification("%s %s" % (team_names, msg))
 
 
-class TeamLeaveView(PersonView):
+class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
+    schema = Interface
 
-    def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToLeave():
-            # Nothing to do
-            return
+    @property
+    def label(self):
+        return 'Leave ' + cgi.escape(self.context.displayname)
 
-        if self.request.form.get('leave'):
+    page_title = label
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    next_url = cancel_url
+
+    @action(_("Leave"), name="leave")
+    def action_save(self, action, data):
+        response = self.request.response
+
+        if self.user_can_request_to_leave:
             self.user.leave(self.context)
-
-        self.request.response.redirect('./')
 
 
 class PersonEditEmailsView(LaunchpadFormView):
@@ -5088,6 +5154,13 @@ class PersonEditLocationView(LaunchpadFormView):
 
     schema = PersonLocationForm
     custom_widget('location', LocationWidget)
+
+    @property
+    def page_title(self):
+        return smartquote(
+            "%s's location and timezone" % self.context.displayname)
+
+    label = page_title
 
     @property
     def field_names(self):

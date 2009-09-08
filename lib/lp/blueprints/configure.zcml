@@ -28,7 +28,7 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        factory="lp.blueprints.browser.sprint.SprintBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

@@ -9,7 +9,6 @@ __all__ = [
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBadges',
-    'ArchiveBreadcrumb',
     'ArchiveBuildsView',
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
@@ -65,9 +64,9 @@ from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.person import IPersonSet, PersonVisibility
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, active_publishing_status,
-    inactive_publishing_status, IPublishingSet)
+    active_publishing_status, inactive_publishing_status, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
@@ -78,7 +77,6 @@ from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.widgets import (
@@ -382,14 +380,6 @@ class ArchiveNavigationMenu(NavigationMenu):
     links = []
 
 
-class ArchiveBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IArchive`."""
-
-    @property
-    def text(self):
-        return self.context.displayname
-
-
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
 
@@ -479,6 +469,10 @@ class ArchiveViewBase(LaunchpadView):
         """Return a dict representation of the build counters."""
         return self.context.getBuildCounters()
 
+    @cachedproperty
+    def dependencies(self):
+        return list(self.context.dependencies)
+
     @property
     def show_dependencies(self):
         """Whether or not to present the archive-dependencies section.
@@ -487,7 +481,22 @@ class ArchiveViewBase(LaunchpadView):
         or if the user has permission to change it.
         """
         can_edit = check_permission('launchpad.Edit', self.context)
-        return can_edit or self.context.dependencies
+        return can_edit or len(self.dependencies) > 0
+
+    @property
+    def has_disabled_dependencies(self):
+        """Whether this archive has disabled archive dependencies or not.
+
+        Although, it will be True only if the requester has permission
+        to edit the context archive (i.e. if the user can do something
+        about it).
+        """
+        disabled_dependencies = [
+            archive_dependency
+            for archive_dependency in self.dependencies
+            if not archive_dependency.dependency.enabled]
+        can_edit = check_permission('launchpad.Edit', self.context)
+        return can_edit and len(disabled_dependencies) > 0
 
 
 class ArchiveSourcePackageListViewBase(ArchiveViewBase):
@@ -1128,8 +1137,11 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             dependency = archive_dependency.dependency
             if not dependency.is_ppa:
                 continue
-            dependency_label = '<a href="%s">%s</a>' % (
-                canonical_url(dependency), archive_dependency.title)
+            if check_permission('launchpad.View', dependency):
+                dependency_label = '<a href="%s">%s</a>' % (
+                    canonical_url(dependency), archive_dependency.title)
+            else:
+                dependency_label = archive_dependency.title
             dependency_token = '%s/%s' % (
                 dependency.owner.name, dependency.name)
             term = SimpleTerm(

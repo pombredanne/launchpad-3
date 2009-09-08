@@ -6,32 +6,31 @@ links to each.
 Any user can see that a project with no releases has no downloads.
 
     >>> anon_browser.open('http://launchpad.dev/aptoncd')
-    >>> anon_browser.getLink('Downloads').click()
-    >>> anon_browser.url
-    'http://launchpad.dev/aptoncd/+download'
-    >>> anon_browser.title
-    'APTonCD project files'
-    >>> content = find_tag_by_id(anon_browser.contents, 'project-downloads')
+    >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
     >>> print extract_text(content)
-    No download files exist for this project.
-    You might want to check this project's Bazaar branches...
+    Downloads
+    APTonCD does not have any download files.
 
 Any user can see a project with a release without files has no downlaod files.
 
     >>> anon_browser.open('http://launchpad.dev/thunderbird')
-    >>> anon_browser.getLink('Downloads').click()
-    >>> anon_browser.url
-    'http://launchpad.dev/thunderbird/+download'
-    >>> content = find_tag_by_id(anon_browser.contents, 'project-downloads')
+    >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
     >>> print extract_text(content)
-    No download files exist for this project.
-    ...
+    Downloads
+    Mozilla Thunderbird does not have any download files.
 
 Any user can see a projects download files organised by series. For each
 series, the owner sees a heading, summary, table of files, and links to each
 release to add download files.
 
-    >>> anon_browser.open('http://launchpad.dev/firefox/+download')
+    >>> anon_browser.open('http://launchpad.dev/firefox')
+    >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
+    >>> print extract_text(content)
+    Downloads
+    Latest version is 0.9.2
+    firefox-0.9.2.orig.tar.gz...
+
+    >>> anon_browser.getLink('All downloads').click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'project-downloads'))
     0.9.2 (One (secure) Tree Hill) release, from the trunk series.
@@ -91,13 +90,13 @@ A project owner should not see the delete button when there are no files.
 
     >>> tbird_owner = setupBrowser(
     ...     auth='Basic foo.bar@canonical.com:test')
-    >>> tbird_owner.open('http://launchpad.dev/thunderbird')
-    >>> tbird_owner.getLink('Downloads').click()
+    >>> tbird_owner.open('http://launchpad.dev/thunderbird/+download')
     >>> tbird_owner.title
     'Mozilla Thunderbird project files'
     >>> main_content = find_main_content(tbird_owner.contents)
     >>> print extract_text(main_content)
     Download project files
+    Mozilla Thunderbird...
     No download files exist for this project...
     Add download file for release: 0.8
     >>> tbird_owner.getControl('Delete Files')

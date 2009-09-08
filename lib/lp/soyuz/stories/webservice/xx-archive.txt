@@ -897,7 +897,7 @@ First we'll add an explicit dependency on the primary archive to
 cprov's PPA. We can't do this through the webservice yet.
 
     >>> from lp.soyuz.interfaces.component import IComponentSet
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> login('foo.bar@canonical.com')
     >>> cprov_ppa_db = getUtility(IPersonSet).getByName('cprov').archive
     >>> dep = cprov_ppa_db.addArchiveDependency(

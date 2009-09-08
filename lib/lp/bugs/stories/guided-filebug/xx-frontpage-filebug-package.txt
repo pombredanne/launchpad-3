@@ -2,8 +2,7 @@
 
 On the Bugs front page there is a link to file a bug.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/')
-    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/+filebug')
     >>> user_browser.title
     'Report a bug'
 
@@ -39,8 +38,7 @@ A link will be included to take the user back to the +filebug page:
 
 If we enter an non-existent package, we get an error message.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/')
-    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/+filebug')
     >>> user_browser.getControl('Distribution').selected = True
     >>> user_browser.getControl(
     ...     name='field.bugtarget.distribution').value = ['ubuntu']

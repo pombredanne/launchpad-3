@@ -605,14 +605,16 @@ class BugzillaAPI(Bugzilla):
 
         # Get only the remote comment IDs and store them in the
         # 'comments' field of the bug.
-        bug_comments_dict = self.xmlrpc_proxy.Bug.comments({
+        return_dict = self.xmlrpc_proxy.Bug.comments({
             'ids': [actual_bug_id],
             'include_fields': ['id'],
             })
 
         # We need to convert bug and comment ids to strings (see bugs
         # 248662 amd 248938).
-        bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
+        bug_comments_dict = return_dict['bugs']
+        bug_comments = bug_comments_dict[str(actual_bug_id)]['comments']
+
         return [str(comment['id']) for comment in bug_comments]
 
     def fetchComments(self, bug_watch, comment_ids):
@@ -636,7 +638,10 @@ class BugzillaAPI(Bugzilla):
             if int(comment['bug_id']) != actual_bug_id:
                 del comments[comment_id]
 
-        self._bugs[actual_bug_id]['comments'] = return_dict['comments']
+        # Ensure that comment IDs are converted to ints.
+        comments_with_int_ids = dict(
+            (int(id), comments[id]) for id in comments)
+        self._bugs[actual_bug_id]['comments'] = comments_with_int_ids
 
     def getPosterForComment(self, bug_watch, comment_id):
         """See `ISupportsCommentImport`."""

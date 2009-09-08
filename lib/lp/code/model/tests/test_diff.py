@@ -7,6 +7,7 @@ __metaclass__ = type
 
 
 from cStringIO import StringIO
+from difflib import unified_diff
 from unittest import TestLoader
 
 from bzrlib.branch import Branch
@@ -83,13 +84,13 @@ class TestDiff(DiffTestCase):
     def test_text_reads_librarian_content(self):
         # IDiff.text will read at most config.diff.max_read_size bytes from
         # the librarian.
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertEqual(content, diff.text)
 
     def test_oversized_normal(self):
         # A diff smaller than config.diff.max_read_size is not oversized.
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertFalse(diff.oversized)
 
@@ -97,14 +98,14 @@ class TestDiff(DiffTestCase):
         # IDiff.text will read at most config.diff.max_read_size bytes from
         # the librarian.
         self.pushConfig("diff", max_read_size=25)
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertEqual(content[:25], diff.text)
 
     def test_oversized_for_big_diff(self):
         # A diff larger than config.diff.max_read_size is oversized.
         self.pushConfig("diff", max_read_size=25)
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
 
@@ -117,6 +118,37 @@ class TestDiff(DiffTestCase):
             source_branch, source_rev_id, target_branch)
         transaction.commit()
         self.checkExampleMerge(diff.text)
+
+    diff_bytes = (
+        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "@@ -1,3 +0,0 @@\n"
+        "-a\n"
+        "-b\n"
+        "-c\n"
+        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "@@ -0,0 +1,2 @@\n"
+        "+a\n"
+        "+b\n"
+        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "@@ -1,3 +1,4 @@\n"
+        " a\n"
+        "-b\n"
+        " c\n"
+        "+d\n"
+        "+e\n")
+
+    def test_generateDiffstat(self):
+        self.assertEqual(
+            {'foo': (2, 1), 'bar': (0, 3), 'baz': (2, 0)},
+            Diff.generateDiffstat(self.diff_bytes))
+
+    def test_fromFileSetsDiffstat(self):
+        diff = Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
+        self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
+                         diff.diffstat)
 
 
 class TestStaticDiff(TestCaseWithFactory):
@@ -166,12 +198,14 @@ class TestStaticDiff(TestCaseWithFactory):
         It creates a new object if there is none, but uses the existing one
         if possible.
         """
-        diff_a = 'a'
-        diff_b = 'b'
-        static_diff = StaticDiff.acquireFromText('rev1', 'rev2', diff_a)
+        diff_a = ''.join(unified_diff('', 'a'))
+        diff_b = ''.join(unified_diff('', 'b'))
+        static_diff = StaticDiff.acquireFromText(
+            'rev1', 'rev2', diff_a)
         self.assertEqual('rev1', static_diff.from_revision_id)
         self.assertEqual('rev2', static_diff.to_revision_id)
-        static_diff2 = StaticDiff.acquireFromText('rev1', 'rev2', diff_b)
+        static_diff2 = StaticDiff.acquireFromText(
+            'rev1', 'rev2', diff_b)
         self.assertIs(static_diff, static_diff2)
 
     def test_acquireFromTextEmpty(self):
@@ -179,9 +213,11 @@ class TestStaticDiff(TestCaseWithFactory):
         self.assertEqual('', static_diff.diff.text)
 
     def test_acquireFromTextNonEmpty(self):
-        static_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'abc')
+        diff_bytes = ''.join(unified_diff('', 'abc'))
+        static_diff = StaticDiff.acquireFromText(
+            'rev1', 'rev2', diff_bytes)
         transaction.commit()
-        self.assertEqual('abc', static_diff.diff.text)
+        self.assertEqual(diff_bytes, static_diff.diff.text)
 
 
 class TestPreviewDiff(DiffTestCase):
@@ -190,7 +226,7 @@ class TestPreviewDiff(DiffTestCase):
     layer = LaunchpadFunctionalLayer
 
     def _createProposalWithPreviewDiff(self, dependent_branch=None,
-                                       content='content'):
+                                       content=None):
         # Create and return a preview diff.
         mp = self.factory.makeBranchMergeProposal(
             dependent_branch=dependent_branch)
@@ -199,8 +235,10 @@ class TestPreviewDiff(DiffTestCase):
             dependent_revision_id = None
         else:
             dependent_revision_id = u'rev-c'
+        if content is None:
+            content = ''.join(unified_diff('', 'content'))
         mp.updatePreviewDiff(
-            content, u'stat', u'rev-a', u'rev-b',
+            content, u'rev-a', u'rev-b',
             dependent_revision_id=dependent_revision_id)
         # Make sure the librarian file is written.
         transaction.commit()
@@ -279,6 +317,7 @@ class TestPreviewDiff(DiffTestCase):
         self.assertEqual(target_rev_id, preview.target_revision_id)
         transaction.commit()
         self.checkExampleMerge(preview.text)
+        self.assertEqual({'foo': (5, 0)}, preview.diffstat)
 
 
 def test_suite():

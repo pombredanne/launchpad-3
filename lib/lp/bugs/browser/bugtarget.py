@@ -7,16 +7,14 @@ __metaclass__ = type
 
 __all__ = [
     "BugTargetBugListingView",
-    "BugTargetBugsView",
     "BugTargetBugTagsView",
-    "FileBugViewBase",
+    "BugTargetBugsView",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FrontPageFileBugAdvancedView",
+    "FileBugViewBase",
     "FrontPageFileBugGuidedView",
     "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
-    "ProjectFileBugAdvancedView",
     ]
 
 import cgi
@@ -796,8 +794,8 @@ class FileBugAdvancedView(FileBugViewBase):
     def initialize(self):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
-        self.request.response.redirect(filebug_url,
-        status=HTTP_MOVED_PERMANENTLY)
+        self.request.response.redirect(
+            filebug_url, status=HTTP_MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -1291,6 +1289,16 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
 
     schema = IOfficialBugTagTargetPublic
     custom_widget('official_bug_tags', LargeBugTagsWidget)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Manage official bug tags for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @action('Save', name='save')
     def save_action(self, action, data):

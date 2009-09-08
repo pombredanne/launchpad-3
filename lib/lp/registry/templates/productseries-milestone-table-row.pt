@@ -16,10 +16,6 @@
         tal:attributes="href milestone/series_target/fmt:url"
         tal:content="milestone/series_target/displayname">trunk</a>
         <tal:can-edit condition="context/required:launchpad.Edit">
-          <tal:comment condition="nothing">
-          # XXX sinzui 2009-07-18 bug=40978: This should not happen, but
-          # owners can fix the milestone by setting the series.
-          </tal:comment>
           <tal:missing-series tal:condition="not: milestone/series_target">
             <a title="Set the series"
               tal:attributes="href milestone_menu/edit/fmt:url">Set</a>
@@ -40,12 +36,12 @@
         </tal:cannot-edit>
         <tal:can-edit condition="context/required:launchpad.Edit">
           <a title="Set the expected date the milestone will be complete"
-            tal:attributes="href milestone_menu/edit/fmt:url">Set</a>
+            tal:attributes="href milestone_menu/edit/fmt:url">Set date</a>
           <a tal:replace="structure milestone_menu/edit/fmt:icon" />
         </tal:can-edit>
       </tal:empty-date>
     </td>
-    <td>
+    <td tal:condition="not: view/is_distroseries_milestone">
       <span
         tal:define="release milestone/product_release"
         tal:condition="release"
