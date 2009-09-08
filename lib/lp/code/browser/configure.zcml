@@ -391,6 +391,9 @@
         <browser:page
             name="++branch-metadata"
             template="../templates/branch-metadata.pt" />
+        <browser:page
+            name="++branch-related-bugs-specs"
+            template="../templates/branch-related-bugs-specs.pt" />
 
     </browser:pages>
     <browser:pages
