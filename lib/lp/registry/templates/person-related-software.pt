@@ -14,7 +14,7 @@
 </div>
 
 <div metal:fill-slot="main">
-  <div class="top-portlet">
+  <div class="top-portlet" id="navlinks">
     <ul class="horizontal">
       Full listings:
       <li><a tal:replace="structure view/menu:navigation/maintained/render"/>
