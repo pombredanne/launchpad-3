@@ -26,6 +26,7 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
     LaunchpadEditFormView, action, canonical_url, ContextMenu, NavigationMenu,
     enabled_with_permission, Link, custom_widget)
+from lp.translations.utilities.pluralforms import make_friendly_plural_forms
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -156,6 +157,10 @@ class LanguageView(TranslationsMixin, LaunchpadView):
     def getTopContributors(self):
         return self.context.translators[:20]
 
+    @property
+    def friendlypluralforms(self):
+        result = make_friendly_plural_forms(self.context.pluralexpression)
+        return result
 
 class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
