@@ -6,7 +6,12 @@
 """Unit tests for SourceListEntriesView."""
 
 __metaclass__ = type
-__all__ = ['TestBranchView', 'test_suite']
+__all__ = [
+    'TestDefaultSelectedSeries',
+    'TestOneDistroSeriesOnly',
+    'TestSourcesListComment',
+    'test_suite',
+    ]
 
 import unittest
 

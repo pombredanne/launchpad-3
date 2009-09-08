@@ -333,6 +333,22 @@ is a copy archive.
     >>> copy_archive_view.is_copy
     True
 
+The Package view overrides the default series filter to use the distroseries
+from the browser's user-agent, when applicable.
+
+    >>> print ppa_archive_view.default_series_filter.token
+    any
+
+    >>> ppa_archive_view_warty = create_view(
+    ...     cprov.archive, name="+packages",
+    ...     HTTP_USER_AGENT='Mozilla/5.0 '
+    ...                     '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
+    ...                     'Gecko/2009042523 Ubuntu/4.10 (whatever) '
+    ...                     'Firefox/3.0.10')
+    >>> ppa_archive_view_warty.initialize()
+    >>> print ppa_archive_view_warty.default_series_filter.token
+    warty
+
 
 == ArchivePackageDeletionView ==
 
