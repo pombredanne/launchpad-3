@@ -379,6 +379,9 @@
         <browser:page
             name="++branch-information"
             template="../templates/branch-information.pt" />
+        <browser:page
+            name="++branch-management"
+            template="../templates/branch-management.pt" />
 
     </browser:pages>
     <browser:pages

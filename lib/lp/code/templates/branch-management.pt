@@ -1,0 +1,71 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+
+  <div id="browse-url"
+    tal:condition="context/code_is_browseable">
+    <label>Browse this branch:</label>
+    <tt>Link to Loggerhead</tt>
+  </div>
+
+  <div id="download-url"
+      tal:condition="view/bzr_download_url">
+    <label>Get this branch:</label>
+    <tt>bzr branch <tal:url replace="view/bzr_download_url" /></tt>
+  </div>
+
+  <tal:hosted-branch condition="context/branch_type/enumvalue:HOSTED">
+    <tal:not-logged-in condition="not:view/user">
+      <tal:individual condition="not:context/owner/isTeam">
+          Only
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/displayname">Person</a>
+          can upload to this branch. If you are
+          <tal:branch-owner replace="context/owner/displayname"/>
+          please <a href="+login">log in</a> for upload directions.
+      </tal:individual>
+      <tal:team tal:condition="context/owner/isTeam">
+          Members of
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/displayname">Team</a>
+          can upload to this branch. <a href="+login">Log in</a> for directions.
+      </tal:team>
+    </tal:not-logged-in>
+
+    <tal:logged-in condition="view/user">
+      <tal:can-upload tal:condition="view/user_can_upload">
+        <div id="upload-url">
+          <label>Update this branch:</label>
+          <tt>bzr push <tal:url replace="view/bzr_download_url" /></tt>
+        </div>
+        <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
+          To authenticate with the Launchpad branch upload service, you need
+          to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+            register a SSH key </a>.
+        </p>
+      </tal:can-upload>
+
+      <tal:cannot-upload condition="not:view/user_can_upload">
+        <div id="upload-directions" tal:condition="not:context/owner/isTeam">
+          You cannot upload to this branch. Only
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/displayname">Person</a>
+          can upload to this branch.
+        </div>
+        <div id="upload-directions" tal:condition="context/owner/isTeam">
+          You cannot upload to this branch. Members of
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/displayname">Team</a>
+          can upload to this branch.
+        </div>
+
+      </tal:cannot-upload>
+
+    </tal:logged-in>
+
+  </tal:hosted-branch>
+
+
+
+</div>
