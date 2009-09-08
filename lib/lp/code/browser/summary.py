@@ -14,6 +14,7 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
 from lp.code.browser.branchlisting import get_plural_text
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.revisioncache import IRevisionCache
 
@@ -24,7 +25,10 @@ class BranchCountSummaryView(LaunchpadView):
     @cachedproperty
     def _collection(self):
         """Return the branch collection for this context."""
-        return IBranchCollection(self.context).visibleByUser(self.user)
+        collection = IBranchCollection(self.context).visibleByUser(self.user)
+        collection = collection.withLifecycleStatus(
+            *DEFAULT_BRANCH_STATUS_IN_LISTING)
+        return collection
 
     @cachedproperty
     def _revision_cache(self):
@@ -59,7 +63,8 @@ class BranchCountSummaryView(LaunchpadView):
 
     @property
     def branch_text(self):
-        return get_plural_text(self.branch_count, _('branch'), _('branches'))
+        return get_plural_text(
+            self.branch_count, _('active branch'), _('active branches'))
 
     @property
     def person_text(self):
