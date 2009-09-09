@@ -112,5 +112,36 @@ class TestPlanUpdate(unittest.TestCase):
         self.assertEqual(set(), removed)
 
 
+# XXX: Actually remove branches
+
+# XXX: Update existing branches
+
+# XXX: Branch new branches
+
+# XXX: Should we parallelize? If so, how? Can we rely on Twisted being
+# present.
+
+# XXX: Find the sourcecode directory.
+
+# XXX: Handle symlinks. Lots of people manage sourcecode via symlinks
+
+# XXX: Actual storage location can be inferred from symlinks, since presumably
+# they link into the actual store. However, some of the symlinks might differ
+# (because of developers fiddling with things). We can take a survey of all of
+# them, and choose the most popular.
+
+# XXX: How to report errors?
+
+# XXX: rocketfuel-get does stacking onto launchpad for some branches. Should
+# we actually do this? It seems a bit silly if in a shared repo. (Although
+# does the branch mask the shared repo bit?)
+
+# XXX: Can we get rocketfuel-setup to use this?
+
+# XXX: (unrelated). Finding the highest common ancestor is easy, but what if
+# you have two (N?) trees? Is there a way to algorithmically find the two (N?)
+# interesting HCAs? Can the question even be framed well?
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
