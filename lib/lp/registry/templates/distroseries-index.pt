@@ -51,13 +51,8 @@
 
         <div class="yui-u">
           <div
-            tal:replace="structure context/@@+portlet-architectures" />
-
-          <ul class="horizontal">
-            <li>
-              <a tal:replace="structure overview_menu/packaging/fmt:icon-link" />
-            </li>
-          </ul>
+            tal:condition="context/getLatestUploads"
+            tal:replace="structure context/@@+portlet-latestuploads" />
         </div>
       </div>
 
@@ -80,8 +75,7 @@
             tal:condition="context/@@+get-involved/official_malone" />
 
           <div
-            tal:condition="context/getLatestUploads"
-            tal:replace="structure context/@@+portlet-latestuploads" />
+            tal:replace="structure context/@@+portlet-architectures" />
         </div>
 
         <div class="yui-u">

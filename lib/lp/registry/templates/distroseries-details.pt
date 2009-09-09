@@ -14,7 +14,7 @@
 
     <dl id="series-name">
       <dt>Series:</dt>
-      <dd><tal:name replace="context/name" /></dd>
+      <dd><tal:name replace="context/displayname" /></dd>
     </dl>
 
     <dl id="series-drivers">

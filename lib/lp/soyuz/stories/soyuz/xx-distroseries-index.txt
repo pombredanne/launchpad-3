@@ -64,8 +64,13 @@ on the series' details.
     >>> anon_browser.open(
     ...     "http://launchpad.dev/ubuntu/warty/+portlet-details")
     >>> print extract_text(anon_browser.contents)
-    Drivers: Ubuntu Team
+    Series information
+    Distribution: Ubuntu
+    Series: Warty
+    Project drivers: Ubuntu Team
+    Release manager: None
     Status: Current Stable Release
+    Derives from: Is not derived from another series.
     Source packages: 3
     Binary packages: 4
 
@@ -75,9 +80,14 @@ text slightly to annouce this:
     >>> anon_browser.open(
     ...     "http://launchpad.dev/debian/sarge/+portlet-details")
     >>> print extract_text(anon_browser.contents)
-    Drivers: Jeff Waugh Mark Shuttleworth
+    Series information
+    Distribution: Debian
+    Series: Sarge
+    Project drivers: Jeff Waugh, Mark Shuttleworth
+    Release manager: Jeff Waugh
     Status: Pre-release Freeze
-    No sources imported or published.
-    No binaries imported or published.
-    Derives from: Debian Woody
+    Derives from: Woody
+    Source packages: No sources imported or published.
+    Binary packages: No binaries imported or published.
+
 
