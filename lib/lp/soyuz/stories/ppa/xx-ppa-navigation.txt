@@ -185,31 +185,3 @@ The 'First' and 'Previous' links, however, are now active.
     >>> anon_browser.getLink('Previous').url
     'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?start=1&batch=1'
 
-== Maintained Packages link ==
-
-The Maintained Packages link only appears if the person or team has
-maintained packages to show. No-priv does not maintain packages.
-
-    >>> anon_browser.open("http://launchpad.dev/~no-priv")
-    >>> print_tag_with_id(anon_browser.contents, 'ppas')
-    Personal package archives
-    PPA for No Privileges Person
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/~no-priv/+maintained-packages")
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'packages'))
-    Maintained packages...
-    No Privileges Person does not maintain any packages.
-
-Mark has packages that he maintains.
-
-    >>> anon_browser.open("http://launchpad.dev/~mark")
-    >>> print_tag_with_id(anon_browser.contents, 'ppas')
-    Personal package archives
-    PPA for Mark Shuttleworth
-    Maintained Packages
-    >>> anon_browser.getLink(url="+maintained-packages").click()
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'packages'))
-    Maintained packages...
-    alsa-utils  ... 1.0.9a-4...
