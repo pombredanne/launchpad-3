@@ -159,8 +159,24 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
     @property
     def friendlypluralforms(self):
-        result = make_friendly_plural_forms(self.context.pluralexpression)
-        return result
+        """Formats the plural forms' example list.
+
+        It takes the list of examples for each plural form and transforms in a
+        comma separated list to be displayed.
+        """
+        pluralforms_list = make_friendly_plural_forms(
+                self.context.pluralexpression, self.context.pluralforms)
+
+        for item in pluralforms_list:
+            examples = ", ".join(map(str, item['examples']))
+            if len(item['examples']) != 1:
+                examples += ", ..."
+            else:
+                examples += "."
+            item['examples'] = examples
+
+        return pluralforms_list
+
 
 class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
