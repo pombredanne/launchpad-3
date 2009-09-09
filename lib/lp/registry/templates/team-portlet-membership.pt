@@ -121,4 +121,5 @@
     </tr>
   </table>
   </tal:can-view>
+</div>
 </tal:root>
