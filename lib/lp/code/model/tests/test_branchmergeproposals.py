@@ -1474,6 +1474,46 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         # Still only one vote.
         self.assertEqual(1, len(list(merge_proposal.votes)))
 
+class TestBranchMergeProposalResubmit(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_resubmit(self):
+        """Ensure that resubmit performs its basic function.
+
+        It should create a new merge proposal, mark the old one as superseded,
+        and set its status to superseded.
+        """
+        bmp1 = self.factory.makeBranchMergeProposal()
+        login_person(bmp1.registrant)
+        bmp2 = bmp1.resubmit(bmp1.registrant)
+        self.assertNotEqual(bmp1.id, bmp2.id)
+        self.assertEqual(
+            bmp1.queue_status, BranchMergeProposalStatus.SUPERSEDED)
+        self.assertEqual(
+            bmp2.queue_status, BranchMergeProposalStatus.NEEDS_REVIEW)
+        self.assertEqual(
+            bmp2, bmp1.superseded_by)
+
+    def test_resubmit_re_requests_review(self):
+        """Resubmit should request new reviews.
+
+        Both those who have already reviewed and those who have been nominated
+        to review should be requested to review the new proposal.
+        """
+        bmp1 = self.factory.makeBranchMergeProposal()
+        nominee = self.factory.makePerson()
+        login_person(bmp1.registrant)
+        bmp1.nominateReviewer(nominee, bmp1.registrant, 'nominee')
+        reviewer = self.factory.makePerson()
+        bmp1.createComment(
+            reviewer, 'I like', vote=CodeReviewVote.APPROVE,
+            review_type='specious')
+        bmp2 = bmp1.resubmit(bmp1.registrant)
+        self.assertEqual(
+            set([(nominee, 'nominee'), (reviewer, 'specious')]),
+            set((vote.reviewer, vote.review_type) for vote in bmp2.votes))
+
 
 class TestCreateMergeProposalJob(TestCaseWithFactory):
     """Tests for CreateMergeProposalJob."""
