@@ -383,7 +383,7 @@ of packages that are currently building.
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1}
 
-But as soon as one of cdrkit's builds starts, the package is considered
+But as soon as one of cdrkit's builds start, the package is considered
 to be building:
 
     >>> builds[4].buildstate = BuildStatus.BUILDING
