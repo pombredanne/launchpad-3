@@ -371,8 +371,9 @@ class ArchiveMenuMixin:
         text = 'Delete packages'
         link = Link('+delete-packages', text, icon='edit')
 
-        # This link should not be available for copy archives.
-        if self.context.is_copy:
+        # This link should not be available for copy archives or
+        # archives without any sources.
+        if self.context.is_copy or not self.context.has_sources:
             link.enabled = False
         return link
 
@@ -399,8 +400,8 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
     usedfor = IArchive
     facet = 'overview'
     links = ['admin', 'builds', 'builds_building', 'builds_pending',
-             'builds_successful', 'copy', 'delete', 'edit',
-             'edit_dependencies', 'packages', 'ppa']
+             'builds_successful', 'edit', 'edit_dependencies', 'packages',
+             'ppa']
 
 
 class IArchiveIndexActionsMenu(Interface):
@@ -572,7 +573,7 @@ class IPPAPackageFilter(Interface):
         title=_("Package name contains"), required=False)
 
     series_filter = Choice(
-        source=ArchiveSeriesVocabularyFactory(), required=True)
+        source=ArchiveSeriesVocabularyFactory(), required=False)
 
     status_filter = Choice(vocabulary=SimpleVocabulary((
         SimpleTerm(active_publishing_status, 'published', 'Published'),
