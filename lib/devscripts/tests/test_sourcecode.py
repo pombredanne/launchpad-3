@@ -8,7 +8,7 @@ __metaclass__ = type
 from StringIO import StringIO
 import unittest
 
-from devscripts.sourcecode import parse_config_file
+from devscripts.sourcecode import interpret_config, parse_config_file
 
 
 class TestParseConfigFile(unittest.TestCase):
@@ -48,6 +48,28 @@ class TestParseConfigFile(unittest.TestCase):
         self.assertEqual(
             [['key', 'value', 'optional']],
             list(parse_config_file(config_file)))
+
+
+class TestInterpretConfiguration(unittest.TestCase):
+    """Tests for the configuration interpreter."""
+
+    def test_empty(self):
+        # An empty configuration stream means no configuration.
+        config = interpret_config([])
+        self.assertEqual({}, config)
+
+    def test_key_value(self):
+        # A (key, value) pair without a third optional value is returned in
+        # the configuration as a dictionary entry under 'key' with '(value,
+        # False)' as its value.
+        config = interpret_config([['key', 'value']])
+        self.assertEqual({'key': ('value', False)}, config)
+
+    def test_key_value_optional(self):
+        # A (key, value, optional) entry is returned in the configuration as a
+        # dictionary entry under 'key' with '(value, True)' as its value.
+        config = interpret_config([['key', 'value', 'optional']])
+        self.assertEqual({'key': ('value', True)}, config)
 
 
 def test_suite():
