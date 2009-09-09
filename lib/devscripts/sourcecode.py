@@ -46,6 +46,19 @@ def _subset_dict(d, keys):
 
 
 def plan_update(existing_branches, configuration):
+    """Plan the update to existing branches based on 'configuration'.
+
+    :param existing_branches: A sequence of branches that already exist.
+    :param configuration: A dictionary of sourcecode configuration, such as is
+        returned by `interpret_config`.
+    :return: (new_branches, update_branches, removed_branches), where
+        'new_branches' are the branches in the configuration that don't exist
+        yet, 'update_branches' are the branches in the configuration that do
+        exist, and 'removed_branches' are the branches that exist locally, but
+        not in the configuration. 'new_branches' and 'update_branches' are
+        dicts of the same form as 'configuration', 'removed_branches' is a
+        set of the same form as 'existing_branches'.
+    """
     existing_branches = set(existing_branches)
     config_branches = set(configuration.keys())
     new_branches = config_branches - existing_branches
