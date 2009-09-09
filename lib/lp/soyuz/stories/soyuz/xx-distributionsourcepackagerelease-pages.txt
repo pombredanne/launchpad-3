@@ -53,7 +53,7 @@ they all point to the `DistributionSourcePackage` (parent) url.
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntutest/+source/testing-dspr
-    Main heading: (No main heading)
+    Main heading: testing-dspr 1.0 (source) in ubuntutest
 
 The first section presented ('top-porlet') contains the source package
 release changelog. It shows the reason why this version of the package
