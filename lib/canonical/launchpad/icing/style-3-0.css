@@ -759,15 +759,27 @@ div.translations-legend {
   padding-top: 2em;
   padding-bottom: 1em;
 }
-.translation-stats th {
+tbody.translation-stats td {
+  text-align:center;
+}
+tbody.translation-stats td.template-name {
+  text-align:left;
+}
+tfoot tr.overall-translation-stats td, th {
+  background-color: #f7f7f7;
+  border: 0px;
+  border-top: 2px solid #d2d2d2;
+  border-bottom: 2px solid #d2d2d2;
+  padding-top: 5px;
+  padding-bottom: 5px;
   font-weight: bold;
-  padding-right: 1em;
-  text-align: left;
 }
-.translation-stats td {
-  text-align: right;
+tfoot tr.overall-translation-stats th {
+  text-align:left;
 }
-
+tfoot tr.overall-translation-stats td {
+  text-align:center;
+}
 table.narrow-listing {
   width: 45em;
 }

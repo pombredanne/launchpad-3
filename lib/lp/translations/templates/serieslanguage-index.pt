@@ -48,6 +48,7 @@
       </p>
     </div>
 
+    <div style="max-width:840px;">
     <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
     <table class="listing sortable" id="translationstatuses">
@@ -63,10 +64,10 @@
           <th>By</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="translation-stats">
         <tr tal:repeat="entry view/pofiles"
             tal:attributes="id string:${entry/potemplate/name}">
-          <td>
+          <td class="template-name">
             <a tal:attributes="href string:${entry/fmt:url}/+translate"
                tal:content="entry/potemplate/name">
                apache2-dev
@@ -157,11 +158,28 @@
             </tal:block>
           </td>
         </tr>
+        <tfoot>
+          <tr class="overall-translation-stats">
+            <th>Overall statistics:</th>
+            <td><span tal:replace="context/messageCount">N</span></td>
+            <td>
+              <span style="white-space: nowrap"
+                    tal:content="structure context/@@+barchart">--</span>
+            </td>
+            <td><span tal:replace="context/untranslatedCount">N</span></td>
+            <td><span tal:replace="context/unreviewedCount">N</span></td>
+            <td><span tal:replace="context/updatesCount">N</span></td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
       </tbody>
     </table>
     <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
-    <div tal:replace="structure context/@@+portlet-stats" />
+    <div class="translations-legend">
+      <div tal:replace="structure context/@@+rosetta-status-legend" />
+    </div>
+    </div><!-- max-width -->
   </tal:block>
 
 </div>

@@ -39,9 +39,6 @@
         <!-- portlets -->
 
         <browser:page
-            name="+portlet-stats"
-            template="../templates/rosetta-portlet-stats.pt"/>
-        <browser:page
             name="+portlet-groups"
             template="../templates/rosetta-portlet-groups.pt"/>
     </browser:pages>
@@ -280,9 +277,6 @@
         permission="zope.Public"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer">
-        <browser:page
-            name="+portlet-stats"
-            template="../templates/serieslanguage-portlet-stats.pt"/>
         <browser:page
             name="+rosetta-status-legend"
             template="../templates/rosetta-status-legend.pt"/>
