@@ -43,54 +43,8 @@
   </ul>
 
   <tal:menu replace="structure view/@@+global-actions" />
+  <tal:polls replace="structure context/@@+portlet-polls" />
 
-  <div id="polls" class="portlet">
-    <h2>Polls</h2>
-    <p tal:condition="not: view/hasCurrentPolls">
-      No polls created.
-    </p>
-
-    <ul tal:condition="view/hasCurrentPolls">
-      <li tal:repeat="poll view/openpolls">
-        <a tal:attributes="href poll/fmt:url">
-          <span tal:replace="poll/title" />
-        </a> - closes
-        <span
-          tal:attributes="title poll/datecloses/fmt:datetime"
-          tal:content="poll/datecloses/fmt:displaydate" />.
-
-        <tal:block define="user request/lp:person" condition="user">
-          <tal:block condition="python: poll.personVoted(user)">
-            You have
-            <span tal:replace="poll/closesIn/fmt:approximateduration" />
-            to change your vote if you wish.
-          </tal:block>
-
-          <tal:block condition="python: not poll.personVoted(user)">
-            You have
-            <span tal:replace="poll/closesIn/fmt:approximateduration" />
-            left to vote in this poll.
-          </tal:block>
-        </tal:block>
-
-      </li>
-
-      <li tal:condition="view/userIsOwner"
-          tal:repeat="poll view/notyetopenedpolls">
-        <a tal:attributes="href poll/fmt:url">
-          <span tal:replace="poll/title" />
-        </a> - opens
-        <span
-          tal:attributes="title poll/dateopens/fmt:datetime"
-          tal:content="poll/dateopens/fmt:displaydate" />
-      </li>
-    </ul>
-
-    <a tal:condition="view/hasCurrentPolls"
-       tal:replace="structure overview_menu/polls/fmt:link" />
-    <a tal:replace="structure overview_menu/add_poll/fmt:link" />
-
-  </div>
 </div>
 
 <!-- heading slot. -->
@@ -111,6 +65,20 @@
       class="description"
       tal:content="structure context/teamdescription/fmt:text-to-html"
     />
+    <ul class="horizontal">
+      <li
+        tal:define="link context/menu:overview/projects"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link context/menu:overview/maintained"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link context/menu:overview/ppa"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+    </ul>
 </div>
 
 <!-- main slot. -->
@@ -120,16 +88,16 @@
   <div class="yui-g">
     <!-- First portlet column. -->
     <div class="first yui-u">
-      <div tal:content="structure context/@@+portlet-membership" />
+      <metal:details use-macro="context/@@+person-macros/team-details" />
       <div tal:content="structure context/@@+portlet-ppas" />
-      <metal:subteam-of use-macro="context/@@+person-macros/subteam-of" />
+      <div tal:content="structure context/@@+portlet-mailinglist" />
     </div>
 
     <!-- Second portlet column. -->
     <div class="yui-u">
-      <metal:details use-macro="context/@@+person-macros/team-details" />
+      <div tal:content="structure context/@@+portlet-membership" />
       <div tal:content="structure context/@@+portlet-related-projects" />
-      <div tal:content="structure context/@@+portlet-mailinglist" />
+      <metal:subteam-of use-macro="context/@@+person-macros/subteam-of" />
     </div>
   </div>
 

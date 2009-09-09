@@ -36,8 +36,12 @@ The page contains a few interesting details about team membership.
     2005-06-06
 
     >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'subscription-policy'))
+    Subscription policy:
+    Moderated Team
+
+    >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    This is a Moderated Team.
     10 active members, 1 invited members, 2 proposed members...
 
     >>> print extract_text(
@@ -49,10 +53,8 @@ The page contains a few interesting details about team membership.
     ...     find_tag_by_id(browser.contents, 'contact-languages'))
     Languages:
     English
-    Set preferred languages
 
-The polls portlet only shows a link to view all polls if current
-polls exist.
+The polls portlet is only shown if current polls exist.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'polls'))
     Polls
@@ -60,9 +62,10 @@ polls exist.
     Show polls
 
     >>> browser.open('http://launchpad.dev/~launchpad')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'polls'))
-    Polls
-    No polls created.
+    >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
+    >>> print BeautifulSoup(
+    ...     browser.contents, parseOnlyThese=SoupStrainer(id='polls'))
+    <BLANKLINE>
 
 The subteam-of portlet is not shown if the team is not a subteam.
 
@@ -129,6 +132,7 @@ He can also see the contact email address and a link to contact the team.
     Email:
     Contact this team's email address
     support@ubuntu.com
+    Set contact address
 
 Member can contact their team even if the team does not have a contact
 address:
