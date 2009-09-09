@@ -68,6 +68,10 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
     """Browser view to manage used language packs."""
     schema = IDistroSeries
     label = ""
+    # XXX: Another hack because the page_title is set in initialize() here and
+    # we don't want to call that when generating breadcrumbs as it's an
+    # expensive method and might cause forms to be processed more than once.
+    page_title = 'Language packs'
 
     def is_langpack_admin(self, action=None):
         """Find out if the current user is a Language Packs Admin.

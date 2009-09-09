@@ -80,6 +80,9 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <facet
         facet="translations">
+        <browser:navigation
+            module="lp.translations.browser.translator"
+            classes="TranslatorNavigation"/>
         <browser:defaultView
             for="lp.translations.interfaces.translator.ITranslator"
             name="+admin"

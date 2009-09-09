@@ -247,6 +247,7 @@ class POFileFilteredView(LaunchpadView):
     """A filtered view for a `POFile`."""
 
     DEFAULT_BATCH_SIZE = 50
+    person = None
 
     @property
     def _person_name(self):
@@ -256,6 +257,7 @@ class POFileFilteredView(LaunchpadView):
         else:
             return self.person.displayname
 
+    @property
     def page_title(self):
         """See `LaunchpadView`."""
         return smartquote('Translations by %s in "%s"') % (
@@ -267,7 +269,6 @@ class POFileFilteredView(LaunchpadView):
 
     def initialize(self):
         """See `LaunchpadView`."""
-        self.person = None
         person = self.request.form.get('person')
         if person is None:
             self.request.response.addErrorNotification(
