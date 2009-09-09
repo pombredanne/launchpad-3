@@ -163,7 +163,7 @@ class ContainerRevision():
     #
     # In our links, even when the link text is a revnum, we still
     # use a rev-id for the target.  This is both so that the URL will
-    # still work if you manually tweak it (say from "devel" to
+    # still work if you manually tweak it (say to "db-devel" from
     # "devel") and so that hovering over a revnum on the wiki page
     # will give you some information about it before you click
     # (because a rev id often identifies the committer).
