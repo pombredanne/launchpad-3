@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'PersonTranslationView',
     'PersonTranslationRelicensingView',
+    'TranslationActivityView',
 ]
 
 from datetime import datetime, timedelta
@@ -151,27 +152,12 @@ class PersonTranslationsMenu(NavigationMenu):
 class PersonTranslationView(LaunchpadView):
     """View for translation-related Person pages."""
 
-    _pofiletranslator_cache = None
-
     reviews_to_show = 10
 
     def __init__(self, *args, **kwargs):
         super(PersonTranslationView, self).__init__(*args, **kwargs)
         now = datetime.now(pytz.timezone('UTC'))
         self.history_horizon = now - timedelta(90, 0, 0)
-
-    @cachedproperty
-    def batchnav(self):
-        translations_person = ITranslationsPerson(self.context)
-        batchnav = BatchNavigator(
-            translations_person.translation_history, self.request)
-
-        pofiletranslatorset = getUtility(IPOFileTranslatorSet)
-        batch = batchnav.currentBatch()
-        self._pofiletranslator_cache = (
-            pofiletranslatorset.prefetchPOFileTranslatorRelations(batch))
-
-        return batchnav
 
     @cachedproperty
     def recent_activity(self):
@@ -464,3 +450,26 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
                 "Unknown allow_relicensing value: %r" % allow_relicensing)
         self.next_url = self.getSafeRedirectURL(data['back_to'])
 
+
+class TranslationActivityView(LaunchpadView):
+    """View for person's activity listing."""
+
+    _pofiletranslator_cache = None
+
+    @property
+    def label(self):
+        return "Translation activity by %s" % self.context.displayname
+
+    @cachedproperty
+    def batchnav(self):
+        """Iterate over person's translation_history."""
+        translations_person = ITranslationsPerson(self.context)
+        batchnav = BatchNavigator(
+            translations_person.translation_history, self.request)
+
+        pofiletranslatorset = getUtility(IPOFileTranslatorSet)
+        batch = batchnav.currentBatch()
+        self._pofiletranslator_cache = (
+            pofiletranslatorset.prefetchPOFileTranslatorRelations(batch))
+
+        return batchnav

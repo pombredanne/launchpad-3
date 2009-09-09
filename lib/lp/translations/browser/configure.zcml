@@ -725,6 +725,13 @@
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
+            name="+activity"
+            class="lp.translations.browser.person.TranslationActivityView"
+            permission="zope.Public"
+            template="../templates/person-translation-activity.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
             name="+translations-to-review"
             class="lp.translations.browser.person.PersonTranslationView"
             permission="zope.Public"

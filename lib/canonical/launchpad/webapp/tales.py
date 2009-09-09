@@ -3181,3 +3181,27 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
         return self._context.title
+
+
+class POFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IPOFile` objects to a formatted string."""
+
+    traversable_names = {
+        'link': 'link',
+        'url': 'url', 
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(POFileFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        pofile = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(pofile.title))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title
