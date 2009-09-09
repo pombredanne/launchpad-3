@@ -87,9 +87,6 @@
             facet="overview"
             template="../templates/distroseries-index.pt"/>
         <browser:page
-            name="+portlet-aboutcve"
-            template="../templates/portlet-aboutcve.pt"/>
-        <browser:page
             name="+portlet-details"
             facet="overview"
             template="../templates/distroseries-details.pt"/>
@@ -1426,9 +1423,6 @@
             facet="overview"
             template="../templates/object-portlet-summary.pt"/>
         <browser:page
-            name="+portlet-aboutcve"
-            template="../templates/portlet-aboutcve.pt"/>
-        <browser:page
             name="+purchase-subscription"
             template="../templates/product-purchase-subscription.pt"/>
     </browser:pages>
@@ -1611,6 +1605,13 @@
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
     </browser:pages>
+    <browser:page
+        name="+addpackage"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="canonical.launchpad.browser.PackagingAddView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/productseries-packaging.pt"/>
     <browser:page
         name="+ubuntupkg"
         facet="overview"
@@ -1838,9 +1839,6 @@
             name="+milestones"
             facet="overview"
             template="../templates/object-milestones.pt"/>
-        <browser:page
-            name="+portlet-aboutcve"
-            template="../templates/portlet-aboutcve.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -1978,6 +1976,10 @@
             name="+gethelp"
             facet="answers"
             template="../templates/sourcepackage-gethelp.pt"/>
+        <browser:page
+            name="+packaging"
+            facet="overview"
+            template="../templates/sourcepackage-packaging.pt"/>
         <!-- SourcePackage Portlets -->
         <browser:page
             name="+portlet-details"
