@@ -64,9 +64,12 @@
   <tal:block tal:define="activities view/recent_activity">
     <tal:block condition="activities">
       <div class="portlet" style="max-width:800px">
-        <h2 id="translation-activities-header">
-          <tal:name replace="context/displayname">Foo Bar</tal:name>'s activity
-        </h2>
+        <h2 id="translation-activities-header">Activity</h2>
+        <p>
+          These are the translations that
+          <tal:name replace="context/displayname">Foo Bar</tal:name>
+          last worked on:
+        </p>
         <table class="summary">
           <tr tal:repeat="activity activities">
             <td tal:attributes="title activity/date/fmt:datetime"
