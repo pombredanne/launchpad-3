@@ -847,13 +847,18 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
+            class="lp.registry.browser.person.PersonKarmaView">
+            <browser:page
+                name="+karma"
+                template="../templates/person-karma.pt"/>
+        </browser:pages>
+        <browser:pages
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
             class="lp.registry.browser.person.PersonView">
             <browser:page
                 name="+participation"
                 template="../templates/person-participation.pt"/>
-            <browser:page
-                name="+karma"
-                template="../templates/person-karma.pt"/>
             <browser:page
                 name="+sshkeys"
                 attribute="showSSHKeys"/>

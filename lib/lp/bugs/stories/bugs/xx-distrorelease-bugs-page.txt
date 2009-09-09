@@ -64,8 +64,8 @@ The link goes to the expirable bugs page, where the anonymous user can
 see which bugs will expire if they are not confirmed.
 
     >>> expirable_bugs_link.click()
-    >>> anon_browser.title
-    'Bugs that can expire in The Warty Warthog Release'
+    >>> print anon_browser.title
+    +expirable-bugs : Bugs on warty : 4.10 : Ubuntu
 
 
 == Bugs Statistics ==
