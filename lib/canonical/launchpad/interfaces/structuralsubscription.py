@@ -171,14 +171,19 @@ class IStructuralSubscriptionTarget(Interface):
         This method is used to create a new `IStructuralSubscription`
         for the target, with no levels set.
 
-        :subscriber: The IPerson who will be subscribed.
+        :subscriber: The IPerson who will be subscribed. If omited,
+            subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
         :return: The new subscription.
         """
 
     @operation_parameters(
         subscriber=Reference(
-            schema=IPerson, title=_('Person'), required=False))
+            schema=IPerson,
+            title=_(
+                'Person to subscribe. If omitted, the requesting user will be '
+                'subscribed.'),
+            required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
     def addBugSubscription(subscriber, subscribed_by):
@@ -188,14 +193,19 @@ class IStructuralSubscriptionTarget(Interface):
         for the target with the bug notification level set to
         COMMENTS, the only level currently in use.
 
-        :subscriber: The IPerson who will be subscribed.
+        :subscriber: The IPerson who will be subscribed. If omited,
+            subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
         :return: The new bug subscription.
         """
 
     @operation_parameters(
         subscriber=Reference(
-            schema=IPerson, title=_('Person'), required=False))
+            schema=IPerson,
+            title=_(
+                'Person to unsubscribe. If omitted, the requesting user will '
+                'be unsubscribed.'),
+            required=False))
     @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
     def removeBugSubscription(subscriber, unsubscribed_by):
@@ -205,7 +215,8 @@ class IStructuralSubscriptionTarget(Interface):
         set the subscription's `bug_notification_level` to
         `NOTHING`, otherwise, destroy the subscription.
 
-        :subscriber: The IPerson who will be subscribed.
+        :subscriber: The IPerson who will be unsubscribed. If omitted,
+            unsubscribed_by will be used.
         :unsubscribed_by: The IPerson removing the subscription.
         """
 
