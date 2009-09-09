@@ -108,15 +108,23 @@
         </div></div>
         <div class="yui-u"><div class="portlet">
           <h2><tal:archive_label replace="archive_label" /> statistics</h2>
-          <dl tal:define="pkg_build_counts view/num_pkgs_building">
+          <dl tal:define="num_updates view/num_updates_over_last_days;
+                          pkg_build_counts view/num_pkgs_building">
             <dt>Activity</dt>
-            <dd><span tal:replace="view/num_updates_over_last_days">10</span>
-              updates were added during the past month.</dd>
+            <dd><span tal:replace="num_updates">10</span>
+              update<tal:plural content="string:s"
+                                condition="python:num_updates!=1"/>
+              added during the past month.</dd>
             <dd tal:condition="pkg_build_counts">
               Currently <span tal:replace="pkg_build_counts/building">2</span>
-              packages are building and
-              <span tal:replace="pkg_build_counts/waiting">2</span> packages
-              are waiting to build.</dd>
+              package<tal:plural content="string:s"
+                                 condition="python:pkg_build_counts['building']!=1"
+                       /> building and
+              <span tal:replace="pkg_build_counts/waiting">2</span>
+              package<tal:plural content="string:s"
+                                 condition="python:pkg_build_counts['waiting']!=1"
+                       />
+              waiting to build.</dd>
           </dl>
         </div></div>
       </div><!-- yui-g -->

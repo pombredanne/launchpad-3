@@ -328,7 +328,7 @@ A statistics portlet is included on the index page.
     >>> print extract_text(stats)
     PPA statistics
     Activity
-    1 updates were added during the past month.
+    1 update added during the past month.
 
 If the ppa has some current activity (building or waiting builds) then this
 is also included in the statistics portlet.
@@ -347,8 +347,8 @@ is also included in the statistics portlet.
     >>> print extract_text(stats)
     PPA statistics
     Activity
-    1 updates were added during the past month.
-    Currently 1 packages are building and 0 packages are waiting to build.
+    1 update added during the past month.
+    Currently 1 package building and 0 packages waiting to build.
 
 
 == Filtering an archive ==
