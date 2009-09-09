@@ -92,6 +92,7 @@ the documentation url through the edit view.
     Just a testing team
     Esperanto
     http://www.launchpad.net/
+    edit
 
 
 == Notification display ==
