@@ -8,7 +8,8 @@ __metaclass__ = type
 from StringIO import StringIO
 import unittest
 
-from devscripts.sourcecode import interpret_config, parse_config_file
+from devscripts.sourcecode import (
+    interpret_config, parse_config_file, plan_update)
 
 
 class TestParseConfigFile(unittest.TestCase):
@@ -70,6 +71,45 @@ class TestInterpretConfiguration(unittest.TestCase):
         # dictionary entry under 'key' with '(value, True)' as its value.
         config = interpret_config([['key', 'value', 'optional']])
         self.assertEqual({'key': ('value', True)}, config)
+
+
+class TestPlanUpdate(unittest.TestCase):
+    """Tests for how to plan the update."""
+
+    def test_trivial(self):
+        # In the trivial case, there are no existing branches and no
+        # configured branches, so there are no branches to add, none to
+        # update, and none to remove.
+        new, existing, removed = plan_update([], {})
+        self.assertEqual({}, new)
+        self.assertEqual({}, existing)
+        self.assertEqual(set(), removed)
+
+    def test_all_new(self):
+        # If there are no existing branches, then the all of the configured
+        # branches are new, none are existing and none have been removed.
+        new, existing, removed = plan_update([], {'a': ('b', False)})
+        self.assertEqual({'a': ('b', False)}, new)
+        self.assertEqual({}, existing)
+        self.assertEqual(set(), removed)
+
+    def test_all_old(self):
+        # If there configuration is now empty, but there are existing
+        # branches, then that means all the branches have been removed from
+        # the configuration, none are new and none are updated.
+        new, existing, removed = plan_update(['a', 'b', 'c'], {})
+        self.assertEqual({}, new)
+        self.assertEqual({}, existing)
+        self.assertEqual(set(['a', 'b', 'c']), removed)
+
+    def test_all_same(self):
+        # If the set of existing branches is the same as the set of
+        # non-existing branches, then they all need to be updated.
+        config = {'a': ('b', False), 'c': ('d', True)}
+        new, existing, removed = plan_update(config.keys(), config)
+        self.assertEqual({}, new)
+        self.assertEqual(config, existing)
+        self.assertEqual(set(), removed)
 
 
 def test_suite():

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'interpret_config',
     'parse_config_file',
+    'plan_update',
     ]
 
 
@@ -29,11 +30,28 @@ def interpret_config_entry(entry):
     return (entry[0], (entry[1], len(entry) > 2))
 
 
-def interpret_config(configuration):
+def interpret_config(config_entries):
     """Interpret a configuration stream, as parsed by 'parse_config_file'.
 
     :param configuration: A sequence of parsed configuration entries.
     :return: A dict mapping the names of the sourcecode dependencies to a
         2-tuple of their branches and whether or not they are optional.
     """
-    return dict(map(interpret_config_entry, configuration))
+    return dict(map(interpret_config_entry, config_entries))
+
+
+def _subset_dict(d, keys):
+    """Return a dict that's a subset of 'd', based on the keys in 'keys'."""
+    return dict((key, d[key]) for key in keys)
+
+
+def plan_update(existing_branches, configuration):
+    existing_branches = set(existing_branches)
+    config_branches = set(configuration.keys())
+    new_branches = config_branches - existing_branches
+    removed_branches = existing_branches - config_branches
+    update_branches = config_branches.intersection(existing_branches)
+    return (
+        _subset_dict(configuration, new_branches),
+        _subset_dict(configuration, update_branches),
+        removed_branches)
