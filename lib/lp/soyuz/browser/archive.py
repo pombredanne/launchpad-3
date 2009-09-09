@@ -806,6 +806,38 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
         return sources.count()
 
+    @property
+    def num_pkgs_building(self):
+        """Return the number of building/waiting to build packages."""
+
+        building = getUtility(IBuildSet).getBuildsForArchive(
+            self.context, status=BuildStatus.BUILDING)
+        needs_build = getUtility(IBuildSet).getBuildsForArchive(
+            self.context, status=BuildStatus.NEEDSBUILD)
+
+        # Create a set of all source package releases that have builds
+        # waiting to build, as well as a set of those with building builds.
+        needs_build_set = set()
+        for build in needs_build:
+            needs_build_set.add(build.sourcepackagerelease)
+
+        building_set = set()
+        for build in building:
+            building_set.add(build.sourcepackagerelease)
+
+        # A package is not counted as waiting if it already has at least
+        # one build building.
+        pkgs_building_count = len(building_set)
+        pkgs_waiting_count = len(needs_build_set.difference(building_set))
+
+        if pkgs_building_count == 0 and pkgs_waiting_count == 0:
+            return None
+
+        return {
+            'building': pkgs_building_count,
+            'waiting_to_build': pkgs_waiting_count
+            }
+
 
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""

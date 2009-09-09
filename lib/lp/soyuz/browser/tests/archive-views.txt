@@ -333,8 +333,6 @@ others will not.
     >>> view.filtered_sources[0].secure_record.datecreated = UTC_NOW
     >>> view.filtered_sources[1].secure_record.datecreated = UTC_NOW
     >>> view.filtered_sources[2].secure_record.datecreated = thirtyone_days_ago
-    >>> import transaction # REMOVE again.
-    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
     >>> view.num_updates_over_last_days()
@@ -347,10 +345,50 @@ We can optionally pass the number of days.
 
 
 The ArchiveView includes a helper to return the number of packages that
-are building as well as the number of packages waiting to build.
+are building as well as the number of packages waiting to build. This
+property returns None if there are no current builds in progress (or
+waiting).
+
+    >>> print view.num_pkgs_building
+    None
+
+Let's set some builds appropriately to see the results.
+
+    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+    >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
+    >>> source = view.filtered_sources[0]
+    >>> ignore = source.sourcepackagerelease.createBuild(
+    ...     distroarchseries=warty_hppa, archive=view.context,
+    ...     pocket=source.pocket)
+    >>> builds = getUtility(IBuildSet).getBuildsForArchive(view.context)
+    >>> for build in builds:
+    ...     print build.title
+    hppa build of cdrkit 1.0 in ubuntu warty RELEASE
+    hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+
+    >>> builds[0].buildstate = BuildStatus.NEEDSBUILD
+    >>> builds[1].buildstate = BuildStatus.BUILDING
+    >>> builds[2].buildstate = BuildStatus.BUILDING
 
     >>> view.num_pkgs_building
-    {'building': 3, 'waiting_to_build': 1}
+    {'building': 2, 'waiting_to_build': 1}
+
+Adding a second waiting build for the cdrkit does not add to the number
+of packages that are currently building.
+
+    >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
+    >>> view.num_pkgs_building
+    {'building': 2, 'waiting_to_build': 1}
+
+But as soon as one of cdrkit's builds starts, the package is considered
+to be building:
+
+    >>> builds[4].buildstate = BuildStatus.BUILDING
+    >>> view.num_pkgs_building
+    {'building': 3, 'waiting_to_build': 0}
 
 
 == ArchivePackageView ==
