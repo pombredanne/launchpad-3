@@ -170,7 +170,7 @@
       <input type="hidden" name="action" value="claim_gpg" />
       <h2>Import an OpenPGP key</h2>
 
-      <p>To start using an OpenPGP key with your Launchpad account, simply paste its fingerprint below. (<a href="/+help/import-pgp-key.html" target="help">How to get the fingerprint</a>)
+      <p>To start using an OpenPGP key with your Launchpad account, simply paste its fingerprint below. (<a href="/+help/import-pgp-key.html" target="help">How to get the fingerprint</a>)</p>
 
           <table>
             <tbody>
