@@ -23,17 +23,17 @@ simply mimics the `DistributionSourcePackageRelease.title`.
     >>> print dspr_view.page_title
     testing-dspr 1.0 (source) in ubuntutest
 
-'files' property returns a list of files included in the source upload
-encapsulated as `ProxiedLibraryFileAlias` objects, so their 'http_url'
-points to the LP proxied url which normalizes the path to files
-allowing them to be downloaded using `dget`.
+The 'files' property returns a list of files included in the source
+upload encapsulated as `ProxiedLibraryFileAlias` objects. Their
+'http_url' points to the LP proxied url which normalizes the path
+tofiles allowing them to be downloaded using `dget`.
 
     >>> for source_file in dspr_view.files:
     ...     print source_file.filename, source_file.http_url
     testing-dspr_1.0.dsc
     http://.../ubuntutest/+archive/primary/+files/testing-dspr_1.0.dsc
 
-'sponsor' property indicates whether the upload was 'sponsored' or
+The 'sponsor' property indicates whether the upload was 'sponsored' or
 not. When the upload was signed by someone else than the source
 creator, the upload signer is the sponsor.
 
@@ -43,8 +43,7 @@ creator, the upload signer is the sponsor.
     >>> print dspr_view.sponsor
     None
 
-    # Forcebly change the SPR.creator, so the source become
-    # 'sponsored'.
+    # Forcibly change the SPR.creator, so the source becomes 'sponsored'.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
     >>> a_person = factory.makePerson(name='novice')
@@ -98,20 +97,18 @@ copies.
     hoary-test
     breezy-autotest
 
-'grouped_builds' returns a list of `DistroSeriesBuilds` objects which
-contains the `IBuild`s for the source.
+'grouped_builds' returns a list of dictionaries which contains
+`IBuild`s for a given `IDistroSeries`.
 
     >>> def print_grouped_builds():
-    ...     if len(dspr_view.grouped_builds) == 0:
-    ...        print 'No builds'
-    ...        return
     ...     for build_group in dspr_view.grouped_builds:
     ...         arch_tags = ' '.join(
-    ...             build.arch_tag for build in build_group.builds)
-    ...         print '%s: %s' % (build_group.series.name, arch_tags)
+    ...             build.arch_tag for build in build_group['builds'])
+    ...         print '%s: %s' % (build_group['distroseries'].name, arch_tags)
+    ...     print 'END'
 
     >>> print_grouped_builds()
-    No builds
+    END
 
     # Create default builds for the testing DSPR.
     >>> login('foo.bar@canonical.com')
@@ -121,10 +118,10 @@ contains the `IBuild`s for the source.
     >>> dspr_view = create_initialized_view(dspr, name="+index")
     >>> print_grouped_builds()
     breezy-autotest: i386
+    END
 
-The returned `DistroSeriesBuilds` objects are ordered by ascending
-distroseries version and their 'builds' are ordered by ascending
-'architecturetag'..
+The returned dictionaries are ordered by descending distroseries
+version and their 'builds' are ordered by ascending 'architecturetag'.
 
     # Create extras builds for the testing DSPR.
     >>> login('foo.bar@canonical.com')
@@ -140,3 +137,4 @@ distroseries version and their 'builds' are ordered by ascending
     >>> print_grouped_builds()
     hoary-test: amd64
     breezy-autotest: hppa i386
+    END

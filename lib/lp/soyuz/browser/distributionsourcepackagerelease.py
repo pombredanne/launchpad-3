@@ -17,6 +17,7 @@ from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, stepthrough)
+from lp.archivepublisher.debversion import Version
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
@@ -38,17 +39,9 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
             return None
 
 
-class DistroSeriesBuilds:
-    """Group of `IDistroSeries` and `IBuild`s."""
-    def __init__(self, series, builds):
-        self.series = series
-        self.builds = [
-            build
-            for build in builds
-            if build.distroseries == self.series]
-
-
 class DistributionSourcePackageReleaseView(LaunchpadView):
+    """View logic for `DistributionSourcePackageRelease` objects. """
+
     usedfor = IDistributionSourcePackageRelease
 
     @property
@@ -57,11 +50,12 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
 
     @cachedproperty
     def _cached_publishing_history(self):
+        """Local copy of the context 'publishing_history' values."""
         return list(self.context.publishing_history)
 
     @property
     def currently_published(self):
-        """A list of published publications for this source package release.
+        """A list of published publications for this release.
 
         :return: a `list` of `SourcePackagePublishingHistory` currently
             published in the main archives.
@@ -83,13 +77,13 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
 
     @cachedproperty
     def sponsor(self):
-        """The sponsor of this source package.
+        """This source package's sponsor.
 
         A source package was sponsored if the owner of the key used to sign
-        its upload is different of its 'creator' (DSC 'Changed-by:')
+        its upload is different from its 'creator' (DSC 'Changed-by:')
 
-        :return: return the sponsor `IPerson` or None if the source
-            upload was not sponsored.
+        :return: the sponsor `IPerson`, or none if the upload was not
+            sponsored.
         """
         upload = self.context.package_upload
         if upload is None:
@@ -105,15 +99,31 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
     def grouped_builds(self):
         """Builds for this source in the primary archive grouped by series.
 
-        :return: a `list` of `DistroSeriesBuilds` ordered by descending
-             versions.
+        :return: a `list` of dictionaries containing 'distroseries' and its
+             grouped 'builds' ordered by descending distroseries versions.
         """
+        # Build a local list of `IBuilds` ordered by ascending
+        # 'architecture_tag'.
         cached_builds = sorted(
             self.context.builds, key=operator.attrgetter('arch_tag'))
-        series = set(
-            build.distroseries for build in cached_builds)
-        sorted_series = sorted(
-            series, key=operator.attrgetter('version'), reverse=True)
-        return [
-            DistroSeriesBuilds(series, cached_builds)
-            for series in sorted_series]
+
+        # Build a list of unique `IDistroSeries` related with the local
+        # builds ordered by descending version.
+        def distroseries_sort_key(item):
+            return Version(item.version)
+        sorted_distroseries = sorted(
+            set(build.distroseries for build in cached_builds),
+            key=distroseries_sort_key, reverse=True)
+
+        # Group builds as dictionaries.
+        distroseries_builds = []
+        for distroseries in sorted_distroseries:
+            builds = [
+                build
+                for build in cached_builds
+                if build.distroseries == distroseries
+                ]
+            distroseries_builds.append(
+                {'distroseries': distroseries, 'builds': builds})
+
+        return distroseries_builds

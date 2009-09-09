@@ -1,9 +1,9 @@
 DistributionSourcePackageRelease pages
 ======================================
 
-`DistributionSourcePackageRelease` page presents all relevant details
-of a `SourcePackageRelease` published (or pending publication) in one
-or more series of a `Distribution`.
+The `DistributionSourcePackageRelease` page presents all relevant
+details of a `SourcePackageRelease` published (or pending publication)
+in one or more series of a `Distribution`.
 
     # Create a brand new publication of 'testing-dspr - 1.0' for tests.
     # Set a different source maintainer and changelog entry with email
@@ -23,29 +23,25 @@ or more series of a `Distribution`.
     ... LP: #1234
     ... celso.providelo@canonical.com
     ... """
+    >>> transaction.commit()
     >>> logout()
 
 The `DistributionSourcePackageRelease` page is accessed from the
 `DistributionSourcePackage`.
 
-    # XXX cprov: enable the navigation tests from  DSP:+index
-    # gets fixed.
-    # >>> anon_browser.open(
-    # ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox')
-    # >>> anon_browser.getLink('1.0').click()
-
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntutest/+source/testing-dspr/1.0')
+    ...     'http://launchpad.dev/ubuntutest/+source/testing-dspr')
+    >>> anon_browser.getLink('1.0').click()
 
     >>> print anon_browser.url
     http://launchpad.dev/ubuntutest/+source/testing-dspr/1.0
 
-Its title describe exactly what it is about.
+Its title describes exactly what it is about.
 
     >>> print anon_browser.title
     testing-dspr 1.0 (source) in ubuntutest
 
-Its application bar has enabled entries for Code, Bugs and Answers and
+Its application bar has enabled entries for Code, Bugs and Answers, and
 they all point to the `DistributionSourcePackage` (parent) url.
 
     >>> print_location(anon_browser.contents)
@@ -57,10 +53,10 @@ they all point to the `DistributionSourcePackage` (parent) url.
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntutest/+source/testing-dspr
-    Main heading: testing-dspr 1.0 (source) in ubuntutest
+    Main heading: (No main heading)
 
 The first section presented ('top-porlet') contains the source package
-release 'changelog'. It is the reason why this version of the package
+release changelog. It shows the reason why this version of the package
 exists, will usually describe a bug that was fixed or a feature that
 was introduced.
 
@@ -77,8 +73,8 @@ Bug references in the 'changelog' are 'linkified'.
     http://launchpad.dev/bugs/1234
 
 The email addresses mentioned in the 'changelog' are only rendered to
-users logged in. They are also become a link to the corresponding
-person in Launchpad if it exists.
+users logged in. They also become a link to the corresponding person
+in Launchpad if it exists.
 
     >>> user_browser.open(anon_browser.url)
     >>> print_tag_with_id(user_browser.contents, 'source-changelog')
@@ -96,7 +92,7 @@ person in Launchpad if it exists.
     >>> print user_browser.getLink('celso.providelo@canonical.com').url
     http://launchpad.dev/~cprov
 
-The following portlet present its 'Upload details' and link to the
+The following portlet presents its 'Upload details' and link to the
 users involved with it and the `DistroSeries` it was originally
 uploaded to.
 
@@ -192,7 +188,7 @@ source in the context distribution, grouped by distroseries.
     http://launchpad.dev/ubuntutest/+source/testing-dspr/1.0/+build/...
 
 The 'Downloads' section lists and links to the files for this
-source. Each file links to it's normalized download path based on the
+source. Each file links to its normalized download path based on the
 distribution primary archive URL. It allows the files to be download
 via `dget`.
 

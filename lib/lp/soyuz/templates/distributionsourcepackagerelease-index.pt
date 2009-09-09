@@ -9,10 +9,6 @@
 
 <body>
 
-<div metal:fill-slot="heading">
-  <h1 tal:content="view/page_title">foo-bar 1.0 (source) in ubuntu</h1>
-</div>
-
 <div metal:fill-slot="main">
 
   <div id="source-changelog" class="top-portlet">
@@ -121,8 +117,8 @@
     <div id="source-builds" class="portlet">
       <h2>Builds</h2>
       <tal:series tal:repeat="series_builds view/grouped_builds">
-        <p><a tal:attributes="href series_builds/series/fmt:url"
-              tal:content="series_builds/series/displayname"
+        <p><a tal:attributes="href series_builds/distroseries/fmt:url"
+              tal:content="series_builds/distroseries/displayname"
              >Hoary Mock</a>:
           <tal:builds tal:repeat="build series_builds/builds">
             <tal:icon replace="structure build/image:icon" />
