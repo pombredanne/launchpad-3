@@ -205,14 +205,15 @@ class MenuAPI:
     def navigation(self):
         """Navigation menu links list."""
         try:
-            # NavigationMenus may be associated with a content object or one of
-            # its views. The context we need is the one from the TAL expression.
+            # NavigationMenus may be associated with a content object or one
+            # of its views. The context we need is the one from the TAL
+            # expression.
             context = self._tales_context
             if self._selectedfacetname is not None:
                 selectedfacetname = self._selectedfacetname
             else:
-                # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
-                # facet name from the layer implemented by the request.
+                # XXX sinzui 2008-05-09 bug=226917: We should be retrieving
+                # the facet name from the layer implemented by the request.
                 view = get_current_view(self._request)
                 selectedfacetname = get_facet(view)
             try:
@@ -2830,6 +2831,16 @@ class FormattersAPI:
         else:
             return self._stringtoformat
 
+    def ellipsize(self, maxlength):
+        """Use like tal:content="context/foo/fmt:ellipsize/60"."""
+        if len(self._stringtoformat) > maxlength:
+            length = (maxlength - 3) / 2
+            return (
+                self._stringtoformat[:maxlength - length - 3] + '...' +
+                self._stringtoformat[-length:])
+        else:
+            return self._stringtoformat
+
     def format_diff(self):
         """Format the string as a diff in a table with line numbers."""
         # Trim off trailing carriage returns.
@@ -2918,6 +2929,12 @@ class FormattersAPI:
                     "you need to traverse a number after fmt:shorten")
             maxlength = int(furtherPath.pop())
             return self.shorten(maxlength)
+        elif name == 'ellipsize':
+            if len(furtherPath) == 0:
+                raise TraversalError(
+                    "you need to traverse a number after fmt:ellipsize")
+            maxlength = int(furtherPath.pop())
+            return self.ellipsize(maxlength)
         elif name == 'diff':
             return self.format_diff()
         elif name == 'css-id':
@@ -3139,3 +3156,28 @@ class PageMacroDispatcher:
             return self.base
         else:
             return self.master
+
+
+class TranslationGroupFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `ITranslationGroup` objects to a formatted string."""
+
+    traversable_names = {
+        'link': 'link',
+        'url': 'url', 
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(TranslationGroupFormatterAPI, self).url(
+            view_name, rootsite)
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        group = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(group.title))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title

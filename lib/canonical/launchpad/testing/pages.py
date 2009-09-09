@@ -258,7 +258,8 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
         for col_num, item in enumerate(row.findAll('td')):
             if columns is None or col_num in columns:
                 row_content.append(extract_text(item))
-        print sep.join(row_content)
+        if len(row_content) > 0:
+            print sep.join(row_content)
 
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.

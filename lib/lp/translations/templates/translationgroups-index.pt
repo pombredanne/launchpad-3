@@ -45,10 +45,7 @@
         <tbody>
           <tr tal:repeat="group context">
             <td>
-              <a
-                tal:content="group/title/fmt:shorten/57"
-                tal:attributes="href group/name"
-              >Ubuntu Translators</a>
+              <a tal:replace="structure group/fmt:link">Ubuntu Translators</a>
             </td>
             <td>
               <tal:projects condition="group/top_projects">

@@ -76,17 +76,6 @@ class ContextDisplayName(SubstitutionHelper):
         return self.text % context.displayname
 
 
-class FilteredTranslationsTitle(SubstitutionHelper):
-    """Return the formatted string with context's title and view's person."""
-    def __call__(self, context, view):
-        if view.person is not None:
-            person = view.person.displayname
-        else:
-            person = 'unknown'
-        return self.text % {'title' : context.title,
-                            'person' : person }
-
-
 class ContextId(SubstitutionHelper):
     """Return the formatted string with context's id."""
     def __call__(self, context, view):
@@ -204,10 +193,6 @@ bugbranch_delete = 'Delete bug branch link'
 
 bugbranch_edit = "Edit branch fix status"
 
-def bugcomment_index(context, view):
-    """Return the page title for a bug comment."""
-    return "Bug #%d - Comment #%d" % (context.bug.id, view.comment.index)
-
 buglinktarget_linkbug = 'Link to bug report'
 
 buglinktarget_unlinkbugs = 'Remove links to bug reports'
@@ -224,16 +209,6 @@ def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
     return 'Manage nomination for bug #%d in %s' % (
         context.bug.id, context.target.bugtargetdisplayname)
-
-def bugwatch_editform(context, view):
-    """Return the title for the page to edit an external bug watch."""
-    return 'Bug #%d - Edit external bug watch (%s in %s)' % (
-        context.bug.id, context.remotebug, context.bugtracker.title)
-
-def bugwatch_comments(context, view):
-    """Return the title for a page of imported comments for a bug watch."""
-    return "Bug #%d - Comments imported from bug watch %s on %s" % (
-        context.bug.id, context.remotebug, context.bugtracker.title)
 
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
@@ -283,15 +258,6 @@ bugtask_view = BugTaskPageTitle()
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
-
-bugtracker_edit = ContextTitle(
-    smartquote('Change details for "%s" bug tracker'))
-
-bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
-
-bugtrackers_add = 'Register an external bug tracker'
-
-bugtrackers_index = 'Bug trackers registered in Launchpad'
 
 build_buildlog = ContextTitle('Build log for %s')
 
@@ -440,8 +406,6 @@ distroseries_builds = ContextTitle('%s builds')
 
 distroseries_queue = ContextTitle('Queue for %s')
 
-distroseriesbinarypackage_index = ContextTitle('%s')
-
 distroserieslanguage_index = ContextTitle('%s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
@@ -489,8 +453,6 @@ def hasspecifications_specs(context, view):
         return "Blueprints for %s" % context.title
 
 hassprints_sprints = ContextTitle("Events related to %s")
-
-hastranslationimports_index = 'Translation import queue'
 
 hwdb_fingerprint_submissions = (
     "Hardware Database submissions for a fingerprint")
@@ -710,8 +672,6 @@ openidrpconfig_edit = ContextDisplayName(
 
 openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
-official_bug_target_manage_tags = 'Manage Official Bug Tags'
-
 def package_bugs(context, view):
     """Return the page title bug in a package."""
     return 'Bugs in %s' % context.name
@@ -772,8 +732,6 @@ def person_index(context, view):
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
-person_maintained_packages = ContextDisplayName('Software maintained by %s')
-
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
 
 def person_mergeproposals(context, view):
@@ -790,12 +748,6 @@ person_packagebugs_search = person_packagebugs
 
 person_participation = ContextTitle("Team participation by %s")
 
-person_ppa_packages = ContextDisplayName('PPA packages related to %s')
-
-person_related_projects = ContextDisplayName('Projects related to %s')
-
-person_related_software = ContextDisplayName('Software related to %s')
-
 person_review = ContextDisplayName("Review %s")
 
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
@@ -804,20 +756,10 @@ person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations = ContextDisplayName('Translations related to %s')
 
-person_translations_relicensing = "Translations licensing"
-
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
-
-person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
-
-person_vouchers = ContextDisplayName(
-    'Commercial subscription vouchers for %s')
-
-pofile_filter = FilteredTranslationsTitle(
-    smartquote('Translations by %(person)s in "%(title)s"'))
 
 pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
@@ -872,10 +814,6 @@ def product_mergeproposals(context, view):
     """Return the view's heading."""
     return view.heading
 
-def product_new(context, view):
-    """Return the view's heading."""
-    return view.heading
-
 product_new_guided = 'Before you register your project...'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
@@ -891,17 +829,7 @@ product_timeline = ContextTitle('Timeline Diagram for %s')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
-productrelease_add = ContextDisplayName('Publish the release of %s')
-
-productrelease_add_from_series = productrelease_add
-
-productrelease_delete = ContextTitle('Delete %s in Launchpad')
-
-productrelease_file_add = ContextDisplayName('Add a file to %s')
-
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
-
-productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
@@ -1153,10 +1081,6 @@ team_index = ContextBrowsername('%s in Launchpad')
 
 team_invitations = ContextBrowsername("Invitations sent to %s")
 
-team_join = ContextBrowsername('Join %s')
-
-team_leave = ContextBrowsername('Leave %s')
-
 team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
@@ -1178,11 +1102,6 @@ def teammembership_index(context, view):
 def teammembership_invitation(context, view):
     """Return the page title to invite a person to become a team member."""
     return "Make %s a member of %s" % (
-        context.person.displayname, context.team.displayname)
-
-def teammembership_self_renewal(context, view):
-    """Return the page title renew membership in a team."""
-    return "Renew membership of %s in %s" % (
         context.person.displayname, context.team.displayname)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
@@ -1220,10 +1139,6 @@ translationgroup_reassignment = ContextTitle(smartquote(
 translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
-
-translationimportqueue_index = 'Translation import queue'
-
-translationimportqueue_blocked = 'Translation import queue - Blocked'
 
 def translationmessage_translate(context, view):
     """Return the page to translate a template into a language per message."""

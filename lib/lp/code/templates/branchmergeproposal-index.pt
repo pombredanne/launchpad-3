@@ -24,6 +24,11 @@
 
 
 <metal:side fill-slot="side">
+  <div class="portlet" tal:define="link context/menu:context/resubmit"
+       tal:condition="link/enabled"
+       tal:content="structure link/render">
+       Resubmit proposal
+  </div>
   <div tal:replace="structure context/@@+pagelet-subscribers" />
 </metal:side>
 

@@ -46,6 +46,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
 from canonical.launchpad.interfaces.hwdb import HWBus, IHWSubmission
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.soyuz.interfaces.archive import IArchive
@@ -59,7 +60,7 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)

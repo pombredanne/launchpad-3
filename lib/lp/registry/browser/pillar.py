@@ -20,9 +20,11 @@ from canonical.launchpad.webapp.menu import Link, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
 from canonical.launchpad.webapp.tales import MenuAPI
 
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
 
 
@@ -81,13 +83,19 @@ class PillarView(LaunchpadView):
             # Projectgroups do not support submit code, override the
             # default.
             self.official_codehosting = False
-        elif IDistributionSourcePackage.providedBy(self.context):
-            # Distro source packages don't have blueprints, override
-            # the default.
-            self._set_official_launchpad(pillar)
-            self.official_blueprints = False
         else:
             self._set_official_launchpad(pillar)
+            if IProductSeries.providedBy(self.context):
+                self.official_answers = False
+            elif IDistroSeries.providedBy(self.context):
+                self.official_answers = False
+                self.official_codehosting = False
+            elif IDistributionSourcePackage.providedBy(self.context):
+                self.official_blueprints = False
+                self.official_rosetta = False
+            else:
+                # The context is used by all apps.
+                pass
 
     def _set_official_launchpad(self, pillar):
         """Does the pillar officially use launchpad."""
