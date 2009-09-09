@@ -24,6 +24,7 @@ from cStringIO import StringIO
 from email import message_from_string
 from operator import itemgetter
 from simplejson import dumps
+import re
 import tempfile
 import urllib
 
@@ -53,6 +54,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces._schema_circular_imports import (
     IBug, IDistribution)
+from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
@@ -155,6 +157,9 @@ class FileBugDataParser:
         if 'Subscribers' in headers:
             subscribers_string = unicode(headers['Subscribers'])
             data.subscribers = subscribers_string.lower().split()
+        if 'HWDB-Submission' in headers:
+            submission_string = unicode(headers['HWDB-Submission'])
+            data.hwdb_submission_keys = re.split(', *', submission_string)
 
     def parse(self):
         """Parse the message and  return a FileBugData instance.
@@ -243,6 +248,7 @@ class FileBugData:
         self.extra_description = None
         self.comments = []
         self.attachments = []
+        self.hwdb_submission_keys = []
 
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
@@ -605,6 +611,13 @@ class FileBugViewBase(LaunchpadFormView):
                     notifications.append(
                         '%s has been subscribed to this bug.' %
                         person.displayname)
+
+        submission_set = getUtility(IHWSubmissionSet)
+        for submission_key in extra_data.hwdb_submission_keys:
+            submission = submission_set.getBySubmissionKey(
+                submission_key, self.user)
+            if submission is not None:
+                bug.linkHWSubmission(submission)
 
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
