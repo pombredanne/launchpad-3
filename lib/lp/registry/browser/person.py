@@ -713,7 +713,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class PersonBugsMenu(ApplicationMenu):
+class PersonBugsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'bugs'

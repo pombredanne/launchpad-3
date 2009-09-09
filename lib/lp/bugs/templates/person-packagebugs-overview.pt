@@ -6,13 +6,17 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
       <h1>Package bugs</h1>
     </metal:heading>
+
+    <metal:side fill-slot="side">
+      <tal:menu replace="structure context/@@+global-actions" />
+    </metal:side>
 
     <div metal:fill-slot="main">
       <p>
