@@ -62,10 +62,8 @@ The polls portlet is only shown if current polls exist.
     Show polls
 
     >>> browser.open('http://launchpad.dev/~launchpad')
-    >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
-    >>> print BeautifulSoup(
-    ...     browser.contents, parseOnlyThese=SoupStrainer(id='polls'))
-    <BLANKLINE>
+    >>> print find_tag_by_id(browser.contents, 'polls')
+    None
 
 The subteam-of portlet is not shown if the team is not a subteam.
 

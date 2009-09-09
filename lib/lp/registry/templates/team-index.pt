@@ -86,16 +86,23 @@
      tal:define="overview_menu context/menu:overview">
 
   <div class="yui-g">
-    <!-- First portlet column. -->
     <div class="first yui-u">
       <metal:details use-macro="context/@@+person-macros/team-details" />
+    </div>
+    <div class="first yui-u">
+      <div tal:content="structure context/@@+portlet-membership" />
+    </div>
+  </div>
+
+  <div class="yui-g">
+    <!-- First portlet column. -->
+    <div class="first yui-u">
       <div tal:content="structure context/@@+portlet-ppas" />
       <div tal:content="structure context/@@+portlet-mailinglist" />
     </div>
 
     <!-- Second portlet column. -->
     <div class="yui-u">
-      <div tal:content="structure context/@@+portlet-membership" />
       <div tal:content="structure context/@@+portlet-related-projects" />
       <metal:subteam-of use-macro="context/@@+person-macros/subteam-of" />
     </div>
