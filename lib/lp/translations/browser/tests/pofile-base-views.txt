@@ -48,7 +48,7 @@ The view also know about the contributers to the translations in this POFile
 but currently there have not been any contributions yet.
 
     >>> print view.contributors
-    []
+    ()
 
 So let's make a contribution.
 

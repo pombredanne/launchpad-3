@@ -69,12 +69,19 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
             self.pofile, self.changed,
             date_updated=self.now())
 
+        # Update statistics so that shown_count returns correct values.
+        self.pofile.updateStatistics()
+
     def _assertEqualPOTMsgSets(self, expected, messages):
         self.assertEqual(expected, [tm.potmsgset for tm in messages])
 
     def test_show_all_messages(self):
+        # The default is to show all messages.
         view = POFileBaseView(self.pofile, LaunchpadTestRequest())
         view.initialize()
+        self.assertEqual('all', view.DEFAULT_SHOW)
+        self.assertEqual(view.DEFAULT_SHOW, view.show)
+        self.assertEqual(4, view.shown_count)
         self._assertEqualPOTMsgSets(
             [self.untranslated, self.translated,
              self.new_suggestion, self.changed],
@@ -84,6 +91,7 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         form = {'show': 'translated'}
         view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
         view.initialize()
+        self.assertEqual(3, view.shown_count)
         self._assertEqualPOTMsgSets(
             [self.translated, self.new_suggestion, self.changed],
             view.messages)
@@ -92,18 +100,21 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         form = {'show': 'untranslated'}
         view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
         view.initialize()
+        self.assertEqual(1, view.shown_count)
         self._assertEqualPOTMsgSets([self.untranslated], view.messages)
 
     def test_show_new_suggestions(self):
         form = {'show': 'new_suggestions'}
         view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
         view.initialize()
+        self.assertEqual(1, view.shown_count)
         self._assertEqualPOTMsgSets([self.new_suggestion], view.messages)
 
     def test_show_changed_in_launchpad(self):
         form = {'show': 'changed_in_launchpad'}
         view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
         view.initialize()
+        self.assertEqual(1, view.shown_count)
         self._assertEqualPOTMsgSets(
              [self.changed], view.messages)
 
@@ -112,6 +123,7 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         form = {'show': 'foo_bar'}
         view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
         view.initialize()
+        self.assertEqual(view.DEFAULT_SHOW, view.show)
         self._assertEqualPOTMsgSets(
             [self.untranslated, self.translated,
              self.new_suggestion, self.changed],

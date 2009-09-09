@@ -151,16 +151,11 @@ class POFileBaseView(LaunchpadView):
         self._initializeShowOption()
 
         self.batchnav = self._buildBatchNavigator()
-        # These two variables are stored for the sole purpose of being
-        # output in hidden inputs that preserve the current navigation
-        # when submitting forms.
-        self.start = self.batchnav.start
-        self.size = self.batchnav.currentBatch().size
 
 
     @cachedproperty
     def contributors(self):
-        return list(self.context.contributors)
+        return tuple(self.context.contributors)
 
     @property
     def user_can_edit(self):
@@ -180,31 +175,21 @@ class POFileBaseView(LaunchpadView):
         """
 
         if self.user_can_edit:
-            statement = _("You have full access to this translation.")
-        else:
-            if self.user_can_suggest:
-                statement = _("Your suggestions will be held for review by "
-                              "the managers of this translation.")
-            else:
-                # Check for logged in state
-                if self.user is None:
-                    statement = _("You are not logged in.  Please log in to "
-                                  "work on translations.")
-                else:
-                    if not self.has_translationgroup:
-                        statement = _("This translation is not open for "
-                                      "changes.")
-                    else:
-                        if self.is_managed:
-                            statement = _("This template can be translated "
-                                          "only by its managers.")
-                        else:
-                            statement = _("There is nobody to manage "
-                                          "translation into this particular "
-                                          "language.  If you are interested "
-                                          "in working on it, please contact "
-                                          "the translation group.")
-        return statement
+            return _("You have full access to this translation.")
+        if self.user_can_suggest:
+            return _("Your suggestions will be held for review by "
+                     "the managers of this translation.")
+        # Check for logged in state
+        if self.user is None:
+            return _("You are not logged in.  Please log in to "
+                     "work on translations.")
+        if not self.has_translationgroup:
+            return _("This translation is not open for changes.")
+        if self.is_managed:
+            return _("This template can be translated only by its managers.")
+        return _("There is nobody to manage translation into this particular "
+                 "language.  If you are interested in working on it, please "
+                 "contact the translation group.")
 
     @property
     def translation_groups_statement(self):
@@ -225,6 +210,8 @@ class POFileBaseView(LaunchpadView):
                 else:
                     groups.append(_(u"%s assigned by %s") % (
                         translator.translator.displayname, group.title))
+            # There are at most two translation groups, so just using 'and'
+            # is fine here.
             statement = (_(u"This translation is managed by ") +
                          _(u" and ").join(groups))+"."
         else:
