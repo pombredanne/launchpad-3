@@ -1150,7 +1150,7 @@ class TestBranchMergeProposalJob(TestCaseWithFactory):
 
 class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
         """MergeProposalCreatedJob provides the expected interfaces."""
@@ -1178,12 +1178,29 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
             source_branch=source, target_branch=target,
             registrant=source.owner)
         job = MergeProposalCreatedJob.create(bmp)
+        transaction.commit()
+        self.layer.switchDbUser(config.mpcreationjobs.dbuser)
         diff = job.run()
         self.assertIsNot(None, diff)
+        self.assertEqual(diff, bmp.review_diff)
+        self.assertIsNot(None, bmp.preview_diff)
         transaction.commit()
+        self.checkDiff(diff)
+        self.checkDiff(bmp.preview_diff)
+
+    def checkDiff(self, diff):
         self.assertNotIn('+bar', diff.diff.text)
         self.assertIn('+qux', diff.diff.text)
-        self.assertEqual(diff, bmp.review_diff)
+
+    def createProposalWithEmptyBranches(self, review_diff=None):
+        target_branch, tree = self.create_branch_and_tree()
+        tree.commit('test')
+        source_branch = self.factory.makeProductBranch(
+            product=target_branch.product)
+        self.createBzrBranch(source_branch, tree.branch)
+        return self.factory.makeBranchMergeProposal(
+            source_branch=source_branch, target_branch=target_branch,
+            review_diff=review_diff)
 
     def test_run_skips_diff_if_present(self):
         """The review diff is only generated if not already assigned."""
@@ -1191,22 +1208,22 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         # bzr branch if there's already a diff.  So here, we create a
         # database branch that has no bzr branch.
         self.useBzrBranches()
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.createProposalWithEmptyBranches()
         job = MergeProposalCreatedJob.create(bmp)
-        self.assertRaises(bzr_errors.NotBranchError, job.run)
         diff_bytes = ''.join(unified_diff('', 'foo'))
         review_diff = StaticDiff.acquireFromText('rev1', 'rev2', diff_bytes)
         transaction.commit()
         removeSecurityProxy(bmp).review_diff = review_diff
-        # If job.run were trying to use the bzr branch, it would error.
         job.run()
+        self.assertEqual(review_diff, bmp.review_diff)
 
     def test_run_sends_email(self):
         """MergeProposalCreationJob.run sends an email."""
+        self.useBzrBranches()
         diff_bytes = ''.join(unified_diff('', 'foo'))
         review_diff = StaticDiff.acquireFromText('rev1', 'rev2', diff_bytes)
         transaction.commit()
-        bmp = self.factory.makeBranchMergeProposal(review_diff=review_diff)
+        bmp = self.createProposalWithEmptyBranches(review_diff)
         job = MergeProposalCreatedJob.create(bmp)
         self.assertEqual([], pop_notifications())
         job.run()

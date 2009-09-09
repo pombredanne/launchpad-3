@@ -206,6 +206,9 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
         if self.branch_merge_proposal.review_diff is None:
             self.branch_merge_proposal.review_diff = self._makeReviewDiff()
             transaction.commit()
+        preview_diff = PreviewDiff.fromBranchMergeProposal(
+            self.branch_merge_proposal)
+        self.branch_merge_proposal.preview_diff = preview_diff
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
