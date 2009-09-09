@@ -27,21 +27,18 @@
     </tal:inactive>
   </div>
 
-<div class="yui-g">
-  <div class="first yui-u"></div>
-
   <tal:me condition="view/person_includes_me">
     <tal:reviewer condition="view/person_is_reviewer">
-      <div id="translations-to-review-section" class="yui-u">
-          <span style="float:right">
-            <a href="http://help.launchpad.net/Translations/Reviewing">
-              Why is this important?
-            </a>
-          </span>
+      <div id="translations-to-review-section" class="portlet" style="max-width:800px">
         <h2>Translations you need to review</h2>
+        <span style="display:block; text-align:right">
+          <a href="http://help.launchpad.net/Translations/Reviewing">
+            Why is this important?
+          </a>
+        </span>
         <metal:translations-to-review
           tal:replace="structure context/@@+translations-to-review-table" />
-        <span style="float:right"
+        <span style="display:block; text-align:right"
               tal:condition="python: view.num_projects_and_packages_to_review > 1">
           <a href="+translations-to-review" id="translations-to-review-link">
             See all
@@ -56,7 +53,7 @@
 
   <tal:me condition="view/person_includes_me">
     <tal:translator condition="view/person_is_translator">
-      <div id="translations-to-complete-section" class="yui-u">
+      <div id="translations-to-complete-section" class="portlet" style="max-width:800px">
         <h2>Translations you can help complete</h2>
         <metal:translations-to-complete
           tal:replace="structure context/@@+translations-to-complete-table" />
@@ -66,7 +63,7 @@
 
   <tal:block tal:define="activities view/recent_activity">
     <tal:block condition="activities">
-      <div class="yui-u">
+      <div class="portlet" style="max-width:800px">
         <h2 id="translation-activities-header">
           <tal:name replace="context/displayname">Foo Bar</tal:name>'s activity
         </h2>
@@ -81,15 +78,15 @@
                  tal:attributes="href activity/url">foo bar in package bla</a>
             </td>
           </tr>
-          <tr><td colspan="2" style="text-align:right">
-            <a href="+activity">See all</a>
-          </td></tr>
         </table>
+        <span style="display:block; text-align:right">
+          <a href="+activity">See all</a>
+        </span>
       </div>
     </tal:block>
   </tal:block>
 
-  <div tal:condition="view/translation_groups" class="yui-u">
+  <div tal:condition="view/translation_groups" class="portlet" style="max-width:800px">
     <h2>Translation Groups</h2>
     <span tal:replace="context/displayname">Mark Shuttleworth</span> is
     a member of the following translation groups:
@@ -123,7 +120,6 @@
       </tbody>
     </table>
   </div>
-</div>
 </div>
 </body>
 </html>

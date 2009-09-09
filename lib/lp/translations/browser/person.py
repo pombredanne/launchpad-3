@@ -457,7 +457,7 @@ class TranslationActivityView(LaunchpadView):
     _pofiletranslator_cache = None
 
     @property
-    def label(self):
+    def page_title(self):
         return "Translation activity by %s" % self.context.displayname
 
     @cachedproperty
