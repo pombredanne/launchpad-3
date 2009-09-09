@@ -5,7 +5,7 @@ The PPA packages page
 The PPA packages page is accessible from the PPA page.
 
     >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> anon_browser.getLink('View detailed package list').click()
+    >>> anon_browser.getLink('View package details').click()
     >>> print anon_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+packages
 
@@ -312,7 +312,7 @@ in the list.
 Access ubuntu-team's PPA page:
 
     >>> foo_browser.open(ubuntu_ppa_url)
-    >>> foo_browser.getLink('View detailed package list').click()
+    >>> foo_browser.getLink('View package details').click()
 
 The package row data shows the uploader:
 
