@@ -16,7 +16,7 @@
     </metal:side>
 
     <div metal:fill-slot="main">
-      <h1 tal:content="view/page_title" />
+      <h1>Package bugs</h1>
 
       <p>
         <tal:person content="context/fmt:displayname">Sample Person</tal:person>

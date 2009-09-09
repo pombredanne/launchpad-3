@@ -1852,8 +1852,6 @@ class PersonSpecFeedbackView(HasSpecificationsView):
 class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug subscriber."""
 
-    page_title = 'Package bugs'
-
     columns_to_show = ["id", "summary", "importance", "status"]
 
     @property
