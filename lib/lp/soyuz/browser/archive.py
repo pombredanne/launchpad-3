@@ -782,7 +782,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             }
 
         now = datetime.now(tz=pytz.UTC)
-        for index, result_tuple in enumerate(result_tuples):
+        for result_tuple in result_tuples:
             source_pub = result_tuple[0]
             current_status = source_pub.getStatusSummaryForBuilds()['status']
             duration = now - source_pub.datepublished
