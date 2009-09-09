@@ -362,7 +362,7 @@ class ArchiveMenuMixin:
         return Link('+builds?build_state=building', text, icon='info')
 
     def packages(self):
-        text = 'View detailed package list'
+        text = 'View package details'
         return Link('+packages', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -411,7 +411,8 @@ class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
     """Archive index navigation menu."""
     usedfor = IArchiveIndexActionsMenu
     facet = 'overview'
-    links = ['admin', 'edit', 'edit_dependencies', 'manage_subscribers']
+    links = ['admin', 'edit', 'edit_dependencies', 'manage_subscribers',
+             'packages']
 
 
 class IArchivePackagesActionMenu(Interface):

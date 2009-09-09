@@ -135,9 +135,6 @@
       </div><!-- yui-g -->
 
       <div class="portlet" tal:condition="archive_active">
-        <span class="see-all"><a
-              tal:replace="structure context/menu:overview/packages/fmt:link" />
-        </span>
         <h2>Overview of all packages published in
           <form class="package-search-filter" action="" method="GET"
                 style="display:inline;font-size:90%">
