@@ -48,5 +48,5 @@ Linking the packages makes this possible.
     ...     name="field.target_branch.target_branch").value = b2_name
     >>> browser.getControl('Propose Merge').click()
 
-    >>> print browser.title
-    Proposal to merge lp://dev/...
+    >>> print browser.title.encode('utf-8')
+    “generic-string1” package : 13.0 : generic-string3
