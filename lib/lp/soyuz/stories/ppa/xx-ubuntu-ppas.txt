@@ -270,18 +270,12 @@ Let's see his sources.list entries:
 
 and the select control that lets you update them:
 
-    >>> print find_tag_by_id(anon_browser.contents, 'series-widget-div')
-    <div id="series-widget-div">
-    ...
-        <select id="field.series" name="field.series" size="1"
-                onchange="updateSeries(this);">
-            <option selected="selected" value="YOUR_UBUNTU_VERSION_HERE">Choose
-                your Ubuntu version</option>
-            <option value="breezy-autotest">Breezy
-                Badger Autotest (6.6.6)</option>
-            <option value="warty">Warty (4.10)</option>
-        </select>
-    ...
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'series-widget-div'))
+    Display sources.list entries for:
+    Choose your Ubuntu version
+    Breezy Badger Autotest (6.6.6)
+    Warty (4.10)
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -327,6 +321,41 @@ latest published sources with their states.
     iceweasel ... ago
     Successfully built
 
+A statistics portlet is included on the index page.
+
+    >>> stats = find_portlet(
+    ...     anon_browser.contents, "PPA statistics")
+    >>> print extract_text(stats)
+    PPA statistics
+    Activity
+    1 update added during the past month.
+
+If the ppa has some current activity (building or waiting builds) then this
+is also included in the statistics portlet.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
+    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+    >>> builds = getUtility(IBuildSet).getBuildsForArchive(cprov_ppa)
+    >>> builds[0].buildstate = BuildStatus.BUILDING
+    >>> logout()
+
+    >>> anon_browser.reload()
+    >>> stats = find_portlet(
+    ...     anon_browser.contents, "PPA statistics")
+    >>> print extract_text(stats)
+    PPA statistics
+    Activity
+    1 update added during the past month.
+    Currently 1 package building and 0 packages waiting to build.
+
+Current build activity is linked to the builds page with the relevant
+filter.
+
+    >>> print anon_browser.getLink('1 package building').url
+    http://launchpad.dev/~cprov/+archive/ppa/+builds?build_state=building
+
 
 == Filtering an archive ==
 
@@ -371,6 +400,7 @@ link to a repository that doesn't exist yet.
     This PPA does not contain
     any packages yet. Find more information about how to upload
     packages in the PPA help page
+    ...
 
 It also contains a link to the 'PPA help page'.
 

@@ -26,7 +26,7 @@ __all__ = [
     ]
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 from zope.app.form.browser import TextAreaWidget
@@ -353,8 +353,16 @@ class ArchiveMenuMixin:
         text = 'View successful builds'
         return Link('+builds?build_state=built', text, icon='info')
 
+    def builds_pending(self):
+        text = 'View successful builds'
+        return Link('+builds?build_state=pending', text, icon='info')
+
+    def builds_building(self):
+        text = 'View successful builds'
+        return Link('+builds?build_state=building', text, icon='info')
+
     def packages(self):
-        text = 'View detailed package list'
+        text = 'View package details'
         return Link('+packages', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -390,8 +398,9 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'builds', 'builds_successful', 'copy', 'delete',
-              'edit', 'edit_dependencies', 'packages', 'ppa']
+    links = ['admin', 'builds', 'builds_building', 'builds_pending',
+             'builds_successful', 'copy', 'delete', 'edit',
+             'edit_dependencies', 'packages', 'ppa']
 
 
 class IArchiveIndexActionsMenu(Interface):
@@ -402,7 +411,8 @@ class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
     """Archive index navigation menu."""
     usedfor = IArchiveIndexActionsMenu
     facet = 'overview'
-    links = ['admin', 'edit', 'edit_dependencies', 'manage_subscribers']
+    links = ['admin', 'edit', 'edit_dependencies', 'manage_subscribers',
+             'packages']
 
 
 class IArchivePackagesActionMenu(Interface):
@@ -795,6 +805,45 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 })
 
         return latest_updates_list
+
+    def num_updates_over_last_days(self, num_days=30):
+        """Return the number of updates over the past days."""
+        now = datetime.now(tz=pytz.UTC)
+        created_since = now - timedelta(num_days)
+
+        sources = self.context.getPublishedSources(
+            created_since_date=created_since)
+
+        return sources.count()
+
+    @property
+    def num_pkgs_building(self):
+        """Return the number of building/waiting to build packages."""
+
+        building = getUtility(IBuildSet).getBuildsForArchive(
+            self.context, status=BuildStatus.BUILDING)
+        needs_build = getUtility(IBuildSet).getBuildsForArchive(
+            self.context, status=BuildStatus.NEEDSBUILD)
+
+        # Create a set of all source package releases that have builds
+        # waiting to build, as well as a set of those with building builds.
+        needs_build_set = set(
+            build.sourcepackagerelease for build in needs_build)
+
+        building_set = set(
+            build.sourcepackagerelease for build in building)
+
+        # A package is not counted as waiting if it already has at least
+        # one build building.
+        pkgs_building_count = len(building_set)
+        pkgs_waiting_count = len(needs_build_set.difference(building_set))
+
+        # The total is just used for conditionals in the template.
+        return {
+            'building': pkgs_building_count,
+            'waiting': pkgs_waiting_count,
+            'total': pkgs_building_count + pkgs_waiting_count,
+            }
 
 
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
