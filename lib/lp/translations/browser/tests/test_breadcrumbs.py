@@ -11,7 +11,10 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
 
+from lp.translations.interfaces.distroserieslanguage import (
+    IDistroSeriesLanguageSet)
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 class BaseTranslationsBreadcrumbTestCase(BaseBreadcrumbTestCase):
     def setUp(self):
@@ -112,6 +115,27 @@ class TestTranslationGroupsBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
             ["http://translations.launchpad.dev/+groups",
              "http://translations.launchpad.dev/+groups/test-translators"],
             ["Translation groups", "Test translators"])
+
+
+class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+    def setUp(self):
+        super(TestSeriesLanguageBreadcrumbs, self).setUp()
+        self.language = getUtility(ILanguageSet)['sr']
+
+    def test_distroserieslanguage(self):
+        distribution = self.factory.makeDistribution(
+            name='crumb-tester', displayname="Crumb Tester")
+        series = self.factory.makeDistroRelease(
+            name="test", version="1.0", distribution=distribution)
+        serieslanguage = getUtility(IDistroSeriesLanguageSet).getDummy(
+            series, self.language)
+        self._testContextBreadcrumbs(
+            [distribution, series, serieslanguage],
+            ["http://launchpad.dev/crumb-tester",
+             "http://launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test/+lang/sr"],
+            ["Crumb Tester", "1.0", "Translations", "Serbian (sr)"])
 
 
 def test_suite():
