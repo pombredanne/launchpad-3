@@ -10,20 +10,18 @@ from zope.component import getUtility
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
-from lp.testing import ANONYMOUS, login
 
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 
-class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
-
+class BaseTranslationsBreadcrumbTestCase(BaseBreadcrumbTestCase):
     def setUp(self):
-        super(TestTranslationsVHostBreadcrumb, self).setUp()
+        super(BaseTranslationsBreadcrumbTestCase, self).setUp()
         self.traversed_objects = [self.root]
-        login(ANONYMOUS)
 
-    def _testContextBreadcrumbs(self, traversal_list, links, texts):
+    def _testContextBreadcrumbs(self, traversal_list, links, texts, url=None):
         self.traversed_objects.extend(traversal_list)
-        context = traversal_list[-1]
-        url = canonical_url(context, rootsite='translations')
+        if url is None:
+            url = canonical_url(traversal_list[-1], rootsite='translations')
 
         self.assertEquals(
             links,
@@ -31,6 +29,9 @@ class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
         self.assertEquals(
             texts,
             self._getBreadcrumbsTexts(url, self.traversed_objects))
+
+
+class TestTranslationsVHostBreadcrumb(BaseTranslationsBreadcrumbTestCase):
 
     def test_product(self):
         product = self.factory.makeProduct(
@@ -90,6 +91,27 @@ class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
             ['http://launchpad.dev/~crumb-tester',
              'http://translations.launchpad.dev/~crumb-tester'],
             ["Crumb Tester", "Translations"])
+
+
+class TestTranslationGroupsBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+
+    def test_translationgroupset(self):
+        group_set = getUtility(ITranslationGroupSet)
+        url = canonical_url(group_set, rootsite='translations')
+        # Translation group listing is top-level, so no breadcrumbs show up.
+        self._testContextBreadcrumbs(
+            [], [], [],
+            url=url)
+
+    def test_translationgroup(self):
+        group_set = getUtility(ITranslationGroupSet)
+        group = self.factory.makeTranslationGroup(
+            name='test-translators', title='Test translators')
+        self._testContextBreadcrumbs(
+            [group_set, group],
+            ["http://translations.launchpad.dev/+groups",
+             "http://translations.launchpad.dev/+groups/test-translators"],
+            ["Translation groups", "Test translators"])
 
 
 def test_suite():
