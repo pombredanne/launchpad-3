@@ -21,11 +21,9 @@
       <h1 tal:content="context/displayname">project 1.x series</h1>
     </tal:heading>
 
-    <div metal:fill-slot="main"
-      tal:define="distro context/distribution;
-                  overview_menu context/menu:overview;
-                  binarycount context/binarycount">
-      <div class="top-portlet">
+    <div metal:fill-slot="main">
+      <div class="top-portlet"
+        tal:define="binarycount context/binarycount">
         <div class="summary"
           tal:content="structure context/summary/fmt:text-to-html" />
 
@@ -63,7 +61,7 @@
 
         <ul class="horizontal" style="margin-bottom: 1em;">
           <li>
-            <a tal:replace="structure overview_menu/create_milestone/fmt:icon-link" />
+            <a tal:replace="structure context/menu:overview/create_milestone/fmt:icon-link" />
           </li>
         </ul>
       </div>

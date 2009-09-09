@@ -75,10 +75,6 @@ For distroseries we publish a subset of its attributes.
 Creating a milestone on the distroseries
 ----------------------------------------
 
-The newMilstone method is called by sending "ws.op=newMilestone" as a
-request variable along with the parameters. The webservice.named_post()
-method simplifies this for us.
-
     >>> response = webservice.named_post(
     ...     current_series['self_link'], 'newMilestone', {},
     ...     name='alpha1', code_name='wombat', date_targeted=u'2009-09-06',

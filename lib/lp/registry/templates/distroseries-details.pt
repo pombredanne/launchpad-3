@@ -54,7 +54,8 @@
           tal:attributes="href context/parent_series/fmt:url"
           tal:content="context/parent_series/displayname" />
         <tal:none condition="not: context/parent_series">
-          Is not derived from another series.
+          <tal:name replace="context/displayname"/> is not derived from
+          another series.
         </tal:none>
       </dd>
     </dl>
