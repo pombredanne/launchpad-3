@@ -370,6 +370,7 @@ them, though:
     >>> print table
     None
     >>> content = find_main_content(browser.contents)
-    >>> print extract_text(content)
+    >>> print extract_text(content.h1)
     Upstream bug report for Kubuntu
+    >>> print extract_text(content.find('div', 'top-portlet'))
     Kubuntu has no bugs filed against it.
