@@ -59,7 +59,7 @@ from zope.component import (
     ComponentLookupError, getAdapter, getUtility, getMultiAdapter)
 from zope.event import notify
 from zope import formlib
-from zope.interface import implementer, implements, providedBy
+from zope.interface import implementer, implements, Interface, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
 from zope.schema.vocabulary import (
@@ -88,9 +88,9 @@ from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action, custom_widget, canonical_url, GetitemNavigation,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
-    redirection, stepthrough)
+    action, custom_widget, canonical_url, enabled_with_permission,
+    GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, NavigationMenu, redirection, stepthrough)
 from lazr.uri import URI
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -1888,8 +1888,74 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         return bugtask_listing_item
 
 
+class IBugTaskSearchListingMenu(Interface):
+    """A marker interface for the search listing navigation menu."""
+
+
+class BugTaskSearchListingMenu(NavigationMenu):
+    """The search listing navigation menu."""
+    usedfor = IBugTaskSearchListingMenu
+    facet = 'bugs'
+
+    @property
+    def links(self):
+        bug_target = self.context.context
+        if IDistribution.providedBy(bug_target):
+            return (
+                'bugsupervisor',
+                'securitycontact',
+                'cve',
+                'subscribe',
+                )
+        elif IDistroSeries.providedBy(bug_target):
+            return (
+                'cve',
+                'nominations',
+                'subscribe',
+                )
+        elif IDistributionSourcePackage.providedBy(bug_target):
+            return (
+                'subscribe',
+                )
+        elif IProduct.providedBy(bug_target):
+            return (
+                'bugsupervisor',
+                'securitycontact',
+                'cve',
+                'subscribe'
+                )
+        elif IProductSeries.providedBy(bug_target):
+            return (
+                'nominations',
+                'subscribe',
+                )
+        elif IProject.providedBy(bug_target):
+            return ()
+        else:
+            return ()
+
+    def cve(self):
+        return Link('+cve', 'CVE reports', icon='cve')
+
+    @enabled_with_permission('launchpad.Edit')
+    def bugsupervisor(self):
+        return Link('+bugsupervisor', 'Change bug supervisor', icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        return Link('+securitycontact', 'Change security contact', icon='edit')
+
+    def subscribe(self):
+        return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
+
+    def nominations(self):
+        return Link('+nominations', 'Review nominations', icon='bug')
+
+
 class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
     """View that renders a list of bugs for a given set of search criteria."""
+
+    implements(IBugTaskSearchListingMenu)
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (

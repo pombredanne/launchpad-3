@@ -307,7 +307,7 @@ class BranchMirrorer(object):
         """
         try:
             branch = Branch.open(destination_url)
-        except errors.NotBranchError:
+        except (errors.NotBranchError, errors.IncompatibleRepositories):
             # Make a new branch in the same format as the source branch.
             return self.createDestinationBranch(
                 source_branch, destination_url)
@@ -331,7 +331,8 @@ class BranchMirrorer(object):
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
         except (errors.UnstackableRepositoryFormat,
-                errors.UnstackableBranchFormat):
+                errors.UnstackableBranchFormat,
+                errors.IncompatibleRepositories):
             stacked_on_url = None
         except errors.NotBranchError:
             raise StackedOnBranchNotFound()
