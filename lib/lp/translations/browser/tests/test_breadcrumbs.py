@@ -13,6 +13,8 @@ from canonical.launchpad.webapp.tests.breadcrumbs import (
 
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
+from lp.translations.interfaces.productserieslanguage import (
+    IProductSeriesLanguageSet)
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
@@ -136,6 +138,21 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
              "http://translations.launchpad.dev/crumb-tester/test",
              "http://translations.launchpad.dev/crumb-tester/test/+lang/sr"],
             ["Crumb Tester", "1.0", "Translations", "Serbian (sr)"])
+
+    def test_productserieslanguage(self):
+        product = self.factory.makeProduct(
+            name='crumb-tester', displayname="Crumb Tester")
+        series = self.factory.makeProductSeries(
+            name="test", product=product)
+        serieslanguage = getUtility(IProductSeriesLanguageSet).getDummy(
+            series, self.language)
+        self._testContextBreadcrumbs(
+            [product, series, serieslanguage],
+            ["http://launchpad.dev/crumb-tester",
+             "http://launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test/+lang/sr"],
+            ["Crumb Tester", "Series test", "Translations", "Serbian (sr)"])
 
 
 def test_suite():

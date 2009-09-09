@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0213
+# pylint: disable-msg=E0213, F0401
 
 from lazr.restful.fields import Reference
 
@@ -19,6 +19,7 @@ __all__ = [
     'IProductSeriesLanguage',
     'IProductSeriesLanguageSet',
     ]
+
 
 class IProductSeriesLanguage(IRosettaStats):
     """Per-language statistics for a product series."""
@@ -50,6 +51,12 @@ class IProductSeriesLanguage(IRosettaStats):
         For any `POTemplate` that does not have a translation to the
         required language, a `DummyPOFile` is provided.
         """
+
+    def setCounts(total, imported, changed, new, unreviewed):
+        """Set aggregated message counts for ProductSeriesLanguage."""
+
+    def recalculateCounts(total, imported, changed, new, unreviewed):
+        """Recalculate message counts for this ProductSeriesLanguage."""
 
 
 class IProductSeriesLanguageSet(Interface):
