@@ -118,7 +118,7 @@
    </div> <!-- yui-u -->
 
    <div class="yui-u">
-    <div id="source-builds" class="top-portlet">
+    <div id="source-builds" class="portlet">
       <h2>Builds</h2>
       <tal:series tal:repeat="series_builds view/grouped_builds">
         <p><a tal:attributes="href series_builds/distroseries/fmt:url"

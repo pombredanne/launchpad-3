@@ -60,7 +60,7 @@ source package.
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: 1.0.9a-4ubuntu1 version
+    Main heading: alsa-utils 1.0.9a-4ubuntu1 (source) in Ubuntu
 
 
 == Distribution source package release build ==
