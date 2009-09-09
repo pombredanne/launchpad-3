@@ -3182,6 +3182,17 @@ class PersonCodeOfConductEditView(LaunchpadView):
 
 
 class PersonEditWikiNamesView(LaunchpadView):
+
+    @property
+    def label(self):
+        return smartquote("%s's wiki names" % self.context.displayname)
+
+    page_title = label
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context, view_name="+edit")
+
     def _validateWikiURL(self, url):
         """Validate the URL.
 
@@ -3387,6 +3398,16 @@ class PersonEditSSHKeysView(LaunchpadView):
         else:
             raise UnexpectedFormData("Unexpected action: %s" % action)
 
+    @property
+    def label(self):
+        return "Change your SSH keys"
+
+    page_title = label
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context, view_name="+edit")
+
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
         try:
@@ -3463,6 +3484,16 @@ class PersonGPGView(LaunchpadView):
 
     error_message = None
     info_message = None
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context, view_name="+edit")
+
+    @property
+    def label(self):
+        return "Change your OpenPGP keys"
+
+    page_title = label
 
     def keyserver_url(self):
         assert self.fingerprint
