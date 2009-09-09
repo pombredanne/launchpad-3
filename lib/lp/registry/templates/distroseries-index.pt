@@ -57,7 +57,7 @@
       </div>
 
       <div class="portlet">
-        <h2>Milestones and releases</h2>
+        <h2>Milestones</h2>
 
         <table tal:replace="structure context/@@+table-milestones" />
 
