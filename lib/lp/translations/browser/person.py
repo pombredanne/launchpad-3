@@ -89,6 +89,33 @@ class TranslateLinksAggregator(WorkListLinksAggregator):
         return pofile.untranslatedCount()
 
 
+class ActivityDescriptor:
+    """Description of a past translation activity."""
+
+    date = None
+    title = None
+    url = None
+
+    def __init__(self, person, pofiletranslator):
+        """Describe a past translation activity by `person`.
+
+        :param person: The `Person` whose activity is being described.
+        :param pofiletranslator: A `POFileTranslator` record for
+            `person`.
+        """
+        assert person == pofiletranslator.person, (
+            "This POFileTranslator record is for the wrong person.")
+
+        self.date = pofiletranslator.date_last_touched
+
+        pofile = pofiletranslator.pofile
+
+        self.title = pofile.potemplate.translationtarget.title
+
+        person_name = urllib.urlencode({'person': person.name})
+        self.url = canonical_url(pofile) + "/+filter?%s" % person_name
+
+
 def person_is_reviewer(person):
     """Is `person` a translations reviewer?"""
     groups = ITranslationsPerson(person).translation_groups
@@ -126,6 +153,8 @@ class PersonTranslationView(LaunchpadView):
 
     _pofiletranslator_cache = None
 
+    reviews_to_show = 10
+
     def __init__(self, *args, **kwargs):
         super(PersonTranslationView, self).__init__(*args, **kwargs)
         now = datetime.now(pytz.timezone('UTC'))
@@ -145,6 +174,22 @@ class PersonTranslationView(LaunchpadView):
         return batchnav
 
     @cachedproperty
+    def recent_activity(self):
+        """Recent translation activity by this person."""
+        entries = ITranslationsPerson(self.context).translation_history[:10]
+        return [ActivityDescriptor(self.context, entry) for entry in entries]
+
+    @cachedproperty
+    def latest_activity(self):
+        """Single latest translation activity by this person."""
+        translations_person = ITranslationsPerson(self.context)
+        latest = list(translations_person.translation_history[:1])
+        if len(latest) == 0:
+            return None
+        else:
+            return ActivityDescriptor(self.context, latest[0])
+
+    @cachedproperty
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         translations_person = ITranslationsPerson(self.context)
@@ -155,11 +200,6 @@ class PersonTranslationView(LaunchpadView):
         """Return translators a person is a member of."""
         translations_person = ITranslationsPerson(self.context)
         return list(translations_person.translators)
-
-    @cachedproperty
-    def person_filter_querystring(self):
-        """Return person's name appropriate for including in links."""
-        return urllib.urlencode({'person': self.context.name})
 
     @property
     def person_is_reviewer(self):
