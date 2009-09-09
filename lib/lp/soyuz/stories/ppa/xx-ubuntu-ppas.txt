@@ -350,6 +350,12 @@ is also included in the statistics portlet.
     1 update added during the past month.
     Currently 1 package building and 0 packages waiting to build.
 
+Current build activity is linked to the builds page with the relevant
+filter.
+
+    >>> print anon_browser.getLink('1 package building').url
+    http://launchpad.dev/~cprov/+archive/ppa/+builds?build_state=building
+
 
 == Filtering an archive ==
 

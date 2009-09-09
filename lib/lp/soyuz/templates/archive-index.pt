@@ -116,15 +116,20 @@
                                 condition="python:num_updates!=1"/>
               added during the past month.</dd>
             <dd tal:condition="pkg_build_counts">
-              Currently <span tal:replace="pkg_build_counts/building">2</span>
+              Currently
+              <a tal:attributes="href context/menu:overview/builds_building/fmt:url"
+                 tal:omit-tag="not:pkg_build_counts/building">
+              <span tal:replace="pkg_build_counts/building">2</span>
               package<tal:plural content="string:s"
                                  condition="python:pkg_build_counts['building']!=1"
-                       /> building and
+                       /> building</a> and
+              <a tal:attributes="href context/menu:overview/builds_pending/fmt:url"
+                 tal:omit-tag="not:pkg_build_counts/waiting">
               <span tal:replace="pkg_build_counts/waiting">2</span>
               package<tal:plural content="string:s"
                                  condition="python:pkg_build_counts['waiting']!=1"
                        />
-              waiting to build.</dd>
+              waiting to build</a>.</dd>
           </dl>
         </div></div>
       </div><!-- yui-g -->
