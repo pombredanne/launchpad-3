@@ -247,7 +247,6 @@ Let's start by adding some extra packages to Celso's archive:
 
     >>> login(ANONYMOUS)
     >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
-    >>> publishToPPA("cprov")
     >>> logout()
     >>> transaction.commit()
     >>> flush_database_updates()
@@ -276,7 +275,6 @@ and the select control that lets you update them:
     Display sources.list entries for:
     Choose your Ubuntu version
     Breezy Badger Autotest (6.6.6)
-    Hoary (5.04)
     Warty (4.10)
 
 The sample data has two packages belonging to Celso. Two table rows
@@ -307,7 +305,6 @@ The source packages list is presented publicly.
     cdrkit              1.0             no signer (2007-07-09)
     commercialpackage   1.0-1           no signer
     iceweasel           1.0             no signer (2007-07-09)
-    mozilla-firefox     0.9             no signer
     pmount              0.1-1           no signer (2007-07-09)
 
 A Latest updates portlet is included on the index page indicating the
@@ -331,7 +328,27 @@ A statistics portlet is included on the index page.
     >>> print extract_text(stats)
     PPA statistics
     Activity
-    2 updates were added during the past month.
+    1 updates were added during the past month.
+
+If the ppa has some current activity (building or waiting builds) then this
+is also included in the statistics portlet.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
+    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+    >>> builds = getUtility(IBuildSet).getBuildsForArchive(cprov_ppa)
+    >>> builds[0].buildstate = BuildStatus.BUILDING
+    >>> logout()
+
+    >>> anon_browser.reload()
+    >>> stats = find_portlet(
+    ...     anon_browser.contents, "PPA statistics")
+    >>> print extract_text(stats)
+    PPA statistics
+    Activity
+    1 updates were added during the past month.
+    Currently 1 packages are building and 0 packages are waiting to build.
 
 
 == Filtering an archive ==
@@ -348,7 +365,6 @@ explicitly set the 'Any Series' filter and get the same result:
     cdrkit              1.0             no signer (2007-07-09)
     commercialpackage   1.0-1           no signer
     iceweasel           1.0             no signer (2007-07-09)
-    mozilla-firefox     0.9             no signer
     pmount              0.1-1           no signer (2007-07-09)
 
 If the packages are filtered by a particular series, then the result
@@ -571,7 +587,7 @@ the 'Most active' section.
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
     PPAs with the highest number of uploads in the last 7 days.
-    PPA for Celso Providelo       5 uploads
+    PPA for Celso Providelo       4 uploads
     PPA for Mark Shuttleworth     2 uploads
     PPA for No Privileges Person  1 uploads
 

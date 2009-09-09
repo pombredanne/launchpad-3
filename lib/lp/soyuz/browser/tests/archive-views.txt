@@ -374,21 +374,21 @@ Let's set some builds appropriately to see the results.
     >>> builds[2].buildstate = BuildStatus.BUILDING
 
     >>> view.num_pkgs_building
-    {'building': 2, 'waiting_to_build': 1}
+    {'building': 2, 'waiting': 1}
 
 Adding a second waiting build for the cdrkit does not add to the number
 of packages that are currently building.
 
     >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
     >>> view.num_pkgs_building
-    {'building': 2, 'waiting_to_build': 1}
+    {'building': 2, 'waiting': 1}
 
 But as soon as one of cdrkit's builds starts, the package is considered
 to be building:
 
     >>> builds[4].buildstate = BuildStatus.BUILDING
     >>> view.num_pkgs_building
-    {'building': 3, 'waiting_to_build': 0}
+    {'building': 3, 'waiting': 0}
 
 
 == ArchivePackageView ==

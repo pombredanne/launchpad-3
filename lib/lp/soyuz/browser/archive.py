@@ -835,7 +835,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
         return {
             'building': pkgs_building_count,
-            'waiting_to_build': pkgs_waiting_count
+            'waiting': pkgs_waiting_count
             }
 
 
