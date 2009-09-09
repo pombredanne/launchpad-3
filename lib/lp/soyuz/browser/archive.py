@@ -26,7 +26,7 @@ __all__ = [
     ]
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 from zope.app.form.browser import TextAreaWidget
@@ -795,6 +795,16 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 })
 
         return latest_updates_list
+
+    def num_updates_over_last_days(self, num_days=30):
+        """Return the number of updates over the past days."""
+        now = datetime.now(tz=pytz.UTC)
+        created_since = now - timedelta(num_days)
+
+        sources = self.context.getPublishedSources(
+            created_since_date=created_since)
+
+        return sources.count()
 
 
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):

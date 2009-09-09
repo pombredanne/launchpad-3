@@ -316,6 +316,35 @@ is from most recent.
     cdrkit - Failed to build
     pmount - Successfully built
 
+The ArchiveView also includes a helper method to return the number of
+updates over the past month (by default).
+
+    >>> view.num_updates_over_last_days()
+    0
+
+If we update the datecreated for some of the publishing records, those
+created within the last 30 days will be included in the count, but
+others will not.
+
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> thirtyone_days_ago = datetime.now(tz=pytz.UTC) - timedelta(31)
+    >>> login('foo.bar@canonical.com')
+    >>> view.filtered_sources[0].secure_record.datecreated = UTC_NOW
+    >>> view.filtered_sources[1].secure_record.datecreated = UTC_NOW
+    >>> view.filtered_sources[2].secure_record.datecreated = thirtyone_days_ago
+    >>> import transaction # REMOVE again.
+    >>> transaction.commit()
+    >>> login(ANONYMOUS)
+
+    >>> view.num_updates_over_last_days()
+    2
+
+We can optionally pass the number of days.
+
+    >>> view.num_updates_over_last_days(33)
+    3
+
 
 == ArchivePackageView ==
 

@@ -240,13 +240,14 @@ In the three sample data PPAs, only one matches the search string "Celso".
 
 == Owner's PPA pages ==
 
-Let's start by adding an extra package to Celso's archive:
+Let's start by adding some extra packages to Celso's archive:
 
     >>> import transaction
     >>> from lp.soyuz.tests.ppa import publishToPPA
 
     >>> login(ANONYMOUS)
     >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
+    >>> publishToPPA("cprov")
     >>> logout()
     >>> transaction.commit()
     >>> flush_database_updates()
@@ -270,18 +271,13 @@ Let's see his sources.list entries:
 
 and the select control that lets you update them:
 
-    >>> print find_tag_by_id(anon_browser.contents, 'series-widget-div')
-    <div id="series-widget-div">
-    ...
-        <select id="field.series" name="field.series" size="1"
-                onchange="updateSeries(this);">
-            <option selected="selected" value="YOUR_UBUNTU_VERSION_HERE">Choose
-                your Ubuntu version</option>
-            <option value="breezy-autotest">Breezy
-                Badger Autotest (6.6.6)</option>
-            <option value="warty">Warty (4.10)</option>
-        </select>
-    ...
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'series-widget-div'))
+    Display sources.list entries for:
+    Choose your Ubuntu version
+    Breezy Badger Autotest (6.6.6)
+    Hoary (5.04)
+    Warty (4.10)
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -311,6 +307,7 @@ The source packages list is presented publicly.
     cdrkit              1.0             no signer (2007-07-09)
     commercialpackage   1.0-1           no signer
     iceweasel           1.0             no signer (2007-07-09)
+    mozilla-firefox     0.9             no signer
     pmount              0.1-1           no signer (2007-07-09)
 
 A Latest updates portlet is included on the index page indicating the
@@ -327,6 +324,15 @@ latest published sources with their states.
     iceweasel ... ago
     Successfully built
 
+A statistics portlet is included on the index page.
+
+    >>> stats = find_portlet(
+    ...     anon_browser.contents, "PPA statistics")
+    >>> print extract_text(stats)
+    PPA statistics
+    Activity
+    2 updates were added during the past month.
+
 
 == Filtering an archive ==
 
@@ -342,6 +348,7 @@ explicitly set the 'Any Series' filter and get the same result:
     cdrkit              1.0             no signer (2007-07-09)
     commercialpackage   1.0-1           no signer
     iceweasel           1.0             no signer (2007-07-09)
+    mozilla-firefox     0.9             no signer
     pmount              0.1-1           no signer (2007-07-09)
 
 If the packages are filtered by a particular series, then the result
@@ -371,6 +378,7 @@ link to a repository that doesn't exist yet.
     This PPA does not contain
     any packages yet. Find more information about how to upload
     packages in the PPA help page
+    ...
 
 It also contains a link to the 'PPA help page'.
 
@@ -563,7 +571,7 @@ the 'Most active' section.
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
     PPAs with the highest number of uploads in the last 7 days.
-    PPA for Celso Providelo       4 uploads
+    PPA for Celso Providelo       5 uploads
     PPA for Mark Shuttleworth     2 uploads
     PPA for No Privileges Person  1 uploads
 

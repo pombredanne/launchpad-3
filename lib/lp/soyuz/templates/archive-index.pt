@@ -108,6 +108,11 @@
         </div></div>
         <div class="yui-u"><div class="portlet">
           <h2><tal:archive_label replace="archive_label" /> statistics</h2>
+          <dl>
+            <dt>Activity</dt>
+            <dd><span tal:replace="view/num_updates_over_last_days">10</span>
+              updates were added during the past month.</dd>
+          </dl>
         </div></div>
       </div><!-- yui-g -->
 
