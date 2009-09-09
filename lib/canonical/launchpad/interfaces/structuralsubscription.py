@@ -169,7 +169,7 @@ class IStructuralSubscriptionTarget(Interface):
         This method is used to create a new `IStructuralSubscription`
         for the target, with no levels set.
 
-        :subscriber: The IPerson who will be subscribed. If omited,
+        :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
         :return: The new subscription.
@@ -179,8 +179,8 @@ class IStructuralSubscriptionTarget(Interface):
         subscriber=Reference(
             schema=IPerson,
             title=_(
-                'Person to subscribe. If omitted, the requesting user will be '
-                'subscribed.'),
+                'Person to subscribe. If omitted, the requesting user will be'
+                ' subscribed.'),
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
@@ -191,7 +191,7 @@ class IStructuralSubscriptionTarget(Interface):
         for the target with the bug notification level set to
         COMMENTS, the only level currently in use.
 
-        :subscriber: The IPerson who will be subscribed. If omited,
+        :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
         :return: The new bug subscription.
