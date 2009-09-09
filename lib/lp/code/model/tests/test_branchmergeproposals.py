@@ -70,7 +70,7 @@ class TestBranchMergeProposalInterface(TestCaseWithFactory):
 
 
 class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
-    """Ensure that BranchMergeProposal implements its interface."""
+    """Ensure that BranchMergeProposal implements privacy."""
 
     layer = DatabaseFunctionalLayer
 
