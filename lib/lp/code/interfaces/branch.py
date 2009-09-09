@@ -28,7 +28,7 @@ __all__ = [
     'IBranchBatchNavigator',
     'IBranchCloud',
     'IBranchDelta',
-    'IBranchBatchNavigator',
+    'IBranchListingQueryOptimiser',
     'IBranchNavigationMenu',
     'IBranchSet',
     'NoSuchBranch',
@@ -1132,6 +1132,24 @@ class IBranchSet(Interface):
     @collection_default_content()
     def getBranches(limit=50):
         """Return a collection of branches."""
+
+
+class IBranchListingQueryOptimiser(Interface):
+    """Interface for a helper utility to do efficient queries for branches.
+
+    Branch listings show several pieces of information and need to do batch
+    queries to the database to avoid many small queries.
+
+    Instead of having branch related queries scattered over other utility
+    objects, this interface and utility object brings them together.
+    """
+
+    def getProductSeriesForBranches(branch_ids):
+        """Return the ProductSeries associated with a branch in branches.
+
+        :param store: the `Store` to use.
+        :param branch_ids: a list of branch ids.
+        """
 
 
 class IBranchDelta(Interface):
