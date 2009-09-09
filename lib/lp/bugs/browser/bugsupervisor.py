@@ -24,7 +24,7 @@ class BugSupervisorEditView(LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Edit bug supervisor for bug #%d' % self.context.id
+        return 'Edit bug supervisor for %s' % self.context.displayname
 
     @property
     def page_title(self):

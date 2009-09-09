@@ -219,7 +219,7 @@ And check out the report:
     >>> admin_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> admin_browser.getLink('change').click()
     >>> admin_browser.title
-    'Edit bug supervisor for bug #4'
+    'Edit bug supervisor for Mozilla Firefox'
 
 If you're not allowed to edit the product, no love for you, though:
 
