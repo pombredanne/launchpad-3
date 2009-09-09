@@ -3156,3 +3156,28 @@ class PageMacroDispatcher:
             return self.base
         else:
             return self.master
+
+
+class TranslationGroupFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `ITranslationGroup` objects to a formatted string."""
+
+    traversable_names = {
+        'link': 'link',
+        'url': 'url', 
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(TranslationGroupFormatterAPI, self).url(
+            view_name, rootsite)
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        group = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(group.title))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title

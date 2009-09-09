@@ -404,6 +404,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     custom_widget('back_to', TextWidget, visible=False)
 
     @property
+    def page_title(self):
+        return "Translations licensing by %s" % self.context.displayname
+
+    @property
     def initial_values(self):
         """Set the default value for the relicensing radio buttons."""
         translations_person = ITranslationsPerson(self.context)
@@ -423,6 +427,11 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         """Return an URL for this view."""
         return canonical_url(self.context, view_name='+licensing')
 
+    @property
+    def cancel_url(self):
+        """Escape to the person's main Translations page."""
+        return canonical_url(self.context)
+
     def getSafeRedirectURL(self, url):
         """Successful form submission should send to this URL."""
         if url and url.startswith(self.request.getApplicationURL()):
@@ -434,9 +443,9 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     def submit_action(self, action, data):
         """Store person's decision about translations relicensing.
 
-        Decision is stored through
+        The user's decision is stored through
         `ITranslationsPerson.translations_relicensing_agreement`
-        which uses TranslationRelicensingAgreement table.
+        which is backed by the TranslationRelicensingAgreement table.
         """
         translations_person = ITranslationsPerson(self.context)
         allow_relicensing = data['allow_relicensing']
@@ -449,8 +458,6 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
             translations_person.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
-                "Your translations will be removed once we complete the "
-                "switch to the BSD license. "
                 "Thanks for trying out Launchpad Translations."))
         else:
             raise AssertionError(

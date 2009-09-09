@@ -9,8 +9,9 @@
 
 <body>
 
+<h1>Translations related to <tal:name content="context/displayname" /></h1>
+
 <div metal:fill-slot="main">
-  <h1>Translations related to <tal:name content="context/displayname" /></h1>
 
   <div class="top-portlet">
     <tal:active tal:condition="view/latest_activity">
@@ -90,32 +91,36 @@
     <span tal:replace="context/displayname">Mark Shuttleworth</span> is
     a member of the following translation groups:
 
-      <table class="listing" id="translation-group-memberships">
-        <thead>
-          <tr>
-            <th>Translation group</th>
-            <th>Language</th>
-            <th>Translation guidelines</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="translator view/translators">
-            <td><a tal:attributes="href translator/translationgroup/fmt:url"
-           tal:content="translator/translationgroup/title"></a></td>
-           <td tal:content="translator/language/englishname">Esperanto</td>
-           <td><a tal:condition="translator/style_guide_url"
-                  tal:content="translator/style_guide_url"
-                  tal:attributes="href translator/style_guide_url"
-                >Documentation URL</a>
-           <a tal:attributes="href string:${translator/translationgroup/fmt:url}/${translator/language/code}/+edit"
-           ><img src="/@@/edit" /></a></td>
-      </tr>
+    <table class="listing"
+           id="translation-group-memberships"
+           style="max-width:800px">
+      <thead>
+        <tr>
+          <th>Translation group</th>
+          <th>Language</th>
+          <th>Translation guidelines</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="translator view/translators">
+          <td>
+            <a tal:replace="structure translator/translationgroup/fmt:link">
+              Launchpad Translators
+            </a>
+          </td>
+          <td tal:content="translator/language/englishname">Esperanto</td>
+          <td><a tal:condition="translator/style_guide_url"
+                 tal:content="translator/style_guide_url"
+                 tal:attributes="href translator/style_guide_url"
+              >Documentation URL</a>
+            <a class="edit sprite"
+               tal:attributes="href string:${translator/translationgroup/fmt:url}/${translator/language/code}/+edit"
+            ><span class="invisible-link">edit</span></a></td>
+        </tr>
       </tbody>
     </table>
   </div>
 
 </div>
-
-
 </body>
 </html>
