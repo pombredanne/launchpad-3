@@ -1,7 +1,8 @@
-= Distribution series main page =
+Distribution series main page
+=============================
 
-In the main page for a distribution we have a link to help translating this
-distribution series.
+In the main page for a distribution we have a link to help translating
+this distribution series.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
     >>> user_browser.getLink('Help translate').click()
@@ -9,7 +10,44 @@ distribution series.
     Translations of The Hoary Hedgehog Release in Launchpad
 
 
-== Distribution series bug subscriptions ==
+Details portlet
+---------------
+
+The distroseries page contains a details portlet giving more information
+on the series' details.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/warty/+portlet-details")
+    >>> print extract_text(anon_browser.contents)
+    Series information
+    Distribution: Ubuntu
+    Series: Warty
+    Project drivers: Ubuntu Team
+    Release manager: None
+    Status: Current Stable Release
+    Derives from: Warty is not derived from another series.
+    Source packages: 3
+    Binary packages: 4 ...
+
+On series that have no source or binary packages, the portlet will
+change its text slightly to annouce this:
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/debian/sarge/+portlet-details")
+    >>> print extract_text(anon_browser.contents)
+    Series information
+    Distribution: Debian
+    Series: Sarge
+    Project drivers: Jeff Waugh, Mark Shuttleworth
+    Release manager: Jeff Waugh
+    Status: Pre-release Freeze
+    Derives from: Woody
+    Source packages: No sources imported or published.
+    Binary packages: No binaries imported or published. ...
+
+
+Distribution series bug subscriptions
+-------------------------------------
 
 To receive email notifications about bugs pertaining to a distribution
 series, we can create structural bug subscriptions.
@@ -18,5 +56,8 @@ series, we can create structural bug subscriptions.
     >>> admin_browser.getLink('Subscribe to bug mail').click()
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu/warty/+subscribe
+
     >>> print admin_browser.title
     Bug subscriptions for The Warty Warthog Release
+
+

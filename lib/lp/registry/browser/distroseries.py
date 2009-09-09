@@ -320,6 +320,12 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
             self.context.distribution.displayname,
             self.context.version)
 
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return '%s %s in Launchpad' % (
+        self.context.distribution.title, self.context.version)
+
     @cachedproperty
     def cached_packagings(self):
         # +packaging hits this many times, so avoid redoing the query

@@ -13,7 +13,7 @@
   </p>
 
   <tal:buildable condition="architectures">
-    <ul>
+    <ul id="portlet-architectures-list">
       <tal:official repeat="architecture architectures">
         <li tal:condition="architecture/official">
           <a class="sprite architecture"
