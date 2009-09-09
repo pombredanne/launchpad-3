@@ -26,6 +26,9 @@ __all__ = [
     ]
 
 
+from datetime import datetime
+import pytz
+
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -33,6 +36,7 @@ from zope.interface import implements, Interface
 from zope.schema import Choice, List, TextLine
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from storm.zope.interfaces import IResultSet
 
 from sqlobject import SQLObjectNotFound
 
@@ -69,7 +73,8 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.person import IPersonSet, PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, inactive_publishing_status, IPublishingSet)
+    active_publishing_status, inactive_publishing_status, IPublishingSet,
+    PackagePublishingStatus)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
@@ -748,6 +753,48 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             id="edit-description",
             title=self.archive_label + " description",
             value=description)
+
+    @property
+    def latest_updates(self):
+        """Return the last five published sources for this archive."""
+        sources = self.context.getPublishedSources(
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # We adapt the ISQLResultSet into a normal storm IResultSet so we
+        # can re-order and limit the results (orderBy is not included on
+        # the ISQLResultSet interface). Because this query contains
+        # pre-joins, the result of the adaption is a set of tuples.
+        result_tuples = IResultSet(sources)
+        result_tuples = result_tuples.order_by('datepublished DESC')[:5]
+
+        # We want to return a list of dicts for easy template rendering.
+        latest_updates_list = []
+
+        # The status.title is not presentable and the description for
+        # each status is too long for use here, so define a dict of
+        # concise status descriptions that will fit in a small area.
+        status_names = {
+            'FULLYBUILT': 'Successfully built',
+            'FULLYBUILT_PENDING': 'Successfully built',
+            'NEEDSBUILD': 'Waiting to build',
+            'FAILEDTOBUILD': 'Failed to build',
+            'BUILDING': 'Currently building',
+            }
+
+        now = datetime.now(tz=pytz.UTC)
+        for index, result_tuple in enumerate(result_tuples):
+            source_pub = result_tuple[0]
+            current_status = source_pub.getStatusSummaryForBuilds()['status']
+            duration = now - source_pub.datepublished
+
+            latest_updates_list.append({
+                'title': source_pub.source_package_name,
+                'status': status_names[current_status.title],
+                'status_class': current_status.title,
+                'duration': duration,
+                })
+
+        return latest_updates_list
 
 
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
