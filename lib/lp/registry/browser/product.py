@@ -10,11 +10,8 @@ __all__ = [
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
-    'ProductBountiesMenu',
     'ProductBrandingView',
-    'ProductBreadcrumb',
     'ProductBugsMenu',
-    'ProductChangeTranslatorsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditNavigationMenu',
@@ -76,7 +73,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -247,13 +244,6 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IProduct`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
@@ -273,12 +263,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
         return Link('', text, summary)
-
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'Bounties related to %s' % self.context.displayname
-        return Link(target, text, summary)
 
     def branches(self):
         text = 'Code'
@@ -353,6 +337,10 @@ class ProductEditLinksMixin:
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
+
 
 class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
@@ -377,7 +365,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer')
+    links = ('edit', 'review_license', 'administer', 'subscribe')
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
@@ -516,21 +504,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, summary, icon='add')
 
 
-class ProductBountiesMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
-
-
 def _sort_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""
     if a['name'] == 'ubuntu':
@@ -548,7 +521,7 @@ class ProductSetFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSet
 
-    enable_only = ['overview']
+    enable_only = ['overview', 'branches']
 
 
 class SortSeriesMixin:
@@ -1541,7 +1514,7 @@ class ProjectAddStepOne(StepView):
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
@@ -1576,7 +1549,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     product = None
 

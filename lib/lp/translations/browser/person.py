@@ -69,7 +69,6 @@ class WorkListLinksAggregator(TranslationLinksAggregator):
 
 class ReviewLinksAggregator(WorkListLinksAggregator):
     """A `TranslationLinksAggregator` for translations to review."""
-
     # Link to unreviewed suggestions.
     pofile_link_suffix = '/+translate?show=new_suggestions'
 
@@ -77,6 +76,17 @@ class ReviewLinksAggregator(WorkListLinksAggregator):
     def countStrings(self, pofile):
         """See `WorkListLinksAggregator.countStrings`."""
         return pofile.unreviewedCount()
+
+
+class TranslateLinksAggregator(WorkListLinksAggregator):
+    """A `TranslationLinksAggregator` for translations to complete."""
+    # Link to untranslated strings.
+    pofile_link_suffix = '/+translate?show=untranslated'
+
+    # Strings that need work are untranslated ones.
+    def countStrings(self, pofile):
+        """See `WorkListLinksAggregator.countStrings`."""
+        return pofile.untranslatedCount()
 
 
 def person_is_reviewer(person):
@@ -116,7 +126,10 @@ class PersonTranslationView(LaunchpadView):
 
     _pofiletranslator_cache = None
 
-    history_horizon = None
+    def __init__(self, *args, **kwargs):
+        super(PersonTranslationView, self).__init__(*args, **kwargs)
+        now = datetime.now(pytz.timezone('UTC'))
+        self.history_horizon = now - timedelta(90, 0, 0)
 
     @cachedproperty
     def batchnav(self):
@@ -156,7 +169,9 @@ class PersonTranslationView(LaunchpadView):
     @property
     def person_is_translator(self):
         """Is this person active in translations?"""
-        return self.context.hasKarma('translations')
+        person = ITranslationsPerson(self.context)
+        history = person.getTranslationHistory(self.history_horizon).any()
+        return history is not None
 
     @property
     def person_includes_me(self):
@@ -166,6 +181,11 @@ class PersonTranslationView(LaunchpadView):
             return False
         else:
             return user.inTeam(self.context)
+
+    @property
+    def requires_preferred_languages(self):
+        """Does this person need to set preferred languages?"""
+        return not self.context.isTeam() and len(self.context.languages) == 0
 
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
@@ -180,12 +200,6 @@ class PersonTranslationView(LaunchpadView):
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
 
-    def _setHistoryHorizon(self):
-        """If not already set, set `self.history_horizon`."""
-        if self.history_horizon is None:
-            now = datetime.now(pytz.timezone('UTC'))
-            self.history_horizon = now - timedelta(90, 0, 0)
-
     def _getTargetsForReview(self, max_fetch=None):
         """Query and aggregate the top targets for review.
 
@@ -195,7 +209,6 @@ class PersonTranslationView(LaunchpadView):
             Multiple `POFile`s may be aggregated together into a single
             target.
         """
-        self._setHistoryHorizon()
         person = ITranslationsPerson(self.context)
         pofiles = person.getReviewableTranslationFiles(
             no_older_than=self.history_horizon)
@@ -214,23 +227,80 @@ class PersonTranslationView(LaunchpadView):
             Multiple `POFile`s may be aggregated together into a single
             target.
         """
-        self._setHistoryHorizon()
         person = ITranslationsPerson(self.context)
         pofiles = person.suggestReviewableTranslationFiles(
             no_older_than=self.history_horizon)[:max_fetch]
 
         return ReviewLinksAggregator().aggregate(pofiles)
 
+    def _getTargetsForTranslation(self, max_fetch=None):
+        """Get translation targets for this person to translate.
+
+        Results are ordered from most to fewest untranslated messages.
+        """
+        person = ITranslationsPerson(self.context)
+        urgent_first = (max_fetch >= 0)
+        pofiles = person.getTranslatableFiles(
+            no_older_than=self.history_horizon, urgent_first=urgent_first)
+
+        if max_fetch is not None:
+            pofiles = pofiles[:abs(max_fetch)]
+
+        return TranslateLinksAggregator().aggregate(pofiles)
+
+    def _suggestTargetsForTranslation(self, max_fetch=None):
+        """Suggest translations this person could be helping complete."""
+        person = ITranslationsPerson(self.context)
+        pofiles = person.suggestTranslatableFiles(
+            no_older_than=self.history_horizon)
+
+        if max_fetch is not None:
+            pofiles = pofiles[:max_fetch]
+
+        return TranslateLinksAggregator().aggregate(pofiles)
+
     @cachedproperty
     def all_projects_and_packages_to_review(self):
         """Top projects and packages for this person to review."""
         return self._getTargetsForReview()
 
+    def _addToTargetsList(self, existing_targets, new_targets, max_items,
+                          max_overall):
+        """Add `new_targets` to `existing_targets` list.
+
+        This is for use in showing top-10 ists of translations a user
+        should help review or complete.
+
+        :param existing_targets: Translation targets that are already
+            being listed.
+        :param new_targets: Translation targets to add.  Ones that were
+            already in `existing_targets` will not be added again.
+        :param max_items: Maximum number of targets from `new_targets`
+            to add.
+        :param max_overall: Maximum overall size of the resulting list.
+            What happens if `existing_targets` already exceeds this size
+            is none of your business.
+        :return: A list of translation targets containing all of
+            `existing_targets`, followed by as many from `new_targets`
+            as there is room for.
+        """
+        remaining_slots = max_overall - len(existing_targets)
+        maximum_addition = min(max_items, remaining_slots)
+        if remaining_slots <= 0:
+            return existing_targets
+
+        known_targets = set([item['target'] for item in existing_targets])
+        really_new = [
+            item
+            for item in new_targets
+            if item['target'] not in known_targets
+            ]
+
+        return existing_targets + really_new[:maximum_addition]
+
     @property
     def top_projects_and_packages_to_review(self):
         """Suggest translations for this person to review."""
-        self._setHistoryHorizon()
-
         # Maximum number of projects/packages to list that this person
         # has recently worked on.
         max_known_targets = 9
@@ -241,21 +311,53 @@ class PersonTranslationView(LaunchpadView):
         # worked on.  Aggregation may reduce the number we get, so ask
         # the database for a few extra.
         fetch = 5 * max_known_targets
-        recent = self._getTargetsForReview(fetch)[:max_known_targets]
+        recent = self._getTargetsForReview(fetch)
+        overall = self._addToTargetsList(
+            [], recent, max_known_targets, list_length)
 
-        # Fill out the list with other translations that the person
-        # could also be reviewing.
-        empty_slots = list_length - len(recent)
-        fetch = 5 * empty_slots
-        random_suggestions = self._suggestTargetsForReview(fetch)
-        random_suggestions = random_suggestions[:empty_slots]
+        # Fill out the list with other, randomly suggested translations
+        # that the person could also be reviewing.
+        fetch = 5 * (list_length - len(overall))
+        suggestions = self._suggestTargetsForReview(fetch)
+        overall = self._addToTargetsList(
+            overall, suggestions, list_length, list_length)
 
-        return recent + random_suggestions
+        return overall
 
     @cachedproperty
     def num_projects_and_packages_to_review(self):
         """How many translations do we suggest for reviewing?"""
         return len(self.all_projects_and_packages_to_review)
+
+    @property
+    def top_projects_and_packages_to_translate(self):
+        """Suggest translations for this person to help complete."""
+        # Maximum number of translations to list that need the most work
+        # done.
+        max_urgent_targets = 3
+        # Maximum number of translations to list that are almost
+        # complete.
+        max_almost_complete_targets = 3
+        # Length of overall list to display.
+        list_length = 10
+
+        fetch = 5 * max_urgent_targets
+        urgent = self._getTargetsForTranslation(fetch)
+        overall = self._addToTargetsList(
+            [], urgent, max_urgent_targets, list_length)
+
+        fetch = 5 * max_almost_complete_targets
+        almost_complete = self._getTargetsForTranslation(-fetch)
+        overall = self._addToTargetsList(
+            overall, almost_complete, max_almost_complete_targets,
+            list_length)
+
+        fetch = 5 * (list_length - len(overall))
+        suggestions = self._suggestTargetsForTranslation(fetch)
+        overall = self._addToTargetsList(
+            overall, suggestions, list_length, list_length)
+
+        return overall
 
 
 class PersonTranslationRelicensingView(LaunchpadFormView):
@@ -265,6 +367,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     custom_widget(
         'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
     custom_widget('back_to', TextWidget, visible=False)
+
+    @property
+    def page_title(self):
+        return "Translations licensing by %s" % self.context.displayname
 
     @property
     def initial_values(self):
@@ -286,6 +392,11 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         """Return an URL for this view."""
         return canonical_url(self.context, view_name='+licensing')
 
+    @property
+    def cancel_url(self):
+        """Escape to the person's main Translations page."""
+        return canonical_url(self.context)
+
     def getSafeRedirectURL(self, url):
         """Successful form submission should send to this URL."""
         if url and url.startswith(self.request.getApplicationURL()):
@@ -297,9 +408,9 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     def submit_action(self, action, data):
         """Store person's decision about translations relicensing.
 
-        Decision is stored through
+        The user's decision is stored through
         `ITranslationsPerson.translations_relicensing_agreement`
-        which uses TranslationRelicensingAgreement table.
+        which is backed by the TranslationRelicensingAgreement table.
         """
         translations_person = ITranslationsPerson(self.context)
         allow_relicensing = data['allow_relicensing']
@@ -312,8 +423,6 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
             translations_person.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
-                "Your translations will be removed once we complete the "
-                "switch to the BSD license. "
                 "Thanks for trying out Launchpad Translations."))
         else:
             raise AssertionError(

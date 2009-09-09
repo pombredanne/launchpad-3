@@ -40,9 +40,7 @@ And the users can click on the item and will be taken to the PPA page.
     >>> anon_browser.title
     'PPA for Celso Providelo'
 
-The navigation menu item is presented also for person/team with no
-PPA, and performs the same action, focus the inline PPA section which
-allows users with permission to create a PPA.
+There is a link that allows users with permission to create a PPA.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
@@ -51,9 +49,6 @@ allows users with permission to create a PPA.
 
     >>> print cprov_browser.title
     Launchpad Buildd Admins in Launchpad
-
-    >>> print cprov_browser.getLink('Personal Package Archives').url
-    http://launchpad.dev/~launchpad-buildd-admins#ppas
 
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Personal package archives
@@ -189,3 +184,4 @@ The 'First' and 'Previous' links, however, are now active.
 
     >>> anon_browser.getLink('Previous').url
     'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?start=1&batch=1'
+

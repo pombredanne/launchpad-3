@@ -114,11 +114,6 @@ merge proposal is considered a "landing target" with an optional
 
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> nopriv_browser.getLink('Merge Proposals').click()
-    >>> printMergeProposals(nopriv_browser, 'landing-targets')
-    lp://dev/~name12/gnome-terminal/main - view proposal details
-    Merge proposed by No Privileges Person
-    Needs review
 
 Since the user who registered the merge proposal is different
 to the owner of the source branch, they are shown explicitly.
@@ -140,23 +135,6 @@ shown.
     >>> printMergeProposals(sample_browser, 'landing-targets')
     lp://dev/~name12/gnome-terminal/main - view proposal details
     Needs review
-
-
-== Landing Candidates ==
-
-From the point of view of the target branch, the proposals are
-"landing candidates".  The most recently created merge proposals are
-shown first.
-
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> browser.getLink('Merge Proposals').click()
-    >>> printMergeProposals(browser, 'landing-candidates')
-    lp://dev/~name12/gnome-terminal/scanned (Development) - view proposal details
-      Needs review
-    lp://dev/~name12/gnome-terminal/klingon (Experimental) - view proposal details
-      Merge proposed by No Privileges Person
-      Needs review
 
 
 == Viewing a proposal for merging ==
@@ -441,11 +419,7 @@ branches but with the state set to work-in-progress.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges')
     >>> sample_browser.getLink('view proposal details').click()
     >>> orig_url = sample_browser.url
-    >>> sample_browser.getLink('Change status').click()
-    >>> sample_browser.getControl(name='field.queue_status').displayValue = (
-    ...     ['Resubmit'])
-
-    >>> sample_browser.getControl('Change Status').click()
+    >>> sample_browser.getLink('Resubmit proposal').click()
 
 This takes the user to the resubmission page.
 
@@ -496,7 +470,6 @@ proposal.  It can only be set to another inactive state like "rejected" or
     >>> print_options(sample_browser.getControl(name='field.queue_status'))
     REJECTED
     MERGED
-    SUPERSEDED
 
 If we make the superseding proposal inactive, we can set the original back to
 work-in-progress.
@@ -520,7 +493,6 @@ work-in-progress.
     CODE_APPROVED
     REJECTED
     MERGED
-    SUPERSEDED
 
 Merged proposals can be reset to other values, because they may have been
 marked merged by mistake, in the UI.
@@ -538,7 +510,6 @@ marked merged by mistake, in the UI.
     CODE_APPROVED
     REJECTED
     MERGED
-    SUPERSEDED
 
 
 == Default target branches ==
@@ -719,8 +690,11 @@ Create merge proposal with a review diff, and go to its index page.
 
     >>> login('admin@canonical.com')
     >>> from lp.code.model.diff import StaticDiff
-    >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff'
-    ...     u'\u1010'.encode('utf-8'))
+    >>> from difflib import unified_diff
+    >>> diff_text = ''.join(
+    ...     unified_diff('', ['Fake Diff' + u'\u1010'.encode('utf-8')]))
+    >>> review_diff = StaticDiff.acquireFromText(
+    ...     'a', 'b', diff_text)
     >>> transaction.commit()
     >>> bmp = factory.makeBranchMergeProposal(review_diff=review_diff)
     >>> url = canonical_url(bmp)
@@ -731,7 +705,7 @@ Create merge proposal with a review diff, and go to its index page.
 
 The text of the review diff is in the page.
     >>> print repr(extract_text(get_review_diff()))
-    u'Review Diff\nDownload diff\n1\nFake Diff\u1010'
+    u'Review Diff\nDownload diff\n1\n...Fake Diff\u1010'
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')

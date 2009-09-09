@@ -26,6 +26,9 @@ import os.path
 import pytz
 from storm.store import Store
 import transaction
+
+from twisted.python.util import mergeFunctionMetadata
+
 from zope.component import ComponentLookupError, getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -57,7 +60,7 @@ from canonical.launchpad.interfaces.hwdb import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.translations.interfaces.translationgroup import (
@@ -86,6 +89,7 @@ from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -100,7 +104,9 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
-from lp.testing import time_counter
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.testing import run_with_login, time_counter
 
 SPACE = ' '
 
@@ -125,7 +131,7 @@ def default_master_store(func):
             return func(*args, **kw)
         finally:
             store_selector.pop()
-    return with_default_master_store
+    return mergeFunctionMetadata(func, with_default_master_store)
 
 
 # We use this for default paramters where None has a specific meaning.  For
@@ -158,6 +164,18 @@ class ObjectFactory:
     def getUniqueInteger(self):
         """Return an integer unique to this factory instance."""
         return self._integer.next()
+
+    def getUniqueHexString(self, digits=None):
+        """Return a unique hexadecimal string.
+
+        :param digits: The number of digits in the string. 'None' means you
+            don't care.
+        :return: A hexadecimal string, with 'a'-'f' in lower case.
+        """
+        hex_number = '%x' % self.getUniqueInteger()
+        if digits is not None:
+            hex_number.zfill(digits)
+        return hex_number
 
     def getUniqueString(self, prefix=None):
         """Return a string unique to this factory instance.
@@ -238,6 +256,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person
+
+    def makeGPGKey(self, owner):
+        """Give 'owner' a crappy GPG key for the purposes of testing."""
+        return getUtility(IGPGKeySet).new(
+            owner.id,
+            keyid=self.getUniqueHexString(digits=8).upper(),
+            fingerprint='A' * 40,
+            keysize=self.factory.getUniqueInteger(),
+            algorithm=GPGKeyAlgorithm.R,
+            active=True,
+            can_encrypt=False)
 
     def _stuff_preferredemail_cache(self, person):
         """Stuff the preferredemail cache.
@@ -1079,13 +1108,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None, title=None):
+    def makeSpecification(self, product=None, title=None, distribution=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
             not specified, an arbitrary product is created.
         """
-        if product is None:
+        if distribution is None and product is None:
             product = self.makeProduct()
         if title is None:
             title = self.getUniqueString('title')
@@ -1096,7 +1125,38 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary=self.getUniqueString('summary'),
             definition_status=SpecificationDefinitionStatus.NEW,
             owner=self.makePerson(),
-            product=product)
+            product=product,
+            distribution=distribution)
+
+    def makeQuestion(self, target=None, title=None):
+        """Create and return a new, arbitrary Question.
+
+        :param target: The IQuestionTarget to make the question on. If one is
+            not specified, an arbitrary product is created.
+        :param title: The question title. If one is not provided, an
+            arbitrary title is created.
+        """
+        if target is None:
+            target = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
+        return target.newQuestion(
+            owner=target.owner, title=title, description='description')
+
+    def makeFAQ(self, target=None, title=None):
+        """Create and return a new, arbitrary FAQ.
+
+        :param target: The IFAQTarget to make the FAQ on. If one is
+            not specified, an arbitrary product is created.
+        :param title: The FAQ title. If one is not provided, an
+            arbitrary title is created.
+        """
+        if target is None:
+            target = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
+        return target.newFAQ(
+            owner=target.owner, title=title, content='content')
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
@@ -1354,6 +1414,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             architecturetag, processorfamily, official, owner,
             supports_virtualized)
 
+    def makeComponent(self, name=None):
+        """Make a new `IComponent`."""
+        if name is None:
+            name = self.getUniqueString()
+        return getUtility(IComponentSet).ensure(name)
+
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
@@ -1373,6 +1439,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString()
         if purpose is None:
             purpose = ArchivePurpose.PPA
+
+        # Making a distribution makes an archive, and there can be only one
+        # per distribution.
+        if purpose == ArchivePurpose.PRIMARY:
+            return distribution.main_archive
 
         return getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
@@ -1581,8 +1652,26 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
 
+    def makePackageset(self, name=None, description=None, owner=None,
+                       packages=()):
+        """Make an `IPackageset`."""
+        if name is None:
+            name = self.getUniqueString(u'package-set-name')
+        if description is None:
+            description = self.getUniqueString(u'package-set-description')
+        if owner is None:
+            person = self.getUniqueString(u'package-set-owner')
+            owner = self.makePerson(name=person)
+        techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
+        ps_set = getUtility(IPackagesetSet)
+        package_set = run_with_login(
+            techboard.teamowner,
+            lambda: ps_set.new(name, description, owner))
+        run_with_login(owner, lambda: package_set.add(packages))
+        return package_set
+
     def getAnyPocket(self):
-        return PackagePublishingPocket.RELEASE
+        return PackagePublishingPocket.BACKPORTS
 
     def makeSuiteSourcePackage(self, distroseries=None,
                                sourcepackagename=None, pocket=None):
@@ -1696,7 +1785,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return MergeDirective2(
             'revid', 'sha', 0, 0, target_branch_url,
             source_branch=source_branch_url, base_revision_id='base-revid',
-            patch='booga')
+            patch='')
 
     def makeMergeDirectiveEmail(self, body='Hi!\n', signing_context=None):
         """Create an email with a merge directive attached.

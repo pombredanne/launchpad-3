@@ -313,16 +313,13 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.project.IProject"
-        factory="lp.registry.browser.project.ProjectBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.project.IProjectSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- The bounty system is kept maintained but not available for users.
-                This is achieved by putting it on the PageTestLayer. -->
 
     <facet
         facet="answers"/>
@@ -770,7 +767,7 @@
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.IPerson"
-            factory="lp.registry.browser.person.PersonBreadcrumb"
+            factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -823,10 +820,6 @@
                 permission="launchpad.Edit"
                 set_schema="lp.registry.interfaces.person.IHasStanding"/>
         </class>
-
-        <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
-
 
         <!-- Adding SSH keys is the only possibly harmful thing that can be done
         without the user's password, so we use a special permission here to make
@@ -1193,7 +1186,7 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
-        factory="lp.registry.browser.product.ProductBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -1203,10 +1196,6 @@
 
     <!-- XXX: Steve Alexander 2005-09-21:
                                                 ProductBugsMenu undeclared until layout bug is fixed -->
-
-
-    <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
 
 
     <!-- ProductSet-->
@@ -1228,7 +1217,6 @@
                 featuredTranslatables
                 count_all
                 count_translatables
-                count_bounties
                 count_buggy
                 count_featureful
                 count_reviewed
@@ -1444,17 +1432,13 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistribution"
-        factory="lp.registry.browser.distribution.DistributionBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
-
 
     <!-- DistributionSet -->
 

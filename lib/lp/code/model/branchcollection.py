@@ -8,7 +8,7 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, Desc, LeftJoin, Join, Or, Select, Union
+from storm.expr import And, Count, Desc, LeftJoin, Join, Or, Select, Union
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -71,6 +71,16 @@ class GenericBranchCollection:
     def count(self):
         """See `IBranchCollection`."""
         return self.getBranches().count()
+
+    def ownerCounts(self):
+        """See `IBranchCollection`."""
+        is_team = Person.teamowner != None
+        branch_owners = self._getBranchIdQuery()
+        branch_owners.columns = (Branch.ownerID,)
+        counts = dict(self.store.find(
+            (is_team, Count(Person.id)),
+            Person.id.is_in(branch_owners)).group_by(is_team))
+        return (counts.get(False, 0), counts.get(True, 0))
 
     @property
     def store(self):
@@ -150,6 +160,14 @@ class GenericBranchCollection:
         Used primarily by the visibility check for target branches.
         """
         return []
+
+    def getMergeProposalsForPerson(self, person, status=None):
+        """See `IBranchCollection`."""
+        # We want to limit the proposals to those where the source branch is
+        # limited by the defined collection.
+        owned = self.ownedBy(person).getMergeProposals(status)
+        reviewing = self.getMergeProposalsForReviewer(person, status)
+        return owned.union(reviewing)
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""

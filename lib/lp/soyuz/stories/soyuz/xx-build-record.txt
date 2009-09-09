@@ -61,7 +61,7 @@ component.
     ...
     Build status
     Needs building
-    Start in 1 minute (2505) What's this?
+    Start in ... (2505) What's this?
     Build details
     Source: testing - 1.0
     Archive: Primary Archive for Ubuntu Test
@@ -109,7 +109,7 @@ new 'score' value is presented.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
-    Start in 1 minute (0) Rescore build What's this?
+    Start in ... (0) Rescore build What's this?
 
 Eventually a pending build record will get started, and while it's
 building the page will also contain a link to the builder where the
@@ -271,7 +271,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     # Mark the testing build as FULLYBUILT and upload a corresponding
     # binary package for it which will be awaiting for acceptance.
     >>> login('foo.bar@canonical.com')
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> build.buildqueue_record.destroySelf()
     >>> build.buildstate = BuildStatus.FULLYBUILT
     >>> build.builder = bob_builder

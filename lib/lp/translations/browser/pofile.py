@@ -24,6 +24,8 @@ from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
+from canonical.lazr.utils import smartquote
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.translations.browser.translationmessage import (
@@ -246,6 +248,23 @@ class POFileFilteredView(LaunchpadView):
 
     DEFAULT_BATCH_SIZE = 50
 
+    @property
+    def _person_name(self):
+        """Person's display name.  Graceful about unknown persons."""
+        if self.person is None:
+            return "unknown person"
+        else:
+            return self.person.displayname
+
+    def page_title(self):
+        """See `LaunchpadView`."""
+        return smartquote('Translations by %s in "%s"') % (
+            self._person_name, self.context.title)
+    
+    def label(self):
+        """See `LaunchpadView`."""
+        return "Translations by %s" % self._person_name
+
     def initialize(self):
         """See `LaunchpadView`."""
         self.person = None
@@ -285,9 +304,19 @@ class POFileUploadView(POFileView):
         self.form = self.request.form
         self.process_form()
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return "Upload %s translation for %s" % (
+            self.context.language.englishname,
+            self.context.potemplate.displayname)
+
     def process_form(self):
         """Handle a form submission to request a translation file upload."""
-        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # XXX henninge 2008-12-03 bug=192925: This code is duplicated for
         # productseries and potemplate and should be unified.
 
         if self.request.method != 'POST' or self.user is None:
@@ -657,3 +686,13 @@ class POExportView(BaseExportView):
 
     def getDefaultFormat(self):
         return self.context.potemplate.source_file_format
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return "Download %s translation of %s" % (
+            self.context.language.englishname,
+            self.context.potemplate.displayname)

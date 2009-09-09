@@ -107,8 +107,8 @@ def check_builds(distroseries):
     via initialiseFromParent method.
     """
     # Avoid circular import.
+    from lp.registry.interfaces.pocket import PackagePublishingPocket
     from lp.soyuz.interfaces.build import BuildStatus
-    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
     parentseries = distroseries.parent_series
 
@@ -127,7 +127,7 @@ def check_queue(distroseries):
     via initialiseFromParent method.
     """
     # Avoid circular import.
-    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     parentseries = distroseries.parent_series
 

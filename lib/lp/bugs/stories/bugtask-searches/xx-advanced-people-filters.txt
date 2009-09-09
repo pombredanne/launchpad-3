@@ -172,7 +172,7 @@ subscribed to any bugs. In this case, no bugs are found:
     >>> anon_browser.getControl('Bug subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Bugs ...
+    Mozilla Firefox ...
     No results for search
 
 We'll continue by subscribing the same user to a couple of bugs. However,
@@ -211,7 +211,7 @@ Next we'll subscribe our user to the first bug we've just registered:
     Bug...Subscribe someone else to bug #...
 
     >>> browser.getControl('Person').value = subscriber
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Subscribe user').click()
     >>> print extract_text(find_main_content(browser.contents))
     No Privileges Person has been subscribed to this bug...
 
@@ -234,7 +234,7 @@ Next we'll subscribe our user to the second bug we've just registered:
     Bug...Subscribe someone else to bug #...
 
     >>> browser.getControl('Person').value = subscriber
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Subscribe user').click()
     >>> print extract_text(find_main_content(browser.contents))
     No Privileges Person has been subscribed to this bug...
 

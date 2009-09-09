@@ -8,7 +8,6 @@ __all__ = [
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
-    'SprintBreadcrumb',
     'SprintEditView',
     'SprintFacets',
     'SprintMeetingExportView',
@@ -33,7 +32,7 @@ from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 from lp.blueprints.interfaces.specification import (
@@ -68,13 +67,6 @@ class SprintFacets(StandardLaunchpadFacets):
 class SprintNavigation(Navigation):
 
     usedfor = ISprint
-
-
-class SprintBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `ISprint`."""
-    @property
-    def text(self):
-        return self.context.title
 
 
 class SprintOverviewMenu(ApplicationMenu):

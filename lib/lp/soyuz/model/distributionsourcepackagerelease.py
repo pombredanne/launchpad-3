@@ -163,7 +163,7 @@ class DistributionSourcePackageRelease:
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagerelease),
             distinct=True,
-            orderBy=['-datecreated'],
+            orderBy=['BinaryPackageName.name'],
             clauseTables=['DistroArchSeries', 'DistroSeries',
                           'BinaryPackageRelease', 'BinaryPackageName',
                           'Build'],

@@ -42,6 +42,9 @@ class NullJob(BaseRunnableJob):
     def getOopsRecipients(self):
         return self.oops_recipients
 
+    def getOopsVars(self):
+        return [('foo', 'bar')]
+
     def getErrorRecipients(self):
         return self.error_recipients
 
@@ -111,6 +114,7 @@ class TestJobRunner(TestCaseWithFactory):
         reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
+        self.assertEqual([('foo', 'bar')], oops.req_vars)
 
     def test_runAll_aborts_transaction_on_error(self):
         """runAll should abort the transaction on oops."""

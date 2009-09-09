@@ -70,12 +70,12 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingPocket,
-    PackagePublishingStatus, IPublishingSet)
+    active_publishing_status, PackagePublishingStatus, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.scripts.packagecopier import CannotCopy, do_copy
 from canonical.launchpad.webapp.interfaces import (
@@ -1577,4 +1577,4 @@ class ArchiveSet:
             DistroSeries.distribution == distribution,
             )
 
-        return results
+        return results.order_by(SourcePackagePublishingHistory.id)
