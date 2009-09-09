@@ -20,7 +20,11 @@ from canonical.launchpad.webapp.menu import Link, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
 from canonical.launchpad.webapp.tales import MenuAPI
 
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
 
 
@@ -47,17 +51,17 @@ class InvolvedMenu(NavigationMenu):
 
     def help_translate(self):
         return Link(
-            '/', 'Help translate', site='translations', icon='translations',
+            '', 'Help translate', site='translations', icon='translations',
             enabled=self.context.official_rosetta)
 
     def submit_code(self):
         return Link(
-            '+filebug', 'Submit code', site='code', icon='code',
+            '+addbranch', 'Submit code', site='code', icon='code',
             enabled=self.context.official_codehosting)
 
     def register_blueprint(self):
         return Link(
-            '+addbranch', 'Register a blueprint', site='blueprints',
+            '+addspec', 'Register a blueprint', site='blueprints',
             icon='blueprints', enabled=self.context.official_blueprints)
 
 
@@ -76,10 +80,22 @@ class PillarView(LaunchpadView):
         if IProject.providedBy(pillar):
             for product in pillar.products:
                 self._set_official_launchpad(product)
-            # Projectgroups do not support submit code.
+            # Projectgroups do not support submit code, override the
+            # default.
             self.official_codehosting = False
         else:
             self._set_official_launchpad(pillar)
+            if IProductSeries.providedBy(self.context):
+                self.official_answers = False
+            elif IDistroSeries.providedBy(self.context):
+                self.official_answers = False
+                self.official_codehosting = False
+            elif IDistributionSourcePackage.providedBy(self.context):
+                self.official_blueprints = False
+                self.official_rosetta = False
+            else:
+                # The context is used by all apps.
+                pass
 
     def _set_official_launchpad(self, pillar):
         """Does the pillar officially use launchpad."""

@@ -169,9 +169,9 @@
         factory="lp.registry.adapters.distroseries_to_launchpadusage"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumbBuilder"
+        factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
         permission="zope.Public"/>
 
     <facet
@@ -311,18 +311,15 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.project.IProject"
-        factory="lp.registry.browser.project.ProjectBreadcrumbBuilder"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.project.IProjectSet"
-        factory="lp.registry.browser.project.ProjectSetBreadcrumbBuilder"
+        factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- The bounty system is kept maintained but not available for users.
-                This is achieved by putting it on the PageTestLayer. -->
 
     <facet
         facet="answers"/>
@@ -436,9 +433,9 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumbBuilder"
+        factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"
         permission="zope.Public"/>
 
     <!-- CommercialSubscription -->
@@ -768,14 +765,14 @@
             factory="canonical.launchpad.browser.TeamBadges"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.IPerson"
-            factory="lp.registry.browser.person.PersonBreadcrumbBuilder"
+            factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.ITeam"
-            factory="lp.registry.browser.person.TeamBreadcrumbBuilder"
+            factory="lp.registry.browser.person.TeamBreadcrumb"
             permission="zope.Public"/>
 
         <!-- Using
@@ -823,10 +820,6 @@
                 permission="launchpad.Edit"
                 set_schema="lp.registry.interfaces.person.IHasStanding"/>
         </class>
-
-        <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
-
 
         <!-- Adding SSH keys is the only possibly harmful thing that can be done
         without the user's password, so we use a special permission here to make
@@ -1191,22 +1184,18 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadProductContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
-        factory="lp.registry.browser.product.ProductBreadcrumbBuilder"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProductSet"
-        factory="lp.registry.browser.product.ProductSetBreadcrumbBuilder"
+        factory="lp.registry.browser.product.ProductSetBreadcrumb"
         permission="zope.Public"/>
 
     <!-- XXX: Steve Alexander 2005-09-21:
                                                 ProductBugsMenu undeclared until layout bug is fixed -->
-
-
-    <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
 
 
     <!-- ProductSet-->
@@ -1228,7 +1217,6 @@
                 featuredTranslatables
                 count_all
                 count_translatables
-                count_bounties
                 count_buggy
                 count_featureful
                 count_reviewed
@@ -1328,9 +1316,9 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.registry.browser.productseries.ProductSeriesBreadcrumbBuilder"
+        factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
         permission="zope.Public"/>
 
     <!-- ProductSeriesSet -->
@@ -1442,19 +1430,15 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistribution"
-        factory="lp.registry.browser.distribution.DistributionBreadcrumbBuilder"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistributionSet"
-        factory="lp.registry.browser.distribution.DistributionSetBreadcrumbBuilder"
+        factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
-
 
     <!-- DistributionSet -->
 
@@ -1511,9 +1495,9 @@
             interface="lp.registry.interfaces.sourcepackage.ISourcePackageFactory"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumbBuilder"
+        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"
         permission="zope.Public"/>
 
     <!--

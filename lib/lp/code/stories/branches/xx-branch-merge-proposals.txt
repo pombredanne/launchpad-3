@@ -114,11 +114,6 @@ merge proposal is considered a "landing target" with an optional
 
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> nopriv_browser.getLink('Merge Proposals').click()
-    >>> printMergeProposals(nopriv_browser, 'landing-targets')
-    lp://dev/~name12/gnome-terminal/main - view proposal details
-    Merge proposed by No Privileges Person
-    Needs review
 
 Since the user who registered the merge proposal is different
 to the owner of the source branch, they are shown explicitly.
@@ -140,23 +135,6 @@ shown.
     >>> printMergeProposals(sample_browser, 'landing-targets')
     lp://dev/~name12/gnome-terminal/main - view proposal details
     Needs review
-
-
-== Landing Candidates ==
-
-From the point of view of the target branch, the proposals are
-"landing candidates".  The most recently created merge proposals are
-shown first.
-
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> browser.getLink('Merge Proposals').click()
-    >>> printMergeProposals(browser, 'landing-candidates')
-    lp://dev/~name12/gnome-terminal/scanned (Development) - view proposal details
-      Needs review
-    lp://dev/~name12/gnome-terminal/klingon (Experimental) - view proposal details
-      Merge proposed by No Privileges Person
-      Needs review
 
 
 == Viewing a proposal for merging ==
@@ -294,6 +272,48 @@ People who are logged in can perform reviews.
     Reviewer                         Review Type  Date Requested Status
     No Privileges Person (community)                             Disapprove ...
 
+People can claim reviews for teams of which they are a member.
+
+    >>> sample_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
+    ...     '/klingon/+merge/1')
+    >>> sample_browser.getLink('Request another review').click()
+    >>> sample_browser.getControl('Reviewer').value = 'hwdb-team'
+    >>> sample_browser.getControl('Review type').value = 'claimable'
+    >>> sample_browser.getControl('Request Review').click()
+    >>> pending = find_tag_by_id(
+    ...     sample_browser.contents, 'code-review-votes')
+    >>> print extract_text(pending)
+    Reviewer                         Review Type  Date Requested Status...
+    HWDB Team                        claimable    ... ago        Pending ...
+    >>> foobar_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
+    ...     '/klingon/+merge/1')
+    >>> foobar_browser.getControl('Claim review').click()
+    >>> pending = find_tag_by_id(
+    ...     foobar_browser.contents, 'code-review-votes')
+
+After claiming a review, the claimant is listed instead of their team.
+
+    >>> print extract_text(pending)
+    Reviewer                         Review Type  Date Requested Status...
+    Foo Bar                          claimable    ... ago        Pending ...
+
+The claimant can reassign the review to someone else.
+
+    >>> foobar_browser.getLink('Reassign').click()
+    >>> foobar_browser.getControl('Reviewer').value = 'hwdb-team'
+    >>> foobar_browser.getControl('Reassign').click()
+    >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
+    ...     '/klingon/+merge/1')
+    >>> pending = find_tag_by_id(
+    ...     foobar_browser.contents, 'code-review-votes')
+
+The review is now reassigned to the HWDB team.
+
+    >>> print extract_text(pending)
+    Reviewer                         Review Type  Date Requested Status...
+    HWDB Team                        claimable    ... ago        Pending ...
+
 
 == Marking as merged ==
 
@@ -399,11 +419,7 @@ branches but with the state set to work-in-progress.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges')
     >>> sample_browser.getLink('view proposal details').click()
     >>> orig_url = sample_browser.url
-    >>> sample_browser.getLink('Change status').click()
-    >>> sample_browser.getControl(name='field.queue_status').displayValue = (
-    ...     ['Resubmit'])
-
-    >>> sample_browser.getControl('Change Status').click()
+    >>> sample_browser.getLink('Resubmit proposal').click()
 
 This takes the user to the resubmission page.
 
@@ -454,7 +470,6 @@ proposal.  It can only be set to another inactive state like "rejected" or
     >>> print_options(sample_browser.getControl(name='field.queue_status'))
     REJECTED
     MERGED
-    SUPERSEDED
 
 If we make the superseding proposal inactive, we can set the original back to
 work-in-progress.
@@ -478,7 +493,6 @@ work-in-progress.
     CODE_APPROVED
     REJECTED
     MERGED
-    SUPERSEDED
 
 Merged proposals can be reset to other values, because they may have been
 marked merged by mistake, in the UI.
@@ -496,7 +510,6 @@ marked merged by mistake, in the UI.
     CODE_APPROVED
     REJECTED
     MERGED
-    SUPERSEDED
 
 
 == Default target branches ==
@@ -607,17 +620,16 @@ in the source branch.
     ...     else:
     ...         print extract_text(links)
 
-    >>> nopriv_browser.open(
-    ...     'http://code.launchpad.dev/~mark/firefox/release-0.9.2')
-    >>> nopriv_browser.getLink('Propose for merging').click()
-    >>> nopriv_browser.getControl(
-    ...     name='field.target_branch.target_branch').value = (
-    ...         '~mark/firefox/main')
-    >>> nopriv_browser.getControl('Propose Merge').click()
+    >>> login('admin@canonical.com')
+    >>> bmp = factory.makeBranchMergeProposal()
+    >>> bug = factory.makeBug(title="Bug for linking")
+    >>> link = bmp.source_branch.linkBug(bug, bmp.source_branch.owner)
+    >>> bmp_url = canonical_url(bmp)
+    >>> logout()
+    >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
     Linked bug reports and blueprints
-    Bug #4: Reflow problems with complex page layouts
-    ...
+    Bug #...: Bug for linking (Undecided &ndash; New)
 
 There shouldn't be a 'Linked bug reports and blueprints' section if there are
 none
@@ -678,8 +690,11 @@ Create merge proposal with a review diff, and go to its index page.
 
     >>> login('admin@canonical.com')
     >>> from lp.code.model.diff import StaticDiff
-    >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff'
-    ...     u'\u1010'.encode('utf-8'))
+    >>> from difflib import unified_diff
+    >>> diff_text = ''.join(
+    ...     unified_diff('', ['Fake Diff' + u'\u1010'.encode('utf-8')]))
+    >>> review_diff = StaticDiff.acquireFromText(
+    ...     'a', 'b', diff_text)
     >>> transaction.commit()
     >>> bmp = factory.makeBranchMergeProposal(review_diff=review_diff)
     >>> url = canonical_url(bmp)
@@ -690,7 +705,7 @@ Create merge proposal with a review diff, and go to its index page.
 
 The text of the review diff is in the page.
     >>> print repr(extract_text(get_review_diff()))
-    u'Review Diff\nDownload diff\n1\nFake Diff\u1010'
+    u'Review Diff\nDownload diff\n1\n...Fake Diff\u1010'
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')

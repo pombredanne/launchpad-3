@@ -31,13 +31,13 @@ class FakeLaunchpadRequest(FakeRequest):
         return StepsToGo(self)
 
 
-class TestBaseStructuralSubscriptionTraversal(TestCaseWithFactory):
+class StructuralSubscriptionTraversalTestBase(TestCaseWithFactory):
     """Verify that we can reach a target's structural subscriptions."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBaseStructuralSubscriptionTraversal, self).setUp()
+        super(StructuralSubscriptionTraversalTestBase, self).setUp()
         login('foo.bar@canonical.com')
         self.eric = self.factory.makePerson(name='eric')
         self.michael = self.factory.makePerson(name='michael')
@@ -50,6 +50,8 @@ class TestBaseStructuralSubscriptionTraversal(TestCaseWithFactory):
         self.navigation = ProductNavigation
 
     def test_structural_subscription_traversal(self):
+        # Verify that an existing structural subscription can be
+        # reached from the target.
         request = FakeLaunchpadRequest([], ['eric'])
         self.assertEqual(
             self.target.getSubscription(self.eric),
@@ -57,6 +59,8 @@ class TestBaseStructuralSubscriptionTraversal(TestCaseWithFactory):
                 request, '+subscription'))
 
     def test_missing_structural_subscription_traversal(self):
+        # Verify that a NotFound is raised when attempting to reach
+        # a structural subscription for an person without one.
         request = FakeLaunchpadRequest([], ['michael'])
         self.assertRaises(
             NotFound,
@@ -64,6 +68,8 @@ class TestBaseStructuralSubscriptionTraversal(TestCaseWithFactory):
             request, '+subscription')
 
     def test_missing_person_structural_subscription_traversal(self):
+        # Verify that a NotFound is raised when attempting to reach
+        # a structural subscription for a person that does not exist.
         request = FakeLaunchpadRequest([], ['doesnotexist'])
         self.assertRaises(
             NotFound,
@@ -71,18 +77,20 @@ class TestBaseStructuralSubscriptionTraversal(TestCaseWithFactory):
             request, '+subscription')
 
     def test_structural_subscription_canonical_url(self):
-        request = FakeLaunchpadRequest([], ['eric'])
+        # Verify that the canonical_url of a structural subscription
+        # is correct.
         self.assertEqual(
             canonical_url(self.target.getSubscription(self.eric)),
             canonical_url(self.target) + '/+subscription/eric')
 
     def tearDown(self):
         logout()
-        super(TestBaseStructuralSubscriptionTraversal, self).tearDown()
+        super(StructuralSubscriptionTraversalTestBase, self).tearDown()
 
 
 class TestProductSeriesStructuralSubscriptionTraversal(
-    TestBaseStructuralSubscriptionTraversal):
+    StructuralSubscriptionTraversalTestBase):
+    """Test IStructuralSubscription traversal from IProductSeries."""
     def setUpTarget(self):
         self.target = self.factory.makeProduct(name='fooix').newSeries(
             self.eric, '0.1', '0.1')
@@ -90,7 +98,8 @@ class TestProductSeriesStructuralSubscriptionTraversal(
 
 
 class TestMilestoneStructuralSubscriptionTraversal(
-    TestBaseStructuralSubscriptionTraversal):
+    StructuralSubscriptionTraversalTestBase):
+    """Test IStructuralSubscription traversal from IMilestone."""
     def setUpTarget(self):
         self.target = self.factory.makeProduct(name='fooix').newSeries(
             self.eric, '0.1', '0.1').newMilestone('0.1.0')
@@ -98,29 +107,34 @@ class TestMilestoneStructuralSubscriptionTraversal(
 
 
 class TestProjectStructuralSubscriptionTraversal(
-    TestBaseStructuralSubscriptionTraversal):
+    StructuralSubscriptionTraversalTestBase):
+    """Test IStructuralSubscription traversal from IProject."""
     def setUpTarget(self):
         self.target = self.factory.makeProject(name='fooix-project')
         self.navigation = ProjectNavigation
 
 
 class TestDistributionStructuralSubscriptionTraversal(
-    TestBaseStructuralSubscriptionTraversal):
+    StructuralSubscriptionTraversalTestBase):
+    """Test IStructuralSubscription traversal from IDistribution."""
     def setUpTarget(self):
         self.target = self.factory.makeDistribution(name='debuntu')
         self.navigation = DistributionNavigation
 
 
 class TestDistroSeriesStructuralSubscriptionTraversal(
-    TestBaseStructuralSubscriptionTraversal):
+    StructuralSubscriptionTraversalTestBase):
+    """Test IStructuralSubscription traversal from IDistroSeries."""
     def setUpTarget(self):
         self.target = self.factory.makeDistribution(name='debuntu').newSeries(
             '5.0', '5.0', '5.0', '5.0', '5.0', '5.0', None, self.eric)
         self.navigation = DistroSeriesNavigation
 
 
-class TestDistributionSourcePackagetructuralSubscriptionTraversal(
-    TestBaseStructuralSubscriptionTraversal):
+class TestDistributionSourcePackageStructuralSubscriptionTraversal(
+    StructuralSubscriptionTraversalTestBase):
+    """Test IStructuralSubscription traversal from IDistributionSourcePackage.
+    """
     def setUpTarget(self):
         debuntu = self.factory.makeDistribution(name='debuntu')
         fooix = self.factory.makeSourcePackageName('fooix')

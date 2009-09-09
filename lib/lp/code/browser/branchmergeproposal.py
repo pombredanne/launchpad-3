@@ -44,7 +44,6 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
@@ -223,7 +222,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Resubmit proposal'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.SUPERSEDED)
-        return Link('+resubmit', text, enabled=enabled)
+        return Link('+resubmit', text, enabled=enabled, icon='edit')
 
 
 class UnmergedRevisionsMixin:
@@ -293,6 +292,7 @@ class BranchMergeProposalNavigation(Navigation):
 
     @stepthrough('reviews')
     def traverse_review(self, id):
+        """Navigate to a CodeReviewVoteReference through its BMP."""
         try:
             id = int(id)
         except ValueError:
@@ -301,7 +301,6 @@ class BranchMergeProposalNavigation(Navigation):
             return self.context.getVoteReference(id)
         except WrongBranchMergeProposal:
             return None
-
 
     @stepthrough('comments')
     def traverse_comment(self, id):
@@ -441,8 +440,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return DecoratedBugs linked to the source branch."""
         # Avoid import loop
         from lp.code.browser.branch import DecoratedBug
-        branch = self.context.source_branch
-        return [DecoratedBug(bug, branch) for bug in branch.linked_bugs]
+        return [DecoratedBug(bug, self.context.source_branch)
+                for bug in self.context.related_bugs]
 
 
 class DecoratedCodeReviewVoteReference:
@@ -509,22 +508,6 @@ class DecoratedCodeReviewVoteReference:
     def status_text(self):
         """The text shown in the table of the users vote."""
         return self.status_text_map[self.context.comment.vote]
-
-class ReassignSchema(Interface):
-
-    reviewer = PublicPersonChoice( title=_('Reviewer'), required=True,
-            description=_('A person who you want to review this.'),
-            vocabulary='ValidPersonOrTeam')
-
-
-class CodeReviewVoteReassign(LaunchpadFormView):
-
-    schema = ReassignSchema
-
-    @action('Reassign', name='reassign')
-    def reassign_action(self, action, data):
-        self.context.reviewer = data['reviewer']
-        self.next_url = canonical_url(self.context.branch_merge_proposal)
 
 
 class BranchMergeProposalVoteView(LaunchpadView):
@@ -1045,14 +1028,11 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
             BranchMergeProposalStatus.REJECTED,
             # BranchMergeProposalStatus.QUEUED,
             BranchMergeProposalStatus.MERGED,
-            BranchMergeProposalStatus.SUPERSEDED,
             )
         terms = []
         for status in possible_next_states:
             if not self.context.isValidTransition(status, self.user):
                 continue
-            if status == BranchMergeProposalStatus.SUPERSEDED:
-                title = 'Resubmit'
             else:
                 title = status.title
             terms.append(SimpleTerm(status, status.name, title))
@@ -1084,11 +1064,9 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         if new_status == curr_status:
             return
 
-        if new_status == BranchMergeProposalStatus.SUPERSEDED:
-            # Redirect the user to the resubmit view.
-            self.next_url = canonical_url(self.context, view_name="+resubmit")
-        else:
-            self.context.setStatus(new_status, self.user, rev_id)
+        assert new_status != BranchMergeProposalStatus.SUPERSEDED, (
+            'Superseded is done via an action, not by setting status.')
+        self.context.setStatus(new_status, self.user, rev_id)
 
 
 class IAddVote(Interface):

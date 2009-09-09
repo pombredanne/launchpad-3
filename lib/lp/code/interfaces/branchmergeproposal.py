@@ -32,6 +32,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.interfaces import IBug
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
@@ -243,6 +244,10 @@ class IBranchMergeProposal(Interface):
             value_type=Reference(schema=Interface), # ICodeReviewComment
             readonly=True))
 
+    related_bugs = CollectionField(
+        title=_("Bugs related to this merge proposal."),
+        value_type=Reference(schema=IBug), readonly=True)
+
     address = exported(
         TextLine(
             title=_('The email address for this proposal.'),
@@ -394,7 +399,9 @@ class IBranchMergeProposal(Interface):
         """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
-        user-entered data like the whiteboard.
+        user-entered data like the whiteboard.  All the current proposal's
+        reviewers, including those who have only been nominated, are requested
+        to review the new proposal.
         """
 
     def isMergable():
@@ -465,13 +472,13 @@ class IBranchMergeProposal(Interface):
         """Delete the proposal to merge."""
 
     @operation_parameters(
-        diff_content=Bytes(), diff_stat=Text(),
-        source_revision_id=TextLine(), target_revision_id=TextLine(),
-        dependent_revision_id=TextLine(), conflicts=Text())
+        diff_content=Bytes(), source_revision_id=TextLine(),
+        target_revision_id=TextLine(), dependent_revision_id=TextLine(),
+        conflicts=Text())
     @export_write_operation()
-    def updatePreviewDiff(diff_content, diff_stat,
-                        source_revision_id, target_revision_id,
-                        dependent_revision_id=None, conflicts=None):
+    def updatePreviewDiff(diff_content, source_revision_id,
+                          target_revision_id, dependent_revision_id=None,
+                          conflicts=None):
         """Update the preview diff for this proposal.
 
         If there is not an existing preview diff, one will be created.
@@ -597,6 +604,16 @@ class IMergeProposalCreatedJobSource(Interface):
 
     def iterReady():
         """Iterate through all ready MergeProposalCreatedJobs."""
+
+
+class IUpdatePreviewDiffJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
+
+    def create(bmp):
+        """Create a job to update the diff for this merge proposal."""
+
+    def iterReady():
+        """Iterate through jobs ready to update preview diffs."""
 
 
 def notify_modified(proposal, func, *args, **kwargs):

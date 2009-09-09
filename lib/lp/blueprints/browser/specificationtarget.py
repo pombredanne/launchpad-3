@@ -29,7 +29,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
@@ -333,7 +333,7 @@ class RegisterABlueprintButtonView:
         """ % canonical_url(target, rootsite='blueprints')
 
 
-class HasSpecificationsOnBlueprintsVHostBreadcrumbBuilder(BreadcrumbBuilder):
+class HasSpecificationsOnBlueprintsVHostBreadcrumb(Breadcrumb):
     rootsite = 'blueprints'
 
     @property
@@ -341,7 +341,7 @@ class HasSpecificationsOnBlueprintsVHostBreadcrumbBuilder(BreadcrumbBuilder):
         return 'Blueprints for %s' % self.context.title
 
 
-class PersonOnBlueprintsVHostBreadcrumbBuilder(BreadcrumbBuilder):
+class PersonOnBlueprintsVHostBreadcrumb(Breadcrumb):
     rootsite = 'blueprints'
 
     @property

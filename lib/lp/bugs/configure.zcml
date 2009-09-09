@@ -234,6 +234,7 @@
                     transitionToImportance
                     transitionToStatus
                     transitionToAssignee
+                    transitionToMilestone
                     transitionToTarget"/>
             
             <!-- XXX Brad Bollenbach 2006-09-29
@@ -269,11 +270,13 @@
             factory="lp.bugs.browser.bugtask.assignee_renderer"
             name="assignee"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            factory="lp.bugs.browser.bugtask.bugtarget_renderer"
+            name="target"/>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            factory="lp.bugs.browser.bugtask.BugTaskBreadcrumbBuilder"
+            factory="lp.bugs.browser.bugtask.BugTaskBreadcrumb"
             permission="zope.Public"/>
-
         
         <!-- NullBugTask -->
         
@@ -379,9 +382,9 @@
                 set_attributes="active"/>
         </class>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
-            factory="lp.bugs.browser.bugtracker.BugTrackerBreadcrumbBuilder"
+            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
         
         <!-- BugTrackerSet -->
@@ -397,6 +400,11 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
         </securedutility>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
+            factory="lp.bugs.browser.bugtracker.BugTrackerSetBreadcrumb"
+            permission="zope.Public"/>
         
         <!-- BugTrackerAlias -->
         
@@ -878,8 +886,8 @@
     </securedutility>
     <adapter
         name="bugs"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
-        factory="lp.bugs.browser.bugtarget.BugTargetOnBugsVHostBreadcrumbBuilder"
+        factory="lp.bugs.browser.bugtarget.BugTargetOnBugsVHostBreadcrumb"
         permission="zope.Public"/>
 </configure>

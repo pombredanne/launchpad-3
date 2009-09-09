@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesAddView',
     'DistroSeriesAdminView',
-    'DistroSeriesBreadcrumbBuilder',
+    'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesPackageSearchView',
@@ -44,7 +44,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
@@ -124,7 +124,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
         return getUtility(IPackageUploadSet).get(id)
 
 
-class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
     @property
     def text(self):

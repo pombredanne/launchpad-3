@@ -5,10 +5,59 @@ __metaclass__ = type
 
 import unittest
 
+from zope.interface import implements
+
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
-from lp.testing import login
+from lp.testing import login, TestCase
+
+
+class Cookbook:
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+
+class TestBreadcrumb(TestCase):
+
+    def test_rootsite_defaults_to_mainsite(self):
+        # When a class' ICanonicalUrlData doesn't define a rootsite, our
+        # Breadcrumb adapter will use 'mainsite' as the rootsite.
+        cookbook = Cookbook()
+        self.assertIs(cookbook.rootsite, None)
+        self.assertEquals(Breadcrumb(cookbook).rootsite, 'mainsite')
+
+    def test_urldata_rootsite_is_honored(self):
+        # When a class' ICanonicalUrlData defines a rootsite, our Breadcrumb
+        # adapter will use it.
+        cookbook = Cookbook()
+        cookbook.rootsite = 'cooking'
+        self.assertEquals(Breadcrumb(cookbook).rootsite, 'cooking')
+
+
+class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
+    """When the current page is not the object's default one (+index), we add
+    an extra breadcrumb for it.
+    """
+
+    def setUp(self):
+        super(TestExtraBreadcrumbForLeafPageOnHierarchyView, self).setUp()
+        login('test@canonical.com')
+        self.product = self.factory.makeProduct(name='crumb-tester')
+        self.product_url = canonical_url(self.product)
+
+    def test_default_page(self):
+        urls = self._getBreadcrumbsURLs(
+            self.product_url, [self.root, self.product])
+        self.assertEquals(urls, [self.product_url])
+
+    def test_non_default_page(self):
+        downloads_url = "%s/+download" % self.product_url
+        urls = self._getBreadcrumbsURLs(
+            downloads_url, [self.root, self.product])
+        self.assertEquals(urls, [self.product_url, downloads_url])
 
 
 class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):

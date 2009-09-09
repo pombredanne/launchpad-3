@@ -115,6 +115,7 @@ it here as a blueprint" link:
     >>> print user_browser.url
     http://blueprints.launchpad.dev/bzr/+addspec
     >>> print extract_text(find_main_content(user_browser.contents))
+    Bazaar Version Control System...
     Register a new blueprint...
 
 

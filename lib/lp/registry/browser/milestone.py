@@ -27,6 +27,7 @@ from canonical.launchpad import _
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from canonical.launchpad.browser.structuralsubscription import (
@@ -230,6 +231,14 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             file.libraryfile.hits for file in self.product_release_files)
 
     @property
+    def is_distroseries_milestone(self):
+        """Is the current milestone is a distroseries milestone?
+
+        Milestones that belong to distroseries cannot have releases.
+        """
+        return IDistroSeries.providedBy(self.context.series_target)
+
+    @property
     def is_project_milestone(self):
         """Check, if the current milestone is a project milestone.
 
@@ -345,6 +354,10 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     """A view for deleting an `IMilestone`."""
     schema = IMilestone
     field_names = []
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     @property
     def label(self):

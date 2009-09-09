@@ -39,7 +39,6 @@ from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import  IPrivacy, NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
-from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
@@ -559,20 +558,24 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
                     distroseries=None):
         """Create an INullBugTask and return it for the given parameters."""
 
+    @operation_parameters(
+        target=Reference(schema=IBugTarget, title=_('Target')))
+    @call_with(owner=REQUEST_USER)
+    @export_factory_operation(Interface, [])
     def addNomination(owner, target):
         """Nominate a bug for an IDistroSeries or IProductSeries.
 
         :owner: An IPerson.
         :target: An IDistroSeries or IProductSeries.
 
-        The nomination will be automatically approved, if the user has
-        permission to approve it.
-
         This method creates and returns a BugNomination. (See
         lp.bugs.model.bugnomination.BugNomination.)
         """
 
-    def canBeNominatedFor(nomination_target):
+    @operation_parameters(
+        target=Reference(schema=IBugTarget, title=_('Target')))
+    @export_read_operation()
+    def canBeNominatedFor(target):
         """Can this bug nominated for this target?
 
         :nomination_target: An IDistroSeries or IProductSeries.
@@ -580,7 +583,11 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         Returns True or False.
         """
 
-    def getNominationFor(nomination_target):
+    @operation_parameters(
+        target=Reference(schema=IBugTarget, title=_('Target')))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getNominationFor(target):
         """Return the IBugNomination for the target.
 
         If no nomination is found, a NotFoundError is raised.
@@ -588,6 +595,15 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         :param nomination_target: An IDistroSeries or IProductSeries.
         """
 
+    @operation_parameters(
+        target=Reference(
+            schema=IBugTarget, title=_('Target'), required=False),
+        nominations=List(
+            title=_("Nominations to search through."),
+            value_type=Reference(schema=Interface), # IBugNomination
+            required=False))
+    @operation_returns_collection_of(Interface) # IBugNomination
+    @export_read_operation()
     def getNominations(target=None, nominations=None):
         """Return a list of all IBugNominations for this bug.
 

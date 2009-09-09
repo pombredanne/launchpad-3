@@ -22,6 +22,7 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.browser.product import ProductEditView
 from lp.translations.browser.translations import TranslationsMixin
 
+
 class ProductTranslationsMenu(NavigationMenu):
 
     usedfor = IProduct
@@ -64,6 +65,19 @@ class ProductTranslationsMenu(NavigationMenu):
 class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
     label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
+
+    @property
+    def page_title(self):
+        return "Set translation permissions for %s" % (
+            self.context.displayname)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
 
 
 class ProductView(LaunchpadView):

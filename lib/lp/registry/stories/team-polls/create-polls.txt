@@ -111,7 +111,7 @@ We're redirected to the newly created poll
     >>> team_admin_browser.title
     'Poll: \xe2\x80\x9cDebian Project Leader Election 2080\xe2\x80\x9d'
     >>> print_location(team_admin_browser.contents)
-    Hierarchy: Launchpad > ?Ubuntu Team? team
+    Hierarchy: None displayed
     Tabs:
     * Overview (selected) - http://launchpad.dev/~ubuntu-team
     * Code - http://code.launchpad.dev/~ubuntu-team

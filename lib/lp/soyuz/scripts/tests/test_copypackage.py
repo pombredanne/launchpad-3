@@ -25,6 +25,7 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy)
@@ -33,8 +34,7 @@ from lp.soyuz.interfaces.build import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingPocket, PackagePublishingStatus,
-    active_publishing_status)
+    PackagePublishingStatus, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
     PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.model.publishing import (
@@ -132,6 +132,22 @@ class ReUploadFileTestCase(TestCaseWithFactory):
             private_file.restricted, 'New file still public')
         self.assertSameContent(public_file, private_file)
         self.assertFileIsReset(private_file)
+
+    def test_re_upload_file_does_not_leak_file_descriptors(self):
+        # Reuploading a library file doesn't leak file descriptors. The
+        # only extra file opened by the end of the process is the socket
+        # with the librarian server.
+        private_file = self.factory.makeLibraryFileAlias(restricted=True)
+        transaction.commit()
+
+        def number_of_open_files():
+            return len(os.listdir('/proc/%d/fd/' % os.getpid()))
+        previously_open_files = number_of_open_files()
+
+        public_file = re_upload_file(private_file)
+
+        open_files = number_of_open_files() - previously_open_files
+        self.assertEqual(1, open_files)
 
 
 class UpdateFilesPrivacyTestCase(TestCaseWithFactory):

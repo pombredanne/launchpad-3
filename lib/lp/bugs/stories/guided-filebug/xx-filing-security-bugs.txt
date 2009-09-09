@@ -3,8 +3,7 @@
 There's an option to file a security related bug on the +filebug page.
 It's only visible on the second step, after the summary has been submitted.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/')
-    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/+filebug')
     >>> user_browser.getControl('This bug is a security vulnerability')
     Traceback (most recent call last):
     ...
