@@ -372,6 +372,11 @@ Zero or more spaces may appear between the ":" and the "#".
     u'LP: <a href="/bugs/10" title="another test bug">#10</a>
       LP: <a href="/bugs/10" title="another test bug">#10</a>'
 
+The regex is case-insensitive, so "lp: #nnn" also works.
+
+    >>> spr_view._linkify_bug_numbers("lp: #10")
+    u'lp: <a href="/bugs/10" title="another test bug">#10</a>'
+
 
 == Comparing Sourcepackages ==
 
