@@ -372,8 +372,6 @@ distributionsourcepackage_publishinghistory = ContextTitle(
 structural_subscriptions_manage = ContextTitle(
     'Bug subscriptions for %s')
 
-distributionsourcepackagerelease_index = ContextTitle('%s')
-
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
 distroarchseries_builds = ContextTitle('%s builds')
@@ -406,8 +404,6 @@ distroseries_queue = ContextTitle('Queue for %s')
 distroserieslanguage_index = ContextTitle('%s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
-
-edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
