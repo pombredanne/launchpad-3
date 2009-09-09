@@ -345,12 +345,10 @@ We can optionally pass the number of days.
 
 
 The ArchiveView includes a helper to return the number of packages that
-are building as well as the number of packages waiting to build. This
-property returns None if there are no current builds in progress (or
-waiting).
+are building as well as the number of packages waiting to build.
 
     >>> print view.num_pkgs_building
-    None
+    {'building': 0, 'waiting': 0, 'total': 0}
 
 Let's set some builds appropriately to see the results.
 
@@ -374,21 +372,21 @@ Let's set some builds appropriately to see the results.
     >>> builds[2].buildstate = BuildStatus.BUILDING
 
     >>> view.num_pkgs_building
-    {'building': 2, 'waiting': 1}
+    {'building': 2, 'waiting': 1, 'total': 3}
 
 Adding a second waiting build for the cdrkit does not add to the number
 of packages that are currently building.
 
     >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
     >>> view.num_pkgs_building
-    {'building': 2, 'waiting': 1}
+    {'building': 2, 'waiting': 1, 'total': 3}
 
 But as soon as one of cdrkit's builds start, the package is considered
 to be building:
 
     >>> builds[4].buildstate = BuildStatus.BUILDING
     >>> view.num_pkgs_building
-    {'building': 3, 'waiting': 0}
+    {'building': 3, 'waiting': 0, 'total': 3}
 
 
 == ArchivePackageView ==

@@ -115,7 +115,7 @@
               update<tal:plural content="string:s"
                                 condition="python:num_updates!=1"/>
               added during the past month.</dd>
-            <dd tal:condition="pkg_build_counts">
+            <dd tal:condition="pkg_build_counts/total">
               Currently
               <a tal:attributes="href context/menu:overview/builds_building/fmt:url"
                  tal:omit-tag="not:pkg_build_counts/building">

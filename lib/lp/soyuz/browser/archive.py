@@ -827,25 +827,22 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
         # Create a set of all source package releases that have builds
         # waiting to build, as well as a set of those with building builds.
-        needs_build_set = set()
-        for build in needs_build:
-            needs_build_set.add(build.sourcepackagerelease)
+        needs_build_set = set(
+            build.sourcepackagerelease for build in needs_build)
 
-        building_set = set()
-        for build in building:
-            building_set.add(build.sourcepackagerelease)
+        building_set = set(
+            build.sourcepackagerelease for build in building)
 
         # A package is not counted as waiting if it already has at least
         # one build building.
         pkgs_building_count = len(building_set)
         pkgs_waiting_count = len(needs_build_set.difference(building_set))
 
-        if pkgs_building_count == 0 and pkgs_waiting_count == 0:
-            return None
-
+        # The total is just used for conditionals in the template.
         return {
             'building': pkgs_building_count,
-            'waiting': pkgs_waiting_count
+            'waiting': pkgs_waiting_count,
+            'total': pkgs_building_count + pkgs_waiting_count,
             }
 
 
