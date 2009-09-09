@@ -1244,16 +1244,17 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
         # Present a page notification describing the action.
         messages = []
+        destination_url = canonical_url(destination_archive) + '/+packages'
         if len(copies) == 0:
             messages.append(
                 '<p>All packages already copied to '
                 '<a href="%s">%s</a>.</p>' % (
-                    canonical_url(destination_archive),
+                    destination_url,
                     destination_archive.displayname))
         else:
             messages.append(
                 '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                    canonical_url(destination_archive),
+                    destination_url,
                     destination_archive.displayname))
             messages.append('<ul>')
             messages.append(

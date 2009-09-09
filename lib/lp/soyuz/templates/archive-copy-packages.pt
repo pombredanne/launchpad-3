@@ -93,6 +93,9 @@
             <td colspan="2">
               <input
                 tal:replace="structure view/actions/field.actions.copy/render" />
+                or
+                <a tal:attributes="href context/menu:overview/packages/fmt:url">
+                  Cancel</a>
             </td>
           </tr>
 
