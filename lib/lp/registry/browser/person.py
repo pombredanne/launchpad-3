@@ -870,7 +870,7 @@ class CommonMenuLinks:
     def summary(self):
         target = '+related-software'
         text = 'Summary'
-        return Link(target, text)
+        return Link(target, text, icon='info')
 
     def maintained(self):
         target = '+maintained-packages'
@@ -881,17 +881,17 @@ class CommonMenuLinks:
     def uploaded(self):
         target = '+uploaded-packages'
         text = 'Uploaded Packages'
-        return Link(target, text)
+        return Link(target, text, icon='info')
 
     def ppa(self):
         target = '+ppa-packages'
         text = 'PPA Packages'
-        return Link(target, text)
+        return Link(target, text, icon='info')
 
     def projects(self):
         target = '+related-projects'
         text = 'Related Projects'
-        return Link(target, text)
+        return Link(target, text, icon='info')
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -4834,6 +4834,10 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     max_results_to_display = config.launchpad.default_batch_size
 
+    @property
+    def page_title(self):
+        return "Software related to " + self.context.displayname
+
     @cachedproperty
     def related_projects(self):
         """Return a list of project dicts owned or driven by this person.
@@ -5057,6 +5061,10 @@ class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
         packages = self.context.getLatestMaintainedPackages()
         self.setUpBatch(packages)
 
+    @property
+    def page_title(self):
+        return "Software maintained by " + self.context.displayname
+
 
 class PersonUploadedPackagesView(PersonRelatedSoftwareView):
     """View for +uploaded-packages."""
@@ -5065,6 +5073,10 @@ class PersonUploadedPackagesView(PersonRelatedSoftwareView):
         """Set up the batch navigation."""
         packages = self.context.getLatestUploadedButNotMaintainedPackages()
         self.setUpBatch(packages)
+
+    @property
+    def page_title(self):
+        return "Software uploaded by " + self.context.displayname
 
 
 class PersonPPAPackagesView(PersonRelatedSoftwareView):
@@ -5082,6 +5094,10 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
         packages_batch = self.filterPPAPackageList(packages_batch)
         self.batch = self._addStatsToPackages(packages_batch)
 
+    @property
+    def page_title(self):
+        return "PPA packages related to " + self.context.displayname
+
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
     """View for +related-projects."""
@@ -5091,6 +5107,10 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
         self.batchnav = BatchNavigator(
             self.related_projects, self.request)
         self.batch = list(self.batchnav.currentBatch())
+
+    @property
+    def page_title(self):
+        return "Projects related to " + self.context.displayname
 
 
 class PersonOAuthTokensView(LaunchpadView):
