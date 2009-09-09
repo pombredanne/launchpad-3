@@ -305,7 +305,7 @@ they were published:
     iceweasel - Successfully built
 
 Let's now update the datepublished for iceweasel to show that the ordering
-is from most-recent.
+is from most recent.
 
     >>> from canonical.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')

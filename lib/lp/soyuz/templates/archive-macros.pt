@@ -354,7 +354,7 @@ div.package-details {
     <tal:updates condition="updates">
       <ul class="latest-ppa-updates">
         <li tal:repeat="update updates"
-            tal:attributes="class string:${update/status_class} ${update/even_class}">
+            tal:attributes="class update/status_class">
           <strong tal:content="update/title">Firefox-3.5</strong>
           <span class="duration">
             <span tal:replace="update/duration/fmt:approximateduration">
