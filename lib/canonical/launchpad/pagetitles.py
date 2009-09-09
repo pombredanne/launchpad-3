@@ -389,11 +389,6 @@ distroseries_bugs = ContextTitle('Bugs in %s')
 
 distroseries_cvereport = ContextDisplayName('CVE report for %s')
 
-def distroseries_index(context, view):
-    """Return the distribution and version page title."""
-    return '%s %s in Launchpad' % (
-        context.distribution.title, context.version)
-
 def distroseries_language_packs(context, view):
     return view.page_title
 
@@ -838,8 +833,6 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
-
-productseries_index = ContextTitle('%s')
 
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')

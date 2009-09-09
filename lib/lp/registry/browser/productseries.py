@@ -347,6 +347,11 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         # Check the form submission.
         self.processForm()
 
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return self.context.title
+
     def processForm(self):
         """Process a form if it was submitted."""
         if not self.request.method == "POST":
