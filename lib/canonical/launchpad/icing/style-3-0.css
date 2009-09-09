@@ -748,6 +748,26 @@ form.translations div.alignment .secondary label {
   padding: 2px 1em 2px 2px;
 }
 
+/* Translations statistics and legend.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+lang/es
+ *   https://translations.launchpad.dev/evolution/trunk/+lang/es
+ */
+
+div.translations-legend {
+  padding-top: 2em;
+  padding-bottom: 1em;
+}
+.translation-stats th {
+  font-weight: bold;
+  padding-right: 1em;
+  text-align: left;
+}
+.translation-stats td {
+  text-align: right;
+}
+
 table.narrow-listing {
   width: 45em;
 }

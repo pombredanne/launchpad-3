@@ -1,0 +1,43 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="yui-g translations-legend" id="portlet-stats">
+
+  <div class="yui-u first">
+    <h3 tal:content="
+        string:Overall ${context/language/englishname} statistics">
+      Overall Serbian statistics
+    </h3>
+    <div>
+      <span style="white-space: nowrap"
+            tal:content="structure context/@@+barchart">--</span>
+    </div>
+    <table class="translation-stats">
+      <tr>
+        <th>Total strings:</th>
+        <td><span tal:replace="context/messageCount">N</span></td>
+      </tr>
+      <tr>
+        <th>Translated:</th>
+        <td><span tal:replace="context/translatedCount">N</span></td>
+      </tr>
+      <tr>
+        <th>Untranslated:</th>
+        <td><span tal:replace="context/untranslatedCount">N</span></td>
+      </tr>
+      <tr>
+        <th>Unreviewed:</th>
+        <td><span tal:replace="context/unreviewedCount">N</span></td>
+      </tr>
+      <tr>
+        <th>Changed:</th>
+        <td><span tal:replace="context/updatesCount">N</span></td>
+      </tr>
+    </table>
+  </div>
+  <div class="yui-u">
+    <h3>Legend</h3>
+    <div tal:replace="structure context/@@+rosetta-status-legend" />
+  </div>
+</div>

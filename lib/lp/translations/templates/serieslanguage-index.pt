@@ -2,26 +2,10 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="rosetta"
+  metal:use-macro="view/macro:page/main_only"
 >
 
 <body>
-
-<metal:rightportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-stats" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>
-    Programs you can translate into
-    <tal:language replace="context/language/englishname">Catalan</tal:language>
-  </h1>
-</metal:heading>
 
 <div metal:fill-slot="main">
   <tal:block condition="not:view/pofiles">
@@ -31,15 +15,42 @@
   </tal:block>
 
   <tal:block condition="view/pofiles">
+    <h1>Translatable templates</h1>
+    <div class="top-portlet">
+      <tal:with_group condition="view/translation_group">
+        <p tal:condition="view/translation_team">
+          <tal:product replace="structure
+            view/parent/fmt:link">Evolution</tal:product>
+          is translated by
+          <tal:team replace="structure
+                             view/translation_team/translator/fmt:link">
+            Serbian translators</tal:team> — if you need help, or your
+          translations are not being reviewed, please get in touch with them.
+        </p>
 
-    <p>
-      Choose a template name to begin translating. Templates that are
-      considered more important for translation are listed first.
-    </p>
+        <p tal:condition="not:view/translation_team">
+          There is no team to translate
+          <tal:product replace="structure
+            view/parent/fmt:link">Evolution</tal:product>
+          to
+          <a tal:attributes="href context/language/fmt:url"
+             tal:content="context/language/englishname">Serbian</a>.
+          To set one up, please get in touch with
+          <a tal:replace="structure view/translation_group/fmt:link"
+             >Launchpad Translators</a>
+          coordinator.
+        </p>
+      </tal:with_group>
+
+      <p>
+        Choose a template name to begin translating.
+        Templates which are more important to translate are listed first.
+      </p>
+    </div>
 
     <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
-    <table class="listing sortable" width="100%" id="translationstatuses">
+    <table class="listing sortable" id="translationstatuses">
       <thead>
         <tr>
           <th>Template Name</th>
@@ -148,32 +159,12 @@
         </tr>
       </tbody>
     </table>
-
     <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
-    <div tal:replace="structure context/@@+rosetta-status-legend" />
-
+    <div tal:replace="structure context/@@+portlet-stats" />
   </tal:block>
 
 </div>
-
-<div metal:fill-slot="help">
-  <p>
-    This page shows each of the translation templates in each of the source
-    packages in the
-    <span tal:replace="context/distroseries/displayname">hoary</span>
-    series of
-    <span tal:replace="context/distroseries/distribution/displayname">Ubuntu
-    </span>. Select a template to start translating.
-  </p>
-  <ul class="info">
-    <li>
-      <a href="https://help.launchpad.net/RosettaFAQ"
-      >Frequently asked questions</a>
-    </li>
-  </ul>
-</div>
-
 
 </body>
 </html>
