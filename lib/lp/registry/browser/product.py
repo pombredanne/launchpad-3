@@ -1671,7 +1671,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 class ProductAddView(MultiStepView):
     """The controlling view for product/+new."""
 
-    page_title = ProjectAddStepOne.page_title
     total_steps = 2
 
     @property

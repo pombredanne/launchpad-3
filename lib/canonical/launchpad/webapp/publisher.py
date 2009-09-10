@@ -697,10 +697,6 @@ class Navigation:
         if self.newlayer is not None:
             setFirstLayer(request, self.newlayer)
 
-        # store the current context object in the request's
-        # traversed_objects list:
-        request.traversed_objects.append(self.context)
-
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals
         if stepto_traversals is not None:

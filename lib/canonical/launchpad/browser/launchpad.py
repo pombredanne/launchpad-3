@@ -36,7 +36,7 @@ from datetime import timedelta, datetime
 
 from zope.app import zapi
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getMultiAdapter, getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -221,7 +221,7 @@ class Hierarchy(LaunchpadView):
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
-        return self.request.traversed_objects
+        return self.request.traversed_objects[:-1]
 
     @cachedproperty
     def items(self):
@@ -264,26 +264,23 @@ class Hierarchy(LaunchpadView):
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the requested page (as specified in self.request) is the default
-        one for the last traversed object, return None.
+        one for our parent view's context, return None.
         """
         url = self.request.getURL()
         last_segment = URI(url).path.split('/')[-1]
-        obj = self.request.traversed_objects[-1]
+        from zope.security.proxy import removeSecurityProxy
+        view = removeSecurityProxy(self.request.traversed_objects[-1])
+        obj = view.context
         default_view_name = zapi.getDefaultViewName(obj, self.request)
         if last_segment.startswith('+') and last_segment != default_view_name:
-            if last_segment in ("+viewstatus", "+editstatus"):
-                # XXX: Another evil hack because of
-                # BugTaskNavigation.traverse().
-                last_segment += '-page'
-            view = getMultiAdapter((obj, self.request), name=last_segment)
             title = getattr(view, 'page_title', None)
             if title is None:
                 template = getattr(view, 'template', None)
                 if template is None:
                     template = view.index
-                foo = PageTemplateContextsAPI(
+                template_api = PageTemplateContextsAPI(
                     dict(context=obj, template=template, view=view))
-                title = foo.pagetitle()
+                title = template_api.pagetitle()
             if len(title) > 30:
                 title = "%s..." % title[:30]
             breadcrumb = Breadcrumb(None)
