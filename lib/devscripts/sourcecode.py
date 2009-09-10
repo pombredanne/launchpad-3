@@ -76,6 +76,7 @@ def plan_update(existing_branches, configuration):
 
 
 def find_branches(directory):
+    """List the directory names in 'directory' that are branches."""
     transport = get_transport(directory)
     return (
         os.path.basename(branch.base.rstrip('/'))
