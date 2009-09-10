@@ -2,11 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-tests to investigate (probably because are multi-step views)
-	lib/lp/bugs/tests/../stories/bugwatches/xx-bugwatch-errors.txt
-	lib/lp/bugs/tests/../stories/bug-also-affects/xx-also-affects-distribution-default-values.txt 
-	lib/lp/bugs/tests/../stories/bugs/bug-add-subscriber.txt
-      	(link that previously was not present is now in the breadcrumbs)
-	xx-distroseries-language-packs.txt
-	xx-person-translations..txt
-	xx-pofile-index.txt
