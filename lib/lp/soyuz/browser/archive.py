@@ -354,11 +354,11 @@ class ArchiveMenuMixin:
         return Link('+builds?build_state=built', text, icon='info')
 
     def builds_pending(self):
-        text = 'View successful builds'
+        text = 'View pending builds'
         return Link('+builds?build_state=pending', text, icon='info')
 
     def builds_building(self):
-        text = 'View successful builds'
+        text = 'View in-progress builds'
         return Link('+builds?build_state=building', text, icon='info')
 
     def packages(self):
@@ -371,8 +371,9 @@ class ArchiveMenuMixin:
         text = 'Delete packages'
         link = Link('+delete-packages', text, icon='edit')
 
-        # This link should not be available for copy archives.
-        if self.context.is_copy:
+        # This link should not be available for copy archives or
+        # archives without any sources.
+        if self.context.is_copy or not self.context.has_sources:
             link.enabled = False
         return link
 
@@ -399,8 +400,8 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
     usedfor = IArchive
     facet = 'overview'
     links = ['admin', 'builds', 'builds_building', 'builds_pending',
-             'builds_successful', 'copy', 'delete', 'edit',
-             'edit_dependencies', 'packages', 'ppa']
+             'builds_successful', 'edit', 'edit_dependencies', 'packages',
+             'ppa']
 
 
 class IArchiveIndexActionsMenu(Interface):
@@ -572,7 +573,7 @@ class IPPAPackageFilter(Interface):
         title=_("Package name contains"), required=False)
 
     series_filter = Choice(
-        source=ArchiveSeriesVocabularyFactory(), required=True)
+        source=ArchiveSeriesVocabularyFactory(), required=False)
 
     status_filter = Choice(vocabulary=SimpleVocabulary((
         SimpleTerm(active_publishing_status, 'published', 'Published'),
@@ -1244,16 +1245,17 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
         # Present a page notification describing the action.
         messages = []
+        destination_url = canonical_url(destination_archive) + '/+packages'
         if len(copies) == 0:
             messages.append(
                 '<p>All packages already copied to '
                 '<a href="%s">%s</a>.</p>' % (
-                    canonical_url(destination_archive),
+                    destination_url,
                     destination_archive.displayname))
         else:
             messages.append(
                 '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                    canonical_url(destination_archive),
+                    destination_url,
                     destination_archive.displayname))
             messages.append('<ul>')
             messages.append(

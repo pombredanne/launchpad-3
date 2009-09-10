@@ -531,23 +531,20 @@
             DistributionSourcePackageReleaseNavigation"/>
     <browser:pages
         for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
-        class="canonical.launchpad.webapp.LaunchpadView"
+        class="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleaseView"
         permission="zope.Public">
         <browser:page
             name="+index"
             facet="overview"
             template="../templates/distributionsourcepackagerelease-index.pt"/>
-
-        <!-- DistributionSourcePackageRelease Portlets -->
-
-        <browser:page
-            name="+portlet-details"
-            facet="overview"
-            template="../templates/distributionsourcepackagerelease-portlet-details.pt"/>
         <browser:page
             name="+changes"
             facet="overview"
             template="../templates/distributionsourcepackagerelease-changes.pt"/>
+        <browser:page
+            name="+publishinghistory"
+            facet="overview"
+            template="../templates/distributionsourcepackage-publishinghistory.pt"/>
     </browser:pages>
     <browser:defaultView
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
@@ -755,7 +752,7 @@
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distroseries.IDistroSeries"
-            class="lp.registry.browser.distroseries.DistroSeriesView"
+            class="lp.soyuz.browser.distroseries.DistroSeriesBuildsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"
