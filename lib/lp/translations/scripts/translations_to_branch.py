@@ -56,7 +56,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
     def _commit(self, source, committer):
         """Commit changes to branch.  Check for race conditions."""
         self._checkForObjections(source)
-        committer.commit("Launchpad automatic translations update.")
+        committer.commit(
+            "Launchpad automatic translations update.", txn=self.txn)
 
     def _exportToBranch(self, source):
         """Export translations for source into source.translations_branch.
@@ -67,6 +68,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         self._checkForObjections(source)
 
         committer = self._makeDirectBranchCommit(source.translations_branch)
+        self.logger.debug("Created DirectBranchCommit.")
+        if self.txn:
+            self.txn.commit()
 
         try:
             subset = getUtility(IPOTemplateSet).getSubset(
@@ -75,8 +79,10 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 base_path = os.path.dirname(template.path)
 
                 for pofile in template.pofiles:
+                    language_code = pofile.getFullLanguageCode()
+                    self.logger.debug("Exporting %s." % language_code)
                     pofile_path = os.path.join(
-                        base_path, pofile.getFullLanguageCode() + '.po')
+                        base_path, language_code + '.po')
                     pofile_contents = pofile.export()
 
                     committer.writeFile(pofile_path, pofile_contents)
@@ -87,6 +93,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     if self.txn:
                         self.txn.commit()
 
+            self.logger.debug("Writing to branch.")
             self._commit(source, committer)
         finally:
             committer.unlock()
@@ -113,8 +120,6 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     self.txn.abort()
 
             items_done += 1
-            if self.txn:
-                self.txn.begin()
 
         self.logger.info("Processed %d item(s); %d failure(s)." % (
             items_done, items_failed))
