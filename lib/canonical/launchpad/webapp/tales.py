@@ -1215,6 +1215,17 @@ class PillarFormatterAPI(CustomizableFormatter):
         return html
 
 
+class DistroSeriesFormatterAPI(CustomizableFormatter):
+    """Adapter for IDistroSeries objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+
 class SourcePackageFormatterAPI(CustomizableFormatter):
     """Adapter for ISourcePackage objects to a formatted string."""
 
@@ -2812,7 +2823,6 @@ class FormattersAPI:
             # Only linkify if person exists and does not want to hide
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
-                person_formatter = PersonFormatterAPI(person)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
                     address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
