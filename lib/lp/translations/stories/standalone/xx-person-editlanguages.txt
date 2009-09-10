@@ -179,3 +179,59 @@ Person's page to do it himself.
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print extract_text(message)
     Added Esperanto to No Privileges Person's preferred languages.
+
+
+The personal page nags
+----------------------
+
+If you don't have your preferred languages set, your Translations home
+page will nag you about it.
+
+    >>> def find_nag(browser):
+    ...     """Return the nag message as shown in browser, if present."""
+    ...     tag = find_tag_by_id(browser.contents, 'no-languages')
+    ...     if tag:
+    ...         return tag.renderContents()
+    ...     else:
+    ...         return None
+
+Noi, a new user, visits her home page.
+
+    >>> login(ANONYMOUS)
+    >>> noi = factory.makePerson(
+    ...     name='noi', email='noi@example.com', password='test')
+    >>> logout()
+
+    >>> noi_browser = setupBrowser('Basic noi@example.com:test')
+    >>> noi_home = 'http://translations.launchpad.dev/~noi'
+    >>> noi_browser.open(noi_home)
+
+The home page reminds her to set her preferred languages.
+
+    >>> print find_nag(noi_browser)
+    You have not selected your preferred languages.
+    Please <a ...>set them now</a>.
+
+The message does not appear for other users looking at Noi's home page.
+
+    >>> user_browser.open(noi_home)
+    >>> print find_nag(user_browser)
+    None
+
+The nag message links to the languages editing page.
+
+    >>> noi_browser.getLink(id='set-languages').click()
+    >>> print noi_browser.title
+    Your language preferences
+
+Once Noi has set one or more preferred languages, the nag message goes
+away.
+
+    >>> login(ANONYMOUS)
+    >>> from lp.services.worlddata.model.language import LanguageSet
+    >>> noi.addLanguage(LanguageSet().getLanguageByCode('lo'))
+    >>> logout()
+
+    >>> noi_browser.open(noi_home)
+    >>> print find_nag(noi_browser)
+    None

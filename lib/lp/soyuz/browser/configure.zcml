@@ -528,23 +528,20 @@
             DistributionSourcePackageReleaseNavigation"/>
     <browser:pages
         for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
-        class="canonical.launchpad.webapp.LaunchpadView"
+        class="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleaseView"
         permission="zope.Public">
         <browser:page
             name="+index"
             facet="overview"
             template="../templates/distributionsourcepackagerelease-index.pt"/>
-
-        <!-- DistributionSourcePackageRelease Portlets -->
-
-        <browser:page
-            name="+portlet-details"
-            facet="overview"
-            template="../templates/distributionsourcepackagerelease-portlet-details.pt"/>
         <browser:page
             name="+changes"
             facet="overview"
             template="../templates/distributionsourcepackagerelease-changes.pt"/>
+        <browser:page
+            name="+publishinghistory"
+            facet="overview"
+            template="../templates/distributionsourcepackage-publishinghistory.pt"/>
     </browser:pages>
     <browser:defaultView
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
@@ -667,13 +664,6 @@
             name="+queue"
             template="../templates/distroseries-queue.pt"/>
         <browser:page
-            name="+addpackage"
-            for="lp.registry.interfaces.productseries.IProductSeries"
-            class="canonical.launchpad.browser.PackagingAddView"
-            facet="overview"
-            permission="launchpad.Edit"
-            template="../templates/productseries-packaging.pt"/>
-        <browser:page
             name="+activate-ppa"
             for="lp.registry.interfaces.person.IPerson"
             facet="overview"
@@ -713,19 +703,14 @@
             permission="zope.Public"
             name="+portlet-ppa-architectures"
             template="../templates/distribution-portlet-ppa-architectures.pt"/>
-        <browser:pages
+        <browser:page
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+            class=
+                "lp.soyuz.browser.sourcepackage.SourcePackageChangelogView"
             permission="zope.Public"
-            class="lp.registry.browser.sourcepackage.SourcePackageView">
-            <browser:page
-                name="+packaging"
-                facet="overview"
-                template="../templates/sourcepackage-packaging.pt"/>
-            <browser:page
-                name="+changelog"
-                facet="overview"
-                template="../templates/sourcepackage-changelog.pt"/>
-        </browser:pages>
+            name="+changelog"
+            facet="overview"
+            template="../templates/sourcepackage-changelog.pt"/>
         <browser:pages
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
             permission="zope.Public"
@@ -764,7 +749,7 @@
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distroseries.IDistroSeries"
-            class="lp.registry.browser.distroseries.DistroSeriesView"
+            class="lp.soyuz.browser.distroseries.DistroSeriesBuildsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"
