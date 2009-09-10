@@ -33,6 +33,7 @@ from lp.registry.interfaces.productrelease import (
 
 from lazr.restful.interface import copy_field
 from canonical.launchpad import _
+from canonical.lazr.utils import smartquote
 from lp.registry.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
@@ -132,8 +133,10 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Create a new release for %s' % (
-            self.context.product.displayname)
+        return smartquote('Create a new release for %s' %
+                          self.context.product.displayname)
+
+    page_title = label
 
     @property
     def cancel_url(self):
@@ -232,7 +235,9 @@ class ProductReleaseEditView(LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Edit %s release details' % self.context.title
+        return smartquote('Edit %s release details' % self.context.title)
+
+    page_title = label
 
     @action('Change', name='change')
     def change_action(self, action, data):
@@ -282,7 +287,9 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Add a download file to %s' % self.context.title
+        return smartquote('Add a download file to %s' % self.context.title)
+
+    page_title = label
 
     @action('Upload', name='add')
     def add_action(self, action, data):
@@ -354,7 +361,9 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @property
     def label(self):
         """The form label."""
-        return 'Delete %s' % self.context.title
+        return smartquote('Delete %s' % self.context.title)
+
+    page_title = label
 
     @action('Delete this Release', name='delete')
     def delete_action(self, action, data):
@@ -368,4 +377,3 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
