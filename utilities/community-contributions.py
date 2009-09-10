@@ -217,11 +217,9 @@ class ExCon():
             plural = ""
         s.append("''%d top-level landing%s:''\n\n"
                  % (self.num_landings(), plural))
-        def prefer_recent_revs(a, b):
-            # A and B are LogRevisions; put more recent ones higher in the list.
-            return cmp(b.top_rev.revno, a.top_rev.revno)
-        for cr in sorted(self._landings, prefer_recent_revs):
-            s.append(str(cr))
+        s.append(''.join(map(str, sorted(self._landings,
+                                         key=lambda x: x.top_rev.revno,
+                                         reverse=True))))
         s.append("\n")
         return ''.join(s)
 
@@ -274,14 +272,12 @@ class LogExCons(log.LogFormatter):
 
     def result(self):
         """Return a moin-wiki-syntax string with TOC followed by contributions."""
-        def prefer_more_revs(a, b):
-            # List the most prolific contributors first.
-            return cmp(b.num_landings(), a.num_landings())
-        sorted_contributors = \
-            sorted(self.all_ex_cons.values(), prefer_more_revs)
         s = [ ]
         s.append("-----\n\n")
         s.append("= Who =\n\n")
+        sorted_contributors = sorted(self.all_ex_cons.values(),
+                                     key=lambda x: x.num_landings(),
+                                     reverse=True)
         for val in sorted_contributors:
             plural = "s"
             if val.num_landings() == 1:
