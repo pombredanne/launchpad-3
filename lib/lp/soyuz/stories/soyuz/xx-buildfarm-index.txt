@@ -13,7 +13,6 @@ in the 'Status' column. There are also 2 portlets on the right-side
 containing the build queue status summary for each build domain.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    The Launchpad build farm
     1 available build machine, 1 disabled and 1 building of a total of
     2 registered.
     Builders
