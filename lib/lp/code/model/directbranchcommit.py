@@ -15,7 +15,7 @@ import os.path
 from bzrlib.branch import Branch
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
-from bzrlib.transform import TransformPreview
+from bzrlib.transform import TransformPreview, ROOT_PARENT
 
 from canonical.launchpad.interfaces import IMasterObject
 from lp.codehosting.vfs import make_branch_mirrorer
@@ -84,8 +84,13 @@ class DirectBranchCommit:
         if to_mirror:
             self.bzrbranch = Branch.open(self.db_branch.warehouse_url)
         else:
+            # Have the opening done through a branch mirrorer.  It will
+            # pick the right policy.  In case we're writing to a hosted
+            # branch stacked on a mirrored branch, the mirrorer knows
+            # how to do the right thing.
             mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
             self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
+
         self.bzrbranch.lock_write()
         self.is_locked = True
 
@@ -118,7 +123,7 @@ class DirectBranchCommit:
         if dirname:
             parent_id = self._getDir(parent_dir)
         else:
-            parent_id = None
+            parent_id = ROOT_PARENT
 
         # Create new directory.
         dirfile_id = gen_file_id(path)
@@ -180,32 +185,15 @@ class DirectBranchCommit:
         try:
             self._checkForRace()
 
-            preview_tree = self.transform_preview.get_preview_tree()
-
             rev_id = self.revision_tree.get_revision_id()
             if rev_id == NULL_REVISION:
-                parents = []
-            else:
-                parents = [rev_id]
-
-            builder = self.bzrbranch.get_commit_builder(parents)
-
-            list(builder.record_iter_changes(
-                preview_tree, rev_id, self.transform_preview.iter_changes()))
-
-            builder.finish_inventory()
-
-            new_rev_id = builder.commit(commit_message)
-            builder = None
-
-            revno, old_rev_id = self.bzrbranch.last_revision_info()
-            self.bzrbranch.set_last_revision_info(revno + 1, new_rev_id)
-
+                if list(self.transform_preview.iter_changes()) == []:
+                    return
+            new_rev_id = self.transform_preview.commit(
+                self.bzrbranch, commit_message)
             IMasterObject(self.db_branch).requestMirror()
 
         finally:
-            if builder:
-                builder.abort()
             self.unlock()
             self.is_open = False
         return new_rev_id

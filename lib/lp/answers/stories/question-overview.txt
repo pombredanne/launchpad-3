@@ -93,28 +93,6 @@ On that facet, we will find the same common listings:
     >>> browser.getLink('My questions').url
     '.../ubuntu/+myquestions'
 
-== DistroSeries ==
-
-On a distroseries there is a "Ask Question" link, but note that it
-points at its distro, not itself. Questions are linked to distro,
-and optionally source package too.
-
-    >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
-    >>> user_browser.getLink('Ask a question').click()
-    >>> print user_browser.title
-    +addquestion : Questions for Ubuntu Linux : Ubuntu
-    >>> user_browser.url
-    '.../ubuntu/+addquestion'
-
-There is also an 'Ask a question' button on the Distrorelease Bugs facet
-home page, which also links to the related distribution page.
-
-    >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
-    >>> user_browser.getLink('Ask a question').click()
-    >>> print user_browser.title
-    +addquestion : Questions for Ubuntu Linux : Ubuntu
-    >>> user_browser.url
-    '.../ubuntu/+addquestion'
 
 == Source packages ==
 
