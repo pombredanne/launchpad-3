@@ -2,36 +2,90 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-details">
+  id="milestone-details" class="portlet">
+  <h2>Milestone information</h2>
 
-  <h2><span tal:replace="context/title">Milestone title</span> details</h2>
+  <div class="two-column-list">
+    <dl>
+      <dt>Project:</dt>
+      <dd><a tal:replace="structure view/milestone/target/fmt:link" /></dd>
+    </dl>
 
-  <div class="portletBody portletContent">
+    <dl tal:condition="not: view/is_project_milestone">
+      <dt>Series:</dt>
+      <dd><a tal:attributes="href view/milestone/series_target/fmt:url"
+        tal:content="view/milestone/series_target/displayname"
+        tal:condition="view/milestone/series_target" /></dd>
+    </dl>
 
-    <b>Name:</b>
-    <span tal:replace="context/name">foo</span><br />
+    <dl>
+      <dt>Version:</dt>
+      <dd><tal:version replace="context/name" /></dd>
+    </dl>
 
-    <tal:hascodename condition="context/code_name">
-        <b>Codename:</b>
-        <tal:codename replace="context/code_name" /><br/>
-    </tal:hascodename>
+    <dl>
+      <dt>Code name:</dt>
+      <dd>
+        <tal:code-name replace="view/milestone/code_name" />
+        <tal:no-code-name
+          condition="not: view/milestone/code_name">None</tal:no-code-name>
+      </dd>
+    </dl>
 
-    <b>Date expected:</b>
-    <span
-      tal:replace="context/dateexpected/fmt:approximatedate|nothing">
-      2005-06-01
-    </span>
-    <i tal:condition="not: context/dateexpected">None set.</i>
-    <br />
+    <dl>
+      <dt>Expected:</dt>
+      <dd><span
+        tal:attributes="title context/dateexpected/fmt:datetime"
+        tal:content="context/dateexpected/fmt:approximatedate" />
+        &nbsp;
+        <a tal:replace="structure view/milestone/menu:overview/create_release/fmt:icon-link" />
+      </dd>
+    </dl>
 
-    <b>For:</b>
-    <a tal:content="context/target/displayname"
-       tal:attributes="href context/target/fmt:url">Ubuntu</a>
-    <a tal:content="context/series_target/displayname"
-       tal:condition="context/series_target"
-       tal:attributes="href context/series_target/fmt:url">Hoary</a>
-    <br />
+    <tal:has_release condition="view/release">
+      <dl>
+        <dt>Released:</dt>
+        <dd><span
+          tal:attributes="title view/release/datereleased/fmt:datetime"
+          tal:content="view/release/datereleased/fmt:approximatedate" />
+          &nbsp;
+          <a tal:replace="structure release_menu/delete/fmt:icon" />
+          <a tal:replace="structure release_menu/edit/fmt:icon" />
+          </dd>
+      </dl>
 
+      <dl>
+        <dt>Registrant:</dt>
+        <dd><tal:registrant replace="structure view/release/owner/fmt:link"/></dd>
+      </dl>
+
+      <dl>
+        <dt>Release registered:</dt>
+        <dd><span
+          tal:attributes="title view/release/datecreated/fmt:datetime"
+          tal:content="view/release/datecreated/fmt:approximatedate" /></dd>
+      </dl>
+    </tal:has_release>
   </div>
 
+  <dl tal:condition="not: view/is_project_milestone">
+    <dt>Active:</dt>
+    <dd>
+      <tal:yes condition="context/active">
+        Yes. Drivers can target bugs and blueprints to this milestone.
+      </tal:yes>
+      <tal:no condition="not: context/active">
+        No.  Drivers cannot target bugs and blueprints to this milestone.
+      </tal:no>
+      &nbsp; <a tal:replace="structure view/milestone/menu:navigation/edit/fmt:icon" />
+    </dd>
+  </dl>
+
+  <tal:has_release condition="view/release">
+    <p style="clear: both"
+      tal:define="link release_menu/download"
+      tal:condition="link/enabled">
+      <a tal:replace="structure link/render">Download RDF metadata</a>
+    </p>
+  </tal:has_release>
 </div>
