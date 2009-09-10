@@ -148,7 +148,7 @@ class PersonTranslationsMenu(NavigationMenu):
 
     def licensing(self):
         text = 'Translations licensing'
-        enabled = (self.context == self.user)
+        enabled = (self.person == self.user)
         return Link('+licensing', text, enabled=enabled)
 
     def translations_to_review(self):
