@@ -74,7 +74,7 @@
                 tal:attributes="href link/url"
               >project settings</a> page.
             </tal:permissions>
-
+          </p>
         <p tal:condition="view/has_translation_documentation">
           Before translating, please look at
           <a tal:attributes="
