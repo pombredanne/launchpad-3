@@ -156,17 +156,15 @@ current distroseries architecture list.
 
     >>> def check_arch_list(distroseries='warty'):
     ...     anon_browser.open("http://launchpad.dev/ubuntu/%s" % distroseries)
-    ...     for arch in find_tags_by_class(
-    ...         anon_browser.contents, 'architecture'):
-    ...         print extract_text(arch)
+    ...     print extract_text(find_tag_by_id(
+    ...         anon_browser.contents, 'portlet-architectures-list'))
 
 Since we disabled ppa-support for warty/i386, it's now presented as
 'official' only.
 
     >>> check_arch_list()
     i386
-    hppa
-    (unofficial)
+    hppa (unofficial)
 
 Re-enabling the PPA support on warty/i386 has immediate effects in the
 way this distroarchseries is presented.
@@ -176,8 +174,7 @@ way this distroarchseries is presented.
 
     >>> check_arch_list()
     i386
-    hppa
-    (unofficial)
+    hppa (unofficial)
 
 The same effect is observed when we make warty/i386 unofficial.
 
@@ -186,10 +183,8 @@ The same effect is observed when we make warty/i386 unofficial.
     >>> admin_browser.getControl("Change").click()
 
     >>> check_arch_list()
-    hppa
-    (unofficial)
-    i386
-    (unofficial)
+    hppa (unofficial)
+    i386 (unofficial)
 
 
 == Creating a new DistroArchSeries ==
