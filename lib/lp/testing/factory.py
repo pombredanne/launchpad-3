@@ -65,6 +65,7 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
+from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
@@ -104,6 +105,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.testing import run_with_login, time_counter
@@ -485,6 +487,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
+    def makeTranslator(self, language_code, group=None, person=None):
+        """Create a new, arbitrary `Translator`."""
+        language = getUtility(ILanguageSet).getLanguageByCode(language_code)
+        if group is None:
+            group = self.makeTranslationGroup()
+        if person is None:
+            person = self.makePerson()
+        return getUtility(ITranslatorSet).new(group, language, person)
+
     def makeMilestone(
         self, product=None, distribution=None, productseries=None, name=None):
         if product is None and distribution is None and productseries is None:
@@ -755,7 +766,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param branch: The branch that should be the default stacked-on
             branch.
         """
-        from lp.testing import run_with_login
         # 'branch' might be private, so we remove the security proxy to get at
         # the methods.
         naked_branch = removeSecurityProxy(branch)
