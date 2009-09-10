@@ -18,7 +18,7 @@ import rlcompleter
 rlcompleter
 
 
-from devscripts.ec2test.ec2testrunner import (
+from devscripts.ec2test.testrunner import (
     AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2TestRunner,
     TRUNK_BRANCH)
 

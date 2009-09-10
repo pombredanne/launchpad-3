@@ -10,7 +10,7 @@ import os
 
 import boto
 
-from devscripts.ec2test.ec2account import EC2Account
+from devscripts.ec2test.account import EC2Account
 
 class CredentialsError(Exception):
     """Raised when AWS credentials could not be loaded."""

@@ -24,8 +24,8 @@ from bzrlib.plugins.pqm.pqm_submit import (
 
 import paramiko
 
-from devscripts.ec2test.ec2instance import EC2Instance
-from devscripts.ec2test.ec2credentials import CredentialsError, EC2Credentials
+from devscripts.ec2test.instance import EC2Instance
+from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
 
 # XXX duplicated from __init__.py .. fix that
 TRUNK_BRANCH = 'bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel'
