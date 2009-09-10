@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import os
+import shutil
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.transport import get_transport
@@ -81,3 +82,57 @@ def find_branches(directory):
     return (
         os.path.basename(branch.base.rstrip('/'))
         for branch in BzrDir.find_branches(transport))
+
+
+def get_branches(sourcecode_directory, new_branches):
+    """Get the new branches into sourcecode."""
+    for project, (branch_url, optional) in new_branches.iteritems():
+        destination = os.path.join(sourcecode_directory, project)
+        print 'Getting %s from %s' % (project, branch_url)
+        os.system('bzr branch %s %s' % (branch_url, destination))
+
+
+def update_branches(sourcecode_directory, update_branches):
+    """Update the existing branches in sourcecode."""
+    for project, (branch_url, optional) in update_branches.iteritems():
+        destination = os.path.join(sourcecode_directory, project)
+        print 'Updating %s' % (project,)
+        os.system('bzr pull -d %s %s' % (destination, branch_url))
+
+
+def remove_branches(sourcecode_directory, removed_branches):
+    """Remove sourcecode that's no longer there."""
+    for project in removed_branches:
+        destination = os.path.join(sourcecode_directory, project)
+        print 'Removing %s' % project
+        try:
+            shutil.rmtree(destination)
+        except OSError:
+            os.unlink(destination)
+
+
+def update_sourcecode(sourcecode_directory, config_filename):
+    """Update the sourcecode."""
+    config_file = open(config_filename)
+    config = interpret_config(parse_config_file(config_file))
+    config_file.close()
+    branches = find_branches(sourcecode_directory)
+    new, updated, removed = plan_update(branches, config)
+    get_branches(sourcecode_directory, new)
+    update_branches(sourcecode_directory, updated)
+    remove_branches(sourcecode_directory, removed)
+
+
+def get_launchpad_root():
+    return os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+
+def main(args):
+    root = get_launchpad_root()
+    if len(args) > 1:
+        sourcecode_directory = args[1]
+    else:
+        sourcecode_directory = os.path.join(root, 'sourcecode')
+    config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
+    update_sourcecode(sourcecode_directory, config_filename)
+    return 0
