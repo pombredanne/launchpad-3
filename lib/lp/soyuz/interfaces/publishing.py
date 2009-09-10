@@ -846,6 +846,20 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
+    def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
+                             component, section, priority, status, pocket):
+        """Create a new `BinaryPackagePublishingHistory`.
+
+        datecreated will be UTC_NOW.
+        """
+
+    def newSourcePublication(archive, sourcepackagerelease, distroseries,
+                             component, section, status, pocket):
+        """Create a new `SourcePackagePublishingHistory`.
+
+        datecreated will be UTC_NOW.
+        """
+
     def getByIdAndArchive(id, archive, source=True):
         """Return the publication matching id AND archive.
 
