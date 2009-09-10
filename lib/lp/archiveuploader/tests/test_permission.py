@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
-    CannotUploadToArchive, components_valid_for, verify_upload)
+    components_valid_for, verify_upload)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import TestCaseWithFactory
