@@ -14,7 +14,7 @@ import unittest
 import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
-from bzrlib.errors import IncompatibleRepositories, NotBranchError
+from bzrlib.errors import IncompatibleRepositories, NotBranchError, NotStacked
 from bzrlib.tests.http_server import HttpServer
 from bzrlib.remote import RemoteBranch
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
@@ -202,6 +202,19 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         to_mirror.mirrorWithoutChecks()
         dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
         self.assertFalse(dest._format.supports_stacking())
+
+    def test_defaultStackedOnBranchIncompatibleMirrorsOK(self):
+        # If the policy supplies a stacked on URL for a branch which is
+        # incompatible with the branch we're mirroring, the mirroring
+        # completes successfully and the destination branch is not stacked.
+        stack_on = self.make_branch('default-stack-on', format='2a')
+        source_branch = self.make_branch('source-branch', format='1.9')
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            policy=PrearrangedStackedBranchPolicy(stack_on.base))
+        to_mirror.mirrorWithoutChecks()
+        dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
+        self.assertRaises(NotStacked, dest.get_stacked_on_url)
 
     def testCanMirrorWithIncompatibleRepos(self):
         # If the destination branch cannot be opened because its repository is
