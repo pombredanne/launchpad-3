@@ -260,7 +260,12 @@
     <browser:url
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         path_expression="string:+lang/${language/code}"
-        attribute_to_parent="productseries"/>
+        attribute_to_parent="productseries"
+        rootsite="translations"/>
+    <browser:navigation
+        module="lp.translations.browser.productserieslanguage"
+        classes="
+            ProductSeriesLanguageNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         name="+index"/>
@@ -277,7 +282,7 @@
         name="+index"
         permission="zope.Public"
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
-        template="../templates/productserieslanguage-index.pt"
+        template="../templates/serieslanguage-index.pt"
         class="lp.translations.browser.productserieslanguage.ProductSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
