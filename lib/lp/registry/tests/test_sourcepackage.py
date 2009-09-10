@@ -166,6 +166,14 @@ class TestSourcePackage(TestCaseWithFactory):
             distribution_sourcepackage,
             sourcepackage.distribution_sourcepackage)
 
+    def test_default_archive(self):
+        # The default archive of a source package is the primary archive of
+        # its distribution.
+        sourcepackage = self.factory.makeSourcePackage()
+        distribution = sourcepackage.distribution
+        self.assertEqual(
+            distribution.main_archive, sourcepackage.default_archive)
+
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
     """Tests for source package branch linking security."""

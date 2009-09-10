@@ -576,6 +576,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         else:
             return None
 
+    @property
+    def default_archive(self):
+        """See `ISourcePackage`."""
+        return self.distribution.main_archive
+
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(

@@ -224,6 +224,11 @@ class ISourcePackage(IBugTarget):
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
 
+    default_archive = Attribute(
+        "The default archive of this package. If last published to a partner "
+        "component, then its the partner archive. Otherwise, the primary "
+        "archive of the associated distribution.")
+
 
 class ISourcePackageFactory(Interface):
     """A creator of source packages."""
