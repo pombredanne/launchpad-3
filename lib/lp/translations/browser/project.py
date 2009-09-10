@@ -23,10 +23,10 @@ class ProjectTranslationsMenu(NavigationMenu):
 
     usedfor = IProject
     facet = 'translations'
-    links = ['products', 'changetranslators', 'overview']
+    links = ['products', 'settings', 'overview']
 
     @enabled_with_permission('launchpad.Edit')
-    def changetranslators(self):
+    def settings(self):
         text = 'Settings'
         return Link('+changetranslators', text, icon='edit')
 
