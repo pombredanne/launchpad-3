@@ -260,7 +260,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             all_assignments, 'assignee', key='displayname')
 
     @cachedproperty
-    def user_assigments(self):
+    def user_counts(self):
         """The counts of the items assigned to the currrent user."""
         all_assignments = []
         if self.user:

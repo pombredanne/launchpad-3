@@ -32,7 +32,7 @@ StatusCount
 The get_status_counts function returns a list StatusCounts summarising an
 iterable of items. The items can be different kinds of objects so long
 as they all have the same attribute name to count, and the object in that
-attribute has the required attribute to sort. 
+attribute has the required attribute to sort.
 
     >>> from lp.registry.browser import get_status_counts
     >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
