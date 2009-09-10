@@ -61,13 +61,21 @@ class ProductReleaseNavigation(Navigation):
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = ['edit', 'add_file', 'administer', 'download', 'view_milestone']
+    links = (
+        'edit', 'add_file', 'administer', 'download', 'delete',
+        'view_milestone')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
         summary = "Edit this release"
         return Link('+edit', text, summary=summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete'
+        summary = "Delete this release"
+        return Link('+delete', text, summary=summary, icon='remove')
 
     @enabled_with_permission('launchpad.Edit')
     def add_file(self):

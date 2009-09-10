@@ -30,12 +30,15 @@ from lp.bugs.interfaces.bugtask import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, ContextMenu, Link,
+    action, canonical_url, custom_widget,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    enabled_with_permission, GetitemNavigation, Navigation, NavigationMenu)
+    enabled_with_permission, GetitemNavigation, Navigation)
+from canonical.launchpad.webapp.menu import (
+    ApplicationMenu, ContextMenu, Link, NavigationMenu)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import DateWidget
 
@@ -54,11 +57,8 @@ class MilestoneNavigation(Navigation,
     usedfor = IMilestone
 
 
-class MilestoneContextMenu(ContextMenu):
+class MilestoneLinkMixin:
     """The menu for this milestone."""
-    usedfor = IMilestone
-
-    links = ['edit', 'subscribe', 'create_release']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -84,19 +84,42 @@ class MilestoneContextMenu(ContextMenu):
         summary = 'Create a release from this milestone'
         # Releases only exist for products.
         # A milestone can only have a single product release.
-        enabled = (not IProjectMilestone.providedBy(self.context)
+        enabled = (IProduct.providedBy(self.context.target)
                    and self.context.product_release is None)
         return Link(
             '+addrelease', text, summary, icon='add', enabled=enabled)
 
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        """The link to delete this milestone."""
+        text = 'Delete'
+        # ProjectMilestones are virtual milestones and do not have
+        # any properties which can be edited.
+        enabled = not IProjectMilestone.providedBy(self.context)
+        summary = "Delete this milestone"
+        return Link(
+            '+delete', text, icon='trash-icon',
+            summary=summary, enabled=enabled)
 
-class MilestoneOverviewNavigationMenu(NavigationMenu):
-    """Overview navigation menus for `IProductSeries` objects."""
-    # Suppress the ProductOverviewNavigationMenu from showing on milestones,
-    # pages.
+
+class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
+    """The menu for this milestone."""
+    usedfor = IMilestone
+    links = ['edit', 'subscribe', 'create_release']
+
+
+class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
+    """Overview navigation menus for `IMilestone` objects."""
     usedfor = IMilestone
     facet = 'overview'
-    links = ()
+    links = ('edit', 'delete', 'subscribe')
+
+
+class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
+    """Overview  menus for `IMilestone` objects."""
+    usedfor = IMilestone
+    facet = 'overview'
+    links = ('create_release', )
 
 
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
@@ -129,6 +152,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `LaunchpadView`."""
         self.form = self.request.form
         self.processDeleteFiles()
+
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return self.context.title
 
     def getReleases(self):
         """See `ProductDownloadFileMixin`."""
@@ -225,6 +253,37 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         return get_status_counts(self.specifications, 'implementation_status')
 
     @cachedproperty
+    def assignment_counts(self):
+        """The counts of the items assigned to users."""
+        all_assignments = self.bugtasks + self.specifications
+        return get_status_counts(
+            all_assignments, 'assignee', key='displayname')
+
+    @cachedproperty
+    def user_assigments(self):
+        """The counts of the items assigned to the currrent user."""
+        all_assignments = []
+        if self.user:
+            for status_count in get_status_counts(
+                self.specifications, 'assignee', key='displayname'):
+                if status_count.status == self.user:
+                    if status_count.count == 1:
+                        status_count.status = 'blueprint'
+                    else:
+                        status_count.status = 'blueprints'
+                    all_assignments.append(status_count)
+            for status_count in get_status_counts(
+                self.bugtasks, 'assignee', key='displayname'):
+                if status_count.status == self.user:
+                    if status_count.count == 1:
+                        status_count.status = 'bug'
+                    else:
+                        status_count.status = 'bugs'
+                    all_assignments.append(status_count)
+            return all_assignments
+        return all_assignments
+
+    @cachedproperty
     def total_downloads(self):
         """Total downloads of files associated with this milestone."""
         return sum(
@@ -249,7 +308,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @property
     def has_bugs_or_specs(self):
         """Does the milestone have any bugtasks and specifications?"""
-        return len(self.bugtasks) > 0  or len(self.specifications) > 0
+        return len(self.bugtasks) > 0 or len(self.specifications) > 0
 
 
 class MilestonesView(MilestoneView):
@@ -394,5 +453,3 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
         self.request.response.addInfoNotification(
             "Milestone %s deleted." % name)
         self.next_url = canonical_url(series)
-
-
