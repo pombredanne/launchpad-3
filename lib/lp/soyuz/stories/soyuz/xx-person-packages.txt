@@ -15,18 +15,18 @@ where all items can be perused.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'navlinks'))
     Summary
-    Maintained Packages
-    Uploaded Packages
-    PPA Packages
-    Related Projects
+    Maintained packages
+    Uploaded packages
+    PPA packages
+    Related projects
 
-    >>> print browser.getLink("Maintained Packages").url
+    >>> print browser.getLink("Maintained packages").url
     http://launchpad.dev/~name16/+maintained-packages
-    >>> print browser.getLink("Uploaded Packages").url
+    >>> print browser.getLink("Uploaded packages").url
     http://launchpad.dev/~name16/+uploaded-packages
-    >>> print browser.getLink("PPA Packages").url
+    >>> print browser.getLink("PPA packages").url
     http://launchpad.dev/~name16/+ppa-packages
-    >>> print browser.getLink("Related Projects").url
+    >>> print browser.getLink("Related projects").url
     http://launchpad.dev/~name16/+related-projects
 
 Each category on the summary page has a heading that shows how many
@@ -86,11 +86,11 @@ package release page:
 
 == Batched listing pages ==
 
-Following the navigation link to "Maintained Packages" takes the user
+Following the navigation link to "Maintained packages" takes the user
 to the page that lists maintained packages in batches.
 
     >>> browser.open("http://launchpad.dev/~mark/+related-software")
-    >>> browser.getLink("Maintained Packages").click()
+    >>> browser.getLink("Maintained packages").click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     1...5 of 7 results
     ...
@@ -98,7 +98,8 @@ to the page that lists maintained packages in batches.
     alsa-utils  Debian Sid   1.0.9a-4  2005-07-01  None       0     0
     ...
 
-The Maintained Packages page only has data if the person or team has
+The Maintained packages page only has data if the person or team has
+    Subscription policy:
 maintained packages to show. No-priv does not maintain packages.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv")
@@ -112,10 +113,10 @@ maintained packages to show. No-priv does not maintain packages.
     Name...
     No Privileges Person does not maintain any packages.
 
-The navigation link to "Uploaded Packages" takes the user to the
+The navigation link to "Uploaded packages" takes the user to the
 page that lists uploaded packages in batches.
 
-    >>> browser.getLink("Uploaded Packages").click()
+    >>> browser.getLink("Uploaded packages").click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     1...5 of 6 results
     ...
@@ -123,20 +124,20 @@ page that lists uploaded packages in batches.
     foobar  Ubuntu Breezy-autotest  1.0  2006-12-01  i386       0     0
     ...
 
-The navigation link to "PPA Packages" takes the user to the
+The navigation link to "PPA packages" takes the user to the
 page that lists PPA packages in batches.
 
-    >>> browser.getLink("PPA Packages").click()
+    >>> browser.getLink("PPA packages").click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     1...1 of 1 result
     ...
     Name      Uploaded to           Version  When        Failures
     iceweasel PPA for Mark...Warty  1.0      2006-04-11  None
 
-And finally the Related Projects navigation link takes the user to the
+And finally the Related projects navigation link takes the user to the
 page that lists related projects in batches.
 
-    >>> browser.getLink("Related Projects").click()
+    >>> browser.getLink("Related projects").click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'projects'))
     1...5 of 5 results
     ...

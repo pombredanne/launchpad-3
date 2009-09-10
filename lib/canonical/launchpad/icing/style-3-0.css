@@ -669,6 +669,39 @@ ul.super-add-action li a {
     margin-top: -2px;
     }
 
+/* For the Latest updates portlet 
+ * at https://launchpad.dev/~cprov/+archive/ppa */
+ul.latest-ppa-updates .duration {
+    font-size: 75%;
+}
+ul.latest-ppa-updates li {
+    padding: 3px;
+    background-repeat: no-repeat;
+    background-position:right center;
+}
+/* The following could be generalised for use to the following selector:
+ * .side .portlet li.nth-child(odd)
+ * if needed. */
+ul.latest-ppa-updates li:nth-child(odd) {
+    border-top: 1px solid #dedede;
+    border-bottom: 1px solid #dedede;
+    background-color: #eeeeff;
+}
+ul.latest-ppa-updates li.FULLYBUILT {
+    background-image: url('/@@/yes');
+}
+ul.latest-ppa-updates li.FULLYBUILT_PENDING {
+    background-image: url('/@@/build-success-publishing');
+}
+ul.latest-ppa-updates li.NEEDSBUILD {
+    background-image: url('/@@/build-needed');
+}
+ul.latest-ppa-updates li.FAILEDTOBUILD {
+    background-image: url('/@@/build-failed');
+}
+ul.latest-ppa-updates li.BUILDING {
+    background-image: url('/@@/processing');
+}
 /* From nice_pre in tales.py */
 pre.wrap {
   white-space: -moz-pre-wrap;
