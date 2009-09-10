@@ -28,6 +28,10 @@
   </div>
 
   <tal:me condition="view/person_includes_me">
+    <p tal:condition="view/requires_preferred_languages" id="no-languages">
+      You have not selected your preferred languages.  Please
+      <a href="/+editmylanguages" id="set-languages">set them now</a>.
+    </p>
     <tal:reviewer condition="view/person_is_reviewer">
       <div id="translations-to-review-section" class="portlet" style="max-width:800px">
         <h2>Translations you need to review</h2>

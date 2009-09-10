@@ -208,6 +208,11 @@ class PersonTranslationView(LaunchpadView):
         else:
             return user.inTeam(self.context)
 
+    @property
+    def requires_preferred_languages(self):
+        """Does this person need to set preferred languages?"""
+        return not self.context.isTeam() and len(self.context.languages) == 0
+
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
 
