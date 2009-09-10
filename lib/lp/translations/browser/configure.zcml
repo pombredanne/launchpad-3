@@ -35,12 +35,9 @@
         <browser:page
             name="+products-with-translations"
             template="../templates/rosetta-products.pt"/>
-        
+
         <!-- portlets -->
-        
-        <browser:page
-            name="+portlet-stats"
-            template="../templates/rosetta-portlet-stats.pt"/>
+
         <browser:page
             name="+portlet-groups"
             template="../templates/rosetta-portlet-groups.pt"/>
@@ -155,18 +152,21 @@
     <browser:url
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         path_expression="string:+lang/${language/code}"
-        attribute_to_parent="distroseries"/>
+        attribute_to_parent="distroseries"
+        rootsite="translations"/>
+    <browser:navigation
+        module="lp.translations.browser.distroserieslanguage"
+        classes="
+            DistroSeriesLanguageNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
-        name="+index"/>
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         permission="zope.Public"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer">
-        <browser:page
-            name="+portlet-stats"
-            template="../templates/distroserieslanguage-portlet-stats.pt"/>
         <browser:page
             name="+rosetta-status-legend"
             template="../templates/rosetta-status-legend.pt"/>
@@ -175,7 +175,7 @@
         name="+index"
         permission="zope.Public"
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
-        template="../templates/distroserieslanguage-index.pt"
+        template="../templates/serieslanguage-index.pt"
         class="lp.translations.browser.distroserieslanguage.DistroSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
@@ -906,9 +906,6 @@
         <browser:page
             name="+langchart"
             template="../templates/distroseries-langchart.pt"/>
-        <browser:page
-            name="+potlist"
-            template="../templates/object-pots.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"

@@ -748,6 +748,38 @@ form.translations div.alignment .secondary label {
   padding: 2px 1em 2px 2px;
 }
 
+/* Translations statistics and legend.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+lang/es
+ *   https://translations.launchpad.dev/evolution/trunk/+lang/es
+ */
+
+div.translations-legend {
+  padding-top: 2em;
+  padding-bottom: 1em;
+}
+tbody.translation-stats td {
+  text-align:center;
+}
+tbody.translation-stats td.template-name {
+  text-align:left;
+}
+tfoot tr.overall-translation-stats td, th {
+  background-color: #f7f7f7;
+  border: 0px;
+  border-top: 2px solid #d2d2d2;
+  border-bottom: 2px solid #d2d2d2;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  font-weight: bold;
+}
+tfoot tr.overall-translation-stats th {
+  text-align:left;
+}
+tfoot tr.overall-translation-stats td {
+  text-align:center;
+}
 table.narrow-listing {
   width: 45em;
 }

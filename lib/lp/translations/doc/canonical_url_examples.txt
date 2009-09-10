@@ -151,7 +151,7 @@ DistroSeriesLanguage objects have their URLs on translations vhost.
     >>> boo_bah_serbian = getUtility(IDistroSeriesLanguageSet).getDummy(
     ...     distroseries, serbian)
     >>> canonical_url(boo_bah_serbian)
-    u'http://launchpad.dev/boo/bah/+lang/sr'
+    u'http://translations.launchpad.dev/boo/bah/+lang/sr'
 
 Product, ProductSeries and ProductSeriesLanguage
 ---------------------------------------------------
