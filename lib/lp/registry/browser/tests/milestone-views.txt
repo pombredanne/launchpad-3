@@ -17,6 +17,20 @@ The default url for a milestone is to the main site.
     >>> print test_tales("milestone/fmt:url", milestone=milestone)
     http://launchpad.dev/puffin/+milestone/kakapo
 
+Milestone defines several menus.
+
+    >>> from lp.registry.browser.milestone import (
+    ...     MilestoneContextMenu, MilestoneOverviewMenu,
+    ...     MilestoneOverviewNavigationMenu)
+    >>> from lp.testing.menu import check_menu_links
+
+    >>> check_menu_links(MilestoneContextMenu(milestone))
+    True
+    >>> check_menu_links(MilestoneOverviewMenu(milestone))
+    True
+    >>> check_menu_links(MilestoneOverviewNavigationMenu(milestone))
+    True
+
 The MilestoneView provides access to the milestone and to its release if
 it has one.
 
