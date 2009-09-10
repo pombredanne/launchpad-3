@@ -28,7 +28,6 @@ from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadRadioWidget
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.translationlinksaggregator import (
     TranslationLinksAggregator)
