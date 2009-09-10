@@ -6,14 +6,25 @@ Users can directly see and edit milestones through the milestone views.
     >>> product = factory.makeProduct(name="puffin")
     >>> series = factory.makeProductSeries(product=product, name="awk")
     >>> milestone = factory.makeMilestone(productseries=series, name="kakapo")
+
+The default url for a milestone is to the main site.
+
+    >>> from canonical.launchpad.ftests import test_tales
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> request = LaunchpadTestRequest(SERVER_URL='http://bugs.launchpad.net')
+    >>> login(ANONYMOUS, request)
+    >>> print test_tales("milestone/fmt:url", milestone=milestone)
+    http://launchpad.dev/puffin/+milestone/kakapo
+
+The MilestoneView provides access to the milestone and to its release if
+it has one.
+
     >>> person = milestone.product.owner
     >>> login_person(person)
     >>> view = create_view(milestone, '+index')
     >>> print view.context.name
     kakapo
-
-The MilestoneView provides access to the milestone and to its release if
-it has one.
 
     >>> print view.milestone.name
     kakapo
