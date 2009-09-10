@@ -195,7 +195,7 @@ through the hwdb_submission_keys attribute.
     >>> data = FileBugData()
     >>> parser._setDataFromHeaders(
     ...     data, {'HWDB-Submission': 'submission-one'})
-    >>> data.hwdb_submission_keys
+    >>> list(data.hwdb_submission_keys)
     [u'submission-one']
 
 Two or more submission keys may be specified, separated by a comma,
@@ -203,8 +203,9 @@ optionally followed by space characters.
 
     >>> data = FileBugData()
     >>> parser._setDataFromHeaders(
-    ...     data, {'HWDB-Submission': 'submission-one, two,three,  four'})
-    >>> data.hwdb_submission_keys
+    ...     data,
+    ...     {'HWDB-Submission': ' submission-one, two\t,three ,  \nfour  '})
+    >>> list(data.hwdb_submission_keys)
     [u'submission-one', u'two', u'three', u'four']
 
 

@@ -24,7 +24,6 @@ from cStringIO import StringIO
 from email import message_from_string
 from operator import itemgetter
 from simplejson import dumps
-import re
 import tempfile
 import urllib
 
@@ -159,7 +158,8 @@ class FileBugDataParser:
             data.subscribers = subscribers_string.lower().split()
         if 'HWDB-Submission' in headers:
             submission_string = unicode(headers['HWDB-Submission'])
-            data.hwdb_submission_keys = re.split(', *', submission_string)
+            data.hwdb_submission_keys = (
+                part.strip() for part in submission_string.split(','))
 
     def parse(self):
         """Parse the message and  return a FileBugData instance.
