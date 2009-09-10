@@ -874,21 +874,21 @@ class CommonMenuLinks:
 
     def uploaded(self):
         target = '+uploaded-packages'
-        text = 'Uploaded Packages'
+        text = 'Uploaded packages'
         return Link(target, text, icon='info')
 
     def ppa(self):
         # XXX: salgado, 2009-09-09, bug=426899: Need to conditionally disable
         # this link.
         target = '+ppa-packages'
-        text = 'PPA Packages'
+        text = 'PPA packages'
         return Link(target, text, icon='info')
 
     def projects(self):
         # XXX: salgado, 2009-09-09, bug=426900: Need to conditionally disable
         # this link.
         target = '+related-projects'
-        text = 'Related Projects'
+        text = 'Related projects'
         return Link(target, text, icon='info')
 
 
@@ -1030,7 +1030,7 @@ class IPersonEditMenu(Interface):
 
 
 class IPersonRelatedSoftwareMenu(Interface):
-    """A marker interface for the 'Related Software' navigation menu."""
+    """A marker interface for the 'Related software' navigation menu."""
 
 
 class PPANavigationMenuMixIn:
@@ -1065,7 +1065,7 @@ class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
 
     def related_software(self):
         target = '+related-software'
-        text = 'Related Software'
+        text = 'Related software'
         return Link(target, text, menu=IPersonRelatedSoftwareMenu)
 
     def karma(self):
