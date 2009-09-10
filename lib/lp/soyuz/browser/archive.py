@@ -544,6 +544,11 @@ class ArchiveViewBase(LaunchpadView):
         can_edit = check_permission('launchpad.Edit', self.context)
         return can_edit and len(disabled_dependencies) > 0
 
+    @property
+    def ppa_reference(self):
+        """ """
+        return 'ppa:%s/%s' % (self.context.owner.name, self.context.name)
+
 
 class ArchiveSeriesVocabularyFactory:
     """A factory for generating vocabularies of an archive's series."""

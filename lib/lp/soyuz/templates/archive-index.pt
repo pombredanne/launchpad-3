@@ -7,7 +7,6 @@
   i18n:domain="launchpad"
   >
 <body>
-
     <tal:heading metal:fill-slot="heading">
       <h1 tal:condition="context/enabled"
           tal:replace="structure view/displayname_edit_widget">
@@ -40,72 +39,25 @@
            tal:condition="context/required:launchpad.Append">
         <h2>Uploading packages to this PPA</h2>
         <p>You can upload packages to this PPA using:</p>
-        <p><tt>dput ppa:<tal:owner-name
-                  replace="context/owner/name" />/<tal:ppa-name
-                  replace="context/name" /> &lt;source.changes&gt;</tt>
+        <p><tt>dput <tal:ppa-ref replace="view/ppa_reference"
+                      >ppa:cprov/ppa</tal:ppa-ref> &lt;source.changes&gt;</tt>
               (<a href="https://help.launchpad.net/Packaging/PPA/Uploading"
                  >Read about uploading</a>)</p>
       </div>
 
       <div class="yui-gc">
-        <div class="yui-u first" tal:condition="context/is_ppa">
-        <div class="portlet">
-          <h2>Adding this PPA to your system</h2>
-          <tal:is-active condition="archive_active">
-          <p>Copy the lines below and add them to your system's software
-             sources. (<a href="/+help/soyuz/ppa-sources-list.html"
-                          target="help">Read about installing</a>)</p>
-          <tal:entries replace="structure view/sources_list_entries" />
-          <dl id="signing-key"
-              tal:define="signing_key context/signing_key"
-              tal:condition="signing_key">
-            <dt>Signing key:</dt>
-            <dd>
-              <a tal:attributes="href signing_key/keyserverURL">
-                <code tal:content="signing_key/displayname"
-                  >1024R/23456789</code>
-              </a>
-              (<a href="/+help/soyuz/ppa-sources-list.html"
-                  target="help">What is this?</a>)
-            </dd>
-          </dl>
-          <div tal:condition="context/dependencies" id="archive-dependencies">
-            <h3>Dependencies:</h3>
-            <p tal:condition="view/has_disabled_dependencies"
-               class="message warning">
-              This PPA depends on disabled archives. it may cause
-              spurious build failures or binaries with unexpected
-              contents.
-            </p>
-            <ul>
-              <li tal:repeat="dependency context/dependencies">
-                <a tal:attributes="href dependency/dependency/fmt:url"
-                   tal:condition="
-                   dependency/dependency/required:launchpad.View"
-                   tal:content="dependency/title" />
-                <span tal:replace="dependency/title"
-                      tal:condition="
-                      not: dependency/dependency/required:launchpad.View" />
-                <span style="color: red"
-                      tal:condition="not: dependency/dependency/enabled"
-                 >[disabled]</span>
-                (included <span
-                 tal:replace="dependency/date_created/fmt:displaydate" />)
-              </li>
-            </ul>
-          </div>
+
+        <div class="yui-u first">
+          <tal:ppa-install tal:condition="context/is_ppa">
+            <metal:ppa-install
+              use-macro="context/@@+macros/ppa-install-portlet" />
+          </tal:ppa-install>
           <tal:package-copy-request-list tal:condition="context/is_copy">
             <metal:package-copy-request-list
               use-macro="context/@@+macros/package-copy-request-list" />
           </tal:package-copy-request-list>
-          </tal:is-active>
-          <p tal:condition="not: archive_active">
-            This <tal:archive_label replace="archive_label" /> does not contain
-            any packages yet. Find more information about how to upload
-            packages in the <a href="https://help.launchpad.net/Packaging/PPA"
-            >PPA help page</a>
-          </p>
-        </div></div>
+        </div>
+
         <div class="yui-u"><div class="portlet">
           <h2><tal:archive_label replace="archive_label" /> statistics</h2>
           <dl tal:define="num_updates view/num_updates_over_last_days;
@@ -132,7 +84,8 @@
               waiting to build</a>.</dd>
           </dl>
         </div></div>
-      </div><!-- yui-g -->
+
+      </div><!-- yui-gc -->
 
       <div class="portlet" tal:condition="archive_active">
         <h2>Overview of all packages published in
@@ -203,7 +156,7 @@
       <tal:menu replace="structure view/@@+global-actions" />
       <metal:build-status-summary
         use-macro="context/@@+macros/latest-updates-portlet" />
-
     </tal:side>
+
   </body>
 </html>
