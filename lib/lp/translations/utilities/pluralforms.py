@@ -19,13 +19,14 @@ def make_friendly_plural_forms(expression, pluralforms_count):
         forms.setdefault(expression_(n), [])
         # Giving a limit of 6 examples per plural form. If all the forms were
         # contemplated, it stops.
-        if len(forms[expression_(n)]) == 6 and len(forms) == pluralforms_count:
+        if (len(forms[expression_(n)]) == 6 and
+                len(forms) == pluralforms_count):
             break
         if len(forms[expression_(n)]) == 6:
             continue
         forms[expression_(n)].append(n)
 
-    return [{'form':k, 'examples':v} for (k,v) in forms.iteritems()]
+    return [{'form' : k, 'examples' : v} for (k, v) in forms.iteritems()]
 
 
 def make_plural_function(expression):
