@@ -87,26 +87,37 @@ def find_branches(directory):
         for branch in BzrDir.find_branches(transport))
 
 
-def get_branches(sourcecode_directory, new_branches):
+def get_branches(sourcecode_directory, new_branches,
+                 possible_transports=None):
     """Get the new branches into sourcecode."""
     for project, (branch_url, optional) in new_branches.iteritems():
         destination = os.path.join(sourcecode_directory, project)
+        remote_branch = Branch.open(
+            branch_url, possible_transports=possible_transports)
+        possible_transports.append(
+            remote_branch.bzrdir.root_transport)
         print 'Getting %s from %s' % (project, branch_url)
-        os.system('bzr branch %s %s' % (branch_url, destination))
+        remote_branch.bzrdir.sprout(
+            destination, create_tree_if_local=True,
+            source_branch=remote_branch,
+            possible_transports=possible_transports)
 
 
-def update_branches(sourcecode_directory, update_branches):
+def update_branches(sourcecode_directory, update_branches,
+                    possible_transports=None):
     """Update the existing branches in sourcecode."""
-    possible_transports = []
+    if possible_transports is None:
+        possible_transports = []
     for project, (branch_url, optional) in update_branches.iteritems():
         destination = os.path.join(sourcecode_directory, project)
         print 'Updating %s' % (project,)
         local_tree = WorkingTree.open(destination)
-        transport = get_transport(branch_url)
-        possible_transports.append(transport)
+        remote_branch = Branch.open(
+            branch_url, possible_transports=possible_transports)
+        possible_transports.append(
+            remote_branch.bzrdir.root_transport)
         local_tree.pull(
-            Branch.open(
-                transport.base, possible_transports=possible_transports),
+            remote_branch,
             possible_transports=possible_transports)
 
 
@@ -128,8 +139,9 @@ def update_sourcecode(sourcecode_directory, config_filename):
     config_file.close()
     branches = find_branches(sourcecode_directory)
     new, updated, removed = plan_update(branches, config)
-    get_branches(sourcecode_directory, new)
-    update_branches(sourcecode_directory, updated)
+    possible_transports = []
+    get_branches(sourcecode_directory, new, possible_transports)
+    update_branches(sourcecode_directory, updated, possible_transports)
     remove_branches(sourcecode_directory, removed)
 
 
