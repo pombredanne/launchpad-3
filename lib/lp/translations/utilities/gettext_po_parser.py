@@ -15,7 +15,6 @@ __all__ = [
     'POParser',
     ]
 
-import gettext
 import datetime
 import re
 import codecs
