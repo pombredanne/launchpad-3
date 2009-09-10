@@ -61,9 +61,7 @@ class ProductReleaseNavigation(Navigation):
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = (
-        'edit', 'add_file', 'administer', 'download', 'delete',
-        'view_milestone')
+    links = ('edit', 'add_file', 'download', 'delete')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -82,19 +80,9 @@ class ProductReleaseContextMenu(ContextMenu):
         text = 'Add download file'
         return Link('+adddownloadfile', text, icon='add')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+review', text, icon='edit')
-
     def download(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    def view_milestone(self):
-        text = 'View milestone'
-        url = canonical_url(self.context.milestone)
-        return Link(url, text)
 
 
 class ProductReleaseAddViewBase(LaunchpadFormView):
