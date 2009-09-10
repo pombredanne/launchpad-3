@@ -145,8 +145,9 @@ class ContainerRevision():
         # trunks; that makes life hard.  Not sure what to do about
         # that; unifying the data is possible, but a bit of work.
         # See https://dev.launchpad.net/Trunk for more information.
-        rev_url_base = "http://bazaar.launchpad.net/~launchpad-pqm/" \
-            "launchpad/devel/revision/"
+        rev_url_base = (
+            "http://bazaar.launchpad.net/~launchpad-pqm/"
+            "launchpad/devel/revision/")
 
         # In loggerhead, you can use either a revision number or a
         # revision ID.  In other words, these would reach the same page:
