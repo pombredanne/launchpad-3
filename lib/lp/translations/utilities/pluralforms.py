@@ -10,31 +10,23 @@ from lp.translations.interfaces.translations import (
 class BadPluralExpression(Exception):
     """Local "escape hatch" exception for unusable plural expressions."""
 
-def make_friendly_plural_forms(expression):
+def make_friendly_plural_forms(expression, pluralforms_count):
+    """Return a dict's list of plural forms' examples from an expression."""
     expression_ = make_plural_function(expression)
-    #zero_nine = range(0,10)
-    #ten_thirtynine = range(10, 40)
-    #hundred_hundrednine = range(100, 110)
-    #hundredeleven_hundredthirtynine = range(111,140)
-
     forms = {}
-    numbers = range(0, 140)
 
-    #for n in zero_nine:
-    #    forms.setdefault(func(n), [])
-    #    forms[func(n)].append(n)
-    #for n in ten_thirtynine:
-    #    forms.setdefault(func(n), [])
-    #    forms[func(n)].append(n)
-    #for n in hundred_hundrednine:
-    #    forms.setdefault(func(n), [])
-    #    forms[func(n)].append(n)
-    #for n in hundredeleven_hundredthirtynine:
-    #    forms.setdefault(func(n), [])
-    #    forms[func(n)].append(n)
+    for n in range(1, 200):
+        forms.setdefault(expression_(n), [])
+        # Giving a limit of 6 examples per plural form. If all the forms were
+        # contemplated, it stops.
+        if len(forms[expression_(n)]) == 6 and len(forms) == pluralforms_count:
+            break
+        if len(forms[expression_(n)]) == 6:
+            continue
+        forms[expression_(n)].append(n)
 
+    return [{'form':k, 'examples':v} for (k,v) in forms.iteritems()]
 
-    return expression
 
 def make_plural_function(expression):
     """Create a lambda function for C-like plural expression."""
