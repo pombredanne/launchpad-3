@@ -17,39 +17,6 @@ from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.mailman.runmailman import stop_mailman
 
 
-log = None # Initialized in main()
-
-
-def process_exists(pid):
-    """True if the given process exists."""
-    try:
-        pgid = os.getpgid(pid)
-    except OSError, x:
-        if x.errno == 3:
-            return False
-        log.error("Unknown exception from getpgid - %s", str(x))
-    return True
-
-
-def wait_for_pids(pids, wait, log):
-    """
-    Wait until all signalled processes are dead, or until we hit the
-    timeout.
-
-    Processes discovered to be dead are removed from the list.
-
-    :param pids: A list of (service, pid).
-
-    :param wait: How many seconds to wait.
-    """
-    wait_start = time.time()
-    while pids and time.time() < wait_start + wait:
-        for service, pid in pids[:]:
-            if not process_exists(pid):
-                pids.remove((service, pid))
-        time.sleep(0.1)
-
-
 def main():
     parser = OptionParser('Usage: %prog [options] [SERVICE ...]')
     parser.add_option("-w", "--wait", metavar="SECS",
@@ -122,3 +89,32 @@ def main():
             except OSError:
                 pass
 
+
+def process_exists(pid):
+    """True if the given process exists."""
+    try:
+        pgid = os.getpgid(pid)
+    except OSError, x:
+        if x.errno == 3:
+            return False
+        log.error("Unknown exception from getpgid - %s", str(x))
+    return True
+
+
+def wait_for_pids(pids, wait, log):
+    """
+    Wait until all signalled processes are dead, or until we hit the
+    timeout.
+
+    Processes discovered to be dead are removed from the list.
+
+    :param pids: A list of (service, pid).
+
+    :param wait: How many seconds to wait.
+    """
+    wait_start = time.time()
+    while pids and time.time() < wait_start + wait:
+        for service, pid in pids[:]:
+            if not process_exists(pid):
+                pids.remove((service, pid))
+        time.sleep(0.1)
