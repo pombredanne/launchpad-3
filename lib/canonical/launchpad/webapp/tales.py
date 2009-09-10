@@ -2823,7 +2823,6 @@ class FormattersAPI:
             # Only linkify if person exists and does not want to hide
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
-                person_formatter = PersonFormatterAPI(person)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
                     address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
