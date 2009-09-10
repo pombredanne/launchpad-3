@@ -59,8 +59,8 @@ As of 2009-09-01, you can get editmoin.py from
 # counted as a Canonical contributor, sometimes Canonical people
 # submit from personal addresses, so we still need a list.
 #
-# ### TODO: Really, this ought to use launchpadlib to consult
-# ### Launchpad itself to find out who's a Canonical developer.
+# XXX: Really, this ought to use launchpadlib to consult
+# Launchpad itself to find out who's a Canonical developer.
 known_canonical_devs = (
     u'Aaron Bentley',
     u'Abel Deuring',
@@ -145,10 +145,10 @@ class ContainerRevision():
         else:
             date_str = "(NO DATE)"
 
-        # ### TODO: just using 'devel' branch for now.  We have four
-        # ### trunks; that makes life hard.  Not sure what to do about
-        # ### that; unifying the data is possible, but a bit of work.
-        # ### See https://dev.launchpad.net/Trunk for more information.
+        # XXX: just using 'devel' branch for now.  We have four
+        # trunks; that makes life hard.  Not sure what to do about
+        # that; unifying the data is possible, but a bit of work.
+        # See https://dev.launchpad.net/Trunk for more information.
         rev_url_base = "http://bazaar.launchpad.net/~launchpad-pqm/" \
             "launchpad/devel/revision/"
 
@@ -305,7 +305,7 @@ class LogExCons(log.LogFormatter):
             ec.add_top_level_revision(self.current_top_level_rev)
 
 
-### TODO: is this really necessary?  See bzrlib/log.py.
+# XXX: is this really necessary?  See bzrlib/log.py.
 log.log_formatter_registry.register('external_contributors', LogExCons,
                                     'Find non-Canonical contributors.')
 
@@ -357,7 +357,7 @@ def main():
     # Do everything.
     b = Branch.open(target)
 
-    # ### TODO: 8976 is the first non-Canonical contribution on 'devel'.
+    # XXX: 8976 is the first non-Canonical contribution on 'devel'.
     # On 'db-devel', the magic revision number is 8327.  We're aiming at
     # 'devel' right now, but perhaps it would be good to parameterize
     # this, or just auto-detect the branch and choose the right number.
