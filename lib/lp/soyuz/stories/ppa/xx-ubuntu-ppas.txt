@@ -397,9 +397,9 @@ link to a repository that doesn't exist yet.
     PPA description
     I am not allowed to say, I have no privs.
     Adding this PPA to your system
-    This PPA does not contain
-    any packages yet. Find more information about how to upload
-    packages in the PPA help page
+    This PPA does not contain any packages yet.
+    Find more information about how to upload packages in the PPA help page.
+    PPA statistics
     ...
 
 It also contains a link to the 'PPA help page'.
