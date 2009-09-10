@@ -68,10 +68,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
     """Browser view to manage used language packs."""
     schema = IDistroSeries
     label = ""
-    # XXX: Another hack because the page_title is set in initialize() here and
-    # we don't want to call that when generating breadcrumbs as it's an
-    # expensive method and might cause forms to be processed more than once.
-    page_title = 'Language packs'
 
     def is_langpack_admin(self, action=None):
         """Find out if the current user is a Language Packs Admin.
@@ -96,6 +92,15 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
     def is_admin(self):
         return self.is_langpack_admin() or self.is_translations_admin()
 
+    @property
+    def displayname(self):
+        return '%s %s' % (self.context.distribution.displayname,
+                          self.context.version)
+
+    @property
+    def page_title(self):
+        return "Language packs for %s" % self.displayname
+
     def initialize(self):
         self.old_request_value = (
             self.context.language_pack_full_export_requested)
@@ -111,10 +116,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         else:
             self.field_names = []
         super(DistroSeriesLanguagePackView, self).initialize()
-        self.displayname = '%s %s' % (
-            self.context.distribution.displayname,
-            self.context.version)
-        self.page_title = "Language packs for %s" % self.displayname
         if self.is_langpack_admin():
             self.adminlabel = 'Request a full language pack export of %s' % (
                 self.displayname)
