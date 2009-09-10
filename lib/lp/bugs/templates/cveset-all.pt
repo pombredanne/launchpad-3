@@ -14,10 +14,6 @@
       <h1>All registered CVEs</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-
-</metal:leftportlets>
-
 <div metal:fill-slot="main"
      tal:define="batchnav view/getAllBatched;
                  batch batchnav/currentBatch">
