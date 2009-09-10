@@ -372,8 +372,6 @@ distributionsourcepackage_publishinghistory = ContextTitle(
 structural_subscriptions_manage = ContextTitle(
     'Bug subscriptions for %s')
 
-distributionsourcepackagerelease_index = ContextTitle('%s')
-
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
 distroarchseries_builds = ContextTitle('%s builds')
@@ -389,11 +387,6 @@ distroseries_bugs = ContextTitle('Bugs in %s')
 
 distroseries_cvereport = ContextDisplayName('CVE report for %s')
 
-def distroseries_index(context, view):
-    """Return the distribution and version page title."""
-    return '%s %s in Launchpad' % (
-        context.distribution.title, context.version)
-
 def distroseries_language_packs(context, view):
     return view.page_title
 
@@ -404,15 +397,11 @@ distroseries_search = ContextDisplayName('Search packages in %s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
-distroseries_builds = ContextTitle('%s builds')
-
 distroseries_queue = ContextTitle('Queue for %s')
 
 distroserieslanguage_index = ContextTitle('%s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
-
-edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -712,12 +701,6 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
-
-person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
-
 # person_foaf is an rdf file
 
 person_hwdb_submissions = ContextDisplayName(
@@ -838,8 +821,6 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
-
-productseries_index = ContextTitle('%s')
 
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
