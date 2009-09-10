@@ -41,7 +41,12 @@ class ProjectTranslationsMenu(NavigationMenu):
 
 
 class ProjectView(LaunchpadView):
-    pass
+    """A view for `IProject` in the translations context."""
+    @property
+    def untranslatables(self):
+        translatables = set(self.context.translatables())
+        all_products = set(self.context.products)
+        return list(all_products - translatables)
 
 
 class ProjectChangeTranslatorsView(TranslationsMixin, ProjectEditView):

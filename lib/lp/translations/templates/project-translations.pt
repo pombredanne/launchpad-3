@@ -10,14 +10,8 @@
     <h1>Translatable applications</h1>
 
     <div class="top-portlet">
-      <p>
-        <tal:permissions
-           replace="structure
-                    context/@@+portlet-translation-groups-and-permission"
-           />
-      </p>
       <p tal:condition="context/translatables">
-        Select a project to begin translating it into your own language.
+        Select a project you want to translate into your own language.
       </p>
       <p tal:condition="not:context/translatables">
         There are no translatable projects in
@@ -29,25 +23,66 @@
         <a tal:replace="structure context/owner/fmt:link">owner</a> who is
         the administrator for the project.
       </p>
+
+      <p>
+        <tal:permissions
+           replace="structure
+                    context/@@+portlet-translation-groups-and-permission"
+           />
+      </p>
     </div>
 
-    <dl tal:condition="context/translatables">
-      <tal:project repeat="product context/translatables">
-        <dt>
-          <a tal:replace="structure product/fmt:link/+translations">
-            Evolution
-          </a>
-        </dt>
-        <dd>
-          <span tal:replace="product/title">
-            The Evolution Groupware Application
-          </span>
-        </dd>
-      </tal:project>
-    </dl>
-    <p tal:condition="view/required:launchpad.Edit">
-      <a class="add sprite" href="+newproduct">Add another project</a>
-    </p>
+    <div class="yui-g">
+      <div class="yui-u first">
+        <div class="portlet">
+          <h3>Translatable projects</h3>
+          <dl tal:condition="context/translatables">
+            <tal:project repeat="product context/translatables">
+              <dt>
+                <a tal:replace="structure product/fmt:link/+translations">
+                  Evolution
+                </a>
+              </dt>
+              <dd>
+                <span tal:replace="product/title">
+                  The Evolution Groupware Application
+                </span>
+              </dd>
+            </tal:project>
+          </dl>
+        </div>
+      </div>
+      <div class="yui-u">
+        <div class="portlet">
+          <h3>Other projects in
+            <tal:group replace="context/displayname">GNOME</tal:group>
+          </h3>
+          <p>
+            These projects are not yet set up for translation in Launchpad.
+          </p>
+          <dl tal:condition="view/untranslatables">
+            <tal:project repeat="product view/untranslatables">
+              <dt>
+                <a tal:replace="structure product/fmt:link/+translations">
+                  Evolution
+                </a>
+              </dt>
+              <dd>
+                <span tal:replace="product/title">
+                  The Evolution Groupware Application
+                </span>
+              </dd>
+            </tal:project>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="yui-b">
+      <p tal:condition="view/required:launchpad.Edit">
+        <a class="add sprite" href="+newproduct">Add another project</a>
+      </p>
+    </div>
+
 
   </div><!--main-->
 </body>
