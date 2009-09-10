@@ -182,6 +182,7 @@ class ContainerRevision():
 # "ExternalContributor" is too much to type, so I guess we'll just use this.
 class ExCon():
     """A contributor to Launchpad from outside Canonical."""
+
     def __init__(self, name):
         """Create a new external contributor named NAME.  NAME is usually
         e.g. "Veronica Random <veronica@example.com>", but any "@"-sign
@@ -259,6 +260,7 @@ def get_ex_cons(authors, all_ex_cons):
 # or something -- subclasses don't have to be about display.
 class LogExCons(log.LogFormatter):
     """Log all the external contributions, by Contributor."""
+
     # See log.LogFormatter documentation.
     supports_merge_revisions = True
 
