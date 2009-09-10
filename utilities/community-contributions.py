@@ -204,12 +204,11 @@ class ExCon():
         return len(self._landings)
 
     def add_top_level_revision(self, cr):
-        """Record ContainableRevision CR as associated with this
-        contributor."""
+        "Record ContainableRevision CR as associated with this contributor."
         self._landings[cr] = cr
 
     def show_contributions(self):
-        """Return a wikified string showing this contributor's contributions."""
+        "Return a wikified string showing this contributor's contributions."
         s = [ ]
         s.append("== %s ==\n\n" % self.name)
         plural = "s"
@@ -267,11 +266,12 @@ class LogExCons(log.LogFormatter):
         # Dictionary mapping author names (with undisguised email
         # addresses) to ExCon objects.
         self.all_ex_cons = { }
-        # ContainerRevision object representing most-recently-seen top-level rev.
+        # ContainerRevision object representing most-recently-seen
+        # top-level rev.
         current_top_level_rev = None
 
     def result(self):
-        """Return a moin-wiki-syntax string with TOC followed by contributions."""
+        "Return a moin-wiki-syntax string with TOC followed by contributions."
         s = [ ]
         s.append("-----\n\n")
         s.append("= Who =\n\n")
@@ -349,7 +349,8 @@ def main():
 
     # Ensure we have the arguments we need.
     if len(args) < 1:
-        sys.stderr.write("ERROR: path to Launchpad branch required as argument\n")
+        sys.stderr.write("ERROR: path to Launchpad branch "
+                         "required as argument\n")
         usage()
         sys.exit(1)
 
@@ -368,7 +369,7 @@ def main():
     lec = LogExCons()
     if not quiet:
         print "Calculating (this may take a while)..."
-    logger.show(lec) # This won't "show" anything; it's just for gathering data.
+    logger.show(lec)  # Won't "show" anything -- just gathers data.
     page_contents = page_intro + lec.result()
     def update_if_modified(moinfile):
         if moinfile._unescape(moinfile.body) == page_contents:
