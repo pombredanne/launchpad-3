@@ -4,7 +4,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> anon_browser.title
+    >>> print anon_browser.title
     +ppas : Ubuntu
 
 
@@ -742,7 +742,7 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntutest")
     >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> anon_browser.title
+    >>> print anon_browser.title
     +ppas : ubuntutest
 
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))

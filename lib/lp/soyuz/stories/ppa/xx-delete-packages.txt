@@ -385,7 +385,7 @@ Even if the source added is recorded as SUPERSEDED, it is still
 available for deletion because it contains a PUBLISHED binary.
 
     >>> user_browser.getLink('Delete packages').click()
-    >>> user_browser.title
+    >>> print user_browser.title
     +delete-packages : PPA for No Privileges Person : No Privileges Person
 
     >>> print_ppa_packages(user_browser.contents)
@@ -532,7 +532,7 @@ as it would refer to non-existent links.
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/foobar/1.0")
     >>> user_browser.getLink('See full publishing history').click()
     >>> print extract_text(find_main_content(user_browser.contents))
-    foobar 1.0 (source) in Ubuntu
+    Ubuntu
     ...
     1.0
     Removed from disk on 2006-12-02.
