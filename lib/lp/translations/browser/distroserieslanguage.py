@@ -12,7 +12,6 @@ __all__ = [
 
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import Navigation
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
