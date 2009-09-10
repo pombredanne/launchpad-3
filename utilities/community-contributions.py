@@ -119,10 +119,6 @@ known_canonical_devs = (
     )
 
 
-class RevisionError(Exception):
-    pass;
-
-
 class ContainerRevision():
     """A wrapper for a top-level LogRevision containing child LogRevisions."""
 
