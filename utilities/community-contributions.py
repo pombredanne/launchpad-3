@@ -4,9 +4,10 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Show what Launchpad community contributors have done, by trawling
-a Launchpad branch's history, detecting contributions by non-Canonical
-developers, and updating https://dev.launchpad.net/Contributions accordingly.
+"""Show what Launchpad community contributors have done.
+
+Trawl a Launchpad branch's history to detect contributions by non-Canonical
+developers, then update https://dev.launchpad.net/Contributions accordingly.
 
 Usage: community-contributions.py [options] PATH_TO_LAUNCHPAD_DEVEL_BRANCH
 
