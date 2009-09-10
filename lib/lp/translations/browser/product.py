@@ -113,3 +113,10 @@ class ProductView(LaunchpadView):
             'potemplates': translatable.getCurrentTranslationTemplates(),
             'base_url': canonical_url(translatable)
             }
+
+    @cachedproperty
+    def untranslatable_series(self):
+        """Return series which are not yet set up for translations."""
+        all_series = set(self.context.serieses)
+        translatable = set(self.context.translatable_series)
+        return all_series - translatable

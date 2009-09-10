@@ -9,6 +9,14 @@
     <div metal:fill-slot="main"
          tal:define="uses_translations view/uses_translations;
                      admin_user context/required:launchpad.TranslationsAdmin">
+      <ul class="helplinks">
+        <li>
+          <a href="https://help.launchpad.net/Translations"
+             id="link-to-translations-help"
+             >Help for translations
+          </a>
+        </li>
+      </ul>
       <tal:uses-translations condition="uses_translations">
         <h1>Translation overview</h1>
       </tal:uses-translations>
@@ -20,68 +28,69 @@
           Translation setup needed
         </h1>
       </tal:not-uses-translations>
-      <ul class="helplinks">
-        <li>
-          <a href="https://help.launchpad.net/Translations"
-             id="link-to-translations-help"
-             >Help for translations
-          </a>
-        </li>
-      </ul>
       <tal:uses-translations condition="uses_translations">
         <tal:translatable define="target context/primary_translatable">
 
           <div class="top-portlet">
-            <p>
-              Translation focus series right now is
-              <tal:target replace="structure target/fmt:link/+translations">
-                trunk
-              </tal:target> — overall statistics are shown below. 
-              You can also
-              <a tal:attributes="href target/fmt:url/+export">download</a> or 
-              <a tal:attributes="href target/fmt:url/+translations-upload"
-                 >upload</a> translations for
-              <tal:target replace="structure target/name">trunk</tal:target>.
-            </p>
-            <p>To see all the translation files that are waiting to be 
-              imported, please look at 
-              <a tal:attributes="href context/fmt:url/+imports" 
-                 tal:content="string:${context/displayname} import queue">
-                import queue</a>.
-            </p>
           </div>
 
-          <div class="yui-gc">
-
-            <div class="yui-u first portlet">
-          <h2>Translation for
-            <span tal:replace="target/displayname">main</span></h2>
-          <div tal:replace="structure target/@@+languages" />
-          <div style="height:1em;"></div>
-          <div tal:replace="structure context/@@+rosetta-status-legend" />
-            </div>
-
-            <div class="yui-u">
+          <div class="yui-g">
+            <div class="yui-u first">
               <div class="portlet">
-                <h2>Permissions</h2>
+                <h3>Translation details</h3>
                 <p>
-                  <tal:permissions
-                     replace="structure
-                         context/@@+portlet-translation-groups-and-permission"
-                     />
+                  Launchpad currently recommends translating
+                  <tal:target replace="structure target/fmt:link/+translations"
+                              >trunk</tal:target>.
+                  <tal:admins condition="context/required:launchpad.AnyPerson">
+                    You can also
+                    <a tal:attributes="href target/fmt:url/+export"
+                       >download</a> or
+                    <a tal:attributes="
+                        href target/fmt:url/+translations-upload"
+                     >upload</a> translations for
+                    <tal:target replace="structure target/name"
+                                >trunk</tal:target>.
+                  </tal:admins>
+                </p>
+                <p>To see all the translation files that are waiting to be
+                  imported, please look at
+                  <a tal:attributes="href context/fmt:url/+imports"
+                     tal:content="string:${context/displayname} import queue">
+                    import queue</a>.
                 </p>
               </div>
-              <div tal:replace="structure context/@@+portlet-translatables" />
-              <tal:registrant-or-admin
-                 condition="admin_user">
-                <tal:has-obsolete-entries
-                   condition="context/obsolete_translatable_series">
-                  <div
-                     tal:replace="structure 
-                                  context/@@+portlet-obsolete-translatables" />
-                </tal:has-obsolete-entries>
-              </tal:registrant-or-admin>
+              <div class="portlet">
+                <h3>Permissions</h3>
+                <p>
+                  <tal:permissions replace="
+                     structure
+                     context/@@+portlet-translation-groups-and-permission"/>
+                </p>
+              </div>
             </div>
+            <div class="yui-u">
+              <div>
+                <tal:registrant-or-admin
+                   condition="admin_user">
+                  <tal:has-obsolete-entries
+                     condition="context/obsolete_translatable_series">
+                    <div tal:replace="
+                        structure
+                        context/@@+portlet-obsolete-translatables" />
+                  </tal:has-obsolete-entries>
+                </tal:registrant-or-admin>
+              </div>
+              <div tal:replace="structure context/@@+portlet-translatables" />
+            </div>
+          </div>
+
+          <div class="yui-b">
+            <h2>Translation for
+              <span tal:replace="target/displayname">main</span></h2>
+            <div tal:replace="structure target/@@+languages" />
+            <div style="height:1em;"></div>
+            <div tal:replace="structure context/@@+rosetta-status-legend" />
           </div>
         </tal:translatable>
       </tal:uses-translations>

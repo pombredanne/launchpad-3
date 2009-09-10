@@ -34,7 +34,7 @@
 
     <div class="yui-g">
       <div class="yui-u first">
-        <div class="portlet">
+        <div class="portlet" id="translatable-projects">
           <h3>Translatable projects</h3>
           <dl tal:condition="context/translatables">
             <tal:project repeat="product context/translatables">
@@ -53,7 +53,7 @@
         </div>
       </div>
       <div class="yui-u">
-        <div class="portlet">
+        <div class="portlet" id="untranslatable-projects">
           <h3>Other projects in
             <tal:group replace="context/displayname">GNOME</tal:group>
           </h3>
