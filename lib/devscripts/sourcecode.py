@@ -13,10 +13,11 @@ __all__ = [
 import os
 import shutil
 
-from bzrlib.builtins import cmd_pull
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.plugin import load_plugins
 from bzrlib.transport import get_transport
+from bzrlib.workingtree import WorkingTree
 
 
 def parse_config_file(file_handle):
@@ -94,16 +95,19 @@ def get_branches(sourcecode_directory, new_branches):
         os.system('bzr branch %s %s' % (branch_url, destination))
 
 
-def pull_branch(branch_url, destination):
-    cmd_pull().run_argv_aliases(['-d', destination, branch_url])
-
-
 def update_branches(sourcecode_directory, update_branches):
     """Update the existing branches in sourcecode."""
+    possible_transports = []
     for project, (branch_url, optional) in update_branches.iteritems():
         destination = os.path.join(sourcecode_directory, project)
         print 'Updating %s' % (project,)
-        pull_branch(branch_url, destination)
+        local_tree = WorkingTree.open(destination)
+        transport = get_transport(branch_url)
+        possible_transports.append(transport)
+        local_tree.pull(
+            Branch.open(
+                transport.base, possible_transports=possible_transports),
+            possible_transports=possible_transports)
 
 
 def remove_branches(sourcecode_directory, removed_branches):
