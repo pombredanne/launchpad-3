@@ -124,17 +124,18 @@ class ContainerRevision():
 
     def __init__(self, top_lr):
         self.top_rev = top_lr       # e.g. LogRevision for r9371.
-        self.contained_revs = [ ]   # e.g. [ {9369.1.1}, {9206.4.4}, ... ],
-                                  # where "{X}" means "LogRevision for X"
+        self.contained_revs = []    # e.g. [ {9369.1.1}, {9206.4.4}, ... ],
+                                    # where "{X}" means "LogRevision for X"
+
     def add_subrev(self, lr):
         """Add a descendant child of this container revision."""
         self.contained_revs.append(lr)
 
     def __str__(self):
-        timestamp      = self.top_rev.rev.timestamp
-        timezone       = self.top_rev.rev.timezone
-        message        = self.top_rev.rev.message        or "(NO LOG MESSAGE)"
-        rev_id         = self.top_rev.rev.revision_id    or "(NO REVISION ID)"
+        timestamp = self.top_rev.rev.timestamp
+        timezone = self.top_rev.rev.timezone
+        message = self.top_rev.rev.message or "(NO LOG MESSAGE)"
+        rev_id = self.top_rev.rev.revision_id or "(NO REVISION ID)"
         inventory_sha1 = self.top_rev.rev.inventory_sha1
         if timestamp:
             date_str = format_date(timestamp, timezone or 0, 'original')
@@ -167,7 +168,7 @@ class ContainerRevision():
         # will give you some information about it before you click
         # (because a rev id often identifies the committer).
         rev_id_url = rev_url_base + rev_id
-        s = [ ]
+        s = []
         s.append(" * [[%s|r%s]] -- %s\n"
                  % (rev_id_url, self.top_rev.revno, date_str))
         s.append(" {{{\n%s\n}}}\n" % message)
@@ -196,7 +197,7 @@ class ExCon():
         # All the top-level revisions this contributor is associated with
         # (key == value == ContainerRevision).  We use a dictionary
         # instead of list to get set semantics; set() would be overkill.
-        self._landings = { }
+        self._landings = {}
 
     def num_landings(self):
         """Return the number of top-level landings that include revisions
@@ -209,7 +210,7 @@ class ExCon():
 
     def show_contributions(self):
         "Return a wikified string showing this contributor's contributions."
-        s = [ ]
+        s = []
         s.append("== %s ==\n\n" % self.name)
         plural = "s"
         if self.num_landings() == 1:
@@ -231,25 +232,25 @@ def get_ex_cons(authors, all_ex_cons):
     ALL_EX_CONS is a dictionary mapping author names (as received from
     the bzr logs, i.e., with email address undisguised) to ExCon objects.
     """
-    ex_cons_this_rev = [ ]
+    ex_cons_this_rev = []
     for a in authors:
-      known = False
-      for name_fragment in known_canonical_devs:
-        if u"@canonical.com" in a or name_fragment in a:
-          known = True
-          break
-      if not known:
-        ### There's a variant of the Singleton pattern that could be
-        ### used for this, whereby instantiating an ExCon object would
-        ### just get back an existing object if such has already been
-        ### instantiated for this name.  But that would make this code
-        ### non-reentrant, and that's just not cool.
-        if all_ex_cons.has_key(a):
-          ec = all_ex_cons[a]
-        else:
-          ec = ExCon(a)
-          all_ex_cons[a] = ec
-        ex_cons_this_rev.append(ec)
+        known = False
+        for name_fragment in known_canonical_devs:
+            if u"@canonical.com" in a or name_fragment in a:
+                known = True
+                break
+        if not known:
+            ### There's a variant of the Singleton pattern that could be
+            ### used for this, whereby instantiating an ExCon object would
+            ### just get back an existing object if such has already been
+            ### instantiated for this name.  But that would make this code
+            ### non-reentrant, and that's just not cool.
+            if all_ex_cons.has_key(a):
+                ec = all_ex_cons[a]
+            else:
+                ec = ExCon(a)
+                all_ex_cons[a] = ec
+            ex_cons_this_rev.append(ec)
     return ex_cons_this_rev
 
 
@@ -265,14 +266,14 @@ class LogExCons(log.LogFormatter):
         super(LogExCons, self).__init__(to_file=None)
         # Dictionary mapping author names (with undisguised email
         # addresses) to ExCon objects.
-        self.all_ex_cons = { }
+        self.all_ex_cons = {}
         # ContainerRevision object representing most-recently-seen
         # top-level rev.
         current_top_level_rev = None
 
     def result(self):
         "Return a moin-wiki-syntax string with TOC followed by contributions."
-        s = [ ]
+        s = []
         s.append("-----\n\n")
         s.append("= Who =\n\n")
         sorted_contributors = sorted(self.all_ex_cons.values(),
