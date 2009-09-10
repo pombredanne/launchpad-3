@@ -62,7 +62,8 @@ class SourcePackageReleaseView(LaunchpadView):
         # feeding the result into another regex to pull out the bug and
         # bugnum groups.
         line_matches = re.finditer(
-            'LP:\s*(?P<buglist>(.+?[^,]))($|\n)', changelog, re.DOTALL)
+            'LP:\s*(?P<buglist>(.+?[^,]))($|\n)', changelog,
+            re.DOTALL | re.IGNORECASE)
         seen_bugnums = set()
         for line_match in line_matches:
             bug_matches = re.finditer(
