@@ -10,6 +10,11 @@ __all__ = [
     'plan_update',
     ]
 
+import os
+
+from bzrlib.bzrdir import BzrDir
+from bzrlib.transport import get_transport
+
 
 def parse_config_file(file_handle):
     """Parse the source code config file 'file_handle'.
@@ -68,3 +73,10 @@ def plan_update(existing_branches, configuration):
         _subset_dict(configuration, new_branches),
         _subset_dict(configuration, update_branches),
         removed_branches)
+
+
+def find_branches(directory):
+    transport = get_transport(directory)
+    return (
+        os.path.basename(branch.base.rstrip('/'))
+        for branch in BzrDir.find_branches(transport))

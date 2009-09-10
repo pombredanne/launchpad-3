@@ -5,11 +5,17 @@
 
 __metaclass__ = type
 
+import shutil
 from StringIO import StringIO
+import tempfile
 import unittest
 
+from bzrlib.bzrdir import BzrDir
+from bzrlib.tests import TestCase
+from bzrlib.transport import get_transport
+
 from devscripts.sourcecode import (
-    interpret_config, parse_config_file, plan_update)
+    find_branches, interpret_config, parse_config_file, plan_update)
 
 
 class TestParseConfigFile(unittest.TestCase):
@@ -110,6 +116,40 @@ class TestPlanUpdate(unittest.TestCase):
         self.assertEqual({}, new)
         self.assertEqual(config, existing)
         self.assertEqual(set(), removed)
+
+
+class TestFindBranches(TestCase):
+    """Tests the way that we find branches."""
+
+    def makeBranch(self, path):
+        transport = get_transport(path)
+        transport.ensure_base()
+        BzrDir.create_branch_convenience(
+            transport.base, possible_transports=[transport])
+
+    def makeDirectory(self):
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory)
+        return directory
+
+    def test_empty_directory_has_no_branches(self):
+        # An empty directory has no branches.
+        empty = self.makeDirectory()
+        self.assertEqual([], list(find_branches(empty)))
+
+    def test_directory_with_branches(self):
+        # find_branches finds branches in the directory.
+        directory = self.makeDirectory()
+        self.makeBranch('%s/a' % directory)
+        self.assertEqual(['a'], list(find_branches(directory)))
+
+    def test_ignores_files(self):
+        # find_branches ignores any files in the directory.
+        directory = self.makeDirectory()
+        some_file = open('%s/a' % directory, 'w')
+        some_file.write('hello\n')
+        some_file.close()
+        self.assertEqual([], list(find_branches(directory)))
 
 
 # XXX: Actually remove branches
