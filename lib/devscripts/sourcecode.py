@@ -134,5 +134,7 @@ def main(args):
     else:
         sourcecode_directory = os.path.join(root, 'sourcecode')
     config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
+    print 'Sourcecode: %s' % (sourcecode_directory,)
+    print 'Config: %s' % (config_filename,)
     update_sourcecode(sourcecode_directory, config_filename)
     return 0
