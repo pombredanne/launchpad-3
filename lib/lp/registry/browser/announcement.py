@@ -12,7 +12,6 @@ __all__ = [
     'AnnouncementRetractView',
     'AnnouncementDeleteView',
     'AnnouncementEditView',
-    'AnnouncementNavigation',
     'AnnouncementSetView',
     'HasAnnouncementsView',
     'AnnouncementView',
@@ -35,15 +34,9 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
-    enabled_with_permission, Link, NavigationMenu)
-from canonical.launchpad.webapp import Navigation
+    Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
 from canonical.widgets import AnnouncementDateWidget
-
-
-class AnnouncementNavigation(Navigation):
-    """The navigation for `IAnnouncement`."""
-    usedfor = IAnnouncement
 
 
 class AnnouncementMenuMixin:

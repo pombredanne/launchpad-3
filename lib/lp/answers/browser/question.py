@@ -17,7 +17,6 @@ __all__ = [
     'QuestionHistoryView',
     'QuestionLinkFAQView',
     'QuestionMessageDisplayView',
-    'QuestionNavigation',
     'QuestionSetContextMenu',
     'QuestionSetNavigation',
     'QuestionRejectView',
@@ -175,11 +174,6 @@ class QuestionSetContextMenu(ContextMenu):
         """Return a Link to the find distribution view."""
         text = 'Find distribution'
         return Link('/distros', text, icon='search')
-
-
-class QuestionNavigation(Navigation):
-    """Navigation for the IQuestion."""
-    usedfor = IQuestion
 
 
 class QuestionSetNavigation(Navigation):

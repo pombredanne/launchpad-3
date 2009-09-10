@@ -8,20 +8,14 @@ import cgi
 from lp.translations.interfaces.translator import (
     ITranslator, IEditTranslator)
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
-    Navigation)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 
 __all__ = [
     'TranslatorAdminView',
     'TranslatorEditView',
-    'TranslatorNavigation',
     'TranslatorRemoveView',
     ]
-
-
-class TranslatorNavigation(Navigation):
-    usedfor = ITranslator
 
 
 class TranslatorAdminView(LaunchpadEditFormView):
