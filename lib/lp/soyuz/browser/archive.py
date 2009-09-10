@@ -354,11 +354,11 @@ class ArchiveMenuMixin:
         return Link('+builds?build_state=built', text, icon='info')
 
     def builds_pending(self):
-        text = 'View successful builds'
+        text = 'View pending builds'
         return Link('+builds?build_state=pending', text, icon='info')
 
     def builds_building(self):
-        text = 'View successful builds'
+        text = 'View in-progress builds'
         return Link('+builds?build_state=building', text, icon='info')
 
     def packages(self):
