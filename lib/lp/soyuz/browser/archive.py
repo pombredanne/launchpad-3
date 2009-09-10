@@ -545,6 +545,12 @@ class ArchiveViewBase(LaunchpadView):
         can_edit = check_permission('launchpad.Edit', self.context)
         return can_edit and len(disabled_dependencies) > 0
 
+    @property
+    def package_copy_requests(self):
+        """Return any package copy requests associated with this archive."""
+        return(getUtility(
+                IPackageCopyRequestSet).getByTargetArchive(self.context))
+
 
 class ArchiveSeriesVocabularyFactory:
     """A factory for generating vocabularies of an archive's series."""
@@ -738,12 +744,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             self.context.distribution, self.archive_url,
             self.context.series_with_sources)
         return SourcesListEntriesView(entries, self.request)
-
-    @property
-    def package_copy_requests(self):
-        """Return any package copy requests associated with this archive."""
-        return(getUtility(
-                IPackageCopyRequestSet).getByTargetArchive(self.context))
 
     @property
     def archive_description_html(self):
