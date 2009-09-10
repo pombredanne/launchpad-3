@@ -395,7 +395,7 @@ div.package-details {
         <strong tal:content="view/ppa_reference">ppa:cprov/ppa</strong>
         to your system's Software Sources.
         <span id="pre-karmic-systems-slide-trigger"
-          >Not using karmic?</span></p>
+          >Not using Ubuntu 9.10 (karmic)?</span></p>
 
       <div id="ppa-install-slide-trigger">
         <div class="widget-header">

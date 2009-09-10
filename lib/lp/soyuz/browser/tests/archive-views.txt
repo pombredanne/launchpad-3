@@ -46,6 +46,18 @@ the string 'PPA' or 'Archive' depending on whether the archive is a PPA
     >>> print copy_archive_view.archive_label
     Archive
 
+There is also the 'ppa_reference' property, which mimics the syntax
+supported by `dput` and `software-properties` Ubuntu tools.
+
+    >>> print ppa_archive_view.ppa_reference
+    ppa:cprov/ppa
+
+    >>> print copy_archive_view.ppa_reference
+    Traceback (most recent call last):
+    ...
+    AssertionError: PPA reference should not be used for non-PPA
+    archives.
+
 The ArchiveView is provides the html for the inline description
 editing widget.
 

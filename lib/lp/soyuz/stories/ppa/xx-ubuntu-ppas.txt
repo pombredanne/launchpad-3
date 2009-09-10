@@ -251,31 +251,64 @@ Let's start by adding an extra package to Celso's archive:
     >>> transaction.commit()
     >>> flush_database_updates()
 
-And now on to the page itself. In the table rows, the "Owner" is a
-clickable link to his PPA page:
+And now on to the page itself. In the table rows, the PPA
+'displayname' is a link to its corresponding page:
 
-    >>> anon_browser.getLink("Celso Providelo").click()
-    >>> anon_browser.title
-    'PPA for Celso Providelo'
+    >>> anon_browser.getLink("PPA for Celso Providelo").click()
+    >>> print anon_browser.title
+    PPA for Celso Providelo
 
-Let's see his sources.list entries:
+The first portlet in the PPA index page tell users how to install the
+context PPA in their systems.
 
-    >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
-    >>> text = extract_text(results)
-    >>> print text
-    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu
-        YOUR_UBUNTU_VERSION_HERE main
-    deb-src http://ppa.launchpad.dev/cprov/ppa/ubuntu
-        YOUR_UBUNTU_VERSION_HERE main
+    >>> install_portlet = find_portlet(
+    ...     anon_browser.contents, 'Adding this PPA to your system')
 
-and the select control that lets you update them:
+    >>> print extract_text(install_portlet)
+    Adding this PPA to your system
+    You can update your system with unsupported packages from this
+    untrusted PPA by adding ppa:cprov/ppa to your system's Software Sources.
+    Not using Ubuntu 9.10 (karmic)?
+    Technical details about this PPA
+    ...
+    For questions and bugs with software in this PPA please contact
+    Celso Providelo.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'series-widget-div'))
+The PPA owner reference is a link to its profile page.
+
+    >>> print anon_browser.getLink('Celso Providelo').url
+    http://launchpad.dev/~cprov
+
+The installation details are presented right below the 'Technical
+details about this PPA' (in a javascript-expandable area). It consists
+basically of an interactive 'sources_list' widget which allows users
+to select their Ubuntu series (when it's not detected automatically)
+and copy-and-paste the repository URL to their systems.
+
+    >>> tech_details = first_tag_by_class(
+    ...     str(install_portlet), 'widget-body')
+
+    >>> print extract_text(tech_details)
+    Copy the lines below and add them to your system's software
+    sources. (Read about installing)
     Display sources.list entries for:
-    Choose your Ubuntu version
-    Breezy Badger Autotest (6.6.6)
-    Warty (4.10)
+      Choose your Ubuntu version
+      Breezy Badger Autotest (6.6.6)
+      Warty (4.10)
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu
+      YOUR_UBUNTU_VERSION_HERE main
+    deb-src http://ppa.launchpad.dev/cprov/ppa/ubuntu
+      YOUR_UBUNTU_VERSION_HERE main
+
+There is a link within this section pointing users to the 'help'
+wiki, which contains more documentation about the PPA installation
+procedure.
+
+    >>> print anon_browser.getLink('Read about installing').url
+    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
+
+When present PPA 'Build dependencies' and 'Signing key' will also be
+presented within this section. See below.
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
