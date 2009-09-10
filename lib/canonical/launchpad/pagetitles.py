@@ -397,8 +397,6 @@ distroseries_search = ContextDisplayName('Search packages in %s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
-distroseries_builds = ContextTitle('%s builds')
-
 distroseries_queue = ContextTitle('Queue for %s')
 
 distroserieslanguage_index = ContextTitle('%s')
