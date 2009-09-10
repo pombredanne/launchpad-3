@@ -46,8 +46,7 @@ Related question's portlet.
 
     >>> user_browser.getLink('Link to a FAQ').click()
     >>> user_browser.title
-    '+linkfaq : Questions for “mozilla-firefox” package in Ubuntu
-    : “mozilla-firefox” package : Ubuntu'
+    '+linkfaq : Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
 
     >>> user_browser.getControl(name='field.faq-query').value = 'voip'
     >>> user_browser.getControl('Search', index=0).click()
