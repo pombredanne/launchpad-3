@@ -38,7 +38,7 @@ attachment.
     >>> import re
     >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d')).click()
     >>> print user_browser.title
-    +edit : Bug #2 (blackhole) : Bugs on tomcat : Tomcat
+    +edit : Bug #2 (blackhole) : Bugs in tomcat : Tomcat
     >>> user_browser.getControl('Delete Attachment') is not None
     True
 

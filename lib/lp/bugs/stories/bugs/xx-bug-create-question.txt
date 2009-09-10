@@ -29,7 +29,7 @@ is really a question. He chooses to make a question from it.
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
     >>> user_browser.getLink('Convert to a question').click()
     >>> user_browser.title
-    '+create-question : Bug #10 : Bugs on linux-source-2.6.15
+    '+create-question : Bug #10 : Bugs in linux-source-2.6.15
     : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
 
 The 'Convert this to a question' page explains what will happen if No
@@ -135,7 +135,7 @@ into a question.
     crashes\xe2\x80\x9d'
     >>> user_browser.getLink('Convert to a question').click()
     >>> print user_browser.title
-    +create-question : Bug #9 : Bugs on thunderbird : Mozilla Thunderbird
+    +create-question : Bug #9 : Bugs in thunderbird : Mozilla Thunderbird
     >>> find_main_content(user_browser.contents).p
     <p>
     This bug cannot be converted into a question.
@@ -162,7 +162,7 @@ or a bookmark, he sees that he cannot create the question again.
     ...     'http://bugs.launchpad.dev'
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10/+create-question')
     >>> user_browser.title
-    '+create-question : Bug #10 : Bugs on linux-source-2.6.15
+    '+create-question : Bug #10 : Bugs in linux-source-2.6.15
     : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
     >>> find_main_content(user_browser.contents).p
     <p>
@@ -211,7 +211,7 @@ reactivate a bug report.
     work on selections\xe2\x80\x9d'
     >>> user_browser.getLink('Convert back to a bug').click()
     >>> print user_browser.title
-    +remove-question : Bug #12 : Bugs on jokosher : Jokosher
+    +remove-question : Bug #12 : Bugs in jokosher : Jokosher
 
 The 'Convert back to a bug' page explains what will happen if No
 Privileges Person chooses to reactivate the bug. There is an optional
@@ -279,7 +279,7 @@ question to remove.
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/jokosher/+bug/12/+remove-question')
     >>> print user_browser.title
-    +remove-question : Bug #12 : Bugs on jokosher : Jokosher
+    +remove-question : Bug #12 : Bugs in jokosher : Jokosher
     >>> find_main_content(user_browser.contents).p
     <p>
     The bug was not converted to a question. There is nothing to change. ...

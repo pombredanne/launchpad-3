@@ -59,7 +59,7 @@ progress bugs.
     ...     "field.status=In+Progress&search=Search")
 
     >>> print anon_browser.title
-    Foo Bar's package bug reports
+    +packagebugs-search : Foo Bar
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~name16/+packagebugs-search?"
@@ -68,7 +68,7 @@ progress bugs.
     ...     "field.status=Confirmed&field.status=In+Progress&search=Search")
 
     >>> print anon_browser.title
-    Foo Bar's package bug reports
+    +packagebugs-search : Foo Bar
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~name16/+packagebugs-search?"
@@ -77,7 +77,7 @@ progress bugs.
     ...     "field.status=In+Progress&field.unassigned=on&search=Search")
 
     >>> print anon_browser.title
-    Foo Bar's package bug reports
+    +packagebugs-search : Foo Bar
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~name16/+packagebugs-search?"
@@ -85,7 +85,7 @@ progress bugs.
     ...     "field.status=In+Progress&search=Search")
 
     >>> print anon_browser.title
-    Foo Bar's package bug reports
+    +packagebugs-search : Foo Bar
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~name16/+packagebugs-search?"
@@ -94,7 +94,7 @@ progress bugs.
     ...     "field.status=In+Progress&search=Search")
 
     >>> print anon_browser.title
-    Foo Bar's package bug reports
+    +packagebugs-search : Foo Bar
 
 On the bug listing page, there is a searchtext field, for searching the
 title and description of the package's bugs.
@@ -105,7 +105,8 @@ title and description of the package's bugs.
     ...     "field.searchtext=support&search=Search")
 
     >>> print anon_browser.title
-    Foo Bar's package bug reports
+    +packagebugs-search : Foo Bar
+
 
 Error Handling
 --------------

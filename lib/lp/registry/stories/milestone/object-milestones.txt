@@ -306,30 +306,30 @@ Mozilla Firefox product, to complement the existing series "1.0":
     >>> browser.open('http://launchpad.dev/firefox')
     >>> browser.getLink('Register a series').click()
     >>> print browser.title
-    Register a new Mozilla Firefox release series
+    +addseries : Mozilla Firefox
 
     >>> browser.getControl('Name').value = '2.0'
     >>> browser.getControl('Summary').value = 'The Firefox 2.0 Series'
     >>> browser.getControl('Register Series').click()
     >>> print browser.title
-    Mozilla Firefox 2.0 series
+    Series 2.0 : Mozilla Firefox
 
 We'll also create a new test milestone within the "trunk" series:
 
     >>> browser.open('http://launchpad.dev/firefox/trunk')
     >>> print browser.title
-    Mozilla Firefox trunk series
+    Series trunk : Mozilla Firefox
 
     >>> browser.getLink('Create milestone').click()
     >>> print browser.title
-    Add new milestone for Mozilla Firefox trunk series
+    +addmilestone : Series trunk : Mozilla Firefox
 
     >>> milestone = 'test-milestone'
     >>> browser.getControl('Name').value = milestone
     >>> browser.getControl('Date Targeted').value = '2100-08-08'
     >>> browser.getControl('Register Milestone').click()
     >>> print browser.title
-    Mozilla Firefox trunk series
+    Series trunk : Mozilla Firefox
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'series-trunk'))
     Version "Codename"              Expected    Released              Summary
@@ -351,7 +351,7 @@ Let's target an existing bug to both series "1.0" and series "2.0":
 
     >>> browser.getLink('Target to release').click()
     >>> print browser.title
-    Target bug...to series
+    +nominate : Bug #19 (test-bug-1) : Bugs in firefox : Mozilla Firefox
 
     >>> browser.getControl('1.0').selected = True
     >>> browser.getControl('2.0').selected = True

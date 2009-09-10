@@ -43,8 +43,8 @@ Currently (until we get some UI input) there is no link to the archives
 page, but it exists at:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+archives")
-    >>> anon_browser.title
-    'Ubuntu Linux Copy Archives'
+    >>> print anon_browser.title
+    +archives : Ubuntu
 
 This index of /ubuntu/+archives provides an overview describing
 what the viewer can expect to find here

@@ -39,8 +39,8 @@ User can filter any contributions done by Carlos (the first person
 appearing among contributors), by choosing the 'filter' link:
 
     >>> anon_browser.getLink('filter').click()
-    >>> anon_browser.title
-    'Translations by Carlos...of evolution-2.2...'
+    >>> print anon_browser.title
+    +filter : Series trunk : Evolution
 
 To display all the translations submitted by Carlos, and allow easier
 debugging and problem catching when changes are introduced, we define

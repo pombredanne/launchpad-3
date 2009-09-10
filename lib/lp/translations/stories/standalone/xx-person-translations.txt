@@ -56,8 +56,8 @@ all translations done by Carlos in this file.
 
     >>> alsa_utils_link = 'Spanish (es) translation of alsa-utils in alsa-utils trunk'
     >>> anon_browser.getLink(alsa_utils_link).click()
-    >>> anon_browser.title
-    'Translations by Carlos...of alsa-utils...'
+    >>> print anon_browser.title
+    +filter : Series trunk : alsa-utils
 
 From the full listing of all contributions, Carlos can jump to the pages
 containing only untranslated or only translations that need reviewing.

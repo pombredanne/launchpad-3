@@ -5,8 +5,8 @@ that person's +related-software page, which is linked to from the
 person's home page.
 
     >>> browser.open("http://launchpad.dev/~name16/+related-software")
-    >>> browser.title
-    'Software related to Foo Bar'
+    >>> print browser.title
+    +related-software : Foo Bar
 
 This page is just a summary of the user's packages and will only
 display up to the most recent 30 items in each category.  However, it
@@ -59,7 +59,7 @@ line here as it has working links in the sample data:
     <Link text='cnews' url='http://launchpad.dev/ubuntu/+source/cnews'>
     >>> link.click()
     >>> browser.title
-    '...cnews... package in Ubuntu'
+    '\xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
 
 Same process for the second column should take us to a distribution series
 source package page:
@@ -81,7 +81,7 @@ package release page:
     <Link text='cr.g7-37' url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
     >>> link.click()
     >>> browser.title
-    'cnews cr.g7-37 (source) in Ubuntu'
+    '\xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
 
 
 == Batched listing pages ==

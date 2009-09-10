@@ -14,7 +14,7 @@ Karl realises that he is not on the translate page, he can see that
 that this page has information about relicensing.
 
     >>> print browser.title
-    Translations licensing by Karl Tilbury
+    +licensing : Karl Tilbury
     >>> print extract_text(find_main_content(browser.contents))
     Karl Tilbury
     ...
@@ -72,7 +72,7 @@ Karl changes his mind. He returns to the licensing page.
     >>> browser.url
     'http://translations.launchpad.dev/~karl/+licensing'
     >>> print browser.title
-    Translations licensing by Karl Tilbury
+    +licensing : Karl Tilbury
 
 Karl sees that the current value is 'no', which he set before.
 

@@ -66,7 +66,7 @@ provided link.
 
     >>> jblack_browser.getLink('Create a new PPA').click()
     >>> print jblack_browser.title
-    Activate Personal Package Archive
+    +activate-ppa : James Blackwell
 
     >>> jblack_browser.getControl(
     ...     name="field.displayname").value = 'PPA for James Blackwell'
@@ -288,7 +288,7 @@ build created during the copy is ready to be dispatched.
 
     >>> jblack_browser.getLink('i386').click()
     >>> print jblack_browser.title
-    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
+    PPA for James Blackwell : James Blackwell
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
@@ -328,7 +328,7 @@ James goes straight to the copy interface of his PPA.
 
     >>> jblack_browser.getLink('Copy packages').click()
     >>> print jblack_browser.title
-    Copy packages from PPA for James Blackwell
+    +copy-packages : PPA for James Blackwell : James Blackwell
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build

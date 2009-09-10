@@ -38,13 +38,13 @@ Celso's PPA.
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> cprov_browser.getLink('Delete packages').click()
-    >>> cprov_browser.title
-    'Delete packages from PPA for Celso Providelo'
+    >>> print cprov_browser.title
+    +delete-packages : PPA for Celso Providelo : Celso Providelo
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> admin_browser.getLink('Delete packages').click()
-    >>> admin_browser.title
-    'Delete packages from PPA for Celso Providelo'
+    >>> print admin_browser.title
+    +delete-packages : PPA for Celso Providelo : Celso Providelo
 
 Once accessed the page provides a way to search for published package
 sources and optionally delete one or more matching packages via POST
@@ -290,8 +290,8 @@ message is presented.
 
     >>> admin_browser.open(
     ...    'http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages')
-    >>> admin_browser.title
-    'Delete packages from PPA for No Privileges Person'
+    >>> print admin_browser.title
+    +delete-packages : PPA for No Privileges Person : No Privileges Person
 
     >>> print extract_text(find_main_content(admin_browser.contents))
     Delete packages from PPA for No Privileges Person
@@ -386,7 +386,7 @@ available for deletion because it contains a PUBLISHED binary.
 
     >>> user_browser.getLink('Delete packages').click()
     >>> user_browser.title
-    'Delete packages from PPA for No Privileges Person'
+    +delete-packages : PPA for No Privileges Person : No Privileges Person
 
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build

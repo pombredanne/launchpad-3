@@ -424,7 +424,7 @@ branches but with the state set to work-in-progress.
 This takes the user to the resubmission page.
 
     >>> print sample_browser.title
-    Resubmit proposal to merge
+    +resubmit : GNOME Terminal
 
     >>> sample_browser.getControl('Resubmit').click()
 

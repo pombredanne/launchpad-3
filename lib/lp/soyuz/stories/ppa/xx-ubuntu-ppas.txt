@@ -5,7 +5,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> anon_browser.title
-    'Ubuntu Linux Personal Package Archives'
+    +ppas : Ubuntu
 
 
 == Distribution PPA main page ==
@@ -77,7 +77,7 @@ is presented for other distribution.
     >>> anon_browser.open("http://launchpad.dev/debian")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print anon_browser.title
-    Debian GNU/Linux Personal Package Archives
+    +ppas : Debian
 
 Those pages present coherent data for a distribution with no PPAs.
 
@@ -743,7 +743,7 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
     >>> anon_browser.open("http://launchpad.dev/ubuntutest")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> anon_browser.title
-    'Ubuntu Test Personal Package Archives'
+    +ppas : ubuntutest
 
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
     0
@@ -862,7 +862,7 @@ of downloading the buildlog).
     >>> anon_browser.getLink('i386').click()
 
     >>> print anon_browser.title
-    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    PPA for Celso Providelo : Celso Providelo
 
 This feature is also useful from the PPA owner perspective. When Celso
 sees that there was a failure while building 'cdrkit' on i386 he can
@@ -890,7 +890,7 @@ corresponding build page.
 
     >>> anon_browser.getLink('i386').click()
     >>> print anon_browser.title
-    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    PPA for Celso Providelo : Celso Providelo
 
 
 == Populating 'Most Active' section ==
