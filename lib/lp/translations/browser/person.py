@@ -14,8 +14,10 @@ __all__ = [
 from datetime import datetime, timedelta
 import pytz
 import urllib
+
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
+from zope.interface import implements, Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -123,12 +125,18 @@ def person_is_reviewer(person):
     return groups.any() is not None
 
 
+class IPersonTranslationsMenu(Interface):
+    pass
+
 class PersonTranslationsMenu(NavigationMenu):
 
-    usedfor = IPerson
+    usedfor = IPersonTranslationsMenu
     facet = 'translations'
     links = ('overview', 'licensing', 'imports', 'translations_to_review')
-    title = "Related pages"
+
+    @property
+    def person(self):
+        return self.context.context
 
     def overview(self):
         text = 'Overview'
@@ -145,12 +153,13 @@ class PersonTranslationsMenu(NavigationMenu):
 
     def translations_to_review(self):
         text = 'Translations to review'
-        enabled = person_is_reviewer(self.context)
+        enabled = person_is_reviewer(self.person)
         return Link('+translations-to-review', text, enabled=enabled)
 
 
 class PersonTranslationView(LaunchpadView):
     """View for translation-related Person pages."""
+    implements(IPersonTranslationsMenu)
 
     reviews_to_show = 10
 
@@ -158,6 +167,10 @@ class PersonTranslationView(LaunchpadView):
         super(PersonTranslationView, self).__init__(*args, **kwargs)
         now = datetime.now(pytz.timezone('UTC'))
         self.history_horizon = now - timedelta(90, 0, 0)
+
+    @property
+    def page_title(self):
+        return "Translations related to %s" % self.context.displayname
 
     @cachedproperty
     def recent_activity(self):

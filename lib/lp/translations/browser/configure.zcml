@@ -709,7 +709,6 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+licensing"
-            facet="translations"
             class="
               lp.translations.browser.person.PersonTranslationRelicensingView"
             permission="launchpad.Edit"
@@ -719,10 +718,15 @@
             for="lp.registry.interfaces.person.IPerson"
             name="+imports"
             class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
-            facet="translations"
             permission="zope.Public"
             template="../templates/hastranslationimports-index.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            name="+person-navlinks"
+            template="../templates/person-navlinks.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+activity"
