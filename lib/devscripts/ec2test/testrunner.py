@@ -1,10 +1,15 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Module docstring goes here."""
+"""Code to actually run the tests in an EC2 instance."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'AVAILABLE_INSTANCE_TYPES',
+    'DEFAULT_INSTANCE_TYPE',
+    'EC2TestRunner',
+    'TRUNK_BRANCH',
+    ]
 
 import os
 import pickle
@@ -155,8 +160,6 @@ def validate_file(filename):
     if not os.access(check_file, os.W_OK):
         raise ValueError(
             'you do not have permission to write %s' % (filename,))
-
-
 
 
 def parse_branch_url(branch_url):
