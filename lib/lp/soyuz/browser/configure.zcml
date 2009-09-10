@@ -749,7 +749,7 @@
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distroseries.IDistroSeries"
-            class="lp.registry.browser.distroseries.DistroSeriesView"
+            class="lp.soyuz.browser.distroseries.DistroSeriesBuildsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"
