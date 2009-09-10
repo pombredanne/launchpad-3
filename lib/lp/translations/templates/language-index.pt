@@ -35,7 +35,7 @@
               <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language> has
               <tal:pluralforms replace="context/pluralforms">2</tal:pluralforms> plural forms:
             </p>
-            <div tal:repeat="pluralform view/friendlypluralforms">
+            <div tal:repeat="pluralform view/friendly_plural_forms">
               <p>
                 Form <tal:index replace="pluralform/form">0</tal:index> for
                 <tal:examples replace="pluralform/examples">1, 2, 3...</tal:examples>
