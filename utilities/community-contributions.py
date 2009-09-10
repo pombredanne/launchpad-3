@@ -167,14 +167,16 @@ class ContainerRevision():
         # will give you some information about it before you click
         # (because a rev id often identifies the committer).
         rev_id_url = rev_url_base + rev_id
-        s = " * [[%s|r%s]] -- %s\n" % (rev_id_url, self.top_rev.revno, date_str)
-        s += " {{{\n%s\n}}}\n" % message
-        s += " '''Commits:'''\n "
-        s += "\n ".join(["[[%s|%s]]" % (rev_url_base + lr.rev.revision_id,
-                                        lr.revno)
-                         for lr in self.contained_revs])
-        s += "\n"
-        return s
+        s = [ ]
+        s.append(" * [[%s|r%s]] -- %s\n"
+                 % (rev_id_url, self.top_rev.revno, date_str))
+        s.append(" {{{\n%s\n}}}\n" % message)
+        s.append(" '''Commits:'''\n ")
+        s.append("\n ".join(["[[%s|%s]]" % (rev_url_base + lr.rev.revision_id,
+                                            lr.revno)
+                             for lr in self.contained_revs]))
+        s.append("\n")
+        return ''.join(s)
   
   
 # "ExternalContributor" is too much to type, so I guess we'll just use this.
@@ -207,18 +209,20 @@ class ExCon():
 
     def show_contributions(self):
         """Return a wikified string showing this contributor's contributions."""
-        s = "== %s ==\n\n" % self.name
+        s = [ ]
+        s.append("== %s ==\n\n" % self.name)
         plural = "s"
         if self.num_landings() == 1:
             plural = ""
-        s += "''%d top-level landing%s:''\n\n" % (self.num_landings(), plural)
+        s.append("''%d top-level landing%s:''\n\n"
+                 % (self.num_landings(), plural))
         def prefer_recent_revs(a, b):
             # A and B are LogRevisions; put more recent ones higher in the list.
             return cmp(b.top_rev.revno, a.top_rev.revno)
         for cr in sorted(self._landings, prefer_recent_revs):
-            s += str(cr)
-        s += "\n"
-        return s
+            s.append(str(cr))
+        s.append("\n")
+        return ''.join(s)
 
 
 def get_ex_cons(authors, all_ex_cons):
@@ -273,20 +277,22 @@ class LogExCons(log.LogFormatter):
             return cmp(b.num_landings(), a.num_landings())
         sorted_contributors = \
             sorted(self.all_ex_cons.values(), prefer_more_revs)
-        s = "-----\n\n"
-        s += "= Who =\n\n"
+        s = [ ]
+        s.append("-----\n\n")
+        s.append("= Who =\n\n")
         for val in sorted_contributors:
             plural = "s"
             if val.num_landings() == 1:
                 plural = ""
-            s += " 1. [[#%s|%s]] ''(%d top-level landing%s)''\n" \
-                % (val.name_as_anchor, val.name, val.num_landings(), plural)
-        s += "\n-----\n\n"
-        s += "= What =\n\n"
+            s.append(" 1. [[#%s|%s]] ''(%d top-level landing%s)''\n"
+                     % (val.name_as_anchor, val.name,
+                        val.num_landings(), plural))
+        s.append("\n-----\n\n")
+        s.append("= What =\n\n")
         for val in sorted_contributors:
-            s += "<<Anchor(%s)>>\n" % val.name_as_anchor
-            s += val.show_contributions()
-        return s
+            s.append("<<Anchor(%s)>>\n" % val.name_as_anchor)
+            s.append(val.show_contributions())
+        return ''.join(s)
 
     def log_revision(self, lr):
         """Log a revision.
