@@ -78,7 +78,7 @@
   <tal:block tal:define="activities view/recent_activity">
     <tal:block condition="activities">
       <div class="portlet">
-        <h2 id="translation-activities-header">Activity</h2>
+        <h2>Activity</h2>
         <p>
           These are the translations that
           <tal:name replace="context/displayname">Foo Bar</tal:name>

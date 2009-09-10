@@ -92,6 +92,12 @@ class TranslateLinksAggregator(WorkListLinksAggregator):
         return pofile.untranslatedCount()
 
 
+def compose_pofile_filter_url(pofile, person):
+    """Compose URL for `Person`'s contributions to `POFile`."""
+    person_name = urllib.urlencode({'person': person.name})
+    return canonical_url(pofile) + "/+filter?%s" % person_name
+
+
 class ActivityDescriptor:
     """Description of a past translation activity."""
 
@@ -114,9 +120,7 @@ class ActivityDescriptor:
         pofile = pofiletranslator.pofile
 
         self.title = pofile.potemplate.translationtarget.title
-
-        person_name = urllib.urlencode({'person': person.name})
-        self.url = canonical_url(pofile) + "/+filter?%s" % person_name
+        self.url = compose_pofile_filter_url(pofile, person)
 
 
 def person_is_reviewer(person):
@@ -492,3 +496,6 @@ class TranslationActivityView(LaunchpadView):
             pofiletranslatorset.prefetchPOFileTranslatorRelations(batch))
 
         return batchnav
+
+    def composeURL(self, pofile):
+        return compose_pofile_filter_url(pofile, self.context)
