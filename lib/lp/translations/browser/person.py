@@ -126,7 +126,8 @@ def person_is_reviewer(person):
 
 
 class IPersonTranslationsMenu(Interface):
-    pass
+    """Marker interface for `Person` Translations navigation menu."""
+
 
 class PersonTranslationsMenu(NavigationMenu):
 
