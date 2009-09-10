@@ -158,7 +158,7 @@ class LanguageView(TranslationsMixin, LaunchpadView):
         return self.context.translators[:20]
 
     @property
-    def friendlypluralforms(self):
+    def friendly_plural_forms(self):
         """Formats the plural forms' example list.
 
         It takes the list of examples for each plural form and transforms in a
