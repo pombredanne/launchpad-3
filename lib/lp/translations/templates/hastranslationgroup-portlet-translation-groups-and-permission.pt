@@ -9,11 +9,11 @@
     with <a target="help" href="/+help/permissions-policies.html"
             tal:content="context/translationpermission/title">certain</a>
     permissions.
-    <tal:permissions condition="context/required:launchpad.Edit">
-      <a class="edit sprite"
-         tal:define="link context/menu:navigation/settings"
-         tal:attributes="href link/url"
-         >Change permissions</a>
-    </tal:permissions>
   </p>
+  <div tal:condition="context/required:launchpad.Edit">
+    <a class="edit sprite"
+       tal:define="link context/menu:navigation/settings"
+       tal:attributes="href link/url"
+       >Change permissions</a>
+  </div>
 </div>

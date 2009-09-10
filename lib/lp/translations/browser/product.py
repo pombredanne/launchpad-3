@@ -29,7 +29,7 @@ class ProductTranslationsMenu(NavigationMenu):
     facet = 'translations'
     links = (
         'overview',
-        'translators',
+        'settings',
         'translationdownload',
         'imports',
         )
@@ -39,7 +39,7 @@ class ProductTranslationsMenu(NavigationMenu):
         return Link('+imports', text)
 
     @enabled_with_permission('launchpad.Edit')
-    def translators(self):
+    def settings(self):
         text = 'Settings'
         return Link('+changetranslators', text, icon='edit')
 

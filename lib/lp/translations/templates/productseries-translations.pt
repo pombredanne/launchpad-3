@@ -70,7 +70,7 @@
             <tal:permissions condition="context/product/required:launchpad.Edit">
               You can modify permissions on the
               <a
-                tal:define="link context/product/menu:navigation/translators"
+                tal:define="link context/product/menu:navigation/settings"
                 tal:attributes="href link/url"
               >project settings</a> page.
             </tal:permissions>
