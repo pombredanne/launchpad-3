@@ -352,6 +352,18 @@ class TestPersonTranslationView(TestCaseWithFactory):
         descriptions = self.view.top_projects_and_packages_to_translate
         self.assertEqual(10, len(descriptions))
 
+    def test_requires_preferred_languages(self):
+        # requires_preferred_languages tells the page whether this
+        # person still needs to set their preferred languages.
+        # In this case, our person has set a preferred language, so no,
+        # this is no longer required.
+        self.assertFalse(self.view.requires_preferred_languages)
+
+        # But the answer is True if the person has no preferred
+        # languages.
+        self.view.context.removeLanguage(self.dutch)
+        self.assertTrue(self.view.requires_preferred_languages)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

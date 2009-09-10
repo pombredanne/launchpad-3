@@ -1582,4 +1582,4 @@ class ArchiveSet:
             DistroSeries.distribution == distribution,
             )
 
-        return results
+        return results.order_by(SourcePackagePublishingHistory.id)
