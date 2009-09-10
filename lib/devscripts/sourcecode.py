@@ -13,7 +13,9 @@ __all__ = [
 import os
 import shutil
 
+from bzrlib.builtins import cmd_pull
 from bzrlib.bzrdir import BzrDir
+from bzrlib.plugin import load_plugins
 from bzrlib.transport import get_transport
 
 
@@ -92,12 +94,16 @@ def get_branches(sourcecode_directory, new_branches):
         os.system('bzr branch %s %s' % (branch_url, destination))
 
 
+def pull_branch(branch_url, destination):
+    cmd_pull().run_argv_aliases(['-d', destination, branch_url])
+
+
 def update_branches(sourcecode_directory, update_branches):
     """Update the existing branches in sourcecode."""
     for project, (branch_url, optional) in update_branches.iteritems():
         destination = os.path.join(sourcecode_directory, project)
         print 'Updating %s' % (project,)
-        os.system('bzr pull -d %s %s' % (destination, branch_url))
+        pull_branch(branch_url, destination)
 
 
 def remove_branches(sourcecode_directory, removed_branches):
@@ -136,5 +142,6 @@ def main(args):
     config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
     print 'Sourcecode: %s' % (sourcecode_directory,)
     print 'Config: %s' % (config_filename,)
+    load_plugins()
     update_sourcecode(sourcecode_directory, config_filename)
     return 0
