@@ -1066,10 +1066,10 @@ team_invitations = ContextBrowsername("Invitations sent to %s")
 
 team_mailinglist = 'Configure mailing list'
 
-team_mailinglist_moderate = 'Moderate mailing list'
+#team_mailinglist_moderate = 'Moderate mailing list'
 
-team_mailinglist_subscribers = ContextBrowsername(
-    'Mailing list subscribers for the %s team')
+#team_mailinglist_subscribers = ContextBrowsername(
+#    'Mailing list subscribers for the %s team')
 
 team_map = ContextBrowsername('Map of %s participants')
 

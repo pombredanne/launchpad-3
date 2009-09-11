@@ -730,6 +730,13 @@ class TeamMailingListSubscribersView(LaunchpadView):
 
     max_columns = 4
 
+    @property
+    def label(self):
+        return ('Mailing list subscribers for the %s team' %
+                self.context.displayname)
+
+    page_title = label
+
     @cachedproperty
     def subscribers(self):
         return BatchNavigator(
@@ -764,6 +771,7 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
 
     schema = Interface
     label = 'Mailing list moderation'
+    page_title = label
 
     def __init__(self, context, request):
         """Allow for review and moderation of held mailing list posts."""
