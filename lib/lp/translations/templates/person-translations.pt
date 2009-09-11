@@ -45,22 +45,22 @@
     <tal:reviewer condition="view/person_is_reviewer">
       <div id="translations-to-review-section" class="portlet">
         <h2>Translations you need to review</h2>
-        <span style="display:block; text-align:right">
+        <div class="see-all">
           <a href="http://help.launchpad.net/Translations/Reviewing">
             Why is this important?
           </a>
-        </span>
+        </div>
         <metal:translations-to-review
           tal:replace="structure context/@@+translations-to-review-table" />
-        <span style="display:block; text-align:right"
-              tal:condition="python: view.num_projects_and_packages_to_review > 1">
+        <div class="see-all"
+             tal:condition="python: view.num_projects_and_packages_to_review > 1">
           <a href="+translations-to-review" id="translations-to-review-link">
             See all
             <tal:num tal:replace="view/num_projects_and_packages_to_review">
               16
             </tal:num> unreviewed translations
           </a>
-        </span>
+        </div>
       </div>
     </tal:reviewer>
   </tal:me>
@@ -96,9 +96,9 @@
             </td>
           </tr>
         </table>
-        <span style="display:block; text-align:right">
+        <div class="see-all">
           <a href="+activity">See all</a>
-        </span>
+        </div>
       </div>
     </tal:block>
   </tal:block>

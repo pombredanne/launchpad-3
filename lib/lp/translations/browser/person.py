@@ -112,7 +112,9 @@ class ActivityDescriptor:
             `person`.
         """
         assert person == pofiletranslator.person, (
-            "This POFileTranslator record is for the wrong person.")
+            "Got POFileTranslator record for user %s "
+            "while listing activity for %s." % (
+                person.name, pofiletranslator.person.name))
 
         self.date = pofiletranslator.date_last_touched
 
