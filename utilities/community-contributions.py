@@ -248,7 +248,7 @@ def get_ex_cons(authors, all_ex_cons):
             ### just get back an existing object if such has already been
             ### instantiated for this name.  But that would make this code
             ### non-reentrant, and that's just not cool.
-            if all_ex_cons.has_key(a):
+            if a in all_ex_cons:
                 ec = all_ex_cons[a]
             else:
                 ec = ExCon(a)
