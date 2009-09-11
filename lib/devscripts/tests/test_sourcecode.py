@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import os
 import shutil
 from StringIO import StringIO
 import tempfile
@@ -15,7 +16,8 @@ from bzrlib.tests import TestCase
 from bzrlib.transport import get_transport
 
 from devscripts.sourcecode import (
-    find_branches, interpret_config, parse_config_file, plan_update)
+    find_branches, get_launchpad_root, interpret_config, parse_config_file,
+    plan_update)
 
 
 class TestParseConfigFile(unittest.TestCase):
@@ -116,6 +118,16 @@ class TestPlanUpdate(unittest.TestCase):
         self.assertEqual({}, new)
         self.assertEqual(config, existing)
         self.assertEqual(set(), removed)
+
+    def test_smoke_the_default_config(self):
+        # Make sure we can parse, interpret and plan based on the default
+        # config file.
+        root = get_launchpad_root()
+        config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
+        config_file = open(config_filename)
+        config = interpret_config(parse_config_file(config_file))
+        config_file.close()
+        plan_update([], config)
 
 
 class TestFindBranches(TestCase):
