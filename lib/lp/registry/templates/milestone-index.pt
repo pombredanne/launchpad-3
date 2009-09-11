@@ -22,9 +22,9 @@
       <tal:title tal:content="view/milestone/title"  />
       <a tal:condition="context/required:launchpad.Edit"
         tal:attributes="href view/milestone/fmt:url/+delete"
-        title="Delete this milestone"
+        title="Delete milestone"
         ><img src="/@@/trash-icon"
-           alt="Delete this milestone" title="Delete this milestone" /></a>
+           alt="Delete milestone" title="Delete milestone" /></a>
       <a tal:replace="structure milestone_menu/edit/fmt:icon" />
     </h1>
 
@@ -64,9 +64,9 @@
           tal:content="view/release/datereleased/fmt:approximatedate" />
           &nbsp; <a tal:condition="view/release/required:launchpad.Edit"
             tal:attributes="href view/release/fmt:url/+delete"
-            title="Delete this release"
+            title="Delete release"
             ><img src="/@@/remove"
-               alt="Delete this release" title="Delete this release" /></a>
+               alt="Delete release" title="Delete release" /></a>
           <a tal:replace="structure release_menu/edit/fmt:icon" />
           </td>
       </tr>
