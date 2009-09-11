@@ -22,7 +22,7 @@ will work with spanish in Hoary first.
 DistroSeriesLanguage provides basic `title` describing what is it about.
 
     >>> hoary_spanish.title
-    Spanish translations of Ubuntu Hoary
+    u'Spanish translations of Ubuntu Hoary'
 
 In DistroSeriesLanguage.pofiles we find real POFiles for the given
 DistroSeries in the given language.  That is, translations that actually
