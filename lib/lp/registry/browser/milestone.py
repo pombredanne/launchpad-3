@@ -92,9 +92,8 @@ class MilestoneLinkMixin:
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         """The link to delete this milestone."""
-        text = 'Delete'
-        # ProjectMilestones are virtual milestones and do not have
-        # any properties which can be edited.
+        text = 'Delete milestone'
+        # ProjectMilestones are virtual.
         enabled = not IProjectMilestone.providedBy(self.context)
         summary = "Delete this milestone"
         return Link(

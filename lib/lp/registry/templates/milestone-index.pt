@@ -123,7 +123,7 @@
 
             <dl>
               <dt>Assigned to you:</dt>
-              <dd tal:define="count_statuses view/user_assigments">
+              <dd tal:define="count_statuses view/user_counts">
                 <tal:activities repeat="count_status count_statuses">
                   <strong tal:content="count_status/count">2</strong>
                   <tal:activity replace="structure count_status/status" /><tal:comma
