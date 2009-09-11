@@ -9,8 +9,10 @@ __all__ = [
     'RosettaStatsView',
     'RosettaApplicationNavigation',
     'TranslateRedirectView',
+    'TranslationsLanguageBreadcrumb',
     'TranslationsMixin',
     'TranslationsRedirectView',
+    'TranslationsVHostBreadcrumb',
     ]
 
 from zope.component import getUtility
@@ -28,6 +30,7 @@ from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.layers import TranslationsLayer
 from canonical.launchpad.webapp import Navigation, stepto, canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 
 class HelpTranslateButtonView:
@@ -182,3 +185,18 @@ class TranslationsRedirectView(PageRedirectView):
 
     def __init__(self, context, request):
         PageRedirectView.__init__(self, context, request, '+translations')
+
+
+class TranslationsVHostBreadcrumb(Breadcrumb):
+    rootsite = 'translations'
+
+    @property
+    def text(self):
+        return 'Translations'
+
+
+class TranslationsLanguageBreadcrumb(Breadcrumb):
+    """Breadcrumb for objects with language."""
+    @property
+    def text(self):
+        return self.context.language.displayname
