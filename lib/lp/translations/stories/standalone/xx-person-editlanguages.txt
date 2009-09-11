@@ -16,7 +16,7 @@ lists his current preferences.
     ...     return extract_text(tag)
 
     >>> print find_languages_section(browser.contents)
-    Preferred languages
+    Your preferred languages
     Catalan
     Spanish
     &... Change your preferred languages...
@@ -50,9 +50,8 @@ his preferences, Spanish will no longer be selected, and Welsh will.
 
 After he submits the form, he should again be redirected back to
 Rosetta's About page. The 'Your preferred languages' portlet displays
-his two translatable languages. The page displays two messages
-confirming his changes. The 'Your preferred languages' portlet
-displays his translatable languages.
+his two translatable languages. The page also displays two messages
+confirming his changes.
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
@@ -61,7 +60,7 @@ displays his translatable languages.
 
     >>> browser.open('http://translations.launchpad.dev/')
     >>> print find_languages_section(browser.contents)
-    Preferred languages
+    Your preferred languages
     Catalan
     Welsh
     &...
