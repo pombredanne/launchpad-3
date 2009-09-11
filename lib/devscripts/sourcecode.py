@@ -188,7 +188,10 @@ def main(args):
         sourcecode_directory = args[1]
     else:
         sourcecode_directory = os.path.join(root, 'sourcecode')
-    config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
+    if len(args) > 2:
+        config_filename = args[2]
+    else:
+        config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
     print 'Sourcecode: %s' % (sourcecode_directory,)
     print 'Config: %s' % (config_filename,)
     load_plugins()
