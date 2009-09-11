@@ -31,17 +31,23 @@ from lp.services.apachelogparser.script import ParseApacheLogs
 
 
 class ParseLibrarianApacheLogs(ParseApacheLogs):
+    """An Apache log parser for LibraryFileAlias downloads."""
+
     def setUpUtilities(self):
+        """See `ParseApacheLogs`."""
         self.libraryfilealias_set = getUtility(ILibraryFileAliasSet)
 
     @property
     def root(self):
+        """See `ParseApacheLogs`."""
         return config.librarianlogparser.logs_root
 
     def getDownloadKey(self, path):
+        """See `ParseApacheLogs`."""
         return get_library_file_id(path)
 
     def getDownloadCountUpdater(self, file_id):
+        """See `ParseApacheLogs`."""
         try:
             return self.libraryfilealias_set[file_id].updateDownloadCount
         except SQLObjectNotFound:
