@@ -11,12 +11,12 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
 
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
 
 class BaseTranslationsBreadcrumbTestCase(BaseBreadcrumbTestCase):
     def setUp(self):
