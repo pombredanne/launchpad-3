@@ -319,9 +319,18 @@ def usage():
     print __doc__
 
 
-page_intro = """This page shows contributions to Launchpad from outside Canonical.  It only lists changes that have landed in the Launchpad ''devel'' tree, so changes that land in ''db-devel'' first may take a while to show up (see the [[Trunk|trunk explanation]] for more).
+page_intro = """This page shows contributions to Launchpad from \
+outside Canonical.  It only lists changes that have landed in the \
+Launchpad ''devel'' tree, so changes that land in ''db-devel'' first \
+may take a while to show up (see the [[Trunk|trunk explanation]] for \
+more).
 
-~-''Note for maintainers: this page is updated every 10 minutes by a cron job running as kfogel on devpad (though if there are no new contributions, the page's timestamp won't change).  The code that generates this page is [[http://bazaar.launchpad.net/%7Elaunchpad-pqm/launchpad/devel/annotate/head%3A/utilities/community-contributions.py|utilities/community-contributions.py]] in the Launchpad tree.''-~
+~-''Note for maintainers: this page is updated every 10 minutes by a \
+cron job running as kfogel on devpad (though if there are no new \
+contributions, the page's timestamp won't change).  The code that \
+generates this page is \
+[[http://bazaar.launchpad.net/%7Elaunchpad-pqm/launchpad/devel/annotate/head%3A/utilities/community-contributions.py|utilities/community-contributions.py]] \
+in the Launchpad tree.''-~
 
 """
 
