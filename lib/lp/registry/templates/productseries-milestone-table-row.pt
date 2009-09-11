@@ -62,8 +62,8 @@
           condition="link/enabled">
           <a style="sprite add"
             tal:attributes="href link/fmt:url;
-                            title link/summary
-                            class string:sprite ${link/icon}" >Release now</a>
+                            title link/summary;
+                            class string:sprite ${link/icon}">Release now</a>
         </tal:can-edit>
         </tal:not-yet>
       </tal:no-release>
