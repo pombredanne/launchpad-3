@@ -145,7 +145,7 @@ class EC2Instance:
 
     def setup_user(self):
         """Set up an account named after the local user."""
-        root_connection = self._instance.connect_as_root()
+        root_connection = self.connect_as_root()
         root_p = root_connection.perform
         if self._vals['USER'] == 'gary':
             # This helps gary debug problems others are having by removing
