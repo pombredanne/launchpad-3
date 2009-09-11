@@ -71,7 +71,7 @@ class ProductReleaseContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
-        text = 'Delete'
+        text = 'Delete this release'
         summary = "Delete this release"
         return Link('+delete', text, summary=summary, icon='remove')
 
