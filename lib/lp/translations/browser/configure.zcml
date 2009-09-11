@@ -39,6 +39,9 @@
         <!-- portlets -->
 
         <browser:page
+            name="+portlet-stats"
+            template="../templates/rosetta-portlet-stats.pt"/>
+        <browser:page
             name="+portlet-groups"
             template="../templates/rosetta-portlet-groups.pt"/>
     </browser:pages>

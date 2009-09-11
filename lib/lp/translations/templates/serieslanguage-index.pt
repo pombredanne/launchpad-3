@@ -51,7 +51,7 @@
     <div style="max-width:840px;">
     <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
-    <table class="listing sortable" id="translationstatuses">
+    <table class="listing sortable translation-stats">
       <thead>
         <tr>
           <th>Template Name</th>
@@ -64,7 +64,7 @@
           <th>By</th>
         </tr>
       </thead>
-      <tbody class="translation-stats">
+      <tbody>
         <tr tal:repeat="entry view/pofiles"
             tal:attributes="id string:${entry/potemplate/name}">
           <td class="template-name">
@@ -159,7 +159,7 @@
           </td>
         </tr>
         <tfoot>
-          <tr class="overall-translation-stats">
+          <tr>
             <th>Overall statistics:</th>
             <td><span tal:replace="context/messageCount">N</span></td>
             <td>
