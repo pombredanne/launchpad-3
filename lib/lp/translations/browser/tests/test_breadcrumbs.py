@@ -98,6 +98,49 @@ class TestTranslationsVHostBreadcrumb(BaseTranslationsBreadcrumbTestCase):
             ["Crumb Tester", "Translations"])
 
 
+class TestTranslationGroupsBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+
+    def test_translationgroupset(self):
+        group_set = getUtility(ITranslationGroupSet)
+        url = canonical_url(group_set, rootsite='translations')
+        # Translation group listing is top-level, so no breadcrumbs show up.
+        # Note that the first parameter is an empty list because
+        # ITranslationGroupSet doesn't register Navigation class, and
+        # thus doesn't show up in request.traversed_objects.
+        self._testContextBreadcrumbs(
+            [], [], [],
+            url=url)
+
+    def test_translationgroup(self):
+        group_set = getUtility(ITranslationGroupSet)
+        group = self.factory.makeTranslationGroup(
+            name='test-translators', title='Test translators')
+        self._testContextBreadcrumbs(
+            [group_set, group],
+            ["http://translations.launchpad.dev/+groups",
+             "http://translations.launchpad.dev/+groups/test-translators"],
+            ["Translation groups", "Test translators"])
+
+
+class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+    def setUp(self):
+        super(TestSeriesLanguageBreadcrumbs, self).setUp()
+        self.language = getUtility(ILanguageSet)['sr']
+
+    def test_distroserieslanguage(self):
+        distribution = self.factory.makeDistribution(
+            name='crumb-tester', displayname="Crumb Tester")
+        series = self.factory.makeDistroRelease(
+            name="test", version="1.0", distribution=distribution)
+        serieslanguage = getUtility(IDistroSeriesLanguageSet).getDummy(
+            series, self.language)
+        self._testContextBreadcrumbs(
+            [distribution, series, serieslanguage],
+            ["http://launchpad.dev/crumb-tester",
+             "http://launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test/+lang/sr"],
+            ["Crumb Tester", "1.0", "Translations", "Serbian (sr)"])
 
 
 def test_suite():

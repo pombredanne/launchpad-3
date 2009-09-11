@@ -250,6 +250,12 @@
 
     <!-- DistroSeriesLanguage and Dummy -->
 
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
+        factory="lp.translations.browser.translations.TranslationsLanguageBreadcrumb"
+        permission="zope.Public"/>
+
     <class
         class="lp.translations.model.distroserieslanguage.DistroSeriesLanguage">
         <allow

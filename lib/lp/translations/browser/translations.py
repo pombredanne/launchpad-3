@@ -9,6 +9,7 @@ __all__ = [
     'RosettaStatsView',
     'RosettaApplicationNavigation',
     'TranslateRedirectView',
+    'TranslationsLanguageBreadcrumb',
     'TranslationsMixin',
     'TranslationsRedirectView',
     'TranslationsVHostBreadcrumb',
@@ -192,3 +193,10 @@ class TranslationsVHostBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return 'Translations'
+
+
+class TranslationsLanguageBreadcrumb(Breadcrumb):
+    """Breadcrumb for objects with language."""
+    @property
+    def text(self):
+        return self.context.language.displayname
