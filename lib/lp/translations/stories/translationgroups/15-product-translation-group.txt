@@ -36,13 +36,12 @@ can see that from the translations page.
     ...     find_tag_by_id(netapplet_owner_browser.contents,
     ...                    'translation-permissions'))
     NetApplet (Unspecified) is translated with Open permissions.
-    You can modify permissions on the Settings page.
 
 Now let's make sure we can see the page to let us change translation
 group and permissions.
 
     >>> translations_page_url = netapplet_owner_browser.url
-    >>> netapplet_owner_browser.getLink('Settings').click()
+    >>> netapplet_owner_browser.getLink('Change permissions').click()
     >>> change_translators_url = netapplet_owner_browser.url
 
     >>> print netapplet_owner_browser.title
@@ -57,11 +56,11 @@ group and permissions.
     ...     'Translation group').displayValue
     ['(no value)']
 
-Ordinary users cannot see the "Settings" link or the page it
+Ordinary users cannot see the "Change permissions" link or the page it
 leads to.
 
     >>> user_browser.open(translations_page_url)
-    >>> user_browser.getLink('Settings').click()
+    >>> user_browser.getLink('Change permissions').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError

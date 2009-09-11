@@ -1042,6 +1042,12 @@
             template="../templates/team-index.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.person.TeamIndexView"
+            permission="zope.Public"
+            name="+portlet-polls"
+            template="../templates/team-portlet-polls.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
             class="lp.registry.browser.team.TeamMapView"
             name="+map"

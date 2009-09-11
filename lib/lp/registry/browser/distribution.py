@@ -867,8 +867,7 @@ class DistributionMirrorsView(LaunchpadView):
 
     implements(IDistributionMirrorMenuMarker)
     show_freshness = True
-    show_archive_mirror = True
-    show_cd_mirror = True
+    show_mirror_type = False
     description = None
 
     @cachedproperty
@@ -945,7 +944,6 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
     heading = 'Official Archive Mirrors'
     description = ('These mirrors provide repositories and archives of all '
                    'software for the distribution.')
-    show_archive_mirror = False
 
     @cachedproperty
     def mirrors(self):
@@ -957,7 +955,6 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     heading = 'Official CD Mirrors'
     description = ('These mirrors offer ISO images which you can download '
                    'and burn to CD to make installation disks.')
-    show_cd_mirror = False
     show_freshness = False
 
     @cachedproperty
@@ -1025,6 +1022,8 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 class DistributionPendingReviewMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Pending-review mirrors'
+    show_mirror_type = True
+    show_freshness = False
 
     @cachedproperty
     def mirrors(self):
