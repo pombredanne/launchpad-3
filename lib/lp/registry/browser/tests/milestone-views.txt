@@ -147,7 +147,7 @@ specifications and bugtasks.
     ...     print '%s: %s' % (status_count.status.title, status_count.count)
     New: 2
 
-The assignment_counts property turns all the users and count of bugs and
+The assignment_counts property returns all the users and count of bugs and
 specifications assigned to them.
 
     >>> for status_count in view.assignment_counts:
@@ -161,7 +161,7 @@ The user_counts property is the count items assigned to the current user.
     ...     print '%s: %s' % (status_count.status, status_count.count)
     bugs: 2
 
-The user_counts property is an empty list if the user is None
+The user_counts property is an empty list if the user is None.
 
     >>> logout()
     >>> view = create_view(milestone, '+index')
@@ -227,7 +227,7 @@ This release does not not have release notes or a change log.
     >>> print find_tag_by_id(content, 'changelog')
     None
 
-This release notes and change log do appear when the release has them
+This release notes and change log do appear when the release has them.
 
     >>> release.release_notes = 'My release notes'
     >>> release.changelog = 'My changelog'
