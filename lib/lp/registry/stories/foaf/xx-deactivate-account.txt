@@ -84,8 +84,7 @@ assignee.
     >>> browser.open('http://launchpad.dev/debian/+source/'
     ...     'mozilla-firefox/+bug/3/+viewstatus')
     >>> print extract_text(find_main_content(browser.contents))
-    Bug #3:
-    ...To change this information, you must be logged in...
+    Bug #3
     ...Assigned to unknown...
 
 And now the Launchpad page for that person will clearly say (s)he does not use

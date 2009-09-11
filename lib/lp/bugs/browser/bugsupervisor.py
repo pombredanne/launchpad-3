@@ -21,6 +21,16 @@ class BugSupervisorEditView(LaunchpadEditFormView):
     schema = IHasBugSupervisor
     field_names = ['bug_supervisor']
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit bug supervisor for %s' % self.context.displayname
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     @action('Change', name='change')
     def change_action(self, action, data):
         """Redirect to the target page with a success message."""
@@ -95,5 +105,9 @@ class BugSupervisorEditView(LaunchpadEditFormView):
                 url=(canonical_url(supervisor, rootsite='mainsite') +
                      '/+members'))
             self.setFieldError('bug_supervisor', error)
+
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 

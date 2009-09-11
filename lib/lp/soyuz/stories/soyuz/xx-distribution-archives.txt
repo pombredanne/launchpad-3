@@ -97,6 +97,14 @@ present:
     ...
     deb-src ...</pre>
 
+The package details can be accessed for a distribution archive.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archives")
+    >>> anon_browser.getLink("intrepid-security-rebuild").click()
+    >>> anon_browser.getLink("View package details").click()
+    >>> print anon_browser.title
+    Packages in “Copy archive intrepid-security-rebuild for Joe Bloggs”
+
 The list of copy archives for a distribution may also include private
 copy archives. These should not be displayed unless the user has
 permission to view them.
