@@ -222,7 +222,8 @@ class CVEUpdater(LaunchpadCronScript):
         self.logger.info("Processing CVE XML...")
         self.processCVEXML(cve_db)
         finishts = time.time()
-        self.logger.info('%d seconds to update database.' % (finishts - startts))
+        self.logger.info('%d seconds to update database.'
+                % (finishts - startts))
 
     def processCVEXML(self, cve_xml):
         """Process the CVE XML file.
