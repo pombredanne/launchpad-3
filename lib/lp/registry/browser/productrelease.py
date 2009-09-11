@@ -71,8 +71,8 @@ class ProductReleaseContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
-        text = 'Delete this release'
-        summary = "Delete this release"
+        text = 'Delete release'
+        summary = "Delete release"
         return Link('+delete', text, summary=summary, icon='remove')
 
     @enabled_with_permission('launchpad.Edit')
@@ -361,7 +361,7 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
 
     page_title = label
 
-    @action('Delete this Release', name='delete')
+    @action('Delete Release', name='delete')
     def delete_action(self, action, data):
         series = self.context.productseries
         version = self.context.version

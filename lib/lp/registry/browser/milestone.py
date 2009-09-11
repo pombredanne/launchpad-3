@@ -95,7 +95,7 @@ class MilestoneLinkMixin:
         text = 'Delete milestone'
         # ProjectMilestones are virtual.
         enabled = not IProjectMilestone.providedBy(self.context)
-        summary = "Delete this milestone"
+        summary = "Delete milestone"
         return Link(
             '+delete', text, icon='trash-icon',
             summary=summary, enabled=enabled)
@@ -442,7 +442,7 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
         """The list of `IProductReleaseFile`s related to the milestone."""
         return self._getProductReleaseFiles(self.context)
 
-    @action('Delete this Milestone', name='delete')
+    @action('Delete Milestone', name='delete')
     def delete_action(self, action, data):
         """Delete the milestone anddelete or unlink subordinate objects."""
         # Any associated bugtasks and specifications are untargeted.

@@ -209,7 +209,7 @@ Deleting a product release
 --------------------------
 
     >>> form = {
-    ...     'field.actions.delete': 'Delete this release',
+    ...     'field.actions.delete': 'Delete Release',
     ...     }
     >>> view = create_initialized_view(release, '+delete', form=form)
     >>> print view.label

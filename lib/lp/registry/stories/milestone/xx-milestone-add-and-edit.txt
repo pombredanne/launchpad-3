@@ -119,7 +119,7 @@ Person reads that they will be deleted too.
 Sample Person chooses the delete button, then reads that the action is
 successful.
 
-    >>> driver_browser.getControl('Delete this Milestone').click()
+    >>> driver_browser.getControl('Delete Milestone').click()
     >>> print driver_browser.title
     Mozilla Firefox trunk series
     >>> for message in get_feedback_messages(driver_browser.contents):
