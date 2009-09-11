@@ -205,14 +205,14 @@ aware of this condition.
     http://launchpad.dev/~no-priv/+archive/ppa
 
 When accessed by their owners, a PPA depending on disabled archives
-will additionally show an warning. This way PPA maintainer can react
-to this problem.
+will additionally show an warning for uploaders . This way PPA
+maintainer can react to this problem.
 
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> ui_dependencies = find_tag_by_id(
-    ...     cprov_browser.contents, 'archive-dependencies')
+    >>> upload_hint = find_tag_by_id(
+    ...     cprov_browser.contents, 'upload-hint')
     >>> print extract_text(
-    ...     first_tag_by_class(str(ui_dependencies), 'message warning'))
+    ...     first_tag_by_class(str(upload_hint), 'message warning'))
     This PPA depends on disabled archives. it may cause spurious
     build failures or binaries with unexpected contents.
 
