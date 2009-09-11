@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0213, F0401
+# pylint: disable-msg=E0213
 
 from lazr.restful.fields import Reference
 
