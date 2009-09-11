@@ -2,15 +2,14 @@ The bug supervisor reports present an overview and searchable bug listing
 views for packages for which a user is a bug supervisor.
 
     >>> anon_browser.open("http://launchpad.dev/~name16/+packagebugs")
-    >>> print anon_browser.contents
-    <!DOCTYPE...
-    ...Foo Bar's package bug reports...
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Foo Bar +packagebugs
     ...
-    ...Foo Bar is subscribed to these packages.
-    ...Totals...1...0...1...0...
-    ...mozilla-firefox in ubuntu...1...0...1...0...
-    ...pmount in ubuntu...0...0...0...0...
+    Foo Bar is subscribed to these packages.
     ...
+    Totals 1 0 1 0
+    mozilla-firefox in ubuntu 1 0 1 0
+    pmount in ubuntu 0 0 0 0
 
 If we add a bug for Foo Bar these numbers will be updated:
 
@@ -37,15 +36,14 @@ The numbers displayed will have changed to include the new bug in
 pmount.
 
     >>> anon_browser.open("http://launchpad.dev/~name16/+packagebugs")
-    >>> print anon_browser.contents
-    <!DOCTYPE...
-    ...Foo Bar's package bug reports...
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Foo Bar +packagebugs
     ...
-    ...Foo Bar is subscribed to these packages.
-    ...Totals...2...0...2...0...
-    ...mozilla-firefox in ubuntu...1...0...1...0...
-    ...pmount in ubuntu...1...0...1...0...
+    Foo Bar is subscribed to these packages.
     ...
+    Totals 2 0 2 0
+    mozilla-firefox in ubuntu 1 0 1 0
+    pmount in ubuntu 1 0 1 0
 
     >>> transaction.abort()
 
@@ -54,7 +52,8 @@ progress bugs.
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~name16/+packagebugs-search?"
-    ...     "field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&"
+    ...     "field.distribution=ubuntu&"
+    ...     "field.sourcepackagename=mozilla-firefox&"
     ...     "field.status=New&field.status=Confirmed&"
     ...     "field.status=In+Progress&search=Search")
 
