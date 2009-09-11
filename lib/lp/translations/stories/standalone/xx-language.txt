@@ -89,15 +89,24 @@ about the selected language.
     >>> print browser.url
     http://translations.launchpad.dev/+languages/es
 
-    >>> pluralforms_portlet = find_portlet(browser.contents, 'Plural forms')
-    >>> print pluralforms_portlet
-    <...
+    >>> from canonical.launchpad.testing.pages import setUpGlobs
+    >>> class MockTest(object):
+    ...     def __init__(self):
+    ...         self.globs = {}
+
+    >>> test = MockTest()
+    >>> setUpGlobs(test)
+
+    >>> extract_text = test.globs['extract_text']
+
+    >>> print extract_text(find_portlet(browser.contents, 'Plural forms'
+    ...     ).renderContents())
+    Plural forms
     Spanish has 2 plural forms:
-    ...
     Form 0 for 1.
-    ...
     Form 1 for 2, 3, 4, 5, 6, 7, ...
-    ...
+    When ...
+
     
     >>> translationteams_portlet = find_portlet(
     ...     browser.contents, 'Translation teams')
