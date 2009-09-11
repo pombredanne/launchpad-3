@@ -4,7 +4,10 @@
 """Tests of the HWDB submissions parser."""
 
 from cStringIO import StringIO
-import cElementTree as etree
+try:
+    import xml.etree.cElementTree as etree
+except ImportError:
+    import cElementTree as etree
 from datetime import datetime
 import logging
 import os

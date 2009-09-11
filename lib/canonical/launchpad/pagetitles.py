@@ -399,8 +399,6 @@ distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
 distroseries_queue = ContextTitle('Queue for %s')
 
-distroserieslanguage_index = ContextTitle('%s')
-
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 errorservice_config = 'Configure error log'
@@ -819,8 +817,6 @@ productrelease_admin = ContextTitle('Administer %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_review_licenses = 'Review projects'
-
-productserieslanguage_index = ContextTitle('%s')
 
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
