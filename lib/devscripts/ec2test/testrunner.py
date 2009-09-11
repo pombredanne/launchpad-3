@@ -138,7 +138,7 @@ class EC2TestRunner:
 
     name = 'ec2-test-runner'
 
-    message = instance = image = None
+    message = image = None
     _running = False
 
     def __init__(self, branch, email=False, file=None, test_options='-vv',
@@ -265,8 +265,8 @@ class EC2TestRunner:
                 if tree is not None:
                     # this is the part we want to do whether or not we're
                     # submitting.
-                    submission.check_tree() # any working changes
-                    submission.check_public_branch() # everything public
+                    #submission.check_tree() # any working changes
+                    #submission.check_public_branch() # everything public
                     branch = submission.public_location
                     if (include_download_cache_changes is None or
                         include_download_cache_changes):
@@ -463,7 +463,7 @@ class EC2TestRunner:
         return self._instance.shutdown()
 
     def configure_system(self):
-        self.instance.setup_user()
+        self._instance.setup_user()
 
         user_connection = self._instance.connect_as_user()
         user_p = user_connection.perform
