@@ -823,6 +823,7 @@
         for="lp.registry.interfaces.project.IProject"
         permission="zope.Public"
         name="+translations"
+        class="lp.translations.browser.project.ProjectView"
         template="../templates/project-translations.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
