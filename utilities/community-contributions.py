@@ -380,8 +380,8 @@ def main():
     # it would be good to parameterize this, or just auto-detect the
     # branch and choose the right number.
     logger = log.Logger(b, {'start_revision' : 8976,
-                            'direction'      : 'reverse',
-                            'levels'         : 0, })
+                            'direction' : 'reverse',
+                            'levels' : 0, })
     lec = LogExCons()
     if not quiet:
         print "Calculating (this may take a while)..."
