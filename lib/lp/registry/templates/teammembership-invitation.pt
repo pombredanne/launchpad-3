@@ -12,10 +12,6 @@
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/person/@@+portlet-details" />
-</metal:portlets>
-
 <div metal:fill-slot="main">
 
   <div tal:condition="context/status/enumvalue:INVITED">
