@@ -3,59 +3,80 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad" >
+  metal:use-macro="view/macro:page/main_only"
+>
 
   <body>
   <div metal:fill-slot="main">
+    <ul class="helplinks">
+      <li>
+        <a href="https://help.launchpad.net/Translations"
+           id="link-to-translations-help"
+           >Help for translations
+        </a>
+      </li>
+    </ul>
     <h1>Translations</h1>
 
-  <ul class="helplinks">
-    <li>
-      <a href="https://help.launchpad.net/Translations"
-         id="link-to-translations-help"
-         >Help for translations
-      </a>
-      </li>
-  </ul>
-  <tal:translation_focus condition="view/translation_focus">
-    <p>
-      The current translation focus for
-      <span tal:replace="context/displayname">Ubuntu</span> is
-      <span tal:replace="view/translation_focus/version">6.06</span>
-      (<span tal:replace="view/translation_focus/displayname">Dapper</span>),
-      and we encourage you to translate it first.
-      </p>
-          <p id="translation-permissions">
-            <tal:distro replace="context/displayname">This
-            distribution</tal:distro> is translated
-            <tal:hasgroup condition="context/translationgroup">by
-              <a tal:attributes="href context/translationgroup/fmt:url"
-                 tal:content="context/translationgroup/title">translators</a>
-            </tal:hasgroup>
-            with <a target="help" href="/+help/permissions-policies.html"
-              tal:content="context/translationpermission/title">certain</a>
-            permissions.
-            <tal:permissions condition="context/required:launchpad.Edit">
-              You can modify permissions on the
-              <a
-                tal:define="link context/menu:navigation/settings"
-                tal:attributes="href link/url"
-              >Settings</a> page.
-            </tal:permissions>
-          </p>
+    <tal:translation_focus condition="view/translation_focus"
+                           define="target view/translation_focus">
 
-    <h2>
-      <span tal:replace="view/translation_focus/version">5.04</span>:
-      <span tal:replace="view/translation_focus/title">
-        Hoary Hedgehog
-      </span>
-    </h2>
-    <div tal:replace="structure view/translation_focus/@@+langchart" />
-  </tal:translation_focus>
+      <div class="top-portlet">
+        <p>
+          Launchpad currently recommends translating
+          <tal:target replace="structure target/fmt:link/+translations"
+                      >trunk</tal:target>.
+        </p>
+      </div>
+      <div class="yui-g">
+        <div class="yui-u first">
+          <div class="portlet">
+            <h3>Permissions</h3>
+            <p>
+              <tal:permissions replace="
+                  structure
+                  context/@@+portlet-translation-groups-and-permission"/>
+            </p>
+          </div>
+        </div>
+        <div class="yui-u">
+          <div class="portlet">
+            <h3>Administration</h3>
+            <p>To see all the translation files that are waiting to be
+              imported, please look at
+              <a tal:attributes="href context/fmt:url/+imports"
+                 tal:content="string:${context/displayname} import queue">
+                import queue</a>.
+            </p>
+            <p>
+              <strong>Language pack administrator:</strong>
+              <span
+                 tal:condition="context/language_pack_admin"
+                 tal:replace="structure context/language_pack_admin/fmt:link"
+                    >Mr. No</span>
+              <span tal:condition="not:context/language_pack_admin"
+                >not set</span>
+              <tal:admin condition="context/required:launchpad.Edit">
+                <a tal:attributes="
+                    href context/fmt:url/+select-language-pack-admin"
+                   class="edit sprite"></a>
+              </tal:admin>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <h2>
+        <span tal:replace="view/translation_focus/version">5.04</span>:
+        <span tal:replace="view/translation_focus/title">
+          Hoary Hedgehog
+        </span>
+      </h2>
+      <div tal:replace="structure view/translation_focus/@@+langchart" />
+      <div class="translations-legend">
+        <div tal:replace="structure context/@@+rosetta-status-legend" />
+      </div>
+    </tal:translation_focus>
 
   <tal:secondary condition="view/secondary_translatable_serieses">
     <h2 tal:condition="view/translation_focus">
