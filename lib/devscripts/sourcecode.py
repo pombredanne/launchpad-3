@@ -3,6 +3,7 @@
 
 """Tools for maintaining the Launchpad source code."""
 
+
 __metaclass__ = type
 __all__ = [
     'interpret_config',
@@ -12,10 +13,13 @@ __all__ = [
 
 import os
 import shutil
+import sys
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
+from bzrlib.errors import BzrError
 from bzrlib.plugin import load_plugins
+from bzrlib.trace import report_exception
 from bzrlib.transport import get_transport
 from bzrlib.workingtree import WorkingTree
 
@@ -97,10 +101,21 @@ def get_branches(sourcecode_directory, new_branches,
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
         print 'Getting %s from %s' % (project, branch_url)
-        remote_branch.bzrdir.sprout(
-            destination, create_tree_if_local=True,
-            source_branch=remote_branch,
-            possible_transports=possible_transports)
+        # If the 'optional' flag is set, then it's a branch that shares
+        # history with Launchpad, so we should share repositories. Otherwise,
+        # we should avoid sharing repositories to avoid format
+        # incompatibilities.
+        force_new_repo = not optional
+        try:
+            remote_branch.bzrdir.sprout(
+                destination, create_tree_if_local=True,
+                source_branch=remote_branch, force_new_repo=force_new_repo,
+                possible_transports=possible_transports)
+        except BzrError:
+            if optional:
+                report_exception(sys.exc_info(), sys.stderr)
+            else:
+                raise
 
 
 def update_branches(sourcecode_directory, update_branches,
@@ -118,9 +133,15 @@ def update_branches(sourcecode_directory, update_branches,
             branch_url, possible_transports=possible_transports)
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
-        local_tree.pull(
-            remote_branch,
-            possible_transports=possible_transports)
+        try:
+            local_tree.pull(
+                remote_branch,
+                possible_transports=possible_transports)
+        except BzrError:
+            if optional:
+                report_exception(sys.exc_info(), sys.stderr)
+            else:
+                raise
 
 
 def remove_branches(sourcecode_directory, removed_branches):
@@ -149,6 +170,17 @@ def update_sourcecode(sourcecode_directory, config_filename):
 
 def get_launchpad_root():
     return os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+
+# XXX: JonathanLange 2009-09-11: By default, the script will operate on the
+# current checkout. Most people only have symlinks to sourcecode in their
+# checkouts. This is fine for updating, but breaks for removing (you can't
+# shutil.rmtree a symlink) and breaks for adding, since it adds the new branch
+# to the checkout, rather than to the shared sourcecode area. Ideally, the
+# script would see that the sourcecode directory is full of symlinks and then
+# follow these symlinks to find the shared source directory. If the symlinks
+# differ from each other (because of developers fiddling with things), we can
+# take a survey of all of them, and choose the most popular.
 
 
 def main(args):

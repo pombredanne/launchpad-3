@@ -152,24 +152,5 @@ class TestFindBranches(TestCase):
         self.assertEqual([], list(find_branches(directory)))
 
 
-# XXX: Handle symlinks. Lots of people manage sourcecode via symlinks
-
-# XXX: Actual storage location can be inferred from symlinks, since presumably
-# they link into the actual store. However, some of the symlinks might differ
-# (because of developers fiddling with things). We can take a survey of all of
-# them, and choose the most popular.
-
-# XXX: How to report errors?
-
-# XXX: rocketfuel-get does stacking onto launchpad for some branches. Should
-# we actually do this? It seems a bit silly if in a shared repo. (Although
-# does the branch mask the shared repo bit?)
-
-# XXX: Can we get rocketfuel-setup to use this?
-
-# XXX: Handle 'optional' branches. The semantics in rocketfuel-get are that a
-# failure to get or update an optional branch is non-critical.
-
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
