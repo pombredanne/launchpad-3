@@ -8,6 +8,7 @@ __all__ = [
     'EC2Instance',
     ]
 
+import os
 import select
 import socket
 import subprocess
@@ -168,10 +169,12 @@ class EC2Instance:
         # Make user's .ssh directory
         root_p('sudo -u %(USER)s mkdir /home/%(USER)s/.ssh')
         root_sftp = root_connection.ssh.open_sftp()
-        remote_ssh_dir = '/home/%(USER)s/.ssh' % self.vals
+        remote_ssh_dir = '/home/%(USER)s/.ssh' % self._vals
         # Create config file
         self.log('Creating %s/config\n' % (remote_ssh_dir,))
-        ssh_config_source = open(self.ssh_config_file_name)
+        ssh_config_file_name = os.path.join(
+            self._vals['HOME'], '.ssh', 'config')
+        ssh_config_source = open(ssh_config_file_name)
         config = SSHConfig()
         config.parse(ssh_config_source)
         ssh_config_source.close()
@@ -187,13 +190,13 @@ class EC2Instance:
                 if value is not None:
                     ssh_config_dest.write('    %s %s\n' % (key, value))
         ssh_config_dest.write('Host bazaar.launchpad.net\n')
-        ssh_config_dest.write('    user %(launchpad-login)s\n' % self.vals)
+        ssh_config_dest.write('    user %(launchpad-login)s\n' % self._vals)
         ssh_config_dest.close()
         # create authorized_keys
         self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
         authorized_keys_file = root_sftp.open(
             "%s/authorized_keys" % remote_ssh_dir, 'w')
-        authorized_keys_file.write("%(key_type)s %(key)s\n" % self.vals)
+        authorized_keys_file.write("%(key_type)s %(key)s\n" % self._vals)
         authorized_keys_file.close()
         root_sftp.close()
         # Chown and chmod the .ssh directory and contents that we just
@@ -202,7 +205,7 @@ class EC2Instance:
         root_p('chmod 644 /home/%(USER)s/.ssh/*')
         self.log(
             'You can now use ssh -A %s to log in the instance.\n' %
-            self._instance.hostname)
+            self.hostname)
         # give the user permission to do whatever in /var/www
         root_p('chown -R %(USER)s:%(USER)s /var/www')
         root_connection.close()
@@ -223,9 +226,9 @@ class EC2InstanceConnection:
             statuses.
         :param out: A stream to write the output of the remote command to.
         """
-        cmd = cmd % self._vals
+        cmd = cmd % self.instance._vals
         self.instance.log(
-            '%s@%s$ %s\n' % (self.username, self._boto_instance.id, cmd))
+            '%s@%s$ %s\n' % (self.username, self.instance._boto_instance.id, cmd))
         session = self.ssh.get_transport().open_session()
         session.exec_command(cmd)
         session.shutdown_write()
@@ -262,9 +265,9 @@ class EC2InstanceConnection:
         Use this to run commands that require local SSH credentials. For
         example, getting private branches from Launchpad.
         """
-        cmd = cmd % self._vals
-        self.log('%s@%s$ %s\n' % (self.username, self._boto_instance.id, cmd))
-        call = ['ssh', '-A', self.hostname,
+        cmd = cmd % self.instance._vals
+        self.instance.log('%s@%s$ %s\n' % (self.username, self.instance._boto_instance.id, cmd))
+        call = ['ssh', '-A', self.instance.hostname,
                '-o', 'CheckHostIP no',
                '-o', 'StrictHostKeyChecking no',
                '-o', 'UserKnownHostsFile ~/.ec2/known_hosts',

@@ -162,7 +162,6 @@ class EC2TestRunner:
           - instance_type (validates)
           - image (after connecting to ec2)
           - file (after checking we can write to it)
-          - ssh_config_file_name (after checking it exists)
           - vals, a dict containing
             - the environment
             - trunk_branch (either from global or derived from branches)
@@ -361,7 +360,6 @@ class EC2TestRunner:
         self.vals = dict(os.environ)
         self.vals['trunk_branch'] = trunk_branch
         self.vals['branch'] = branch
-        home = self.vals['HOME']
 
         # Email configuration.
         if email is not None or pqm_message is not None:
@@ -397,15 +395,6 @@ class EC2TestRunner:
         key = agent.get_keys()[0]
         self.vals['key_type'] = key.get_name()
         self.vals['key'] = key.get_base64()
-
-        # Verify the .ssh config file
-        self.ssh_config_file_name = os.path.join(home, '.ssh', 'config')
-        if not os.path.exists(self.ssh_config_file_name):
-            self.error_and_quit(
-                'This script expects to find the .ssh config in %s.  Please '
-                'make sure it exists and contains the necessary '
-                'configuration to access devpad.' % (
-                    self.ssh_config_file_name,))
 
         # Get the bzr login.
         login = get_lp_login()
