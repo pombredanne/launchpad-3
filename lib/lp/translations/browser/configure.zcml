@@ -32,9 +32,8 @@
         <browser:page
             name="+about"
             template="../templates/rosetta-about.pt"/>
-        
         <!-- portlets -->
-        
+
         <browser:page
             name="+portlet-stats"
             template="../templates/rosetta-portlet-stats.pt"/>
@@ -160,18 +159,21 @@
     <browser:url
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         path_expression="string:+lang/${language/code}"
-        attribute_to_parent="distroseries"/>
+        attribute_to_parent="distroseries"
+        rootsite="translations"/>
+    <browser:navigation
+        module="lp.translations.browser.distroserieslanguage"
+        classes="
+            DistroSeriesLanguageNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
-        name="+index"/>
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         permission="zope.Public"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer">
-        <browser:page
-            name="+portlet-stats"
-            template="../templates/distroserieslanguage-portlet-stats.pt"/>
         <browser:page
             name="+rosetta-status-legend"
             template="../templates/rosetta-status-legend.pt"/>
@@ -180,7 +182,7 @@
         name="+index"
         permission="zope.Public"
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
-        template="../templates/distroserieslanguage-index.pt"
+        template="../templates/serieslanguage-index.pt"
         class="lp.translations.browser.distroserieslanguage.DistroSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
@@ -265,7 +267,12 @@
     <browser:url
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         path_expression="string:+lang/${language/code}"
-        attribute_to_parent="productseries"/>
+        attribute_to_parent="productseries"
+        rootsite="translations"/>
+    <browser:navigation
+        module="lp.translations.browser.productserieslanguage"
+        classes="
+            ProductSeriesLanguageNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         name="+index"/>
@@ -282,7 +289,7 @@
         name="+index"
         permission="zope.Public"
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
-        template="../templates/productserieslanguage-index.pt"
+        template="../templates/serieslanguage-index.pt"
         class="lp.translations.browser.productserieslanguage.ProductSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
@@ -820,6 +827,7 @@
         for="lp.registry.interfaces.project.IProject"
         permission="zope.Public"
         name="+translations"
+        class="lp.translations.browser.project.ProjectView"
         template="../templates/project-translations.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
@@ -911,9 +919,6 @@
         <browser:page
             name="+langchart"
             template="../templates/distroseries-langchart.pt"/>
-        <browser:page
-            name="+potlist"
-            template="../templates/object-pots.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
