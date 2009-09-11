@@ -466,30 +466,29 @@ class EC2TestRunner:
 
     def configure_system(self):
         # AS ROOT
-        self._instance.connect_as_root()
+        root_connection = self._instance.connect_as_root()
+        root_p = root_connection.perform
         if self.vals['USER'] == 'gary':
             # This helps gary debug problems others are having by removing
             # much of the initial setup used to work on the original image.
-            self._instance.perform('deluser --remove-home gary',
-                          ignore_failure=True)
-        p = self._instance.perform
+            root_p('deluser --remove-home gary', ignore_failure=True)
         # Let root perform sudo without a password.
-        p('echo "root\tALL=NOPASSWD: ALL" >> /etc/sudoers')
+        root_p('echo "root\tALL=NOPASSWD: ALL" >> /etc/sudoers')
         # Add the user.
-        p('adduser --gecos "" --disabled-password %(USER)s')
+        root_p('adduser --gecos "" --disabled-password %(USER)s')
         # Give user sudo without password.
-        p('echo "%(USER)s\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
+        root_p('echo "%(USER)s\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
             # Make /var/launchpad owned by user.
-        p('chown -R %(USER)s:%(USER)s /var/launchpad')
+        root_p('chown -R %(USER)s:%(USER)s /var/launchpad')
         # Clean out left-overs from the instance image.
-        p('rm -fr /var/tmp/*')
+        root_p('rm -fr /var/tmp/*')
         # Update the system.
-        p('aptitude update')
-        p('aptitude -y full-upgrade')
+        root_p('aptitude update')
+        root_p('aptitude -y full-upgrade')
         # Set up ssh for user
         # Make user's .ssh directory
-        p('sudo -u %(USER)s mkdir /home/%(USER)s/.ssh')
-        sftp = self._instance.ssh.open_sftp()
+        root_p('sudo -u %(USER)s mkdir /home/%(USER)s/.ssh')
+        root_sftp = root_connection.ssh.open_sftp()
         remote_ssh_dir = '/home/%(USER)s/.ssh' % self.vals
         # Create config file
         self.log('Creating %s/config\n' % (remote_ssh_dir,))
@@ -497,7 +496,7 @@ class EC2TestRunner:
         config = SSHConfig()
         config.parse(ssh_config_source)
         ssh_config_source.close()
-        ssh_config_dest = sftp.open("%s/config" % remote_ssh_dir, 'w')
+        ssh_config_dest = root_sftp.open("%s/config" % remote_ssh_dir, 'w')
         ssh_config_dest.write('CheckHostIP no\n')
         ssh_config_dest.write('StrictHostKeyChecking no\n')
         for hostname in ('devpad.canonical.com', 'chinstrap.canonical.com'):
@@ -513,29 +512,30 @@ class EC2TestRunner:
         ssh_config_dest.close()
         # create authorized_keys
         self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
-        authorized_keys_file = sftp.open(
+        authorized_keys_file = root_sftp.open(
             "%s/authorized_keys" % remote_ssh_dir, 'w')
         authorized_keys_file.write("%(key_type)s %(key)s\n" % self.vals)
         authorized_keys_file.close()
-        sftp.close()
+        root_sftp.close()
         # Chown and chmod the .ssh directory and contents that we just
         # created.
-        p('chown -R %(USER)s:%(USER)s /home/%(USER)s/')
-        p('chmod 644 /home/%(USER)s/.ssh/*')
+        root_p('chown -R %(USER)s:%(USER)s /home/%(USER)s/')
+        root_p('chmod 644 /home/%(USER)s/.ssh/*')
         self.log(
             'You can now use ssh -A %s to log in the instance.\n' %
             self._instance.hostname)
         # give the user permission to do whatever in /var/www
-        p('chown -R %(USER)s:%(USER)s /var/www')
-        self._instance.ssh.close()
+        root_p('chown -R %(USER)s:%(USER)s /var/www')
+        root_connection.close()
 
         # AS USER
-        self._instance.connect_as_user()
-        sftp = self._instance.ssh.open_sftp()
+        user_connection = self._instance.connect_as_user()
+        user_p = user_connection.perform
+        user_sftp = user_connection.ssh.open_sftp()
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            p('sudo -u %(USER)s mkdir /home/%(USER)s/.bazaar')
-            bazaar_conf_file = sftp.open(
+            user_p('sudo -u %(USER)s mkdir /home/%(USER)s/.bazaar')
+            bazaar_conf_file = user_sftp.open(
                 "/home/%(USER)s/.bazaar/bazaar.conf" % self.vals, 'w')
             bazaar_conf_file.write(
                 'smtp_server = %(smtp_server)s\n' % self.vals)
@@ -548,32 +548,32 @@ class EC2TestRunner:
             bazaar_conf_file.close()
         # Copy remote ec2-remote over
         self.log('Copying ec2test-remote.py to remote machine.\n')
-        sftp.put(
+        user_sftp.put(
             os.path.join(os.path.dirname(os.path.realpath(__file__)),
                          'ec2test-remote.py'),
             '/var/launchpad/ec2test-remote.py')
-        sftp.close()
+        user_sftp.close()
         # Set up launchpad login and email
-        p('bzr launchpad-login %(launchpad-login)s')
-        p("bzr whoami '%(email)s'")
-        self._instance.ssh.close()
+        user_p('bzr launchpad-login %(launchpad-login)s')
+        user_p("bzr whoami '%(email)s'")
+        user_connection.close()
 
     def prepare_tests(self):
-        self._instance.connect_as_user()
+        user_connection = self._instance.connect_as_user()
         # Clean up the test branch left in the instance image.
-        self._instance.perform('rm -rf /var/launchpad/test')
+        user_connection.perform('rm -rf /var/launchpad/test')
         # get newest sources
-        self._instance.run_with_ssh_agent(
+        user_connection.run_with_ssh_agent(
             "rsync -avp --partial --delete "
             "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
             "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
             "/var/launchpad/sourcecode/")
         # Get trunk.
-        self._instance.run_with_ssh_agent(
+        user_connection.run_with_ssh_agent(
             'bzr branch %(trunk_branch)s /var/launchpad/test')
         # Merge the branch in.
         if self.vals['branch'] is not None:
-            self._instance.run_with_ssh_agent(
+            user_connection.run_with_ssh_agent(
                 'cd /var/launchpad/test; bzr merge %(branch)s')
         else:
             self.log('(Testing trunk, so no branch merge.)')
@@ -584,39 +584,39 @@ class EC2TestRunner:
                 # These two branches share some of the history with Launchpad.
                 # So we create a stacked branch on Launchpad so that the shared
                 # history isn't duplicated.
-                self._instance.run_with_ssh_agent(
+                user_connection.run_with_ssh_agent(
                     'bzr branch --no-tree --stacked %s %s' %
                     (TRUNK_BRANCH, fulldest))
                 # The --overwrite is needed because they are actually two
                 # different branches (canonical-identity-provider was not
                 # branched off launchpad, but some revisions are shared.)
-                self._instance.run_with_ssh_agent(
+                user_connection.run_with_ssh_agent(
                     'bzr pull --overwrite %s -d %s' % (src, fulldest))
                 # The third line is necessary because of the --no-tree option
                 # used initially. --no-tree doesn't create a working tree.
                 # It only works with the .bzr directory (branch metadata and
                 # revisions history). The third line creates a working tree
                 # based on the actual branch.
-                self._instance.run_with_ssh_agent(
+                user_connection.run_with_ssh_agent(
                     'bzr checkout "%s" "%s"' % (fulldest, fulldest))
             else:
                 # The "--standalone" option is needed because some branches
                 # are/were using a different repository format than Launchpad
                 # (bzr-svn branch for example).
-                self._instance.run_with_ssh_agent(
+                user_connection.run_with_ssh_agent(
                     'bzr branch --standalone %s %s' % (src, fulldest))
         # prepare fresh copy of sourcecode and buildout sources for building
-        p = self._instance.perform
+        p = user_connection.perform
         p('rm -rf /var/launchpad/tmp')
         p('mkdir /var/launchpad/tmp')
         p('cp -R /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
         p('mkdir /var/launchpad/tmp/eggs')
-        self._instance.run_with_ssh_agent(
+        user_connection.run_with_ssh_agent(
             'bzr co lp:lp-source-dependencies '
             '/var/launchpad/tmp/download-cache')
         if (self.include_download_cache_changes and
             self.download_cache_additions):
-            sftp = self._instance.ssh.open_sftp()
+            sftp = user_connection.ssh.open_sftp()
             root = os.path.realpath(
                 os.path.join(self.original_branch, 'download-cache'))
             for info in self.download_cache_additions:
@@ -633,12 +633,12 @@ class EC2TestRunner:
         p('cd /var/launchpad/test && make build')
         p('cd /var/launchpad/test && make schema')
         # close ssh connection
-        self._instance.ssh.close()
+        user_connection.close()
 
     def start_demo_webserver(self):
         """Turn ec2 instance into a demo server."""
-        self._instance.connect_as_user()
-        p = self._instance.perform
+        user_connection = self._instance.connect_as_user()
+        p = user_connection.perform
         p('mkdir -p /var/tmp/bazaar.launchpad.dev/static')
         p('mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors')
         p('sudo a2enmod proxy > /dev/null')
@@ -665,10 +665,10 @@ class EC2TestRunner:
         # Start launchpad in the background.
         p('cd /var/launchpad/test/; make start')
         # close ssh connection
-        self._instance.ssh.close()
+        user_connection.close()
 
     def run_tests(self):
-        self._instance.connect_as_user()
+        user_connection = self._instance.connect_as_user()
 
         # Make sure we activate the failsafe --shutdown feature.  This will
         # make the server shut itself down after the test run completes, or
@@ -724,7 +724,7 @@ class EC2TestRunner:
 
         # Run the remote script!  Our execution will block here until the
         # remote side disconnects from the terminal.
-        self._instance.perform(' '.join(cmd))
+        user_connection.perform(' '.join(cmd))
         self._running = True
 
         if not self.headless:
@@ -734,7 +734,7 @@ class EC2TestRunner:
             #
             # We only have 60 seconds to do this before the remote test
             # script shuts the server down automatically.
-            self._instance.perform(
+            user_connection.perform(
                 'kill `cat /var/launchpad/ec2test-remote.pid`')
 
             # deliver results as requested

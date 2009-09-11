@@ -110,26 +110,22 @@ class EC2Instance:
             return None
         return self._boto_instance.public_dns_name
 
-    def connect_as_root(self):
-        """Connect to the instance as root.
-
-        All subsequent 'perform' and 'subprocess' operations will be done with
-        root privileges.
-        """
-        # XXX: JonathanLange 2009-06-02: This state-changing method could
-        # perhaps be written as a function such as run_as_root, or as a method
-        # that returns a root connection.
+    def _connect(self, user, use_agent):
+        """Connect to the instance as `user`. """
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(AcceptAllPolicy())
+        connect_args = {'username': user}
+        if not use_agent:
+            connect_args.update({
+                'pkey': self.private_key,
+                'allow_agent': False,
+                'look_for_keys': False,
+                })
         for count in range(10):
-            self.ssh = paramiko.SSHClient()
-            self.ssh.set_missing_host_key_policy(AcceptAllPolicy())
-            self.username = 'root'
             try:
-                self.ssh.connect(
-                    self.hostname, username='root',
-                    pkey=self.private_key,
-                    allow_agent=False, look_for_keys=False)
+                ssh.connect(self.hostname, **connect_args)
             except (socket.error, paramiko.AuthenticationException), e:
-                self.log('connect_as_root: %r' % (e,))
+                self.log('_connect: %r' % (e,))
                 if count < 9:
                     time.sleep(5)
                     self.log('retrying...')
@@ -137,24 +133,22 @@ class EC2Instance:
                     raise
             else:
                 break
+        return EC2InstanceConnection(self, user, ssh)
+
+    def connect_as_root(self):
+        return self._connect('root', False)
 
     def connect_as_user(self):
-        """Connect as user.
+        return self._connect(self._vals['USER'], False)
 
-        All subsequent 'perform' and 'subprocess' operations will be done with
-        user-level privileges.
-        """
-        # XXX: JonathanLange 2009-06-02: This state-changing method could
-        # perhaps be written as a function such as run_as_user, or as a method
-        # that returns a user connection.
-        #
-        # This does not have the retry logic of connect_as_root because the
-        # circumstances that make the retries necessary appear to only happen
-        # on start-up, and connect_as_root is called first.
-        self.ssh = paramiko.SSHClient()
-        self.ssh.set_missing_host_key_policy(AcceptAllPolicy())
-        self.username = self._vals['USER']
-        self.ssh.connect(self.hostname)
+
+class EC2InstanceConnection:
+    """An ssh connection to an `EC2Instance`."""
+
+    def __init__(self, instance, username, ssh):
+        self.instance = instance
+        self.username = username
+        self.ssh = ssh
 
     def perform(self, cmd, ignore_failure=False, out=None):
         """Perform 'cmd' on server.
@@ -164,7 +158,8 @@ class EC2Instance:
         :param out: A stream to write the output of the remote command to.
         """
         cmd = cmd % self._vals
-        self.log('%s@%s$ %s\n' % (self.username, self._boto_instance.id, cmd))
+        self.instance.log(
+            '%s@%s$ %s\n' % (self.username, self._boto_instance.id, cmd))
         session = self.ssh.get_transport().open_session()
         session.exec_command(cmd)
         session.shutdown_write()
@@ -212,3 +207,7 @@ class EC2Instance:
         if res and not ignore_failure:
             raise RuntimeError('Command failed: %s' % (cmd,))
         return res
+
+    def close(self):
+        self.ssh.close()
+        self.ssh = None
