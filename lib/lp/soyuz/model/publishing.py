@@ -45,6 +45,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IArchiveSafePublisher,
@@ -1105,6 +1106,10 @@ class PublishingSet:
                              distroarchseries, component, section, priority,
                              status, pocket):
         """See `IPublishingSet`."""
+        if archive.is_ppa:
+            # PPA component must always be 'main', so we override it
+            # here.
+            component = getUtility(IComponentSet)['main']
         pub = SecureBinaryPackagePublishingHistory(
             archive=archive,
             binarypackagerelease=binarypackagerelease,
@@ -1125,6 +1130,10 @@ class PublishingSet:
                              distroseries, component, section, status,
                              pocket):
         """See `IPublishingSet`."""
+        if archive.is_ppa:
+            # PPA component must always be 'main', so we override it
+            # here.
+            component = getUtility(IComponentSet)['main']
         pub = SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
