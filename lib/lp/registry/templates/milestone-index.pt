@@ -314,11 +314,7 @@
                      tal:replace="structure bugtask/assignee/fmt:link" />&nbsp;
                 </td>
                 <td
-                  tal:define="when python: bugtask.date_closed or
-                                   bugtask.date_fix_committed or
-                                   bugtask.date_inprogress or
-                                   bugtask.date_left_new"
-                  tal:attributes="title when/fmt:displaydate">
+                  tal:attributes="title bugtask/last_significant_change_date/fmt:displaydate">
                   <span class="sortkey" tal:content="bugtask/status/sortkey" />
                   <span
                       tal:content="bugtask/status/title"
