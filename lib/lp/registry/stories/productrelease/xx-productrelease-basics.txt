@@ -60,7 +60,7 @@ There is a warning that the milestone has been deactivated.
 
 The release's information is displayed in the page.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'release_notes'))
+    >>> print extract_text(find_tag_by_id(browser.contents, 'release-notes'))
     Released 1.0
     >>> print extract_text(find_tag_by_id(browser.contents, 'changelog'))
     Fix Foo
