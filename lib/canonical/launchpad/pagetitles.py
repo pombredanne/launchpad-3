@@ -594,8 +594,6 @@ message_add = ContextBugId('Bug #%d - Add a comment')
 
 milestone_add = ContextTitle('Add new milestone for %s')
 
-milestone_index = ContextTitle('%s')
-
 milestone_edit = ContextTitle('Edit %s')
 
 milestone_delete = ContextTitle('Delete %s')
