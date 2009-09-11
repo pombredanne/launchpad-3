@@ -58,10 +58,6 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
             self.distroseries.displayname)
 
     @property
-    def text(self):
-        return self.language.englishname
-
-    @property
     def pofiles(self):
         return POFile.select('''
             POFile.language = %s AND
