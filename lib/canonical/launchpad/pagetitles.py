@@ -679,10 +679,6 @@ people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
-person_archive_subscription = ContextDisplayName('%s')
-
-person_archive_subscriptions = 'Private PPA access'
-
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 

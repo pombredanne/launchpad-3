@@ -9,6 +9,8 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSubscribersView',
+    'PersonalArchiveSubscriptionBreadcrumb',
+    'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
     'traverse_archive_subscription_for_subscriber'
     ]
@@ -34,10 +36,11 @@ from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IPersonalArchiveSubscription)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView)
+    canonical_url, LaunchpadView, Navigation)
 from canonical.widgets import DateWidget
 from canonical.widgets.popup import PersonPickerWidget
 
@@ -65,6 +68,20 @@ class PersonalArchiveSubscription:
         """See `IPersonalArchiveSubscription`."""
         return "Access to %s" % self.archive.displayname
 
+    @property
+    def title(self):
+        """Required for default headings in templates."""
+        return self.displayname
+
+
+class PersonalArchiveSubscriptionNavigation(Navigation):
+    """Navigation for `IPersonalArchiveSubscription`.
+
+    Without this, a breadcrumb will not be created for personal
+    archive subscription objects.
+    """
+    usedfor = IPersonalArchiveSubscription
+
 def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     """Return the subscription for a subscriber to an archive."""
     subscription = None
@@ -77,6 +94,14 @@ def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
         return None
     else:
         return PersonalArchiveSubscription(subscriber, archive)
+
+
+class PersonalArchiveSubscriptionBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for `PersonalArchiveSubscription`."""
+
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class IArchiveSubscriberUI(Interface):
@@ -265,6 +290,10 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
 
+    # XXX Michael Nelson 20090911 bug=417089. This should be removed
+    # when bug 417089 lands.
+    page_title = "Private PPA access"
+
     @cachedproperty
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
@@ -293,6 +322,15 @@ class PersonArchiveSubscriptionView(LaunchpadView):
     has a current token), and the ability to generate and re-generate
     tokens.
     """
+
+    @property
+    def page_title(self):
+        """Return a relevant page_title.
+
+        XXX Michael Nelson 20090911 bug=417089. This should be removed
+        when bug 417089 lands.
+        """
+        return self.context.displayname
 
     def initialize(self):
         """Process any posted actions."""

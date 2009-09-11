@@ -646,6 +646,11 @@
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber"
         provides="lp.soyuz.browser.archivesubscription.IArchiveSubscriberUI"
         factory="lp.soyuz.browser.archivesubscription.archive_subscription_ui_adapter"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
+        factory="lp.soyuz.browser.archivesubscription.PersonalArchiveSubscriptionBreadcrumb"
+        permission="zope.Public"/>
     <subscriber
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber
              lazr.lifecycle.interfaces.IObjectCreatedEvent"

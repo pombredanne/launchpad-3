@@ -518,6 +518,9 @@
     <browser:defaultView
         for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
         name="+index"/>
+    <browser:navigation
+        module="lp.soyuz.browser.archivesubscription"
+        classes="PersonalArchiveSubscriptionNavigation"/>
     <browser:defaultView
         for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
         name="+index"/>
