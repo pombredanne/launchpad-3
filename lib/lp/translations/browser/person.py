@@ -146,21 +146,22 @@ class PersonTranslationsMenu(NavigationMenu):
 
     def overview(self):
         text = 'Overview'
-        return Link('', text)
+        return Link('', text, icon='info')
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', text, icon='info')
 
     def licensing(self):
         text = 'Translations licensing'
         enabled = (self.person == self.user)
-        return Link('+licensing', text, enabled=enabled)
+        return Link('+licensing', text, enabled=enabled, icon='info')
 
     def translations_to_review(self):
         text = 'Translations to review'
         enabled = person_is_reviewer(self.person)
-        return Link('+translations-to-review', text, enabled=enabled)
+        return Link(
+            '+translations-to-review', text, enabled=enabled, icon='info')
 
 
 class PersonTranslationView(LaunchpadView):
