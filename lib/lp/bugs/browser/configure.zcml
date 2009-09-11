@@ -208,18 +208,6 @@
         classes="MaloneRelatedPages"
         module="lp.bugs.browser.malone"/>
     <browser:page
-        name="+filebug"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FrontPageFileBugGuidedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
-        name="+filebug-advanced"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         class="lp.bugs.browser.bugtask.BugsBugTaskSearchListingView"
         permission="zope.Public"
