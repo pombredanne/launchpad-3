@@ -3,7 +3,6 @@
 
 """Tools for maintaining the Launchpad source code."""
 
-
 __metaclass__ = type
 __all__ = [
     'interpret_config',
