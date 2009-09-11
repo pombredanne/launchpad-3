@@ -264,8 +264,8 @@ class EC2TestRunner:
                 if tree is not None:
                     # this is the part we want to do whether or not we're
                     # submitting.
-                    #submission.check_tree() # any working changes
-                    #submission.check_public_branch() # everything public
+                    submission.check_tree() # any working changes
+                    submission.check_public_branch() # everything public
                     branch = submission.public_location
                     if (include_download_cache_changes is None or
                         include_download_cache_changes):
