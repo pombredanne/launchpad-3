@@ -32,7 +32,6 @@ import paramiko
 from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
 from devscripts.ec2test.instance import EC2Instance
 
-# XXX duplicated from __init__.py .. fix that
 TRUNK_BRANCH = 'bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel'
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
 AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
