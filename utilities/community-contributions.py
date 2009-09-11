@@ -59,8 +59,8 @@ As of 2009-09-01, you can get editmoin.py from
 # counted as a Canonical contributor, sometimes Canonical people
 # submit from personal addresses, so we still need a list.
 #
-# XXX: Really, this ought to use launchpadlib to consult
-# Launchpad itself to find out who's a Canonical developer.
+# XXX: Karl Fogel 2009-09-10: Really, this ought to use launchpadlib
+# to consult Launchpad itself to find out who's a Canonical developer.
 known_canonical_devs = (
     u'Aaron Bentley',
     u'Abel Deuring',
@@ -142,10 +142,11 @@ class ContainerRevision():
         else:
             date_str = "(NO DATE)"
 
-        # XXX: just using 'devel' branch for now.  We have four
-        # trunks; that makes life hard.  Not sure what to do about
-        # that; unifying the data is possible, but a bit of work.
-        # See https://dev.launchpad.net/Trunk for more information.
+        # XXX: Karl Fogel 2009-09-10: just using 'devel' branch for
+        # now.  We have four trunks; that makes life hard.  Not sure
+        # what to do about that; unifying the data is possible, but a
+        # bit of work.  See https://dev.launchpad.net/Trunk for more
+        # information.
         rev_url_base = (
             "http://bazaar.launchpad.net/~launchpad-pqm/"
             "launchpad/devel/revision/")
@@ -310,7 +311,7 @@ class LogExCons(log.LogFormatter):
             ec.add_top_level_revision(self.current_top_level_rev)
 
 
-# XXX: is this really necessary?  See bzrlib/log.py.
+# XXX: Karl Fogel 2009-09-10: is this really necessary?  See bzrlib/log.py.
 log.log_formatter_registry.register('external_contributors', LogExCons,
                                     'Find non-Canonical contributors.')
 
@@ -372,10 +373,11 @@ def main():
     # Do everything.
     b = Branch.open(target)
 
-    # XXX: 8976 is the first non-Canonical contribution on 'devel'.
-    # On 'db-devel', the magic revision number is 8327.  We're aiming at
-    # 'devel' right now, but perhaps it would be good to parameterize
-    # this, or just auto-detect the branch and choose the right number.
+    # XXX: Karl Fogel 2009-09-10: 8976 is the first non-Canonical
+    # contribution on 'devel'.  On 'db-devel', the magic revision
+    # number is 8327.  We're aiming at 'devel' right now, but perhaps
+    # it would be good to parameterize this, or just auto-detect the
+    # branch and choose the right number.
     logger = log.Logger(b, {'start_revision' : 8976,
                             'direction'      : 'reverse',
                             'levels'         : 0, })
