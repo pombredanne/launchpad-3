@@ -289,7 +289,8 @@ and copy-and-paste the repository URL to their systems.
     ...     str(install_portlet), 'widget-body')
 
     >>> print extract_text(tech_details)
-    Copy the lines below and add them to your system's software
+    This PPA can be added to your system manually by copying
+    the lines below and adding them to your system's software
     sources. (Read about installing)
     Display sources.list entries for:
       Choose your Ubuntu version

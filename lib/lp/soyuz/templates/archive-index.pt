@@ -38,6 +38,11 @@
       <div class="portlet" id="upload-hint"
            tal:condition="context/required:launchpad.Append">
         <h2>Uploading packages to this PPA</h2>
+        <p tal:condition="view/has_disabled_dependencies"
+           class="message warning">
+           This PPA depends on disabled archives. it may cause
+           spurious build failures or binaries with unexpected
+           contents.</p>
         <p>You can upload packages to this PPA using:</p>
         <p><tt>dput <tal:ppa-ref replace="view/ppa_reference"
                       >ppa:cprov/ppa</tal:ppa-ref> &lt;source.changes&gt;</tt>
@@ -184,7 +189,8 @@
         </div>
 
         <div class="widget-body">
-          <p>Copy the lines below and add them to your system's software
+          <p>This PPA can be added to your system manually by copying
+             the lines below and adding them to your system's software
              sources. (<a href="/+help/soyuz/ppa-sources-list.html"
                           target="help">Read about installing</a>)</p>
           <tal:entries replace="structure view/sources_list_entries" />
@@ -204,11 +210,6 @@
           <div id="archive-dependencies"
                tal:condition="context/dependencies">
             <h3>Dependencies:</h3>
-            <p tal:condition="view/has_disabled_dependencies"
-               class="message warning">
-               This PPA depends on disabled archives. it may cause
-               spurious build failures or binaries with unexpected
-               contents.</p>
             <ul>
               <li tal:repeat="dependency context/dependencies">
                 <a tal:attributes="href dependency/dependency/fmt:url"
