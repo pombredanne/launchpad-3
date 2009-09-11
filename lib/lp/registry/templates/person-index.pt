@@ -44,6 +44,42 @@
 
 <div metal:fill-slot="side" tal:define="overview_menu context/menu:overview">
   <tal:menu replace="structure view/@@+global-actions" />
+
+  <div class="portlet"
+    tal:condition="view/can_contact">
+    <a href="+contactuser" class="sprite mail"
+      tal:attributes="title view/contact_link_title"
+      tal:content="view/specific_contact_text">Contact
+        this person</a>
+  </div>
+
+  <div id="participation" class="portlet involvement"
+    tal:condition="context/is_valid_person">
+    <h2>Participation</h2>
+
+    <ul>
+      <li>
+        <a class="sprite bugs"
+          tal:attributes="href context/fmt:url:bugs">Bugs</a>
+      </li>
+      <li>
+        <a class="sprite answers"
+          tal:attributes="href context/fmt:url:answers">Answers</a>
+      </li>
+      <li>
+        <a class="sprite translations"
+          tal:attributes="href context/fmt:url:translations">Translations</a>
+      </li>
+      <li>
+        <a class="sprite blueprints"
+          tal:attributes="href context/fmt:url:code">Code</a>
+      </li>
+      <li>
+        <a class="sprite blueprints"
+          tal:attributes="href context/fmt:url:blueprints">Blueprints</a>
+      </li>
+    </ul>
+  </div>
 </div>
 
 <div metal:fill-slot="heading"
@@ -74,19 +110,25 @@
   <tal:is-valid-person tal:condition="context/is_valid_person">
 
     <div class="yui-g">
-      <div tal:content="structure context/@@+portlet-contact-details"/>
+      <div class="first yui-u">
+        <div tal:content="structure context/@@+portlet-contact-details"/>
+      </div>
+      <div class="yui-u">
+        <div tal:content="structure context/@@+portlet-involvement"/>
+        <div tal:content="structure context/@@+portlet-ppas"/>
+      </div>
     </div>
+
+    <div tal:content="structure context/@@+portlet-currentfocus"/>
 
     <div class="yui-g">
       <!-- First portlet column. -->
       <div class="first yui-u">
         <div tal:content="structure context/@@+portlet-memberships"/>
-        <div tal:content="structure context/@@+portlet-currentfocus"/>
       </div>
       <div class="yui-u">
         <div tal:content="structure context/@@+portlet-contributions"/>
-        <div tal:content="structure context/@@+portlet-ppas"/>
-        <div tal:content="structure context/@@+portlet-involvement"/>
+
       </div>
     </div>
 

@@ -8,7 +8,7 @@
     <h2>
       <span class="see-all" tal:condition="memberships">
         <a tal:attributes="href context/menu:overview/memberships/url">
-          Show all memberships
+          All memberships
         </a>
       </span>
       Latest memberships

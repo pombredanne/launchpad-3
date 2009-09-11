@@ -7,56 +7,49 @@
 <div class="portlet" id="contact-details"
      tal:define="overview_menu context/menu:overview">
 
-  <dl>
-    <dt>Email:</dt>
-    <dd
-      tal:attributes="title view/visible_email_address_description">
-      <tal:not_logged_in
-        condition="view/email_address_visibility/is_login_required">
-        <a href="+login">Log in</a> for email information.
-      </tal:not_logged_in>
+  <h2>User information</h2>
 
-      <tal:no_preferredemail
-        condition="view/email_address_visibility/are_none_available">
-        <tal:comment replace="nothing">
-        The user is not valid; this portlet is not used.
-        </tal:comment>
-      </tal:no_preferredemail>
+  <div class="two-column-list">
+    <dl>
+      <dt>Email:</dt>
+      <dd
+        tal:attributes="title view/visible_email_address_description">
+        <tal:not_logged_in
+          condition="view/email_address_visibility/is_login_required">
+          <a href="+login">Log in</a> for email information.
+        </tal:not_logged_in>
 
-      <tal:cant-view-hidden-emails
-        condition="view/email_address_visibility/are_hidden">
-        No public address provided.
-        <metal:define metal:define-macro="contact">
-          <tal:can-contact condition="view/can_contact">
-            (<a href="+contactuser"
-               tal:attributes="title view/contact_link_title"
-               tal:content="view/specific_contact_text">Contact
-                 this person</a>)
-            <tal:no_preferredemail
-              condition="view/email_address_visibility/are_none_available">
-              <br /><small>(Launchpad notifications are sent to all
-                            team members)</small>
-            </tal:no_preferredemail>
-          </tal:can-contact>
-        </metal:define>
-      </tal:cant-view-hidden-emails>
+        <tal:no_preferredemail
+          condition="view/email_address_visibility/are_none_available">
+          <tal:comment replace="nothing">
+          The user is not valid; this portlet is not used.
+          </tal:comment>
+        </tal:no_preferredemail>
 
-      <tal:emails
-        repeat="email view/visible_email_addresses">
-        <span style="white-space: nowrap">
-          <img src="/@@/private" alt=""
-            tal:condition="view/email_address_visibility/are_allowed"/>
-          <img src="/@@/mail" alt=""
-            tal:condition="view/email_address_visibility/are_public"/>
-          <tal:email replace="email">foo2@bar.com</tal:email>
-          <tal:contact condition="repeat/email/start">
-            <tal:contact metal:use-macro="template/macros/contact" />
-          </tal:contact>
-          <br tal:omit-tag="repeat/email/end" />
-        </span>
-      </tal:emails>
-    </dd>
-  </dl>
+        <tal:cant-view-hidden-emails
+          condition="view/email_address_visibility/are_hidden">
+          No public address provided.
+        </tal:cant-view-hidden-emails>
+
+        <tal:emails
+          repeat="email view/visible_email_addresses">
+          <span style="white-space: nowrap">
+            <img src="/@@/private" alt=""
+              tal:condition="view/email_address_visibility/are_allowed"/>
+            <img src="/@@/mail" alt=""
+              tal:condition="view/email_address_visibility/are_public"/>
+            <tal:email replace="email">foo2@bar.com</tal:email>
+            <br tal:omit-tag="repeat/email/end" />
+          </span>
+        </tal:emails>
+      </dd>
+    </dl>
+
+    <dl tal:condition="context/time_zone">
+      <dt>Time zone:</dt>
+      <dd tal:replace="context/time_zone">UTC</dd>
+    </dl>
+  </div>
 
   <div class="two-column-list">
     <dl tal:condition="not: context/wiki_names/is_empty">
@@ -78,9 +71,7 @@
                            tal:content="ircnick/network" />
       </dd>
     </dl>
-  </div>
 
-  <div class="two-column-list">
     <dl tal:condition="context/jabberids">
       <dt>Jabber:</dt>
       <dd>
@@ -90,18 +81,7 @@
         </tal:block>
       </dd>
     </dl>
-    <dl tal:condition="view/viewing_own_page" id="openid-info">
-      <dt>OpenID login:</dt>
-      <dd>
-        <img src="/@@/private" alt="" />
-        <tal:openid-login content="view/openid_identity_url" />
-        <a target="help" href="/+help/openid.html"
-           >(What&rsquo;s&nbsp;this?)</a>
-      </dd>
-    </dl>
-  </div>
 
-  <div class="two-column-list">
     <dl tal:condition="context/gpgkeys">
       <dt>OpenPGP keys:</dt>
       <dd>
@@ -137,9 +117,7 @@
         </tal:has_keys>
       </dd>
     </dl>
-  </div>
 
-  <div class="two-column-list">
     <dl id="languages">
       <dt>Languages:</dt>
       <dd>
@@ -159,6 +137,15 @@
     </dl>
   </div>
 
+  <dl tal:condition="view/viewing_own_page" id="openid-info">
+    <dt>OpenID login:</dt>
+    <dd>
+      <img src="/@@/private" alt="" />
+      <tal:openid-login content="view/openid_identity_url" />
+      <a target="help" href="/+help/openid.html"
+         >(What&rsquo;s&nbsp;this?)</a>
+    </dd>
+  </dl>
 </div>
 
 </tal:root>
