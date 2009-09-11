@@ -16,6 +16,8 @@ import time
 
 import paramiko
 
+from devscripts.ec2test.sshconfig import SSHConfig
+
 
 class AcceptAllPolicy:
     """We accept all unknown host key."""
@@ -139,7 +141,71 @@ class EC2Instance:
         return self._connect('root', False)
 
     def connect_as_user(self):
-        return self._connect(self._vals['USER'], False)
+        return self._connect(self._vals['USER'], True)
+
+    def setup_user(self):
+        """Set up an account named after the local user."""
+        root_connection = self._instance.connect_as_root()
+        root_p = root_connection.perform
+        if self._vals['USER'] == 'gary':
+            # This helps gary debug problems others are having by removing
+            # much of the initial setup used to work on the original image.
+            root_p('deluser --remove-home gary', ignore_failure=True)
+        # Let root perform sudo without a password.
+        root_p('echo "root\tALL=NOPASSWD: ALL" >> /etc/sudoers')
+        # Add the user.
+        root_p('adduser --gecos "" --disabled-password %(USER)s')
+        # Give user sudo without password.
+        root_p('echo "%(USER)s\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
+            # Make /var/launchpad owned by user.
+        root_p('chown -R %(USER)s:%(USER)s /var/launchpad')
+        # Clean out left-overs from the instance image.
+        root_p('rm -fr /var/tmp/*')
+        # Update the system.
+        root_p('aptitude update')
+        root_p('aptitude -y full-upgrade')
+        # Set up ssh for user
+        # Make user's .ssh directory
+        root_p('sudo -u %(USER)s mkdir /home/%(USER)s/.ssh')
+        root_sftp = root_connection.ssh.open_sftp()
+        remote_ssh_dir = '/home/%(USER)s/.ssh' % self.vals
+        # Create config file
+        self.log('Creating %s/config\n' % (remote_ssh_dir,))
+        ssh_config_source = open(self.ssh_config_file_name)
+        config = SSHConfig()
+        config.parse(ssh_config_source)
+        ssh_config_source.close()
+        ssh_config_dest = root_sftp.open("%s/config" % remote_ssh_dir, 'w')
+        ssh_config_dest.write('CheckHostIP no\n')
+        ssh_config_dest.write('StrictHostKeyChecking no\n')
+        for hostname in ('devpad.canonical.com', 'chinstrap.canonical.com'):
+            ssh_config_dest.write('Host %s\n' % (hostname,))
+            data = config.lookup(hostname)
+            for key in ('hostname', 'gssapiauthentication', 'proxycommand',
+                        'user', 'forwardagent'):
+                value = data.get(key)
+                if value is not None:
+                    ssh_config_dest.write('    %s %s\n' % (key, value))
+        ssh_config_dest.write('Host bazaar.launchpad.net\n')
+        ssh_config_dest.write('    user %(launchpad-login)s\n' % self.vals)
+        ssh_config_dest.close()
+        # create authorized_keys
+        self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
+        authorized_keys_file = root_sftp.open(
+            "%s/authorized_keys" % remote_ssh_dir, 'w')
+        authorized_keys_file.write("%(key_type)s %(key)s\n" % self.vals)
+        authorized_keys_file.close()
+        root_sftp.close()
+        # Chown and chmod the .ssh directory and contents that we just
+        # created.
+        root_p('chown -R %(USER)s:%(USER)s /home/%(USER)s/')
+        root_p('chmod 644 /home/%(USER)s/.ssh/*')
+        self.log(
+            'You can now use ssh -A %s to log in the instance.\n' %
+            self._instance.hostname)
+        # give the user permission to do whatever in /var/www
+        root_p('chown -R %(USER)s:%(USER)s /var/www')
+        root_connection.close()
 
 
 class EC2InstanceConnection:
