@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import os
 import shutil
 from StringIO import StringIO
 import tempfile
@@ -15,7 +16,8 @@ from bzrlib.tests import TestCase
 from bzrlib.transport import get_transport
 
 from devscripts.sourcecode import (
-    find_branches, interpret_config, parse_config_file, plan_update)
+    find_branches, get_launchpad_root, interpret_config, parse_config_file,
+    plan_update)
 
 
 class TestParseConfigFile(unittest.TestCase):
@@ -117,6 +119,16 @@ class TestPlanUpdate(unittest.TestCase):
         self.assertEqual(config, existing)
         self.assertEqual(set(), removed)
 
+    def test_smoke_the_default_config(self):
+        # Make sure we can parse, interpret and plan based on the default
+        # config file.
+        root = get_launchpad_root()
+        config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
+        config_file = open(config_filename)
+        config = interpret_config(parse_config_file(config_file))
+        config_file.close()
+        plan_update([], config)
+
 
 class TestFindBranches(TestCase):
     """Tests the way that we find branches."""
@@ -150,37 +162,6 @@ class TestFindBranches(TestCase):
         some_file.write('hello\n')
         some_file.close()
         self.assertEqual([], list(find_branches(directory)))
-
-
-# XXX: Actually remove branches
-
-# XXX: Update existing branches
-
-# XXX: Branch new branches
-
-# XXX: Should we parallelize? If so, how? Can we rely on Twisted being
-# present.
-
-# XXX: Find the sourcecode directory.
-
-# XXX: Handle symlinks. Lots of people manage sourcecode via symlinks
-
-# XXX: Actual storage location can be inferred from symlinks, since presumably
-# they link into the actual store. However, some of the symlinks might differ
-# (because of developers fiddling with things). We can take a survey of all of
-# them, and choose the most popular.
-
-# XXX: How to report errors?
-
-# XXX: rocketfuel-get does stacking onto launchpad for some branches. Should
-# we actually do this? It seems a bit silly if in a shared repo. (Although
-# does the branch mask the shared repo bit?)
-
-# XXX: Can we get rocketfuel-setup to use this?
-
-# XXX: (unrelated). Finding the highest common ancestor is easy, but what if
-# you have two (N?) trees? Is there a way to algorithmically find the two (N?)
-# interesting HCAs? Can the question even be framed well?
 
 
 def test_suite():
