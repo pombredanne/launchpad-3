@@ -42,5 +42,5 @@ in the right column.
     Change your preferred language...
 
     >>> right_column.findAll('a')[-1]
-    <a href="/+editmylanguages">
+    <a href="/+editmylanguages"...>
     ...Change your preferred language...
