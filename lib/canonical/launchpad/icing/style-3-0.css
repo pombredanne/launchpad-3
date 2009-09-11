@@ -712,9 +712,6 @@ pre.wrap {
 
 /* ==== Listing tables ==== */
 
-table.listing thead {
-  font-size: 116%;
-}
 table.listing th {
   font-weight: bold;
 }
