@@ -65,7 +65,7 @@ class ProductReleaseContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change details'
+        text = 'Change release details'
         summary = "Edit this release"
         return Link('+edit', text, summary=summary, icon='edit')
 

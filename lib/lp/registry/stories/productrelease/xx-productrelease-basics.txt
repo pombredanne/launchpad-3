@@ -113,7 +113,7 @@ has a productrelease.
 The release owner can edit the release via its +edit form:
 
     >>> browser.open('http://launchpad.dev/firefox/trunk/1.0')
-    >>> browser.getLink('Change details', index=1).click()
+    >>> browser.getLink('Change release details', index=1).click()
     >>> print browser.title
     Edit Mozilla Firefox 1.0 release details
     >>> browser.getControl('Changelog').value = 'This is not a joke.'
@@ -151,7 +151,7 @@ Celso is a member of ubuntu-team, so he can edit this release too:
 
     >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
-    >>> browser.getLink('Change details', index=1).click()
+    >>> browser.getLink('Change release details', index=0).click()
     >>> print browser.title
     Edit Tomcat 0.6.6.6 release details
     >>> browser.getControl('Changelog').value = 'Fixes 3 bugs.'
@@ -171,7 +171,7 @@ others:
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
-    >>> browser.getLink('Change details').click()
+    >>> browser.getLink('Change release details', index=0).click()
     >>> print browser.title
     Edit Tomcat 0.6.6.6 release details
     >>> browser.getControl('Changelog').value = 'Fixes 4 bugs.'
