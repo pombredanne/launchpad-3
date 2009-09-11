@@ -653,7 +653,7 @@ class EC2TestRunner:
         self._running = True
 
         if not self.headless:
-            sftp = self._instance.ssh.open_sftp()
+            sftp = user_connection.ssh.open_sftp()
             # We ran to completion locally, so we'll be in charge of shutting
             # down the instance, in case the user has requested a postmortem.
             #
@@ -668,8 +668,7 @@ class EC2TestRunner:
                     'Writing abridged test results to %s.\n' % self.file)
                 sftp.get('/var/www/summary.log', self.file)
             sftp.close()
-        # close ssh connection
-        self._instance.ssh.close()
+        user_connection.close()
 
     def get_remote_test_options(self):
         """Return the test command that will be passed to ec2test-remote.py.
