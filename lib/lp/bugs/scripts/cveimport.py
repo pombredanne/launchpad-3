@@ -217,13 +217,13 @@ class CVEUpdater(LaunchpadCronScript):
         else:
             raise LaunchpadScriptFailure('No CVE database file or URL given.')
 
-        # start analysing the data
-        startts = time.time()
+        # Start analysing the data.
+        start_time = time.time()
         self.logger.info("Processing CVE XML...")
         self.processCVEXML(cve_db)
-        finishts = time.time()
+        finish_time = time.time()
         self.logger.info('%d seconds to update database.'
-                % (finishts - startts))
+                % (finish_time - start_time))
 
     def processCVEXML(self, cve_xml):
         """Process the CVE XML file.
