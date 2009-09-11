@@ -22,7 +22,7 @@ offer a download link for that series.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/evolution/+translations')
-    >>> user_browser.getLink('Download').click()
+    >>> user_browser.getLink('download').click()
     >>> print user_browser.url
     http://translations.launchpad.dev/evolution/trunk/+export
 

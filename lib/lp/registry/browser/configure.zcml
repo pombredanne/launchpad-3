@@ -1042,6 +1042,12 @@
             template="../templates/team-index.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.person.TeamIndexView"
+            permission="zope.Public"
+            name="+portlet-polls"
+            template="../templates/team-portlet-polls.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
             class="lp.registry.browser.team.TeamMapView"
             name="+map"
@@ -1254,6 +1260,7 @@
     <browser:url
         for="lp.registry.interfaces.milestone.IMilestone"
         path_expression="string:+milestone/${name}"
+        rootsite="mainsite"
         attribute_to_parent="target"/>
     <browser:pages
         for="lp.registry.interfaces.milestone.IMilestone"
@@ -1266,6 +1273,9 @@
         <browser:page
             name="+productseries-table-row"
             template="../templates/productseries-milestone-table-row.pt"/>
+        <browser:page
+            name="+productrelease-data"
+            template="../templates/productrelease-portlet-data.pt"/>
         <browser:page
             name="+portlet-details"
             template="../templates/milestone-portlet-details.pt"/>
@@ -1301,6 +1311,7 @@
     <browser:menus
         classes="
             MilestoneContextMenu
+            MilestoneOverviewMenu
             MilestoneOverviewNavigationMenu"
         module="lp.registry.browser.milestone"/>
     <browser:defaultView

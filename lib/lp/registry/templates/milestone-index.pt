@@ -22,9 +22,9 @@
       <tal:title tal:content="view/milestone/title"  />
       <a tal:condition="context/required:launchpad.Edit"
         tal:attributes="href view/milestone/fmt:url/+delete"
-        title="Delete this milestone"
+        title="Delete milestone"
         ><img src="/@@/trash-icon"
-           alt="Delete this milestone" title="Delete this milestone" /></a>
+           alt="Delete milestone" title="Delete milestone" /></a>
       <a tal:replace="structure milestone_menu/edit/fmt:icon" />
     </h1>
 
@@ -64,9 +64,9 @@
           tal:content="view/release/datereleased/fmt:approximatedate" />
           &nbsp; <a tal:condition="view/release/required:launchpad.Edit"
             tal:attributes="href view/release/fmt:url/+delete"
-            title="Delete this release"
+            title="Delete release"
             ><img src="/@@/remove"
-               alt="Delete this release" title="Delete this release" /></a>
+               alt="Delete release" title="Delete release" /></a>
           <a tal:replace="structure release_menu/edit/fmt:icon" />
           </td>
       </tr>
@@ -101,93 +101,9 @@
       </fieldset>
     </div>
 
-    <tal:has_release condition="view/release">
-      <form method="POST"
-            tal:attributes="action request/URL">
-
-        <h2 style="margin-top: 2em;">Download files for this release</h2>
-
-        <p id="how-to-verify" tal:condition="view/download_files">
-          After you've downloaded a file, you can verify its authenticity
-          using its MD5 sum or signature.
-          (<a href="/+help/verify-downloads.html" target="help">How do I
-          verify a download?</a>)
-        </p>
-
-        <table id="downloads" class="listing">
-          <thead>
-            <tr>
-              <th>File</th>
-              <th>Description</th>
-              <th>Downloads</th>
-              <th tal:condition="has_edit" width="10%">Delete</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="file view/download_files">
-              <tal:define-vars
-                define="checkbox_index string:${repeat/file/index}">
-                <tal:release-file
-                  metal:use-macro="file/@@+macros/detailed_display" />
-              </tal:define-vars>
-            </tr>
-          </tbody>
-          <tfoot tal:condition="view/total_downloads">
-            <tr>
-              <th colspan="2" style="padding-top: 1em; text-align: right;">
-                Total downloads:
-              </th>
-              <td style="border: none; text-align: center;">
-                <span tal:replace="view/total_downloads/fmt:intcomma" />
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <div style="margin-top: .4em;" tal:condition="has_edit">
-          <div style="float:right">
-            <input type="submit" name="delete_files" value="Delete Files"
-              tal:condition="view/product_release_files"/>
-          </div>
-          <div
-            tal:define="link release_menu/add_file"
-            tal:condition="link/enabled">
-            <a tal:replace="structure link/render">Add a file</a>
-          </div>
-        </div>
-      </form>
-
-      <h2 style="margin-top: 2em;">Release notes
-        <a tal:replace="structure release_menu/edit/fmt:icon" /></h2>
-
-      <div id="release_notes"
-        tal:content="structure view/release/release_notes/fmt:text-to-html"
-        tal:condition="view/release/release_notes">
-        ProductRelease.release_notes go here.
-      </div>
-
-      <p tal:condition="not: view/release/release_notes">
-        <em>This release does not have release notes.</em>
-      </p>
-
-      <h2 style="margin-top: 2em;">Changelog</h2>
-
-      <fieldset class="collapsible collapsed" style="padding: 0px;"
-        tal:condition="view/release/changelog">
-        <legend>View the full changelog</legend>
-        <div id="changelog" style="margin-bottom: 0px;"
-          tal:content="structure view/release/changelog/fmt:obfuscate-email/fmt:text-to-html">
-          ProductRelease.changelog go here.
-        </div>
-        <div style="margin-top: -0.5em;">
-          <a
-          tal:attributes="href release_menu/edit/url">Edit the changelog</a> &nbsp; <a tal:replace="structure release_menu/edit/fmt:icon" /></div>
-      </fieldset>
-
-      <p tal:condition="not: view/release/changelog">
-        <em>This release does not have a changelog.</em> &nbsp; <a tal:replace="structure release_menu/edit/fmt:icon" />
-      </p>
-    </tal:has_release>
+    <tal:release
+      condition="view/release"
+      replace="structure view/milestone/@@+productrelease-data" />
 
   <p style="margin-top: 2em; font-size: 120%">
     <span id="specification-count" style="color: #3594bb;"
