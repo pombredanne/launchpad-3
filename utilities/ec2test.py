@@ -6,7 +6,6 @@
 """Executable for the ec2test script."""
 
 __metaclass__ = type
-__all__ = []
 
 import _pythonpath
 from devscripts.ec2test import main
