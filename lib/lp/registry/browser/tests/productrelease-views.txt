@@ -173,6 +173,20 @@ A ProductRelease can be edited using the ProductReleaseEditView.
     revised
 
 
+Product release menus
+---------------------
+
+The ProductReleaseContextMenu is used to manage links to the work with
+a product release.
+
+    >>> from lp.registry.browser.productrelease import (
+    ...     ProductReleaseContextMenu)
+    >>> from lp.testing.menu import check_menu_links
+
+    >>> check_menu_links(ProductReleaseContextMenu(release))
+    True
+
+
 Adding a download file to a release
 -----------------------------------
 

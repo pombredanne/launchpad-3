@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'MilestoneAddView',
+    'MilestoneContextMenu',
     'MilestoneDeleteView',
     'MilestoneEditView',
     'MilestoneNavigation',
@@ -37,7 +38,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation)
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, Link, NavigationMenu)
+    ApplicationMenu, ContextMenu, Link, NavigationMenu)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import DateWidget
 
@@ -99,6 +100,12 @@ class MilestoneLinkMixin:
         return Link(
             '+delete', text, icon='trash-icon',
             summary=summary, enabled=enabled)
+
+
+class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
+    """The menu for this milestone."""
+    usedfor = IMilestone
+    links = ['edit', 'subscribe', 'create_release']
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
@@ -253,7 +260,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             all_assignments, 'assignee', key='displayname')
 
     @cachedproperty
-    def user_assigments(self):
+    def user_counts(self):
         """The counts of the items assigned to the currrent user."""
         all_assignments = []
         if self.user:

@@ -1692,17 +1692,8 @@ beside the mugshot. */
   border: 1px solid gray;
   padding: 0.3em;
   margin: 1em 0 1em 0;
-  float: left; /* So the border doesn't use 100% of the page */
 }
 
-div#build-status-summary {
-    clear:right;
-    float:right;
-}
-
-div#build-status-summary h2 {
-    margin-top:0;
-}
 
 div#build-status-summary th {
     text-align:left;
@@ -1836,6 +1827,13 @@ div.logtail p {
     max-width: 100%;
 }
 
+/* <pre> for presenting source changelog nicely. */
+pre.changelog {
+    margin: 0.5em;
+    padding: 5px;
+    font: 116% monospace;
+}
+
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
    linkified should be lined-through. */
 a.ppa-icon-inactive {
@@ -1848,6 +1846,18 @@ span.ppa-icon-inactive {
 div.builds_list form {
     padding: 1em 1em 2em 0em;
 }
+
+/* XXX Michael Nelson 20090828 bug=420376
+ * Temporary style for actions on the ppa/+packages page until we move
+ * the copy/delete packages functionality into the page itself. */
+div.ppa-packaging-tmp-actions {
+    float:right;
+}
+
+div.ppa-packaging-tmp-actions .portlet {
+    border-top: 0 none;
+}
+
 
 /* --- Code --- */
 

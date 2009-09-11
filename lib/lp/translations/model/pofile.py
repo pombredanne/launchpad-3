@@ -61,6 +61,7 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.translatablemessage import TranslatableMessage
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -409,6 +410,10 @@ class POFileMixIn(RosettaStats):
     def getFullLanguageName(self):
         """See `IPOFile`."""
         return self.language.getFullEnglishName(self.variant)
+
+    def makeTranslatableMessage(self, potmsgset):
+        """See `IPOFile`."""
+        return TranslatableMessage(potmsgset, self)
 
 
 class POFile(SQLBase, POFileMixIn):
