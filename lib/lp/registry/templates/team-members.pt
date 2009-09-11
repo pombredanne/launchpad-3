@@ -12,10 +12,6 @@
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:portlets>
-
 <div metal:fill-slot="main"
      tal:define="user_can_edit_memberships context/required:launchpad.Edit;
                  active_member_count context/active_member_count">

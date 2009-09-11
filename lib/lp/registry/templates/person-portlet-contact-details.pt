@@ -5,160 +5,158 @@
   omit-tag="">
 
 <div class="portlet" id="contact-details"
-  tal:define="overview_menu context/menu:overview">
-  <div class="portletContent portletBody">
+     tal:define="overview_menu context/menu:overview">
 
-    <table>
-      <tbody>
+  <dl>
+    <dt>Email:</dt>
+    <dd
+      tal:attributes="title view/visible_email_address_description">
+      <tal:not_logged_in
+        condition="view/email_address_visibility/is_login_required">
+        <a href="+login">Log in</a> for email information.
+      </tal:not_logged_in>
 
-        <tr>
+      <tal:no_preferredemail
+        condition="view/email_address_visibility/are_none_available">
+        <tal:comment replace="nothing">
+        The user is not valid; this portlet is not used.
+        </tal:comment>
+      </tal:no_preferredemail>
 
-          <th>Email:</th>
-
-          <td
-            tal:attributes="title view/visible_email_address_description">
-            <tal:not_logged_in
-              condition="view/email_address_visibility/is_login_required">
-              <a href="+login">Log in</a> for email information.
-            </tal:not_logged_in>
-
+      <tal:cant-view-hidden-emails
+        condition="view/email_address_visibility/are_hidden">
+        No public address provided.
+        <metal:define metal:define-macro="contact">
+          <tal:can-contact condition="view/can_contact">
+            (<a href="+contactuser"
+               tal:attributes="title view/contact_link_title"
+               tal:content="view/specific_contact_text">Contact
+                 this person</a>)
             <tal:no_preferredemail
               condition="view/email_address_visibility/are_none_available">
-              <tal:comment replace="nothing">
-              The user is not valid; this portlet is not used.
-              </tal:comment>
+              <br /><small>(Launchpad notifications are sent to all
+                            team members)</small>
             </tal:no_preferredemail>
+          </tal:can-contact>
+        </metal:define>
+      </tal:cant-view-hidden-emails>
 
-            <tal:cant-view-hidden-emails
-              condition="view/email_address_visibility/are_hidden">
-              No public address provided.
-              <metal:define metal:define-macro="contact">
-                <tal:can-contact condition="view/can_contact">
-                  (<a href="+contactuser"
-                     tal:attributes="title view/contact_link_title"
-                     tal:content="view/specific_contact_text">Contact
-                       this person</a>)
-                  <tal:no_preferredemail
-                    condition="view/email_address_visibility/are_none_available">
-                    <br /><small>(Launchpad notifications are sent to all
-                                  team members)</small>
-                  </tal:no_preferredemail>
-                </tal:can-contact>
-              </metal:define>
-            </tal:cant-view-hidden-emails>
+      <tal:emails
+        repeat="email view/visible_email_addresses">
+        <span style="white-space: nowrap">
+          <img src="/@@/private" alt=""
+            tal:condition="view/email_address_visibility/are_allowed"/>
+          <img src="/@@/mail" alt=""
+            tal:condition="view/email_address_visibility/are_public"/>
+          <tal:email replace="email">foo2@bar.com</tal:email>
+          <tal:contact condition="repeat/email/start">
+            <tal:contact metal:use-macro="template/macros/contact" />
+          </tal:contact>
+          <br tal:omit-tag="repeat/email/end" />
+        </span>
+      </tal:emails>
+    </dd>
+  </dl>
 
-            <tal:emails
-              repeat="email view/visible_email_addresses">
-              <span style="white-space: nowrap">
-                <img src="/@@/private" alt=""
-                  tal:condition="view/email_address_visibility/are_allowed"/>
-                <img src="/@@/mail" alt=""
-                  tal:condition="view/email_address_visibility/are_public"/>
-                <tal:email replace="email">foo2@bar.com</tal:email>
-                <tal:contact condition="repeat/email/start">
-                  <tal:contact metal:use-macro="template/macros/contact" />
-                </tal:contact>
-                <br tal:omit-tag="repeat/email/end" />
-              </span>
-            </tal:emails>
-          </td>
-        </tr>
+  <div class="two-column-list">
+    <dl tal:condition="not: context/wiki_names/is_empty">
+      <dt>Wiki:</dt>
+      <dd>
+        <span tal:repeat="wiki context/wiki_names">
+          <a tal:content="wiki/url"
+             tal:attributes="href wiki/url"
+           >WikiName</a><tal:block condition="not: repeat/wiki/end">,
+           </tal:block>
+        </span>
+      </dd>
+    </dl>
+    <dl tal:repeat="ircnick context/ircnicknames">
+      <dt>IRC:</dt>
+      <dd><code style="font-size: 120%"
+                tal:content="ircnick/nickname"/>
+          on network <code style="font-size: 120%"
+                           tal:content="ircnick/network" />
+      </dd>
+    </dl>
+  </div>
 
-        <tr tal:condition="context/icon">
-          <th>Icon:</th>
-          <td><tal:icon replace="structure context/image:icon" /></td>
-        </tr>
-        <tal:XXX condition="nothing">
-          # XXX: salgado, 2008-11-25 bug=296739: We should use
-          # context/wiki_names/is_empty here, but we can't do that because
-          # there's a bug preventing us from updating our version of storm
-          # to trunk.
-        </tal:XXX>
-        <tr tal:condition="context/wiki_names/any">
-          <th>Wiki:</th>
-          <td>
-            <span tal:repeat="wiki context/wiki_names">
-              <a tal:content="wiki/url"
-                 tal:attributes="href wiki/url"
-               >WikiName</a><tal:block condition="not: repeat/wiki/end">,
-               </tal:block>
-            </span>
-          </td>
-        </tr>
-        <tr tal:repeat="ircnick context/ircnicknames">
-          <th>IRC:</th>
-          <td><code style="font-size: 120%"
-                    tal:content="ircnick/nickname"/>
-              on network <code style="font-size: 120%"
-                               tal:content="ircnick/network" />
-          </td>
-        </tr>
-        <tr tal:condition="context/jabberids">
-          <th>Jabber:</th>
-          <td>
-            <tal:block repeat="jabberid context/jabberids">
-              <span tal:replace="jabberid/jabberid/fmt:obfuscate-email"
-                /><span tal:condition="not: repeat/jabberid/end">,</span>
-            </tal:block>
-          </td>
-        </tr>
-        <tr tal:condition="context/gpgkeys">
-          <th>OpenPGP keys:</th>
-          <td>
-            <tal:keys repeat="key context/gpgkeys">
-              <a tal:attributes="href key/keyserverURL"
-                 tal:omit-tag="not: request/lp:person">
-                <tal:keyid replace="key/keyid"
-                  /></a><span tal:condition="not: repeat/key/end">,</span>
-            </tal:keys>
-          </td>
-        </tr>
+  <div class="two-column-list">
+    <dl tal:condition="context/jabberids">
+      <dt>Jabber:</dt>
+      <dd>
+        <tal:block repeat="jabberid context/jabberids">
+          <span tal:replace="jabberid/jabberid/fmt:obfuscate-email"
+            /><span tal:condition="not: repeat/jabberid/end">,</span>
+        </tal:block>
+      </dd>
+    </dl>
+    <dl tal:condition="view/viewing_own_page" id="openid-info">
+      <dt>OpenID login:</dt>
+      <dd>
+        <img src="/@@/private" alt="" />
+        <tal:openid-login content="view/openid_identity_url" />
+        <a target="help" href="/+help/openid.html"
+           >(What&rsquo;s&nbsp;this?)</a>
+      </dd>
+    </dl>
+  </div>
 
-        <tr id="sshkeys">
-          <th>SSH Keys:</th>
-          <td tal:define="sshkeys context/sshkeys">
-            <tal:no_keys condition="not: sshkeys">
-              <tal:is_user condition="view/viewing_own_page">
-                <a tal:replace="structure overview_menu/editsshkeys/fmt:icon-link" />
-              </tal:is_user>
-              <tal:other_user condition="not: view/viewing_own_page">
-                No keys registered
-              </tal:other_user>
-            </tal:no_keys>
+  <div class="two-column-list">
+    <dl tal:condition="context/gpgkeys">
+      <dt>OpenPGP keys:</dt>
+      <dd>
+        <tal:keys repeat="key context/gpgkeys">
+          <a tal:attributes="href key/keyserverURL"
+             tal:omit-tag="not: request/lp:person">
+            <tal:keyid replace="key/keyid"
+              /></a><span tal:condition="not: repeat/key/end">,</span>
+        </tal:keys>
+      </dd>
+    </dl>
 
-            <tal:has_keys condition="sshkeys">
-              <tal:keys repeat="sshkey sshkeys">
-                <a href="+sshkeys"><tal:key replace="sshkey/comment" /></a>
-                <tal:first condition="repeat/sshkey/start">
-                  <a tal:replace="structure overview_menu/editsshkeys/fmt:icon" />
-                </tal:first>
-                <br />
-              </tal:keys>
-            </tal:has_keys>
-          </td>
-        </tr>
+    <dl id="sshkeys">
+      <dt>SSH Keys:</dt>
+      <dd tal:define="sshkeys context/sshkeys">
+        <tal:no_keys condition="not: sshkeys">
+          <tal:is_user condition="view/viewing_own_page">
+            <a tal:replace="structure overview_menu/editsshkeys/fmt:icon-link" />
+          </tal:is_user>
+          <tal:other_user condition="not: view/viewing_own_page">
+            No keys registered
+          </tal:other_user>
+        </tal:no_keys>
 
-        <tr tal:condition="view/viewing_own_page" id="openid-info">
-          <th>OpenID login:</th>
-          <td>
-            <img src="/@@/private" alt="" />
-            <tal:openid-login content="view/openid_identity_url" />
-            <a target="help" href="/+help/openid.html"
-               >(What&rsquo;s&nbsp;this?)</a>
-          </td>
-        </tr>
-        <tr id="languages">
-          <th>Languages:</th>
-          <td>
-            <tal:languages content="view/languages">
-              English
-            </tal:languages>
-            <a tal:replace="structure overview_menu/editlanguages/fmt:icon" />
-          </td>
-        </tr>
-      </tbody>
-    </table>
+        <tal:has_keys condition="sshkeys">
+          <tal:keys repeat="sshkey sshkeys">
+            <a href="+sshkeys"><tal:key replace="sshkey/comment" /></a>
+            <tal:first condition="repeat/sshkey/start">
+              <a tal:replace="structure overview_menu/editsshkeys/fmt:icon" />
+            </tal:first>
+            <br />
+          </tal:keys>
+        </tal:has_keys>
+      </dd>
+    </dl>
+  </div>
 
+  <div class="two-column-list">
+    <dl id="languages">
+      <dt>Languages:</dt>
+      <dd>
+        <tal:languages content="view/languages">
+          English
+        </tal:languages>
+        <a tal:replace="structure overview_menu/editlanguages/fmt:icon" />
+      </dd>
+    </dl>
+
+    <dl id="karma">
+      <dt>Karma:</dt>
+      <dd><a id="karma-total"
+             tal:attributes="href overview_menu/karma/url"
+             tal:content="context/karma">342</a>
+      </dd>
+    </dl>
   </div>
 
 </div>
