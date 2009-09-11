@@ -59,7 +59,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.publishing import (
-    ISourcePackagePublishingHistory, PackagePublishingStatus)
+    IPublishingSet, ISourcePackagePublishingHistory, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
@@ -1305,7 +1305,6 @@ class PackageUploadBuild(SQLBase):
         other_dars = other_dars - set([target_dar])
         # First up, publish everything in this build into that dar.
         published_binaries = []
-        main_component = getUtility(IComponentSet)['main']
         for binary in self.build.binarypackages:
             target_dars = set([target_dar])
             if not binary.architecturespecific:
@@ -1332,28 +1331,17 @@ class PackageUploadBuild(SQLBase):
                         "Could not find the corresponding DEBUG archive "
                         "for %s" % (distribution.title))
 
-            # We override PPA to always publish in the main component.
-            if self.packageupload.archive.is_ppa:
-                component = main_component
-            else:
-                component = binary.component
-
             for each_target_dar in target_dars:
-                # XXX: dsilvers 2005-10-20 bug=3408:
-                # What do we do about embargoed binaries here?
-                sbpph = SecureBinaryPackagePublishingHistory(
+                bpph = getUtility(IPublishingSet).newBinaryPublication(
+                    archive=archive,
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
+                    component=binary.component,
                     section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
-                    datecreated=UTC_NOW,
-                    pocket=self.packageupload.pocket,
-                    embargo=False,
-                    component=component,
-                    archive=archive,
+                    pocket=self.packageupload.pocket
                     )
-                bpph = BinaryPackagePublishingHistory.get(sbpph.id)
                 published_binaries.append(bpph)
         return published_binaries
 
@@ -1470,31 +1458,21 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
-        # XXX: dsilvers: 2005-10-20 bug=3408:
-        # What do we do here to support embargoed sources?
         debug(logger, "Publishing source %s/%s to %s/%s" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
 
-        if self.packageupload.archive.is_ppa:
-            # We override PPA to always publish in the main component.
-            component = getUtility(IComponentSet)['main']
-        else:
-            component = self.sourcepackagerelease.component
-
-        sspph = SecureSourcePackagePublishingHistory(
-            distroseries=self.packageupload.distroseries,
+        return getUtility(IPublishingSet).newSourcePublication(
+            archive=self.packageupload.archive,
             sourcepackagerelease=self.sourcepackagerelease,
-            component=component,
+            distroseries=self.packageupload.distroseries,
+            component=self.sourcepackagerelease.component,
             section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=self.packageupload.pocket,
-            embargo=False,
-            archive=self.packageupload.archive)
-        return SourcePackagePublishingHistory.get(sspph.id)
+            pocket=self.packageupload.pocket
+            )
 
 
 class PackageUploadCustom(SQLBase):
