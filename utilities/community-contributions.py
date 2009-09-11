@@ -35,11 +35,12 @@ Options:
 # For understanding the code, you may find it helpful to see
 # bzrlib/log.py and http://bazaar-vcs.org/Integrating_with_Bazaar.
 
+import getopt
 import re
 import sys
-import getopt
-from bzrlib.branch import Branch
+
 from bzrlib import log
+from bzrlib.branch import Branch
 from bzrlib.osutils import format_date
 
 try:
