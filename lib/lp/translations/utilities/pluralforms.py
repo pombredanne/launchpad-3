@@ -10,23 +10,32 @@ from lp.translations.interfaces.translations import (
 class BadPluralExpression(Exception):
     """Local "escape hatch" exception for unusable plural expressions."""
 
-def make_friendly_plural_forms(expression, pluralforms_count):
-    """Return a dict's list of plural forms' examples from an expression."""
-    expression_ = make_plural_function(expression)
-    forms = {}
 
-    for n in range(1, 200):
-        forms.setdefault(expression_(n), [])
-        # Giving a limit of 6 examples per plural form. If all the forms were
-        # contemplated, it stops.
-        if (len(forms[expression_(n)]) == 6 and
+def make_friendly_plural_forms(expression, pluralforms_count):
+    """Return a list of dicts of plural forms and its examples."""
+
+    expression = make_plural_function(expression)
+    forms = {}
+    # The max length of the examples list per plural form.
+    MAX_EXAMPLES = 6
+
+    for number in range(1, 200):
+        form = expression(number)
+        # Create empty list if this form doesn't have one yet
+        forms.setdefault(form, [])
+        # If all the plural forms for this language have examples (max. of 6
+        # numbers per plural form), it stops.
+        if (len(forms[form]) == MAX_EXAMPLES and
                 len(forms) == pluralforms_count):
             break
-        if len(forms[expression_(n)]) == 6:
+        if len(forms[form]) == MAX_EXAMPLES:
             continue
-        forms[expression_(n)].append(n)
+        forms[form].append(number)
 
-    return [{'form' : k, 'examples' : v} for (k, v) in forms.iteritems()]
+    # Each dict has two keys, 'form' and 'examples', that address the form
+    # number index and a list of its examples.
+    return [{'form' : form, 'examples' : examples}
+            for (form, examples) in forms.iteritems()]
 
 
 def make_plural_function(expression):
