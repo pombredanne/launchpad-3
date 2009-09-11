@@ -1,11 +1,11 @@
-<tal:root
+<div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
+  id="release-data" >
 
   <div class="portlet"
-    tal:define="release_menu context/menu:context">
+    tal:define="has_edit view/release/required:launchpad.Edit;">
     <form method="POST" tal:attributes="action request/URL">
       <h2>Download files for this release</h2>
 
@@ -50,12 +50,13 @@
 
       <div style="margin-top: .4em;" tal:condition="has_edit">
         <div style="float:right">
-          <input type="submit" name="delete_files" value="Delete Files"
+          <input id="delete-files" type="submit"
+            name="delete_files" value="Delete Files"
             tal:condition="view/product_release_files"/>
         </div>
 
         <ul class="horizontal"
-          tal:define="link release_menu/add_file"
+          tal:define="link view/release/menu:context/add_file"
           tal:condition="link/enabled">
           <li>
             <a tal:replace="structure link/fmt:link" />
@@ -68,10 +69,10 @@
   <div class="top-portlet">
     <h2>
       Release notes
-       &nbsp; <a tal:replace="structure release_menu/edit/fmt:icon" />
+       &nbsp; <a tal:replace="structure view/release/menu:context/edit/fmt:icon" />
     </h2>
 
-    <div id="release_notes"
+    <div id="release-notes"
       tal:content="structure view/release/release_notes/fmt:text-to-html"
       tal:condition="view/release/release_notes">
       ProductRelease.release_notes
@@ -83,7 +84,7 @@
 
     <h2>
       Changelog
-      &nbsp; <a tal:replace="structure release_menu/edit/fmt:icon" />
+      &nbsp; <a tal:replace="structure view/release/menu:context/edit/fmt:icon" />
     </h2>
 
     <fieldset class="collapsible collapsed" style="padding: 0px;"
@@ -100,4 +101,4 @@
       <em>This release does not have a changelog.</em>
     </p>
   </div>
-</tal:root>
+</div>

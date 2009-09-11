@@ -197,6 +197,65 @@ If there are files, these files will be returned as a list.
     [u'test.txt']
 
 
+Milestone product release data
+------------------------------
+
+The +productrelease-data named view uses the same view as +index to display
+the product release data for a milestone.
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     extract_text, find_tag_by_id)
+
+    >>> view = create_view(
+    ...     milestone, '+productrelease-data', principal=person)
+    >>> content = find_tag_by_id(view.render(), 'release-data')
+    >>> print find_tag_by_id(content, 'how-to-verify').a['href']
+    /+help/verify-downloads.html
+
+    >>> print extract_text(find_tag_by_id(content, 'downloads'))
+    File                 Description  Downloads  Delete
+    test.txt (md5, sig)  test file ...
+
+    >>> print find_tag_by_id(content, 'delete-files')['type']
+    submit
+
+This release does not not have release notes or a change log.
+
+    >>> print find_tag_by_id(content, 'release-notes')
+    None
+
+    >>> print find_tag_by_id(content, 'changelog')
+    None
+
+This release notes and change log do appear when the release has them
+
+    >>> release.release_notes = 'My release notes'
+    >>> release.changelog = 'My changelog'
+    >>> view = create_view(
+    ...     milestone, '+productrelease-data', principal=person)
+    >>> content = find_tag_by_id(view.render(), 'release-data')
+    >>> print extract_text(find_tag_by_id(content, 'release-notes'))
+    My release notes
+
+    >>> print extract_text(find_tag_by_id(content, 'changelog'))
+    My changelog
+
+The delete column and delete submit are not rendered if the user does
+not have edit permission.
+
+    >>> login_person(engineer)
+    >>> view = create_view(
+    ...     milestone, '+productrelease-data', principal=engineer)
+    >>> content = find_tag_by_id(view.render(), 'release-data')
+    >>> print extract_text(find_tag_by_id(content, 'downloads'))
+    File                 Description  Downloads
+    test.txt (md5, sig)  test file ...
+
+    >>> print find_tag_by_id(content, 'delete-files')
+    None
+
+    >>> login_person(person)
+
 Editing milestones
 ------------------
 

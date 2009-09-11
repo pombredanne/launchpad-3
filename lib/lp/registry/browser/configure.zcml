@@ -1268,6 +1268,9 @@
             name="+productseries-table-row"
             template="../templates/productseries-milestone-table-row.pt"/>
         <browser:page
+            name="+productrelease-data"
+            template="../templates/productrelease-portlet-data.pt"/>
+        <browser:page
             name="+portlet-details"
             template="../templates/milestone-portlet-details.pt"/>
     </browser:pages>
