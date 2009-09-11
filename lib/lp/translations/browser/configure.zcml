@@ -29,9 +29,7 @@
         <browser:page
             name="+index"
             template="../templates/rosetta-index.pt"/>
-        <browser:page
-            name="+about"
-            template="../templates/rosetta-about.pt"/>
+
         <!-- portlets -->
 
         <browser:page

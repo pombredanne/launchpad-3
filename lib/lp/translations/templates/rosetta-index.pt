@@ -79,7 +79,8 @@
                             </div>
 
                         </div>
-                        <div class="three column right">
+                        <div class="three column right"
+                             id="preferred-languages">
                           <h2>Preferred languages</h2>
                           <ul>
                             <li tal:repeat="language view/translatable_languages">
@@ -91,7 +92,7 @@
                               </a>
                             </li>
                           </ul>
-                          <a href="/+editmylanguages">
+                          <a href="/+editmylanguages" id="change-languages">
                             &raquo; Change your preferred languages...
                           </a>
                         </div>

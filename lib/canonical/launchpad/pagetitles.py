@@ -582,8 +582,6 @@ def marketing_tour(context, view):
     """Return the view's pagetitle."""
     return view.pagetitle
 
-marketing_translations_about = "About Translations"
-
 marketing_translations_faq = "FAQs about Translations"
 
 mentoringofferset_success = "Successful mentorships over the past year."
