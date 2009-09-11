@@ -104,6 +104,9 @@ class TestTranslationGroupsBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
         group_set = getUtility(ITranslationGroupSet)
         url = canonical_url(group_set, rootsite='translations')
         # Translation group listing is top-level, so no breadcrumbs show up.
+        # Note that the first parameter is an empty list because
+        # ITranslationGroupSet doesn't register Navigation class, and
+        # thus doesn't show up in request.traversed_objects.
         self._testContextBreadcrumbs(
             [], [], [],
             url=url)
