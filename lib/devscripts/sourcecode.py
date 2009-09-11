@@ -108,6 +108,8 @@ def update_branches(sourcecode_directory, update_branches,
     """Update the existing branches in sourcecode."""
     if possible_transports is None:
         possible_transports = []
+    # XXX: JonathanLange 2009-11-09: Rather than updating one branch after
+    # another, we could instead try to get them in parallel.
     for project, (branch_url, optional) in update_branches.iteritems():
         destination = os.path.join(sourcecode_directory, project)
         print 'Updating %s' % (project,)

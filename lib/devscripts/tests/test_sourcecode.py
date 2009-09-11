@@ -152,17 +152,6 @@ class TestFindBranches(TestCase):
         self.assertEqual([], list(find_branches(directory)))
 
 
-# XXX: Actually remove branches
-
-# XXX: Update existing branches
-
-# XXX: Branch new branches
-
-# XXX: Should we parallelize? If so, how? Can we rely on Twisted being
-# present.
-
-# XXX: Find the sourcecode directory.
-
 # XXX: Handle symlinks. Lots of people manage sourcecode via symlinks
 
 # XXX: Actual storage location can be inferred from symlinks, since presumably
@@ -178,9 +167,8 @@ class TestFindBranches(TestCase):
 
 # XXX: Can we get rocketfuel-setup to use this?
 
-# XXX: (unrelated). Finding the highest common ancestor is easy, but what if
-# you have two (N?) trees? Is there a way to algorithmically find the two (N?)
-# interesting HCAs? Can the question even be framed well?
+# XXX: Handle 'optional' branches. The semantics in rocketfuel-get are that a
+# failure to get or update an optional branch is non-critical.
 
 
 def test_suite():
