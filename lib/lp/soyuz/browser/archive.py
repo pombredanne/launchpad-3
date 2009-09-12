@@ -546,10 +546,22 @@ class ArchiveViewBase(LaunchpadView):
         return can_edit and len(disabled_dependencies) > 0
 
     @property
+    def ppa_reference(self):
+        """PPA reference as supported by `dput` and `software-properties`.
+
+        :raises AssertionError: if the context `IArchive` is not a PPA.
+        :return: a `str` as 'ppa:%(ppa.owner.name)/%(ppa.name)'
+        """
+        assert self.context.is_ppa, (
+            'PPA reference should not be used for non-PPA archives.')
+        return 'ppa:%s/%s' % (self.context.owner.name, self.context.name)
+
+    @cachedproperty
     def package_copy_requests(self):
         """Return any package copy requests associated with this archive."""
-        return(getUtility(
-                IPackageCopyRequestSet).getByTargetArchive(self.context))
+        copy_requests = getUtility(
+            IPackageCopyRequestSet).getByTargetArchive(self.context)
+        return list(copy_requests)
 
 
 class ArchiveSeriesVocabularyFactory:
