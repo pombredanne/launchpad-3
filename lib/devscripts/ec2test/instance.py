@@ -8,6 +8,7 @@ __all__ = [
     'EC2Instance',
     ]
 
+import glob
 import os
 import select
 import socket
@@ -210,6 +211,65 @@ class EC2Instance:
         root_p('chown -R %(USER)s:%(USER)s /var/www')
         root_connection.close()
 
+    def _copy_single_glob_match(self, sftp, pattern, local_dir, remote_dir):
+        [local_path] = glob.glob(os.path.join(local_dir, pattern))
+        name = os.path.basename(local_path)
+        remote_path = os.path.join(remote_dir, name)
+        remote_file = sftp.open(remote_path, 'w')
+        remote_file.write(open(local_path).read())
+        remote_file.close()
+        return remote_path
+
+    def copy_key_and_certificate_to_image(self, sftp):
+        remote_ec2_dir = '/mnt/ec2'
+        local_ec2_dir = os.path.expanduser('~/.ec2')
+        remote_private_key_path = self._copy_single_glob_match(
+            sftp, 'pk-*.pem', local_ec2_dir, remote_ec2_dir)
+        remote_cert_path = self._copy_single_glob_match(
+            sftp, 'cert-*.pem', local_ec2_dir, remote_ec2_dir)
+        return (remote_private_key_path, remote_cert_path)
+
+    def bundle(self, name):
+        """Bundle, upload and register the instance as a new AMI."""
+        root_connection = self.connect_as_root()
+        sftp = root_connection.ssh.open_sftp()
+
+        remote_private_key_path, remote_cert_path = \
+            self.copy_key_and_certificate_to_image(sftp)
+
+        sftp.close()
+
+        bundle_dir = os.path.join('/mnt', name)
+
+        root_connection.perform('mkdir ' + bundle_dir)
+        root_connection.peform(' '.join([
+            'ec2-bundle-vol',
+            '-d %s' % bundle_dir,
+            '-b',   # Set batch-mode, which doesn't use prompts.
+            '-k %s' % remote_private_key_path,
+            '-c %s' % remote_cert_path,
+            '-u %s'  % self.account_id
+            ]))
+
+        # Assume that the manifest is 'image.manifest.xml', since "image" is
+        # the default prefix.
+        manifest = os.path.join(bundle_dir, 'image.manifest.xml')
+
+        # Best check that the manifest actually exists though.
+        test = 'test -f %s' % manifest
+        root_connection.perform(test)
+
+        root_connection.peform(' '.join([
+            'ec2-upload-bundle',
+            '-b %s' % self.target_bucket,
+            '-m %s' % manifest,
+            '-a %s' % self.access_key,
+            '-s %s' % self.secret_key
+            ]))
+
+        sftp.close()
+        root_connection.close()
+
 
 class EC2InstanceConnection:
     """An ssh connection to an `EC2Instance`."""
@@ -280,3 +340,4 @@ class EC2InstanceConnection:
     def close(self):
         self.ssh.close()
         self.ssh = None
+
