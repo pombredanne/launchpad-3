@@ -359,7 +359,7 @@ class TestCase(unittest.TestCase):
 
 
 # Python 2.4 monkeypatch:
-if not hasattr(TestCase, '_exc_info'):
+if getattr(TestCase, '_exc_info', None) is None:
     class UnitTest24TestMethodNameAttributeAccessMonkeypatchDescriptor:
         def __get__(self, obj, type):
             return obj._TestCase__testMethodName
