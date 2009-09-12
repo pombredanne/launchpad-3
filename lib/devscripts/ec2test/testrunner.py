@@ -631,3 +631,12 @@ class EC2TestRunner:
             # ec2test-remote.py wants the extra options to be after a double-
             # dash.
             return ('--', self.test_options)
+
+    def run(self, demo_networks):
+        self.start()
+        self.configure_system()
+        self.prepare_tests()
+        if demo_networks:
+            self.start_demo_webserver()
+        else:
+            self.run_tests()

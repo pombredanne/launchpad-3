@@ -283,22 +283,15 @@ def main():
         pqm_message=options.pqm_message,
         pqm_public_location=options.pqm_public_location,
         pqm_submit_location=options.pqm_submit_location,
-        demo_networks=options.demo_networks,
         open_browser=options.open_browser, pqm_email=options.pqm_email,
         include_download_cache_changes=options.include_download_cache_changes,
         instance=instance, vals=vals,
         )
-    e = None
+
     try:
         try:
-            runner.start()
-            runner.configure_system()
-            runner.prepare_tests()
-            if options.demo_networks:
-                runner.start_demo_webserver()
-            else:
-                runner.run_tests()
-        except Exception, e:
+            runner.run(demo_networks)
+        except Exception:
             # If we are running in demo or postmortem mode, it is really
             # helpful to see if there are any exceptions before it waits
             # in the console (in the finally block), and you can't figure
