@@ -814,7 +814,7 @@ class DistributionSeriesView(LaunchpadView):
     @property
     def page_title(self):
         """The HTML page title."""
-        return "%s version history" % self.context.displayname
+        return "%s version history" % self.context.title
 
     @cachedproperty
     def styled_series(self):
