@@ -777,9 +777,6 @@ product_bugs = ContextDisplayName('Bugs in %s')
 
 product_code_index = ContextDisplayName("Bazaar branches of %s")
 
-product_distros = ContextDisplayName(
-    '%s packages: Comparison of distributions')
-
 product_cvereport = ContextTitle('CVE reports for %s')
 
 product_edit = 'Change project details'

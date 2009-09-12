@@ -27,9 +27,15 @@
       </thead>
       <tbody>
         <tr tal:repeat="pkging series/packagings">
-          <td tal:content="pkging/distroseries/distribution/displayname">Ubuntu</td>
-          <td><span tal:replace="pkging/distroseries/version">4.05</span>
-              (<span tal:replace="pkging/distroseries/name">hoary</span>)</td>
+          <td>
+            <a tal:replace="structure pkging/distroseries/distribution/fmt:link" />
+          </td>
+
+          <td>
+            <a tal:attributes="href pkging/distroseries/fmt:url"><tal:version
+              replace="pkging/distroseries/version" />
+              (<tal:name replace="pkging/distroseries/displayname" />)</a>
+          </td>
               
             <td>
               <a
@@ -45,15 +51,18 @@
       </tbody>
     </table>
 
-        <p tal:condition="not: series/packagings">
-          No packages linked to this series.
-        </p>
-        <ul tal:condition="context/required:launchpad.Edit" class="menu">
-          <li class="add">
-            <a tal:attributes="href string:${series/fmt:url}/+addpackage"
-            >Link a package</a>
-          </li>
-        </ul>
+    <p tal:condition="not: series/packagings">
+      No packages linked to this series.
+    </p>
+
+    <ul class="horizontal">
+      <li tal:condition="context/required:launchpad.Edit" >
+        <a tal:replace="structure series/menu:overview/add_package/fmt:link" />
+      </li>
+      <li>
+        <a tal:replace="structure context/menu:overview/distributions/fmt:link" />
+      </li>
+    </ul>
 
   </tal:series>
 

@@ -1385,10 +1385,6 @@
             facet="overview"
             template="../templates/product-series.pt"/>
         <browser:page
-            name="+distributions"
-            facet="overview"
-            template="../templates/product-distros.pt"/>
-        <browser:page
             name="+listing-for-review"
             template="../templates/product-listing-for-review.pt"/>
         <browser:page
@@ -1440,6 +1436,13 @@
         name="+packages"
         facet="overview"
         template="../templates/product-packages.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        class="lp.registry.browser.product.ProductDistributionsView"
+        name="+distributions"
+        facet="overview"
+        template="../templates/product-distros.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"

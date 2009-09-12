@@ -12,6 +12,7 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
+    'ProductDistributionsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditNavigationMenu',
@@ -967,6 +968,16 @@ class ProductPackagesView(ProductView):
     def page_title(self):
         """The HTML page title."""
         return '%s packages in Launchpad' % self.context.displayname
+
+
+class ProductDistributionsView(ProductView):
+    """View for displaying product packaging by distribution"""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return '%s packages: Comparison of distributions' % (
+            self.context.displayname)
 
 
 class ProductDownloadFilesView(LaunchpadView,
