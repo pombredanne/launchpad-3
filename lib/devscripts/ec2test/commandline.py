@@ -306,16 +306,10 @@ def main():
             traceback.print_exc()
     finally:
         try:
-            # XXX: JonathanLange 2009-06-02: Blackbox alert! This gets at the
-            # private _instance variable of runner. Instead, it should do
-            # something smarter. For example, the demo networks stuff could be
-            # extracted out to different, non-TestRunner class that has an
-            # instance.
-            if options.demo_networks and runner._instance is not None:
+            if options.demo_networks:
                 demo_network_string = '\n'.join(
                     '  ' + network for network in options.demo_networks)
-                # XXX: JonathanLange 2009-06-02: Blackbox alert! See above.
-                ec2_ip = socket.gethostbyname(runner._instance.hostname)
+                ec2_ip = socket.gethostbyname(instance.hostname)
                 print (
                     "\n\n"
                     "********************** DEMO *************************\n"
@@ -335,10 +329,7 @@ def main():
                     "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
                     "\n*****************************************************"
                     "\n\n")
-             # XXX: JonathanLange 2009-06-02: Blackbox alert! This uses the
-             # private '_instance' variable and assumes that the runner has
-             # exactly one instance.
-            if options.postmortem and runner._instance is not None:
+            if options.postmortem:
                 console = code.InteractiveConsole({'runner': runner, 'e': e})
                 console.interact((
                     'Postmortem Console.  EC2 instance is not yet dead.\n'
@@ -350,9 +341,7 @@ def main():
                     'Also try these:\n'
                     '  http://%(dns)s/current_test.log\n'
                     '  ssh -A %(dns)s') %
-                                 # XXX: JonathanLange 2009-06-02: Blackbox
-                                 # alert! See above.
-                                 {'dns': runner._instance.hostname})
+                                 {'dns': instance.hostname})
                 print 'Postmortem console closed.'
         finally:
             runner.shutdown()
