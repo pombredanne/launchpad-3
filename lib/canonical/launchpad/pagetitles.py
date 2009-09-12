@@ -795,8 +795,6 @@ def product_mergeproposals(context, view):
 
 product_new_guided = 'Before you register your project...'
 
-product_packages = ContextDisplayName('%s packages in Launchpad')
-
 product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 

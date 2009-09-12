@@ -1381,10 +1381,6 @@
             facet="overview"
             template="../templates/object-timeline-graph.pt"/>
         <browser:page
-            name="+packages"
-            facet="overview"
-            template="../templates/product-packages.pt"/>
-        <browser:page
             name="+series"
             facet="overview"
             template="../templates/product-series.pt"/>
@@ -1437,6 +1433,13 @@
             name="+purchase-subscription"
             template="../templates/product-purchase-subscription.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        class="lp.registry.browser.product.ProductPackagesView"
+        name="+packages"
+        facet="overview"
+        template="../templates/product-packages.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"

@@ -21,6 +21,7 @@ __all__ = [
     'ProductNavigation',
     'ProductNavigationMenu',
     'ProductOverviewMenu',
+    'ProductPackagesView',
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSetBreadcrumb',
@@ -957,6 +958,15 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         """
         return (check_permission('launchpad.Edit', self.context) or
                 check_permission('launchpad.Commercial', self.context))
+
+
+class ProductPackagesView(ProductView):
+    """View for displaying product packaging"""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return '%s packages in Launchpad' % self.context.displayname
 
 
 class ProductDownloadFilesView(LaunchpadView,
