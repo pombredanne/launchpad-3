@@ -21,6 +21,8 @@ import sys
 # Shut up pyflakes.
 rlcompleter
 
+from bzrlib.plugins.launchpad.account import get_lp_login
+
 import paramiko
 
 from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
@@ -185,6 +187,10 @@ def main():
               'will always raise an error.  Also note that, if you have any '
               'changes in your download cache, you must explicitly choose to '
               'include or ignore the changes.'))
+    parser.add_option(
+        '--bundle',
+        dest='bundle', action='store',
+        help=('XXX.'))
     options, args = parser.parse_args()
     if options.debug:
         import pdb; pdb.set_trace()
@@ -276,21 +282,54 @@ def main():
 
     # XXXX end XXXX
 
-    runner = EC2TestRunner(
-        branch, email=email, file=options.file,
-        test_options=options.test_options, headless=options.headless,
-        branches=branches,
-        pqm_message=options.pqm_message,
-        pqm_public_location=options.pqm_public_location,
-        pqm_submit_location=options.pqm_submit_location,
-        open_browser=options.open_browser, pqm_email=options.pqm_email,
-        include_download_cache_changes=options.include_download_cache_changes,
-        instance=instance, vals=vals,
-        )
+    if not options.bundle:
+        runner = EC2TestRunner(
+            branch, email=email, file=options.file,
+            test_options=options.test_options, headless=options.headless,
+            branches=branches,
+            pqm_message=options.pqm_message,
+            pqm_public_location=options.pqm_public_location,
+            pqm_submit_location=options.pqm_submit_location,
+            open_browser=options.open_browser, pqm_email=options.pqm_email,
+            include_download_cache_changes=options.include_download_cache_changes,
+            instance=instance, vals=vals,
+            )
+        def run_tests():
+            runner.start()
+            runner.configure_system()
+            runner.prepare_tests()
+            if demo_networks:
+                runner.start_demo_webserver()
+            else:
+                runner.run_tests()
+        run = run_tests
+    else:
+        login = get_lp_login()
+        if not login:
+            error_and_quit(
+                'you must have set your launchpad login in bzr.')
+        vals['launchpad-login'] = login
+        def make_new_image():
+            instance.start()
+            instance.setup_user()
+            user_connection = instance.connect_as_user()
+            user_connection.perform('bzr launchpad-login %(launchpad-login)s')
+            user_connection.perform("bzr whoami '%(email)s'")
+            user_connection.run_with_ssh_agent(
+                "rsync -avp --partial --delete "
+                "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
+                "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
+                "/var/launchpad/sourcecode/")
+            user_connection.run_with_ssh_agent(
+                'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
+            user_connection.close()
+            instance.bundle(options.bundle)
+        run = make_new_image
+
 
     try:
         try:
-            runner.run(demo_networks)
+            run()
         except Exception:
             # If we are running in demo or postmortem mode, it is really
             # helpful to see if there are any exceptions before it waits
@@ -337,4 +376,4 @@ def main():
                                  {'dns': instance.hostname})
                 print 'Postmortem console closed.'
         finally:
-            runner.shutdown()
+            instance.shutdown()
