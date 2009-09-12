@@ -4,8 +4,8 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> anon_browser.title
-    'Ubuntu Linux Personal Package Archives'
+    >>> print anon_browser.title
+    +ppas : Ubuntu
 
 
 == Distribution PPA main page ==
@@ -77,7 +77,7 @@ is presented for other distribution.
     >>> anon_browser.open("http://launchpad.dev/debian")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print anon_browser.title
-    Debian GNU/Linux Personal Package Archives
+    +ppas : Debian
 
 Those pages present coherent data for a distribution with no PPAs.
 
@@ -256,7 +256,7 @@ And now on to the page itself. In the table rows, the PPA
 
     >>> anon_browser.getLink("PPA for Celso Providelo").click()
     >>> print anon_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
 The first portlet in the PPA index page tell users how to install the
 context PPA in their systems.
@@ -567,8 +567,8 @@ Just quickly check if the singular form of this section is handled
 properly.
 
     >>> anon_browser.open("http://launchpad.dev/~mark/+archive/ppa")
-    >>> anon_browser.title
-    'PPA for Mark Shuttleworth'
+    >>> print anon_browser.title
+    PPA for Mark Shuttleworth : Mark Shuttleworth
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:
@@ -592,8 +592,8 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntutest")
     >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> anon_browser.title
-    'Ubuntu Test Personal Package Archives'
+    >>> print anon_browser.title
+    +ppas : ubuntutest
 
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
     0
@@ -636,7 +636,7 @@ PPA itself.
 
     >>> anon_browser.getLink('PPA for Celso Providelo').click()
     >>> print anon_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
 
 == Compatibility URL Redirection ==
