@@ -97,9 +97,6 @@
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"/>
-        <browser:page
-            name="+milestones"
-            template="../templates/object-milestones.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -305,10 +302,6 @@
         <browser:page
             name="+listing-detailed"
             template="../templates/project-listing-detailed.pt"/>
-        <browser:page
-            name="+milestones"
-            facet="overview"
-            template="../templates/object-milestones.pt"/>
 
         <!-- Projects portlets -->
 
@@ -1288,6 +1281,13 @@
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
     <browser:page
+        name="+pillar-table-row"
+        for="lp.registry.interfaces.milestone.IProjectMilestone"
+        class="lp.registry.browser.milestone.MilestoneView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/productseries-milestone-table-row.pt"/>
+    <browser:page
         name="+edit"
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneEditView"
@@ -1308,6 +1308,13 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productrelease-add.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.milestone.IHasMilestones"
+        class="lp.registry.browser.milestone.ObjectMilestonesView"
+        name="+milestones"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/object-milestones.pt"/>
     <browser:menus
         classes="
             MilestoneContextMenu
@@ -1417,10 +1424,6 @@
             name="+portlet-milestones"
             facet="overview"
             template="../templates/object-portlet-milestones.pt"/>
-        <browser:page
-            name="+milestones"
-            facet="overview"
-            template="../templates/object-milestones.pt"/>
         <browser:page
             name="+portlet-packages"
             facet="overview"
@@ -1600,9 +1603,6 @@
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"/>
-        <browser:page
-            name="+milestones"
-            template="../templates/object-milestones.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -1846,10 +1846,6 @@
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"/>
-        <browser:page
-            name="+milestones"
-            facet="overview"
-            template="../templates/object-milestones.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"

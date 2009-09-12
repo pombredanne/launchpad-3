@@ -625,8 +625,6 @@ def object_driver(context, view):
     """Return the page title to change the driver."""
     return view.page_title
 
-object_milestones = ContextTitle(smartquote("%s's milestones"))
-
 # object_pots is a fragment.
 
 object_translations = ContextDisplayName('Translation templates for %s')
