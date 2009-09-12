@@ -78,7 +78,7 @@ provided link.
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
-    PPA for James Blackwell
+    PPA for James Blackwell : James Blackwell
 
 Now, that James has his own PPA, he navigates back to Celso's PPA
 copy package interface can see packages to be copied.
@@ -247,7 +247,7 @@ also marked as pending build for i386.
 
     >>> jblack_browser.getLink('PPA for James Blackwell').click()
     >>> print jblack_browser.title
-    Packages in “PPA for James Blackwell”
+    +packages : PPA for James Blackwell : James Blackwell
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -328,7 +328,7 @@ James goes straight to the copy interface of his PPA.
     >>> jblack_browser.getLink('PPA for James Blackwell').click()
     >>> jblack_browser.getLink('View package details').click()
     >>> print jblack_browser.title
-    Packages in “PPA for James Blackwell”
+    +packages : PPA for James Blackwell : James Blackwell
 
     >>> jblack_browser.getLink('Copy packages').click()
     >>> print jblack_browser.title
@@ -674,7 +674,7 @@ together.
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
-    PPA for James Blackwell Friends
+    PPA for James Blackwell Friends : “James Blackwell Friends” team
 
 PPA created, now James want to populate it with the finest packages he
 have ever seen. He goes to Celso's PPA copy interface.
@@ -738,7 +738,8 @@ sources and binaries are copied to their PPA.
 
     >>> jblack_browser.getLink('PPA for James Blackwell Friends').click()
     >>> print jblack_browser.title
-    Packages in “PPA for James Blackwell Friends”
+    +packages : PPA for James Blackwell Friends
+    : “James Blackwell Friends” team
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source            Uploader    Published   Status   Series  Section  Build
@@ -821,7 +822,7 @@ tests.
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
-    PPA for James Blackwell Sandbox
+    PPA for James Blackwell Sandbox : “James Blackwell Sandbox” team
 
 James now goes to his PPA and copy all sources to his Sandbox PPA
 for a mass rebuild, including the deleted source. James is going
@@ -875,7 +876,7 @@ even the 'warty' source, which was not denied.
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack-sandbox/+archive')
     >>> print jblack_browser.title
-    PPA for James Blackwell Sandbox
+    PPA for James Blackwell Sandbox : “James Blackwell Sandbox” team
 
     >>> print_ppa_packages(jblack_browser.contents)
 

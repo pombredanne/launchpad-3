@@ -46,7 +46,7 @@ will be private.
    >>> browser.getControl(name='field.accepted').value = True
    >>> browser.getControl("Activate").click()
    >>> print browser.title
-   Private Team PPA
+   Private Team PPA : “Private Team” team
 
 
 Administrator changes to the PPA

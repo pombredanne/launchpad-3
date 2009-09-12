@@ -494,7 +494,7 @@ index page (see `IArchivedependency.title`).
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print admin_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
     >>> print_tag_with_id(admin_browser.contents, 'archive-dependencies')
     Dependencies:
@@ -518,7 +518,7 @@ PPA context page and the action won't be executed.
 
     >>> admin_browser.getLink("Cancel").click()
     >>> print admin_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
 The dependencies were not modified.
 
