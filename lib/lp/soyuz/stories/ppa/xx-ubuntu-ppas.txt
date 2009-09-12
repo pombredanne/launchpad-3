@@ -256,7 +256,7 @@ And now on to the page itself. In the table rows, the PPA
 
     >>> anon_browser.getLink("PPA for Celso Providelo").click()
     >>> print anon_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
 The first portlet in the PPA index page tell users how to install the
 context PPA in their systems.
@@ -567,8 +567,8 @@ Just quickly check if the singular form of this section is handled
 properly.
 
     >>> anon_browser.open("http://launchpad.dev/~mark/+archive/ppa")
-    >>> anon_browser.title
-    'PPA for Mark Shuttleworth'
+    >>> print anon_browser.title
+    PPA for Mark Shuttleworth : Mark Shuttleworth
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:
@@ -636,7 +636,7 @@ PPA itself.
 
     >>> anon_browser.getLink('PPA for Celso Providelo').click()
     >>> print anon_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
 
 == Compatibility URL Redirection ==

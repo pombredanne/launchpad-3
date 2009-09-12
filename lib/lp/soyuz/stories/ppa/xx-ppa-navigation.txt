@@ -37,8 +37,8 @@ And the users can click on the item and will be taken to the PPA page.
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa'
 
-    >>> anon_browser.title
-    'PPA for Celso Providelo'
+    >>> print anon_browser.title
+    PPA for Celso Providelo : Celso Providelo
 
 There is a link that allows users with permission to create a PPA.
 
@@ -96,14 +96,14 @@ link.
 
     >>> anon_browser.getLink('View package details').click()
     >>> print anon_browser.title
-    Packages in “Default PPA”
+    +packages : Default PPA : Celso Providelo
 
 You can see the build details of the packages in the archive by using
 the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
     >>> print anon_browser.title
-    Builds for Default PPA
+    +builds : Default PPA : Celso Providelo
 
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa/+builds'
