@@ -20,4 +20,4 @@ same navigation as the bug page itself.
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox
-    Main heading: Approve or decline nomination
+    Main heading: Approve or decline nomination for bug #1 in Ubuntu Hoary
