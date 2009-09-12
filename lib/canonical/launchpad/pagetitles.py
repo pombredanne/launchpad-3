@@ -812,8 +812,6 @@ productrelease_admin = ContextTitle('Administer %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
-products_review_licenses = 'Review projects'
-
 productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
