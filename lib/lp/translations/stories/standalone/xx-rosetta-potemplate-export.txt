@@ -19,7 +19,8 @@ Logged in as a regular user, the +export page is accessible.
   ...     '/+source/evolution/+pots/evolution-2.2')
   >>> browser.getLink('Download').click()
   >>> browser.title
-  '+export : \xe2\x80\x9cevolution\xe2\x80\x9d package : 5.04 : Ubuntu'
+  '+export : \xe2\x80\x9cevolution\xe2\x80\x9d package : Translations : 5.04
+  : Ubuntu'
 
 If we POST without the appropriate format included, we tell the user off:
 

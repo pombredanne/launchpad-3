@@ -40,7 +40,7 @@ appearing among contributors), by choosing the 'filter' link:
 
     >>> anon_browser.getLink('filter').click()
     >>> print anon_browser.title
-    +filter : Series trunk : Evolution
+    +filter : Translations : Series trunk : Evolution
 
 To display all the translations submitted by Carlos, and allow easier
 debugging and problem catching when changes are introduced, we define
