@@ -243,7 +243,7 @@ class EC2Instance:
         bundle_dir = os.path.join('/mnt', name)
 
         root_connection.perform('mkdir ' + bundle_dir)
-        root_connection.peform(' '.join([
+        root_connection.perform(' '.join([
             'ec2-bundle-vol',
             '-d %s' % bundle_dir,
             '-b',   # Set batch-mode, which doesn't use prompts.
@@ -261,9 +261,9 @@ class EC2Instance:
         test = 'test -f %s' % manifest
         root_connection.perform(test)
 
-        root_connection.peform(' '.join([
+        root_connection.perform(' '.join([
             'ec2-upload-bundle',
-            '-b %s' % self.target_bucket,
+            '-b %s' % name,
             '-m %s' % manifest,
             '-a %s' % self._account.credentials.identifier,
             '-s %s' % self._account.credentials.secret,
@@ -274,7 +274,7 @@ class EC2Instance:
 
         # This is invoked locally.
         mfilename = os.path.basename(manifest)
-        manifest_path = os.path.join(self.target_bucket, mfilename)
+        manifest_path = os.path.join(name, mfilename)
 
         env = os.environ.copy()
         if 'JAVA_HOME' not in os.environ:
