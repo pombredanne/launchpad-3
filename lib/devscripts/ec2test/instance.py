@@ -218,23 +218,23 @@ class EC2Instance:
         remote_file = sftp.open(remote_path, 'w')
         remote_file.write(open(local_path).read())
         remote_file.close()
-        return remote_path
+        return local_path, remote_path
 
     def copy_key_and_certificate_to_image(self, sftp):
         remote_ec2_dir = '/mnt/ec2'
         local_ec2_dir = os.path.expanduser('~/.ec2')
-        remote_private_key_path = self._copy_single_glob_match(
+        local_pk, remote_pk = self._copy_single_glob_match(
             sftp, 'pk-*.pem', local_ec2_dir, remote_ec2_dir)
-        remote_cert_path = self._copy_single_glob_match(
+        local_cert, remote_cert = self._copy_single_glob_match(
             sftp, 'cert-*.pem', local_ec2_dir, remote_ec2_dir)
-        return (remote_private_key_path, remote_cert_path)
+        return (local_pk, remote_pk, local_cert, remote_cert)
 
     def bundle(self, name):
         """Bundle, upload and register the instance as a new AMI."""
         root_connection = self.connect_as_root()
         sftp = root_connection.ssh.open_sftp()
 
-        remote_private_key_path, remote_cert_path = \
+        local_pk, remote_pk, local_cert, remote_cert = \
             self.copy_key_and_certificate_to_image(sftp)
 
         sftp.close()
@@ -246,9 +246,10 @@ class EC2Instance:
             'ec2-bundle-vol',
             '-d %s' % bundle_dir,
             '-b',   # Set batch-mode, which doesn't use prompts.
-            '-k %s' % remote_private_key_path,
-            '-c %s' % remote_cert_path,
-            '-u %s'  % self.account_id
+            '-k %s' % remote_pk,
+            '-c %s' % remote_cert,
+            '-u %s'  % open(
+                os.path.expanduser('~/.ec2/aws_user')).read().strip()
             ]))
 
         # Assume that the manifest is 'image.manifest.xml', since "image" is
@@ -263,12 +264,29 @@ class EC2Instance:
             'ec2-upload-bundle',
             '-b %s' % self.target_bucket,
             '-m %s' % manifest,
-            '-a %s' % self.access_key,
-            '-s %s' % self.secret_key
+            '-a %s' % self._account.credentials.identifier,
+            '-s %s' % self._account.credentials.secret,
             ]))
 
         sftp.close()
         root_connection.close()
+
+        # This is invoked locally.
+        mfilename = os.path.basename(manifest)
+        manifest_path = os.path.join(self.target_bucket, mfilename)
+
+        env = os.environ.copy()
+        if 'JAVA_HOME' not in os.environ:
+            env['JAVA_HOME'] = '/usr/lib/jvm/default-java'
+        cmd = [
+            'ec2-register',
+            '--private-key=%s' % local_pk,
+            '--cert=%s' % self.local_cert,
+            manifest_path
+            ]
+        self.log("Executing command: %s" % ' '.join(cmd))
+        subprocess.check_call(cmd, env=env)
+
 
 
 class EC2InstanceConnection:
