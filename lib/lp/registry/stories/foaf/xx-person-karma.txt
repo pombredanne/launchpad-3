@@ -19,7 +19,7 @@ details their karma-generating activities.
 
     >>> print_navigation_links(anon_browser.contents)
     Profile
-    Related Software: ...
+    Related software: ...
     Karma: http://launchpad.dev/~name12/+karma
 
     >>> anon_browser.getLink('Karma').click()

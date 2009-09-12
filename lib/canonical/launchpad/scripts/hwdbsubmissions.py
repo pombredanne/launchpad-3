@@ -16,7 +16,10 @@ __all__ = [
 
 import bz2
 from cStringIO import StringIO
-import cElementTree as etree
+try:
+    import xml.etree.cElementTree as etree
+except ImportError:
+    import cElementTree as etree
 from datetime import datetime, timedelta
 from logging import getLogger
 import os

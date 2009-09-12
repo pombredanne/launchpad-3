@@ -854,12 +854,6 @@ class CommonMenuLinks:
         text = 'Change home page'
         return Link(target, text, icon='edit')
 
-    def related_projects(self):
-        target = '+related-software#projects'
-        text = 'List related projects'
-        summary = 'Projects %s is involved with' % self.context.displayname
-        return Link(target, text, summary, icon='product')
-
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
@@ -868,30 +862,34 @@ class CommonMenuLinks:
                    'Package Archive and create a new PPA.')
         return Link(target, text, summary, icon='add')
 
-    def summary(self):
+    def related_software_summary(self):
         target = '+related-software'
         text = 'Summary'
         return Link(target, text, icon='info')
 
     def maintained(self):
         target = '+maintained-packages'
-        text = 'Maintained Packages'
+        text = 'Maintained packages'
         enabled = bool(self.person.getLatestMaintainedPackages())
         return Link(target, text, enabled=enabled, icon='info')
 
     def uploaded(self):
         target = '+uploaded-packages'
-        text = 'Uploaded Packages'
+        text = 'Uploaded packages'
         return Link(target, text, icon='info')
 
     def ppa(self):
+        # XXX: salgado, 2009-09-09, bug=426899: Need to conditionally disable
+        # this link.
         target = '+ppa-packages'
-        text = 'PPA Packages'
+        text = 'PPA packages'
         return Link(target, text, icon='info')
 
     def projects(self):
+        # XXX: salgado, 2009-09-09, bug=426900: Need to conditionally disable
+        # this link.
         target = '+related-projects'
-        text = 'Related Projects'
+        text = 'Related projects'
         return Link(target, text, icon='info')
 
 
@@ -904,7 +902,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma',
-             'administer', 'related_projects', 'activate_ppa', 'maintained',
+             'administer', 'projects', 'activate_ppa', 'maintained',
              'view_ppa_subscriptions']
 
     @enabled_with_permission('launchpad.Edit')
@@ -1033,7 +1031,7 @@ class IPersonEditMenu(Interface):
 
 
 class IPersonRelatedSoftwareMenu(Interface):
-    """A marker interface for the 'Related Software' navigation menu."""
+    """A marker interface for the 'Related software' navigation menu."""
 
 
 class PPANavigationMenuMixIn:
@@ -1068,7 +1066,7 @@ class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
 
     def related_software(self):
         target = '+related-software'
-        text = 'Related Software'
+        text = 'Related software'
         return Link(target, text, menu=IPersonRelatedSoftwareMenu)
 
     def karma(self):
@@ -1081,7 +1079,8 @@ class PersonRelatedSoftwareNavigationMenu(NavigationMenu, CommonMenuLinks):
 
     usedfor = IPersonRelatedSoftwareMenu
     facet = 'overview'
-    links = ('summary', 'maintained', 'uploaded', 'ppa', 'projects')
+    links = ('related_software_summary', 'maintained', 'uploaded', 'ppa',
+             'projects')
 
     @property
     def person(self):
@@ -1298,8 +1297,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'join', 'leave', 'add_my_teams', 'mentorships',
-             'reassign', 'related_projects',
-             'activate_ppa', 'maintained']
+             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -2798,6 +2796,10 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return "Contact this team's owner"
         else:
             raise AssertionError('Unknown group to contact.')
+
+    def should_show_polls_portlet(self):
+        menu = TeamOverviewMenu(self.context)
+        return self.hasCurrentPolls() or menu.add_poll().enabled
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""

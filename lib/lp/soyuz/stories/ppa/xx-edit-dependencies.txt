@@ -39,15 +39,6 @@ any sources.
     ...     auth='Basic no-priv@canonical.com:test')
     >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
 
-    >>> print extract_text(find_main_content(no_priv_browser.contents))
-    This archive is public
-    PPA for No Privileges Person
-    ...
-    Build dependencies: Edit dependencies
-    This PPA does not contain
-    any packages yet. Find more information about how to upload
-    packages in the PPA help page
-
     >>> no_priv_browser.getLink('Edit dependencies').click()
     >>> print no_priv_browser.url
     http://launchpad.dev/~no-priv/+archive/ppa/+edit-dependencies
@@ -175,7 +166,7 @@ sources.list widget).
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> print_tag_with_id(user_browser.contents, 'archive-dependencies')
-    Build dependencies:
+    Dependencies:
     PPA for Mark Shuttleworth (included ... ago)
     PPA for No Privileges Person (included ... ago)
 
@@ -201,7 +192,7 @@ aware of this condition.
 
     >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> print_tag_with_id(anon_browser.contents, 'archive-dependencies')
-    Build dependencies:
+    Dependencies:
     PPA for Mark Shuttleworth [disabled] (included ... ago)
     PPA for No Privileges Person (included ... ago)
 
@@ -214,14 +205,14 @@ aware of this condition.
     http://launchpad.dev/~no-priv/+archive/ppa
 
 When accessed by their owners, a PPA depending on disabled archives
-will additionally show an warning. This way PPA maintainer can react
-to this problem.
+will additionally show an warning for uploaders . This way PPA
+maintainer can react to this problem.
 
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> ui_dependencies = find_tag_by_id(
-    ...     cprov_browser.contents, 'archive-dependencies')
+    >>> upload_hint = find_tag_by_id(
+    ...     cprov_browser.contents, 'upload-hint')
     >>> print extract_text(
-    ...     first_tag_by_class(str(ui_dependencies), 'message warning'))
+    ...     first_tag_by_class(str(upload_hint), 'message warning'))
     This PPA depends on disabled archives. it may cause spurious
     build failures or binaries with unexpected contents.
 
@@ -506,11 +497,10 @@ index page (see `IArchivedependency.title`).
     PPA for Celso Providelo
 
     >>> print_tag_with_id(admin_browser.contents, 'archive-dependencies')
-    Build dependencies:
+    Dependencies:
     PPA for Mark Shuttleworth (included ... ago)
     Primary Archive for Ubuntu Linux - RELEASE
     (main, restricted, universe, multiverse) (included ... ago)
-    Edit dependencies
 
 == Cancelling a form request ==
 
@@ -533,8 +523,8 @@ PPA context page and the action won't be executed.
 The dependencies were not modified.
 
     >>> print_tag_with_id(admin_browser.contents, 'archive-dependencies')
-    Build dependencies:
+    Dependencies:
     PPA for Mark Shuttleworth (included ... ago)
     Primary Archive for Ubuntu Linux - RELEASE
     (main, restricted, universe, multiverse) (included ... ago)
-    Edit dependencies
+

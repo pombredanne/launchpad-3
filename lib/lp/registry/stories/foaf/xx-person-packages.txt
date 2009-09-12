@@ -6,7 +6,7 @@ From the main person page, the user's Package Maintenance Report can be
 accessed by clicking on the 'Related Software' menu item.
 
     >>> anon_browser.open('http://launchpad.dev/~mark')
-    >>> anon_browser.getLink('Related Software').click()
+    >>> anon_browser.getLink('Related software').click()
 
     >>> print anon_browser.title
     +related-software : Mark Shuttleworth

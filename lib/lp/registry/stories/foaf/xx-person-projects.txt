@@ -36,11 +36,11 @@ unimplemented specs and open questions.
     >>> print anon_browser.getLink('8').url
     http://launchpad.dev/ubuntu/+questions
 
-A person's projects are listed on the 'Related Software' page,
+A person's projects are listed on the 'Related software' page,
 accessible through the main navigation menu.
 
     >>> anon_browser.open('http://launchpad.dev/~mark')
-    >>> anon_browser.getLink('Related Software').click()
+    >>> anon_browser.getLink('Related software').click()
     >>> print anon_browser.url
     http://launchpad.dev/~mark/+related-software
     >>> print anon_browser.title

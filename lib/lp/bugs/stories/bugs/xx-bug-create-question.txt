@@ -94,7 +94,7 @@ questions' portlet, and uses it to go to the question page.
     Bug #10:
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
-    >>> question_anchor = portlet.div.a
+    >>> question_anchor = portlet.a
     >>> question_anchor
     <a href=".../ubuntu/+source/linux-source-2.6.15/+question/...">another
     test bug</a>

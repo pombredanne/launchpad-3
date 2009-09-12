@@ -7,7 +7,10 @@ CVE's are fully registered in Launchpad."""
 
 __metaclass__ = type
 
-import cElementTree
+try:
+    import xml.etree.cElementTree as cElementTree
+except ImportError:
+    import cElementTree
 import urllib2
 import gzip
 import StringIO

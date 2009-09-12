@@ -90,8 +90,8 @@ A successful activation redirects to the PPA page
 Where Sample person user can see the description previously entered.
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Hoohay for PPA.
 
 The PPA owner is able to edit PPA 'displayname' and 'description'.
@@ -112,8 +112,8 @@ where he can see the updated information.
     Sample testing PPA
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Howdy, cowboys !
 
 Empty 'description' fields are not be rendered.
@@ -218,8 +218,8 @@ That understood, the PPA gets activated.
     Devel PPA
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Hoohay for Team PPA.
 
 Any team administrator can edit the description contents,
@@ -238,8 +238,8 @@ exactly the same as for a user-PPA, see above:
     Devel PPA
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Yay, I can change it.
 
 Cancelling the 'Edit' form will redirect the user to the PPA overview
@@ -254,8 +254,8 @@ page and discard the changes.
     Devel PPA
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Yay, I can change it.
 
 Similarly to users, teams with assigned PPAs cannot be renamed either.
@@ -296,8 +296,8 @@ name of other users or teams:
     Hack PPA
 
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(admin_browser.contents, 'edit-description'))
+    PPA description
     Go for it, you lazy !
 
 LP-admins can also 'edit' PPAs of other people:
@@ -378,9 +378,6 @@ see some of the updated information.
     >>> for msg in get_feedback_messages(admin_browser.contents):
     ...     print msg
     This archive has been disabled.
-
-    >>> print_tag_with_id(admin_browser.contents, 'privacy')
-    This archive is private
 
 We need go back to the "Administer archive" page to see the build score change
 that was made:
@@ -491,8 +488,8 @@ Activate the PPA in the first browser:
     Boom PPA
 
     >>> print extract_text(
-    ...     find_tag_by_id(browser1.contents, 'description'))
-    Description
+    ...     find_tag_by_id(browser1.contents, 'edit-description'))
+    PPA description
     PPA rocks!
 
 Activating the default PPA in the second browser results in an error

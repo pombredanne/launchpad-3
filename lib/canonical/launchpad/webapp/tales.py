@@ -1286,6 +1286,17 @@ class PillarFormatterAPI(CustomizableFormatter):
         return html
 
 
+class DistroSeriesFormatterAPI(CustomizableFormatter):
+    """Adapter for IDistroSeries objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+
 class SourcePackageFormatterAPI(CustomizableFormatter):
     """Adapter for ISourcePackage objects to a formatted string."""
 
@@ -2885,7 +2896,6 @@ class FormattersAPI:
             # Only linkify if person exists and does not want to hide
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
-                person_formatter = PersonFormatterAPI(person)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
                     address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
@@ -3250,6 +3260,54 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
         group = self._context
         url = self.url(view_name, rootsite)
         return u'<a href="%s">%s</a>' % (url, cgi.escape(group.title))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title
+
+
+class LanguageFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `ILanguage` objects to a formatted string."""
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(LanguageFormatterAPI, self).url(view_name, rootsite)
+
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s" class="sprite language">%s</a>' % (
+            url, cgi.escape(self._context.englishname))
+
+    def displayname(self, view_name, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        return self._context.englishname
+
+
+class POFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IPOFile` objects to a formatted string."""
+
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(POFileFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        pofile = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(pofile.title))
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
