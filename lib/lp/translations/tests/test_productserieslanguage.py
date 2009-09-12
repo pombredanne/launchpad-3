@@ -226,6 +226,17 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # which adds up as (1+3)+(1+1).
         self.assertPSLStatistics(psl, (30, 6, 2, 4, 3, 5))
 
+    def test_recalculateCounts_no_pofiles(self):
+        # Test that recalculateCounts works correctly even when there
+        # are no POFiles returned.
+        potemplate1 = self.createPOTemplateWithPOTMsgSets(1)
+        potemplate2 = self.createPOTemplateWithPOTMsgSets(2)
+        psl = self.psl_set.getProductSeriesLanguage(self.productseries,
+                                                    self.language)
+        psl.recalculateCounts()
+        # And all the counts are zero.
+        self.assertPSLStatistics(psl, (3, 0, 0, 0, 0, 0))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
