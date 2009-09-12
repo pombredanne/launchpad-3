@@ -222,6 +222,7 @@ class EC2Instance:
 
     def copy_key_and_certificate_to_image(self, sftp):
         remote_ec2_dir = '/mnt/ec2'
+        sftp.mkdir(remote_ec2_dir)
         local_ec2_dir = os.path.expanduser('~/.ec2')
         local_pk, remote_pk = self._copy_single_glob_match(
             sftp, 'pk-*.pem', local_ec2_dir, remote_ec2_dir)

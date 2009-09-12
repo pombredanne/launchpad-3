@@ -309,6 +309,7 @@ def main():
             error_and_quit(
                 'you must have set your launchpad login in bzr.')
         vals['launchpad-login'] = login
+        vals['email'] = 'michael.hudson@canonical.com'
         def make_new_image():
             instance.start()
             instance.setup_user()
