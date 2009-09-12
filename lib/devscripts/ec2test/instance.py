@@ -44,11 +44,11 @@ class EC2Instance:
     # XXX: JonathanLange 2009-05-31: Possibly separate out "get an instance"
     # and "set up instance for Launchpad testing" logic.
 
-    def __init__(self, name, image, instance_type, demo_networks, controller,
+    def __init__(self, name, image, instance_type, demo_networks, account,
                  vals):
         self._name = name
         self._image = image
-        self._controller = controller
+        self._account = account
         self._instance_type = instance_type
         self._demo_networks = demo_networks
         self._boto_instance = None
@@ -72,8 +72,8 @@ class EC2Instance:
             self.log('Instance %s already started' % self._boto_instance.id)
             return
         start = time.time()
-        self.private_key = self._controller.acquire_private_key()
-        self._controller.acquire_security_group(
+        self.private_key = self._account.acquire_private_key()
+        self._account.acquire_security_group(
             demo_networks=self._demo_networks)
         reservation = self._image.run(
             key_name=self._name, security_groups=[self._name],

@@ -410,7 +410,7 @@ class EC2TestRunner:
             self.error_and_quit(str(e))
 
         # Make the EC2 connection.
-        controller = credentials.connect(self.name)
+        account = credentials.connect(self.name)
 
         # We do this here because it (1) cleans things up and (2) verifies
         # that the account is correctly set up. Both of these are appropriate
@@ -419,13 +419,13 @@ class EC2TestRunner:
         # We always recreate the keypairs because there is no way to
         # programmatically retrieve the private key component, unless we
         # generate it.
-        controller.delete_previous_key_pair()
+        account.delete_previous_key_pair()
 
         # get the image
-        image = controller.acquire_image(machine_id)
+        image = account.acquire_image(machine_id)
         self._instance = EC2Instance(
             self.name, image, instance_type, demo_networks,
-            controller, self.vals)
+            account, self.vals)
         # now, as best as we can tell, we should be good to go.
 
     def error_and_quit(self, msg):
