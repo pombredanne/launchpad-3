@@ -10,25 +10,38 @@ __all__ = [
 
 import code
 import optparse
+import os
 import socket
 import traceback
 # The rlcompleter and readline modules change the behavior of the python
 # interactive interpreter just by being imported.
 import readline
 import rlcompleter
+import sys
 # Shut up pyflakes.
 rlcompleter
 
+import paramiko
 
-from devscripts.ec2test.testrunner import (
-    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2TestRunner,
-    TRUNK_BRANCH)
+from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
+from devscripts.ec2test.instance import EC2Instance
+from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 readline.parse_and_bind('tab: complete')
+
+DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
+AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
+
 
 # XXX: JonathanLange 2009-05-31: Strongly considering turning this into a
 # Bazaar plugin -- probably would make the option parsing and validation
 # easier.
+
+def error_and_quit(msg):
+    """Print error message and exit."""
+    sys.stderr.write(msg)
+    sys.exit(1)
+
 
 def main():
     parser = optparse.OptionParser(
@@ -210,17 +223,70 @@ def main():
         branches = ()
     else:
         branches = [data.split('=', 1) for data in options.branches]
+
+    # XXXX THE FOLLOWING CHUNK OF CODE IN NO WAY BELONGS HERE!! XXXX
+
+    # Validate instance_type and get default kernal and ramdisk.
+    if options.instance_type not in AVAILABLE_INSTANCE_TYPES:
+        raise ValueError('unknown instance_type %s' % (options.instance_type,))
+
+
+    # Get the AWS identifier and secret identifier.
+    try:
+        credentials = EC2Credentials.load_from_file()
+    except CredentialsError, e:
+        error_and_quit(str(e))
+
+    # Make the EC2 connection.
+    account = credentials.connect(EC2TestRunner.name)
+
+    # We do this here because it (1) cleans things up and (2) verifies
+    # that the account is correctly set up. Both of these are appropriate
+    # for initialization.
+    #
+    # We always recreate the keypairs because there is no way to
+    # programmatically retrieve the private key component, unless we
+    # generate it.
+    account.delete_previous_key_pair()
+
+    # get the image
+    image = account.acquire_image(options.machine_id)
+    if options.demo_networks is None:
+        demo_networks = ()
+    else:
+        demo_networks = options.demo_networks
+
+    # XXX vals is a terrible idea.
+    vals = os.environ.copy()
+    # Get a public key from the agent.
+    agent = paramiko.Agent()
+    keys = agent.get_keys()
+    if len(keys) == 0:
+        error_and_quit(
+            'You must have an ssh agent running with keys installed that '
+            'will allow the script to rsync to devpad and get your '
+            'branch.\n')
+    key = agent.get_keys()[0]
+    vals['key_type'] = key.get_name()
+    vals['key'] = key.get_base64()
+
+    instance = EC2Instance(
+        EC2TestRunner.name, image, options.instance_type, demo_networks,
+        account, vals)
+
+    # XXXX end XXXX
+
     runner = EC2TestRunner(
         branch, email=email, file=options.file,
         test_options=options.test_options, headless=options.headless,
         branches=branches,
-        machine_id=options.machine_id, instance_type=options.instance_type,
         pqm_message=options.pqm_message,
         pqm_public_location=options.pqm_public_location,
         pqm_submit_location=options.pqm_submit_location,
         demo_networks=options.demo_networks,
         open_browser=options.open_browser, pqm_email=options.pqm_email,
         include_download_cache_changes=options.include_download_cache_changes,
+        instance=instance, vals=vals,
         )
     e = None
     try:

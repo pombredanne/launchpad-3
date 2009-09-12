@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'AVAILABLE_INSTANCE_TYPES',
-    'DEFAULT_INSTANCE_TYPE',
     'EC2TestRunner',
     'TRUNK_BRANCH',
     ]
@@ -27,14 +25,8 @@ from bzrlib.plugins.launchpad.account import get_lp_login
 from bzrlib.plugins.pqm.pqm_submit import (
     NoPQMSubmissionAddress, PQMSubmission)
 
-import paramiko
-
-from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
-from devscripts.ec2test.instance import EC2Instance
 
 TRUNK_BRANCH = 'bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel'
-DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
-AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 
 
 class UnknownBranchURL(Exception):
@@ -143,11 +135,11 @@ class EC2TestRunner:
 
     def __init__(self, branch, email=False, file=None, test_options='-vv',
                  headless=False, branches=(),
-                 machine_id=None, instance_type=DEFAULT_INSTANCE_TYPE,
+                 machine_id=None,
                  pqm_message=None, pqm_public_location=None,
-                 pqm_submit_location=None, demo_networks=None,
+                 pqm_submit_location=None,
                  open_browser=False, pqm_email=None,
-                 include_download_cache_changes=None):
+                 include_download_cache_changes=None, instance=None, vals=None):
         """Create a new EC2TestRunner.
 
         This sets the following attributes:
@@ -159,7 +151,6 @@ class EC2TestRunner:
           - branches (parses, validates)
           - message (after validating PQM submisson)
           - email (after validating email capabilities)
-          - instance_type (validates)
           - image (after connecting to ec2)
           - file (after checking we can write to it)
           - vals, a dict containing
@@ -178,10 +169,6 @@ class EC2TestRunner:
         self.test_options = test_options
         self.headless = headless
         self.include_download_cache_changes = include_download_cache_changes
-        if demo_networks is None:
-            demo_networks = ()
-        else:
-            demo_networks = demo_networks
         self.open_browser = open_browser
         if headless and file:
             raise ValueError(
@@ -342,10 +329,6 @@ class EC2TestRunner:
         # We do a lot of looking before leaping here because we want to avoid
         # wasting time and money on errors we could have caught early.
 
-        # Validate instance_type and get default kernal and ramdisk.
-        if instance_type not in AVAILABLE_INSTANCE_TYPES:
-            raise ValueError('unknown instance_type %s' % (instance_type,))
-
         # Validate and set file.
         validate_file(file)
         self.file = file
@@ -357,7 +340,7 @@ class EC2TestRunner:
         # how the different bits of the system interoperate (passing 'vals' to
         # a method means it uses...?). Consider changing things around so that
         # vals is not needed.
-        self.vals = dict(os.environ)
+        self.vals = vals
         self.vals['trunk_branch'] = trunk_branch
         self.vals['branch'] = branch
 
@@ -384,18 +367,6 @@ class EC2TestRunner:
                 self.vals['email'] = (
                     from_email.encode('utf8').encode('string-escape'))
 
-        # Get a public key from the agent.
-        agent = paramiko.Agent()
-        keys = agent.get_keys()
-        if len(keys) == 0:
-            self.error_and_quit(
-                'You must have an ssh agent running with keys installed that '
-                'will allow the script to rsync to devpad and get your '
-                'branch.\n')
-        key = agent.get_keys()[0]
-        self.vals['key_type'] = key.get_name()
-        self.vals['key'] = key.get_base64()
-
         # Get the bzr login.
         login = get_lp_login()
         if not login:
@@ -403,30 +374,7 @@ class EC2TestRunner:
                 'you must have set your launchpad login in bzr.')
         self.vals['launchpad-login'] = login
 
-        # Get the AWS identifier and secret identifier.
-        try:
-            credentials = EC2Credentials.load_from_file()
-        except CredentialsError, e:
-            self.error_and_quit(str(e))
-
-        # Make the EC2 connection.
-        account = credentials.connect(self.name)
-
-        # We do this here because it (1) cleans things up and (2) verifies
-        # that the account is correctly set up. Both of these are appropriate
-        # for initialization.
-        #
-        # We always recreate the keypairs because there is no way to
-        # programmatically retrieve the private key component, unless we
-        # generate it.
-        account.delete_previous_key_pair()
-
-        # get the image
-        image = account.acquire_image(machine_id)
-        self._instance = EC2Instance(
-            self.name, image, instance_type, demo_networks,
-            account, self.vals)
-        # now, as best as we can tell, we should be good to go.
+        self._instance = instance
 
     def error_and_quit(self, msg):
         """Print error message and exit."""
