@@ -349,8 +349,6 @@ distribution_members = ContextTitle('%s distribution members')
 
 distribution_mirrors = ContextTitle("Mirrors of %s")
 
-distribution_series = ContextTitle("%s version history")
-
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translation_settings = ContextTitle(
@@ -799,8 +797,6 @@ product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 
 product_review_license = ContextTitle('Review %s')
-
-product_series = ContextDisplayName('%s timeline')
 
 product_timeline = ContextTitle('Timeline Diagram for %s')
 

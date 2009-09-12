@@ -1811,19 +1811,20 @@
         facet="overview"
         class="lp.registry.browser.distribution.DistributionPackageSearchView"
         template="../templates/distribution-search.pt"/>
-    <browser:pages
+    <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionView"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            facet="overview"
-            template="../templates/distribution-index.pt"/>
-        <browser:page
-            name="+series"
-            facet="overview"
-            template="../templates/distribution-series.pt"/>
-    </browser:pages>
+        permission="zope.Public"
+        name="+index"
+        facet="overview"
+        template="../templates/distribution-index.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionSeriesView"
+        permission="zope.Public"
+        name="+series"
+        facet="overview"
+        template="../templates/distribution-series.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionView"
