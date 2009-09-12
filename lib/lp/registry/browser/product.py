@@ -23,6 +23,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductRdfView',
     'ProductReviewLicenseView',
+    'ProductSeriesView',
     'ProductSetBreadcrumb',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -1306,6 +1307,14 @@ class ProductAddSeriesView(LaunchpadFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
+
+
+class ProductSeriesView(ProductView):
+    """A view for showing a product's series."""
+
+    def page_title(self):
+        """The HTML page title."""
+        return '%s timeline' % self.context.displayname
 
 
 class ProductRdfView:
