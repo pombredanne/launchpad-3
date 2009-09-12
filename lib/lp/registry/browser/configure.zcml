@@ -403,7 +403,7 @@
         class="lp.registry.browser.project.ProjectAddView"
         facet="overview"
         permission="launchpad.ProjectReview"
-        template="../templates/project-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:url
         for="lp.registry.interfaces.project.IProjectSeries"
         path_expression="string:+series/${name}"
