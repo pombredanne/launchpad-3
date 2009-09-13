@@ -11,6 +11,7 @@ __all__ = [
     'SourcePackageFacets',
     'SourcePackageHelpView',
     'SourcePackageNavigation',
+    'SourcePackagePackaging',
     'SourcePackageView',
     ]
 
@@ -246,6 +247,15 @@ class SourcePackageView:
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
+
+
+class SourcePackagePackaging:
+    """A View to show where the package is packged."""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Upstream links'
 
 
 class SourcePackageHelpView:
