@@ -5,15 +5,15 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.config import config
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
-from canonical.database.sqlbase import cursor, sqlvalues
 from lp.registry.browser.person import PersonView
-from lp.testing import TestCaseWithFactory
-from zope.component import getUtility
-from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
 from lp.registry.model.karma import KarmaCategory
+from lp.testing import TestCaseWithFactory
+
 
 class TestPersonView(TestCaseWithFactory):
 
@@ -21,15 +21,16 @@ class TestPersonView(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.person = self.factory.makePerson()
-        self.view = PersonView(self.person,
-                               LaunchpadTestRequest())
-        self.makeKarmaCache(person=self.person, 
-            category=KarmaCategory.byName('bugs'))
-        self.makeKarmaCache(person=self.person, 
-            category=KarmaCategory.byName('answers'))
-        self.makeKarmaCache(person=self.person, 
-            category=KarmaCategory.byName('code')) 
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        self.view = PersonView(
+            person, LaunchpadTestRequest())
+        self.makeKarmaCache(
+            person, product, KarmaCategory.byName('bugs'))
+        self.makeKarmaCache(
+            person, product, KarmaCategory.byName('answers'))
+        self.makeKarmaCache(
+            person, product, KarmaCategory.byName('code'))
 
     def test_karma_category_sort(self):
         categories = self.view.contributed_categories
@@ -40,10 +41,7 @@ class TestPersonView(TestCaseWithFactory):
         self.assertEqual(category_names, [u'code', u'bugs', u'answers'], 
                          'Categories are not sorted correctly')
 
-    def makeKarmaCache(self, person, category, value=10, product=None):
-        if product is None:
-            product = self.factory.makeProduct()
-
+    def makeKarmaCache(self, person, product, category, value=10):
         # karmacacheupdater is the only db user who has write access to
         # the KarmaCache table so we switch to it here
         LaunchpadZopelessLayer.switchDbUser('karma')
@@ -63,6 +61,7 @@ class TestPersonView(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('launchpad')
 
         return karmacache
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
