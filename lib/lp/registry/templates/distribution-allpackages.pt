@@ -3,22 +3,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>
-        All source packages in
-        <tal:distro replace="context/displayname">Fuix</tal:distro>
-      </h1>
-    </metal:heading>
+
 
 <div metal:fill-slot="main"
      tal:define="batch view/batchnav/currentBatch">
+  <h1 tal:content="view/page_title">All packages : Ubuntu</h1>
 
   <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 

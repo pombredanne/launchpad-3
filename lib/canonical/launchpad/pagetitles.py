@@ -337,8 +337,6 @@ default_editform = 'Default "Edit" Page'
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distribution_allpackages = ContextTitle('All packages in %s')
-
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
