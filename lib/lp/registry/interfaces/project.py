@@ -20,7 +20,7 @@ from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
-from lp.app.interfaces.rootcontext import IRootContext
+from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals

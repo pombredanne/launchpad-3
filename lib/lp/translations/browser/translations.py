@@ -28,7 +28,8 @@ from lp.registry.interfaces.product import IProductSet
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.layers import TranslationsLayer
-from canonical.launchpad.webapp import Navigation, stepto, canonical_url
+from canonical.launchpad.webapp import (
+    LaunchpadView, Navigation, stepto, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
@@ -65,7 +66,9 @@ class TranslationsMixin:
             getUtility(ILaunchpadCelebrities).lp_translations,
             rootsite='answers')
 
+
 class RosettaApplicationView(TranslationsMixin):
+    """View for various top-level Translations pages."""
 
     def __init__(self, context, request):
         self.context = context
@@ -109,6 +112,17 @@ class RosettaApplicationView(TranslationsMixin):
         """The url of the launchpad-users team."""
         team = getUtility(IPersonSet).getByName('launchpad-users')
         return canonical_url(team)
+
+
+class TranslatableProductsView(LaunchpadView):
+    """List of translatable products."""
+    label = "Projects with translations in Launchpad"
+
+    @cachedproperty
+    def batchnav(self):
+        """Navigate the list of translatable products."""
+        return BatchNavigator(
+            getUtility(IProductSet).getTranslatables(), self.request)
 
 
 class RosettaStatsView:

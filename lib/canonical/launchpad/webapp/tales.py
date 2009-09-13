@@ -16,6 +16,8 @@ import re
 import rfc822
 import sys
 import urllib
+import warnings
+
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
@@ -60,6 +62,9 @@ from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.soyuz.interfaces.build import BuildStatus
+
+
+SEPARATOR = ' : '
 
 
 def escape(text, quote=True):
@@ -439,7 +444,12 @@ class ObjectFormatterAPI:
     # constants, so it's not a problem. We might want to use something like
     # frozenset (http://code.activestate.com/recipes/414283/) here, though.
     # The names which can be traversed further (e.g context/fmt:url/+edit).
-    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
+    traversable_names = {
+        'api_url': 'api_url',
+        'link': 'link',
+        'pagetitle': 'pagetitle',
+        'url': 'url',
+        }
 
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
@@ -533,6 +543,67 @@ class ObjectFormatterAPI:
             return 'private'
         else:
             return 'public'
+
+    def pagetitle(self, view_name):
+        """The page title to be used.
+
+        By default, reverse breadcrumbs are always used if they are available.
+        If not available, then the view's .page_title attribute or entry in
+        pagetitles.py (deprecated) is used.  If breadcrumbs are available,
+        then a view can still choose to override them by setting the attribute
+        .override_title_breadcrumbs to True.
+        """
+        view = self._context
+        request = get_current_browser_request()
+        module = canonical.launchpad.pagetitles
+        hierarchy_view = getMultiAdapter(
+            (view.context, request), name='+hierarchy')
+        override = getattr(view, 'override_title_breadcrumbs', False)
+        if (override or
+            hierarchy_view is None or
+            not hierarchy_view.display_breadcrumbs):
+            # The breadcrumbs are either not available or are overridden.  If
+            # the view has a .page_title attribute use that.
+            page_title = getattr(view, 'page_title', None)
+            if page_title is not None:
+                return page_title
+            # If there is no template for the view, just use the default
+            # Launchpad title.
+            template = getattr(view, 'template', None)
+            if template is None:
+                template = getattr(view, 'index', None)
+                if template is None:
+                    return module.DEFAULT_LAUNCHPAD_TITLE
+            # There is no .page_title attribute on the view, so fallback to
+            # looking for an an entry in pagetitles.py.  This is deprecated
+            # though, so issue a warning.
+            filename = os.path.basename(template.filename)
+            name, ext = os.path.splitext(filename)
+            title_name = name.replace('-', '_')
+            title_object = getattr(module, title_name, None)
+            # Page titles are mandatory.
+            assert title_object is not None, (
+                'No .page_title or pagetitles.py found for %s'
+                % template.filename)
+            ## 2009-09-08 BarryWarsaw bug 426527: Enable this when we want to
+            ## force conversions from pagetitles.py; however tests will fail
+            ## because of this output.
+            ## warnings.warn('Old style pagetitles.py entry found for %s. '
+            ##               'Switch to using a .page_title attribute on the '
+            ##               'view instead.' % template.filename,
+            ##               DeprecationWarning)
+            if isinstance(title_object, basestring):
+                return title_object
+            else:
+                title = title_object(view.context, view)
+                if title is None:
+                    return module.DEFAULT_LAUNCHPAD_TITLE
+                else:
+                    return title
+        # Use the reverse breadcrumbs.
+        return SEPARATOR.join(
+            breadcrumb.text for breadcrumb
+            in reversed(hierarchy_view.items))
 
 
 class ObjectImageDisplayAPI:
@@ -2125,6 +2196,8 @@ def clean_path_segments(request):
     return clean_path_split
 
 
+# 2009-09-08 BarryWarsaw bug 426532.  Remove this class, all references to it,
+# and all instances of CONTEXTS/fmt:pagetitle
 class PageTemplateContextsAPI:
     """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
 
@@ -2778,7 +2851,7 @@ class FormattersAPI:
         \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
         [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
         \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
-        """, re.VERBOSE)
+        """, re.VERBOSE)              # ' <- font-lock turd
 
     def obfuscate_email(self):
         """Obfuscate an email address if there's no authenticated user.
@@ -3187,6 +3260,54 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
         group = self._context
         url = self.url(view_name, rootsite)
         return u'<a href="%s">%s</a>' % (url, cgi.escape(group.title))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title
+
+
+class LanguageFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `ILanguage` objects to a formatted string."""
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(LanguageFormatterAPI, self).url(view_name, rootsite)
+
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s" class="sprite language">%s</a>' % (
+            url, cgi.escape(self._context.englishname))
+
+    def displayname(self, view_name, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        return self._context.englishname
+
+
+class POFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IPOFile` objects to a formatted string."""
+
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(POFileFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        pofile = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(pofile.title))
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""

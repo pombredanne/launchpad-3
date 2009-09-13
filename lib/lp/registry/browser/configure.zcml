@@ -847,13 +847,18 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
+            class="lp.registry.browser.person.PersonKarmaView">
+            <browser:page
+                name="+karma"
+                template="../templates/person-karma.pt"/>
+        </browser:pages>
+        <browser:pages
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
             class="lp.registry.browser.person.PersonView">
             <browser:page
                 name="+participation"
                 template="../templates/person-participation.pt"/>
-            <browser:page
-                name="+karma"
-                template="../templates/person-karma.pt"/>
             <browser:page
                 name="+sshkeys"
                 attribute="showSSHKeys"/>
@@ -1260,6 +1265,7 @@
     <browser:url
         for="lp.registry.interfaces.milestone.IMilestone"
         path_expression="string:+milestone/${name}"
+        rootsite="mainsite"
         attribute_to_parent="target"/>
     <browser:pages
         for="lp.registry.interfaces.milestone.IMilestone"
@@ -1272,6 +1278,9 @@
         <browser:page
             name="+productseries-table-row"
             template="../templates/productseries-milestone-table-row.pt"/>
+        <browser:page
+            name="+productrelease-data"
+            template="../templates/productrelease-portlet-data.pt"/>
         <browser:page
             name="+portlet-details"
             template="../templates/milestone-portlet-details.pt"/>
@@ -1307,6 +1316,7 @@
     <browser:menus
         classes="
             MilestoneContextMenu
+            MilestoneOverviewMenu
             MilestoneOverviewNavigationMenu"
         module="lp.registry.browser.milestone"/>
     <browser:defaultView
