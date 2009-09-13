@@ -271,6 +271,11 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
         """See `AbstractPackageSearchView`."""
         return self.context.searchPackages(self.text)
 
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return 'Search packages'
+
 
 class DistroSeriesStatusMixin:
     """A mixin that provides status field support."""
