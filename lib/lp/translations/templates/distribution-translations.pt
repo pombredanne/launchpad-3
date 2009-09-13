@@ -48,20 +48,9 @@
                  tal:content="string:${context/displayname} import queue">
                 import queue</a>.
             </p>
-            <p>
-              <strong>Language pack administrator:</strong>
-              <span
-                 tal:condition="context/language_pack_admin"
-                 tal:replace="structure context/language_pack_admin/fmt:link"
-                    >Mr. No</span>
-              <span tal:condition="not:context/language_pack_admin"
-                >not set</span>
-              <tal:admin condition="context/required:launchpad.Edit">
-                <a tal:attributes="
-                    href context/fmt:url/+select-language-pack-admin"
-                   class="edit sprite"></a>
-              </tal:admin>
-            </p>
+
+            <div tal:replace="structure
+                              context/@@+language-pack-admin-info" />
           </div>
         </div>
       </div>
