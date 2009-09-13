@@ -1989,10 +1989,6 @@
             facet="overview"
             template="../templates/sourcepackage-index.pt"/>
         <browser:page
-            name="+gethelp"
-            facet="answers"
-            template="../templates/sourcepackage-gethelp.pt"/>
-        <browser:page
             name="+packaging"
             facet="overview"
             template="../templates/sourcepackage-packaging.pt"/>
@@ -2002,6 +1998,13 @@
             facet="overview"
             template="../templates/sourcepackage-portlet-details.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="zope.Public"
+        class="lp.registry.browser.sourcepackage.SourcePackageHelpView"
+        name="+gethelp"
+        facet="answers"
+        template="../../answers/templates/sourcepackage-gethelp.pt"/>
     <browser:menus
         classes="
             SourcePackageFacets
