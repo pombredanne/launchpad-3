@@ -399,8 +399,6 @@ distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
 distroseries_queue = ContextTitle('Queue for %s')
 
-distroserieslanguage_index = ContextTitle('%s')
-
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 errorservice_config = 'Configure error log'
@@ -478,29 +476,19 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_js is standard javascript
 
-launchpad_invalidbatchsize = "Invalid Batch Size"
-
 launchpad_legal = 'Launchpad legalese'
 
 launchpad_login = 'Log in or register with Launchpad'
 
-launchpad_notfound = 'Error: Page not found'
-
 launchpad_onezerostatus = 'One-Zero Page Template Status'
-
-launchpad_requestexpired = 'Error: Timeout'
 
 def launchpad_search(context, view):
     """Return the page title corresponding to the user's search."""
     return view.page_title
 
-launchpad_translationunavailable = 'Translation page is not available'
-
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 launchpad_librarianfailure = "Sorry, you can't do this right now"
-
-launchpad_readonlyfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -584,8 +572,6 @@ def marketing_tour(context, view):
     """Return the view's pagetitle."""
     return view.pagetitle
 
-marketing_translations_about = "About Translations"
-
 marketing_translations_faq = "FAQs about Translations"
 
 mentoringofferset_success = "Successful mentorships over the past year."
@@ -597,8 +583,6 @@ mentoringofferset_success = "Successful mentorships over the past year."
 message_add = ContextBugId('Bug #%d - Add a comment')
 
 milestone_add = ContextTitle('Add new milestone for %s')
-
-milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
@@ -739,8 +723,6 @@ person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
 person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
-person_translations = ContextDisplayName('Translations related to %s')
-
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
@@ -819,8 +801,6 @@ productrelease_admin = ContextTitle('Administer %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_review_licenses = 'Review projects'
-
-productserieslanguage_index = ContextTitle('%s')
 
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')

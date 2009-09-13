@@ -546,10 +546,22 @@ class ArchiveViewBase(LaunchpadView):
         return can_edit and len(disabled_dependencies) > 0
 
     @property
+    def ppa_reference(self):
+        """PPA reference as supported by `dput` and `software-properties`.
+
+        :raises AssertionError: if the context `IArchive` is not a PPA.
+        :return: a `str` as 'ppa:%(ppa.owner.name)/%(ppa.name)'
+        """
+        assert self.context.is_ppa, (
+            'PPA reference should not be used for non-PPA archives.')
+        return 'ppa:%s/%s' % (self.context.owner.name, self.context.name)
+
+    @cachedproperty
     def package_copy_requests(self):
         """Return any package copy requests associated with this archive."""
-        return(getUtility(
-                IPackageCopyRequestSet).getByTargetArchive(self.context))
+        copy_requests = getUtility(
+            IPackageCopyRequestSet).getByTargetArchive(self.context)
+        return list(copy_requests)
 
 
 class ArchiveSeriesVocabularyFactory:
@@ -746,6 +758,23 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         return SourcesListEntriesView(entries, self.request)
 
     @property
+    def default_series_filter(self):
+        """Return the distroseries identified by the user-agent."""
+        version_number = get_user_agent_distroseries(
+            self.request.getHeader('HTTP_USER_AGENT'))
+
+        # Check if this version is one of the available
+        # distroseries for this archive:
+        vocabulary = self.widgets['series_filter'].vocabulary
+        for term in vocabulary:
+            if (term.value is not None and
+                term.value.version == version_number):
+                return term
+
+        # Otherwise we default to 'any'
+        return vocabulary.getTermByToken('any')
+
+    @property
     def archive_description_html(self):
         """The archive's description as HTML."""
         formatter = FormattersAPI
@@ -867,23 +896,6 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         # This property enables menu items to be shared between
         # context and view menues.
         return self.context.is_copy
-
-    @property
-    def default_series_filter(self):
-        """Return the distroseries identified by the user-agent."""
-        version_number = get_user_agent_distroseries(
-            self.request.getHeader('HTTP_USER_AGENT'))
-
-        # Check if this version is one of the available
-        # distroseries for this archive:
-        vocabulary = self.widgets['series_filter'].vocabulary
-        for term in vocabulary:
-            if (term.value is not None and
-                term.value.version == version_number):
-                return term
-
-        # Otherwise we default to 'any'
-        return vocabulary.getTermByToken('any')
 
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):

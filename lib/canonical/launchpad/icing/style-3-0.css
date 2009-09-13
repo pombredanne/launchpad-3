@@ -712,11 +712,22 @@ pre.wrap {
 
 /* ==== Listing tables ==== */
 
-table.listing thead {
-  font-size: 116%;
-}
 table.listing th {
-  font-weight: bold;
+    font-weight: bold;
+}
+table.narrow-listing {
+    width: 45em;
+}
+/* ~person/+karma */
+table.cozy-listing {
+    width: 20em;
+    background-color: #fff;
+    border: 1px solid #d2d2d2;
+    border-bottom: 1px solid #d2d2d2;
+}
+table.cozy-listing td {
+    border: 1px #d2d2d2;
+    border-style: dotted none none none;
 }
 
 ul.language, li.language             {
@@ -728,32 +739,32 @@ ul.language, li.language             {
 /* ==== Translations hand-made forms ==== */
 
 form.translations div.fields {
-  padding: 1em;
+    padding: 1em;
 }
 
 form.translations div.actions {
-  padding: 1em;
-  text-align: right;
-  clear:both;
+    padding: 1em;
+    text-align: right;
+    clear:both;
 }
 
 form.translations input {
-  padding-left: 0.5em;
-  padding-right: 0.5em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
 }
 
 form.translations select {
-  margin-left: 0.5em;
-  padding-right: 0.5em;
+    margin-left: 0.5em;
+    padding-right: 0.5em;
 }
 
 form.translations label {
-  padding-left: 0.5em;
-  padding-right: 1em;
+    padding-left: 0.5em;
+    padding-right: 1em;
 }
 
 form.translations .listbox label {
-  padding: 2px 1em 2px 2px;
+    padding: 2px 1em 2px 2px;
 }
 
 /* Provide top-alignment for radio boxes and longer explanations
@@ -764,23 +775,53 @@ form.translations .listbox label {
  *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
  */
 form.translations div.alignment .content {
-  float:left;
+    float:left;
 }
 form.translations div.alignment .selector {
-  margin-right: 0.5em;
-  float: left;
-  clear: both;
+    margin-right: 0.5em;
+    float: left;
+    clear: both;
 }
 form.translations div.alignment .content label {
-  padding: 0px;
-  margin: 0px;
-  font-weight: bold;
+    padding: 0px;
+    margin: 0px;
+    font-weight: bold;
 }
 form.translations div.alignment .secondary label {
-  font-weight: normal;
-  padding: 2px 1em 2px 2px;
+    font-weight: normal;
+    padding: 2px 1em 2px 2px;
 }
 
-table.narrow-listing {
-  width: 45em;
+/* Translations statistics and legend.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+lang/es
+ *   https://translations.launchpad.dev/evolution/trunk/+lang/es
+ */
+
+div.translations-legend {
+    padding-top: 2em;
+    padding-bottom: 1em;
+}
+table.translation-stats td {
+    text-align:center;
+}
+table.translation-stats td.template-name {
+    text-align:left;
+}
+table.translation-stats tfoot td,
+table.translation-stats tfoot th {
+    background-color: #f7f7f7;
+    border: 0px;
+    border-top: 2px solid #d2d2d2;
+    border-bottom: 2px solid #d2d2d2;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-weight: bold;
+}
+table.translation-stats tfoot th {
+    text-align:left;
+}
+table.translation-stats tfoot td {
+    text-align:center;
 }
