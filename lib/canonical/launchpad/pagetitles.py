@@ -1066,11 +1066,6 @@ team_invitations = ContextBrowsername("Invitations sent to %s")
 
 team_mailinglist = 'Configure mailing list'
 
-#team_mailinglist_moderate = 'Moderate mailing list'
-
-#team_mailinglist_subscribers = ContextBrowsername(
-#    'Mailing list subscribers for the %s team')
-
 team_map = ContextBrowsername('Map of %s participants')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
@@ -1080,11 +1075,6 @@ team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 def teammembership_index(context, view):
     """Return the page title to the persons status in a team."""
     return smartquote("%s's membership status in %s") % (
-        context.person.displayname, context.team.displayname)
-
-def teammembership_invitation(context, view):
-    """Return the page title to invite a person to become a team member."""
-    return "Make %s a member of %s" % (
         context.person.displayname, context.team.displayname)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')

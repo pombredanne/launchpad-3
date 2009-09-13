@@ -739,8 +739,9 @@ class TeamMailingListSubscribersView(LaunchpadView):
 
     @cachedproperty
     def subscribers(self):
+        #DO NOT CHECK IN
         return BatchNavigator(
-            self.context.mailing_list.getSubscribers(), self.request)
+            self.context.mailing_list.getSubscribers(), self.request, size=50)
 
     def renderTable(self):
         html = ['<table style="max-width: 80em">']
