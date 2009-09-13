@@ -55,8 +55,8 @@
                  tal:content="packaging/sourcepackagename/name">
             evolution</a>
           </td>
-          <td tal:content="packaging/productseries/title">
-            evolution main
+          <td>
+            <a tal:replace="structure packaging/productseries/fmt:link" />
           </td>
         </tr>
       </tbody>
