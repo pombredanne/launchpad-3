@@ -3,20 +3,16 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Linking to upstream</h1>
-    </metal:heading>
 
 <div metal:fill-slot="main"
      tal:define="packagings view/cached_packagings;
                  unlinked_translatables view/unlinked_translatables">
+  <h1 tal:content="view/page_title" />
 
   <p>Links from distribution packages to upstream project series let
     distribution and upstream maintainers share bugs, patches, and translations

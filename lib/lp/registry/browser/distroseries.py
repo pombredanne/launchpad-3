@@ -12,6 +12,7 @@ __all__ = [
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesPackageSearchView',
+    'DistroSeriesPackagesView',
     'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
@@ -498,3 +499,12 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class DistroSeriesPackagesView(DistroSeriesView):
+    """A View to show series package to upstream package relationships."""
+
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return 'Mapping series packages to upstream project series'

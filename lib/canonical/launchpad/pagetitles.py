@@ -388,9 +388,6 @@ distroseries_cvereport = ContextDisplayName('CVE report for %s')
 def distroseries_language_packs(context, view):
     return view.page_title
 
-distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
-    'for %s')
-
 distroseries_search = ContextDisplayName('Search packages in %s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
