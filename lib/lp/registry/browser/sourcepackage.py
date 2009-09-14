@@ -257,16 +257,10 @@ class SourcePackageView:
 class SourcePackagePackaging:
     """A View to show where the package is packged."""
 
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return 'Upstream links'
+    page_title = 'Upstream links'
 
 
 class SourcePackageHelpView:
     """A View to show Answers help."""
 
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return 'Help and support options'
+    page_title = 'Help and support options'

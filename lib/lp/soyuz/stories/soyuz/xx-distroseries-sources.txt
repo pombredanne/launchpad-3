@@ -84,7 +84,7 @@ Product and Branches:
   >>> print extract_text(find_tag_by_id(browser.contents, 'upstreams'))
   Project Group: the Mozilla Project
   Project: Mozilla Firefox ...
-  Branch: trunk
+  Series: trunk Change upstream link
 
 The user can also download the files for the "currentrelease" (last
 published version) if they are available:
