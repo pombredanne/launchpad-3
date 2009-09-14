@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime, timedelta
-from operator import attrgetter
 from pprint import pformat
 import copy
 import os
@@ -70,7 +69,16 @@ class TestCase(unittest.TestCase):
     # Python 2.4 monkeypatch:
     if getattr(unittest.TestCase, '_exc_info', None) is None:
         _exc_info = unittest.TestCase._TestCase__exc_info
-        _testMethodName = property(attrgetter('_TestCase__testMethodName'))
+        # We would not expect to need to make this property writeable, but
+        # twisted.trial.unittest.TestCase.__init__ peculiarly chooses to write
+        # to it in the same way that the __init__ of the standard library's
+        # unittest.TestCase.__init__ does.
+        class MonkeyPatchDescriptor:
+            def __get__(self, obj, type):
+                return obj._TestCase__testMethodName
+            def __set__(self, obj, value):
+                obj._TestCase__testMethodName = value
+        _testMethodName = MonkeyPatchDescriptor()
 
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
