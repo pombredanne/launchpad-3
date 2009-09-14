@@ -667,9 +667,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # Omitting any of the three tags <udev>, <dmi>, <sysfs-attributes>
         # makes the data invalid.
         all_tags = ['udev', 'dmi', 'sysfs-attributes']
-        for index in range(len(all_tags)):
+        for index, missing_tag in enumerate(all_tags):
             test_tags = all_tags[:]
-            missing_tag = test_tags[index]
             del test_tags[index]
             replace_text = [
                 '<%s>text</%s>' % (tag, tag) for tag in test_tags]
@@ -1690,13 +1689,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element aliases in interleave',
             'missing attribute of <alias>')
-
-        # The value of target does not have to be an integer.
-        sample_data = self.sample_data.replace(
-            '<alias target="65">', '<alias target="noInteger">')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertNotEqual(
-            result, None, '<alias target="noInteger"> rejected')
 
         # Other attributes are not allowed. We get again the same
         # quite unspecific error message as above.
