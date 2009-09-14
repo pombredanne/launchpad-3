@@ -447,12 +447,12 @@ class ObjectFormatterAPI:
     traversable_names = {
         'api_url': 'api_url',
         'link': 'link',
-        'pagetitle': 'pagetitle',
         'url': 'url',
         }
 
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
+        'pagetitle': 'pagetitle',
         'public-private-css': 'public_private_css',
         }
 
@@ -544,7 +544,7 @@ class ObjectFormatterAPI:
         else:
             return 'public'
 
-    def pagetitle(self, view_name):
+    def pagetitle(self):
         """The page title to be used.
 
         By default, reverse breadcrumbs are always used if they are available.
