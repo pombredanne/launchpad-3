@@ -41,7 +41,6 @@ AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 # easier.
 
 def run_with_instance(instance, run, demo_networks, postmortem):
-    instance.start()
     try:
         try:
             run()
@@ -376,6 +375,7 @@ def main():
             instance.bundle(options.bundle)
         run = make_new_image
 
+    instance.start()
     instance.set_up_user(user_key)
 
     run_with_instance(
