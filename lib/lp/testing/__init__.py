@@ -21,6 +21,7 @@ from bzrlib.transport import get_transport
 
 import pytz
 from storm.store import Store
+from storm.tracer import install_tracer, remove_tracer_type
 
 import transaction
 from zope.component import getUtility
@@ -61,6 +62,17 @@ class FakeTime:
     def now(self):
         """Use this bound method instead of time.time in tests."""
         return self._now
+
+
+class StormStatementCounter:
+    """A storm tracer to count queries."""
+
+    def __init__(self):
+        self.count = 0
+
+    def connection_raw_execute(self, *args):
+        """Increment the counter.  We don't care about the args."""
+        self.count += 1
 
 
 class TestCase(unittest.TestCase):
@@ -356,6 +368,17 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
+        self._storm_statement_counter = StormStatementCounter()
+        install_tracer(self._storm_statement_counter)
+        self.addCleanup(remove_tracer_type, StormStatementCounter)
+
+    def resetStatementCounter(self):
+        """Reset the statement counter to zero."""
+        self._storm_statement_counter.count = 0
+
+    @property
+    def statement_count(self):
+        return self._storm_statement_counter.count
 
 
 class TestCaseWithFactory(TestCase):
