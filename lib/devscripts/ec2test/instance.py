@@ -187,7 +187,7 @@ class EC2Instance:
         authorized_keys_file = root_sftp.open(
             "%s/authorized_keys" % remote_ssh_dir, 'w')
         authorized_keys_file.write(
-            "%s %s\n" % user_key.get_name(), user_key.get_base64())
+            "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
         authorized_keys_file.close()
         root_sftp.close()
         # Chown and chmod the .ssh directory and contents that we just
