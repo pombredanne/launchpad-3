@@ -140,10 +140,9 @@ class FilterableStatusValues(EnumeratedType):
     use_template(BranchMergeProposalStatus)
 
     sort_order = (
-        'ACTIVE', 'ALL', 'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED',
+        'ALL', 'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED',
         'REJECTED', 'MERGED', 'MERGE_FAILED', 'QUEUED', 'SUPERSEDED')
 
-    ACTIVE = Item("Any active review")
     ALL = Item("Any status")
 
 
@@ -153,7 +152,7 @@ class BranchMergeProposalFilterSchema(Interface):
     # Stats and status attributes
     status = Choice(
         title=_('Status'), vocabulary=FilterableStatusValues,
-        default=FilterableStatusValues.ACTIVE,)
+        default=FilterableStatusValues.ALL,)
 
 
 class BranchMergeProposalListingView(LaunchpadFormView):
@@ -174,25 +173,25 @@ class BranchMergeProposalListingView(LaunchpadFormView):
     @property
     def initial_values(self):
         return {
-            'status': FilterableStatusValues.ACTIVE,
+            'status': FilterableStatusValues.ALL,
             }
 
     @cachedproperty
-    def selected_status(self):
+    def status_value(self):
+        """The effective value of the status widget."""
         widget = self.widgets['status']
         if widget.hasValidInput():
-            filter = widget.getInputValue()
+            return widget.getInputValue()
         else:
-            filter = FilterableStatusValues.ACTIVE
+            return FilterableStatusValues.ALL
 
-        if filter == FilterableStatusValues.ALL:
+    @cachedproperty
+    def status_filter(self):
+        """Return the status values to filter on."""
+        if self.status_value == FilterableStatusValues.ALL:
             return None
-        elif filter == FilterableStatusValues.ACTIVE:
-            return (
-                BranchMergeProposalStatus.NEEDS_REVIEW,
-                BranchMergeProposalStatus.CODE_APPROVED)
         else:
-            return (BranchMergeProposalStatus.items[filter.name], )
+            return (BranchMergeProposalStatus.items[self.status_value.name], )
 
     @property
     def proposals(self):
@@ -208,24 +207,21 @@ class BranchMergeProposalListingView(LaunchpadFormView):
         # Adapt the context to a branch collection.
         collection = IBranchCollection(self.context)
         collection = collection.visibleByUser(self.user)
-        return collection.getMergeProposals(statuses=self.selected_status)
+        return collection.getMergeProposals(statuses=self.status_filter)
 
     @cachedproperty
     def proposal_count(self):
         """Return the number of proposals that will be returned."""
         return self.getVisibleProposalsForUser().count()
 
-
-class PersonBMPListingView(BranchMergeProposalListingView):
-    """Base class for the proposal listings that defines the user."""
-
-    def _getCollection(self):
-        """Return the branch collection for the view."""
-        return getUtility(IAllBranches).visibleByUser(self.user)
-
-    def getUserFromContext(self):
-        """Get the relevant user from the context."""
-        return self.context
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        if self.status_value == FilterableStatusValues.ALL:
+            return "%s has no merge proposals." % self.context.displayname
+        else:
+            return "%s has no merge proposals with status: %s" % (
+                self.context.displayname, self.status_value.title)
 
 
 class ActiveReviewsView(BranchMergeProposalListingView):

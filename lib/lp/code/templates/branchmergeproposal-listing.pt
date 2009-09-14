@@ -2,29 +2,6 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
-  <form method="get" name="filter" id="filter_form"
-        style="padding-bottom: 0.5em"
-        tal:attributes="action context/view/form_action|context/request/URL">
-    <label for="field.status">
-      Proposals with status:
-    </label>
-    <tal:lifecycle-selector replace="structure context/view/widgets/status"/>
-    <noscript>
-      <input type="submit" value="Filter"/>
-    </noscript>
-  </form>
-<script type="text/javascript">
-function submit_filter() {
-    getElement('filter_form').submit();
-}
-
-function hookUpFilterSubmission () {
-    connect('field.status', 'onchange', submit_filter);
-}
-registerLaunchpadFunction(hookUpFilterSubmission);
-
-</script>
-
   <tal:needs-batch condition="context/has_multiple_pages">
     <div id="batch-links">
       <tal:navigation replace="structure context/@@+navigation-links-upper" />

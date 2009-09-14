@@ -12,6 +12,35 @@
 
   <h1 tal:content="view/heading">Bazaar branches</h1>
 
+  <div>
+  <form method="get" name="filter" id="filter_form"
+        style="padding-bottom: 0.5em"
+        tal:attributes="action context/view/form_action|context/request/URL">
+    <label for="field.status">
+      Proposals with status:
+    </label>
+    <tal:lifecycle-selector replace="structure context/view/widgets/status"/>
+    <noscript>
+      <input type="submit" value="Filter"/>
+    </noscript>
+  </form>
+<script type="text/javascript">
+
+YUI.use('node', function(Y) {
+
+  function submit_filter() {
+    Y.get('filter_form').submit();
+  }
+  Y.on('domready', function () {
+    var field = Y.get("[id=field.status]");
+    field.on('change', submit_filter);
+  });
+
+});
+
+</script>
+  </div>
+
   <tal:has-proposals condition="view/proposal_count">
     <div tal:replace="structure view/proposals/@@+listing" />
   </tal:has-proposals>
