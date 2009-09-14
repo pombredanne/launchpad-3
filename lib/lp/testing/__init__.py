@@ -66,6 +66,11 @@ class FakeTime:
 class TestCase(unittest.TestCase):
     """Provide Launchpad-specific test facilities."""
 
+    # Python 2.4 monkeypatch:
+    if getattr(unittest.TestCase, '_exc_info', None) is None:
+        _exc_info = unittest.TestCase._TestCase__exc_info
+        _testMethodName = property(lambda self: self._TestCase__testMethodName)
+
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         self._cleanups = []
@@ -356,12 +361,6 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
-
-
-# Python 2.4 monkeypatch:
-if getattr(TestCase, '_exc_info', None) is None:
-    TestCase._exc_info = TestCase._TestCase__exc_info
-    TestCase._testMethodName = property(lambda self: self._TestCase__testMethodName)
 
 
 class TestCaseWithFactory(TestCase):
