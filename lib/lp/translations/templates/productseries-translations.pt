@@ -15,7 +15,7 @@
         </li>
       </ul>
 
-      <h1>Translations by language</h1>
+      <h1>Translation status by language</h1>
 
       <tal:no-languages condition="not:view/productserieslanguages">
         <div class="yui-b top-portlet">
@@ -78,23 +78,74 @@
             </p>
           </div>
         </div>
-
+      </div>
+      <div class="yui-g">
         <div class="yui-u first">
           <div class="portlet">
-            <h3>Synchronization</h3>
-            <p>
-              <a tal:attributes="href context/menu:navigation/requestbzrimport/url"
-                 tal:condition="context/required:launchpad.Edit"
-                 class="add sprite">
-                Request a single import from bazaar
-              </a>
-              <a tal:attributes="href context/menu:navigation/settings/url"
-                 tal:condition="context/required:launchpad.Edit"
-                 class="edit sprite">
-                Set up bazaar synchronization
-              </a>
-            </p>
-
+            <h3>Automatic synchronization</h3>
+            <tal:uses-bzr-sync condition="view/uses_bzr_sync">
+              <tal:imports condition="view/has_imports_enabled">
+                <tal:exports condition="view/has_exports_enabled">
+                  Translations are imported with every update from branch
+                  <a tal:replace="structure context/branch/fmt:link">
+                    branch
+                  </a>, and exported daily to branch
+	          <a tal:replace="
+                       structure context/translations_branch/fmt:link"
+                     >branch name</a>.
+                </tal:exports>
+              </tal:imports>
+              <tal:imports-only condition="view/has_imports_enabled">
+                <tal:no-exports condition="not:view/has_exports_enabled">
+                  Translations are imported with every update from branch
+                  <a tal:replace="structure context/branch/fmt:link">
+                    branch name
+                  </a>.
+                </tal:no-exports>
+              </tal:imports-only>
+              <tal:exports-only condition="view/has_exports_enabled">
+                <tal:no-imports condition="not:view/has_imports_enabled">
+                  Translations are exported daily to branch
+                  <a tal:replace="
+                       structure context/translations_branch/fmt:link">
+                    branch name
+                  </a>.
+                </tal:no-imports>
+              </tal:exports-only>
+              <div tal:condition="context/required:launchpad.Edit">
+                <a tal:attributes="href context/menu:navigation/settings/url"
+                   class="edit sprite">
+                  Change synchronization settings
+                </a>
+              </div>
+            </tal:uses-bzr-sync>
+            <tal:no-bzr-sync condition="not:view/uses_bzr_sync">
+              <p>This project is currently not using any synchronization
+                with bazaar branches.</p>
+              <tal:branch condition="context/branch">
+                <p>
+                  <a tal:attributes="
+                       href context/menu:navigation/requestbzrimport/url"
+                     tal:condition="context/required:launchpad.Edit"
+                     class="add sprite">
+                    Request an import from bazaar
+                  </a> to do a one time import of all the templates and
+                  translations.
+                </p>
+              </tal:branch>
+              <div tal:condition="context/required:launchpad.Edit">
+                <a tal:attributes="href context/menu:navigation/settings/url"
+                   class="edit sprite">
+                  Set up branch synchronization
+                </a>
+              </div>
+            </tal:no-bzr-sync>
+          </div>
+        </div>
+        <div class="yui-u"
+             tal:condition="context/required:launchpad.AnyPerson">
+          <div class="portlet">
+            <h3>Manual synchronization</h3>
             <p>If you don't want to use bazaar synchronization, you can still
               manually
               <a tal:attributes="href context/menu:navigation/translationupload/url"
@@ -102,7 +153,7 @@
                  class="add sprite">upload</a>
               or
               <a tal:attributes="href context/menu:navigation/translationdownload/url"
-                 tal:condition="context/required:launchpad.Edit"
+                 tal:condition="context/required:launchpad.AnyPerson"
                  class="download sprite">download</a>
               translation tarballs.
             </p>
@@ -110,16 +161,8 @@
         </div>
       </div>
 
-      <div class="yui-b">
-        <tal:user condition="view/user">
-          <p tal:condition="not:view/user/languages">Please <a
-            tal:attributes="href string:${view/user/fmt:url}/+editlanguages"
-            class="edit sprite">
-            set your languages</a> to start translating.</p>
-        </tal:user>
-      </div>
-
       <tal:languages condition="view/productserieslanguages">
+        <h2>Translation status</h2>
 
         <div tal:replace="structure context/@@+languages" />
 
