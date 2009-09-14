@@ -41,6 +41,7 @@ __all__ = [
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
+    'WindmillAppServerLayer',
     'ZopelessAppServerLayer',
     'ZopelessDatabaseLayer',
     'ZopelessLayer',
@@ -1638,3 +1639,20 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @profiled
     def testTearDown(cls):
         LayerProcessController.postTestInvariants()
+
+
+class WindmillAppServerLayer(AppServerLayer):
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        from windmill.bin.admin_lib import start_windmill
+        from lp.testing import windmillconfig
+        os.environ['WINDMILL_CONFIG_FILE'] = windmillconfig.__file__
+        cls.shell_objects = start_windmill()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        from windmill.bin.admin_lib import teardown
+        teardown(cls.shell_objects)
