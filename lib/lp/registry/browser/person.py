@@ -38,6 +38,7 @@ __all__ = [
     'PersonFacets',
     'PersonGPGView',
     'PersonIndexView',
+    'PersonKarmaView',
     'PersonLanguagesView',
     'PersonLatestQuestionsView',
     'PersonNavigation',
@@ -713,7 +714,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class PersonBugsMenu(ApplicationMenu):
+class PersonBugsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
@@ -853,12 +854,6 @@ class CommonMenuLinks:
         text = 'Change home page'
         return Link(target, text, icon='edit')
 
-    def related_projects(self):
-        target = '+related-software#projects'
-        text = 'List related projects'
-        summary = 'Projects %s is involved with' % self.context.displayname
-        return Link(target, text, summary, icon='product')
-
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
@@ -867,31 +862,35 @@ class CommonMenuLinks:
                    'Package Archive and create a new PPA.')
         return Link(target, text, summary, icon='add')
 
-    def summary(self):
+    def related_software_summary(self):
         target = '+related-software'
         text = 'Summary'
-        return Link(target, text)
+        return Link(target, text, icon='info')
 
     def maintained(self):
         target = '+maintained-packages'
-        text = 'Maintained Packages'
+        text = 'Maintained packages'
         enabled = bool(self.person.getLatestMaintainedPackages())
         return Link(target, text, enabled=enabled, icon='info')
 
     def uploaded(self):
         target = '+uploaded-packages'
-        text = 'Uploaded Packages'
-        return Link(target, text)
+        text = 'Uploaded packages'
+        return Link(target, text, icon='info')
 
     def ppa(self):
+        # XXX: salgado, 2009-09-09, bug=426899: Need to conditionally disable
+        # this link.
         target = '+ppa-packages'
-        text = 'PPA Packages'
-        return Link(target, text)
+        text = 'PPA packages'
+        return Link(target, text, icon='info')
 
     def projects(self):
+        # XXX: salgado, 2009-09-09, bug=426900: Need to conditionally disable
+        # this link.
         target = '+related-projects'
-        text = 'Related Projects'
-        return Link(target, text)
+        text = 'Related projects'
+        return Link(target, text, icon='info')
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -903,7 +902,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma',
-             'administer', 'related_projects', 'activate_ppa', 'maintained',
+             'administer', 'projects', 'activate_ppa', 'maintained',
              'view_ppa_subscriptions']
 
     @enabled_with_permission('launchpad.Edit')
@@ -1032,7 +1031,7 @@ class IPersonEditMenu(Interface):
 
 
 class IPersonRelatedSoftwareMenu(Interface):
-    """A marker interface for the 'Related Software' navigation menu."""
+    """A marker interface for the 'Related software' navigation menu."""
 
 
 class PPANavigationMenuMixIn:
@@ -1067,7 +1066,7 @@ class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
 
     def related_software(self):
         target = '+related-software'
-        text = 'Related Software'
+        text = 'Related software'
         return Link(target, text, menu=IPersonRelatedSoftwareMenu)
 
     def karma(self):
@@ -1080,7 +1079,8 @@ class PersonRelatedSoftwareNavigationMenu(NavigationMenu, CommonMenuLinks):
 
     usedfor = IPersonRelatedSoftwareMenu
     facet = 'overview'
-    links = ('summary', 'maintained', 'uploaded', 'ppa', 'projects')
+    links = ('related_software_summary', 'maintained', 'uploaded', 'ppa',
+             'projects')
 
     @property
     def person(self):
@@ -1297,8 +1297,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'join', 'leave', 'add_my_teams', 'mentorships',
-             'reassign', 'related_projects',
-             'activate_ppa', 'maintained']
+             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -2513,6 +2512,24 @@ class PersonLanguagesView(LaunchpadFormView):
             rootsite='answers')
 
 
+class PersonKarmaView(LaunchpadView):
+    """A view class used for ~person/+karma."""
+
+    @property
+    def label(self):
+        return 'Launchpad Karma for ' + cgi.escape(self.user.displayname)
+
+    @cachedproperty
+    def has_karma(self):
+        """Does the person have karma?"""
+        return bool(self.context.karma_category_caches)
+
+    @cachedproperty
+    def has_expired_karma(self):
+        """Did the person have karma?"""
+        return self.context.latestKarma().count() > 0
+
+
 class TeamJoinMixin:
     """Mixin class for views related to joining teams."""
 
@@ -2780,6 +2797,10 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         else:
             raise AssertionError('Unknown group to contact.')
 
+    def should_show_polls_portlet(self):
+        menu = TeamOverviewMenu(self.context)
+        return self.hasCurrentPolls() or menu.add_poll().enabled
+
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
@@ -2912,16 +2933,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return ', '.join(sorted(englishnames))
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
-
-    @cachedproperty
-    def has_karma(self):
-        """Does the have karma?"""
-        return bool(self.context.karma_category_caches)
-
-    @cachedproperty
-    def has_expired_karma(self):
-        """Did the user have karm?."""
-        return self.context.latestKarma().count() > 0
 
     @property
     def public_private_css(self):
@@ -3182,6 +3193,17 @@ class PersonCodeOfConductEditView(LaunchpadView):
 
 
 class PersonEditWikiNamesView(LaunchpadView):
+
+    @property
+    def label(self):
+        return smartquote("%s's wiki names" % self.context.displayname)
+
+    page_title = label
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context, view_name="+edit")
+
     def _validateWikiURL(self, url):
         """Validate the URL.
 
@@ -3387,6 +3409,16 @@ class PersonEditSSHKeysView(LaunchpadView):
         else:
             raise UnexpectedFormData("Unexpected action: %s" % action)
 
+    @property
+    def label(self):
+        return "Change your SSH keys"
+
+    page_title = label
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context, view_name="+edit")
+
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
         try:
@@ -3463,6 +3495,16 @@ class PersonGPGView(LaunchpadView):
 
     error_message = None
     info_message = None
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context, view_name="+edit")
+
+    @property
+    def label(self):
+        return "Change your OpenPGP keys"
+
+    page_title = label
 
     def keyserver_url(self):
         assert self.fingerprint
@@ -4834,6 +4876,10 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     max_results_to_display = config.launchpad.default_batch_size
 
+    @property
+    def page_title(self):
+        return "Software related to " + self.context.displayname
+
     @cachedproperty
     def related_projects(self):
         """Return a list of project dicts owned or driven by this person.
@@ -5057,6 +5103,10 @@ class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
         packages = self.context.getLatestMaintainedPackages()
         self.setUpBatch(packages)
 
+    @property
+    def page_title(self):
+        return "Software maintained by " + self.context.displayname
+
 
 class PersonUploadedPackagesView(PersonRelatedSoftwareView):
     """View for +uploaded-packages."""
@@ -5065,6 +5115,10 @@ class PersonUploadedPackagesView(PersonRelatedSoftwareView):
         """Set up the batch navigation."""
         packages = self.context.getLatestUploadedButNotMaintainedPackages()
         self.setUpBatch(packages)
+
+    @property
+    def page_title(self):
+        return "Software uploaded by " + self.context.displayname
 
 
 class PersonPPAPackagesView(PersonRelatedSoftwareView):
@@ -5082,6 +5136,10 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
         packages_batch = self.filterPPAPackageList(packages_batch)
         self.batch = self._addStatsToPackages(packages_batch)
 
+    @property
+    def page_title(self):
+        return "PPA packages related to " + self.context.displayname
+
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
     """View for +related-projects."""
@@ -5091,6 +5149,10 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
         self.batchnav = BatchNavigator(
             self.related_projects, self.request)
         self.batch = list(self.batchnav.currentBatch())
+
+    @property
+    def page_title(self):
+        return "Projects related to " + self.context.displayname
 
 
 class PersonOAuthTokensView(LaunchpadView):

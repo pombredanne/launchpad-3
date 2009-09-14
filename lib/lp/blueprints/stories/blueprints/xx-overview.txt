@@ -53,7 +53,9 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Support Native SVG Objects
-    Target to a product series...
+    Select the release series of Mozilla Firefox
+    for which this feature should be implemented...
+
     >>> series = browser.getControl('Series Goal')
     >>> series.displayValue = ['firefox 1.0']
     >>> browser.getControl('Continue').click()
@@ -79,7 +81,9 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Support Native SVG Objects
-    Target to a milestone...
+    Select the milestone of Mozilla Firefox in which you would like
+    this feature to be implemented...
+
     >>> milestones = browser.getControl('Milestone')
     >>> milestones.displayValue = ['Mozilla Firefox 1.0.9']
     >>> browser.getControl('Change').click()
@@ -146,7 +150,8 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     CD Media Integrity Check
-    Target to a distribution series...
+    Select the release of Ubuntu for which this blueprint should be
+    a feature goal...
     >>> series = browser.getControl('Series Goal')
     >>> series.displayValue = ['ubuntu grumpy']
     >>> browser.getControl('Continue').click()
@@ -171,7 +176,9 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> browser.getLink('Target milestone').click()
     >>> print extract_text(find_main_content(browser.contents))
     CD Media Integrity Check
-    Target to a milestone...
+    Select the milestone of Ubuntu in which you would like this feature
+    to be implemented...
+
     >>> milestones = browser.getControl('Milestone')
     >>> milestones.displayValue = ['Ubuntu drift-1']
     >>> browser.getControl('Change').click()

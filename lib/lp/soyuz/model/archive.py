@@ -187,6 +187,11 @@ class Archive(SQLBase):
             alsoProvides(self, IDistributionArchive)
 
     @property
+    def title(self):
+        """See `IArchive`."""
+        return self.displayname
+
+    @property
     def is_ppa(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PPA
@@ -1577,4 +1582,4 @@ class ArchiveSet:
             DistroSeries.distribution == distribution,
             )
 
-        return results
+        return results.order_by(SourcePackagePublishingHistory.id)

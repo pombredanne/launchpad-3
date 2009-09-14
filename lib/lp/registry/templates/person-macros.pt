@@ -35,8 +35,7 @@
           <div style="white-space: nowrap">
             <img src="/@@/mail" alt="mail" />
             <tal:email replace="email">foo2@bar.com</tal:email>
-            <a class="sprite edit"
-               tal:attributes="href overview_menu/editemail/fmt:url"></a>
+            <a tal:replace="structure overview_menu/editemail/fmt:icon"></a>
           </div>
         </tal:emails>
         <a tal:condition="not: view/visible_email_addresses"
@@ -65,9 +64,15 @@
         <dt>Languages:</dt>
         <dd>
           <tal:languages content="view/languages">English</tal:languages>
-          <a tal:attributes="href overview_menu/editlanguages/fmt:url"
-            class="sprite edit">
-          <span class="invisible-link">Set preferred languages</span></a>
+          <a tal:replace="structure overview_menu/editlanguages/fmt:icon" />
+        </dd>
+      </dl>
+      <dl id="subscription-policy">
+        <dt>Subscription policy:</dt>
+        <dd>
+          <span tal:replace="context/subscriptionpolicy/title" />
+          <img src="/@@/maybe"
+            tal:attributes="title context/subscriptionpolicy/description" />
         </dd>
       </dl>
 
