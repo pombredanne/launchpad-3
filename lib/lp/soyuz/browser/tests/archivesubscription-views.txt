@@ -306,13 +306,18 @@ Just deactivate the new token again for the remaining tests.
 This view displays a single subscription of a person, as well as the
 corresponding token information.
 
-Initially the subscription does not have an active token:
+The view includes a label to denifen its main heading.
 
     >>> from lp.soyuz.browser.archivesubscription import (
     ...     PersonalArchiveSubscription)
     >>> spiv_subscription = PersonalArchiveSubscription(
     ...     spiv_subscription.subscriber, spiv_subscription.archive)
     >>> view = create_initialized_view(spiv_subscription, name="+index")
+    >>> print view.label
+    Access to PPA for Celso Providelo
+
+Initially the subscription does not have an active token:
+
     >>> print view.active_token
     None
 

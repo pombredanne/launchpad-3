@@ -324,13 +324,9 @@ class PersonArchiveSubscriptionView(LaunchpadView):
     """
 
     @property
-    def page_title(self):
-        """Return a relevant page_title.
-
-        XXX Michael Nelson 20090911 bug=417089. This should be removed
-        when bug 417089 lands.
-        """
-        return self.context.displayname
+    def label(self):
+        """Return the label used for the main heading."""
+        return self.context.title
 
     def initialize(self):
         """Process any posted actions."""
