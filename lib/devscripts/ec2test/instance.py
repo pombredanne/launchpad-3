@@ -8,6 +8,7 @@ __all__ = [
     'EC2Instance',
     ]
 
+import glob
 import os
 import select
 import socket
@@ -15,10 +16,15 @@ import subprocess
 import sys
 import time
 
+from bzrlib.plugins.launchpad.account import get_lp_login
+
 import paramiko
 
+from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.sshconfig import SSHConfig
 
+DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
+AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 
 class AcceptAllPolicy:
     """We accept all unknown host key."""
@@ -33,31 +39,56 @@ class AcceptAllPolicy:
 class EC2Instance:
     """A single EC2 instance."""
 
-    # XXX: JonathanLange 2009-05-31: Make it so that we pass one of these to
-    # EC2 test runner, rather than the test runner knowing how to make one.
-    # Right now, the test runner makes one of these directly. Instead, we want
-    # to make an EC2Account and ask it for one of these instances and then
-    # pass it to the test runner on construction.
+    @classmethod
+    def make(cls, credentials, name, instance_type, machine_id, demo_networks):
+        """Construct an `EC2Instance`.
 
-    # XXX: JonathanLange 2009-05-31: Separate out demo server maybe?
+        :param credentials: An `EC2Credentials` object.
+        :param name: The name to use for the key pair and security group for
+            the instance.
+        :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
+        :param machine_id: ???
+        :param demo_networks: ???
+        """
+        if instance_type not in AVAILABLE_INSTANCE_TYPES:
+            raise ValueError('unknown instance_type %s' % (instance_type,))
 
-    # XXX: JonathanLange 2009-05-31: Possibly separate out "get an instance"
-    # and "set up instance for Launchpad testing" logic.
+        # Make the EC2 connection.
+        account = credentials.connect(name)
 
-    def __init__(self, name, image, instance_type, demo_networks, controller,
+        # We do this here because it (1) cleans things up and (2) verifies
+        # that the account is correctly set up. Both of these are appropriate
+        # for initialization.
+        #
+        # We always recreate the keypairs because there is no way to
+        # programmatically retrieve the private key component, unless we
+        # generate it.
+        account.delete_previous_key_pair()
+
+        # get the image
+        image = account.acquire_image(machine_id)
+
+        vals = os.environ.copy()
+        login = get_lp_login()
+        if not login:
+            error_and_quit(
+                'you must have set your launchpad login in bzr.')
+        vals['launchpad-login'] = login
+
+        return EC2Instance(
+            name, image, instance_type, demo_networks, account, vals)
+
+    # XXX: JonathanLange 2009-05-31: Separate out demo server
+
+    def __init__(self, name, image, instance_type, demo_networks, account,
                  vals):
         self._name = name
         self._image = image
-        self._controller = controller
+        self._account = account
         self._instance_type = instance_type
         self._demo_networks = demo_networks
         self._boto_instance = None
         self._vals = vals
-
-    def error_and_quit(self, msg):
-        """Print error message and exit."""
-        sys.stderr.write(msg)
-        sys.exit(1)
 
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
@@ -72,8 +103,8 @@ class EC2Instance:
             self.log('Instance %s already started' % self._boto_instance.id)
             return
         start = time.time()
-        self.private_key = self._controller.acquire_private_key()
-        self._controller.acquire_security_group(
+        self.private_key = self._account.acquire_private_key()
+        self._account.acquire_security_group(
             demo_networks=self._demo_networks)
         reservation = self._image.run(
             key_name=self._name, security_groups=[self._name],
@@ -92,7 +123,7 @@ class EC2Instance:
             self._output = self._boto_instance.get_console_output()
             self.log(self._output.output)
         else:
-            self.error_and_quit(
+            error_and_quit(
                 'failed to start: %s\n' % self._boto_instance.state)
 
     def shutdown(self):
@@ -144,7 +175,7 @@ class EC2Instance:
     def connect_as_user(self):
         return self._connect(self._vals['USER'], True)
 
-    def set_up_user(self):
+    def set_up_user(self, user_key):
         """Set up an account named after the local user."""
         root_connection = self.connect_as_root()
         as_root = root_connection.perform
@@ -158,10 +189,6 @@ class EC2Instance:
         as_root('adduser --gecos "" --disabled-password %(USER)s')
         # Give user sudo without password.
         as_root('echo "%(USER)s\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
-            # Make /var/launchpad owned by user.
-        as_root('chown -R %(USER)s:%(USER)s /var/launchpad')
-        # Clean out left-overs from the instance image.
-        as_root('rm -fr /var/tmp/*')
         # Update the system.
         as_root('aptitude update')
         as_root('aptitude -y full-upgrade')
@@ -189,14 +216,13 @@ class EC2Instance:
                 value = data.get(key)
                 if value is not None:
                     ssh_config_dest.write('    %s %s\n' % (key, value))
-        ssh_config_dest.write('Host bazaar.launchpad.net\n')
-        ssh_config_dest.write('    user %(launchpad-login)s\n' % self._vals)
         ssh_config_dest.close()
         # create authorized_keys
         self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
         authorized_keys_file = root_sftp.open(
             "%s/authorized_keys" % remote_ssh_dir, 'w')
-        authorized_keys_file.write("%(key_type)s %(key)s\n" % self._vals)
+        authorized_keys_file.write(
+            "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
         authorized_keys_file.close()
         root_sftp.close()
         # Chown and chmod the .ssh directory and contents that we just
@@ -206,9 +232,136 @@ class EC2Instance:
         self.log(
             'You can now use ssh -A %s to log in the instance.\n' %
             self.hostname)
+        # What follows is somewhat ec2test specfic.
         # give the user permission to do whatever in /var/www
         as_root('chown -R %(USER)s:%(USER)s /var/www')
+        # Make /var/launchpad owned by user.
+        as_root('chown -R %(USER)s:%(USER)s /var/launchpad')
+        # Clean out left-overs from the instance image.
+        as_root('rm -fr /var/tmp/*')
         root_connection.close()
+
+    def _copy_single_file(self, sftp, local_path, remote_dir):
+        """Copy `local_path` to `remote_dir` on this instance.
+
+        The name in the remote directory will be that of the local file.
+
+        :param sftp: A paramiko SFTP object.
+        :param local_path: The local path.
+        :param remote_dir: The directory on the instance to copy into.
+        """
+        name = os.path.basename(local_path)
+        remote_path = os.path.join(remote_dir, name)
+        remote_file = sftp.open(remote_path, 'w')
+        remote_file.write(open(local_path).read())
+        remote_file.close()
+        return remote_path
+
+    def copy_key_and_certificate_to_image(self, sftp):
+        """Copy the AWS private key and certificate to the image.
+
+        :param sftp: A paramiko SFTP object.
+        """
+        remote_ec2_dir = '/mnt/ec2'
+        sftp.mkdir(remote_ec2_dir)
+        remote_pk = self._copy_single_file(
+            sftp, self.local_pk, remote_ec2_dir)
+        remote_cert = self._copy_single_file(
+            sftp, self.local_cert, remote_ec2_dir)
+        return (remote_pk, remote_cert)
+
+    def _check_single_glob_match(self, local_dir, pattern, file_kind):
+        """Check that `pattern` matches one file in `local_dir` and return it.
+
+        :param local_dir: The local directory to look in.
+        :param pattern: The glob patten to match.
+        :param file_kind: The sort of file we're looking for, to be used in
+            error messages.
+        """
+        pattern = os.path.join(local_dir, pattern)
+        matches = glob.glob(pattern)
+        if len(matches) != 1:
+            error_and_quit(
+                '%r must match a single %s file' % (pattern, file_kind))
+        return matches[0]
+
+    def check_bundling_prerequisites(self):
+        """Check, as best we can, that all the files we need to bundle exist.
+        """
+        local_ec2_dir = os.path.expanduser('~/.ec2')
+        if not os.path.exists(local_ec2_dir):
+            error_and_quit(
+                "~/.ec2 must exist and contain aws_user, aws_id, a private "
+                "key file and a certificate.")
+        aws_user_file = os.path.expanduser('~/.ec2/aws_user')
+        if not os.path.exists(aws_user_file):
+            error_and_quit(
+                "~/.ec2/aws_user must exist and contain your numeric AWS id.")
+        self.aws_user = open(aws_user_file).read().strip()
+        self.local_cert = self._check_single_glob_match(
+            local_ec2_dir, 'cert-*.pem', 'certificate')
+        self.local_pk = self._check_single_glob_match(
+            local_ec2_dir, 'pk-*.pem', 'private key')
+
+    def bundle(self, name, credentials):
+        """Bundle, upload and register the instance as a new AMI.
+
+        :param name: The name-to-be of the new AMI.
+        :param credentials: An `EC2Credentials` object.
+        """
+        root_connection = self.connect_as_root()
+        sftp = root_connection.ssh.open_sftp()
+
+        remote_pk, remote_cert =  self.copy_key_and_certificate_to_image(sftp)
+
+        sftp.close()
+
+        bundle_dir = os.path.join('/mnt', name)
+
+        root_connection.perform('mkdir ' + bundle_dir)
+        root_connection.perform(' '.join([
+            'ec2-bundle-vol',
+            '-d %s' % bundle_dir,
+            '-b',   # Set batch-mode, which doesn't use prompts.
+            '-k %s' % remote_pk,
+            '-c %s' % remote_cert,
+            '-u %s' % self.aws_user,
+            ]))
+
+        # Assume that the manifest is 'image.manifest.xml', since "image" is
+        # the default prefix.
+        manifest = os.path.join(bundle_dir, 'image.manifest.xml')
+
+        # Best check that the manifest actually exists though.
+        test = 'test -f %s' % manifest
+        root_connection.perform(test)
+
+        root_connection.perform(' '.join([
+            'ec2-upload-bundle',
+            '-b %s' % name,
+            '-m %s' % manifest,
+            '-a %s' % credentials.identifier,
+            '-s %s' % credentials.secret,
+            ]))
+
+        sftp.close()
+        root_connection.close()
+
+        # This is invoked locally.
+        mfilename = os.path.basename(manifest)
+        manifest_path = os.path.join(name, mfilename)
+
+        env = os.environ.copy()
+        if 'JAVA_HOME' not in os.environ:
+            env['JAVA_HOME'] = '/usr/lib/jvm/default-java'
+        cmd = [
+            'ec2-register',
+            '--private-key=%s' % self.local_pk,
+            '--cert=%s' % self.local_cert,
+            manifest_path
+            ]
+        self.log("Executing command: %s" % ' '.join(cmd))
+        subprocess.check_call(cmd, env=env)
 
 
 class EC2InstanceConnection:
