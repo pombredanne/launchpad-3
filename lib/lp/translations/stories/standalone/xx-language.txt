@@ -89,16 +89,6 @@ about the selected language.
     >>> print browser.url
     http://translations.launchpad.dev/+languages/es
 
-    >>> from canonical.launchpad.testing.pages import setUpGlobs
-    >>> class MockTest(object):
-    ...     def __init__(self):
-    ...         self.globs = {}
-
-    >>> test = MockTest()
-    >>> setUpGlobs(test)
-
-    >>> extract_text = test.globs['extract_text']
-
     >>> print extract_text(find_portlet(browser.contents, 'Plural forms'
     ...     ).renderContents())
     Plural forms
