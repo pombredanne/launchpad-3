@@ -100,7 +100,7 @@ team, not even if they manually craft the URL.
     ...     'http://launchpad.dev/~landscape-developers/+member/launchpad')
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    Invited member
+    Invited member Launchpad Developers
     Launchpad Developers (launchpad) has been invited to join this team, but
     hasn't responded to the invitation yet.
 
