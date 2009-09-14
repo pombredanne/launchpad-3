@@ -3,30 +3,20 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-    <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-top-contributors" />
-    </metal:portlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>Distribution packages</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
   <tal:series repeat="series context/serieses">
-    
+    <h1 tal:content="view/page_title">Product packages in Launchpad</h1>
+
     <h2>Series &#8220;<span tal:replace="series/name">main</span>&#8221;</h2>
 
-    <table class="listing" tal:condition="series/packagings">
+    <table id="packages" class="listing" tal:condition="series/packagings">
       <thead>
         <tr>
           <th>Distribution</th>
@@ -37,9 +27,15 @@
       </thead>
       <tbody>
         <tr tal:repeat="pkging series/packagings">
-          <td tal:content="pkging/distroseries/distribution/displayname">Ubuntu</td>
-          <td><span tal:replace="pkging/distroseries/version">4.05</span>
-              (<span tal:replace="pkging/distroseries/name">hoary</span>)</td>
+          <td>
+            <a tal:replace="structure pkging/distroseries/distribution/fmt:link" />
+          </td>
+
+          <td>
+            <a tal:attributes="href pkging/distroseries/fmt:url"><tal:version
+              replace="pkging/distroseries/version" />
+              (<tal:name replace="pkging/distroseries/displayname" />)</a>
+          </td>
               
             <td>
               <a
@@ -55,15 +51,18 @@
       </tbody>
     </table>
 
-        <p tal:condition="not: series/packagings">
-          No packages linked to this series.
-        </p>
-        <ul tal:condition="context/required:launchpad.Edit" class="menu">
-          <li class="add">
-            <a tal:attributes="href string:${series/fmt:url}/+addpackage"
-            >Link a package</a>
-          </li>
-        </ul>
+    <p tal:condition="not: series/packagings">
+      No packages linked to this series.
+    </p>
+
+    <ul class="horizontal">
+      <li tal:condition="context/required:launchpad.Edit" >
+        <a tal:replace="structure series/menu:overview/add_package/fmt:link" />
+      </li>
+      <li>
+        <a tal:replace="structure context/menu:overview/distributions/fmt:link" />
+      </li>
+    </ul>
 
   </tal:series>
 

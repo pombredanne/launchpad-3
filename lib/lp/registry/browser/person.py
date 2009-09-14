@@ -2517,7 +2517,7 @@ class PersonKarmaView(LaunchpadView):
 
     @property
     def label(self):
-        return 'Launchpad Karma for ' + cgi.escape(self.user.displayname)
+        return 'Launchpad Karma for ' + cgi.escape(self.context.displayname)
 
     @cachedproperty
     def has_karma(self):

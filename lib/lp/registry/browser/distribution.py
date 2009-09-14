@@ -22,6 +22,7 @@ __all__ = [
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
+    'DistributionSeriesView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
     'DistributionSetActionNavigationMenu',
@@ -66,6 +67,7 @@ from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -808,6 +810,35 @@ class DistributionEditView(RegistryEditFormView):
         official_malone = data.get('official_malone', False)
         if not official_malone:
             data['enable_bug_expiration'] = False
+
+
+class DistributionSeriesView(LaunchpadView):
+    """A view to list the distribution series"""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "%s version history" % self.context.title
+
+    @cachedproperty
+    def styled_series(self):
+        """A list of dicts; keys: series, css_class, is_development_focus"""
+        all_series = []
+        for series in self.context.serieses:
+            all_series.append({
+                'series': series,
+                'css_class': self.getCssClass(series),
+                })
+        return all_series
+
+    def getCssClass(self, series):
+        """The highlighted, unhighlighted, or dimmed CSS class."""
+        if series.status == DistroSeriesStatus.DEVELOPMENT:
+            return 'highlighted'
+        elif series.status == DistroSeriesStatus.OBSOLETE:
+            return 'dimmed'
+        else:
+            return 'unhighlighted'
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):
