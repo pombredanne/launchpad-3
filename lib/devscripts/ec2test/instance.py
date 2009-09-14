@@ -147,27 +147,27 @@ class EC2Instance:
     def set_up_user(self):
         """Set up an account named after the local user."""
         root_connection = self.connect_as_root()
-        root_p = root_connection.perform
+        as_root = root_connection.perform
         if self._vals['USER'] == 'gary':
             # This helps gary debug problems others are having by removing
             # much of the initial setup used to work on the original image.
-            root_p('deluser --remove-home gary', ignore_failure=True)
+            as_root('deluser --remove-home gary', ignore_failure=True)
         # Let root perform sudo without a password.
-        root_p('echo "root\tALL=NOPASSWD: ALL" >> /etc/sudoers')
+        as_root('echo "root\tALL=NOPASSWD: ALL" >> /etc/sudoers')
         # Add the user.
-        root_p('adduser --gecos "" --disabled-password %(USER)s')
+        as_root('adduser --gecos "" --disabled-password %(USER)s')
         # Give user sudo without password.
-        root_p('echo "%(USER)s\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
+        as_root('echo "%(USER)s\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
             # Make /var/launchpad owned by user.
-        root_p('chown -R %(USER)s:%(USER)s /var/launchpad')
+        as_root('chown -R %(USER)s:%(USER)s /var/launchpad')
         # Clean out left-overs from the instance image.
-        root_p('rm -fr /var/tmp/*')
+        as_root('rm -fr /var/tmp/*')
         # Update the system.
-        root_p('aptitude update')
-        root_p('aptitude -y full-upgrade')
+        as_root('aptitude update')
+        as_root('aptitude -y full-upgrade')
         # Set up ssh for user
         # Make user's .ssh directory
-        root_p('sudo -u %(USER)s mkdir /home/%(USER)s/.ssh')
+        as_root('sudo -u %(USER)s mkdir /home/%(USER)s/.ssh')
         root_sftp = root_connection.ssh.open_sftp()
         remote_ssh_dir = '/home/%(USER)s/.ssh' % self._vals
         # Create config file
@@ -201,13 +201,13 @@ class EC2Instance:
         root_sftp.close()
         # Chown and chmod the .ssh directory and contents that we just
         # created.
-        root_p('chown -R %(USER)s:%(USER)s /home/%(USER)s/')
-        root_p('chmod 644 /home/%(USER)s/.ssh/*')
+        as_root('chown -R %(USER)s:%(USER)s /home/%(USER)s/')
+        as_root('chmod 644 /home/%(USER)s/.ssh/*')
         self.log(
             'You can now use ssh -A %s to log in the instance.\n' %
             self.hostname)
         # give the user permission to do whatever in /var/www
-        root_p('chown -R %(USER)s:%(USER)s /var/www')
+        as_root('chown -R %(USER)s:%(USER)s /var/www')
         root_connection.close()
 
 

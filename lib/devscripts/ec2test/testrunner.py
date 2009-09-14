@@ -455,11 +455,11 @@ class EC2TestRunner:
         self._instance.set_up_user()
 
         user_connection = self._instance.connect_as_user()
-        user_p = user_connection.perform
+        as_user = user_connection.perform
         user_sftp = user_connection.ssh.open_sftp()
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            user_p('sudo -u %(USER)s mkdir /home/%(USER)s/.bazaar')
+            as_user('sudo -u %(USER)s mkdir /home/%(USER)s/.bazaar')
             bazaar_conf_file = user_sftp.open(
                 "/home/%(USER)s/.bazaar/bazaar.conf" % self.vals, 'w')
             bazaar_conf_file.write(
@@ -479,8 +479,8 @@ class EC2TestRunner:
             '/var/launchpad/ec2test-remote.py')
         user_sftp.close()
         # Set up launchpad login and email
-        user_p('bzr launchpad-login %(launchpad-login)s')
-        user_p("bzr whoami '%(email)s'")
+        as_user('bzr launchpad-login %(launchpad-login)s')
+        as_user("bzr whoami '%(email)s'")
         user_connection.close()
 
     def prepare_tests(self):
