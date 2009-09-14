@@ -483,8 +483,6 @@ class EC2TestRunner:
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database
         p('/var/launchpad/test/utilities/launchpad-database-setup %(USER)s')
-        p('cd /var/launchpad/test && make build')
-        p('cd /var/launchpad/test && make schema')
         # close ssh connection
         user_connection.close()
 
