@@ -327,9 +327,7 @@ def main():
             'You must have an ssh agent running with keys installed that '
             'will allow the script to rsync to devpad and get your '
             'branch.\n')
-    key = agent.get_keys()[0]
-    vals['key_type'] = key.get_name()
-    vals['key'] = key.get_base64()
+    user_key = agent.get_keys()[0]
 
     instance = EC2Instance(
         EC2TestRunner.name, image, options.instance_type, demo_networks,
@@ -383,6 +381,9 @@ def main():
             root_connection.close()
             instance.bundle(options.bundle)
         run = make_new_image
+
+    instance.setup_user(user_key)
+
     run_with_instance(
         instance, run, options.demo_networks, options.postmortem)
 
