@@ -29,7 +29,7 @@
     
     <h2 tal:content="distro/title">Ubuntu Linux</h2>
 
-    <table id="distrribution-series" class="listing">
+    <table id="distribution-series" class="listing">
       <thead>
         <tr>
           <th>Distribution Series</th>
