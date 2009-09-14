@@ -452,7 +452,7 @@ class EC2TestRunner:
         return self._instance.shutdown()
 
     def configure_system(self):
-        self._instance.setup_user()
+        self._instance.set_up_user()
 
         user_connection = self._instance.connect_as_user()
         user_p = user_connection.perform

@@ -144,7 +144,7 @@ class EC2Instance:
     def connect_as_user(self):
         return self._connect(self._vals['USER'], True)
 
-    def setup_user(self):
+    def set_up_user(self):
         """Set up an account named after the local user."""
         root_connection = self.connect_as_root()
         root_p = root_connection.perform
