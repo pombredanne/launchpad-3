@@ -10,30 +10,26 @@ __all__ = [
 
 import code
 import optparse
-import os
 import socket
 import traceback
 # The rlcompleter and readline modules change the behavior of the python
 # interactive interpreter just by being imported.
 import readline
 import rlcompleter
-import sys
 # Shut up pyflakes.
 rlcompleter
 
-from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
 from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
-from devscripts.ec2test.instance import EC2Instance
+from devscripts.ec2test.instance import (
+    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 readline.parse_and_bind('tab: complete')
 
-DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
-AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 
 
 # XXX: JonathanLange 2009-05-31: Strongly considering turning this into a
@@ -93,44 +89,6 @@ def run_with_instance(instance, run, demo_networks, postmortem):
         finally:
             if shutdown:
                 instance.shutdown()
-
-
-def make_instance(instance_type, machine_id, demo_networks):
-    # Validate instance_type and get default kernal and ramdisk.
-    if instance_type not in AVAILABLE_INSTANCE_TYPES:
-        raise ValueError('unknown instance_type %s' % (instance_type,))
-
-    # Get the AWS identifier and secret identifier.
-    try:
-        credentials = EC2Credentials.load_from_file()
-    except CredentialsError, e:
-        error_and_quit(str(e))
-
-    # Make the EC2 connection.
-    account = credentials.connect(EC2TestRunner.name)
-
-    # We do this here because it (1) cleans things up and (2) verifies
-    # that the account is correctly set up. Both of these are appropriate
-    # for initialization.
-    #
-    # We always recreate the keypairs because there is no way to
-    # programmatically retrieve the private key component, unless we
-    # generate it.
-    account.delete_previous_key_pair()
-
-    # get the image
-    image = account.acquire_image(machine_id)
-
-    vals = os.environ.copy()
-    login = get_lp_login()
-    if not login:
-        error_and_quit(
-            'you must have set your launchpad login in bzr.')
-    vals['launchpad-login'] = login
-
-    return EC2Instance(
-        EC2TestRunner.name, image, instance_type, demo_networks,
-        account, vals)
 
 
 def main():
@@ -333,9 +291,15 @@ def main():
     else:
         demo_networks = options.demo_networks
 
-    instance = make_instance(
-        instance_type=options.instance_type, machine_id=options.machine_id,
-        demo_networks=demo_networks)
+    # Get the AWS identifier and secret identifier.
+    try:
+        credentials = EC2Credentials.load_from_file()
+    except CredentialsError, e:
+        error_and_quit(str(e))
+
+    instance = EC2Instance.make(
+        credentials, EC2TestRunner.name, instance_type=options.instance_type,
+        machine_id=options.machine_id, demo_networks=demo_networks)
 
     if not options.bundle:
         runner = EC2TestRunner(
@@ -375,7 +339,7 @@ def main():
             root_connection.perform(
                 'deluser --remove-home %(USER)s', ignore_failure=True)
             root_connection.close()
-            instance.bundle(options.bundle)
+            instance.bundle(options.bundle, credentials)
             return True
         run = make_new_image
 

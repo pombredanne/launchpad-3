@@ -47,7 +47,7 @@ class EC2Account:
     _image_match = re.compile(
         r'launchpad-ec2test(\d+)/image.manifest.xml$').match
 
-    def __init__(self, name, connection, credentials):
+    def __init__(self, name, connection):
         """Construct an EC2 instance.
 
         :param name: ???
@@ -55,7 +55,6 @@ class EC2Account:
         """
         self.name = name
         self.conn = connection
-        self.credentials = credentials
 
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""

@@ -59,4 +59,4 @@ class EC2Credentials:
         :return: An `EC2Account` connected to EC2 with these credentials.
         """
         conn = boto.connect_ec2(self.identifier, self.secret)
-        return EC2Account(name, conn, self)
+        return EC2Account(name, conn)

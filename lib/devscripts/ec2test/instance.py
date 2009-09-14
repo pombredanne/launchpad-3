@@ -16,11 +16,15 @@ import subprocess
 import sys
 import time
 
+from bzrlib.plugins.launchpad.account import get_lp_login
+
 import paramiko
 
 from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.sshconfig import SSHConfig
 
+DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
+AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 
 class AcceptAllPolicy:
     """We accept all unknown host key."""
@@ -35,11 +39,36 @@ class AcceptAllPolicy:
 class EC2Instance:
     """A single EC2 instance."""
 
-    # XXX: JonathanLange 2009-05-31: Make it so that we pass one of these to
-    # EC2 test runner, rather than the test runner knowing how to make one.
-    # Right now, the test runner makes one of these directly. Instead, we want
-    # to make an EC2Account and ask it for one of these instances and then
-    # pass it to the test runner on construction.
+    @classmethod
+    def make(cls, credentials, name, instance_type, machine_id, demo_networks):
+        # Validate instance_type and get default kernal and ramdisk.
+        if instance_type not in AVAILABLE_INSTANCE_TYPES:
+            raise ValueError('unknown instance_type %s' % (instance_type,))
+
+        # Make the EC2 connection.
+        account = credentials.connect(name)
+
+        # We do this here because it (1) cleans things up and (2) verifies
+        # that the account is correctly set up. Both of these are appropriate
+        # for initialization.
+        #
+        # We always recreate the keypairs because there is no way to
+        # programmatically retrieve the private key component, unless we
+        # generate it.
+        account.delete_previous_key_pair()
+
+        # get the image
+        image = account.acquire_image(machine_id)
+
+        vals = os.environ.copy()
+        login = get_lp_login()
+        if not login:
+            error_and_quit(
+                'you must have set your launchpad login in bzr.')
+        vals['launchpad-login'] = login
+
+        return EC2Instance(
+            name, image, instance_type, demo_networks, account, vals)
 
     # XXX: JonathanLange 2009-05-31: Separate out demo server maybe?
 
@@ -250,7 +279,7 @@ class EC2Instance:
         self.local_pk = self._check_single_glob_match(
             local_ec2_dir, 'pk-*.pem', 'private key')
 
-    def bundle(self, name):
+    def bundle(self, name, credentials):
         """Bundle, upload and register the instance as a new AMI."""
         root_connection = self.connect_as_root()
         sftp = root_connection.ssh.open_sftp()
@@ -283,8 +312,8 @@ class EC2Instance:
             'ec2-upload-bundle',
             '-b %s' % name,
             '-m %s' % manifest,
-            '-a %s' % self._account.credentials.identifier,
-            '-s %s' % self._account.credentials.secret,
+            '-a %s' % credentials.identifier,
+            '-s %s' % credentials.secret,
             ]))
 
         sftp.close()
