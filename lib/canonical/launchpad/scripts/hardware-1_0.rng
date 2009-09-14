@@ -100,7 +100,9 @@
             </element>
             <optional>
                 <element name="kernel-release">
-                    <text/>
+                    <attribute name="value">
+                        <text/>
+                    </attribute>
                 </element>
             </optional>
         </interleave>
@@ -146,7 +148,7 @@
                         <element name="dmi">
                             <text/>
                         </element>
-                        <element name="scsi-devices">
+                        <element name="sysfs-attributes">
                             <zeroOrMore>
                                 <text/>
                             </zeroOrMore>
