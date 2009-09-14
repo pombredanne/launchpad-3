@@ -198,22 +198,22 @@
       </li>
       <li tal:define="file context/buildlog"
           tal:condition="file">
-        <img src="/@@/download" />
-        <a tal:attributes="href context/build_log_url"
+        <a class="sprite download"
+           tal:attributes="href context/build_log_url"
            tal:content="string: buildlog">BUILDLOG</a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
       <li tal:define="file context/upload_log"
           tal:condition="file">
-        <img src="/@@/download" />
-        <a tal:attributes="href context/upload_log_url"
+        <a class="sprite download"
+           tal:attributes="href context/upload_log_url"
            tal:content="string: uploadlog">UPLOADLOG</a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
       <li tal:define="changesfile view/changesfile;"
           tal:condition="changesfile">
-        <img src="/@@/download" />
-        <a tal:attributes="href changesfile/http_url"
+        <a class="sprite download"
+           tal:attributes="href changesfile/http_url"
            tal:content="changesfile/filename">CHANGESFILE</a>
         (<span tal:replace="changesfile/content/filesize/fmt:bytes" />)
       </li>
@@ -230,8 +230,8 @@
         <p class="discreet">Binary packages produced by this build:</p>
         <ul>
           <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
-            <img src="/@@/package-binary" />
-            <a tal:attributes="href binpkg/fmt:url"
+            <a class="sprite package-binary"
+               tal:attributes="href binpkg/fmt:url"
                tal:content="binpkg/displayname">
              foopkg 1.2-3
             </a>
@@ -242,8 +242,8 @@
         <p class="discreet">Binary packages awaiting publication:</p>
         <ul>
           <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
-            <img src="/@@/package-binary" />
-            <span tal:replace="binpkg/displayname">foopkg 1.2-3</span>
+            <span class="sprite package-binary"
+                  tal:content="binpkg/displayname">foopkg 1.2-3</span>
           </li>
         </ul>
       </tal:upload_not_done>
@@ -252,8 +252,8 @@
     <p class="discreet">Binary packages produced by this build:</p>
     <ul>
       <li tal:repeat="binpkg context/binarypackages">
-        <img src="/@@/package-binary" />
-        <span tal:replace="binpkg/title">foopkg - 1.2-3</span>
+        <span class="sprite package-binary"
+              tal:content="binpkg/title">foopkg - 1.2-3</span>
       </li>
     </ul>
     </tal:ppa>
@@ -265,10 +265,10 @@
     </tal:comment>
     <h2>Built files</h2>
     <p class="discreet">Files resulting from this build:</p>
-    <ul class="download">
+    <ul>
       <li tal:repeat="file view/files">
-        <img src="/@@/download" />
-        <a tal:content="file/filename"
+        <a class="sprite download"
+           tal:content="file/filename"
            tal:attributes="href file/http_url"></a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
