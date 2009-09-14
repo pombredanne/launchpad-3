@@ -432,12 +432,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         lines is over the max_format_lines, then it is cut off at the fmt:diff
         processing.
         """
-        review_diff = self.context.review_diff
+        review_diff = self.preview_diff
         if review_diff is None:
             return False
-        if review_diff.diff.oversized:
+        if review_diff.oversized:
             return True
-        diff_text = self.review_diff
+        diff_text = self.preview_diff_text
         return diff_text.count('\n') >= config.diff.max_format_lines
 
     @property
