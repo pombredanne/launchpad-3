@@ -368,11 +368,6 @@ class EC2TestRunner:
 
         self._instance = instance
 
-    def error_and_quit(self, msg):
-        """Print error message and exit."""
-        sys.stderr.write(msg)
-        sys.exit(1)
-
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
         # XXX: JonathanLange 2009-05-31 bug=383076: This should use Python

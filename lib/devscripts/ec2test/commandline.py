@@ -25,6 +25,7 @@ from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
+from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
 from devscripts.ec2test.instance import EC2Instance
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
@@ -38,12 +39,6 @@ AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 # XXX: JonathanLange 2009-05-31: Strongly considering turning this into a
 # Bazaar plugin -- probably would make the option parsing and validation
 # easier.
-
-def error_and_quit(msg):
-    """Print error message and exit."""
-    sys.stderr.write(msg)
-    sys.exit(1)
-
 
 def run_with_instance(instance, run, demo_networks, postmortem):
     instance.start()
@@ -362,17 +357,18 @@ def main():
                 runner.run_tests()
         run = run_tests
     else:
+        instance.check_bundling_prerequisites()
         def make_new_image():
             instance.setup_user()
             user_connection = instance.connect_as_user()
             user_connection.perform('bzr launchpad-login %(launchpad-login)s')
-            #user_connection.run_with_ssh_agent(
-            #    "rsync -avp --partial --delete "
-            #    "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
-            #    "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
-            #    "/var/launchpad/sourcecode/")
-            #user_connection.run_with_ssh_agent(
-            #    'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
+            user_connection.run_with_ssh_agent(
+                "rsync -avp --partial --delete "
+                "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
+                "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
+                "/var/launchpad/sourcecode/")
+            user_connection.run_with_ssh_agent(
+                'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
             user_connection.close()
             root_connection = instance.connect_as_root()
             root_connection.perform(

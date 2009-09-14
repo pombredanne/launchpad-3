@@ -18,6 +18,7 @@ import time
 
 import paramiko
 
+from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.sshconfig import SSHConfig
 
 
@@ -55,11 +56,6 @@ class EC2Instance:
         self._boto_instance = None
         self._vals = vals
 
-    def error_and_quit(self, msg):
-        """Print error message and exit."""
-        sys.stderr.write(msg)
-        sys.exit(1)
-
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
         # XXX: JonathanLange 2009-05-31 bug=383076: Should delete this and use
@@ -93,7 +89,7 @@ class EC2Instance:
             self._output = self._boto_instance.get_console_output()
             self.log(self._output.output)
         else:
-            self.error_and_quit(
+            error_and_quit(
                 'failed to start: %s\n' % self._boto_instance.state)
 
     def shutdown(self):
@@ -211,32 +207,55 @@ class EC2Instance:
         root_p('rm -fr /var/tmp/*')
         root_connection.close()
 
-    def _copy_single_glob_match(self, sftp, pattern, local_dir, remote_dir):
-        [local_path] = glob.glob(os.path.join(local_dir, pattern))
+    def _copy_single_file(self, sftp, local_path, remote_dir):
         name = os.path.basename(local_path)
         remote_path = os.path.join(remote_dir, name)
         remote_file = sftp.open(remote_path, 'w')
         remote_file.write(open(local_path).read())
         remote_file.close()
-        return local_path, remote_path
+        return remote_path
 
     def copy_key_and_certificate_to_image(self, sftp):
         remote_ec2_dir = '/mnt/ec2'
         sftp.mkdir(remote_ec2_dir)
+        remote_pk = self._copy_single_file(
+            sftp, self.local_pk, remote_ec2_dir)
+        remote_cert = self._copy_single_glob_match(
+            sftp, self.local_cert, remote_ec2_dir)
+        return (remote_pk, remote_cert)
+
+    def _check_single_glob_match(self, local_dir, pattern, file_kind):
+        pattern = os.path.join(local_dir, pattern)
+        matches = glob.glob(pattern)
+        if len(matches) != 1:
+            error_and_quit(
+                '%r must match a single %s file' % (pattern, file_kind))
+        return matches[0]
+
+    def check_bundling_prerequisites(self):
+        """Check, as best we can, that all the files we need to bundle exist.
+        """
         local_ec2_dir = os.path.expanduser('~/.ec2')
-        local_pk, remote_pk = self._copy_single_glob_match(
-            sftp, 'pk-*.pem', local_ec2_dir, remote_ec2_dir)
-        local_cert, remote_cert = self._copy_single_glob_match(
-            sftp, 'cert-*.pem', local_ec2_dir, remote_ec2_dir)
-        return (local_pk, remote_pk, local_cert, remote_cert)
+        if not os.path.exists(local_ec2_dir):
+            error_and_quit(
+                "~/.ec2 must exist and contain aws_user, aws_id, a private "
+                "key file and a certificate.")
+        aws_user_file = os.path.expanduser('~/.ec2/aws_user')
+        if not os.path.exists(aws_user_file):
+            error_and_quit(
+                "~/.ec2/aws_user must exist and contain your numeric AWS id.")
+        self.aws_user = open(aws_user_file).read().strip()
+        self.local_cert = self._check_single_glob_match(
+            local_ec2_dir, 'cert-*.pem', 'certificate')
+        self.local_pk = self._check_single_glob_match(
+            local_ec2_dir, 'pk-*.pem', 'private key')
 
     def bundle(self, name):
         """Bundle, upload and register the instance as a new AMI."""
         root_connection = self.connect_as_root()
         sftp = root_connection.ssh.open_sftp()
 
-        local_pk, remote_pk, local_cert, remote_cert = \
-            self.copy_key_and_certificate_to_image(sftp)
+        remote_pk, remote_cert =  self.copy_key_and_certificate_to_image(sftp)
 
         sftp.close()
 
@@ -249,8 +268,7 @@ class EC2Instance:
             '-b',   # Set batch-mode, which doesn't use prompts.
             '-k %s' % remote_pk,
             '-c %s' % remote_cert,
-            '-u %s'  % open(
-                os.path.expanduser('~/.ec2/aws_user')).read().strip()
+            '-u %s' % self.aws_user,
             ]))
 
         # Assume that the manifest is 'image.manifest.xml', since "image" is
@@ -281,8 +299,8 @@ class EC2Instance:
             env['JAVA_HOME'] = '/usr/lib/jvm/default-java'
         cmd = [
             'ec2-register',
-            '--private-key=%s' % local_pk,
-            '--cert=%s' % local_cert,
+            '--private-key=%s' % self.local_pk,
+            '--cert=%s' % self.local_cert,
             manifest_path
             ]
         self.log("Executing command: %s" % ' '.join(cmd))
