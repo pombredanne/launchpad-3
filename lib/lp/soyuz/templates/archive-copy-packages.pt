@@ -31,7 +31,9 @@
          PPA. Activate your own PPA or join a team with an active PPA.</p>
       <p><tal:activate_ppa
         define="link view/user/menu:overview/activate_ppa"
-        replace="structure link/fmt:icon-link" />
+        replace="structure link/fmt:icon-link" /> or
+        <a tal:attributes="href context/menu:overview/packages/fmt:url">
+          &laquo;back</a>
       </p>
 
     </tal:cannot_copy>
@@ -93,6 +95,9 @@
             <td colspan="2">
               <input
                 tal:replace="structure view/actions/field.actions.copy/render" />
+                or
+                <a tal:attributes="href context/menu:overview/packages/fmt:url">
+                  Cancel</a>
             </td>
           </tr>
 

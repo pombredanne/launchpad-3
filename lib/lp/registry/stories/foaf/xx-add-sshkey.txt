@@ -47,7 +47,7 @@ his SSH keys. The page allows him to add a key.
 
     >>> browser.getLink('Add an SSH key').click()
     >>> print browser.title
-    Change your SSH keys
+    +editsshkeys : Guilherme Salgado
 
 Any key must be of the form "keytype keytext comment", where keytype must be
 either ssh-rsa or ssh-dss.  If the key doesn't match the expected format, an
@@ -108,7 +108,7 @@ menu:
     >>> admin_browser.getLink('Change details').click()
     >>> print_navigation_links(admin_browser.contents)
     Profile
-    Related Software: .../~salgado/+related-software
+    Related software: .../~salgado/+related-software
     Karma: .../~salgado/+karma
     Personal Package Archives: .../~salgado#ppas
     Personal
@@ -130,7 +130,7 @@ to edit his keys is on the page.
     salgado@canario
     >>> browser.getLink('Update SSH keys').click()
     >>> print browser.title
-    Change your SSH keys
+    +editsshkeys : Guilherme Salgado
 
     >>> browser.getControl('Remove', index=0).click()
     >>> soup = find_main_content(browser.contents)

@@ -21,7 +21,7 @@ There is a link in the body page pointing to Celso's PPA.
     >>> anon_browser.getLink("PPA for Celso Providelo").click()
 
     >>> print anon_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
 On the other hand, Sample Person hasn't activated his PPA yet, so he
 can quickly activate one via the link in his PPA section.
@@ -36,7 +36,7 @@ can quickly activate one via the link in his PPA section.
     >>> sample_browser.getLink("Create a new PPA").click()
 
     >>> print sample_browser.title
-    Activate Personal Package Archive
+    +activate-ppa : Sample Person
 
 This page presents a pointer to the current PPA-ToS (terms of service)
 with mandatory 'displayname' and checkbox ('accepted') fields. The
@@ -85,13 +85,13 @@ In order to 'activate' a PPA the user must acknowledge the PPA-ToS.
 A successful activation redirects to the PPA page
 
     >>> print sample_browser.title
-    Sample PPA
+    Sample PPA : Sample Person
 
 Where Sample person user can see the description previously entered.
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Hoohay for PPA.
 
 The PPA owner is able to edit PPA 'displayname' and 'description'.
@@ -109,11 +109,11 @@ After confirming the changes Sample Person is sent to the PPA page
 where he can see the updated information.
 
     >>> print sample_browser.title
-    Sample testing PPA
+    Sample testing PPA : Sample Person
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Howdy, cowboys !
 
 Empty 'description' fields are not be rendered.
@@ -123,7 +123,7 @@ Empty 'description' fields are not be rendered.
     >>> sample_browser.getControl("Save").click()
 
     >>> print sample_browser.title
-    Sample testing PPA
+    Sample testing PPA : Sample Person
 
     >>> print find_tag_by_id(sample_browser.contents, 'description')
     None
@@ -136,7 +136,7 @@ user can't have an emtpy displayname on his PPA.
     >>> sample_browser.getControl("Save").click()
 
     >>> print sample_browser.title
-    Edit Sample testing PPA
+    +edit : Sample testing PPA : Sample Person
 
     >>> for error in get_feedback_messages(sample_browser.contents):
     ...     print error
@@ -193,8 +193,8 @@ Let's proceed with the required permissions:
 
     >>> sample_browser.getLink('Create a new PPA').click()
 
-    >>> print sample_browser.title
-    Activate Personal Package Archive
+    >>> sample_browser.title
+    '+activate-ppa : \xe2\x80\x9cLandscape Developers\xe2\x80\x9d team'
 
     >>> sample_browser.getControl(
     ...     name="field.displayname").value = 'Devel PPA'
@@ -215,11 +215,11 @@ That understood, the PPA gets activated.
     >>> sample_browser.getControl("Activate").click()
 
     >>> print sample_browser.title
-    Devel PPA
+    Devel PPA : “Landscape Developers” team
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Hoohay for Team PPA.
 
 Any team administrator can edit the description contents,
@@ -227,19 +227,19 @@ exactly the same as for a user-PPA, see above:
 
     >>> sample_browser.getLink("Change details").click()
 
-    >>> print sample_browser.title
-    Edit Devel PPA
+    >>> sample_browser.title
+    '+edit : Devel PPA : \xe2\x80\x9cLandscape Developers\xe2\x80\x9d team'
 
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Yay, I can change it.')
     >>> sample_browser.getControl("Save").click()
 
     >>> print sample_browser.title
-    Devel PPA
+    Devel PPA : “Landscape Developers” team
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Yay, I can change it.
 
 Cancelling the 'Edit' form will redirect the user to the PPA overview
@@ -251,11 +251,11 @@ page and discard the changes.
     >>> sample_browser.getControl("Cancel").click()
 
     >>> print sample_browser.title
-    Devel PPA
+    Devel PPA : “Landscape Developers” team
 
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    PPA description
     Yay, I can change it.
 
 Similarly to users, teams with assigned PPAs cannot be renamed either.
@@ -293,11 +293,11 @@ name of other users or teams:
     >>> admin_browser.getControl("Activate").click()
 
     >>> print admin_browser.title
-    Hack PPA
+    Hack PPA : James Blackwell
 
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'description'))
-    Description
+    ...     find_tag_by_id(admin_browser.contents, 'edit-description'))
+    PPA description
     Go for it, you lazy !
 
 LP-admins can also 'edit' PPAs of other people:
@@ -318,7 +318,7 @@ they need to be able to make PPAs private.
     >>> admin_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> admin_browser.getLink("Administer archive").click()
     >>> print admin_browser.title
-    Administer Hack PPA
+    +admin : Hack PPA : James Blackwell
 
     >>> commercial_browser = setupBrowser(
     ...     auth='Basic commercial-member@canonical.com:test')
@@ -373,14 +373,11 @@ Once confirmed the administrator is sent to the PPA page where he can
 see some of the updated information.
 
     >>> print admin_browser.title
-    Hack PPA
+    Hack PPA : James Blackwell
 
     >>> for msg in get_feedback_messages(admin_browser.contents):
     ...     print msg
     This archive has been disabled.
-
-    >>> print_tag_with_id(admin_browser.contents, 'privacy')
-    This archive is private
 
 We need go back to the "Administer archive" page to see the build score change
 that was made:
@@ -447,13 +444,13 @@ PPA overview page and discards the changes.
     >>> admin_browser.getControl("Cancel").click()
 
     >>> print admin_browser.title
-    Hack PPA
+    Hack PPA : James Blackwell
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl("Cancel").click()
 
     >>> print admin_browser.title
-    Hack PPA
+    Hack PPA : James Blackwell
 
 
 == Double submission ==
@@ -488,11 +485,11 @@ Activate the PPA in the first browser:
     >>> browser1.getControl("Activate").click()
 
     >>> print browser1.title
-    Boom PPA
+    Boom PPA : Foo Bar
 
     >>> print extract_text(
-    ...     find_tag_by_id(browser1.contents, 'description'))
-    Description
+    ...     find_tag_by_id(browser1.contents, 'edit-description'))
+    PPA description
     PPA rocks!
 
 Activating the default PPA in the second browser results in an error
@@ -532,7 +529,7 @@ all his PPAs.
     >>> cprov_browser.getLink("Create a new PPA").click()
 
     >>> print cprov_browser.title
-    Activate Personal Package Archive
+    +activate-ppa : Celso Providelo
 
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Existing PPAs
@@ -613,7 +610,7 @@ immediately sent to it.
     >>> cprov_browser.getControl("Activate").click()
 
     >>> print cprov_browser.title
-    Edge PPA
+    Edge PPA : Celso Providelo
 
 Back to his profile page Celso and anyone can his multiple PPAs.
 
