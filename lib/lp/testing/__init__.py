@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from datetime import datetime, timedelta
+from operator import attrgetter
 from pprint import pformat
 import copy
 import os
@@ -69,7 +70,7 @@ class TestCase(unittest.TestCase):
     # Python 2.4 monkeypatch:
     if getattr(unittest.TestCase, '_exc_info', None) is None:
         _exc_info = unittest.TestCase._TestCase__exc_info
-        _testMethodName = property(lambda self: self._TestCase__testMethodName)
+        _testMethodName = property(attrgetter('_TestCase__testMethodName'))
 
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
