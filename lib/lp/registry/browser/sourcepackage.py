@@ -159,6 +159,11 @@ class SourcePackageView:
         self.processForm()
 
     @property
+    def page_title(self):
+        """The HTML page title."""
+        return '%s package' % self.context.name
+
+    @property
     def cancel_url(self):
         return canonical_url(self.context)
 
