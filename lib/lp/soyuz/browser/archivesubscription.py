@@ -136,6 +136,11 @@ class ArchiveSubscribersView(LaunchpadFormView):
     custom_widget('subscriber', PersonPickerWidget,
         header="Select the subscriber")
 
+    @property
+    def label(self):
+        """Return a label for the view's main heading."""
+        return "Manage access to " + self.context.title
+
     def initialize(self):
         """Ensure that we are dealing with a private archive."""
         # If this archive is not private, then we should not be
@@ -237,7 +242,7 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 
     @property
     def label(self):
-        """Return a relevant label for the view's main heading."""
+        """Return a label for the view's main heading."""
         return "Edit " + self.context.displayname
 
     def validate_update_subscription(self, action, data):
@@ -328,7 +333,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
 
     @property
     def label(self):
-        """Return the label used for the main heading."""
+        """Return the label for the view's main heading."""
         return self.context.title
 
     def initialize(self):

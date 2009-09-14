@@ -130,8 +130,6 @@ archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
 archive_index = ContextDisplayName('%s')
 
-archive_subscribers = ContextDisplayName('Manage access to %s')
-
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'

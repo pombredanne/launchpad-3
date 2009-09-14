@@ -30,11 +30,16 @@ First, ensure that the archives we'll be using are private:
     >>> transaction.commit()
     >>> logout()
 
-Initially the view does not display any subscribers, as can be seen
-using the has_subscriptions property:
+The view includes a label property.
 
     >>> login('celso.providelo@canonical.com')
     >>> view = create_initialized_view(cprov.archive, name="+subscriptions")
+    >>> print view.label
+    Manage access to PPA for Celso Providelo
+
+Initially the view does not display any subscribers, as can be seen
+using the has_subscriptions property:
+
     >>> view.has_subscriptions
     False
 
@@ -247,7 +252,7 @@ After canceling a subscription, a relevant notification is added to the view.
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    You have revoked Andrew Bennetts's subscription to PPA for
+    You have revoked Andrew Bennetts's access to PPA for
     Celso Providelo.
 
 Just uncancel the subscription before continuing on.
