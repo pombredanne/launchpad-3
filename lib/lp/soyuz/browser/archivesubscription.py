@@ -295,9 +295,7 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
 
-    # XXX Michael Nelson 20090911 bug=417089. This should be removed
-    # when bug 417089 lands.
-    page_title = "Private PPA access"
+    label = "Private PPA access"
 
     @cachedproperty
     def subscriptions_with_tokens(self):
