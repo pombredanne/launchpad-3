@@ -282,7 +282,7 @@ class EC2Instance:
         cmd = [
             'ec2-register',
             '--private-key=%s' % local_pk,
-            '--cert=%s' % self.local_cert,
+            '--cert=%s' % local_cert,
             manifest_path
             ]
         self.log("Executing command: %s" % ' '.join(cmd))

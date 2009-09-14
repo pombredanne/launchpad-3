@@ -388,10 +388,6 @@ class EC2TestRunner:
         sys.stdout.write(msg)
         sys.stdout.flush()
 
-    def start(self):
-        """Start the EC2 instance."""
-        self._instance.start()
-
     def shutdown(self):
         if self.headless and self._running:
             self.log('letting instance run, to shut down headlessly '

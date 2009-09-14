@@ -45,6 +45,61 @@ def error_and_quit(msg):
     sys.exit(1)
 
 
+def run_with_instance(instance, run, demo_networks, postmortem):
+    instance.start()
+    try:
+        try:
+            run()
+        except Exception:
+            # If we are running in demo or postmortem mode, it is really
+            # helpful to see if there are any exceptions before it waits
+            # in the console (in the finally block), and you can't figure
+            # out why it's broken.
+            traceback.print_exc()
+    finally:
+        try:
+            if demo_networks:
+                demo_network_string = '\n'.join(
+                    '  ' + network for network in demo_networks)
+                ec2_ip = socket.gethostbyname(instance.hostname)
+                print (
+                    "\n\n"
+                    "********************** DEMO *************************\n"
+                    "It may take 20 seconds for the demo server to start up."
+                    "\nTo demo to other users, you still need to open up\n"
+                    "network access to the ec2 instance from their IPs by\n"
+                    "entering command like this in the interactive python\n"
+                    "interpreter at the end of the setup. "
+                    "\n  runner.security_group.authorize("
+                    "'tcp', 443, 443, '10.0.0.5/32')\n\n"
+                    "These demo networks have already been granted access on "
+                    "port 80 and 443:\n" + demo_network_string +
+                    "\n\nYou also need to edit your /etc/hosts to point\n"
+                    "launchpad.dev at the ec2 instance's IP like this:\n"
+                    "  " + ec2_ip + "    launchpad.dev\n\n"
+                    "See "
+                    "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
+                    "\n*****************************************************"
+                    "\n\n")
+            if postmortem:
+                console = code.InteractiveConsole(locals())
+                console.interact((
+                    'Postmortem Console.  EC2 instance is not yet dead.\n'
+                    'It will shut down when you exit this prompt (CTRL-D).\n'
+                    '\n'
+                    'Tab-completion is enabled.'
+                    '\n'
+                    'Test runner instance is available as `runner`.\n'
+                    'Also try these:\n'
+                    '  http://%(dns)s/current_test.log\n'
+                    '  ssh -A %(dns)s') %
+                                 {'dns': instance.hostname})
+                print 'Postmortem console closed.'
+        finally:
+            instance.shutdown()
+
+
+
 def main():
     parser = optparse.OptionParser(
         usage="%prog [options] [branch]",
@@ -295,7 +350,6 @@ def main():
             instance=instance, vals=vals,
             )
         def run_tests():
-            runner.start()
             runner.configure_system()
             runner.prepare_tests()
             if demo_networks:
@@ -311,70 +365,24 @@ def main():
         vals['launchpad-login'] = login
         vals['email'] = 'michael.hudson@canonical.com'
         def make_new_image():
-            instance.start()
             instance.setup_user()
             user_connection = instance.connect_as_user()
             user_connection.perform('bzr launchpad-login %(launchpad-login)s')
             user_connection.perform("bzr whoami '%(email)s'")
-            user_connection.run_with_ssh_agent(
-                "rsync -avp --partial --delete "
-                "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
-                "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
-                "/var/launchpad/sourcecode/")
-            user_connection.run_with_ssh_agent(
-                'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
+            #user_connection.run_with_ssh_agent(
+            #    "rsync -avp --partial --delete "
+            #    "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
+            #    "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
+            #    "/var/launchpad/sourcecode/")
+            #user_connection.run_with_ssh_agent(
+            #    'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
             user_connection.close()
+            root_connection = instance.connect_as_root()
+            root_connection.perform(
+                'deluser --remove-home %(USER)s', ignore_failure=True)
+            root_connection.close()
             instance.bundle(options.bundle)
         run = make_new_image
+    run_with_instance(
+        instance, run, options.demo_networks, options.postmortem)
 
-
-    try:
-        try:
-            run()
-        except Exception:
-            # If we are running in demo or postmortem mode, it is really
-            # helpful to see if there are any exceptions before it waits
-            # in the console (in the finally block), and you can't figure
-            # out why it's broken.
-            traceback.print_exc()
-    finally:
-        try:
-            if options.demo_networks:
-                demo_network_string = '\n'.join(
-                    '  ' + network for network in options.demo_networks)
-                ec2_ip = socket.gethostbyname(instance.hostname)
-                print (
-                    "\n\n"
-                    "********************** DEMO *************************\n"
-                    "It may take 20 seconds for the demo server to start up."
-                    "\nTo demo to other users, you still need to open up\n"
-                    "network access to the ec2 instance from their IPs by\n"
-                    "entering command like this in the interactive python\n"
-                    "interpreter at the end of the setup. "
-                    "\n  runner.security_group.authorize("
-                    "'tcp', 443, 443, '10.0.0.5/32')\n\n"
-                    "These demo networks have already been granted access on "
-                    "port 80 and 443:\n" + demo_network_string +
-                    "\n\nYou also need to edit your /etc/hosts to point\n"
-                    "launchpad.dev at the ec2 instance's IP like this:\n"
-                    "  " + ec2_ip + "    launchpad.dev\n\n"
-                    "See "
-                    "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
-                    "\n*****************************************************"
-                    "\n\n")
-            if options.postmortem:
-                console = code.InteractiveConsole({'runner': runner, 'e': e})
-                console.interact((
-                    'Postmortem Console.  EC2 instance is not yet dead.\n'
-                    'It will shut down when you exit this prompt (CTRL-D).\n'
-                    '\n'
-                    'Tab-completion is enabled.'
-                    '\n'
-                    'Test runner instance is available as `runner`.\n'
-                    'Also try these:\n'
-                    '  http://%(dns)s/current_test.log\n'
-                    '  ssh -A %(dns)s') %
-                                 {'dns': instance.hostname})
-                print 'Postmortem console closed.'
-        finally:
-            instance.shutdown()
