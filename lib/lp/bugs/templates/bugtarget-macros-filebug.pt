@@ -187,15 +187,7 @@
               Launchpad</a>, you should file the bug against that
               specific distribution.
             </p>
-            <tal:XXX condition="nothing">
-              XXX: Graham Binns 2007-07-12 bug=125574:
-              The formatting of this next paragraph seems a little odd
-              when seen in the context of a product that does not use
-              Malone and does not specify another bug tracker. For an
-              example of this, see
-              http://bugs.launchpad.dev/thunderbird/+filebug.
-            </tal:XXX>
-            <p class="helpwanted message">
+            <p class="warning message">
               Launchpad doesn't know of any distribution packages that
               include upstream <span
               tal:replace="product_or_distro/displayname" />. You can
@@ -226,13 +218,14 @@
             </p>
           </tal:has-bugtracker>
           <tal:XXX condition="nothing">
-            XXX: kiko 2007-03-14:
-            We shouldn't be using feedback@launchpad.net, but we have
-            no way of allowing people to go around changing product
-            bugtracker details, so for now it will have to do.
+            XXX: Gavin Panella 2009-09-14 bug=429354:
+            Asking people to use feedback@launchpad.net is not
+            ideal. We could instead link project owners to the +edit
+            page and provide the +contactuser form for everyone else
+            to contact the owner.
           </tal:XXX>
           <tal:not-has-bugtracker condition="not: bugtracker">
-            <p class="helpwanted message">
+            <p class="warning message">
               Launchpad doesn't know what bug tracker <span
               tal:replace="product_or_distro/displayname">Alsa
               Utils</span> uses. Do you know? <a href="mailto:
