@@ -16,7 +16,7 @@ import re
 import rfc822
 import sys
 import urllib
-import warnings
+##import warnings
 
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta

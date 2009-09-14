@@ -20,8 +20,8 @@ what users are the top contributors for a given product/distribution.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IKarma, IKarmaCache, IProductSet,
-    ...     ISourcePackageNameSet, IDistributionSet)
+    ...     IDistributionSet, IKarma, IPersonSet, IProductSet,
+    ...     ISourcePackageNameSet)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
