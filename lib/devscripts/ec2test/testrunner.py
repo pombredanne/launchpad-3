@@ -388,7 +388,7 @@ class EC2TestRunner:
         user_sftp = user_connection.ssh.open_sftp()
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            as_user('sudo -u %(USER)s mkdir /home/%(USER)s/.bazaar')
+            as_user('mkdir /home/%(USER)s/.bazaar')
             bazaar_conf_file = user_sftp.open(
                 "/home/%(USER)s/.bazaar/bazaar.conf" % self.vals, 'w')
             bazaar_conf_file.write(
