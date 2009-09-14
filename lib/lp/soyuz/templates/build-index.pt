@@ -45,7 +45,6 @@
       <div class="yui-g">
 
         <div id="binaries" class="yui-u first"
-             tal:define="uploaded view/has_done_upload;"
              tal:condition="context/binarypackages">
           <div class="portlet">
             <div metal:use-macro="template/macros/binaries" />
@@ -226,7 +225,7 @@
     </tal:comment>
     <h2>Binary packages</h2>
     <tal:non_ppa condition="not: view/is_ppa">
-      <tal:upload_done condition="uploaded">
+      <tal:upload_done condition="view/has_done_upload">
         <p class="discreet">Binary packages produced by this build:</p>
         <ul>
           <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
@@ -238,8 +237,16 @@
           </li>
         </ul>
       </tal:upload_done>
-      <tal:upload_not_done condition="not: uploaded">
-        <p class="discreet">Binary packages awaiting publication:</p>
+      <tal:upload_not_done
+        condition="not: view/has_done_upload"
+        define="upload_status view/package_upload/status">
+        <p class="discreet"
+           tal:condition="upload_status/enumvalue:ACCEPTED"
+          >Binary packages awaiting publication:</p>
+        <p class="discreet"
+           tal:condition="not: upload_status/enumvalue:ACCEPTED"
+          >Binary packages awaiting approval
+           in <span tal:replace="upload_status/name">NEW</span> queue:</p>
         <ul>
           <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
             <span class="sprite package-binary"

@@ -305,7 +305,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'binaries'))
     Binary packages
-    Binary packages awaiting publication:
+    Binary packages awaiting approval in NEW queue:
     testing-bin 1.0
 
     >>> print extract_text(
@@ -314,7 +314,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     Files resulting from this build:
     testing-bin_1.0_all.deb (8 bytes)
 
-Since the binary is still 'awaiting publication', it is not
+Since the binary is still 'awaiting approval', it is not
 linkified. That's because its `DistroArchSeriesBinaryPackageRelease`
 page does not exist yet.
 
@@ -331,13 +331,58 @@ already have access to them.
 
 Again, note that the files are `ProxiedLibrarianFile` objects as well.
 
-Once the new binaries are accepted by an archive administrator (See
-xx-queue-pages.txt) the binary reference becomes a link to its
-corresponding page.
+Binary upload can also be awaiting approval in UNAPPROVED queue
 
-    # Accept and publish the binary upload for the testing build.
+    # Accept the binary upload for the testing build.
+    >>> login('foo.bar@canonical.com')
+    >>> upload.setUnapproved()
+    >>> logout()
+
+    >>> anon_browser.open(anon_browser.url)
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    Binary packages
+    Binary packages awaiting approval in UNAPPROVED queue:
+    testing-bin 1.0
+
+    >>> print anon_browser.getLink('testing-bin 1.0')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
+    http://.../+build/31/+files/testing-bin_1.0_all.deb
+
+When new binaries are accepted by an archive administrator (See
+xx-queue-pages.txt) this action is sinalized in the build page.
+
+    # Accept the binary upload for the testing build.
     >>> login('foo.bar@canonical.com')
     >>> upload.setAccepted()
+    >>> logout()
+
+    >>> anon_browser.open(anon_browser.url)
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    Binary packages
+    Binary packages awaiting publication:
+    testing-bin 1.0
+
+    >>> print anon_browser.getLink('testing-bin 1.0')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
+    http://.../+build/31/+files/testing-bin_1.0_all.deb
+
+Once the accepted binary upload is processed by the backend, the
+binary reference finally becomes a link to its corresponding page.
+
+    # Publish the binary upload for the testing build.
+    >>> login('foo.bar@canonical.com')
     >>> unused = upload.realiseUpload()
     >>> logout()
 

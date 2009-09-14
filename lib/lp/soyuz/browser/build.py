@@ -150,18 +150,19 @@ class BuildView(LaunchpadView):
         return (check_permission('launchpad.Edit', self.context)
             and self.context.can_be_retried)
 
-    @property
-    def has_done_upload(self):
-        """Return True if this build's package upload is done."""
-        package_upload = self.context.package_upload
+    @cachedproperty
+    def package_upload(self):
+        """Return the corresponding package upload for this build."""
+        return self.context.package_upload
 
-        if package_upload is None:
+    @cachedproperty
+    def has_done_upload(self):
+        """Whether this build was already uploaded and published."""
+        if (self.package_upload is None or
+            self.package_upload.status != PackageUploadStatus.DONE):
             return False
 
-        if package_upload.status == PackageUploadStatus.DONE:
-            return True
-
-        return False
+        return True
 
     @property
     def changesfile(self):
