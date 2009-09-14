@@ -42,24 +42,16 @@
 
       </div> <!-- yui-g  -->
 
-      <div class="yui-g">
+      <div id="binaries" class="portlet"
+           tal:define="uploaded view/has_done_upload;"
+           tal:condition="context/binarypackages">
+        <div metal:use-macro="template/macros/binaries" />
+      </div>
 
-        <div id="binaries" class="yui-u first"
-             tal:define="uploaded view/has_done_upload;"
-             tal:condition="context/binarypackages">
-          <div class="portlet">
-            <div metal:use-macro="template/macros/binaries" />
-          </div>
-        </div>
-
-        <div id="files" class="yui-u"
-             tal:condition="context/binarypackages">
-          <div class="portlet">
-            <div metal:use-macro="template/macros/files" />
-          </div>
-        </div>
-
-      </div> <!-- yui-g  -->
+      <div id="files" class="portlet"
+           tal:condition="context/binarypackages">
+        <div metal:use-macro="template/macros/files" />
+      </div>
 
       <div id="buildlog" class="portlet"
            tal:condition="context/buildstate/enumvalue:BUILDING">
