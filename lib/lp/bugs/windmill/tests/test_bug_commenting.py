@@ -11,7 +11,7 @@ import unittest
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
-from canonical.testing.layers import WindmillAppServerLayer
+from canonical.testing.layers import BugsWindmillAppServerLayer
 from canonical.uuid import generate_uuid
 from lp.testing import TestCaseWithFactory
 
@@ -24,7 +24,7 @@ ADD_COMMENT_BUTTON = (
 
 class TestBugCommenting(TestCaseWithFactory):
 
-    layer = WindmillAppServerLayer
+    layer = BugsWindmillAppServerLayer
 
     def test_bug_commenting(self):
         """Test commenting on bugs."""

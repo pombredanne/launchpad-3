@@ -41,7 +41,8 @@ __all__ = [
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
-    'WindmillAppServerLayer',
+    'BugsWindmillAppServerLayer',
+    'CodeWindmillAppServerLayer',
     'ZopelessAppServerLayer',
     'ZopelessDatabaseLayer',
     'ZopelessLayer',
@@ -59,6 +60,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -1640,19 +1642,47 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     def testTearDown(cls):
         LayerProcessController.postTestInvariants()
 
+class BaseWindmillLayer(AppServerLayer):
 
-class WindmillAppServerLayer(AppServerLayer):
+    base_url = None
+    shell_objects = None
+    config_file = None
 
     @classmethod
     @profiled
     def setUp(cls):
+        if cls.base_url is None:
+            return
+        config_text = dedent("""\
+            START_FIREFOX = True
+            TEST_URL = '%s'
+            """ % cls.base_url)
+        cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
+        cls.config_file.write(config_text)
+        # Flush the file so that windmill can read it.
+        cls.config_file.flush()
         from windmill.bin.admin_lib import start_windmill
         from lp.testing import windmillconfig
-        os.environ['WINDMILL_CONFIG_FILE'] = windmillconfig.__file__
+        os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
+        import pdb; pdb.set_trace()
         cls.shell_objects = start_windmill()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        from windmill.bin.admin_lib import teardown
-        teardown(cls.shell_objects)
+        if cls.shell_objects is not None:
+            from windmill.bin.admin_lib import teardown
+            import pdb; pdb.set_trace()
+            teardown(cls.shell_objects)
+        if cls.config_file is not None:
+            cls.config_file.close()
+
+
+class BugsWindmillAppServerLayer(BaseWindmillLayer):
+
+    base_url = 'http://bugs.launchpad.dev:8085/'
+
+
+class CodeWindmillAppServerLayer(BaseWindmillLayer):
+
+    base_url = 'http://code.launchpad.dev:8085/'
