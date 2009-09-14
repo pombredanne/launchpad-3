@@ -141,7 +141,7 @@ class EC2Instance:
     def connect_as_user(self):
         return self._connect(self._vals['USER'], True)
 
-    def set_up_user(self):
+    def set_up_user(self, user_key):
         """Set up an account named after the local user."""
         root_connection = self.connect_as_root()
         as_root = root_connection.perform
@@ -187,7 +187,7 @@ class EC2Instance:
         authorized_keys_file = root_sftp.open(
             "%s/authorized_keys" % remote_ssh_dir, 'w')
         authorized_keys_file.write(
-            "%s %s\n" % key.get_name(), key.get_base64())
+            "%s %s\n" % user_key.get_name(), user_key.get_base64())
         authorized_keys_file.close()
         root_sftp.close()
         # Chown and chmod the .ssh directory and contents that we just
