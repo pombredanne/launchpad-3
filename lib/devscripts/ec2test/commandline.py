@@ -359,7 +359,6 @@ def main():
     else:
         instance.check_bundling_prerequisites()
         def make_new_image():
-            instance.setup_user()
             user_connection = instance.connect_as_user()
             user_connection.perform('bzr launchpad-login %(launchpad-login)s')
             user_connection.run_with_ssh_agent(
@@ -377,8 +376,7 @@ def main():
             instance.bundle(options.bundle)
         run = make_new_image
 
-    instance.setup_user(user_key)
+    instance.set_up_user(user_key)
 
     run_with_instance(
         instance, run, options.demo_networks, options.postmortem)
-

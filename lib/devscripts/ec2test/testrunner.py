@@ -611,4 +611,3 @@ class EC2TestRunner:
             # ec2test-remote.py wants the extra options to be after a double-
             # dash.
             return ('--', self.test_options)
-
