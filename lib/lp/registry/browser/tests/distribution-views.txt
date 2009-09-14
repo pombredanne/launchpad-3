@@ -286,3 +286,21 @@ If the distribution officially uses the application, its portlet does appear.
     portlet-latest-bugs
     >>> print find_tag_by_id(content, 'portlet-blueprints')['id']
     portlet-blueprints
+
+
+Distribution +series
+--------------------
+
+The +series view provides a page title and list of dicts that represent
+the series and the CSS class to present them wth.
+
+    >>> view = create_view(ubuntu, name='+series')
+    >>> print view.page_title
+    Ubuntu Linux version history
+
+    >>> for styled_series in view.styled_series:
+    ...     print styled_series['series'].name, styled_series['css_class']
+    breezy-autotest unhighlighted
+    grumpy unhighlighted
+    hoary highlighted
+    warty unhighlighted

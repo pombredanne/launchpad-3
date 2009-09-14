@@ -900,6 +900,13 @@
         permission="launchpad.TranslationsAdmin"
         template="../../app/templates/generic-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <!-- Language pack admin portlet -->
+    <browser:page
+        name="+language-pack-admin-info"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        permission="launchpad.View"
+        template="../templates/distribution-language-pack-admin-info.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 <!-- DistroSeries -->
 
