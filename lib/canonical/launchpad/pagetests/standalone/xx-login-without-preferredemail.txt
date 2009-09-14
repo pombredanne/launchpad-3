@@ -55,11 +55,8 @@ He can't login without first validating his email address.
 
   >>> path = "%s/+validateemail" % base_path
   >>> browser.open(path)
-  >>> print '\n' + browser.contents
-  <BLANKLINE>
-  ...
-  ...Confirm e-mail address...martin.pitt@canonical.com...
-  ...
+  >>> print browser.title
+  Confirm e-mail address
 
   >>> browser.getControl('Continue').click()
   >>> browser.url
@@ -77,4 +74,3 @@ He can't login without first validating his email address.
   >>> e = EmailAddressSet().getByEmail(to_addr)
   >>> e.status.title
   'Preferred Email Address'
-

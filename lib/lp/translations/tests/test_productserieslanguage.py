@@ -13,13 +13,13 @@ from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import ZopelessDatabaseLayer
 
 
 class TestProductSeriesLanguages(TestCaseWithFactory):
     """Test ProductSeries.productserieslanguages implementation."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a productseries that uses translations.
@@ -101,7 +101,7 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
 class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
     """Test ProductSeriesLanguage statistics calculation."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def createPOTemplateWithPOTMsgSets(self, number_of_potmsgsets):
         potemplate = self.factory.makePOTemplate(
@@ -202,6 +202,40 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
             pofile1.rosettaCount() + pofile2.rosettaCount(),
             pofile1.updatesCount() + pofile2.updatesCount(),
             pofile1.unreviewedCount() + pofile2.unreviewedCount()))
+
+    def test_recalculateCounts(self):
+        # Test that recalculateCounts works correctly.
+        potemplate1 = self.createPOTemplateWithPOTMsgSets(10)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+
+        # Set statistics to 1 imported, 3 new in rosetta (out of which 2
+        # are updates) and 4 with unreviewed suggestions.
+        self.setPOFileStatistics(pofile1, 1, 2, 3, 4)
+
+        potemplate2 = self.createPOTemplateWithPOTMsgSets(20)
+        pofile2 = self.factory.makePOFile(self.language.code, potemplate2)
+        # Set statistics to 1 imported, 1 new in rosetta (which is also the
+        # 1 update) and 1 with unreviewed suggestions.
+        self.setPOFileStatistics(pofile2, 1, 1, 1, 1)
+
+        psl = self.psl_set.getProductSeriesLanguage(self.productseries,
+                                                    self.language)
+        psl.recalculateCounts()
+        # Total is a sum of totals in both POTemplates (10+20).
+        # Translated is a sum of imported and rosetta translations,
+        # which adds up as (1+3)+(1+1).
+        self.assertPSLStatistics(psl, (30, 6, 2, 4, 3, 5))
+
+    def test_recalculateCounts_no_pofiles(self):
+        # Test that recalculateCounts works correctly even when there
+        # are no POFiles returned.
+        potemplate1 = self.createPOTemplateWithPOTMsgSets(1)
+        potemplate2 = self.createPOTemplateWithPOTMsgSets(2)
+        psl = self.psl_set.getProductSeriesLanguage(self.productseries,
+                                                    self.language)
+        psl.recalculateCounts()
+        # And all the counts are zero.
+        self.assertPSLStatistics(psl, (3, 0, 0, 0, 0, 0))
 
 
 def test_suite():

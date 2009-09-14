@@ -40,7 +40,8 @@ Visit the token URL mentioned in the email, and get redirected to
     >>> print browser.title
     Confirm e-mail address
 
-    >>> print find_main_content(browser.contents)
+    >>> print extract_text(find_main_content(browser.contents))
+
     <div...Confirm e-mail address...salgado@ubuntu.com...
 
     >>> browser.getControl('Continue').click()
