@@ -422,7 +422,6 @@ class EC2TestRunner:
         user_sftp.close()
         # Set up launchpad login and email
         user_p('bzr launchpad-login %(launchpad-login)s')
-        user_p("bzr whoami '%(email)s'")
         user_connection.close()
 
     def prepare_tests(self):

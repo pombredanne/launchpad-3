@@ -361,12 +361,10 @@ def main():
             error_and_quit(
                 'you must have set your launchpad login in bzr.')
         vals['launchpad-login'] = login
-        vals['email'] = 'michael.hudson@canonical.com'
         def make_new_image():
             instance.setup_user()
             user_connection = instance.connect_as_user()
             user_connection.perform('bzr launchpad-login %(launchpad-login)s')
-            user_connection.perform("bzr whoami '%(email)s'")
             #user_connection.run_with_ssh_agent(
             #    "rsync -avp --partial --delete "
             #    "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "

@@ -190,8 +190,6 @@ class EC2Instance:
                 value = data.get(key)
                 if value is not None:
                     ssh_config_dest.write('    %s %s\n' % (key, value))
-        ssh_config_dest.write('Host bazaar.launchpad.net\n')
-        ssh_config_dest.write('    user %(launchpad-login)s\n' % self._vals)
         ssh_config_dest.close()
         # create authorized_keys
         self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
