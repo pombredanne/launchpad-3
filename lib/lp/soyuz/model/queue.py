@@ -43,15 +43,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory,
-    SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.queue import (
     PackageUploadStatus, PackageUploadCustomFormat)
