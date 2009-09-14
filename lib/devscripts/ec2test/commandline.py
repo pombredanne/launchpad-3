@@ -376,7 +376,7 @@ def main():
                 'deluser --remove-home %(USER)s', ignore_failure=True)
             root_connection.close()
             instance.bundle(options.bundle)
-            return False
+            return True
         run = make_new_image
 
     instance.start()
