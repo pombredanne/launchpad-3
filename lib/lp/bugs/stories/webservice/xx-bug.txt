@@ -1703,6 +1703,19 @@ And for every bug we can look at the CVEs linked to it.
     status: u'Entry'
     title: u'CVE-1999-8979 (Entry)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979'
+    bugs_collection_link: u'http://.../cves/1999-8979/bugs'
+    ---
+
+And for every CVE we can look at the bugs linked to it.
+
+    >>> bugs_url = bug_one.cves[0].bugs_collection_link
+    >>> pprint_collection(webservice.get(bugs_url).jsonBody())
+    resource_type_link: u'http://.../#bug-page-resource'
+    start: 0
+    total_size: 1
+    ---
+    id: 1
+    resource_type_link: u'http://.../#bug'
     ---
 
 Unlink CVEs from that bug.

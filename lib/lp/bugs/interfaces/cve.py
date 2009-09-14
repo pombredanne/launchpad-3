@@ -88,6 +88,12 @@ class ICve(Interface):
     datemodified = exported(
         Datetime(title=_('Date Modified'), required=True, readonly=False),
         exported_as='date_modified')
+    bugs = exported(
+        CollectionField(
+            title=_('Bugs related to this CVE entry.'),
+            value_type=Reference(schema=IBug),
+            readonly=True))
+    bug_links = Attribute('Links between this CVE entry and bugs.')
 
     # other attributes
     url = exported(
