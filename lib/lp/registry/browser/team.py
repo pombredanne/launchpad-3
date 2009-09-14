@@ -735,13 +735,10 @@ class TeamMailingListSubscribersView(LaunchpadView):
         return ('Mailing list subscribers for the %s team' %
                 self.context.displayname)
 
-    page_title = label
-
     @cachedproperty
     def subscribers(self):
-        #DO NOT CHECK IN
         return BatchNavigator(
-            self.context.mailing_list.getSubscribers(), self.request, size=50)
+            self.context.mailing_list.getSubscribers(), self.request)
 
     def renderTable(self):
         html = ['<table style="max-width: 80em">']
@@ -772,7 +769,6 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
 
     schema = Interface
     label = 'Mailing list moderation'
-    page_title = label
 
     def __init__(self, context, request):
         """Allow for review and moderation of held mailing list posts."""

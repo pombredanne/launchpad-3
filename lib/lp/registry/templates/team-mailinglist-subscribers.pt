@@ -11,8 +11,6 @@
 
   <div metal:fill-slot="main">
 
-    <h1 tal:content="view/label" />
-
     <div id="subscribers">
       <tal:has-mailinglist condition="context/mailing_list">
         <tal:has-subscribers condition="view/subscribers/currentBatch">
