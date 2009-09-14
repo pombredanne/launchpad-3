@@ -41,7 +41,15 @@ class EC2Instance:
 
     @classmethod
     def make(cls, credentials, name, instance_type, machine_id, demo_networks):
-        # Validate instance_type and get default kernal and ramdisk.
+        """Construct an `EC2Instance`.
+
+        :param credentials: An `EC2Credentials` object.
+        :param name: The name to use for the key pair and security group for
+            the instance.
+        :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
+        :param machine_id: ???
+        :param demo_networks: ???
+        """
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
 
@@ -70,10 +78,7 @@ class EC2Instance:
         return EC2Instance(
             name, image, instance_type, demo_networks, account, vals)
 
-    # XXX: JonathanLange 2009-05-31: Separate out demo server maybe?
-
-    # XXX: JonathanLange 2009-05-31: Possibly separate out "get an instance"
-    # and "set up instance for Launchpad testing" logic.
+    # XXX: JonathanLange 2009-05-31: Separate out demo server
 
     def __init__(self, name, image, instance_type, demo_networks, account,
                  vals):
@@ -237,6 +242,14 @@ class EC2Instance:
         root_connection.close()
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
+        """Copy `local_path` to `remote_dir` on this instance.
+
+        The name in the remote directory will be that of the local file.
+
+        :param sftp: A paramiko SFTP object.
+        :param local_path: The local path.
+        :param remote_dir: The directory on the instance to copy into.
+        """
         name = os.path.basename(local_path)
         remote_path = os.path.join(remote_dir, name)
         remote_file = sftp.open(remote_path, 'w')
@@ -245,6 +258,10 @@ class EC2Instance:
         return remote_path
 
     def copy_key_and_certificate_to_image(self, sftp):
+        """Copy the AWS private key and certificate to the image.
+
+        :param sftp: A paramiko SFTP object.
+        """
         remote_ec2_dir = '/mnt/ec2'
         sftp.mkdir(remote_ec2_dir)
         remote_pk = self._copy_single_file(
@@ -254,6 +271,13 @@ class EC2Instance:
         return (remote_pk, remote_cert)
 
     def _check_single_glob_match(self, local_dir, pattern, file_kind):
+        """Check that `pattern` matches one file in `local_dir` and return it.
+
+        :param local_dir: The local directory to look in.
+        :param pattern: The glob patten to match.
+        :param file_kind: The sort of file we're looking for, to be used in
+            error messages.
+        """
         pattern = os.path.join(local_dir, pattern)
         matches = glob.glob(pattern)
         if len(matches) != 1:
@@ -280,7 +304,11 @@ class EC2Instance:
             local_ec2_dir, 'pk-*.pem', 'private key')
 
     def bundle(self, name, credentials):
-        """Bundle, upload and register the instance as a new AMI."""
+        """Bundle, upload and register the instance as a new AMI.
+
+        :param name: The name-to-be of the new AMI.
+        :param credentials: An `EC2Credentials` object.
+        """
         root_connection = self.connect_as_root()
         sftp = root_connection.ssh.open_sftp()
 
@@ -405,4 +433,3 @@ class EC2InstanceConnection:
     def close(self):
         self.ssh.close()
         self.ssh = None
-

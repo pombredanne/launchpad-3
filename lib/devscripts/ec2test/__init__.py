@@ -29,4 +29,3 @@ def error_and_quit(msg):
 
 from devscripts.ec2test.commandline import main
 main # shut up pyflakes
-

@@ -19,7 +19,6 @@ import rlcompleter
 # Shut up pyflakes.
 rlcompleter
 
-
 import paramiko
 
 from devscripts.ec2test import error_and_quit
@@ -31,12 +30,21 @@ from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 readline.parse_and_bind('tab: complete')
 
 
-
 # XXX: JonathanLange 2009-05-31: Strongly considering turning this into a
 # Bazaar plugin -- probably would make the option parsing and validation
 # easier.
 
 def run_with_instance(instance, run, demo_networks, postmortem):
+    """Call run(), then allow post mortem debugging and shut down `instance`.
+
+    :param instance: A running `EC2Instance`.  If `run` returns True, it will
+        be shut down before this function returns.
+    :param run: A callable that will be called with no arguments to do
+        whatever needs to be done with the instance.
+    :param demo_networks: ???
+    :param postmortem: If this flag is true, any exceptions will be caught and
+        an interactive session run to allow debugging the problem.
+    """
     shutdown = True
     try:
         try:
