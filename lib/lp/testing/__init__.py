@@ -360,11 +360,8 @@ class TestCase(unittest.TestCase):
 
 # Python 2.4 monkeypatch:
 if getattr(TestCase, '_exc_info', None) is None:
-    class UnitTest24TestMethodNameAttributeAccessMonkeypatchDescriptor:
-        def __get__(self, obj, type):
-            return obj._TestCase__testMethodName
     TestCase._exc_info = TestCase._TestCase__exc_info
-    TestCase._testMethodName = UnitTest24TestMethodNameAttributeAccessMonkeypatchDescriptor()
+    TestCase._testMethodName = property(lambda self: self._TestCase__testMethodName)
 
 
 class TestCaseWithFactory(TestCase):
