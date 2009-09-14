@@ -347,7 +347,10 @@ and a packaging contents.
 
     >>> view = create_view(productseries, '+addpackage')
     >>> print view.label
-    Add distribution packaging record
+    Packaging of hotter in distributions
+
+    >>> print view.page_title
+    Packaging of hotter in distributions
 
     >>> print view.field_names
     ['distroseries', 'sourcepackagename', 'packaging']

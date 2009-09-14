@@ -761,9 +761,6 @@ product_bugs = ContextDisplayName('Bugs in %s')
 
 product_code_index = ContextDisplayName("Bazaar branches of %s")
 
-product_distros = ContextDisplayName(
-    '%s packages: Comparison of distributions')
-
 product_cvereport = ContextTitle('CVE reports for %s')
 
 product_edit = 'Change project details'
@@ -779,8 +776,6 @@ def product_mergeproposals(context, view):
 
 product_new_guided = 'Before you register your project...'
 
-product_packages = ContextDisplayName('%s packages in Launchpad')
-
 product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 
@@ -794,16 +789,9 @@ productrelease_admin = ContextTitle('Administer %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
-products_review_licenses = 'Review projects'
-
-productseries_packaging = ContextDisplayName(
-    'Packaging of %s in distributions')
-
 productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
-
-project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 

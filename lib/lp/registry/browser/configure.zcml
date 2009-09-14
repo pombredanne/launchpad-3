@@ -396,7 +396,7 @@
         class="lp.registry.browser.project.ProjectAddView"
         facet="overview"
         permission="launchpad.ProjectReview"
-        template="../templates/project-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:url
         for="lp.registry.interfaces.project.IProjectSeries"
         path_expression="string:+series/${name}"
@@ -1393,14 +1393,6 @@
             facet="overview"
             template="../templates/object-timeline-graph.pt"/>
         <browser:page
-            name="+packages"
-            facet="overview"
-            template="../templates/product-packages.pt"/>
-        <browser:page
-            name="+distributions"
-            facet="overview"
-            template="../templates/product-distros.pt"/>
-        <browser:page
             name="+listing-for-review"
             template="../templates/product-listing-for-review.pt"/>
         <browser:page
@@ -1448,6 +1440,20 @@
         facet="overview"
         permission="zope.Public"
         template="../templates/product-series.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        class="lp.registry.browser.product.ProductPackagesView"
+        name="+packages"
+        facet="overview"
+        template="../templates/product-packages.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        class="lp.registry.browser.product.ProductDistributionsView"
+        name="+distributions"
+        facet="overview"
+        template="../templates/product-distros.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"

@@ -12,6 +12,7 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
+    'ProductDistributionsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditNavigationMenu',
@@ -21,6 +22,7 @@ __all__ = [
     'ProductNavigation',
     'ProductNavigationMenu',
     'ProductOverviewMenu',
+    'ProductPackagesView',
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSeriesView',
@@ -961,6 +963,25 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 check_permission('launchpad.Commercial', self.context))
 
 
+class ProductPackagesView(ProductView):
+    """View for displaying product packaging"""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return '%s packages in Launchpad' % self.context.displayname
+
+
+class ProductDistributionsView(ProductView):
+    """View for displaying product packaging by distribution"""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return '%s packages: Comparison of distributions' % (
+            self.context.displayname)
+
+
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
@@ -1417,6 +1438,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
 
     schema = IProductReviewSearch
+    page_title = 'Review projects'
 
     full_row_field_names = [
         'search_text',
