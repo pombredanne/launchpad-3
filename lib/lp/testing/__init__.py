@@ -15,6 +15,8 @@ import tempfile
 import unittest
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.errors import InvalidURLJoin
 from bzrlib.transport import get_transport
 
 import pytz
@@ -390,6 +392,23 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
+    def createBranchAtURL(self, branch_url, format=None):
+        """Create a branch at the supplied URL.
+
+        The branch will be scheduled for deletion when the test terminates.
+        :param branch_url: The URL to create the branch at.
+        :param format: The format of branch to create.
+        """
+        if format is not None and isinstance(format, basestring):
+            format = format_registry.get(format)()
+        transport = get_transport(branch_url)
+        if not self.real_bzr_server:
+            # for real bzr servers, the prefix always exists.
+            transport.create_prefix()
+        self.addCleanup(transport.delete_tree, '.')
+        return BzrDir.create_branch_convenience(
+            branch_url, format=format)
+
     def create_branch_and_tree(self, tree_location='.', product=None,
                                hosted=False, db_branch=None, format=None,
                                **kwargs):
@@ -403,9 +422,6 @@ class TestCaseWithFactory(TestCase):
         :param format: Override the default bzrdir format to create.
         :return: a `Branch` and a workingtree.
         """
-        from bzrlib.bzrdir import BzrDir, format_registry
-        if format is not None and isinstance(format, basestring):
-            format = format_registry.get(format)()
         if db_branch is None:
             if product is None:
                 db_branch = self.factory.makeAnyBranch(**kwargs)
@@ -417,15 +433,20 @@ class TestCaseWithFactory(TestCase):
             branch_url = db_branch.warehouse_url
         if self.real_bzr_server:
             transaction.commit()
-        transport = get_transport(branch_url)
-        if not self.real_bzr_server:
-            transport.clone('../..').ensure_base()
-            transport.clone('..').ensure_base()
-        self.addCleanup(transport.delete_tree, '.')
-        bzr_branch = BzrDir.create_branch_convenience(
-            branch_url, format=format)
+        bzr_branch = self.createBranchAtURL(branch_url, format=format)
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
+
+    def createBzrBranch(self, db_branch, parent=None):
+        """Create a bzr branch for a database branch.
+
+        :param db_branch: The database branch to create the branch for.
+        :param parent: If supplied, the bzr branch to use as a parent.
+        """
+        bzr_branch = self.createBranchAtURL(db_branch.warehouse_url)
+        if parent:
+            bzr_branch.pull(parent)
+        return bzr_branch
 
     @staticmethod
     def getBranchPath(branch, base):
@@ -455,19 +476,9 @@ class TestCaseWithFactory(TestCase):
 
         :return: a `Branch` and a workingtree.
         """
-        from bzrlib.bzrdir import BzrDir
         db_branch = self.factory.makeAnyBranch()
-        transport = get_transport(
-            self.getBranchPath(
+        bzr_branch = self.createBranchAtURL(self.getBranchPath(
                 db_branch, config.codehosting.internal_branch_by_id_root))
-        # Ensure the parent directories exist so that we can stick a branch
-        # in them.
-        transport.clone('../../..').ensure_base()
-        transport.clone('../..').ensure_base()
-        transport.clone('..').ensure_base()
-        bzr_branch = BzrDir.create_branch_convenience(
-            transport.base, possible_transports=[transport])
-        self.addCleanup(lambda: transport.delete_tree('.'))
         return db_branch, bzr_branch.bzrdir.open_workingtree()
 
     def useTempBzrHome(self):

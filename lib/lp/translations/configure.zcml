@@ -8,9 +8,14 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:webservice="http://namespaces.canonical.com/webservice"
+    xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+
+    <lp:help-folder
+        folder="help" type="canonical.launchpad.layers.TranslationsLayer" />
+
     <class
         class="lp.translations.model.vpotexport.VPOTExport">
         <allow
@@ -57,6 +62,7 @@
         <allow
             interface="lp.translations.interfaces.translationsoverview.ITranslationsOverview"/>
     </securedutility>
+
     <!-- ITranslationsPerson -->
 
     <class
@@ -202,7 +208,53 @@
             interface="lp.translations.interfaces.pofiletranslator.IPOFileTranslatorSet"/>
     </securedutility>
 
+    <!-- Breadcrumbs for DistroSeries, Distribution, ProductSeries, Product,
+         Project, TranslationsPerson -->
+    <adapter
+        name="translations"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        name="translations"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        name="translations"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.product.IProduct"
+        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        name="translations"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        name="translations"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.project.IProject"
+        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        name="translations"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.person.IPerson"
+        factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
+        permission="zope.Public"/>
+
+
     <!-- DistroSeriesLanguage and Dummy -->
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
+        factory="lp.translations.browser.translations.TranslationsLanguageBreadcrumb"
+        permission="zope.Public"/>
 
     <class
         class="lp.translations.model.distroserieslanguage.DistroSeriesLanguage">
@@ -314,6 +366,12 @@
 
     <!-- ProductSeriesLanguage and Dummy -->
 
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
+        factory="lp.translations.browser.translations.TranslationsLanguageBreadcrumb"
+        permission="zope.Public"/>
+
     <class
         class="lp.translations.model.productserieslanguage.ProductSeriesLanguage">
         <allow
@@ -389,6 +447,11 @@
                 permission="launchpad.Edit"
                 set_schema="lp.translations.interfaces.translationgroup.ITranslationGroup"/>
         </class>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.translations.interfaces.translationgroup.ITranslationGroup"
+            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+            permission="zope.Public"/>
 
         <!-- TranslationGroupSet -->
 
@@ -398,6 +461,11 @@
             <allow
                 interface="lp.translations.interfaces.translationgroup.ITranslationGroupSet"/>
         </securedutility>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
+            factory="lp.translations.browser.translationgroup.TranslationGroupSetBreadcrumb"
+            permission="zope.Public"/>
     </facet>
     <class
         class="lp.translations.model.potmsgset.POTMsgSet">
@@ -410,6 +478,11 @@
         <require
             permission="launchpad.Admin"
             set_attributes="commenttext sourcecomment filereferences flagscomment"/>
+    </class>
+    <class
+        class="lp.translations.model.translatablemessage.TranslatableMessage">
+        <allow
+            interface="lp.translations.interfaces.translatablemessage.ITranslatableMessage"/>
     </class>
     <facet
         facet="translations">

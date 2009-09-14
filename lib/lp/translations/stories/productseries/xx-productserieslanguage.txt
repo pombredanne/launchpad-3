@@ -9,6 +9,6 @@ templates links to per-language overviews.
     http://translations.launchpad.dev/evolution/trunk/+lang/pt_BR
 
     >>> print browser.title
-    Portuguese (Brazil) translations for Evolution trunk series
+    Portuguese (Brazil) (pt_BR) : Translations : Series trunk : Evolution
 
 The details of the page are tested at the view level.

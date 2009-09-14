@@ -42,16 +42,16 @@ available for Person, Product, Project, Sprint and Distributions, since
 they all implement IHasLogo, IHasMugshot and IHasIcon.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> test_tales("person/image:sprite_css", person=sabdfl)
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> test_tales("person/image:sprite_css", person=mark)
     'sprite person'
 
-    >>> test_tales("person/image:logo", person=sabdfl)
+    >>> test_tales("person/image:logo", person=mark)
     '<img ... src="/@@/person-logo" />'
 
 The Mugshot is presented in an <img> tag.
 
-    >>> test_tales("person/image:mugshot", person=sabdfl)
+    >>> test_tales("person/image:mugshot", person=mark)
     '<img...src="/@@/person-mugshot" />'
 
 For people we even have different images in case the person in question
@@ -92,7 +92,7 @@ We also have an icon for bugs.
 Icons for each type (purpose) of archive we support. Starting with
 personal package archives (PPAs).
 
-    >>> print test_tales("ppa/image:icon", ppa=sabdfl.archive)
+    >>> print test_tales("ppa/image:icon", ppa=mark.archive)
     <img ... src="/@@/ppa-icon" />
 
 Then distribution main archives (primary, partner and debug).
@@ -116,7 +116,7 @@ And finally Copy archives.
     >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
     >>> copy = getUtility(IArchiveSet).new(
-    ...     owner=sabdfl, purpose=ArchivePurpose.COPY,
+    ...     owner=mark, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='rebuild')
 
     >>> print test_tales("archive/image:icon", archive=copy)
@@ -125,40 +125,40 @@ And finally Copy archives.
 PPAs have a 'link' formatter, which returns the appropriate HTML used
 for referring to them in other pages.
 
-    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
-    <a href="/~sabdfl/+archive/ppa"
+    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
+    <a href="/~mark/+archive/ppa"
        class="sprite ppa-icon">PPA for Mark Shuttleworth</a>
 
 Disabled PPAs links use a different icon and are only linkified for
 users with launchpad.View on them.
 
     >>> login('foo.bar@canonical.com')
-    >>> sabdfl.archive.enabled = False
+    >>> mark.archive.enabled = False
 
-    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
-    <a href="/~sabdfl/+archive/ppa" class="sprite ppa-icon-inactive">PPA
+    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
+    <a href="/~mark/+archive/ppa" class="sprite ppa-icon-inactive">PPA
     for Mark Shuttleworth</a>
 
     >>> login(ANONYMOUS)
 
-    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
     <span class="sprite ppa-icon-inactive">PPA for Mark Shuttleworth</span>
 
 Private PPAs links are not rendered for users without launchpad.View on
 them.
 
     >>> login('foo.bar@canonical.com')
-    >>> sabdfl.archive.enabled = True
-    >>> sabdfl.archive.buildd_secret = 'x'
-    >>> sabdfl.archive.private = True
+    >>> mark.archive.enabled = True
+    >>> mark.archive.buildd_secret = 'x'
+    >>> mark.archive.private = True
 
-    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
-    <a href="/~sabdfl/+archive/ppa" class="sprite ppa-icon">PPA
+    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
+    <a href="/~mark/+archive/ppa" class="sprite ppa-icon">PPA
     for Mark Shuttleworth</a>
 
     >>> login(ANONYMOUS)
 
-    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
 
 We also have icons for builds which may have different dimensions.
 
@@ -213,6 +213,19 @@ To truncate a long string, use fmt:shorten:
 
     >>> test_tales('foo/fmt:shorten/8', foo='abcdefghij')
     'abcde...'
+
+To ellipsize the middle of a string. use fmt:ellipsize and pass the max
+length.
+
+    >>> print test_tales('foo/fmt:ellipsize/25',
+    ...     foo='foo-bar-baz-bazoo_22.443.tar.gz')
+    foo-bar-baz....443.tar.gz
+
+The string is not ellipsized if it is less than the max length.
+
+    >>> print test_tales('foo/fmt:ellipsize/25',
+    ...     foo='firefox-0.9.2.orig.tar.gz')
+    firefox-0.9.2.orig.tar.gz
 
 To preserve newlines in text when displaying as HTML, use fmt:nl_to_br:
 
@@ -274,17 +287,41 @@ fmt:url accepts an rootsite extension to make URLs to a specific application.
     >>> login(ANONYMOUS,
     ...     LaunchpadTestRequest(SERVER_URL='http://code.launchpad.net'))
 
-    >>> print test_tales("person/fmt:url:bugs", person=sabdfl)
-    http://bugs.launchpad.dev/~sabdfl
+    >>> print test_tales("person/fmt:url:bugs", person=mark)
+    http://bugs.launchpad.dev/~mark
 
-    >>> print test_tales("person/fmt:url:feeds", person=sabdfl)
-    http://feeds.launchpad.dev/~sabdfl
+    >>> print test_tales("person/fmt:url:feeds", person=mark)
+    http://feeds.launchpad.dev/~mark
 
     >>> print test_tales("pillar/fmt:url:answers", pillar=ubuntu)
     http://answers.launchpad.dev/ubuntu
 
     >>> print test_tales("bug/fmt:url:mainsite", bug=bug)
     http://launchpad.dev/bugs/1
+
+    >>> login(ANONYMOUS)
+
+
+The fmt: namespace to get a web service URL
+-------------------------------------------
+
+The `fmt:api_url` expression gives you the absolute API path to an object.
+This path is everything after the web service version number.
+
+    >>> login(ANONYMOUS,
+    ...     LaunchpadTestRequest(SERVER_URL='http://bugs.launchpad.net'))
+
+    >>> bob = factory.makePerson(name='bob')
+    >>> print test_tales("person/fmt:api_url", person=bob)
+    /~bob
+
+    >>> freewidget = factory.makeProduct(name='freewidget')
+    >>> print test_tales("product/fmt:api_url", product=freewidget)
+    /freewidget
+
+    >>> debuntu = factory.makeProduct(name='debuntu')
+    >>> print test_tales("distro/fmt:api_url", distro=debuntu)
+    /debuntu
 
     >>> login(ANONYMOUS)
 
@@ -309,6 +346,8 @@ to a content object.  There are currently links defined for:
   * blueprint-branch links
   * projects
   * questions
+  * distributions
+  * distroseries
 
 
 Person entries
@@ -317,8 +356,8 @@ Person entries
 For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
-    >>> test_tales("person/fmt:link", person=sabdfl)
-    u'<a href=".../~sabdfl" class="sprite person">Mark Shuttleworth</a>'
+    >>> test_tales("person/fmt:link", person=mark)
+    u'<a href=".../~mark" class="sprite person">Mark Shuttleworth</a>'
 
     >>> test_tales("person/fmt:link", person=matsubara)
     u'<a href=".../~matsubara" class="sprite person-inactive">Diogo ...</a>'
@@ -335,8 +374,8 @@ The link can make the URL go to a specific app.
     >>> print test_tales("pillar/fmt:link:translations", pillar=ubuntu)
     <a ...http://translations.launchpad.dev/ubuntu...
 
-    >>> print test_tales("person/fmt:url:feeds", person=sabdfl)
-    http://feeds.launchpad.dev/~sabdfl
+    >>> print test_tales("person/fmt:url:feeds", person=mark)
+    http://feeds.launchpad.dev/~mark
 
     >>> print test_tales("bug/fmt:url:mainsite", bug=bug)
     http://launchpad.dev/bugs/1
@@ -347,8 +386,8 @@ the mainsite.
     >>> print test_tales("pillar/fmt:link", pillar=ubuntu)
     <a ...http://launchpad.dev/ubuntu...
 
-    >>> print test_tales("person/fmt:link", person=sabdfl)
-    <a ...http://launchpad.dev/~sabdfl...
+    >>> print test_tales("person/fmt:link", person=mark)
+    <a ...http://launchpad.dev/~mark...
 
     >>> print test_tales("team/fmt:link", team=ubuntu_team)
     <a ...http://launchpad.dev/~ubuntu-team...
@@ -383,10 +422,10 @@ If the person has no time_zone specified, we use UTC.
     >>> test_tales("person/fmt:local-time", person=sample_person)
     '... WST'
 
-    >>> print sabdfl.time_zone
+    >>> print mark.time_zone
     None
 
-    >>> test_tales("person/fmt:local-time", person=sabdfl)
+    >>> test_tales("person/fmt:local-time", person=mark)
     '... UTC'
 
 
@@ -456,20 +495,22 @@ Branch subscriptions
 Branch subscriptions show the person and branch name.  For users without
 adequate permissions, a link is not generated.
 
-    >>> branch = factory.makeAnyBranch(title='My Branch')
-    >>> person = factory.makePerson(displayname='My Person')
+    >>> branch = factory.makeProductBranch(
+    ...     owner=eric, product=fooix, name='my-branch', title='My Branch')
+    >>> michael = factory.makePerson(
+    ...     name='michael', displayname='Michael the Viking')
     >>> subscription = factory.makeBranchSubscription(
-    ...     branch=branch, person=person)
+    ...     branch=branch, person=michael)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'Subscription of My Person to
-      lp://dev/~person-name17/product-name12/branch19'
+    u'Subscription of Michael the Viking to
+      lp://dev/~eric/fooix/my-branch'
 
 But if we log in as the subscriber, a link is presented.
 
     >>> login_person(subscription.person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'<a href="http://.../+subscription/person-name21">Subscription
-      of My Person to lp://dev/~person-name17/product-name12/branch19</a>'
+    u'<a href="http://.../+subscription/michael">Subscription
+      of Michael the Viking to lp://dev/~eric/fooix/my-branch</a>'
 
 Merge proposals also have a link formatter, which displays branch
 titles:
@@ -608,6 +649,22 @@ Questions
     u'<a... class="sprite question">1:...</a>'
 
 
+Distributions
+.............
+
+    >>> distribution = factory.makeDistribution()
+    >>> test_tales("distribution/fmt:link", distribution=distribution)
+    u'<a... class="sprite distribution">...</a>'
+
+
+Distribution Series
+...................
+
+    >>> distroseries = factory.makeDistroArchSeries().distroseries
+    >>> test_tales("distroseries/fmt:link", distroseries=distroseries)
+    u'<a href="...">...</a>'
+
+
 The fmt: namespace for specially formatted object info
 ------------------------------------------------------
 
@@ -624,7 +681,7 @@ Bug Trackers
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
-    u'/bugs/bugtrackers/email'
+    u'http://bugs.launchpad.dev/bugs/bugtrackers/email'
 
 (The url is relative if possible, and our test request claims to be from
 launchpad.dev, so the url is relative.)
@@ -1185,60 +1242,6 @@ with 'None/fmt:foo'.
     ''
 
 
-The fmt: namespace to get a location heading
---------------------------------------------
-
-The `fmt:location_heading` is used when you want a heading for the
-nearest object that implements IHasLogo.
-
-    >>> print test_tales(
-    ...     "series/fmt:location_heading", series=ubuntu['warty'])
-    <h2>Ubuntu Linux</h2>
-
-    >>> print test_tales("ppa/fmt:location_heading", ppa=sabdfl.archive)
-    <h2>Mark Shuttleworth</h2>
-
-This can be used together with the `image:logo` formatter which also
-returns the logo of the nearest object that provides a logo.
-
-    >>> print test_tales("series/image:logo", series=ubuntu['warty'])
-    <img ... src="/@@/distribution-logo" />
-
-    >>> print test_tales("ppa/image:logo", ppa=sabdfl.archive)
-    <img ... src="/@@/person-logo" />
-
-If the current context itself defines the location (ie. it implements
-IHasLogo) then an h1 heading will be used instead.
-
-    >>> print test_tales("person/fmt:location_heading", person=sabdfl)
-    <h1>Mark Shuttleworth</h1>
-
-Similarly to the `image:logo` formatter, if the object cannot produce a
-logo, the title defaults to 'Launchpad.net' (differentiating from the
-Launchpad project within Launchpad.net).
-
-    >>> from canonical.launchpad.webapp.publisher import rootObject
-    >>> print test_tales(
-    ...     "root_object/fmt:location_heading", root_object=rootObject)
-    <h2>Launchpad.net</h2>
-
-    >>> print test_tales(
-    ...     "root_object/image:logo", root_object=rootObject)
-    <img ... src="/@@/launchpad-logo" />
-
-Any html in the context title will be escaped to avoid XSS vulnerabilities.
-
-    >>> login('mark@hbd.com')
-    >>> sabdfl.displayname = (
-    ...     "Mark Shuttleworth<br/><script>alert('XSS')</script>")
-    >>> print test_tales("person/fmt:location_heading", person=sabdfl)
-    <h1>Mark
-      Shuttleworth&lt;br/&gt;&lt;script&gt;alert('XSS')&lt;/script&gt;</h1>
-
-    # Restore the anonymous login for the remainder of the test.
-    >>> login(ANONYMOUS, MockBrowserRequest())
-
-
 The lp: namespace for presenting DBSchema items
 -----------------------------------------------
 
@@ -1260,17 +1263,17 @@ The someobject/required:some.Permission helper
 Test the 'required:' namespace.  We're already logged in as the
 anonymous user, and anonymous users can't edit any person:
 
-    >>> test_tales('person/required:launchpad.Edit', person=sabdfl)
+    >>> test_tales('person/required:launchpad.Edit', person=mark)
     False
 
 Anonymous users can do anything with the zope.Public permission.
 
-    >>> test_tales('person/required:zope.Public', person=sabdfl)
+    >>> test_tales('person/required:zope.Public', person=mark)
     True
 
 Queries about permissions that don't exist will raise an exception:
 
-    >>> test_tales('person/required:mushroom.Badger', person=sabdfl)
+    >>> test_tales('person/required:mushroom.Badger', person=mark)
     Traceback (most recent call last):
     ...
     ValueError: ('Undefined permission id', 'mushroom.Badger')

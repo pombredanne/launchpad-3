@@ -7,7 +7,6 @@
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-  xmlns:lp="http://namespaces.canonical.com/lp"
   i18n_domain="canonical.launchpad">
 
   <!--  XXX: Steve Alexander 2004-11-24:
@@ -323,11 +322,6 @@
       classes="LaunchpadRootFacets"
       />
 
-  <browser:menus
-      module="lp.bugs.browser.malone"
-      classes="MaloneContextMenu"
-      />
-
   <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
   <browser:page
       for="*"
@@ -371,15 +365,6 @@
       name="+inline-icon"
       class="canonical.launchpad.browser.launchpad.LinkView"
       template="../templates/launchpad-inline-icon-link.pt"
-      permission="zope.Public"
-      />
-
-  <!-- hierarchy -->
-  <browser:page
-      for="zope.interface.Interface"
-      name="+hierarchy"
-      class="canonical.launchpad.browser.launchpad.Hierarchy"
-      attribute="__call__"
       permission="zope.Public"
       />
 
@@ -458,19 +443,6 @@ these URLs in Apache.
   class="canonical.launchpad.browser.launchpad.IcingContribFolder"
   attribute="__call__"
   permission="zope.Public"
-  />
-
-<!-- Help folders -->
-<lp:help-folder
-  folder="../help/bugs" type="canonical.launchpad.layers.BugsLayer"
-  />
-<lp:help-folder
-  folder="../help/blueprints" 
-  type="canonical.launchpad.layers.BlueprintsLayer"
-  />
-<lp:help-folder
-  folder="../help/translations" 
-  type="canonical.launchpad.layers.TranslationsLayer"
   />
 
 <browser:page

@@ -7,16 +7,14 @@ __metaclass__ = type
 
 __all__ = [
     "BugTargetBugListingView",
-    "BugTargetBugsView",
     "BugTargetBugTagsView",
-    "FileBugViewBase",
+    "BugTargetBugsView",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FrontPageFileBugAdvancedView",
+    "FileBugViewBase",
     "FrontPageFileBugGuidedView",
     "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
-    "ProjectFileBugAdvancedView",
     ]
 
 import cgi
@@ -39,6 +37,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
@@ -53,9 +52,11 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces._schema_circular_imports import (
     IBug, IDistribution)
+from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IFrontPageBugAddForm, IProjectBugAddForm)
@@ -154,6 +155,10 @@ class FileBugDataParser:
         if 'Subscribers' in headers:
             subscribers_string = unicode(headers['Subscribers'])
             data.subscribers = subscribers_string.lower().split()
+        if 'HWDB-Submission' in headers:
+            submission_string = unicode(headers['HWDB-Submission'])
+            data.hwdb_submission_keys = (
+                part.strip() for part in submission_string.split(','))
 
     def parse(self):
         """Parse the message and  return a FileBugData instance.
@@ -242,6 +247,7 @@ class FileBugData:
         self.extra_description = None
         self.comments = []
         self.attachments = []
+        self.hwdb_submission_keys = []
 
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
@@ -265,6 +271,15 @@ class FileBugViewBase(LaunchpadFormView):
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
+
+        if (config.malone.ubuntu_disable_filebug and
+            self.targetIsUbuntu() and
+            self.extra_data_token is None and
+            not self.no_ubuntu_redirect):
+            # The user is trying to file a new Ubuntu bug via the web
+            # interface and without using apport. Redirect to a page
+            # explaining the preferred bug-filing procedure.
+            self.request.response.redirect(config.malone.ubuntu_bug_filing_url)
         if self.extra_data_token is not None:
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
@@ -321,6 +336,22 @@ class FileBugViewBase(LaunchpadFormView):
 
     def contextIsProject(self):
         return IProject.providedBy(self.context)
+
+    def targetIsUbuntu(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return (self.context == ubuntu or
+                (IMaloneApplication.providedBy(self.context) and
+                 self.request.form.get('field.bugtarget.distribution') ==
+                 ubuntu.name) or
+                (IDistributionSourcePackage.providedBy(self.context) and
+                 self.context.distribution == ubuntu))
+
+    @property
+    def no_ubuntu_redirect(self):
+        return (
+            self.request.form.get('no-redirect') is not None or
+            [key for key in self.request.form.keys()
+             if 'field.actions' in key] != [])
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -463,7 +494,6 @@ class FileBugViewBase(LaunchpadFormView):
         security_related = data.get("security_related", False)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
-        product = getUtility(ILaunchBag).product
 
         context = self.context
         if distribution is not None:
@@ -605,6 +635,13 @@ class FileBugViewBase(LaunchpadFormView):
                     notifications.append(
                         '%s has been subscribed to this bug.' %
                         person.displayname)
+
+        submission_set = getUtility(IHWSubmissionSet)
+        for submission_key in extra_data.hwdb_submission_keys:
+            submission = submission_set.getBySubmissionKey(
+                submission_key, self.user)
+            if submission is not None:
+                bug.linkHWSubmission(submission)
 
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
@@ -796,8 +833,8 @@ class FileBugAdvancedView(FileBugViewBase):
     def initialize(self):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
-        self.request.response.redirect(filebug_url,
-        status=HTTP_MOVED_PERMANENTLY)
+        self.request.response.redirect(
+            filebug_url, status=HTTP_MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -897,20 +934,6 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
 
         return search_context
 
-    @cachedproperty
-    def most_common_bugs(self):
-        """Return a list of the most duplicated bugs."""
-        search_context = self.search_context
-        if search_context is None:
-            return []
-        else:
-            return search_context.getMostCommonBugs(
-                self.user, limit=self._MATCHING_BUGS_LIMIT)
-
-    @property
-    def found_possible_duplicates(self):
-        return self.similar_bugs or self.most_common_bugs
-
     @property
     def search_text(self):
         """Return the search string entered by the user."""
@@ -971,18 +994,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
             "This method should be called only when we know which"
             " product the user selected.")
         return self.widgets['product'].getInputValue()
-
-    @cachedproperty
-    def most_common_bugs(self):
-        """Return a list of the most duplicated bugs."""
-        # We can only discover the most common bugs when a product has
-        # been selected.
-        if self.widgets['product'].hasValidInput():
-            selected_product = self._getSelectedProduct()
-            return selected_product.getMostCommonBugs(
-                self.user, limit=self._MATCHING_BUGS_LIMIT)
-        else:
-            return []
 
     def getSecurityContext(self):
         """See FileBugViewBase."""
@@ -1098,7 +1109,7 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
         """See FileBugViewBase."""
         try:
             bugtarget = self.widgets['bugtarget'].getInputValue()
-        except InputErrors, error:
+        except InputErrors:
             return None
         if IDistributionSourcePackage.providedBy(bugtarget):
             return bugtarget.distribution
@@ -1318,6 +1329,16 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     schema = IOfficialBugTagTargetPublic
     custom_widget('official_bug_tags', LargeBugTagsWidget)
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Manage official bug tags for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     @action('Save', name='save')
     def save_action(self, action, data):
         """Action for saving new official bug tags."""
@@ -1344,3 +1365,10 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         """The URL the user is sent to when clicking the "cancel" link."""
         return canonical_url(self.context)
 
+
+class BugTargetOnBugsVHostBreadcrumb(Breadcrumb):
+    rootsite = 'bugs'
+
+    @property
+    def text(self):
+        return 'Bugs in %s' % self.context.name

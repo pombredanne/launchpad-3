@@ -12,7 +12,7 @@ specification. Here, Foo Bar will make an offer on a spec and a bug:
     >>> personset = getUtility(IPersonSet)
     >>> bugset = getUtility(IBugSet)
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> sabdfl = personset.getByName('sabdfl')
+    >>> mark = personset.getByName('mark')
     >>> lpteam = personset.getByName('launchpad')
     >>> kubuntu = distroset.getByName('kubuntu')
     >>> bug2 = bugset.get(2)
@@ -89,7 +89,7 @@ show up there.
     ...     BugTaskImportance, BugTaskStatus, IBugTaskSet)
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> ff_task = bugtaskset.createTask(
-    ...     bug=bug2, product=firefox, owner=sabdfl,
+    ...     bug=bug2, product=firefox, owner=mark,
     ...     status=BugTaskStatus.INVALID,
     ...     importance=BugTaskImportance.MEDIUM)
     >>> syncUpdate(ff_task)

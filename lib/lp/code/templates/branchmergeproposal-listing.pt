@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
 
-  <tal:needs-batch condition="context/multiple_pages">
+  <tal:needs-batch condition="context/has_multiple_pages">
     <div id="batch-links">
       <tal:navigation replace="structure context/@@+navigation-links-upper" />
     </div>
@@ -46,7 +46,7 @@
 
         <td tal:condition="context/show_column/date_reviewed|nothing">
           <span class="sortkey"
-                tal:condition="not:context/multiple_pages"
+                tal:condition="not:context/has_multiple_pages"
                 tal:content="proposal/date_reviewed/fmt:datetime">
             2005-02-12 13:45 EST
           </span>

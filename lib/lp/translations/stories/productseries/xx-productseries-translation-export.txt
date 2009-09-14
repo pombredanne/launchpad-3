@@ -22,7 +22,7 @@ offer a download link for that series.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/evolution/+translations')
-    >>> user_browser.getLink('Download').click()
+    >>> user_browser.getLink('download').click()
     >>> print user_browser.url
     http://translations.launchpad.dev/evolution/trunk/+export
 
@@ -45,7 +45,7 @@ The logged-in user sees a page that lets them select an export format, and
 request the download.
 
     >>> print user_browser.title
-    Download translations for "Evolution trunk series"
+    +export : Translations : Series trunk : Evolution
 
 
 === File format ===
@@ -92,8 +92,7 @@ the option to download any.
     >>> user_browser.open('http://translations.launchpad.dev/bzr/trunk/+export')
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
-    This product series does not have any translation files available for
-    download.
+    There are no translations to download in Bazaar trunk series.
 
 On +translate pages for products that do not have any translations, the action
 link for "Download translations" is hidden.

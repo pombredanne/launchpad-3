@@ -13,12 +13,15 @@ from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.pofile import IPOFileSet
+from lp.translations.interfaces.translatablemessage import (
+    ITranslatableMessage)
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, verifyObject
 from canonical.testing import ZopelessDatabaseLayer
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
@@ -875,6 +878,60 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('eo'))
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('de'))
 
+class TestTranslationCredits(TestCaseWithFactory):
+    """Test generation of translation credits."""
+    
+    layer = ZopelessDatabaseLayer
+    
+    def setUp(self):
+        super(TestTranslationCredits, self).setUp()
+        self.pofile = self.factory.makePOFile('sr')
+        self.potemplate = self.pofile.potemplate
+        
+        self.potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.potemplate, sequence=1)
+        self.credits_potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.potemplate, singular=u'translator-credits')
+    
+    def test_prepareTranslationCredits_extending(self):
+        # This test ensures that continuous updates to the translation credits
+        # don't result in duplicate entries.
+        # Only the 'translator-credits' message is covered right now.
+        person = self.factory.makePerson()
+        
+        imported_credits_text = u"Imported Contributor <name@project.org>"
+        launchpad_credits_text = u"%s\n\nLaunchpad Contributions:\n  %s %s" % (
+            imported_credits_text, person.displayname, canonical_url(person))
+        
+        # Import a translation credits message to 'translator-credits'.
+        self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.credits_potmsgset,
+            translations=[imported_credits_text],
+            is_imported=True)
+        
+        # `person` updates the translation using Launchpad.
+        self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translator=person)
+        
+        # The first translation credits export.
+        credits_text = self.pofile.prepareTranslationCredits(
+            self.credits_potmsgset)
+        self.assertEquals(launchpad_credits_text, credits_text)
+        
+        # Now, re-import this generated message.
+        self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.credits_potmsgset,
+            translations=[credits_text],
+            is_imported=True)
+        
+        credits_text = self.pofile.prepareTranslationCredits(
+            self.credits_potmsgset)
+        self.assertEquals(launchpad_credits_text, credits_text)
+
 
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     """Test ordering of POTMsgSets as returned by PO file methods."""
@@ -1388,6 +1445,27 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.pofile.updateStatistics()
         self.assertEquals(self.pofile.newCount(), 0)
         self.assertEquals(self.pofile.updatesCount(), 1)
+
+
+class TestPOFile(TestCaseWithFactory):
+    """Test PO file methods."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        # Create a POFile to calculate statistics on.
+        super(TestPOFile, self).setUp()
+        self.pofile = self.factory.makePOFile('sr')
+        self.potemplate = self.pofile.potemplate
+
+        # Create a single POTMsgSet that is used across all tests.
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
+                                                    sequence=1)
+
+    def test_makeTranslatableMessage(self):
+        # TranslatableMessages can be created from the PO file
+        message = self.pofile.makeTranslatableMessage(self.potmsgset)
+        verifyObject(ITranslatableMessage, message)
 
 
 def test_suite():

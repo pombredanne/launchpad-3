@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesAddView',
     'DistroSeriesAdminView',
-    'DistroSeriesBreadcrumbBuilder',
+    'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesPackageSearchView',
@@ -37,12 +37,14 @@ from lp.registry.interfaces.distroseries import (
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
@@ -51,9 +53,11 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.registry.browser import MilestoneOverlayMixin
 
 
-class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistroSeries
 
@@ -121,7 +125,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return getUtility(IPackageUploadSet).get(id)
 
 
-class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
     @property
     def text(self):
@@ -140,7 +144,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
     usedfor = IDistroSeries
     facet = 'overview'
     links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'add_milestone', 'admin', 'builds', 'queue',
+             'add_port', 'create_milestone', 'admin', 'builds', 'queue',
              'subscribe']
 
     @enabled_with_permission('launchpad.Admin')
@@ -160,7 +164,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def add_milestone(self):
+    def create_milestone(self):
         text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
@@ -308,12 +312,19 @@ class DistroSeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView):
+class DistroSeriesView(BuildRecordsView, QueueItemsView,
+                       MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
+
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return '%s %s in Launchpad' % (
+        self.context.distribution.title, self.context.version)
 
     @cachedproperty
     def cached_packagings(self):
@@ -347,6 +358,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
 
         See `BuildRecordsView` for further details."""
         return True
+
+    milestone_can_release = False
 
 
 class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):

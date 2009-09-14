@@ -259,14 +259,6 @@ class IBreadcrumb(Interface):
     icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
 
 
-class IBreadcrumbBuilder(IBreadcrumb):
-    """An object that builds `IBreadcrumb` objects."""
-    # We subclass IBreadcrumb to minimize interface drift.
-
-    def make_breadcrumb():
-        """Return an object implementing the `IBreadcrumb` interface."""
-
-
 #
 # Canonical URLs
 #
@@ -358,7 +350,7 @@ class IBasicLaunchpadRequest(Interface):
 
     def getRootURL(rootsite):
         """Return this request's root URL.
-        
+
         If rootsite is not None, then return the root URL for that rootsite,
         looked up from our config.
         """
@@ -634,11 +626,11 @@ class INotificationResponse(Interface):
         instance of a Zope internationalized message will cause the
         message to be translated, then CGI escaped.
 
-        :param msg: This may be a string, an instance of
-        	`zope.i18n.Message`, , or an instance of `IStructuredString`.
+        :param msg: This may be a string, an instance of `zope.i18n.Message`,
+            or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-        	INFO, NOTICE, WARNING, ERROR.
+            INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -804,7 +796,7 @@ class IStoreSelector(Interface):
     """Get a Storm store with a desired flavor.
 
     Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
- 
+
     The master is writable and up to date, but we should not use it
     whenever possible because there is only one master and we don't want
     it to be overloaded.

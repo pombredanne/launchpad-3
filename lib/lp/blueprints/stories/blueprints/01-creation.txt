@@ -114,9 +114,10 @@ it here as a blueprint" link:
     >>> user_browser.getLink('register it here as a blueprint').click()
     >>> print user_browser.url
     http://blueprints.launchpad.dev/bzr/+addspec
+    >>> print user_browser.title
+    +addspec : Blueprints for Bazaar Version Control System : Bazaar
     >>> print extract_text(find_main_content(user_browser.contents))
     Register a new blueprint...
-
 
 === From a product series ===
 
@@ -669,7 +670,7 @@ There are some locations in Launchpad from which it's not possible to register
 a blueprint. To start with, it's not possible to register a blueprint from an
 individual user's blueprint listing page:
 
-    >>> user_browser.open('http://blueprints.launchpad.dev/~sabdfl')
+    >>> user_browser.open('http://blueprints.launchpad.dev/~mark')
     >>> print user_browser.getLink('Register a blueprint')
     Traceback (most recent call last):
         ...

@@ -6,7 +6,7 @@ Ubuntu is using Launchpad for translations
     >>> anon_browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'uses'))
-    Ubuntu Linux uses Launchpad for ... Translations.
+    Uses Launchpad for: ... Translations.
 
 Ubuntu doesn't have TranslationGroup and uses open permissions. We can
 see that from the translations page.
@@ -28,7 +28,7 @@ Watson's account, he's one of the owners of Ubuntu.
     >>> ubuntu_owner_browser.open(anon_browser.url)
     >>> ubuntu_owner_browser.getLink('Settings').click()
     >>> print ubuntu_owner_browser.title
-    Change Ubuntu Linux's translation settings
+    +settings : Translations : Ubuntu
 
 Other users cannot access this page, nor see the menu link to it.
 
@@ -58,15 +58,15 @@ closed permissions.
     ...         'The PolyGlot Translation Group']
     >>> ubuntu_owner_browser.getControl('Change').click()
     >>> print ubuntu_owner_browser.title
-    Change Ubuntu Linux's translation settings
+    Translating Ubuntu
 
-    >>> for tag in find_tags_by_class(
-    ...     ubuntu_owner_browser.contents, 'informational message'):
-    ...     print tag.renderContents()
-    Updated on ...
+    >>> print extract_text(
+    ...     find_tag_by_id(ubuntu_owner_browser.contents,
+    ...                    'translation-permissions'))
+    Ubuntu is translated by The PolyGlot Translation Group...
 
-And make sure these changes are now reflected in the Ubuntu translations
-page.
+These changes are now reflected in the Ubuntu translations page for
+everybody else as well.
 
     >>> anon_browser.reload()
     >>> print anon_browser.title

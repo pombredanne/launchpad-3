@@ -4,8 +4,8 @@
   tal:define="questions view/getLatestQuestions"
   tal:condition="questions">
   <h2>
-    <span class="see-all" tal:condition="nothing"><a
-      tal:attributes="href view/latest_questions_url">All questions</a></span>
+    <span class="see-all"><a
+      tal:attributes="href context/fmt:url:answers">All questions</a></span>
     Latest questions
   </h2>
 
@@ -15,13 +15,9 @@
         tal:attributes="class string: ${question/image:sprite_css};
                         href question/fmt:url;"
         tal:content="question/title/fmt:shorten/80">question title</a>
-      <br />Posted <tal:when replace="question/datecreated/fmt:displaydate" />
+      <br /><span class="registered">
+        Posted <tal:when replace="question/datecreated/fmt:displaydate" />
+      </span>
     </li>
   </ul>
-
-  <tal:comment condition="nothing">
-    # XXX sinzui 2009-08-07 bug=410501: Remove this link and enable the
-    # see all link when the distribution source package index page is 3.0.
-  </tal:comment>
-  <a tal:attributes="href view/latest_questions_url">All questions</a>
 </div>

@@ -1041,9 +1041,6 @@ class TranslationImportQueue:
             status_clause = (
                 "TranslationImportQueueEntry.status = %s" % sqlvalues(status))
 
-        def product_sort_key(product):
-            return product.name
-
         def distroseries_sort_key(distroseries):
             return (distroseries.distribution.name, distroseries.name)
 
@@ -1054,11 +1051,10 @@ class TranslationImportQueue:
         if status is not None:
             query.append(status_clause)
 
-        products = shortlist(Product.select(
+        products = list(Product.select(
             ' AND '.join(query),
             clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
-            distinct=True))
-        products.sort(key=product_sort_key)
+            distinct=True, orderBy='Product.name'))
 
         distroseriess = shortlist(DistroSeries.select("""
             defer_translation_imports IS FALSE AND

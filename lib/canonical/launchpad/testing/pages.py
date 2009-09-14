@@ -58,13 +58,13 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
             del kw['debug']
         else:
             self._debug = False
-        super(UnstickyCookieHTTPCaller, self).__init__(*args, **kw)
+        HTTPCaller.__init__(self, *args, **kw)
 
     def __call__(self, *args, **kw):
         if self._debug:
             pdb.set_trace()
         try:
-            return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
+            return HTTPCaller.__call__(self, *args, **kw)
         finally:
             self.resetCookies()
 
@@ -77,8 +77,7 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         if 'PATH_INFO' not in environment:
             environment = dict(environment)
             environment['PATH_INFO'] = path
-        return super(UnstickyCookieHTTPCaller, self).chooseRequestClass(
-            method, path, environment)
+        return HTTPCaller.chooseRequestClass(self, method, path, environment)
 
     def resetCookies(self):
         self.cookies = SimpleCookie()
@@ -87,10 +86,9 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 class LaunchpadWebServiceCaller(WebServiceCaller):
     """A class for making calls to Launchpad web services."""
 
-    base_url = 'http://api.launchpad.dev'
-
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
-                 handle_errors=True, *args, **kwargs):
+                 handle_errors=True, domain='api.launchpad.dev',
+                 protocol='http'):
         """Create a LaunchpadWebServiceCaller.
         :param oauth_consumer_key: The OAuth consumer key to use.
         :param oauth_access_key: The OAuth access key to use for the request.
@@ -111,9 +109,7 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
             self.access_token = None
 
         self.handle_errors = handle_errors
-
-        # Set up a delegate to make the actual HTTP calls.
-        self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
+        WebServiceCaller.__init__(self, handle_errors, domain, protocol)
 
     def addHeadersTo(self, full_url, full_headers):
         if (self.consumer is not None and self.access_token is not None):
@@ -123,6 +119,8 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
             request.sign_request(OAuthSignatureMethod_PLAINTEXT(),
                                  self.consumer, self.access_token)
             full_headers.update(request.to_header(OAUTH_REALM))
+        if not self.handle_errors:
+            full_headers['X_Zope_handle_errors'] = 'False'
 
 
 def extract_url_parameter(url, parameter):
@@ -260,7 +258,8 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
         for col_num, item in enumerate(row.findAll('td')):
             if columns is None or col_num in columns:
                 row_content.append(extract_text(item))
-        print sep.join(row_content)
+        if len(row_content) > 0:
+            print sep.join(row_content)
 
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
@@ -512,22 +511,23 @@ def print_location(contents):
     """Print the hierarchy, application tabs, and main heading of the page.
 
     The hierarchy shows your position in the Launchpad structure:
-    for example, Launchpad > Ubuntu > 8.04.
+    for example, Ubuntu > 8.04.
     The application tabs represent the major facets of an object:
     for example, Overview, Bugs, and Translations.
     The main heading is the first <h1> element in the page.
     """
     doc = find_tag_by_id(contents, 'document')
-    hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(
+    hierarchy = doc.find(attrs={'class': 'breadcrumbs'}).findAll(
         recursive=False)
     segments = [extract_text(step).encode('us-ascii', 'replace')
-                for step in hierarchy
-                if step.name != 'small']
-    # The first segment is spurious (used for styling), and the second
-    # contains only <img alt="Launchpad"> that extract_text() doesn't
-    # pick up. So we replace the first two elements with 'Launchpad':
-    segments = ['Launchpad'] + segments[2:]
-    print 'Hierarchy:', ' > '.join(segments)
+                for step in hierarchy]
+
+    if len(segments) == 0:
+        breadcrumbs = 'None displayed'
+    else:
+        breadcrumbs = ' > '.join(segments)
+
+    print 'Hierarchy:', breadcrumbs
     print 'Tabs:'
     print_location_apps(contents)
     main_heading = doc.h1
@@ -543,7 +543,7 @@ def print_location_apps(contents):
     """Print the application tabs' text and URL."""
     location_apps = find_tag_by_id(contents, 'lp-apps')
     if location_apps is None:
-        location_apps = first_tag_by_class(contents, 'location-portlet')
+        location_apps = first_tag_by_class(contents, 'watermark-apps-portlet')
         if location_apps is not None:
             location_apps = location_apps.ul.findAll('li')
     else:
@@ -618,8 +618,7 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     request_token.review(person, permission, context)
     access_token = request_token.createAccessToken()
     logout()
-    return LaunchpadWebServiceCaller(
-        consumer_key, access_token.key, port=9000)
+    return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
 def stop():

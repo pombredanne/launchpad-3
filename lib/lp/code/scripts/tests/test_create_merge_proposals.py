@@ -106,9 +106,9 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
-        self.assertEqual(
-            'INFO    creating lockfile\n'
-            'INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
+        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn('INFO    Job resulted in OOPS:', stderr)
+        self.assertIn('INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
 
 

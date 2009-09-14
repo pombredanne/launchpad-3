@@ -141,7 +141,7 @@ previous one.  The size limit is one of the following:
     <BranchSubscription ...
 
     >>> branch.subscribe(
-    ...     personset.getByEmail('mark@hbd.com'),
+    ...     personset.getByEmail('mark@example.com'),
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
@@ -166,7 +166,7 @@ And to make sure we have them:
     jdub
     cprov
     daf
-    sabdfl
+    mark
     launchpad
 
 The getNotificationRecipients method returns an instance of
@@ -195,7 +195,7 @@ to allow email filtering.
     daf@canonical.com             5000 lines        Subscriber
     foo.bar@canonical.com         Send entire diff  Subscriber @launchpad
     jeff.waugh@ubuntulinux.com    500 lines         Subscriber
-    mark@hbd.com                  Send entire diff  Subscriber
+    mark@example.com                  Send entire diff  Subscriber
 
 
 == Limiting the size of diff received by email ==
@@ -283,7 +283,7 @@ unsubscribe link.
 Mark's unsubscription link is to his personal branch subscription.
 
     >>> print_to_and_body(notifications.pop(0))
-    To: Mark Shuttleworth <mark@hbd.com>
+    To: Mark Shuttleworth <mark@example.com>
     Test message.
     <BLANKLINE>
     ...
@@ -349,7 +349,7 @@ Limit hit for jeff:
 And everything for mark:
 
     >>> print_to_and_body(notifications.pop(0))
-    To: Mark Shuttleworth <mark@hbd.com>
+    To: Mark Shuttleworth <mark@example.com>
     Test message.
     ...
     <BLANKLINE>

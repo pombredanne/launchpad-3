@@ -6,10 +6,6 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
   <body>
-    <tal:heading metal:fill-slot="heading">
-      <h1 tal:replace="structure view/title_edit_widget">project title</h1>
-    </tal:heading>
-
     <tal:main metal:fill-slot="main"
       define="overview_menu context/menu:overview">
       <div class="top-portlet">
@@ -118,6 +114,10 @@
               </dl>
             </div>
 
+            <p>
+              <a tal:replace="structure  overview_menu/rdf/fmt:link" />
+            </p>
+
             <p id="registrant">
               Registered
               <tal:created replace="context/datecreated/fmt:approximatedate" />
@@ -147,6 +147,12 @@
             <iframe style="width: 90%"
               metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
 
+            <p id="development-focus">
+              <a tal:replace="structure context/development_focus/fmt:link" />
+              is the current focus of development
+              <a tal:replace="structure overview_menu/edit/fmt:icon" />
+            </p>
+
             <ul class="horizontal"
               tal:condition="overview_menu/series_add/enabled">
               <li>
@@ -169,17 +175,25 @@
 
       <div class="yui-g">
         <div class="yui-u first">
-          <div tal:content="structure context/@@+portlet-listfaqs" />
+          <div tal:content="structure context/@@+portlet-listfaqs"
+            tal:condition="context/official_answers" />
+
+          <div tal:content="structure context/@@+portlet-latestbugs"
+            tal:condition="context/official_malone" />
 
           <div tal:content="structure context/@@+portlet-top-contributors" />
 
-          <div tal:content="structure context/@@+portlet-coming-sprints" />
+          <div tal:content="structure context/@@+portlet-packages" />
         </div>
 
         <div class="yui-u">
-          <div tal:content="structure context/@@+portlet-latestquestions" />
+          <div tal:content="structure context/@@+portlet-latestquestions"
+            tal:condition="context/official_answers" />
 
-          <div tal:content="structure context/@@+portlet-packages" />
+          <div tal:content="structure context/@@+portlet-latestspecs"
+            tal:condition="context/official_blueprints" />
+
+          <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>
       </div>
     </tal:main>
@@ -193,33 +207,20 @@
         <h2>Downloads</h2>
 
         <tal:release condition="release">
-          <ul>
-            <li tal:repeat="file release/files">
-              <a tal:attributes="href file/fmt:url;
-                                 title file/description;"
-                tal:content="file/libraryfile/filename" />
-            </li>
-          </ul>
-
-          <div class="released">
-            <span>
-            released <tal:date replace="release/datereleased/fmt:displaydate" />
-            </span>
-          </div>
+          <tal:downloads replace="structure release/@@+portlet-downloads"/>
         </tal:release>
 
-        <div class="alternate">
-          <a style="text-decoration: underline;"
+        <p class="alternate">
+          <a class="sprint info"
             tal:define="link overview_menu/downloads"
+            tal:condition="release"
             tal:attributes="href link/fmt:url;
-                            title link/summary"
-            tal:content="structure link/escapedtext" /> |
-          <a style="text-decoration: underline;"
-            tal:define="link overview_menu/rdf"
-            tal:attributes="href link/fmt:url;
-                            title link/summary"
-            tal:content="structure link/escapedtext" />
-        </div>
+                            title link/summary">All downloads</a>
+           <tal:no-files condition="not: release">
+             <tal:name replace="context/displayname" /> does not have any
+              download files.
+           </tal:no-files>
+        </p>
       </div>
 
       <div tal:replace="structure context/@@+get-involved" />

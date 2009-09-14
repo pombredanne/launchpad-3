@@ -8,7 +8,7 @@ Let's find a build that produced some binaries:
 
   >>> browser.open("http://launchpad.dev/ubuntu/+builds")
   >>> browser.getControl(name="build_state").value = ['built']
-  >>> browser.getControl("Update").click()
+  >>> browser.getControl("Filter").click()
   >>> browser.getLink("Next").click()
   >>> build_link = browser.getLink(
   ...     'i386 build of mozilla-firefox 0.9 in ubuntu '
@@ -22,7 +22,7 @@ XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
   >>> from lp.soyuz.model.queue import PackageUploadBuild
   >>> from lp.soyuz.interfaces.build import IBuildSet
-  >>> from lp.soyuz.interfaces.publishing import (
+  >>> from lp.registry.interfaces.pocket import (
   ...     PackagePublishingPocket)
   >>> from zope.component import getUtility
 
