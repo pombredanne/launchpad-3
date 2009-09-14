@@ -24,7 +24,7 @@
       tal:condition="milestones">
       <thead>
         <tr>
-          <th>Version "Codename"</th>
+          <th>Version</th>
           <th tal:condition="has_series">Series</th>
           <th>Expected</th>
           <th>Released</th>
