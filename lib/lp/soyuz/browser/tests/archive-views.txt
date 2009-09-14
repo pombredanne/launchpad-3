@@ -46,6 +46,18 @@ the string 'PPA' or 'Archive' depending on whether the archive is a PPA
     >>> print copy_archive_view.archive_label
     Archive
 
+There is also the 'ppa_reference' property, which mimics the syntax
+supported by `dput` and `software-properties` Ubuntu tools.
+
+    >>> print ppa_archive_view.ppa_reference
+    ppa:cprov/ppa
+
+    >>> print copy_archive_view.ppa_reference
+    Traceback (most recent call last):
+    ...
+    AssertionError: PPA reference should not be used for non-PPA
+    archives.
+
 The ArchiveView is provides the html for the inline description
 editing widget.
 
@@ -61,12 +73,15 @@ that returns a dict of the build count summary for the archive:
 An ArchiveView also includes an easy way to get any
 IPackageCopyRequest's associated with an archive:
 
+    >>> len(ppa_archive_view.package_copy_requests)
+    0
+
+    # Create a copy-request to Celso's PPA.
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
-    >>> copy_archive_view.package_copy_requests.count()
+
+    >>> len(copy_archive_view.package_copy_requests)
     1
-    >>> ppa_archive_view.package_copy_requests.count()
-    0
 
 An ArchiveView inherits the status-filter widget for filtering
 packages by status.

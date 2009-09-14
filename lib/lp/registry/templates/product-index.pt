@@ -6,10 +6,6 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
   <body>
-    <tal:heading metal:fill-slot="heading">
-      <h1 tal:replace="structure view/title_edit_widget">project title</h1>
-    </tal:heading>
-
     <tal:main metal:fill-slot="main"
       define="overview_menu context/menu:overview">
       <div class="top-portlet">
