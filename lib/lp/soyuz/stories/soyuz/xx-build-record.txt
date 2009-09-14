@@ -207,19 +207,19 @@ Administrators can retry failed builds using the 'retry' icon in the
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'status'))
     Build status
-    Failed to upload Retry build on Bob The Builder
+    Failed to upload on Bob The Builder Retry this build
     Started ... ago
     Finished ... (took 1 minute, 0.0 seconds)
     buildlog (7 bytes)
     uploadlog (7 bytes)
 
-    >>> print admin_browser.getLink('Retry build').url
+    >>> print admin_browser.getLink('Retry this build').url
     http://launchpad.dev/ubuntutest/+source/testing/1.0/+build/31/+retry
 
-By clicking on the 'Retry build' link, administrators are informed of
+By clicking on the 'Retry this build' link, administrators are informed of
 the consequences of this action.
 
-    >>> admin_browser.getLink('Retry build').click()
+    >>> admin_browser.getLink('Retry this build').click()
     >>> print extract_text(find_main_content(admin_browser.contents))
     Retry i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
@@ -238,7 +238,7 @@ is changed.
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'status'))
     Build status
-    Failed to upload Retry build on Bob The Builder
+    Failed to upload on Bob The Builder Retry this build
     Started ... ago
     Finished ... (took 1 minute, 0.0 seconds)
     buildlog (7 bytes)
@@ -248,7 +248,7 @@ The user is also sent back to the build page if the 'Retry' is
 performed, but then the failed build will be pending again and
 retrying the build is not a possibility anymore.
 
-    >>> admin_browser.getLink("Retry build").click()
+    >>> admin_browser.getLink("Retry this build").click()
     >>> admin_browser.getControl("Retry Build").click()
     >>> for text in get_feedback_messages(admin_browser.contents):
     ...     print text
@@ -259,7 +259,7 @@ retrying the build is not a possibility anymore.
     Needs building
     Start in ... (0) Rescore build What's this?
 
-    >>> admin_browser.getLink("Retry build").click()
+    >>> admin_browser.getLink("Retry this build").click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
