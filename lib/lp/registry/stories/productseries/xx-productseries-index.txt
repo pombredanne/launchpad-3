@@ -5,7 +5,7 @@ The product series overview page summarises the series.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print extract_text(anon_browser.title)
-    Mozilla Firefox trunk series
+    Series trunk : Mozilla Firefox
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(content.h1)
@@ -77,7 +77,7 @@ the status of the bugs and blueprints.
 The driver can see a link to create a release for the milestone.
 
     >>> print extract_text(driver_rows[-1])
-    Mozilla Firefox 1.0   2056-10-16  Create release Release now   Blueprints targeted: 1 Unknown
+    Mozilla Firefox 1.0   2056-10-16  Release now   Blueprints targeted: ...
 
     >>> driver_browser.getLink('Release now')
     <Link ... url='http://launchpad.dev/firefox/+milestone/1.0/+addrelease'>
@@ -87,7 +87,7 @@ The driver also has links to create milestones and releases.
     >>> driver_browser.getLink('Create milestone')
     <Link ... url='http://launchpad.dev/firefox/trunk/+addmilestone'>
 
-    >>> driver_browser.getLink('Create release', index=1)
+    >>> driver_browser.getLink('Create release')
     <Link ... url='http://launchpad.dev/firefox/trunk/+addrelease'>
 
 The user can learn where the code of the series is located if a branch

@@ -346,6 +346,8 @@ to a content object.  There are currently links defined for:
   * blueprint-branch links
   * projects
   * questions
+  * distributions
+  * distroseries
 
 
 Person entries
@@ -645,6 +647,22 @@ Questions
     >>> question = getUtility(IQuestionSet).get(1)
     >>> test_tales("question/fmt:link", question=question)
     u'<a... class="sprite question">1:...</a>'
+
+
+Distributions
+.............
+
+    >>> distribution = factory.makeDistribution()
+    >>> test_tales("distribution/fmt:link", distribution=distribution)
+    u'<a... class="sprite distribution">...</a>'
+
+
+Distribution Series
+...................
+
+    >>> distroseries = factory.makeDistroArchSeries().distroseries
+    >>> test_tales("distroseries/fmt:link", distroseries=distroseries)
+    u'<a href="...">...</a>'
 
 
 The fmt: namespace for specially formatted object info

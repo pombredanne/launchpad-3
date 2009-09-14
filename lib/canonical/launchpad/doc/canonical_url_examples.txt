@@ -22,7 +22,7 @@ so on.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IMaloneApplication, IBazaarApplication,
-    ...     IRosettaApplication, ILaunchpadRoot, IQuestionSet
+    ...     ILaunchpadRoot, IQuestionSet
     ...     )
 
 The Launchpad homepage.
@@ -34,11 +34,6 @@ The Malone homepage.
 
     >>> canonical_url(getUtility(IMaloneApplication))
     u'http://launchpad.dev/bugs'
-
-The Rosetta homepage.
-
-    >>> canonical_url(getUtility(IRosettaApplication))
-    u'http://launchpad.dev/translations'
 
 The Bazaar homepage.
 
@@ -55,6 +50,9 @@ The set of mailing lists
     >>> from canonical.launchpad.interfaces import IMailingListSet
     >>> canonical_url(getUtility(IMailingListSet))
     u'http://launchpad.dev/+mailinglists'
+
+Launchpad Translations (Rosetta) canonical_url examples are in
+lib/lp/translations/doc/canonical_url_examples.txt.
 
 
 == Persons and Teams ==
@@ -361,97 +359,6 @@ the merge proposal)
 
     >>> print canonical_url(comment)
     http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/.../comments/...
-
-
-== POTemplates and so on ==
-
-    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     ITranslationGroupSet)
-
-Most Rosetta pages hang off IPOTemplateSubset objects, of which there are two
-varieties: distribution and upstream.
-
-First, the distribution kind.  We'll need the source package name.
-
-    >>> sourcepackagename = sourcepackagenameset['evolution']
-
-And here's our subset.
-
-    >>> potemplateset = getUtility(IPOTemplateSet)
-    >>> potemplatesubset = potemplateset.getSubset(
-    ...     distroseries=hoary, sourcepackagename=sourcepackagename)
-
-    >>> canonical_url(potemplatesubset)
-    u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots'
-
-We can get a particular PO template for this source package by its PO template
-name.
-
-    >>> potemplate = potemplatesubset['evolution-2.2']
-    >>> canonical_url(potemplate)
-    u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
-
-And we can get a particular PO file for this PO template by its language code.
-
-    >>> pofile = potemplate.getPOFileByLang('es')
-    >>> canonical_url(pofile)
-    u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
-
-Also, we can get the url to a translation message.
-
-    >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
-    >>> translationmessage.setPOFile(pofile)
-    >>> print canonical_url(translationmessage)
-    http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1
-
-Even for a dummy one.
-
-    >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
-    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
-    >>> print canonical_url(translationmessage)
-    http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20
-
-Upstream POTemplateSubsets work in much the same way, except they hang off a
-product series.  Let's get a product series.
-
-Now we can get an upstream subset and do the same sorts of thing as we did
-with the distro subset.
-
-    >>> potemplatesubset = potemplateset.getSubset(
-    ...     productseries=evolution_trunk_series)
-    >>> potemplate = potemplatesubset['evolution-2.2']
-    >>> canonical_url(potemplate)
-    u'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2'
-
-    >>> pofile = potemplate.getPOFileByLang('es')
-    >>> canonical_url(pofile)
-    u'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es'
-
-Also, we can get the url to a dummy one
-
-    >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
-    >>> translationmessage.setPOFile(pofile)
-    >>> print canonical_url(translationmessage)
-    http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/1
-
-Even for a dummy PO msgset
-
-    >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
-    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
-    >>> print canonical_url(translationmessage)
-    http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/20
-
-Rosetta also has translation groups.
-
-    >>> canonical_url(getUtility(ITranslationGroupSet))
-    u'http://translations.launchpad.dev/+groups'
 
 
 == Specifications ==

@@ -331,7 +331,8 @@ class BranchMirrorer(object):
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
         except (errors.UnstackableRepositoryFormat,
-                errors.UnstackableBranchFormat):
+                errors.UnstackableBranchFormat,
+                errors.IncompatibleRepositories):
             stacked_on_url = None
         except errors.NotBranchError:
             raise StackedOnBranchNotFound()
