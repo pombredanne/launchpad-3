@@ -4,12 +4,13 @@ Launchpad can show you a product's packages by distribution, with links to each.
     ...     'http://launchpad.dev/evolution/+distributions')
     >>> anon_browser.url
     'http://launchpad.dev/evolution/+distributions'
-    >>> print anon_browser.contents
-    <...
-    <h1>Packages by distribution</h1>
-    ...
-    <h2>Ubuntu Linux</h2>
-    ...
+    >>> print anon_browser.title
+    +distributions : Evolution
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'distribution-series'))
+    Distribution  Series     Source Package          Upstream Series  Pack...
+    4.10 (Warty)  evolution  Evolution trunk series ...
+
     >>> anon_browser.getLink(url='/ubuntu/warty/+source/evolution').click()
     >>> print anon_browser.contents
     <...
@@ -22,14 +23,12 @@ for each series. In this case, mark@example.com is the owner of Evolution.
 
     >>> evo_owner = setupBrowser(auth='Basic mark@example.com:test')
     >>> evo_owner.open('http://launchpad.dev/evolution/+packages')
-    >>> evo_owner.url
-    'http://launchpad.dev/evolution/+packages'
-    >>> print evo_owner.contents
-    <...
-    ...<h1>Distribution packages</h1>
-    ...
-    ...trunk...
-    ...
+    >>> print evo_owner.title
+    +packages : Evolution
+    >>> print extract_text(find_tag_by_id(evo_owner.contents, 'packages'))
+    Distribution  Series        Source Package  Version
+    Ubuntu        4.10 (Warty)  evolution ...
+
     >>> evo_owner.getLink(url='/ubuntu/hoary/+source/evolution') is not None
     True
     >>> evo_owner.getLink(url='/evolution/trunk/+addpackage') is not None
@@ -39,12 +38,6 @@ If you're not the owner or an admin, you still see the packages, but without
 the link to add packages yourself.
 
     >>> browser.open('http://launchpad.dev/evolution/+packages')
-    >>> browser.url
-    'http://launchpad.dev/evolution/+packages'
-    >>> print browser.contents
-    <...
-    ...<h1>Distribution packages</h1>...
-    ...
     >>> browser.getLink(url='/evolution/trunk/+addpackage')
     Traceback (most recent call last):
     ...

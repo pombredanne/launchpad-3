@@ -1007,9 +1007,6 @@
                 name="+portlet-duplicates"
                 template="../templates/bug-portlet-duplicates.pt"/>
             <browser:page
-                name="+portlet-cve"
-                template="../templates/bug-portlet-cve.pt"/>
-            <browser:page
                 name="+portlet-attachments"
                 template="../templates/bug-portlet-attachments.pt"/>
             <browser:page

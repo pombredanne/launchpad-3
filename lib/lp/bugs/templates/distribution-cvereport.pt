@@ -43,10 +43,8 @@
     </tal:no_series>
     <tal:series condition="serieses">
       <ul>
-        <li tal:repeat="series serieses">
-          <a tal:attributes="href series/fmt:url/+cve"
-             tal:content="series/displayname" />
-        </li>
+        <li tal:repeat="series serieses"
+            tal:content="structure series/fmt:link/+cve" />
       </ul>
     </tal:series>
   </div>

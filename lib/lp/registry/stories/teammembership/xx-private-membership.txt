@@ -49,7 +49,6 @@ A team member will be able to see these parts of the team page.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    This is a Moderated Team.
     2 active members, 1 proposed members...
 
 

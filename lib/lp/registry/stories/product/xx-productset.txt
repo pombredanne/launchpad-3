@@ -1,4 +1,6 @@
-= Product Set Page =
+================
+Product Set Page
+================
 
 Under "/projects" there are several pages for various administration tasks.
 
@@ -31,11 +33,12 @@ A member of the Launchpad registry experts team may successfully access the
     >>> registry_browser.getLink("Review projects").click()
     >>> registry_browser.url
     'http://launchpad.dev/projects/+review-licenses'
-    >>> registry_browser.title
-    'Review projects'
+    >>> print registry_browser.title
+    +review-licenses : Projects
 
 
-== Searching from +review_licenses ==
+Searching from +review_licenses
+===============================
 
 The search parameters that filter on a boolean value can
 be left unspecified to get results with either value.
@@ -119,7 +122,8 @@ will take us back to the page we came from.
     http://launchpad.dev/projects/+review-licenses?field...&start=10
 
 
-= Project list shows license status =
+Project list shows license status
+=================================
 
 The project list will show (Proprietary) next to projects with a
 proprietary license, (Unspecified) next to projects without
@@ -187,30 +191,33 @@ will be displayed as proprietary.
           None
 
 
-== View all projects ==
+View all projects
+=================
 
 The unprivileged user can see "+all".
 
     >>> user_browser.open('http://launchpad.dev/projects/+all')
     >>> print user_browser.title
-    Projects registered in Launchpad
+    +all : Projects
 
 The commercial user can also view "+all".
 
     >>> registry_browser.open('http://launchpad.dev/projects/+all')
     >>> print registry_browser.title
-    Projects registered in Launchpad
+    +all : Projects
 
-== Create a project ==
+
+Create a project
+================
 
 The unprivileged user can see "+new".
 
     >>> user_browser.open('http://launchpad.dev/projects/+new')
-    >>> user_browser.title
-    'Register a project in Launchpad'
+    >>> print user_browser.title
+    +new : Projects
 
 The commercial user can also view "+new".
 
     >>> registry_browser.open('http://launchpad.dev/projects/+new')
-    >>> registry_browser.title
-    'Register a project in Launchpad'
+    >>> print registry_browser.title
+    +new : Projects

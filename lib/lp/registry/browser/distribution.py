@@ -22,6 +22,7 @@ __all__ = [
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
+    'DistributionSeriesView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
     'DistributionSetActionNavigationMenu',
@@ -66,6 +67,7 @@ from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -94,7 +96,7 @@ class UsesLaunchpadMixin:
     def uses_launchpad_for(self):
         """Return a string of LP apps (comma-separated) this distro uses."""
         uses = []
-        href_template = """<a href="%s"><strong>%s</strong></a>"""
+        href_template = """<a href="%s">%s</a>"""
         if self.context.official_answers:
             url = canonical_url(self.context, rootsite='answers')
             uses.append(href_template % (url, 'Answers'))
@@ -806,6 +808,35 @@ class DistributionEditView(RegistryEditFormView):
             data['enable_bug_expiration'] = False
 
 
+class DistributionSeriesView(LaunchpadView):
+    """A view to list the distribution series"""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "%s version history" % self.context.title
+
+    @cachedproperty
+    def styled_series(self):
+        """A list of dicts; keys: series, css_class, is_development_focus"""
+        all_series = []
+        for series in self.context.serieses:
+            all_series.append({
+                'series': series,
+                'css_class': self.getCssClass(series),
+                })
+        return all_series
+
+    def getCssClass(self, series):
+        """The highlighted, unhighlighted, or dimmed CSS class."""
+        if series.status == DistroSeriesStatus.DEVELOPMENT:
+            return 'highlighted'
+        elif series.status == DistroSeriesStatus.OBSOLETE:
+            return 'dimmed'
+        else:
+            return 'unhighlighted'
+
+
 class DistributionChangeMirrorAdminView(RegistryEditFormView):
     """A view to change the mirror administrator."""
     schema = IDistribution
@@ -867,8 +898,7 @@ class DistributionMirrorsView(LaunchpadView):
 
     implements(IDistributionMirrorMenuMarker)
     show_freshness = True
-    show_archive_mirror = True
-    show_cd_mirror = True
+    show_mirror_type = False
     description = None
 
     @cachedproperty
@@ -945,7 +975,6 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
     heading = 'Official Archive Mirrors'
     description = ('These mirrors provide repositories and archives of all '
                    'software for the distribution.')
-    show_archive_mirror = False
 
     @cachedproperty
     def mirrors(self):
@@ -957,7 +986,6 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     heading = 'Official CD Mirrors'
     description = ('These mirrors offer ISO images which you can download '
                    'and burn to CD to make installation disks.')
-    show_cd_mirror = False
     show_freshness = False
 
     @cachedproperty
@@ -1025,6 +1053,8 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 class DistributionPendingReviewMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Pending-review mirrors'
+    show_mirror_type = True
+    show_freshness = False
 
     @cachedproperty
     def mirrors(self):
