@@ -166,8 +166,8 @@ So we try again with an expiry date in the future:
 
 == ArchiveSubscriptionEditView ==
 
-The ArchiveSubscriptionEditView presents the expiry and description ready
-for editing, together with Update and Cancel actions:
+The ArchiveSubsriptionEditView includes a view label for the views main
+title.
 
     >>> login('celso.providelo@canonical.com')
     >>> from lp.soyuz.interfaces.archivesubscriber import (
@@ -175,6 +175,12 @@ for editing, together with Update and Cancel actions:
     >>> spiv_subscription = getUtility(IArchiveSubscriberSet).getByArchive(
     ...     cprov.archive).one()
     >>> view = create_initialized_view(spiv_subscription, name="+edit")
+    >>> print view.label
+    Edit Andrew Bennetts's access to PPA for Celso Providelo
+
+The ArchiveSubscriptionEditView presents the expiry and description ready
+for editing, together with Update and Cancel actions:
+
     >>> view.field_names
     ['date_expires', 'description']
     >>> for action in view.actions:

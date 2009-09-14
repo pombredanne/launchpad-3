@@ -235,6 +235,11 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
     custom_widget('description', TextWidget, displayWidth=40)
     custom_widget('date_expires', CustomWidgetFactory(DateWidget))
 
+    @property
+    def label(self):
+        """Return a relevant label for the view's main heading."""
+        return "Edit " + self.context.displayname
+
     def validate_update_subscription(self, action, data):
         """Ensure that the date of expiry is not in the past."""
         form.getWidgetsData(self.widgets, 'field', data)
