@@ -725,10 +725,7 @@ class DistributionAllPackagesView(LaunchpadView):
         results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
 
-    @property
-    def page_title(self):
-        """Return the HTML page title."""
-        return 'All packages'
+    page_title = 'All packages'
 
 
 class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
