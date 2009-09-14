@@ -577,12 +577,22 @@ class ArchiveSeriesVocabularyFactory:
             this factory can only be used in a class where the context is
             an IArchive.
         """
-        series_terms = [SimpleTerm(None, token='any', title='Any Series')]
+        series_terms = []
         for distroseries in context.series_with_sources:
             series_terms.append(
                 SimpleTerm(distroseries, token=distroseries.name,
                            title=distroseries.displayname))
         return SimpleVocabulary(series_terms)
+
+
+class SeriesFilterWidget(LaunchpadDropdownWidget):
+    """Redefining default display value as 'Any series'."""
+    _messageNoValue = _("any", "Any series")
+
+
+class StatusFilterWidget(LaunchpadDropdownWidget):
+    """Redefining default display value as 'Any status'."""
+    _messageNoValue = _("any", "Any status")
 
 
 class IPPAPackageFilter(Interface):
@@ -604,6 +614,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
     """A Form view for filtering and batching source packages."""
 
     schema = IPPAPackageFilter
+    custom_widget('series_filter', SeriesFilterWidget)
+    custom_widget('status_filter', StatusFilterWidget)
 
     # By default this view will not display the sources with selectable
     # checkboxes, but subclasses can override as needed.
@@ -656,6 +668,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         """Return the currently selected filter or None."""
         requested_series_filter = self.request.query_string_params.get(
             'field.series_filter')
+        if requested_series_filter == ['']:
+            requested_series_filter = None
 
         # If the request included a series filter, try to use it:
         selected_series_filter = None
@@ -667,15 +681,15 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         # If the request didn't include a series, or it was invalid, use
         # the default:
         if selected_series_filter is None:
-            selected_series_filter = self.default_series_filter
+            return self.default_series_filter
 
-        return selected_series_filter
+        return selected_series_filter.value
 
     @property
     def plain_series_filter_widget(self):
         """Render a <select> control with no <div>s around it."""
         return self.widgets['series_filter'].renderValue(
-            self.selected_series_filter.value)
+            self.selected_series_filter)
 
     @property
     def filtered_sources(self):
@@ -683,7 +697,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         return self.context.getPublishedSources(
             name=self.specified_name_filter,
             status=self.selected_status_filter.value,
-            distroseries=self.selected_series_filter.value)
+            distroseries=self.selected_series_filter)
 
     @property
     def default_status_filter(self):
@@ -772,7 +786,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 return term
 
         # Otherwise we default to 'any'
-        return vocabulary.getTermByToken('any')
+        return None
 
     @property
     def archive_description_html(self):
