@@ -4,9 +4,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'TeamInvitationsView',
     'TeamMembershipEditView',
     ]
 
+
+import cgi
 import pytz
 from datetime import datetime
 
@@ -20,6 +23,7 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -299,3 +303,11 @@ class TeamMembershipEditView:
                            tzinfo=UTC)
         return expires
 
+
+class TeamInvitationsView(LaunchpadView):
+    """View for ~team/+invitations."""
+
+    @property
+    def label(self):
+        team_name = cgi.escape(self.context.displayname)
+        return 'Invitations for ' + team_name

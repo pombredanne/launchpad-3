@@ -1179,7 +1179,8 @@
             name="+invitations"
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.Edit"
-            template="../templates/team-invitations.pt"/>
+            template="../templates/team-invitations.pt"
+            class="lp.registry.browser.teammembership.TeamInvitationsView"/>
         <browser:page
             name="+addmember"
             for="lp.registry.interfaces.person.ITeam"
