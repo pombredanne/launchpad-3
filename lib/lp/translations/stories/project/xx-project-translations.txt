@@ -52,7 +52,7 @@ Anonymous users don't see the translations
 
   >>> anon_browser.getLink('Translations').click()
   >>> print anon_browser.title
-  Translations of Network Applet in Launchpad
+  Translations : NetApplet
 
   >>> find_tag_by_id(
   ...     anon_browser.contents,

@@ -24,7 +24,7 @@ as the translation group for the netapplet product...
     ...     'Translation permissions policy').displayValue = ['Structured']
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.title
-    Translations of Network Applet in Launchpad
+    Translations : NetApplet
 
 ... and its associated project, GNOME.
 

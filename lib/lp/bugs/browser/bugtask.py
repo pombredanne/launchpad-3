@@ -1796,6 +1796,13 @@ class BugTaskListingItem:
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
 
+    @property
+    def last_significant_change_date(self):
+        """The date of the last significant change."""
+        return (self.bugtask.date_closed or self.bugtask.date_fix_committed or
+                self.bugtask.date_inprogress or self.bugtask.date_left_new or
+                self.bugtask.datecreated)
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""

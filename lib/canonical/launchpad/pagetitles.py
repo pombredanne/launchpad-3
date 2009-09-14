@@ -349,8 +349,6 @@ distribution_members = ContextTitle('%s distribution members')
 
 distribution_mirrors = ContextTitle("Mirrors of %s")
 
-distribution_series = ContextTitle("%s version history")
-
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translation_settings = ContextTitle(
@@ -476,29 +474,19 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_js is standard javascript
 
-launchpad_invalidbatchsize = "Invalid Batch Size"
-
 launchpad_legal = 'Launchpad legalese'
 
 launchpad_login = 'Log in or register with Launchpad'
 
-launchpad_notfound = 'Error: Page not found'
-
 launchpad_onezerostatus = 'One-Zero Page Template Status'
-
-launchpad_requestexpired = 'Error: Timeout'
 
 def launchpad_search(context, view):
     """Return the page title corresponding to the user's search."""
     return view.page_title
 
-launchpad_translationunavailable = 'Translation page is not available'
-
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 launchpad_librarianfailure = "Sorry, you can't do this right now"
-
-launchpad_readonlyfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -594,8 +582,6 @@ message_add = ContextBugId('Bug #%d - Add a comment')
 
 milestone_add = ContextTitle('Add new milestone for %s')
 
-milestone_index = ContextTitle('%s')
-
 milestone_edit = ContextTitle('Edit %s')
 
 milestone_delete = ContextTitle('Delete %s')
@@ -624,8 +610,6 @@ oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 def object_driver(context, view):
     """Return the page title to change the driver."""
     return view.page_title
-
-object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 # object_pots is a fragment.
 
@@ -777,9 +761,6 @@ product_bugs = ContextDisplayName('Bugs in %s')
 
 product_code_index = ContextDisplayName("Bazaar branches of %s")
 
-product_distros = ContextDisplayName(
-    '%s packages: Comparison of distributions')
-
 product_cvereport = ContextTitle('CVE reports for %s')
 
 product_edit = 'Change project details'
@@ -795,14 +776,10 @@ def product_mergeproposals(context, view):
 
 product_new_guided = 'Before you register your project...'
 
-product_packages = ContextDisplayName('%s packages in Launchpad')
-
 product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 
 product_review_license = ContextTitle('Review %s')
-
-product_series = ContextDisplayName('%s timeline')
 
 product_timeline = ContextTitle('Timeline Diagram for %s')
 
@@ -812,16 +789,9 @@ productrelease_admin = ContextTitle('Administer %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
-products_review_licenses = 'Review projects'
-
-productseries_packaging = ContextDisplayName(
-    'Packaging of %s in distributions')
-
 productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
-
-project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 

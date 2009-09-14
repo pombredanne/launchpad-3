@@ -153,8 +153,8 @@ The link is to the expirable bugs page. No Privileges Person can see
 the bug he set to Incomplete previously.
 
     >>> expirable_bugs_link.click()
-    >>> user_browser.title
-    'Bugs that can expire in Jokosher Audio Editor'
+    >>> print user_browser.title
+    +expirable-bugs : Bugs in jokosher : Jokosher
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)

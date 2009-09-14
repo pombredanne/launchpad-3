@@ -45,7 +45,7 @@
   <tal:side metal:fill-slot="side">
     <div id="involvement" class="portlet involvement">
       <ul>
-        <li>
+        <li style="border: 0">
           <a href="+filebug" class="menu-link-filebug sprite bugs">
             Report a bug
           </a>

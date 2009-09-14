@@ -15,6 +15,7 @@ __all__ = [
     'MilestoneSetNavigation',
     'MilestonesView',
     'MilestoneView',
+    'ObjectMilestonesView',
     ]
 
 
@@ -24,6 +25,7 @@ from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.lazr.utils import smartquote
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
@@ -452,3 +454,12 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
         self.request.response.addInfoNotification(
             "Milestone %s deleted." % name)
         self.next_url = canonical_url(series)
+
+
+class ObjectMilestonesView(LaunchpadView):
+    """A view for listing the milestones for any `IHasMilestones` object"""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return smartquote("%s's milestones" % self.context.title)
