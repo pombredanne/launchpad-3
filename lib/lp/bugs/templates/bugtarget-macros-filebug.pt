@@ -249,14 +249,14 @@
       <tal:not-has-products tal:condition="not: context/products">
         <tal:admin-warning condition="context/required:launchpad.Edit">
           <p class="warning message">
-            There are no projects registered for <span
-            tal:replace="context/displayname">project
-            displayname</span>.
+            There are no projects registered for
+            <span tal:replace="context/displayname">project displayname</span>.
             <br />
-            You need to <a href="+newproduct" tal:attributes="href
-            context/fmt:url/+newproduct">register another project that
-            is part of <tal:project replace="context/displayname"
-            /></a> or associate an existing project with it.
+            You need to
+            <a tal:attributes="href context/fmt:url/+newproduct">register
+            another project that is part of
+            <tal:project replace="context/displayname" /></a>
+            or associate an existing project with it.
           </p>
         </tal:admin-warning>
       </tal:not-has-products>
@@ -284,8 +284,8 @@
         </tal:plural>
         <tal:singular condition="python:context.products.count() == 1">
           <p id="product-list-summary">
-            There is 1 project registered as part of <tal:project
-            replace="context/displayname">Project</tal:project> but it
+            There is 1 project registered as part of
+            <tal:project replace="context/displayname" /> but it
             does not use Launchpad as its bug tracker.
           </p>
           <p>
