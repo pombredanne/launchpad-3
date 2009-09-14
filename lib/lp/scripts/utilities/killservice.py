@@ -113,8 +113,8 @@ def wait_for_pids(pids, wait, log):
     :param wait: How many seconds to wait.
     """
     wait_start = time.time()
-    while pids and time.time() < wait_start + wait:
-        for service, pid in pids[:]:
+    while len(pids) > 0 and time.time() < wait_start + wait:
+        for service, pid in pids[:]: # Copy pids because we mutate it.
             if not process_exists(pid):
                 pids.remove((service, pid))
         time.sleep(0.1)
