@@ -176,7 +176,7 @@ cancellation is displayed.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have cancelled Launchpad Developers's subscription to PPA
+    You have revoked Launchpad Developers's access to PPA
     for Celso Providelo.
 
 

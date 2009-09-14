@@ -186,7 +186,7 @@ for editing, together with Update and Cancel actions:
     >>> for action in view.actions:
     ...     print action.label
     Save
-    Cancel access
+    Revoke access
 
 The ArchiveSubscriptionEditView has a next_url helper property.
 
@@ -247,7 +247,7 @@ After canceling a subscription, a relevant notification is added to the view.
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    You have cancelled Andrew Bennetts's subscription to PPA for
+    You have revoked Andrew Bennetts's subscription to PPA for
     Celso Providelo.
 
 Just uncancel the subscription before continuing on.

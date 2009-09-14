@@ -271,12 +271,12 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
             self.context.subscriber.displayname)
         self.request.response.addNotification(notification)
 
-    @action(u'Cancel access', name='cancel')
+    @action(u'Revoke access', name='cancel')
     def cancel_subscription(self, action, data):
         """Cancel the context subscription."""
         self.context.cancel(self.user)
 
-        notification = "You have cancelled %s's subscription to %s." % (
+        notification = "You have revoked %s's access to %s." % (
             self.context.subscriber.displayname,
             self.context.archive.displayname)
         self.request.response.addNotification(notification)
