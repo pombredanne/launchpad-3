@@ -154,6 +154,7 @@ class EC2Instance:
         # Add the user.
         as_root('adduser --gecos "" --disabled-password %(USER)s')
         # Give user sudo without password.
+        as_root('echo "%(USER)s\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
         # Update the system.
         as_root('aptitude update')
         as_root('aptitude -y full-upgrade')
@@ -219,7 +220,7 @@ class EC2Instance:
         sftp.mkdir(remote_ec2_dir)
         remote_pk = self._copy_single_file(
             sftp, self.local_pk, remote_ec2_dir)
-        remote_cert = self._copy_single_glob_match(
+        remote_cert = self._copy_single_file(
             sftp, self.local_cert, remote_ec2_dir)
         return (remote_pk, remote_cert)
 
