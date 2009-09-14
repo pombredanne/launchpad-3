@@ -13,7 +13,6 @@ in the 'Status' column. There are also 2 portlets on the right-side
 containing the build queue status summary for each build domain.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    The Launchpad build farm
     1 available build machine, 1 disabled and 1 building of a total of
     2 registered.
     Builders
@@ -116,7 +115,7 @@ Administrators can create new builders.
     >>> admin_browser.getLink("Register a new build machine").click()
 
     >>> print admin_browser.title
-    Register a new build machine
+    +new : Build Farm
 
 Registering a new builder involves setting its name, title,
 description and corresponding location.
@@ -161,4 +160,4 @@ just-created builder page.
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> admin_browser.getControl("Register builder").click()
     >>> print backslashreplace(admin_browser.title)
-    Builder \u201cTubaina\u201d
+    Tubaina : Build Farm

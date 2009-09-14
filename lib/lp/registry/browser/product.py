@@ -54,6 +54,7 @@ from canonical.config import config
 from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+from lp.app.interfaces.headings import IEditableContextTitle
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
@@ -780,7 +781,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                   ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
-    implements(IProductActionMenu)
+    implements(IProductActionMenu, IEditableContextTitle)
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)

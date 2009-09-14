@@ -20,6 +20,7 @@ __all__ = [
     'IProductSeriesLanguageSet',
     ]
 
+
 class IProductSeriesLanguage(IRosettaStats):
     """Per-language statistics for a product series."""
 
@@ -50,6 +51,12 @@ class IProductSeriesLanguage(IRosettaStats):
         For any `POTemplate` that does not have a translation to the
         required language, a `DummyPOFile` is provided.
         """
+
+    def setCounts(total, imported, changed, new, unreviewed):
+        """Set aggregated message counts for ProductSeriesLanguage."""
+
+    def recalculateCounts(total, imported, changed, new, unreviewed):
+        """Recalculate message counts for this ProductSeriesLanguage."""
 
 
 class IProductSeriesLanguageSet(Interface):

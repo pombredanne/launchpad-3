@@ -34,7 +34,7 @@ from storm.store import Store
 
 # use cElementTree if it is available ...
 try:
-    import xml.elementtree.cElementTree as ET
+    import xml.etree.cElementTree as ET
 except ImportError:
     try:
         import cElementTree as ET
