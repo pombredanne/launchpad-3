@@ -99,6 +99,43 @@ def run_with_instance(instance, run, demo_networks, postmortem):
             instance.shutdown()
 
 
+def make_instance(instance_type, machine_id, demo_networks):
+    # Validate instance_type and get default kernal and ramdisk.
+    if instance_type not in AVAILABLE_INSTANCE_TYPES:
+        raise ValueError('unknown instance_type %s' % (instance_type,))
+
+    # Get the AWS identifier and secret identifier.
+    try:
+        credentials = EC2Credentials.load_from_file()
+    except CredentialsError, e:
+        error_and_quit(str(e))
+
+    # Make the EC2 connection.
+    account = credentials.connect(EC2TestRunner.name)
+
+    # We do this here because it (1) cleans things up and (2) verifies
+    # that the account is correctly set up. Both of these are appropriate
+    # for initialization.
+    #
+    # We always recreate the keypairs because there is no way to
+    # programmatically retrieve the private key component, unless we
+    # generate it.
+    account.delete_previous_key_pair()
+
+    # get the image
+    image = account.acquire_image(machine_id)
+
+    vals = os.environ.copy()
+    login = get_lp_login()
+    if not login:
+        error_and_quit(
+            'you must have set your launchpad login in bzr.')
+    vals['launchpad-login'] = login
+
+    return EC2Instance(
+        EC2TestRunner.name, image, instance_type, demo_networks,
+        account, vals)
+
 
 def main():
     parser = optparse.OptionParser(
@@ -243,9 +280,10 @@ def main():
               'changes in your download cache, you must explicitly choose to '
               'include or ignore the changes.'))
     parser.add_option(
-        '--bundle',
-        dest='bundle', action='store',
-        help=('XXX.'))
+        '--update-bundle', dest='bundle', action='store',
+        help=('Start the image, update the system packages, sourcecode and '
+              'Launchpad branch then bundle, upload and register a new AMI '
+              'with the given name.'))
     options, args = parser.parse_args()
     if options.debug:
         import pdb; pdb.set_trace()
@@ -285,41 +323,6 @@ def main():
     else:
         branches = [data.split('=', 1) for data in options.branches]
 
-    # XXXX THE FOLLOWING CHUNK OF CODE IN NO WAY BELONGS HERE!! XXXX
-
-    # Validate instance_type and get default kernal and ramdisk.
-    if options.instance_type not in AVAILABLE_INSTANCE_TYPES:
-        raise ValueError('unknown instance_type %s' % (options.instance_type,))
-
-
-    # Get the AWS identifier and secret identifier.
-    try:
-        credentials = EC2Credentials.load_from_file()
-    except CredentialsError, e:
-        error_and_quit(str(e))
-
-    # Make the EC2 connection.
-    account = credentials.connect(EC2TestRunner.name)
-
-    # We do this here because it (1) cleans things up and (2) verifies
-    # that the account is correctly set up. Both of these are appropriate
-    # for initialization.
-    #
-    # We always recreate the keypairs because there is no way to
-    # programmatically retrieve the private key component, unless we
-    # generate it.
-    account.delete_previous_key_pair()
-
-    # get the image
-    image = account.acquire_image(options.machine_id)
-    if options.demo_networks is None:
-        demo_networks = ()
-    else:
-        demo_networks = options.demo_networks
-
-    # XXX vals is a terrible idea.
-    vals = os.environ.copy()
-    # Get a public key from the agent.
     agent = paramiko.Agent()
     keys = agent.get_keys()
     if len(keys) == 0:
@@ -329,11 +332,14 @@ def main():
             'branch.\n')
     user_key = agent.get_keys()[0]
 
-    instance = EC2Instance(
-        EC2TestRunner.name, image, options.instance_type, demo_networks,
-        account, vals)
+    if options.demo_networks is None:
+        demo_networks = ()
+    else:
+        demo_networks = options.demo_networks
 
-    # XXXX end XXXX
+    instance = make_instance(
+        instance_type=options.instance_type, machine_id=options.machine_id,
+        demo_networks=demo_networks)
 
     if not options.bundle:
         runner = EC2TestRunner(
@@ -345,7 +351,7 @@ def main():
             pqm_submit_location=options.pqm_submit_location,
             open_browser=options.open_browser, pqm_email=options.pqm_email,
             include_download_cache_changes=options.include_download_cache_changes,
-            instance=instance, vals=vals,
+            instance=instance, vals=instance._vals,
             )
         def run_tests():
             runner.configure_system()
@@ -356,11 +362,6 @@ def main():
                 runner.run_tests()
         run = run_tests
     else:
-        login = get_lp_login()
-        if not login:
-            error_and_quit(
-                'you must have set your launchpad login in bzr.')
-        vals['launchpad-login'] = login
         def make_new_image():
             instance.setup_user()
             user_connection = instance.connect_as_user()

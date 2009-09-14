@@ -21,7 +21,6 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.config import GlobalConfig
 from bzrlib.errors import UncommittedChanges
-from bzrlib.plugins.launchpad.account import get_lp_login
 from bzrlib.plugins.pqm.pqm_submit import (
     NoPQMSubmissionAddress, PQMSubmission)
 
@@ -366,13 +365,6 @@ class EC2TestRunner:
             else:
                 self.vals['email'] = (
                     from_email.encode('utf8').encode('string-escape'))
-
-        # Get the bzr login.
-        login = get_lp_login()
-        if not login:
-            self.error_and_quit(
-                'you must have set your launchpad login in bzr.')
-        self.vals['launchpad-login'] = login
 
         self._instance = instance
 

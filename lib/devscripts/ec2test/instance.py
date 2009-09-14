@@ -159,10 +159,6 @@ class EC2Instance:
         root_p('adduser --gecos "" --disabled-password %(USER)s')
         # Give user sudo without password.
         root_p('echo "%(USER)s\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
-            # Make /var/launchpad owned by user.
-        root_p('chown -R %(USER)s:%(USER)s /var/launchpad')
-        # Clean out left-overs from the instance image.
-        root_p('rm -fr /var/tmp/*')
         # Update the system.
         root_p('aptitude update')
         root_p('aptitude -y full-upgrade')
@@ -206,8 +202,13 @@ class EC2Instance:
         self.log(
             'You can now use ssh -A %s to log in the instance.\n' %
             self.hostname)
+        # What follows is somewhat ec2test specfic.
         # give the user permission to do whatever in /var/www
         root_p('chown -R %(USER)s:%(USER)s /var/www')
+        # Make /var/launchpad owned by user.
+        root_p('chown -R %(USER)s:%(USER)s /var/launchpad')
+        # Clean out left-overs from the instance image.
+        root_p('rm -fr /var/tmp/*')
         root_connection.close()
 
     def _copy_single_glob_match(self, sftp, pattern, local_dir, remote_dir):
