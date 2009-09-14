@@ -41,9 +41,10 @@ AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 # easier.
 
 def run_with_instance(instance, run, demo_networks, postmortem):
+    shutdown = True
     try:
         try:
-            run()
+            shutdown = run()
         except Exception:
             # If we are running in demo or postmortem mode, it is really
             # helpful to see if there are any exceptions before it waits
@@ -90,7 +91,8 @@ def run_with_instance(instance, run, demo_networks, postmortem):
                                  {'dns': instance.hostname})
                 print 'Postmortem console closed.'
         finally:
-            instance.shutdown()
+            if shutdown:
+                instance.shutdown()
 
 
 def make_instance(instance_type, machine_id, demo_networks):
@@ -354,6 +356,7 @@ def main():
                 runner.start_demo_webserver()
             else:
                 runner.run_tests()
+            return not options.headless
         run = run_tests
     else:
         instance.check_bundling_prerequisites()
@@ -373,6 +376,7 @@ def main():
                 'deluser --remove-home %(USER)s', ignore_failure=True)
             root_connection.close()
             instance.bundle(options.bundle)
+            return False
         run = make_new_image
 
     instance.start()
