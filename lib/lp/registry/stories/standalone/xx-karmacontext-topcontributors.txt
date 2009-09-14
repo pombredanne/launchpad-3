@@ -20,7 +20,7 @@ The top contributors page can be reached from the top contributors portlet.
 
     >>> anon_browser.getLink('More contributors').click()
     >>> print anon_browser.title
-    Top Ubuntu Linux Contributors
+    +topcontributors : Ubuntu
 
 
 Top contributors of a product
@@ -35,7 +35,7 @@ The top contributors page can be reached from the top contributors portlet.
 
     >>> anon_browser.getLink('More contributors').click()
     >>> print anon_browser.title
-    Top Mozilla Firefox Contributors
+    +topcontributors : Mozilla Firefox
 
 
 Top contributors of a project group
@@ -50,4 +50,4 @@ The top contributors page can be reached from the top contributors portlet.
 
     >>> anon_browser.getLink('More contributors').click()
     >>> print anon_browser.title
-    Top The Mozilla Project Contributors
+    +topcontributors : the Mozilla Project

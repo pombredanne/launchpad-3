@@ -48,7 +48,7 @@ here first:
     ...     'http://localhost'
     ...     '/ubuntu/breezy-autotest/+package/mozilla-firefox')
     >>> print browser.title
-    Binary package “mozilla-firefox” in ubuntu breezy-autotest
+    mozilla-firefox : 6.6.6 : Ubuntu
 
 Now run a search for mozilla-firefox and check that it is found:
 

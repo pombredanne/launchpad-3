@@ -46,6 +46,18 @@ the string 'PPA' or 'Archive' depending on whether the archive is a PPA
     >>> print copy_archive_view.archive_label
     Archive
 
+There is also the 'ppa_reference' property, which mimics the syntax
+supported by `dput` and `software-properties` Ubuntu tools.
+
+    >>> print ppa_archive_view.ppa_reference
+    ppa:cprov/ppa
+
+    >>> print copy_archive_view.ppa_reference
+    Traceback (most recent call last):
+    ...
+    AssertionError: PPA reference should not be used for non-PPA
+    archives.
+
 The ArchiveView is provides the html for the inline description
 editing widget.
 
@@ -61,12 +73,15 @@ that returns a dict of the build count summary for the archive:
 An ArchiveView also includes an easy way to get any
 IPackageCopyRequest's associated with an archive:
 
+    >>> len(ppa_archive_view.package_copy_requests)
+    0
+
+    # Create a copy-request to Celso's PPA.
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
-    >>> copy_archive_view.package_copy_requests.count()
+
+    >>> len(copy_archive_view.package_copy_requests)
     1
-    >>> ppa_archive_view.package_copy_requests.count()
-    0
 
 An ArchiveView inherits the status-filter widget for filtering
 packages by status.
@@ -388,6 +403,22 @@ to be building:
     >>> view.num_pkgs_building
     {'building': 3, 'waiting': 0, 'total': 3}
 
+The archive index view overrides the default series filter to use the
+distroseries from the browser's user-agent, when applicable.
+
+    >>> print view.default_series_filter.token
+    any
+
+    >>> view_warty = create_view(
+    ...     cprov.archive, name="+index",
+    ...     HTTP_USER_AGENT='Mozilla/5.0 '
+    ...                     '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
+    ...                     'Gecko/2009042523 Ubuntu/4.10 (whatever) '
+    ...                     'Firefox/3.0.10')
+    >>> view_warty.initialize()
+    >>> print view_warty.default_series_filter.token
+    warty
+
 
 == ArchivePackageView ==
 
@@ -430,22 +461,6 @@ is a copy archive.
 
     >>> copy_archive_view.is_copy
     True
-
-The Package view overrides the default series filter to use the distroseries
-from the browser's user-agent, when applicable.
-
-    >>> print ppa_archive_view.default_series_filter.token
-    any
-
-    >>> ppa_archive_view_warty = create_view(
-    ...     cprov.archive, name="+packages",
-    ...     HTTP_USER_AGENT='Mozilla/5.0 '
-    ...                     '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
-    ...                     'Gecko/2009042523 Ubuntu/4.10 (whatever) '
-    ...                     'Firefox/3.0.10')
-    >>> ppa_archive_view_warty.initialize()
-    >>> print ppa_archive_view_warty.default_series_filter.token
-    warty
 
 
 == ArchivePackageDeletionView ==
