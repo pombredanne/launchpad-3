@@ -13,7 +13,7 @@ The view's label shows the person who's karma we're looking at...
     >>> print view.label
     Launchpad Karma for Geddy Lee
 
-...even when the logged in person is looking at someone else's karma.
+...even when the logged in user is looking at someone else's karma.
 
     >>> neil = factory.makePerson(name='neil', displayname='Neil Peart')
     >>> view = create_initialized_view(neil, '+karma')
