@@ -230,8 +230,8 @@ span.nolink {
     }
 .portlet, .aside {
     clear: both;
-    border-top: 1px solid #d6d6d6;
-    padding: 0.5em 0;
+    border-top: 1px solid #EBEBEB;
+    padding: 1em 0;
     }
 .top-portlet {
     padding: 0 0 0.5em 0;
