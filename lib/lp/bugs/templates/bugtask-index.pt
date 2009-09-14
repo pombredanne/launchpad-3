@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_side"
+  metal:use-macro="view/macro:page/main_only"
 >
   <body>
     <metal:block fill-slot="head_epilogue">
@@ -58,17 +58,6 @@
           >(<tal:link replace="structure link/render" />)</tal:activitylog>
 
       </p>
-      <div class="object identifier">
-
-          <a tal:attributes="href context/bug/fmt:url;
-                             class string: ${context/image:sprite_css}">
-            Bug #<span tal:content="context/bug/id"
-            >12345</span><tal:nickname
-                          condition="context/bug/name">
-          (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>:</a>
-
-      </div>
-      <tal:privacy replace="structure context/bug/@@+portlet-privacy" />
       <h1 tal:replace="structure view/bug_title_edit_widget">
         Bug title
       </h1>
@@ -431,6 +420,7 @@
         </div><!-- id="nonportlets"-->
       </div><!--- id="maincontentsub"-->
       <div id="portlets">
+        <div tal:replace="structure context/bug/@@+portlet-privacy" />
         <div tal:replace="structure context/bug/@@+portlet-duplicates" />
         <div tal:replace="structure context/bug/@@+portlet-subscribers" />
         <div tal:replace="structure context/bug/@@+portlet-questions" />
