@@ -76,8 +76,9 @@ class ProductSeriesLanguage(RosettaStats):
             POTemplate.productseries==self.productseries,
             POTemplate.iscurrent==True)
         imported, changed, new, unreviewed = query[0]
-        if (imported is None or changed is None or 
+        if (imported is None or changed is None or
             new is None or unreviewed is None):
+            # Set all counts to zero.
             imported = changed = new = unreviewed = 0
         self.setCounts(self._getMessageCount(), imported, changed,
                        new, unreviewed)
