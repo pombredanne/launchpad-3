@@ -1019,6 +1019,10 @@ class TeamMapView(LaunchpadView):
             self.request.needs_gmap2 = True
 
     @cachedproperty
+    def label(self):
+        return "Team member locations"
+
+    @cachedproperty
     def mapped_participants(self):
         """Participants with locations."""
         return self.context.getMappedParticipants(limit=self.limit)

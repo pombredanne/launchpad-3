@@ -1051,8 +1051,6 @@ team_mailinglist_moderate = 'Moderate mailing list'
 team_mailinglist_subscribers = ContextBrowsername(
     'Mailing list subscribers for the %s team')
 
-team_map = ContextBrowsername('Map of %s participants')
-
 team_members = ContextBrowsername(smartquote('"%s" members'))
 
 team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))

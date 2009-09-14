@@ -1327,7 +1327,11 @@ class InactiveBatchNavigator(BatchNavigator):
 
 
 class TeamMembershipView(LaunchpadView):
-    """The view behins ITeam/+members."""
+    """The view behind ITeam/+members."""
+
+    @cachedproperty
+    def label(self):
+        return smartquote('Members of "%s"' % self.context.displayname)
 
     @cachedproperty
     def active_memberships(self):
@@ -4562,6 +4566,10 @@ class TeamMugshotView(LaunchpadView):
     def initialize(self):
         """Cache images to avoid dying from a million cuts."""
         getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
+
+    @cachedproperty
+    def label(self):
+        return "Who's in this team?"
 
     @cachedproperty
     def allmembers(self):

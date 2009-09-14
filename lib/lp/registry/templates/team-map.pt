@@ -3,18 +3,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
 <div metal:fill-slot="main">
-
-  <h1>Members' location</h1>
 
   <tal:unmapped condition="view/unmapped_participants_count">
     <div style="margin: 4px;">
