@@ -1060,11 +1060,6 @@ def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
         context.person.displayname, context.team.displayname)
 
-def teammembership_invitation(context, view):
-    """Return the page title to invite a person to become a team member."""
-    return "Make %s a member of %s" % (
-        context.person.displayname, context.team.displayname)
-
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 
 team_newpoll = ContextTitle('New poll for team %s')

@@ -7,7 +7,6 @@
 
 __metaclass__ = type
 
-
 __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
@@ -85,6 +84,7 @@ __all__ = [
     'TeamSpecsMenu',
     'archive_to_person',
     ]
+
 
 import cgi
 import copy
@@ -569,7 +569,6 @@ class TeamInvitationView(LaunchpadFormView):
     implements(IBrowserPublisher)
 
     schema = ITeamMembershipInvitationAcknowledgementForm
-    label = 'Team membership invitation'
     field_names = ['acknowledger_comment']
     custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
     template = ViewPageTemplateFile(
@@ -583,6 +582,14 @@ class TeamInvitationView(LaunchpadFormView):
                 "Only team administrators can approve/decline invitations "
                 "sent to this team.")
         LaunchpadFormView.__init__(self, context, request)
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return "Make %s a member of %s" % (
+            self.context.person.displayname, self.context.team.displayname)
+
+    page_title = label
 
     def browserDefault(self, request):
         return self, ()
