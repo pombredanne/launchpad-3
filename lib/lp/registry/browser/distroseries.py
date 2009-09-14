@@ -271,10 +271,7 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
         """See `AbstractPackageSearchView`."""
         return self.context.searchPackages(self.text)
 
-    @property
-    def page_title(self):
-        """Return the HTML page title."""
-        return 'Search packages'
+    page_title = 'Search packages'
 
 
 class DistroSeriesStatusMixin:
@@ -509,7 +506,4 @@ class DistroSeriesAddView(LaunchpadFormView):
 class DistroSeriesPackagesView(DistroSeriesView):
     """A View to show series package to upstream package relationships."""
 
-    @property
-    def page_title(self):
-        """Return the HTML page title."""
-        return 'Mapping series packages to upstream project series'
+    page_title = 'Mapping series packages to upstream project series'
