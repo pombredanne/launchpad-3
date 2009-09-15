@@ -90,6 +90,8 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
+	bin/test $(VERBOSITY) --layer=BugsWindmillAppServerLayer
+	bin/test $(VERBOSITY) --layer=CodeWindmillAppServerLayer
 	bin/jstest
 
 check_mailman: build
