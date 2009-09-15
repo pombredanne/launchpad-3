@@ -12,8 +12,6 @@
 <div metal:fill-slot="main">
 
   <tal:series repeat="series context/serieses">
-    <h1 tal:content="view/page_title">Product packages in Launchpad</h1>
-
     <h2>Series &#8220;<span tal:replace="series/name">main</span>&#8221;</h2>
 
     <table id="packages" class="listing" tal:condition="series/packagings">
