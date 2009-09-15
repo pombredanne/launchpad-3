@@ -59,7 +59,7 @@ line here as it has working links in the sample data:
     <Link text='cnews' url='http://launchpad.dev/ubuntu/+source/cnews'>
     >>> link.click()
     >>> browser.title
-    '\xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
+    '...cnews... package : Ubuntu'
 
 Same process for the second column should take us to a distribution series
 source package page:
@@ -70,7 +70,7 @@ source package page:
     <Link text='Ubuntu Hoary' url='http://launchpad.dev/ubuntu/hoary/+source/cnews'>
     >>> link.click()
     >>> browser.title
-    'The Hoary Hedgehog Release source packages'
+    '...cnews... package : 5.04 : Ubuntu'
 
 Same again for the third column should take us to a distribution source
 package release page:

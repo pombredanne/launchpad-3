@@ -308,7 +308,6 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 0 0.5em;
   /* Content headings are highlighted using a different color (the color is
      overriden per-application in subsequent rules) instead of bold text. */
-  color: #83ad23;
   font-weight: normal;
 }
 h1 {font-size: 2em;}
@@ -729,7 +728,8 @@ ol.breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 0.5em;
+    margin-bottom: 1em;
+    font-size: 80%;
 }
 ol.breadcrumbs li {
     display:inline;
