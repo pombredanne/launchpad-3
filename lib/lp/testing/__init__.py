@@ -85,6 +85,11 @@ class StormStatementRecorder:
 
 
 def record_statements(function, *args, **kwargs):
+    """Run the function and record the sql statements that are executed.
+
+    :return: a tuple containing the return value of the function,
+        and a list of sql statements.
+    """
     recorder = StormStatementRecorder()
     try:
         install_tracer(recorder)
@@ -95,6 +100,7 @@ def record_statements(function, *args, **kwargs):
 
 
 def run_with_storm_debug(function, *args, **kwargs):
+    """A helper function to run a function with storm debug tracing on."""
     from storm.tracer import debug
     debug(True)
     try:
@@ -398,6 +404,10 @@ class TestCase(unittest.TestCase):
         self.factory = ObjectFactory()
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
+        """Assert that the expected number of SQL statements occurred.
+
+        :return: Returns the result of calling the function.
+        """
         ret, statements = record_statements(function, *args, **kwargs)
         if len(statements) != expected_count:
             self.fail(

@@ -143,7 +143,6 @@ class TestGetOfficialSourcePackageLinksForBranches(TestCaseWithFactory):
 
         b1 = make_linked_package_branch(self.factory)
         store = Store.of(b1)
-        # XXX: Tim Penhey 2009-09-15 bug TODO
         # Constructing a distribution causes the "ubuntu" celebrity to be
         # created which hits the database. So load it now.
         store.flush()
@@ -154,8 +153,7 @@ class TestGetOfficialSourcePackageLinksForBranches(TestCaseWithFactory):
             1, BranchListingQueryOptimiser.
             getOfficialSourcePackageLinksForBranches, [b1.id])
         # Accessing the source package doesn't hit the database.
-        sp = self.assertStatementCount(
-            0, getattr, link, "sourcepackage")
+        sp = self.assertStatementCount(0, getattr, link, "sourcepackage")
         # Getting the distribution from the source package doesn't hit the
         # database.
         self.assertStatementCount(0, getattr, sp, "distribution")
