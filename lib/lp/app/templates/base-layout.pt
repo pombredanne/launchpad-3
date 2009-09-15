@@ -4,12 +4,14 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.2.7 (r${revno});
+    release modules/canonical.launchpad.versioninfo/release;
+    version string:Launchpad ${release} (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
     is_edge modules/canonical.config/config/launchpad/is_edge;
     is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+    site_message modules/canonical.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
     icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
     CONTEXTS python:{'template':template, 'context': context, 'view':view};
@@ -25,9 +27,7 @@
     yui string:${icingroot}/yui/3.0.0pr2/build;
     lazr_js string:${icingroot}/lazr/build;
     lp_js string:${icingroot}/build">
-    <title i18n:translate=""
-      tal:content="view/page_title|CONTEXTS/fmt:pagetitle">Launchpad</title>
-
+    <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
 
     <tal:atomfeeds define="feed_links view/feed_links | nothing">
@@ -79,15 +79,20 @@
       ${view/context/fmt:public-private-css}
       yui-skin-sam">
     <div class="yui-d0">
+      <div id="globalheader" xml:lang="en" lang="en" dir="ltr"
+           tal:condition="site_message">
+        <div class="sitemessage" tal:content="structure site_message">
+          This site is running pre-release code.
+        </div>
+      </div>
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
-        <tal:hierarchy replace="structure context/@@+hierarchy" />
       </div><!--id="locationbar"-->
 
       <div class="watermark-apps-portlet top-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
-        <span tal:replace="structure context/watermark:logo"></span>
-        <h2 tal:replace="structure context/watermark:heading">
+        <span tal:replace="structure view/watermark:logo"></span>
+        <h2 tal:replace="structure view/watermark:heading">
           Celso Providelo
         </h2>
         <metal:heading_nav
@@ -113,12 +118,13 @@
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
             <div tal:condition="view/macro:pagehas/applicationtabs">
-              <h2
-                tal:condition="context/title|nothing"
-                tal:content="context/title"
-                metal:define-slot="heading" />
-              <tal:breadcrumbs>
-                <!-- future breadcrumb rule -->
+            <h1
+              tal:condition="view/label|nothing"
+              tal:content="view/label"
+              metal:define-slot="heading"
+              >Page Label</h1>
+              <tal:breadcrumbs replace="structure context/@@+hierarchy">
+                ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
             </div>
             <metal:main define-slot="main" />

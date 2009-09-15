@@ -130,7 +130,7 @@ are currently published. This special-case is important because it
 avoids changes to accommodate the backported source in the already
 released series.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.registry.interfaces.pocket import (
     ...      PackagePublishingPocket)
     >>> from zope.security.proxy import removeSecurityProxy
 

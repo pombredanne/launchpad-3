@@ -58,6 +58,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
+from lp.bugs.interfaces.bugnomination import IBugNominationSet
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
@@ -125,6 +126,15 @@ class BugNavigation(Navigation):
             attachment = getUtility(IBugAttachmentSet)[name]
             if attachment is not None and attachment.bug == self.context:
                 return attachment
+
+    @stepthrough('nominations')
+    def traverse_nominations(self, nomination_id):
+        """Traverse to a nomination by id."""
+        if nomination_id.isdigit():
+            try:
+                return getUtility(IBugNominationSet).get(nomination_id)
+            except NotFoundError:
+                return None
 
 
 class BugFacets(StandardLaunchpadFacets):
@@ -631,7 +641,12 @@ class BugSecrecyEditView(BugEditViewBase):
     """Page for marking a bug as a private/public."""
 
     field_names = ['private', 'security_related']
-    label = "Bug visibility and security"
+
+    @property
+    def label(self):
+        return 'Bug #%i - Set visiblity and security' % self.context.bug.id
+
+    page_title = label
 
     def setUpFields(self):
         """Make the read-only version of `private` writable."""

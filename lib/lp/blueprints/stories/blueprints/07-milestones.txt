@@ -42,7 +42,7 @@ milestone.
   <.../firefox/+milestone/1.0...
 
   >>> admin_browser.getLink('1.0').url
-  'http://blueprints.launchpad.dev/firefox/+milestone/1.0'
+  'http://launchpad.dev/firefox/+milestone/1.0'
   >>> admin_browser.getLink('1.0').click()
 
 Now, we should see the spec on the Mozilla Milestone 1.0 page.

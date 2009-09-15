@@ -634,6 +634,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         value is set to None, date_assigned is also set to None.
         """
 
+    @mutator_for(target)
     @operation_parameters(
         target=copy_field(target))
     @export_write_operation()

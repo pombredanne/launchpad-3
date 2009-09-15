@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'LanguageAddView',
-    'LanguageContextMenu',
     'LanguageAdminView',
     'LanguageSetContextMenu',
     'LanguageSetNavigation',
@@ -25,7 +24,7 @@ from lp.translations.interfaces.translationsperson import (
 from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
-    LaunchpadEditFormView, action, canonical_url, ContextMenu,
+    LaunchpadEditFormView, action, canonical_url, ContextMenu, NavigationMenu,
     enabled_with_permission, Link, custom_widget)
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -44,8 +43,9 @@ class LanguageSetContextMenu(ContextMenu):
         return Link('+add', text, icon='add')
 
 
-class LanguageContextMenu(ContextMenu):
+class LanguageNavigationMenu(NavigationMenu):
     usedfor = ILanguage
+    facet = 'translations'
     links = ['administer']
 
     @enabled_with_permission('launchpad.Admin')

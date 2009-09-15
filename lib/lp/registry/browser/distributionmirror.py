@@ -10,7 +10,8 @@ __all__ = [
     'DistributionMirrorView',
     'DistributionMirrorReviewView',
     'DistributionMirrorReassignmentView',
-    'DistributionMirrorDeleteView'
+    'DistributionMirrorDeleteView',
+    'DistributionMirrorProberLogView',
     ]
 
 from datetime import datetime
@@ -34,11 +35,11 @@ from lp.registry.interfaces.distributionmirror import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadFormView, Link)
+    LaunchpadEditFormView, LaunchpadFormView, Link, NavigationMenu, action,
+    canonical_url, enabled_with_permission)
 
 
-class DistributionMirrorOverviewMenu(ApplicationMenu):
+class DistributionMirrorOverviewMenu(NavigationMenu):
 
     usedfor = IDistributionMirror
     facet = 'overview'
@@ -52,13 +53,12 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def proberlogs(self):
         text = 'Prober logs'
-        return Link('+prober-logs', text, icon='info')
+        enabled = self.context.last_probe_record is not None
+        return Link('+prober-logs', text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Admin')
     def delete(self):
-        enabled = False
-        if self.context.last_probe_record is None:
-            enabled = True
+        enabled = self.context.last_probe_record is None
         text = 'Delete this mirror'
         return Link('+delete', text, icon='remove', enabled=enabled)
 
@@ -84,6 +84,13 @@ class _FlavoursByDistroSeries:
 
 
 class DistributionMirrorView(LaunchpadView):
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        values = dict(distribution=self.context.distribution.displayname,
+                      name=self.context.title)
+        return '%(distribution)s mirror "%(name)s"' % values
 
     def initialize(self):
         """Set up the sources.list entries for display."""
@@ -272,3 +279,11 @@ class DistributionMirrorReassignmentView(ObjectReassignmentView):
     def contextName(self):
         return self.context.title
 
+
+class DistributionMirrorProberLogView(DistributionMirrorView):
+    """View class for prober logs."""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return '%s mirror prober logs' % self.context.title

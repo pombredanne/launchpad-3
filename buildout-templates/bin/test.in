@@ -140,6 +140,7 @@ defaults = [
     '--test-path=${buildout:directory}/lib',
     '--package=canonical',
     '--package=lp',
+    '--package=devscripts',
     # XXX: Add this back before landing this branch.
     #'--layer=!(MailmanLayer|WindmillLayer)',
     ]

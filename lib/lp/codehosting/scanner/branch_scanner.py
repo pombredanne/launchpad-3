@@ -21,7 +21,7 @@ from lp.code.interfaces.branchscanner import IBranchScanner
 from lp.codehosting.vfs import get_scanner_server
 from lp.codehosting.scanner import buglinks, email, mergedetection
 from lp.codehosting.scanner.bzrsync import (
-    BzrSync, schedule_translation_upload)
+    BzrSync, schedule_diff_updates, schedule_translation_upload)
 from lp.codehosting.scanner.fixture import (
     Fixtures, make_zope_event_fixture, run_with_fixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
@@ -97,6 +97,7 @@ class BranchScanner:
             buglinks.got_new_revision,
             mergedetection.auto_merge_branches,
             mergedetection.auto_merge_proposals,
+            schedule_diff_updates,
             schedule_translation_upload,
             ]
         server = get_scanner_server()
