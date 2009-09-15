@@ -348,6 +348,11 @@
       </form>
     </div>
 
+    <div class="sitemessage" tal:content="structure site_message"
+         tal:condition="site_message">
+      This site is running pre-release code.
+    </div>
+
     <div class="colophon">
       &copy; 2004-2009
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>

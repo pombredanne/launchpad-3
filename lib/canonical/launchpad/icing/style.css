@@ -674,30 +674,19 @@ hr {
 
 /* === Universal page layout === */
 
-/* All pages begin with a global header or a topline. */
-#globalheader {
-  clear: both;
-  position: relative;
-  width: 100%;
-  height: 21px;
-  overflow: hidden;
-  margin: 0 0 1em 0;
-  padding: 0;
-  background-color: #EEE;
-  background-image:  url(globalheader_bg.gif);
-  background-repeat: repeat-x;
-  background-position: top center;
-}
-#globalheader .sitemessage a {
-  color: #FFF;
-  text-decoration: underline;
-}
-/* Site-specific message. */
-#globalheader .sitemessage {
-  text-align: center;
-  color: #FFF;
-  font-size: 13px;
-  padding-top: 2px;
+/* All pages include the sitemessage in the footer if one is defined
+   in the config. */
+.sitemessage {
+    clear: both;
+    position: relative;
+    width: 100%;
+    height: 21px;
+    overflow: hidden;
+    margin: 1em 0;
+    background: url(/@@/footer-background.png) top left repeat-x;
+    text-align: center;
+    font-size: 13px;
+    padding-top: 0.5em;
 }
 
 /* === Login control === */

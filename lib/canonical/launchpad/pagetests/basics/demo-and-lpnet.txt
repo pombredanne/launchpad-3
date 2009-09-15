@@ -53,7 +53,8 @@ For a 3-0 page:
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
     &bull;...Launchpad...) devmode demo site
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'globalheader'))
+    >>> print extract_text(find_tags_by_class(
+    ...     browser.contents, 'sitemessage')[0])
     This is a demo site mmk. File a bug.
     >>> print browser.getLink(url="http://example.com").text
     File a bug
@@ -68,7 +69,8 @@ And for a non-3-0 page:
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
     |...Launchpad...) devmode demo site
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'globalheader'))
+    >>> print extract_text(find_tags_by_class(
+    ...     browser.contents, 'sitemessage')[0])
     This is a demo site mmk. File a bug.
     >>> print browser.getLink(url="http://example.com").text
     File a bug
