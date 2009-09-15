@@ -1004,6 +1004,8 @@ class TeamMapView(LaunchpadView):
     known locations.
     """
 
+    label = "Team member locations"
+
     def __init__(self, context, request):
         """Accept the 'preview' parameter to limit mapped participants."""
         super(TeamMapView, self).__init__(context, request)
@@ -1017,10 +1019,6 @@ class TeamMapView(LaunchpadView):
         # we can render the map.
         if self.mapped_participants_count > 0:
             self.request.needs_gmap2 = True
-
-    @cachedproperty
-    def label(self):
-        return "Team member locations"
 
     @cachedproperty
     def mapped_participants(self):

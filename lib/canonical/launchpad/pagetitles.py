@@ -1033,10 +1033,6 @@ team_mailinglist_moderate = 'Moderate mailing list'
 team_mailinglist_subscribers = ContextBrowsername(
     'Mailing list subscribers for the %s team')
 
-team_members = ContextBrowsername(smartquote('"%s" members'))
-
-team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
-
 def teammembership_index(context, view):
     """Return the page title to the persons status in a team."""
     return smartquote("%s's membership status in %s") % (

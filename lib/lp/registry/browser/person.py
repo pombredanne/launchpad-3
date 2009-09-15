@@ -4563,13 +4563,13 @@ class PersonEditEmailsView(LaunchpadFormView):
 
 class TeamMugshotView(LaunchpadView):
     """A view for the team mugshot (team photo) page"""
+
+    label = "Who's in this team?"
+
     def initialize(self):
         """Cache images to avoid dying from a million cuts."""
         getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
 
-    @cachedproperty
-    def label(self):
-        return "Who's in this team?"
 
     @cachedproperty
     def allmembers(self):
