@@ -1014,7 +1014,6 @@ the PPA publication will always be main:
     ...     distroseries=test_source_pub.distroseries,
     ...     component=test_source_pub.component,
     ...     section=test_source_pub.section,
-    ...     status=test_source_pub.status,
     ...     pocket=test_source_pub.pocket)
     >>> print ppa_pub.component.name
     main
@@ -1029,7 +1028,6 @@ the PPA publication will always be main:
     ...     component=test_bin_pub.component,
     ...     section=test_bin_pub.section,
     ...     priority=test_bin_pub.priority,
-    ...     status=test_bin_pub.status,
     ...     pocket=test_bin_pub.pocket)
     >>> print ppa_pub.binarypackagerelease.component.name
     universe

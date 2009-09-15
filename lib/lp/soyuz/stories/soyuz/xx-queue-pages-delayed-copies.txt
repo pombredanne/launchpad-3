@@ -107,15 +107,11 @@ become available to everyone.
     # DB objects that have no security adapter are modified during the
     # delayed copy, the modification must be done in Zopeless mode.
     >>> import os.path
-    >>> import subprocess
-    >>> import sys
+    >>> from canonical.launchpad.ftests.script import run_script
     >>> from canonical.config import config
     >>> script = os.path.join(config.root, "scripts/process-accepted.py")
-    >>> process = subprocess.Popen(
-    ...     [sys.executable, script, "ubuntu"],
-    ...     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    >>> stdout, stderr = process.communicate()
-    >>> if process.returncode != 0:
+    >>> result, stdout, stderr = run_script(script, ["ubuntu"])
+    >>> if result != 0:
     ...     print stderr
 
 Any user can access the DONE queue and access the delayed-copy

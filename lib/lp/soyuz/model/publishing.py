@@ -786,7 +786,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             distroseries,
             current.component,
             current.section,
-            PackagePublishingStatus.PENDING,
             pocket
             )
 
@@ -1051,7 +1050,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 current.component,
                 current.section,
                 current.priority,
-                PackagePublishingStatus.PENDING,
                 pocket
                 )
             copies.append(copy)
@@ -1104,7 +1102,7 @@ class PublishingSet:
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
-                             status, pocket):
+                             pocket):
         """See `IPublishingSet`."""
         if archive.is_ppa:
             # PPA component must always be 'main', so we override it
@@ -1127,8 +1125,7 @@ class PublishingSet:
         return BinaryPackagePublishingHistory.get(pub.id)
 
     def newSourcePublication(self, archive, sourcepackagerelease,
-                             distroseries, component, section, status,
-                             pocket):
+                             distroseries, component, section, pocket):
         """See `IPublishingSet`."""
         if archive.is_ppa:
             # PPA component must always be 'main', so we override it

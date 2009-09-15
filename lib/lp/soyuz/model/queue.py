@@ -1335,7 +1335,6 @@ class PackageUploadBuild(SQLBase):
                     component=binary.component,
                     section=binary.section,
                     priority=binary.priority,
-                    status=PackagePublishingStatus.PENDING,
                     pocket=self.packageupload.pocket
                     )
                 published_binaries.append(bpph)
@@ -1466,7 +1465,6 @@ class PackageUploadSource(SQLBase):
             distroseries=self.packageupload.distroseries,
             component=self.sourcepackagerelease.component,
             section=self.sourcepackagerelease.section,
-            status=PackagePublishingStatus.PENDING,
             pocket=self.packageupload.pocket
             )
 
