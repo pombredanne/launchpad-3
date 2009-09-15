@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DerivativeDistributionOverviewMenu',
     'DistributionAddView',
     'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
@@ -64,7 +65,8 @@ from lp.answers.browser.questiontarget import (
 from lp.soyuz.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
 from lp.registry.interfaces.distribution import (
-    IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
+    IDerivativeDistribution, IDistribution, IDistributionMirrorMenuMarker,
+    IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -409,6 +411,16 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     def ppas(self):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
+
+
+class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
+
+    usedfor = IDerivativeDistribution
+
+    @enabled_with_permission('launchpad.Append')
+    def addseries(self):
+        text = 'Add series'
+        return Link('+addseries', text, icon='add')
 
 
 class DistributionBugsMenu(ApplicationMenu):

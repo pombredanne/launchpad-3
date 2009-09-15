@@ -1945,6 +1945,7 @@
         template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
+            DerivativeDistributionOverviewMenu
             DistributionBugsMenu
             DistributionFacets
             DistributionMirrorsNavigationMenu
