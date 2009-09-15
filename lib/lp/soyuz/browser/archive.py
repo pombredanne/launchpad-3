@@ -636,71 +636,52 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         else:
             return None
 
-    @cachedproperty
-    def selected_status_filter(self):
-        """Return the selected status filter or the default."""
-        requested_status_filter = self.request.query_string_params.get(
-            'field.status_filter')
+    def getSelectedFilter(self, filter_name):
+        """Return the selected filter or the default, given a filter name.
 
-        # If an empty status filter was specified, then it's explicitly
+        This is needed because zope's form library does not consider
+        query string params (GET params) during a post request.
+        """
+        field_name = 'field.' + filter_name
+        requested_filter = self.request.query_string_params.get(field_name)
+
+        # If an empty filter was specified, then it's explicitly
         # been set to empty - so we use None.
-        if requested_status_filter == ['']:
+        if requested_filter == ['']:
             return None
 
-        # If the requested status filter is none, then we use the default.
-        if requested_status_filter is None:
-            return self.default_status_filter
+        # If the requested filter is none, then we use the default.
+        default_filter_attr = 'default_' + filter_name
+        if requested_filter is None:
+            return getattr(self, default_filter_attr)
 
-        # If the request included a status filter, try to use it - if it's
+        # If the request included a filter, try to use it - if it's
         # invalid we use the default instead.
-        vocab = self.widgets['status_filter'].vocabulary
-        if vocab.by_token.has_key(requested_status_filter[0]):
-            return vocab.getTermByToken(requested_status_filter[0]).value
+        vocab = self.widgets[filter_name].vocabulary
+        if vocab.by_token.has_key(requested_filter[0]):
+            return vocab.getTermByToken(requested_filter[0]).value
         else:
-            return self.default_status_filter
+            return getattr(self, default_filter_attr)
 
     @property
     def plain_status_filter_widget(self):
         """Render a <select> control with no <div>s around it."""
         return self.widgets['status_filter'].renderValue(
-            self.selected_status_filter)
-
-    @property
-    def selected_series_filter(self):
-        """Return the currently selected filter or None."""
-        requested_series_filter = self.request.query_string_params.get(
-            'field.series_filter')
-
-        # If an empty series filter was specified, then it's explicitly
-        # been set to empty - so we use None.
-        if requested_series_filter == ['']:
-            return None
-
-        # If the requested series filter is none, then we use the default.
-        if requested_series_filter is None:
-            return self.default_series_filter
-
-        # If the request included a series filter, try to use it - if it's
-        # invalid we use the default.
-        vocab = self.widgets['series_filter'].vocabulary
-        if vocab.by_token.has_key(requested_series_filter[0]):
-            return vocab.getTermByToken(requested_series_filter[0]).value
-        else:
-            return self.default_series_filter
+            self.getSelectedFilter('status_filter'))
 
     @property
     def plain_series_filter_widget(self):
         """Render a <select> control with no <div>s around it."""
         return self.widgets['series_filter'].renderValue(
-            self.selected_series_filter)
+            self.getSelectedFilter('series_filter'))
 
     @property
     def filtered_sources(self):
         """Return the source results for display after filtering."""
         return self.context.getPublishedSources(
             name=self.specified_name_filter,
-            status=self.selected_status_filter,
-            distroseries=self.selected_series_filter)
+            status=self.getSelectedFilter('status_filter'),
+            distroseries=self.getSelectedFilter('series_filter'))
 
     @property
     def default_status_filter(self):
@@ -1015,14 +996,11 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
 
         This overrides ArchiveViewBase.filtered_sources to use a
         different method on the context specific to deletion records.
-
-        It expects 'self.selected_status_filter' and
-        'self.selected_series_filter' to be set.
         """
         return self.context.getSourcesForDeletion(
             name=self.specified_name_filter,
-            status=self.selected_status_filter,
-            distroseries=self.selected_series_filter.value)
+            status=self.getSelectedFilter('status_filter'),
+            distroseries=self.getSelectedFilter('series_filter'))
 
     @cachedproperty
     def has_sources(self):
@@ -1110,7 +1088,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     def default_status_filter(self):
         """Present published records by default."""
         return self.widgets['status_filter'].vocabulary.getTermByToken(
-            'published')
+            'published').value
 
     def setUpFields(self):
         """Override `ArchiveSourceSelectionFormView`.
