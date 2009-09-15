@@ -3,36 +3,25 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
   <body>
+    <div metal:fill-slot="main">
+      <form name="search" method="GET">
+        <div>Find packages with names containing:</div>
+        
+        <input type="text"
+          name="text"
+          size="35"
+          tal:attributes="value request/text|nothing" />
 
-<div metal:fill-slot="main">
-  <h1>Binary package search results</h1>
+        <input type="submit" value="Search"
+            tal:condition="not: view/search_requested" />
+        <input type="submit" value="Search Again"
+            tal:condition="view/search_requested" />
+      </form>
 
-  <form name="search" method="GET">
-  
-    <div>Find packages with names containing:</div>
-    <input type="text"
-      name="text"
-      size="35"
-      tal:attributes="value request/text|nothing" />
-
-    <input type="submit" value="Search"
-        tal:condition="not: view/search_requested" />
-    <input type="submit" value="Search Again"
-        tal:condition="view/search_requested" />
-
-  </form>
-
-  <metal:package-search use-macro="context/@@+macros/search-results" />
-
-</div>
-
+      <metal:package-search use-macro="context/@@+macros/search-results" />
+    </div>
 </body>
-
 </html>

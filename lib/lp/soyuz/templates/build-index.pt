@@ -42,21 +42,17 @@
 
       </div> <!-- yui-g  -->
 
-      <div class="yui-g" tal:condition="context/binarypackages">
+      <tal:binaries condition="context/binarypackages">
 
-        <div id="binaries" class="yui-u first">
-          <div class="portlet">
-            <div metal:use-macro="template/macros/binaries" />
-          </div>
+        <div id="binaries" class="portlet">
+          <div metal:use-macro="template/macros/binaries" />
         </div>
 
-        <div id="files" class="yui-u">
-          <div class="portlet">
-            <div metal:use-macro="template/macros/files" />
-          </div>
+        <div id="files" class="portlet">
+          <div metal:use-macro="template/macros/files" />
         </div>
 
-      </div> <!-- yui-g  -->
+      </tal:binaries>
 
       <div id="buildlog" class="portlet"
            tal:condition="context/buildstate/enumvalue:BUILDING">
@@ -138,10 +134,6 @@
       <span tal:attributes="
             class string:buildstatus${context/buildstate/name};"
             tal:content="context/buildstate/title">Fully built</span>
-      <tal:retry
-        define="link context/menu:context/retry"
-        condition="link/enabled"
-        replace="structure link/fmt:icon" />
       <tal:building condition="context/buildstate/enumvalue:BUILDING">
         on <a tal:content="view/buildqueue/builder/title"
               tal:attributes="href view/buildqueue/builder/fmt:url"/>
@@ -150,6 +142,9 @@
         on <a tal:content="context/builder/title"
               tal:attributes="href context/builder/fmt:url"/>
       </tal:built>
+      <tal:retry define="link context/menu:context/retry"
+                 condition="link/enabled"
+                 replace="structure link/fmt:link" />
     </p>
 
     <ul>

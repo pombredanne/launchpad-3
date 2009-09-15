@@ -730,6 +730,11 @@ class TeamMailingListSubscribersView(LaunchpadView):
 
     max_columns = 4
 
+    @property
+    def label(self):
+        return ('Mailing list subscribers for the %s team' %
+                self.context.displayname)
+
     @cachedproperty
     def subscribers(self):
         return BatchNavigator(
