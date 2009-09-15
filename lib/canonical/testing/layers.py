@@ -72,6 +72,9 @@ import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
 
+from windmill.bin.admin_lib import (
+    start_windmill, teardown as windmill_teardown)
+
 import zope.app.testing.functional
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
@@ -1675,8 +1678,6 @@ class BaseWindmillLayer(AppServerLayer):
         cls.config_file.write(config_text)
         # Flush the file so that windmill can read it.
         cls.config_file.flush()
-        from windmill.bin.admin_lib import start_windmill
-        from lp.testing import windmillconfig
         os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
         cls.shell_objects = start_windmill()
 
@@ -1685,7 +1686,6 @@ class BaseWindmillLayer(AppServerLayer):
     def tearDown(cls):
         if cls.shell_objects is not None:
             AppServerLayer.tearDown()
-            from windmill.bin.admin_lib import teardown
             teardown(cls.shell_objects)
             # Start the SMTP server, in case other layers need it. It
             # will be killed by AppServerLayer later.
