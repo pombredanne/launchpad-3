@@ -103,7 +103,7 @@ is created.  When those jobs are run, the email is sent from the registrant.
     >>> bmp = source_branch.addLandingTarget(
     ...     registrant, target_branch, review_diff=diff)
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> _unused_diff = job.run()
+    >>> _unused_diff = job.run(_create_preview=False)
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
 
@@ -154,7 +154,7 @@ in the email.
     ...     registrant, target_branch, review_diff=diff,
     ...     initial_comment=initial_comment, review_requests=reviewers)
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> _unused_diff = job.run()
+    >>> _unused_diff = job.run(_create_preview=False)
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:
