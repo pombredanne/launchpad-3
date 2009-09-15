@@ -1686,7 +1686,7 @@ class BaseWindmillLayer(AppServerLayer):
     def tearDown(cls):
         if cls.shell_objects is not None:
             AppServerLayer.tearDown()
-            teardown(cls.shell_objects)
+            windmill_teardown(cls.shell_objects)
             # Start the SMTP server, in case other layers need it. It
             # will be killed by AppServerLayer later.
             LayerProcessController.startSMTPServer()
