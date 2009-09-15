@@ -14,10 +14,6 @@
     <table>
       <tbody>
         <tr>
-          <td class="bug-comment-index">
-            <a tal:attributes="href comment/fmt:url"
-               tal:content="string: #${comment/index}" />
-          </td>
           <td tal:condition="not: comment/bugwatch">
             <tal:comment_owner
                 replace="structure comment/owner/fmt:link" />
@@ -47,6 +43,10 @@
                 <strong tal:condition="comment/display_title"
                         tal:content="comment/title" />
               </a>
+          </td>
+          <td class="bug-comment-index">
+            <a tal:attributes="href comment/fmt:url"
+               tal:content="string: #${comment/index}" />
           </td>
         </tr>
       </tbody>

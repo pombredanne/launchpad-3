@@ -17,6 +17,7 @@ __all__ = [
     'POTemplateSubsetURL',
     'POTemplateSubsetView',
     'POTemplateURL',
+    'POTemplateUploadView',
     'POTemplateView',
     'POTemplateViewPreferred',
     ]
@@ -139,11 +140,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         specifications_link.target = self.target
         return specifications_link
 
-    def bounties(self):
-        bounties_link = self.target_facets.bounties()
-        bounties_link.target = self.target
-        return bounties_link
-
     def calendar(self):
         calendar_link = self.target_facets.calendar()
         calendar_link.target = self.target
@@ -205,7 +201,6 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
     def initialize(self):
         """Get the requested languages and submit the form."""
         self.description = self.context.description
-        self.submitForm()
 
     def requestPoFiles(self):
         """Yield a POFile or DummyPOFile for each of the languages in the
@@ -266,9 +261,25 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             pofile = pofileset.getDummy(self.context, language)
         return pofile
 
+
+class POTemplateUploadView(LaunchpadView, TranslationsMixin):
+    """Upload translations and updated template."""
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return "Upload translation files to %s" % (
+            self.context.displayname)
+
+    def initialize(self):
+        """Get the requested languages and submit the form."""
+        self.submitForm()
+
     def submitForm(self):
-        """Called from the page template to do any processing needed if a form
-        was submitted with the request."""
+        """Process any uploaded files."""
 
         if self.request.method == 'POST':
             if 'UPLOAD' in self.request.form:
@@ -429,7 +440,7 @@ class POTemplateEditView(LaunchpadEditFormView):
 
     schema = IPOTemplate
     field_names = ['description', 'priority', 'owner']
-    label = 'Change PO template information'
+    label = 'Edit translation template details'
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -449,7 +460,17 @@ class POTemplateEditView(LaunchpadEditFormView):
             UTC = pytz.timezone('UTC')
             context.date_last_updated = datetime.datetime.now(UTC)
 
-        self.next_url = canonical_url(self.context)
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def page_title(self):
+        return 'Edit template "%s" details' % (self.context.name)
 
 
 class POTemplateAdminView(POTemplateEditView):
@@ -463,6 +484,15 @@ class POTemplateAdminView(POTemplateEditView):
 
 
 class POTemplateExportView(BaseExportView):
+    """Request downloads of a `POTemplate` and its translations."""
+
+    @property
+    def page_title(self):
+        return "Download translations of %s" % (self.context.displayname)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def processForm(self):
         """Process a form submission requesting a translation export."""

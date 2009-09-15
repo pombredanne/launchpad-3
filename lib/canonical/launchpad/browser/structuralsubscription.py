@@ -4,11 +4,13 @@
 __metaclass__ = type
 
 __all__ = [
+    'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
     ]
 
 from operator import attrgetter
 
+from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
@@ -17,8 +19,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BugNotificationLevel, IDistributionSourcePackage,
     IStructuralSubscriptionForm)
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, action, canonical_url, custom_widget)
+    LaunchpadFormView, action, canonical_url, custom_widget, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -164,7 +167,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
                 'e-mail each time someone reports or changes one of '
                 'its public bugs.' % target.displayname)
         elif is_subscribed and not subscribe:
-            target.removeBugSubscription(self.user)
+            target.removeBugSubscription(self.user, self.user)
             self.request.response.addNotification(
                 'You have unsubscribed from "%s". You '
                 'will no longer automatically receive e-mail about '
@@ -194,7 +197,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
                 team.displayname, self.context.displayname))
 
         for team in subscriptions - form_selected_teams:
-            target.removeBugSubscription(team)
+            target.removeBugSubscription(team, self.user)
             self.request.response.addNotification(
                 'The %s team will no longer automatically receive '
                 'e-mail about changes to public bugs in "%s".' % (
@@ -217,7 +220,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
 
         subscriptions_to_remove = data.get('remove_other_subscriptions', [])
         for subscription in subscriptions_to_remove:
-            target.removeBugSubscription(subscription)
+            target.removeBugSubscription(subscription, self.user)
             self.request.response.addNotification(
                 '%s will no longer automatically receive e-mail about '
                 'public bugs in "%s".' % (
@@ -254,3 +257,13 @@ class StructuralSubscriptionView(LaunchpadFormView):
         and should be shown for the context.
         """
         return IDistributionSourcePackage.providedBy(self.context)
+
+
+class StructuralSubscriptionTargetTraversalMixin:
+    """Mix-in class that provides +subscription/<SUBSCRIBER> traversal."""
+
+    @stepthrough('+subscription')
+    def traverse_structuralsubscription(self, name):
+        """Traverses +subscription portions of URLs."""
+        person = getUtility(IPersonSet).getByName(name)
+        return self.context.getSubscription(person)

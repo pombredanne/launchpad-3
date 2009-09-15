@@ -10,7 +10,6 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
-    'BountyVocabulary',
     'HostedBranchRestrictedOnOwnerVocabulary',
     'BranchRestrictedOnProductVocabulary',
     'BranchVocabulary',
@@ -56,7 +55,6 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from lp.code.model.branch import Branch
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtracker import BugTracker
-from canonical.launchpad.database.bounty import Bounty
 from canonical.launchpad.database import Archive, BugWatch
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
@@ -223,12 +221,6 @@ class BugVocabulary(SQLObjectVocabularyBase):
 
     _table = Bug
     _orderBy = 'id'
-
-
-class BountyVocabulary(SQLObjectVocabularyBase):
-
-    _table = Bounty
-    # XXX kiko 2006-02-20: no _orderBy?
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):

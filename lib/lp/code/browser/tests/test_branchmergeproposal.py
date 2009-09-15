@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from difflib import unified_diff
 import unittest
 
 import transaction
@@ -462,18 +463,21 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def test_review_diff_utf8(self):
         """A review_diff in utf-8 should be converted to utf-8."""
         text = ''.join(unichr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text.encode('utf-8'))
+        diff_bytes = ''.join(unified_diff('', text)).encode('utf-8')
+        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
-        self.assertEqual(text, self._createView().review_diff)
+        self.assertEqual(diff_bytes.decode('utf-8'),
+                         self._createView().review_diff)
 
     def test_review_diff_all_chars(self):
         """review_diff should work on diffs containing all possible bytes."""
         text = ''.join(chr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text)
+        diff_bytes = ''.join(unified_diff('', text))
+        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
-        self.assertEqual(text.decode('windows-1252', 'replace'),
+        self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          self._createView().review_diff)
 
     def test_linked_bugs_excludes_mutual_bugs(self):
@@ -513,10 +517,11 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
             sorted(tokens), vocab_tokens)
 
     def assertAllStatusesAvailable(self, user, except_for=None):
-        # All options should be available to the user.
+        # All options should be available to the user, except for SUPERSEDED,
+        # which is only provided through resubmit.
         desired_statuses = set([
             'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
-            'REJECTED', 'SUPERSEDED'])
+            'REJECTED'])
         if except_for is not None:
             desired_statuses -= set(except_for)
         self.assertStatusVocabTokens(desired_statuses, user)
@@ -526,7 +531,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         # able to approve or reject their own code (assuming they don't have
         # rights on the target branch).
         status_options = [
-            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'SUPERSEDED']
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED']
         self.assertStatusVocabTokens(
             status_options, user=self.proposal.source_branch.owner)
         self.assertStatusVocabTokens(
@@ -544,8 +549,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.proposal.approveBranch(
             self.proposal.target_branch.owner, 'some-revision')
         status_options = [
-            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED',
-            'SUPERSEDED']
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED']
         self.assertStatusVocabTokens(
             status_options, user=self.proposal.source_branch.owner)
         self.assertStatusVocabTokens(

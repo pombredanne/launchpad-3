@@ -1,0 +1,22 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+    <ul id="navlinks" class="horizontal">
+      <li>
+        <a tal:replace="structure
+          view/menu:navigation/related_software_summary/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/maintained/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/uploaded/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/ppa/render"/></li>
+      <li>
+        <a tal:replace="structure view/menu:navigation/projects/render"/></li>
+    </ul>
+
+</tal:root>
+

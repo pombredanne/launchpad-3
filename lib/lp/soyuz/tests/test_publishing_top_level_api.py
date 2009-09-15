@@ -8,8 +8,10 @@ from unittest import TestLoader
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
+
 class TestICanPublishPackagesAPI(TestNativePublishingBase):
 
     def _createLinkedPublication(self, name, pocket):

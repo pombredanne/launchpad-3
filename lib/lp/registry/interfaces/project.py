@@ -20,7 +20,7 @@ from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
-from lp.app.interfaces.rootcontext import IRootContext
+from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -236,9 +236,6 @@ class IProjectPublic(
             description=_("Whether or not this project group has been "
                           "reviewed.")))
 
-    bounties = Attribute(
-        _("The bounties that are related to this project group."))
-
     bugtracker = exported(
         Choice(title=_('Bug Tracker'), required=False,
                vocabulary='BugTracker',
@@ -266,12 +263,6 @@ class IProjectPublic(
 
     def getProduct(name):
         """Get a product with name `name`."""
-
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this project group.
-
-        Return None.
-        """
 
     def translatables():
         """Return an iterator over products that have resources translatables.

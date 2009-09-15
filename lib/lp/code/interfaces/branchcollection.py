@@ -50,6 +50,13 @@ class IBranchCollection(Interface):
     def count():
         """The number of branches in this collection."""
 
+    def ownerCounts():
+        """Return the number of different branch owners.
+
+        :return:  a tuple (individual_count, team_count) containing the number
+            of individuals and teams that own branches in this collection.
+        """
+
     def getBranches():
         """Return a result set of all branches in this collection.
 
@@ -68,6 +75,13 @@ class IBranchCollection(Interface):
         :param for_branches: An iterable of branches what will restrict the
             resulting set of merge proposals to be only those for the
             branches specified.
+        """
+
+    def getMergeProposalsForPerson(person, status=None):
+        """Proposals for `person`.
+
+        Return the proposals for branches owned by `person` or where `person`
+        is reviewing or been asked to review.
         """
 
     def getMergeProposalsForReviewer(reviewer, status=None):

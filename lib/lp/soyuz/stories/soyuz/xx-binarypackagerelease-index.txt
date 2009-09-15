@@ -22,7 +22,7 @@ XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
   >>> from lp.soyuz.model.queue import PackageUploadBuild
   >>> from lp.soyuz.interfaces.build import IBuildSet
-  >>> from lp.soyuz.interfaces.publishing import (
+  >>> from lp.registry.interfaces.pocket import (
   ...     PackagePublishingPocket)
   >>> from zope.component import getUtility
 

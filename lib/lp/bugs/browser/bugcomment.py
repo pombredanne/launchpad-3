@@ -220,6 +220,10 @@ class BugCommentView(LaunchpadView):
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
 
+    def page_title(self):
+        return 'Comment %d for bug %d' % (
+            self.comment.index, self.context.bug.id)
+
 
 class BugCommentBoxView(LaunchpadView):
     """Render a comment box with reply field collapsed."""

@@ -23,7 +23,7 @@ import os
 import time
 
 try:
-    import xml.elementtree.cElementTree as ET
+    import xml.etree.cElementTree as ET
 except ImportError:
     import cElementTree as ET
 

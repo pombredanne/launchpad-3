@@ -45,7 +45,6 @@ class TranslationGroupSetNavigation(GetitemNavigation):
 
 class TranslationGroupSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITranslationGroupSet`."""
-
     text = u"Translation groups"
 
 
@@ -63,8 +62,10 @@ class TranslationGroupView:
             result.append({'lang': item.language.englishname,
                            'person': item.translator,
                            'code': item.language.code,
+                           'language' : item.language,
                            'datecreated': item.datecreated,
                            'style_guide_url': item.style_guide_url,
+                           'context' : item,
                            })
         result.sort(key=operator.itemgetter('lang'))
         return result
@@ -76,8 +77,8 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
     schema = ITranslator
     field_names = ['language', 'translator', 'style_guide_url']
 
-    @action("Add", name="add")
-    def add_action(self, action, data):
+    @action("Appoint", name="appoint")
+    def appoint_action(self, action, data):
         """Appoint a translator to do translations for given language.
 
         Create a translator who, within this group, will be responsible for
@@ -99,8 +100,18 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
                 "There is already a translator for this language")
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    label = "Appoint a translation team"
+
+    @property
+    def page_title(self):
+        return 'Apoint a translation team in "%s"' % (self.context.title)
 
 
 class TranslationGroupEditView(LaunchpadEditFormView):
@@ -130,8 +141,20 @@ class TranslationGroupEditView(LaunchpadEditFormView):
                 "There is already a translation group with this name")
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    @property
+    def label(self):
+        return "Change %s details" % (self.context.title)
+
+    @property
+    def page_title(self):
+        return 'Change "%s" translation group details' % (self.context.title)
 
 
 class TranslationGroupAddView(LaunchpadFormView):
