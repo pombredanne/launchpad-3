@@ -391,9 +391,9 @@
             set_attributes="description displayname"/>
         <require
             permission="launchpad.Commercial"
-            set_attributes="authorized_size buildd_secret
-                            enabled private build_debug_symbols
-                            require_virtualized relative_build_score"/>
+            set_attributes="authorized_size build_debug_symbols buildd_secret
+                            enabled private require_virtualized
+                            relative_build_score"/>
         <require
             permission="launchpad.Admin"
             set_attributes="distribution name signing_key"/>
