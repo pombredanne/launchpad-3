@@ -9,7 +9,9 @@ __all__ = [
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
+    'SourcePackageHelpView',
     'SourcePackageNavigation',
+    'SourcePackagePackaging',
     'SourcePackageView',
     ]
 
@@ -157,6 +159,11 @@ class SourcePackageView:
         self.processForm()
 
     @property
+    def page_title(self):
+        """The HTML page title."""
+        return '%s package' % self.context.name
+
+    @property
     def cancel_url(self):
         return canonical_url(self.context)
 
@@ -245,3 +252,15 @@ class SourcePackageView:
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
+
+
+class SourcePackagePackaging(SourcePackageView):
+    """A View to show where the package is packged."""
+
+    page_title = 'Upstream links'
+
+
+class SourcePackageHelpView:
+    """A View to show Answers help."""
+
+    page_title = 'Help and support options'
