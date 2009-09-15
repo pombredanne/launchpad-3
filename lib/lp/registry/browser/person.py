@@ -1809,6 +1809,8 @@ class PersonSpecWorkloadView(LaunchpadView):
     batching with their individual specifications.
     """
 
+    label = 'Blueprint workload'
+
     @cachedproperty
     def members(self):
         """Return a batch navigator for all members.
@@ -1852,6 +1854,8 @@ class PersonSpecWorkloadTableView(LaunchpadView):
 
 
 class PersonSpecFeedbackView(HasSpecificationsView):
+
+    label = 'Feature feedback requests'
 
     @cachedproperty
     def feedback_specs(self):
