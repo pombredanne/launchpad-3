@@ -146,8 +146,9 @@ page will also include the disable-redirect link in the site_message.
     ...     beta_browser.contents, 'sitemessage')[0]
     >>> print extract_text(site_message)
     This is a beta site. Disable edge redirect.
-    >>> print site_message.find('a').attrMap['onclick']
-    setBetaRedirect(false)
+    >>> print extract_text(site_message.find(
+    ...     'a', onclick="setBetaRedirect(false)"))
+    Disable edge redirect.
 
     >>> dummy = config.pop('edge_data')
 
