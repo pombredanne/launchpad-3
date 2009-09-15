@@ -469,7 +469,8 @@ class PersonEmailAddressLinkChecker(TunableLoop):
         start = time.time()
         while True:
             lag = self.person_store.execute(
-                "SELECT replication_lag();").get_one()[0]
+                "SELECT COALESCE(EXTRACT(EPOCH FROM replication_lag()), 0);"
+                ).get_one()[0]
             if lag < (time.time() - start):
                 return
             # Guestimate on how long we should wait for. We cap
