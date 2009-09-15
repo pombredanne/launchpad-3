@@ -140,7 +140,8 @@ defaults = [
     '--test-path=${buildout:directory}/lib',
     '--package=canonical',
     '--package=lp',
-    '--layer=!MailmanLayer',
+    # XXX: Add this back before landing this branch.
+    #'--layer=!(MailmanLayer|WindmillLayer)',
     ]
 
 # Monkey-patch os.listdir to randomise the results
