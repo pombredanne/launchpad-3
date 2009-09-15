@@ -41,7 +41,6 @@ __all__ = [
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
-    'BugsWindmillAppServerLayer',
     'CodeWindmillAppServerLayer',
     'ZopelessAppServerLayer',
     'ZopelessDatabaseLayer',
@@ -1692,10 +1691,6 @@ class BaseWindmillLayer(AppServerLayer):
             # Close the file so that it gets deleted.
             cls.config_file.close()
 
-
-class BugsWindmillAppServerLayer(BaseWindmillLayer):
-
-    base_url = 'http://bugs.launchpad.dev:8085/'
 
 
 class CodeWindmillAppServerLayer(BaseWindmillLayer):
