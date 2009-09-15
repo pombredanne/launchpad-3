@@ -121,11 +121,11 @@ class POFileMenuMixin:
 
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
-        text = 'Upload translations'
+        text = 'Upload translation'
         return Link('+upload', text, icon='add')
 
     def download(self):
-        text = 'Download translations'
+        text = 'Download translation'
         return Link('+export', text, icon='download')
 
 
@@ -662,7 +662,11 @@ class POFileTranslateView(BaseTranslationView):
     @property
     def label(self):
         """Return the page to translate a template into a language."""
-        return 'Translating into %s' % self.context.language.englishname
+        if self.form_is_writeable:
+            form_label = 'Translating into %s'
+        else:
+            form_label = 'Browsing %s translation'
+        return form_label % self.context.language.englishname
 
     def initialize(self):
         self.pofile = self.context

@@ -142,13 +142,13 @@ in devmode.
     >>> from lp.translations.browser.pofile import POFileNavigationMenu
 
     >>> original_enable_only = POFileNavigationMenu.enable_only
-    >>> POFileNavigationMenu.enable_only = ['description', 'translate']
+    >>> POFileNavigationMenu.enable_only = ['details', 'translate']
     >>> config.devmode
     True
 
     >>> nav_menu_view.initialize()
     >>> print_menu_view_links(nav_menu_view)
-    http://translations.../evolution/trunk/+pots/evolution-2.2/es/details
+    http://translations.../evolution/trunk/+pots/evolution-2.2/es/+details
       name: details
       enabled: True
       linked: True
