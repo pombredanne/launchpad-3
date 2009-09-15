@@ -120,7 +120,7 @@
           <div>
             <h2>Binary packages</h2>
 
-            <div id="binaries" tal:define="binaries view/binaries">
+            <div id="binaries" tal:define="binaries context/binaries">
               <ul tal:condition="binaries">
                 <li tal:repeat="bin_name binaries">
                   <span tal:replace="bin_name" />
