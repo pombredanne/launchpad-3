@@ -12,7 +12,7 @@ from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.uuid import generate_uuid
-from lp.bugs.windmill.testing import BugsWindmillAppServerLayer
+from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
 WAIT_PAGELOAD = u'30000'
@@ -24,7 +24,7 @@ ADD_COMMENT_BUTTON = (
 
 class TestBugCommenting(TestCaseWithFactory):
 
-    layer = BugsWindmillAppServerLayer
+    layer = BugsWindmillLayer
 
     def test_bug_commenting(self):
         """Test commenting on bugs."""

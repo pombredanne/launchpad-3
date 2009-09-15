@@ -12,13 +12,13 @@ import windmill
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
-from lp.code.windmill.testing import CodeWindmillAppServerLayer
+from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import TestCaseWithFactory
 
 
 class TestBranchLinks(TestCaseWithFactory):
 
-    layer = CodeWindmillAppServerLayer
+    layer = CodeWindmillLayer
 
     def test_inline_branch_bug_link_unlink(self):
         """Test branch bug links."""

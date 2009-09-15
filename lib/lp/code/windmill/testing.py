@@ -5,14 +5,14 @@
 
 __metaclass__ = type
 __all__ = [
-    'CodeWindmillAppServerLayer',
+    'CodeWindmillLayer',
     ]
 
 
 from canonical.testing.layers import BaseWindmillLayer
 
 
-class CodeWindmillAppServerLayer(BaseWindmillLayer):
+class CodeWindmillLayer(BaseWindmillLayer):
     """Layer for Code Windmill tests."""
 
     base_url = 'http://code.launchpad.dev:8085/'
