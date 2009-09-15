@@ -11,9 +11,6 @@
 
 <div metal:fill-slot="main"
   tal:define="styled_series view/styled_series">
-
-  <h1 tal:content="view/page_title">Pillar version history</h1>
-
   <div tal:repeat="a_styled_series styled_series">
     <div style="margin-top: 1em;
                 border-bottom: 1px solid #ccc; max-width: 60em;"

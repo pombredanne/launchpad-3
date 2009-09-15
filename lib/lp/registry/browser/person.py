@@ -569,11 +569,17 @@ class TeamInvitationView(LaunchpadFormView):
     implements(IBrowserPublisher)
 
     schema = ITeamMembershipInvitationAcknowledgementForm
-    label = 'Team membership invitation'
     field_names = ['acknowledger_comment']
     custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
     template = ViewPageTemplateFile(
         '../templates/teammembership-invitation.pt')
+
+    @property
+    def label(self):
+        return "Make %s a member of %s" % (
+            self.context.person.displayname, self.context.team.displayname)
+
+    page_title = label
 
     def __init__(self, context, request):
         # Only admins of the invited team can see the page in which they
