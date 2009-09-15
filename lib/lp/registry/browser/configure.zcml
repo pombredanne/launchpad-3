@@ -75,10 +75,6 @@
             facet="overview"
             template="../templates/productseries-table-releases.pt"/>
         <browser:page
-            name="+packaging"
-            facet="overview"
-            template="../templates/distroseries-packaging.pt"/>
-        <browser:page
             name="+filebug"
             facet="bugs"
             attribute="redirectToDistroFileBug"/>
@@ -98,6 +94,13 @@
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesPackagesView"
+        permission="zope.Public"
+        name="+packaging"
+        facet="overview"
+        template="../templates/distroseries-packaging.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Admin"

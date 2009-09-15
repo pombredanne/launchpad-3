@@ -12,6 +12,7 @@ __all__ = [
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesPackageSearchView',
+    'DistroSeriesPackagesView',
     'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
@@ -270,6 +271,8 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
         """See `AbstractPackageSearchView`."""
         return self.context.searchPackages(self.text)
 
+    label = 'Search packages'
+
 
 class DistroSeriesStatusMixin:
     """A mixin that provides status field support."""
@@ -498,3 +501,9 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class DistroSeriesPackagesView(DistroSeriesView):
+    """A View to show series package to upstream package relationships."""
+
+    label = 'Mapping series packages to upstream project series'

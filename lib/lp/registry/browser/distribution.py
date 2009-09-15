@@ -721,9 +721,13 @@ class DistributionPPASearchView(LaunchpadView):
 
 
 class DistributionAllPackagesView(LaunchpadView):
+    """A view to show all the packages in a distribution."""
+
     def initialize(self):
         results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
+
+    label = 'All packages'
 
 
 class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
