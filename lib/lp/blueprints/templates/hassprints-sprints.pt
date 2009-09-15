@@ -11,15 +11,14 @@
   <metal:main metal:fill-slot="main">
 
     <div class="top-portlet">
-      <tal:has-sprints condition="context/sprints">
+      <tal:has-sprints define="sprints context/sprints"
+                       condition="sprints">
         <h1>Events related to <span tal:replace="context/displayname" /></h1>
 
-        <div tal:define="sprints context/sprints" tal:condition="sprints">
-          <table>
-            <tal:per_sprint repeat="sprint sprints"
-                            replace="structure sprint/@@+listing-detailed" />
-          </table>
-        </div>
+        <table>
+          <tal:per_sprint repeat="sprint sprints"
+                          replace="structure sprint/@@+listing-detailed" />
+        </table>
       </tal:has-sprints>
 
       <tal:no-sprints condition="not: context/sprints">
