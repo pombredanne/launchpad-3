@@ -341,7 +341,8 @@ class BranchView(LaunchpadView, FeedsMixin):
 
         The whiteboard is only shown for import branches.
         """
-        if self.context.branch_type == BranchType.IMPORTED:
+        if (self.context.branch_type == BranchType.IMPORTED and
+            self.context.whiteboard):
             return True
         else:
             return False

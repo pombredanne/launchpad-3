@@ -93,11 +93,23 @@
   </div>
 
 
-  <div id="branch-merges" class="yui-g">
+  <div id="branch-merges"
+       class="yui-g"
+       tal:condition="not:context/branch_type/enumvalue:IMPORTED">
     <div class="portlet">
       <h2>Branch Pending Merges</h2>
       <tal:branch-pending-merges
           replace="structure context/@@++branch-pending-merges" />
+    </div>
+  </div>
+
+  <div id="branch-import-details"
+       class="yui-g"
+       tal:condition="context/branch_type/enumvalue:IMPORTED">
+    <div class="portlet">
+      <h2>Import details</h2>
+      <tal:branch-pending-merges
+          replace="structure context/@@++branch-import-details" />
     </div>
   </div>
 
