@@ -86,10 +86,9 @@ class TeamMembershipEditView:
             prefix = 'Invited'
         else:
             raise AssertionError('status unknown')
-        display_name = cgi.escape(self.context.person.displayname)
-        return '%s member %s' % (prefix, display_name)
+        return '%s member %s' % (prefix, self.context.person.displayname)
 
-    # BarryWarsaw 2009-09-14 bug 429729.  This should really go away, but
+    # XXX BarryWarsaw 2009-09-14 bug 429729.  This should really go away, but
     # since there is no +hierarchy adapter for this view, there is no
     # breadcrumbs, and thus no default reverse-breadcrumb page title.
     @property
@@ -341,5 +340,4 @@ class TeamInvitationsView(LaunchpadView):
 
     @property
     def label(self):
-        team_name = cgi.escape(self.context.displayname)
-        return 'Invitations for ' + team_name
+        return 'Invitations for ' + self.context.displayname

@@ -288,7 +288,7 @@
 
       </div>
 
-      <div tal:condition="context/status/enumvalue:INVITED">
+      <div tal:condition="view/isInvited">
         <p>
           <metal:person use-macro="template/macros/person" />
           has been invited to join this team, but hasn't responded to the
@@ -296,7 +296,7 @@
         </p>
       </div>
 
-      <div tal:condition="context/status/enumvalue:INVITATION_DECLINED">
+      <div tal:condition="view/isInvitationDeclined">
         <p>
           <metal:person use-macro="template/macros/person" />
           has been invited to join this team, but has declined the invitation.

@@ -589,8 +589,8 @@ class TeamInvitationView(LaunchpadFormView):
         return "Make %s a member of %s" % (
             self.context.person.displayname, self.context.team.displayname)
 
-    # BarryWarsaw 2009-09-14 bug 429663.  Because this view is subordinate to
-    # the ~person in its context, no +hierarchy adapter can be found.  This
+    # XXX BarryWarsaw 2009-09-14 bug 429663.  Because this view is subordinate
+    # to the ~person in its context, no +hierarchy adapter can be found.  This
     # means the page has no breadcrumbs and no proper page title.  For
     # expediency during the 3.0 conversion work, we'll just set the page title
     # to its label and move on.
