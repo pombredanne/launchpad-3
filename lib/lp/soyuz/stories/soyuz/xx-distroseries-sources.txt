@@ -81,20 +81,10 @@ We can see 'mozilla-firefox' is published once in pocket RELEASE:
 It also provides the upstream relationships for this source, Project,
 Product and Branches:
 
-  >>> print find_tag_by_id(browser.contents, 'upstreams')
-  <ul id="upstreams">
-    <li>
-      <b>Project Group:</b>
-      <a href="/mozilla">the Mozilla Project</a>
-    </li>
-    <li><b>Project:</b>
-      <a href="/firefox">Mozilla Firefox</a>
-    </li>
-    <li><b>Branch: </b>
-      <a href="/firefox/trunk">trunk</a><br />
-    </li>
-    <small>(<a href="/ubuntu/warty/+source/mozilla-firefox/+packaging">update</a>)</small>
-  </ul>
+  >>> print extract_text(find_tag_by_id(browser.contents, 'upstreams'))
+  Project Group: the Mozilla Project
+  Project: Mozilla Firefox ...
+  Series: trunk Change upstream link
 
 The user can also download the files for the "currentrelease" (last
 published version) if they are available:

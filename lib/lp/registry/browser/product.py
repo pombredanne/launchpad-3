@@ -966,20 +966,13 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 class ProductPackagesView(ProductView):
     """View for displaying product packaging"""
 
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return '%s packages in Launchpad' % self.context.displayname
+    label = 'Packages in Launchpad'
 
 
 class ProductDistributionsView(ProductView):
     """View for displaying product packaging by distribution"""
 
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return '%s packages: Comparison of distributions' % (
-            self.context.displayname)
+    label = 'Package comparison by distribution'
 
 
 class ProductDownloadFilesView(LaunchpadView,
@@ -1334,9 +1327,8 @@ class ProductAddSeriesView(LaunchpadFormView):
 class ProductSeriesView(ProductView):
     """A view for showing a product's series."""
 
-    def page_title(self):
-        """The HTML page title."""
-        return '%s timeline' % self.context.displayname
+    label = 'timeline'
+    page_title = label
 
 
 class ProductRdfView:
@@ -1438,7 +1430,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
 
     schema = IProductReviewSearch
-    page_title = 'Review projects'
+    label= 'Review projects'
 
     full_row_field_names = [
         'search_text',
@@ -1507,7 +1499,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         # Override the defaults with the form values if available.
         search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=10)
+                              self.request, size=100)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
