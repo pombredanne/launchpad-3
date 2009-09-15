@@ -9,7 +9,7 @@ We can reach it from the main distribution page:
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Translations').click()
     >>> print browser.title
-    Translating Ubuntu
+    Translations : Ubuntu
 
 Check that there aren't disabled languages shown here:
 
@@ -52,7 +52,7 @@ to the right translation focus.
 And the other Ubuntu distributions should be there too.
 
     >>> content = find_main_content(browser.contents)
-    >>> print extract_text(content.findAll('h2')[2])
+    >>> print extract_text(content.findAll('h2')[1])
     Other versions of Ubuntu
 
     >>> print extract_text(content.find(id='distroseries-list'))
@@ -94,7 +94,7 @@ languages pointing to the latest release, Hoary.
 And the other Ubuntu distributions should be there too.
 
     >>> content = find_main_content(browser.contents)
-    >>> print extract_text(content.findAll('h2')[2])
+    >>> print extract_text(content.findAll('h2')[1])
     Other versions of Debian
 
     >>> print extract_text(content.find(id='distroseries-list'))
