@@ -306,7 +306,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     ...     find_tag_by_id(anon_browser.contents, 'binaries'))
     Binary packages
     Binary packages awaiting approval in NEW queue:
-    testing-bin 1.0
+    testing-bin-1.0
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'files'))
@@ -318,7 +318,7 @@ Since the binary is still 'awaiting approval', it is not
 linkified. That's because its `DistroArchSeriesBinaryPackageRelease`
 page does not exist yet.
 
-    >>> print anon_browser.getLink('testing-bin 1.0')
+    >>> print anon_browser.getLink('testing-bin-1.0')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -344,9 +344,9 @@ Binary upload can also be awaiting approval in UNAPPROVED queue
     ...     find_tag_by_id(anon_browser.contents, 'binaries'))
     Binary packages
     Binary packages awaiting approval in UNAPPROVED queue:
-    testing-bin 1.0
+    testing-bin-1.0
 
-    >>> print anon_browser.getLink('testing-bin 1.0')
+    >>> print anon_browser.getLink('testing-bin-1.0')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -368,9 +368,9 @@ xx-queue-pages.txt) this action is sinalized in the build page.
     ...     find_tag_by_id(anon_browser.contents, 'binaries'))
     Binary packages
     Binary packages awaiting publication:
-    testing-bin 1.0
+    testing-bin-1.0
 
-    >>> print anon_browser.getLink('testing-bin 1.0')
+    >>> print anon_browser.getLink('testing-bin-1.0')
     Traceback (most recent call last):
     ...
     LinkNotFoundError

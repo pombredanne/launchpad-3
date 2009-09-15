@@ -157,12 +157,22 @@ class BuildView(LaunchpadView):
 
     @cachedproperty
     def has_done_upload(self):
-        """Whether this build was already uploaded and published."""
-        if (self.package_upload is None or
-            self.package_upload.status != PackageUploadStatus.DONE):
-            return False
+        """Whether or not binaries were already published for this build."""
+        # Binaries imported by gina (missing `PackageUpload` record)
+        # are always published.
+        imported_binaries = (
+            self.package_upload is None and
+            self.context.binarypackages.count() > 0)
+        # Binaries uploaded from the buildds are published when the
+        # corresponding `PackageUpload` status is DONE.
+        uploaded_binaries = (
+            self.package_upload is not None and
+            self.package_upload.status == PackageUploadStatus.DONE)
 
-        return True
+        if imported_binaries or uploaded_binaries:
+            return True
+
+        return False
 
     @property
     def changesfile(self):

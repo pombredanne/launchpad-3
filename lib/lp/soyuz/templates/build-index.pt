@@ -42,17 +42,15 @@
 
       </div> <!-- yui-g  -->
 
-      <div class="yui-g">
+      <div class="yui-g" tal:condition="context/binarypackages">
 
-        <div id="binaries" class="yui-u first"
-             tal:condition="context/binarypackages">
+        <div id="binaries" class="yui-u first">
           <div class="portlet">
             <div metal:use-macro="template/macros/binaries" />
           </div>
         </div>
 
-        <div id="files" class="yui-u"
-             tal:condition="context/binarypackages">
+        <div id="files" class="yui-u">
           <div class="portlet">
             <div metal:use-macro="template/macros/files" />
           </div>
@@ -224,46 +222,35 @@
       Binaries section.
     </tal:comment>
     <h2>Binary packages</h2>
-    <tal:non_ppa condition="not: view/is_ppa">
-      <tal:upload_done condition="view/has_done_upload">
-        <p class="discreet">Binary packages produced by this build:</p>
-        <ul>
-          <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
-            <a class="sprite package-binary"
-               tal:attributes="href binpkg/fmt:url"
-               tal:content="binpkg/displayname">
-             foopkg 1.2-3
-            </a>
-          </li>
-        </ul>
-      </tal:upload_done>
-      <tal:upload_not_done
-        condition="not: view/has_done_upload"
-        define="upload_status view/package_upload/status">
-        <p class="discreet"
-           tal:condition="upload_status/enumvalue:ACCEPTED"
-          >Binary packages awaiting publication:</p>
-        <p class="discreet"
-           tal:condition="not: upload_status/enumvalue:ACCEPTED"
-          >Binary packages awaiting approval
-           in <span tal:replace="upload_status/name">NEW</span> queue:</p>
-        <ul>
-          <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
-            <span class="sprite package-binary"
-                  tal:content="binpkg/displayname">foopkg 1.2-3</span>
-          </li>
-        </ul>
-      </tal:upload_not_done>
-    </tal:non_ppa>
-    <tal:ppa condition="view/is_ppa">
-    <p class="discreet">Binary packages produced by this build:</p>
-    <ul>
-      <li tal:repeat="binpkg context/binarypackages">
+
+    <tal:upload_done condition="view/has_done_upload">
+      <p class="discreet">Binary packages produced by this build:</p>
+    </tal:upload_done>
+    <tal:upload_not_done condition="not: view/has_done_upload">
+      <p class="discreet"
+         tal:condition="view/package_upload/status/enumvalue:ACCEPTED"
+        >Binary packages awaiting publication:</p>
+      <p class="discreet"
+         tal:condition="not: view/package_upload/status/enumvalue:ACCEPTED"
+        >Binary packages awaiting approval
+         in <span tal:replace="view/package_upload/status/name"
+              >NEW</span> queue:</p>
+    </tal:upload_not_done>
+
+    <ul tal:define="linkify_binaries
+                    python: view.has_done_upload and not view.is_ppa;">
+      <li tal:condition="linkify_binaries"
+          tal:repeat="binpkg context/distroarchseriesbinarypackages">
+        <a class="sprite package-binary"
+           tal:attributes="href binpkg/fmt:url"
+           tal:content="binpkg/displayname">foopkg 1.2-3</a>
+      </li>
+      <li tal:condition="not: linkify_binaries"
+          tal:repeat="binpkg context/binarypackages">
         <span class="sprite package-binary"
-              tal:content="binpkg/title">foopkg - 1.2-3</span>
+              tal:content="binpkg/title">foopkg-1.2-3</span>
       </li>
     </ul>
-    </tal:ppa>
   </metal:macro>
 
   <metal:macro define-macro="files">
