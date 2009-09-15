@@ -38,8 +38,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
@@ -1222,8 +1221,8 @@ class POTemplateSet:
                 POTemplate.from_sourcepackagename == sourcepackagename,
                 POTemplate.sourcepackagename == sourcepackagename))
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        matches = helpers.shortlist(store.find(POTemplate, conditions), 2)
+        store = IStore(POTemplate)
+        matches = helpers.shortlist(store.find(POTemplate, conditions))
 
         if len(matches) == 0:
             # Nope.  Sorry.
