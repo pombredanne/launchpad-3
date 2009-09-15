@@ -26,8 +26,9 @@ class TestBranchLinks(TestCaseWithFactory):
 
         lpuser.FOO_BAR.ensure_login(client)
 
-        client.open(
-            url=windmill.settings['TEST_URL'] + '/~mark/firefox/release--0.9.1')
+        start_url = (
+            windmill.settings['TEST_URL'] + '/~mark/firefox/release--0.9.1')
+        client.open(url=start_url)
         client.waits.forElement(id=u'linkbug', timeout=u'10000')
         client.click(id=u'linkbug')
 
