@@ -1662,6 +1662,10 @@ class BaseWindmillLayer(AppServerLayer):
             # base_url. With no base_url, we can't create the config
             # file windmill needs.
             return
+        # Kill the SMTP server. The current Windmill test don't need it,
+        # and if it's running, uuid will somehow end up listen to its
+        # port, preventing the next test run from starting.
+        LayerProcessController.stopSMTPServer()
         # Windmill needs a config file on disk.
         config_text = dedent("""\
             START_FIREFOX = True
@@ -1680,13 +1684,12 @@ class BaseWindmillLayer(AppServerLayer):
     @profiled
     def tearDown(cls):
         if cls.shell_objects is not None:
-            # Kill the app and smtp server, before calling teardown for
-            # windmill. If this isn't done, uuid ends up listen to the
-            # smtp server's port, preventing next test run from
-            # starting.
             AppServerLayer.tearDown()
             from windmill.bin.admin_lib import teardown
             teardown(cls.shell_objects)
+            # Start the SMTP server, in case other layers need it. It
+            # will be killed by AppServerLayer later.
+            LayerProcessController.startSMTPServer()
         if cls.config_file is not None:
             # Close the file so that it gets deleted.
             cls.config_file.close()
