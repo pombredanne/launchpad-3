@@ -202,7 +202,7 @@ if __name__ == '__main__':
         '--subunit', action='callback', callback=use_subunit)
 
     local_options = options.get_options(args=args)
-    # Set our default options, of the options aren't specified.
+    # Set our default options, if the options aren't specified.
     for name, value in defaults.items():
         parsed_option = getattr(local_options, name)
         if ((parsed_option == []) or
