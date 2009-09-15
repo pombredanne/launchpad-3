@@ -462,7 +462,7 @@ class EC2TestRunner:
         p = user_connection.perform
         p('rm -rf /var/launchpad/tmp')
         p('mkdir /var/launchpad/tmp')
-        p('cp -R /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
+        p('mv /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
         p('mkdir /var/launchpad/tmp/eggs')
         user_connection.run_with_ssh_agent(
             'bzr co lp:lp-source-dependencies '
