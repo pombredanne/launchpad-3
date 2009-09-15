@@ -6,13 +6,14 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="main"
+        tal:define="current context/currentrelease">
       <div class="top-portlet">
         <h1 tal:content="view/page_title"></h1>
 
         <h2>Versions published</h2>
 
-        <p class="warning message" tal:condition="not:context/currentrelease">
+        <p class="warning message" tal:condition="not:current">
           There is no current release of this source package
           in <span tal:replace="context/distroseries/title" />.
           You can still report bugs, make translations, and so on,
@@ -117,10 +118,10 @@
         <div class="yui-u">
           <div tal:replace="structure context/@@+portlet-upstream" />
 
-          <div>
+          <div tal:condition="current">
             <h2>Binary packages</h2>
 
-            <div id="binaries" tal:define="binaries context/binaries">
+            <div id="binaries" tal:define="binaries view/binaries">
               <ul tal:condition="binaries">
                 <li tal:repeat="bin_name binaries">
                   <span tal:replace="bin_name" />
@@ -139,7 +140,6 @@
       </div>
 
       <div class="portlet"
-        tal:define="current context/currentrelease"
         tal:condition="current">
         <h2>Download files from current release (<span
           tal:replace="current/version">2.1.3-4</span>)</h2>

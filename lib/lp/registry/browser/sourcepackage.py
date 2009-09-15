@@ -254,7 +254,7 @@ class SourcePackageView:
         return list(self.context.getCurrentTranslationTemplates())
 
 
-class SourcePackagePackaging:
+class SourcePackagePackaging(SourcePackageView):
     """A View to show where the package is packged."""
 
     page_title = 'Upstream links'
