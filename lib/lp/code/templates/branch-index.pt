@@ -145,7 +145,7 @@
       </div>
     </div>
 
-    <div class="yui-u">
+    <div class="yui-u" tal:condition="view/has_formats">
       <div class="portlet">
         <h2>Branch metadata</h2>
         <tal:branch-metadata replace="structure context/@@++branch-metadata" />

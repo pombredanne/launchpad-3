@@ -278,8 +278,7 @@ class BranchContextMenu(ContextMenu):
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse this branch'
-        enabled = True
-        #enabled = self.context.code_is_browseable
+        enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
 
@@ -346,6 +345,13 @@ class BranchView(LaunchpadView, FeedsMixin):
             return True
         else:
             return False
+
+    def has_formats(self):
+        """Return whether the branch has had its format fields populated."""
+        return (
+            self.context.branch_format or
+            self.context.repository_format or
+            self.context.control_format)
 
     @property
     def codebrowse_url(self):

@@ -4,6 +4,12 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="context_menu context/menu:context">
 
+  <div tal:condition="not: context/revision_count">
+    <div tal:condition="context/branch_type/enumvalue:IMPORTED">
+      This branch is updated by the Launchpad import system.
+    </div>
+  </div>
+
   <div
     id="browse_url"
     class="portletBody portletContent"
