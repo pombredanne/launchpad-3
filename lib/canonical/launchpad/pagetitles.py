@@ -661,12 +661,6 @@ person_answer_contact_for = ContextDisplayName(
 
 person_changepassword = 'Change your password'
 
-person_claim = 'Claim account'
-
-person_claim_team = 'Claim team'
-
-person_deactivate_account = 'Deactivate your Launchpad account'
-
 person_codesofconduct = ContextDisplayName(
     smartquote("%s's code of conduct signatures"))
 
