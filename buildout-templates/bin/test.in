@@ -208,7 +208,11 @@ if __name__ == '__main__':
         if ((parsed_option == []) or
             (parsed_option == options.parser.defaults.get(name))):
             # The option probably wasn't specified on the command line,
-            # let's replace it with our default value.
+            # let's replace it with our default value. It could be that
+            # the real default (as specified in
+            # zope.testing.testrunner.options) was specified, and we
+            # shouldn't replace it with our default, but it's such and
+            # edge case, so we don't have to care about it.
             options.parser.defaults[name] = value
 
     # Turn on Layer profiling if requested.
