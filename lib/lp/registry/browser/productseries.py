@@ -474,10 +474,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 class ProductSeriesUbuntuPackagingView(ProductSeriesView):
     """A view to show series package in Ubuntu."""
 
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return 'Ubuntu source packaging'
+    label = 'Ubuntu source packaging'
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
