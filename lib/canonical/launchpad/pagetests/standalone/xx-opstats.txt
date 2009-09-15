@@ -110,8 +110,9 @@ particular need to differentiate these cases though:
     requests: 1
 
 We also have a special metric counting server errors returned to known
-web browsers - in the production environment we care more about errors
-returned to people than robots crawling obscure parts of the site.
+web browsers (5XXs_b) - in the production environment we care more
+about errors returned to people than robots crawling obscure parts of
+the site.
 
     >>> from textwrap import dedent
     >>> output = http(dedent("""\
