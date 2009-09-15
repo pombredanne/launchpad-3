@@ -93,7 +93,10 @@ Watermark and breadcrumbs.
     ...
               <div class="yui-b" dir="ltr">
                 <div>
-                <h2>Heading</h2>
+                  <div class="registering">
+                    <div />
+                  </div>
+                  <h2>Heading</h2>
                   <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
     ...
 
@@ -189,6 +192,9 @@ Main content.
     <BLANKLINE>
               <div class="yui-b" dir="ltr">
                 <div>
+                  <div class="registering">
+                    <div />
+                  </div>
     <BLANKLINE>
                   <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
     <BLANKLINE>
@@ -307,6 +313,9 @@ Main content.
     <BLANKLINE>
               <div class="yui-b" dir="ltr">
                 <div>
+                  <div class="registering">
+                    <div />
+                  </div>
     <BLANKLINE>
                   <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
     <BLANKLINE>
@@ -461,6 +470,30 @@ test. The template controlled the heading.
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print content.h1
     <h1>Heading</h1>
+
+
+Page registering
+----------------
+
+XXX
+
+    >>> class RegisteringView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/main-registering.pt')
+    ...     page_title = 'Test base-layout: registering'
+
+    >>> view = RegisteringView(user, request)
+    >>> html = view.render()
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     first_tag_by_class)
+
+    >>> print first_tag_by_class(html, 'registering')
+    <div class="registering">
+    <p>something nice about the context registering.</p>
+    </div>
+
 
 
 Public and private presentation

@@ -10,19 +10,18 @@
   <body>
 
     <div metal:fill-slot="heading">
-      <div style="float: left;">
       <h1 tal:content="CONTEXTS/fmt:pagetitle">i386 build of
         alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE</h1>
-      </div>
-      <div style="float: right;">
-      <p class="discreet">
-        Created <span
-          tal:attributes="title context/datecreated/fmt:datetime"
-          tal:content="context/datecreated/fmt:displaydate"
-          >2005-10-05 5:45</span>
-      </p>
-      </div>
     </div> <!-- heading -->
+
+    <tal:registering metal:fill-slot="registering">
+      <p>
+        created
+        <span tal:content="context/datecreated/fmt:displaydate"
+              tal:attributes="title context/datecreated/fmt:datetime"
+          >on 2005-01-01</span>
+      </p>
+    </tal:registering>
 
     <div metal:fill-slot="main">
 
