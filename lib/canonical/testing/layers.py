@@ -25,6 +25,7 @@ __metaclass__ = type
 __all__ = [
     'AppServerLayer',
     'BaseLayer',
+    'BaseWindmillLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
@@ -41,7 +42,6 @@ __all__ = [
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
-    'CodeWindmillAppServerLayer',
     'ZopelessAppServerLayer',
     'ZopelessDatabaseLayer',
     'ZopelessLayer',
@@ -1693,9 +1693,3 @@ class BaseWindmillLayer(AppServerLayer):
         if cls.config_file is not None:
             # Close the file so that it gets deleted.
             cls.config_file.close()
-
-
-
-class CodeWindmillAppServerLayer(BaseWindmillLayer):
-
-    base_url = 'http://code.launchpad.dev:8085/'

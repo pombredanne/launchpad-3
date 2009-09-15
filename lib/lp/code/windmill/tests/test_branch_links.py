@@ -12,7 +12,7 @@ import windmill
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
-from canonical.testing.layers import CodeWindmillAppServerLayer
+from lp.code.windmill.testing import CodeWindmillAppServerLayer
 from lp.testing import TestCaseWithFactory
 
 
