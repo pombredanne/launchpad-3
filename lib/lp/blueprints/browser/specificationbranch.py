@@ -52,7 +52,7 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
 
     schema = ISpecificationBranch
     field_names = []
-    label = _('Delete specification branch summary')
+    label = _('Delete link between specification and branch')
 
     def initialize(self):
         self.specification = self.context.specification
