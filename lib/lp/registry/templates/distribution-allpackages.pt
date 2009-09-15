@@ -4,27 +4,22 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only"
-  i18n:domain="launchpad"
->
+  i18n:domain="launchpad">
   <body>
+    <div metal:fill-slot="main"
+         tal:define="batch view/batchnav/currentBatch">
+      <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
+      <p>
+      <tal:per_item repeat="result batch">
+        <a tal:content="result/name"
+           tal:attributes="href result/distributionsourcepackage/fmt:url"
+           >apache2</a>
+      </tal:per_item>
+      </p>
 
-<div metal:fill-slot="main"
-     tal:define="batch view/batchnav/currentBatch">
-  <h1 tal:content="view/page_title">All packages : Ubuntu</h1>
+      <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
-  <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
-
-  <p>
-  <tal:per_item repeat="result batch">
-    <a tal:content="result/name"
-       tal:attributes="href result/distributionsourcepackage/fmt:url"
-       >apache2</a>
-  </tal:per_item>
-  </p>
-
-  <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
-
-</div>
-</body>
+    </div>
+  </body>
 </html>

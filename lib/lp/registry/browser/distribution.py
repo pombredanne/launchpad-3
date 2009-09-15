@@ -727,7 +727,7 @@ class DistributionAllPackagesView(LaunchpadView):
         results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
 
-    page_title = 'All packages'
+    label = 'All packages'
 
 
 class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
