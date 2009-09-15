@@ -1642,7 +1642,14 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     def testTearDown(cls):
         LayerProcessController.postTestInvariants()
 
+
 class BaseWindmillLayer(AppServerLayer):
+    """Layer for Windmill tests.
+
+    This layer shouldn't be used directly. A subclass needs to be
+    created specifying which base URL to use (e.g.
+    http://bugs.launchpad.dev:8085/).
+    """
 
     base_url = None
     shell_objects = None
@@ -1652,7 +1659,11 @@ class BaseWindmillLayer(AppServerLayer):
     @profiled
     def setUp(cls):
         if cls.base_url is None:
+            # Only do the setup if we're in a subclass that defines
+            # base_url. With no base_url, we can't create the config
+            # file windmill needs.
             return
+        # Windmill needs a config file on disk.
         config_text = dedent("""\
             START_FIREFOX = True
             TEST_URL = '%s'
@@ -1664,17 +1675,21 @@ class BaseWindmillLayer(AppServerLayer):
         from windmill.bin.admin_lib import start_windmill
         from lp.testing import windmillconfig
         os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
-        import pdb; pdb.set_trace()
         cls.shell_objects = start_windmill()
 
     @classmethod
     @profiled
     def tearDown(cls):
         if cls.shell_objects is not None:
+            # Kill the app and smtp server, before calling teardown for
+            # windmill. If this isn't done, uuid ends up listen to the
+            # smtp server's port, preventing next test run from
+            # starting.
+            AppServerLayer.tearDown()
             from windmill.bin.admin_lib import teardown
-            import pdb; pdb.set_trace()
             teardown(cls.shell_objects)
         if cls.config_file is not None:
+            # Close the file so that it gets deleted.
             cls.config_file.close()
 
 

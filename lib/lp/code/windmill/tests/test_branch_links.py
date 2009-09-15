@@ -22,7 +22,6 @@ class TestBranchLinks(TestCaseWithFactory):
 
     def test_inline_branch_bug_link_unlink(self):
         """Test branch bug links."""
-        import pdb; pdb.set_trace()
         client = WindmillTestClient("Branch bug links")
 
         lpuser.FOO_BAR.ensure_login(client)
