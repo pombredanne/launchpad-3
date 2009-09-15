@@ -352,12 +352,12 @@
       <tal:site_message tal:content="structure site_message">
         This site is running pre-release code.
       </tal:site_message>
-      <tal:edge_only condition="is_edge">
+      <tal:redirect_only condition="view/canRedirect">
         <a href="#" class="js-action" onclick="setBetaRedirect(false)"
            tal:condition="not:view/isRedirectInhibited">
           Disable edge redirect.
         </a>
-      </tal:edge_only>
+      </tal:redirect_only>
     </div>
 
     <div class="colophon">

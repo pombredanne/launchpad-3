@@ -18,7 +18,6 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import (
@@ -53,12 +52,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     # The homepage has two columns to hold featured projects. This
     # determines the number of projects we display in each column.
     FEATURED_PROJECT_ROWS = 10
-
-    def canRedirect(self):
-        """Return True if the beta server is available to the user."""
-        return bool(
-            config.launchpad.beta_testers_redirection_host is not None and
-            self.isBetaUser)
 
     @cachedproperty
     def featured_projects(self):
