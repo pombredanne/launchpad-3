@@ -418,7 +418,8 @@
         <browser:menus
             module="lp.bugs.browser.bugtask"
             classes="
-                BugTaskContextMenu"/>
+                BugTaskContextMenu
+                BugTaskSearchListingMenu"/>
         <browser:page
             for="*"
             name="+bugtask-macros-tableview"
@@ -1005,9 +1006,6 @@
             <browser:page
                 name="+portlet-duplicates"
                 template="../templates/bug-portlet-duplicates.pt"/>
-            <browser:page
-                name="+portlet-cve"
-                template="../templates/bug-portlet-cve.pt"/>
             <browser:page
                 name="+portlet-attachments"
                 template="../templates/bug-portlet-attachments.pt"/>

@@ -76,17 +76,6 @@ class ContextDisplayName(SubstitutionHelper):
         return self.text % context.displayname
 
 
-class FilteredTranslationsTitle(SubstitutionHelper):
-    """Return the formatted string with context's title and view's person."""
-    def __call__(self, context, view):
-        if view.person is not None:
-            person = view.person.displayname
-        else:
-            person = 'unknown'
-        return self.text % {'title' : context.title,
-                            'person' : person }
-
-
 class ContextId(SubstitutionHelper):
     """Return the formatted string with context's id."""
     def __call__(self, context, view):
@@ -383,8 +372,6 @@ distributionsourcepackage_publishinghistory = ContextTitle(
 structural_subscriptions_manage = ContextTitle(
     'Bug subscriptions for %s')
 
-distributionsourcepackagerelease_index = ContextTitle('%s')
-
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
 distroarchseries_builds = ContextTitle('%s builds')
@@ -400,11 +387,6 @@ distroseries_bugs = ContextTitle('Bugs in %s')
 
 distroseries_cvereport = ContextDisplayName('CVE report for %s')
 
-def distroseries_index(context, view):
-    """Return the distribution and version page title."""
-    return '%s %s in Launchpad' % (
-        context.distribution.title, context.version)
-
 def distroseries_language_packs(context, view):
     return view.page_title
 
@@ -415,15 +397,9 @@ distroseries_search = ContextDisplayName('Search packages in %s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
-distroseries_builds = ContextTitle('%s builds')
-
 distroseries_queue = ContextTitle('Queue for %s')
 
-distroserieslanguage_index = ContextTitle('%s')
-
 distroseriessourcepackagerelease_index = ContextTitle('%s')
-
-edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -467,8 +443,6 @@ def hasspecifications_specs(context, view):
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
-hastranslationimports_index = 'Translation import queue'
-
 hwdb_fingerprint_submissions = (
     "Hardware Database submissions for a fingerprint")
 
@@ -502,29 +476,19 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_js is standard javascript
 
-launchpad_invalidbatchsize = "Invalid Batch Size"
-
 launchpad_legal = 'Launchpad legalese'
 
 launchpad_login = 'Log in or register with Launchpad'
 
-launchpad_notfound = 'Error: Page not found'
-
 launchpad_onezerostatus = 'One-Zero Page Template Status'
-
-launchpad_requestexpired = 'Error: Timeout'
 
 def launchpad_search(context, view):
     """Return the page title corresponding to the user's search."""
     return view.page_title
 
-launchpad_translationunavailable = 'Translation page is not available'
-
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 launchpad_librarianfailure = "Sorry, you can't do this right now"
-
-launchpad_readonlyfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -608,8 +572,6 @@ def marketing_tour(context, view):
     """Return the view's pagetitle."""
     return view.pagetitle
 
-marketing_translations_about = "About Translations"
-
 marketing_translations_faq = "FAQs about Translations"
 
 mentoringofferset_success = "Successful mentorships over the past year."
@@ -621,8 +583,6 @@ mentoringofferset_success = "Successful mentorships over the past year."
 message_add = ContextBugId('Bug #%d - Add a comment')
 
 milestone_add = ContextTitle('Add new milestone for %s')
-
-milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
@@ -725,12 +685,6 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
-
-person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
-
-person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
-
 # person_foaf is an rdf file
 
 person_hwdb_submissions = ContextDisplayName(
@@ -746,8 +700,6 @@ def person_index(context, view):
         return "%s does not use Launchpad" % context.displayname
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
-
-person_maintained_packages = ContextDisplayName('Software maintained by %s')
 
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
 
@@ -765,31 +717,16 @@ person_packagebugs_search = person_packagebugs
 
 person_participation = ContextTitle("Team participation by %s")
 
-person_ppa_packages = ContextDisplayName('PPA packages related to %s')
-
-person_related_projects = ContextDisplayName('Projects related to %s')
-
-person_related_software = ContextDisplayName('Software related to %s')
-
 person_review = ContextDisplayName("Review %s")
 
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
 person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
-person_translations = ContextDisplayName('Translations related to %s')
-
-person_translations_relicensing = "Translations licensing"
-
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
-
-person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
-
-pofile_filter = FilteredTranslationsTitle(
-    smartquote('Translations by %(person)s in "%(title)s"'))
 
 pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
@@ -864,10 +801,6 @@ productrelease_admin = ContextTitle('Administer %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_review_licenses = 'Review projects'
-
-productserieslanguage_index = ContextTitle('%s')
-
-productseries_index = ContextTitle('%s')
 
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
@@ -1169,10 +1102,6 @@ translationgroup_reassignment = ContextTitle(smartquote(
 translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
-
-translationimportqueue_index = 'Translation import queue'
-
-translationimportqueue_blocked = 'Translation import queue - Blocked'
 
 def translationmessage_translate(context, view):
     """Return the page to translate a template into a language per message."""

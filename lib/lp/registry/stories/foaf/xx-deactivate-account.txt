@@ -84,6 +84,8 @@ assignee.
     >>> browser.open('http://launchpad.dev/debian/+source/'
     ...     'mozilla-firefox/+bug/3/+viewstatus')
     >>> print extract_text(find_main_content(browser.contents))
+    Debian
+    ...
     Bug #3
     ...Assigned to unknown...
 
