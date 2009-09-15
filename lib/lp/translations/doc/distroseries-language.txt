@@ -19,6 +19,11 @@ will work with spanish in Hoary first.
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> hoary_spanish = hoary.getDistroSeriesLanguage(spanish)
 
+DistroSeriesLanguage provides basic `title` describing what is it about.
+
+    >>> hoary_spanish.title
+    u'Spanish translations of Ubuntu Hoary'
+
 In DistroSeriesLanguage.pofiles we find real POFiles for the given
 DistroSeries in the given language.  That is, translations that actually
 contain messages.

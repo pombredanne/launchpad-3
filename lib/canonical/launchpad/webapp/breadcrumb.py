@@ -7,6 +7,8 @@ __metaclass__ = type
 
 __all__ = [
     'Breadcrumb',
+    'DisplaynameBreadcrumb',
+    'TitleBreadcrumb',
     ]
 
 
@@ -15,7 +17,8 @@ from zope.component import queryAdapter
 from zope.interface import implements
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
+from canonical.launchpad.webapp.interfaces import (
+    IBreadcrumb, ICanonicalUrlData)
 
 
 class Breadcrumb:
@@ -25,15 +28,31 @@ class Breadcrumb:
     """
     implements(IBreadcrumb)
 
-    rootsite = 'mainsite'
     text = None
+    _url = None
 
     def __init__(self, context):
         self.context = context
 
     @property
+    def rootsite(self):
+        """The rootsite of this breadcrumb's URL.
+
+        If the `ICanonicalUrlData` for our context defines a rootsite, we
+        return that, otherwise we return 'mainsite'.
+        """
+        url_data = ICanonicalUrlData(self.context)
+        if url_data.rootsite:
+            return url_data.rootsite
+        else:
+            return 'mainsite'
+
+    @property
     def url(self):
-        return canonical_url(self.context, rootsite=self.rootsite)
+        if self._url is None:
+            return canonical_url(self.context, rootsite=self.rootsite)
+        else:
+            return self._url
 
     @property
     def icon(self):
@@ -50,3 +69,19 @@ class Breadcrumb:
 
         return "<%s url='%s' text='%s'%s>" % (
             self.__class__.__name__, self.url, self.text, icon_repr)
+
+
+class DisplaynameBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's displayname as its text."""
+
+    @property
+    def text(self):
+        return self.context.displayname
+
+
+class TitleBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's title as its text."""
+
+    @property
+    def text(self):
+        return self.context.title

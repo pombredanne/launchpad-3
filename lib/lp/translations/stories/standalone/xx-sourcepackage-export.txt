@@ -158,8 +158,9 @@ export format, and request the download.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/mozilla/+export')
-    >>> print browser.title
-    Download translations for mozilla in Ubuntu Hoary
+    >>> browser.title
+    '+export : \xe2\x80\x9cmozilla\xe2\x80\x9d package : Translations
+    : 5.04 : Ubuntu'
 
     >>> browser.getControl('Request Download').click()
 

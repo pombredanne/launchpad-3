@@ -26,7 +26,7 @@ class RunReclaimBranchSpaceJobs(LaunchpadCronScript):
     def main(self):
         globalErrorUtility.configure('reclaimbranchspace')
         job_source = getUtility(IReclaimBranchSpaceJobSource)
-        runner = JobRunner.fromReady(job_source)
+        runner = JobRunner.fromReady(job_source, self.logger)
         runner.runAll()
         self.logger.info(
             'Reclaimed space for %s branches.', len(runner.completed_jobs))

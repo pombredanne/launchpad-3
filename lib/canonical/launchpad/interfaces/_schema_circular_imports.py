@@ -22,8 +22,11 @@ from canonical.launchpad.components.apihelpers import (
     patch_collection_return_type, patch_plain_parameter_type,
     patch_choice_parameter_type, patch_reference_property)
 
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscription, IStructuralSubscriptionTarget)
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.soyuz.interfaces.build import (
@@ -45,6 +48,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
 from canonical.launchpad.interfaces.hwdb import HWBus, IHWSubmission
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.soyuz.interfaces.archive import IArchive
@@ -58,7 +62,7 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
@@ -118,6 +122,12 @@ patch_plain_parameter_type(
     IBug, 'unlinkHWSubmission', 'submission', IHWSubmission)
 patch_collection_return_type(
     IBug, 'getHWSubmissions', IHWSubmission)
+IBug['getNominations'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['nominations'].value_type.schema = (
+        IBugNomination)
+patch_entry_return_type(IBug, 'addNomination', IBugNomination)
+patch_entry_return_type(IBug, 'getNominationFor', IBugNomination)
+patch_collection_return_type(IBug, 'getNominations', IBugNomination)
 
 patch_choice_parameter_type(
     IHasBugs, 'searchTasks', 'hardware_bus', HWBus)
@@ -270,3 +280,11 @@ patch_plain_parameter_type(
 IPackageUpload['pocket'].vocabulary = PackagePublishingPocket
 patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
 patch_reference_property(IPackageUpload, 'archive', IArchive)
+
+# IStructuralSubscription
+patch_reference_property(
+    IStructuralSubscription, 'target', IStructuralSubscriptionTarget)
+
+patch_reference_property(
+    IStructuralSubscriptionTarget, 'parent_subscription_target',
+    IStructuralSubscriptionTarget)

@@ -14,7 +14,7 @@ import unittest
 import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
-from bzrlib.errors import NotBranchError
+from bzrlib.errors import IncompatibleRepositories, NotBranchError, NotStacked
 from bzrlib.tests.http_server import HttpServer
 from bzrlib.remote import RemoteBranch
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
@@ -203,13 +203,55 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
         self.assertFalse(dest._format.supports_stacking())
 
+    def test_defaultStackedOnBranchIncompatibleMirrorsOK(self):
+        # If the policy supplies a stacked on URL for a branch which is
+        # incompatible with the branch we're mirroring, the mirroring
+        # completes successfully and the destination branch is not stacked.
+        stack_on = self.make_branch('default-stack-on', format='2a')
+        source_branch = self.make_branch('source-branch', format='1.9')
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            policy=PrearrangedStackedBranchPolicy(stack_on.base))
+        to_mirror.mirrorWithoutChecks()
+        dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
+        self.assertRaises(NotStacked, dest.get_stacked_on_url)
+
+    def testCanMirrorWithIncompatibleRepos(self):
+        # If the destination branch cannot be opened because its repository is
+        # not compatible with that of the branch it is stacked on, we delete
+        # the destination branch and start again.
+        self.get_transport('dest').ensure_base()
+        # Make a branch to stack on in 1.6 format
+        self.make_branch('dest/stacked-on', format='1.6')
+        # Make a branch stacked on this.
+        stacked_branch = self.make_branch('dest/stacked', format='1.6')
+        stacked_branch.set_stacked_on_url(self.get_url('dest/stacked-on'))
+        # Delete the stacked-on branch and replace it with a 2a format branch.
+        self.get_transport('dest').delete_tree('stacked-on')
+        self.make_branch('dest/stacked-on', format='2a')
+        # Check our setup: trying to open the stacked branch raises
+        # IncompatibleRepositories.
+        self.assertRaises(
+            IncompatibleRepositories,
+            bzrlib.branch.Branch.open, 'dest/stacked')
+        source_branch = self.make_branch(
+            'source-branch', format='2a')
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('dest/stacked'))
+        # The branch can be mirrored without errors and the destionation
+        # location is upgraded to match the source format.
+        to_mirror.mirrorWithoutChecks()
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(
+            source_branch.repository._format,
+            mirrored_branch.repository._format)
+
     def testRaisesStackedOnBranchNotFoundInitialMirror(self):
         # If the stacked-on branch cannot be found in the mirrored area on an
         # initial mirror, then raise StackedOnBranchNotFound. This will ensure
         # the puller will mirror the stacked branch as soon as the stacked-on
         # branch has been mirrored.
-        stacked_on_branch = self.make_branch(
-            'stacked-on-branch', format='1.6')
+        self.make_branch('stacked-on-branch', format='1.6')
         stacked_branch = self.make_branch('source-branch', format='1.6')
         stacked_branch.set_stacked_on_url('../stacked-on-branch')
         # Make a sub-directory so that the relative URL cannot be found.
@@ -238,8 +280,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('mirrored-area/destdir'))
         to_mirror.mirrorWithoutChecks()
-        stacked_on_branch = self.make_branch(
-            'stacked-on-branch', format='1.6')
+        self.make_branch('stacked-on-branch', format='1.6')
         stacked_branch.set_stacked_on_url('../stacked-on-branch')
         self.assertRaises(
             StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)

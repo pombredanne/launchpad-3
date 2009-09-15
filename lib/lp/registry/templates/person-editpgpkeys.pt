@@ -9,15 +9,12 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
   <div metal:fill-slot="main">
-    <h1>Change your OpenPGP keys</h1>
+    <h1 tal:content="view/label" />
 
     <p tal:condition="view/error_message"
        tal:content="structure view/error_message/escapedtext" class="error message"
@@ -173,13 +170,19 @@
       <input type="hidden" name="action" value="claim_gpg" />
       <h2>Import an OpenPGP key</h2>
 
-      <p>To start using an OpenPGP key with your Launchpad account, simply paste its fingerprint below. (<a href="/+help/import-pgp-key.html" target="help">How to get the fingerprint</a>)
+      <p>To start using an OpenPGP key with your Launchpad account, simply
+        paste its fingerprint below.
+        (<a href="/+help/import-pgp-key.html" target="help">How to get the
+        fingerprint</a>)
+      </p>
 
-          <table>
+          <table class="form" id="launchpad-form-widgets">
             <tbody>
               <tr>
+                <div style="margin-bottom: 2.0 em;">
                 <th><label>Fingerprint:</label></th>
                 <td><input type="text" size="50" name="fingerprint" /></td>
+                </div>
               </tr>
               <tr class="discreet">
                 <th>Example:</th>
@@ -190,11 +193,14 @@
             </tbody>
           </table>
           <p>
-            Next, Launchpad will e-mail you using
+            Next, Launchpad will send e-mail to you at
             <code tal:content="context/preferredemail/email"/> with instructions
             on finishing the process.
           </p>
-          <div><input type="submit" name="import" value="Import Key"/></div>
+          <div>
+            <input type="submit" name="import" value="Import Key"/>
+            or&nbsp; <a tal:attributes="href view/cancel_url">Cancel</a>
+          </div>
 
       </form>
     </div>

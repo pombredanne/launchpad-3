@@ -23,7 +23,6 @@ from zope.schema import Choice, TextLine
 from canonical.cachedproperty import cachedproperty
 
 from lp.registry.interfaces.announcement import IAnnouncement
-from lp.registry.interfaces.distribution import IDistribution
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
@@ -77,27 +76,13 @@ class AnnouncementMenuMixin:
         return Link('+announce', text, summary, icon='add')
 
 
-class IAnnouncementEditMenu(Interface):
-    """A marker interface for modify announcement navigation menu."""
-
-
 class AnnouncementEditNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
     """A sub-menu for different aspects of modifying an announcement."""
 
-    usedfor = IAnnouncementEditMenu
+    usedfor = IAnnouncement
     facet = 'overview'
     title = 'Change announcement'
     links = ['edit', 'retarget', 'publish', 'retract', 'delete']
-
-    def __init__(self, context):
-        super(AnnouncementEditNavigationMenu, self).__init__(context)
-        # Links always expect the context if be a model object, not a view.
-        if isinstance(self.context, LaunchpadView):
-            self.view = context
-            self.context = context.context
-        else:
-            self.view = None
-            self.context = context
 
 
 class IAnnouncementCreateMenu(Interface):
@@ -112,14 +97,6 @@ class AnnouncementCreateNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
     title = 'Create announcement'
     links = ['announce']
 
-    # XXX: BradCrittenden 2009-08-19 bug=410491: When the distribution index
-    # page is updated to UI 3.0 the logic to remove the 'announce' link
-    # can/must be removed.  This navigation menu simply does not play well
-    # with the pre-3.0 page structure.
-    def __init__(self, *args, **kwargs):
-        super(AnnouncementCreateNavigationMenu, self).__init__(*args, **kwargs)
-        if IDistribution.providedBy(self.context.context):
-            self.links = []
 
 class AnnouncementFormMixin:
     """A mixin to provide the common form features."""
@@ -177,7 +154,6 @@ class AnnouncementAddView(LaunchpadFormView):
 
 class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
     """A view which allows you to edit the announcement."""
-    implements(IAnnouncementEditMenu)
 
     schema = AddAnnouncementForm
     field_names = ['title', 'summary', 'url', ]
@@ -210,7 +186,6 @@ class AnnouncementRetargetForm(Interface):
 
 class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to move an annoucement to another project."""
-    implements(IAnnouncementEditMenu)
 
     schema = AnnouncementRetargetForm
     field_names = ['target']
@@ -246,7 +221,6 @@ class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to publish an annoucement."""
-    implements(IAnnouncementEditMenu)
 
     schema = AddAnnouncementForm
     field_names = ['publication_date']
@@ -263,7 +237,6 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to unpublish an announcement."""
-    implements(IAnnouncementEditMenu)
 
     schema = IAnnouncement
     label = _('Retract this announcement')
@@ -276,7 +249,6 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to delete an annoucement."""
-    implements(IAnnouncementEditMenu)
 
     schema = IAnnouncement
     label = _('Delete this announcement')
@@ -340,4 +312,3 @@ class AnnouncementSetView(HasAnnouncementsView):
 
 class AnnouncementView(LaunchpadView):
     """A view class for a single announcement."""
-    implements(IAnnouncementEditMenu)

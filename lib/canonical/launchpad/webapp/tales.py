@@ -14,7 +14,10 @@ import math
 import os.path
 import re
 import rfc822
+import sys
 import urllib
+import warnings
+
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
@@ -59,6 +62,9 @@ from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.soyuz.interfaces.build import BuildStatus
+
+
+SEPARATOR = ' : '
 
 
 def escape(text, quote=True):
@@ -134,9 +140,10 @@ class MenuAPI:
     def _getMenuLinksAndAttributes(self, menu):
         """Return a dict of the links and attributes of the menu."""
         menu.request = self._request
+        request_url = self._request_url()
         result = dict(
             (link.name, link)
-            for link in menu.iterlinks(request_url=self._request_url()))
+            for link in menu.iterlinks(request_url=request_url))
         extras = menu.extra_attributes
         if extras is not None:
             for attr in extras:
@@ -202,25 +209,37 @@ class MenuAPI:
     @property
     def navigation(self):
         """Navigation menu links list."""
-        # NavigationMenus may be associated with a content object or one of
-        # its views. The context we need is the one from the TAL expression.
-        context = self._tales_context
-        if self._selectedfacetname is not None:
-            selectedfacetname = self._selectedfacetname
-        else:
-            # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
-            # facet name from the layer implemented by the request.
-            view = get_current_view(self._request)
-            selectedfacetname = get_facet(view)
         try:
-            menu = nearest_adapter(
-                context, INavigationMenu, name=selectedfacetname)
-        except NoCanonicalUrl:
-            menu = None
-        if menu is None or menu.disabled:
-            return {}
-        else:
-            return self._getMenuLinksAndAttributes(menu)
+            # NavigationMenus may be associated with a content object or one
+            # of its views. The context we need is the one from the TAL
+            # expression.
+            context = self._tales_context
+            if self._selectedfacetname is not None:
+                selectedfacetname = self._selectedfacetname
+            else:
+                # XXX sinzui 2008-05-09 bug=226917: We should be retrieving
+                # the facet name from the layer implemented by the request.
+                view = get_current_view(self._request)
+                selectedfacetname = get_facet(view)
+            try:
+                menu = nearest_adapter(
+                    context, INavigationMenu, name=selectedfacetname)
+            except NoCanonicalUrl:
+                menu = None
+            if menu is None or menu.disabled:
+                return {}
+            else:
+                return self._getMenuLinksAndAttributes(menu)
+        except AttributeError, e:
+            # If this method gets an AttributeError, we rethrow it as a
+            # AssertionError. Otherwise, zope will hide the root cause
+            # of the error and just say that "navigation" can't be traversed.
+            new_exception = AssertionError(
+                'AttributError in MenuAPI.navigation: %s' % e)
+            # We cannot use parens around the arguments to `raise`,
+            # since that will cause it to ignore the third argument,
+            # which is the original traceback.
+            raise new_exception, None, sys.exc_info()[2]
 
 
 class CountAPI:
@@ -425,7 +444,12 @@ class ObjectFormatterAPI:
     # constants, so it's not a problem. We might want to use something like
     # frozenset (http://code.activestate.com/recipes/414283/) here, though.
     # The names which can be traversed further (e.g context/fmt:url/+edit).
-    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
+    traversable_names = {
+        'api_url': 'api_url',
+        'link': 'link',
+        'pagetitle': 'pagetitle',
+        'url': 'url',
+        }
 
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
@@ -519,6 +543,67 @@ class ObjectFormatterAPI:
             return 'private'
         else:
             return 'public'
+
+    def pagetitle(self, view_name):
+        """The page title to be used.
+
+        By default, reverse breadcrumbs are always used if they are available.
+        If not available, then the view's .page_title attribute or entry in
+        pagetitles.py (deprecated) is used.  If breadcrumbs are available,
+        then a view can still choose to override them by setting the attribute
+        .override_title_breadcrumbs to True.
+        """
+        view = self._context
+        request = get_current_browser_request()
+        module = canonical.launchpad.pagetitles
+        hierarchy_view = getMultiAdapter(
+            (view.context, request), name='+hierarchy')
+        override = getattr(view, 'override_title_breadcrumbs', False)
+        if (override or
+            hierarchy_view is None or
+            not hierarchy_view.display_breadcrumbs):
+            # The breadcrumbs are either not available or are overridden.  If
+            # the view has a .page_title attribute use that.
+            page_title = getattr(view, 'page_title', None)
+            if page_title is not None:
+                return page_title
+            # If there is no template for the view, just use the default
+            # Launchpad title.
+            template = getattr(view, 'template', None)
+            if template is None:
+                template = getattr(view, 'index', None)
+                if template is None:
+                    return module.DEFAULT_LAUNCHPAD_TITLE
+            # There is no .page_title attribute on the view, so fallback to
+            # looking for an an entry in pagetitles.py.  This is deprecated
+            # though, so issue a warning.
+            filename = os.path.basename(template.filename)
+            name, ext = os.path.splitext(filename)
+            title_name = name.replace('-', '_')
+            title_object = getattr(module, title_name, None)
+            # Page titles are mandatory.
+            assert title_object is not None, (
+                'No .page_title or pagetitles.py found for %s'
+                % template.filename)
+            ## 2009-09-08 BarryWarsaw bug 426527: Enable this when we want to
+            ## force conversions from pagetitles.py; however tests will fail
+            ## because of this output.
+            ## warnings.warn('Old style pagetitles.py entry found for %s. '
+            ##               'Switch to using a .page_title attribute on the '
+            ##               'view instead.' % template.filename,
+            ##               DeprecationWarning)
+            if isinstance(title_object, basestring):
+                return title_object
+            else:
+                title = title_object(view.context, view)
+                if title is None:
+                    return module.DEFAULT_LAUNCHPAD_TITLE
+                else:
+                    return title
+        # Use the reverse breadcrumbs.
+        return SEPARATOR.join(
+            breadcrumb.text for breadcrumb
+            in reversed(hierarchy_view.items))
 
 
 class ObjectImageDisplayAPI:
@@ -1201,6 +1286,17 @@ class PillarFormatterAPI(CustomizableFormatter):
         return html
 
 
+class DistroSeriesFormatterAPI(CustomizableFormatter):
+    """Adapter for IDistroSeries objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+
 class SourcePackageFormatterAPI(CustomizableFormatter):
     """Adapter for ISourcePackage objects to a formatted string."""
 
@@ -1250,7 +1346,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
             html += ')'
         return html % replacements
 
-    def url(self, view_name, rootsite=None):
+    def url(self, view_name=None, rootsite=None):
         """Return the URL to download the file."""
         return self._getDownloadURL(self._context.libraryfile)
 
@@ -2100,6 +2196,8 @@ def clean_path_segments(request):
     return clean_path_split
 
 
+# 2009-09-08 BarryWarsaw bug 426532.  Remove this class, all references to it,
+# and all instances of CONTEXTS/fmt:pagetitle
 class PageTemplateContextsAPI:
     """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
 
@@ -2753,7 +2851,7 @@ class FormattersAPI:
         \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
         [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
         \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
-        """, re.VERBOSE)
+        """, re.VERBOSE)              # ' <- font-lock turd
 
     def obfuscate_email(self):
         """Obfuscate an email address if there's no authenticated user.
@@ -2798,7 +2896,6 @@ class FormattersAPI:
             # Only linkify if person exists and does not want to hide
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
-                person_formatter = PersonFormatterAPI(person)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
                     address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
@@ -2814,6 +2911,16 @@ class FormattersAPI:
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
             return '%s...' % self._stringtoformat[:maxlength-3]
+        else:
+            return self._stringtoformat
+
+    def ellipsize(self, maxlength):
+        """Use like tal:content="context/foo/fmt:ellipsize/60"."""
+        if len(self._stringtoformat) > maxlength:
+            length = (maxlength - 3) / 2
+            return (
+                self._stringtoformat[:maxlength - length - 3] + '...' +
+                self._stringtoformat[-length:])
         else:
             return self._stringtoformat
 
@@ -2905,6 +3012,12 @@ class FormattersAPI:
                     "you need to traverse a number after fmt:shorten")
             maxlength = int(furtherPath.pop())
             return self.shorten(maxlength)
+        elif name == 'ellipsize':
+            if len(furtherPath) == 0:
+                raise TraversalError(
+                    "you need to traverse a number after fmt:ellipsize")
+            maxlength = int(furtherPath.pop())
+            return self.ellipsize(maxlength)
         elif name == 'diff':
             return self.format_diff()
         elif name == 'css-id':
@@ -3126,3 +3239,76 @@ class PageMacroDispatcher:
             return self.base
         else:
             return self.master
+
+
+class TranslationGroupFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `ITranslationGroup` objects to a formatted string."""
+
+    traversable_names = {
+        'link': 'link',
+        'url': 'url', 
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(TranslationGroupFormatterAPI, self).url(
+            view_name, rootsite)
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        group = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(group.title))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title
+
+
+class LanguageFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `ILanguage` objects to a formatted string."""
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(LanguageFormatterAPI, self).url(view_name, rootsite)
+
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s" class="sprite language">%s</a>' % (
+            url, cgi.escape(self._context.englishname))
+
+    def displayname(self, view_name, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        return self._context.englishname
+
+
+class POFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IPOFile` objects to a formatted string."""
+
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(POFileFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        pofile = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(pofile.title))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title

@@ -41,8 +41,8 @@ Using the short-cut URL any user can promptly access the build
 page. It's title briefly describes the build.
 
     >>> anon_browser.open(build_url)
-    >>> print anon_browser.title
-    i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
+    >>> anon_browser.title
+    '\xe2\x80\x9ctesting\xe2\x80\x9d package : ubuntutest'
 
 In the page body readers can see 2 sections, 'Build status' and 'Build
 details'.
@@ -58,9 +58,10 @@ component.
     >>> print extract_text(find_main_content(anon_browser.contents))
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     Created ... ago
+    ...
     Build status
     Needs building
-    Start in 1 minute (2505) What's this?
+    Start in ... (2505) What's this?
     Build details
     Source: testing - 1.0
     Archive: Primary Archive for Ubuntu Test
@@ -108,7 +109,7 @@ new 'score' value is presented.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
-    Start in 1 minute (0) Rescore build What's this?
+    Start in ... (0) Rescore build What's this?
 
 Eventually a pending build record will get started, and while it's
 building the page will also contain a link to the builder where the
@@ -202,7 +203,7 @@ they are private.
 Administrators can retry failed builds using the 'retry' icon in the
 'Build Status' section.
 
-    >>> admin_browser.reload()
+    >>> admin_browser.open(admin_browser.url)
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'status'))
     Build status
@@ -221,6 +222,7 @@ the consequences of this action.
     >>> admin_browser.getLink('Retry build').click()
     >>> print extract_text(find_main_content(admin_browser.contents))
     Retry i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
+    ...
     The status of i386 build of testing 1.0 in ubuntutest
     breezy-autotest RELEASE is Failed to upload.
     Retrying this build will destroy its history and logs.
@@ -269,7 +271,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     # Mark the testing build as FULLYBUILT and upload a corresponding
     # binary package for it which will be awaiting for acceptance.
     >>> login('foo.bar@canonical.com')
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> build.buildqueue_record.destroySelf()
     >>> build.buildstate = BuildStatus.FULLYBUILT
     >>> build.builder = bob_builder
@@ -339,7 +341,7 @@ corresponding page.
     >>> unused = upload.realiseUpload()
     >>> logout()
 
-    >>> anon_browser.reload()
+    >>> anon_browser.open(anon_browser.url)
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'binaries'))
@@ -377,7 +379,7 @@ navigate to packages.
     >>> anon_browser.open(ppa_build_url)
 
     >>> print anon_browser.title
-    i386 build of ppa-test 1.0 in ubuntutest breezy-autotest RELEASE
+    PPA for Celso Providelo : Celso Providelo
 
 The 'Build status' section is identical for PPAs.
 
@@ -447,4 +449,3 @@ Finally, the 'Build files' section is identical for PPA builds.
 
     >>> print anon_browser.getLink('ppa-test-bin_1.0_all.deb').url
     http://.../+build/32/+files/ppa-test-bin_1.0_all.deb
-

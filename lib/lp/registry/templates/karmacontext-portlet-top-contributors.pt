@@ -11,16 +11,14 @@
     Top contributors
   </h2>
 
-  <dl>
+  <ul>
     <tal:contributor tal:repeat="contributor contributors">
-      <dt>
+      <li>
         <a tal:replace="structure contributor/person/fmt:link">
           Guilherme Salgado</a>
-        <strong>
-          <tal:karma replace="contributor/karmavalue" /> points
-        </strong>
-      </dt>
+        <tal:karma replace="contributor/karmavalue" /> points
+      </li>
     </tal:contributor>
-  </dl>
+  </ul>
 </div>
 </tal:uses-launchpad>

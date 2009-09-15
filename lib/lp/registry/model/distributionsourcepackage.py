@@ -266,7 +266,8 @@ class DistributionSourcePackage(BugTargetBase,
         # such as IArchive.rank, we will then be able to return distinct
         # results. As it is, we cannot return distinct results while ordering
         # by a non-selected column.
-        results.order_by(Desc(KarmaTotalCache.karma_total))
+        results.order_by(
+            Desc(KarmaTotalCache.karma_total), Archive.id)
 
         return results
 

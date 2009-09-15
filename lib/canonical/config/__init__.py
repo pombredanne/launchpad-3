@@ -16,6 +16,7 @@ import logging
 import sys
 from urlparse import urlparse, urlunparse
 
+import pkg_resources
 import ZConfig
 
 from lazr.config import ImplicitTypeSchema
@@ -194,8 +195,8 @@ class CanonicalConfig:
 
     def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
-        schemafile = os.path.join(
-            self.root, 'lib/zope/app/server/schema.xml')
+        schemafile = pkg_resources.resource_filename(
+            'zope.app.server', 'schema.xml')
         schema = ZConfig.loadSchema(schemafile)
         root_options, handlers = ZConfig.loadConfig(
             schema, self.zope_config_file)

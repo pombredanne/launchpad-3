@@ -401,7 +401,8 @@ Mirror admins can also see a whiteboard
     >>> cd_mirror.whiteboard = 'This is a good mirror.'
     >>> view = create_initialized_view(
     ...     cd_mirror, '+index', principal=user)
-    >>> print extract_text(find_tag_by_id(view.render(), 'whiteboard'))
+    >>> whiteboard = find_tag_by_id(view.render(), 'whiteboard')
+    >>> print extract_text(whiteboard.find('dd'))
     This is a good mirror.
 
     >>> login('no-priv@canonical.com')

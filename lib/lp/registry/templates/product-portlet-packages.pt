@@ -8,24 +8,27 @@
 <div class="portlet" id="portlet-packages">
   <h2>
     <span class="see-all"><a
-      tal:replace="structure context/menu:overview/packages/fmt:link" /></span>
+      tal:attributes="href context/menu:overview/packages/fmt:url">All
+      packages</a></span>
     Packages in distributions
   </h2>
 
-  <dl>
+  <ul>
     <tal:pair tal:repeat="package packages">
-      <dt>
+      <li>
         <a class="sprite package-source"
           tal:attributes="href package/fmt:url"
           tal:content="package/title">apache in ubuntu hoary</a>
-      </dt>
-      <dd tal:define="release package/currentrelease"
-        tal:condition="release">
+        <br />
+        <span class="registered"
+          tal:define="release package/currentrelease"
+          tal:condition="release">
         <strong>Version
           <tal:version content="release/version">2.3</tal:version></strong>
         uploaded <tal:date replace="release/dateuploaded/fmt:displaydate" />
-      </dd>
+        </span>
+      </li>
     </tal:pair>
-  </dl>
+  </ul>
 </div>
 </tal:root>

@@ -1,4 +1,5 @@
-= Archives =
+Archives
+========
 
 Representations for IArchive can be fetch via the API for PPAs and
 distribution archives.
@@ -101,12 +102,14 @@ A distribution can also provide a list of all its archives:
 
 Attempting to grab a non-existent archive will result in a 404 error:
 
-    >>> bogus_archive = "ubuntutest/+archive/bogus"
-    >>> webservice.get(bogus_archive).jsonBody()
+    >>> bogus_archive = "http://api.launchpad.dev/beta/ubuntutest/+archive/bogus"
+    >>> print webservice.get(bogus_archive)
+    HTTP/1.1 404 Not Found
+    ...
     Traceback (most recent call last):
     ...
-    ValueError: HTTP/1.1 404 Not Found
-    ...
+    NotFound: Object: ..., name: u'bogus'
+    <BLANKLINE>
 
 
 = Archive Permissions =
@@ -224,7 +227,7 @@ Passing a bad package name results in an error:
 
     >>> print webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForPackage',
-    ...     source_package_name="badpackage").getOutput()
+    ...     source_package_name="badpackage")
     HTTP/1.1 400 Bad Request
     ...
 
@@ -236,7 +239,7 @@ a person to upload a package.
     ...     ubuntu['main_archive_link'], 'newPackageUploader', {},
     ...     person=name12['self_link'],
     ...     source_package_name='mozilla-firefox')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -279,7 +282,7 @@ Passing a bad component name results in an error:
 
     >>> print webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForComponent',
-    ...     component_name="badcomponent").getOutput()
+    ...     component_name="badcomponent")
     HTTP/1.1 400 Bad Request
     ...
 
@@ -297,7 +300,7 @@ component.
     ...     ubuntu['main_archive_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'],
     ...     component_name='restricted')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -318,7 +321,7 @@ the 'main' component, or an error is returned:
     >>> response = webservice.named_post(
     ...     cprov_archive['self_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'], component_name='restricted')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 400 Bad Request
     ...
     InvalidComponent: Component for PPAs should be 'main'
@@ -327,7 +330,7 @@ the 'main' component, or an error is returned:
     >>> response = webservice.named_post(
     ...     cprov_archive['self_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'], component_name='main')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -382,7 +385,7 @@ queues in a particular component.
     ...     ubuntu['main_archive_link'], 'newQueueAdmin', {},
     ...     person=name12['self_link'],
     ...     component_name='partner')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -425,7 +428,7 @@ latter can thus not be found.
 
     >>> missing_type_url = '/ubuntu/+archive/primary/+upload/name12?item=firefox'
     >>> this_will_fail = webservice.get(missing_type_url)
-    >>> print this_will_fail.getOutput()
+    >>> print this_will_fail
     HTTP/1.1 404 Not Found
     ...
 
@@ -434,7 +437,7 @@ not found.
 
     >>> wrong_type_url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=firefox&type=Integer'
     >>> this_will_fail = webservice.get(missing_type_url)
-    >>> print this_will_fail.getOutput()
+    >>> print this_will_fail
     HTTP/1.1 404 Not Found
     ...
 
@@ -442,7 +445,7 @@ The item name is missing. The archive permission is hence not found.
 
     >>> missing_item_url = '/ubuntu/+archive/primary/+upload/name12?type=packageset'
     >>> this_will_fail = webservice.get(missing_type_url)
-    >>> print this_will_fail.getOutput()
+    >>> print this_will_fail
     HTTP/1.1 404 Not Found
     ...
 
@@ -451,7 +454,7 @@ not found.
 
     >>> wrong_type_url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=firefox&item=vapourware'
     >>> this_will_fail = webservice.get(missing_type_url)
-    >>> print this_will_fail.getOutput()
+    >>> print this_will_fail
     HTTP/1.1 404 Not Found
     ...
 
@@ -626,8 +629,8 @@ exception therefore results in an OOPS. But within the web service,
 syncSources is invoked directly by the client, and any problems are
 the client's fault. Therefore, there's no need to record an OOPS.
 
-    >>> 'X-Lazr-Oopsid' in already_copied.getOutput()
-    False
+    >>> print already_copied.getheader('X-Lazr-Oopsid')
+    None
 
 'syncSources' behaves trasactionally, i.e. it will only synchronise
 all packages or none of them if there was a problem.
@@ -749,7 +752,7 @@ bad request will result:
     >>> response = mark_webservice.named_post(
     ...     mark_archive['self_link'], 'newSubscription',
     ...     subscriber=cprov_archive['owner_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 400 Bad Request
     ...
     ArchiveNotPrivate: Only private archives can have subscriptions.
@@ -763,7 +766,7 @@ First we'll subscribe mark to cprov's archive:
     ...     cprov_archive['self_link'], 'newSubscription',
     ...     subscriber=mark['self_link'])
 
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -789,7 +792,7 @@ Other webservice users cannot view the subscription.
 
     >>> response = user_webservice.get(
     ...     response.getHeader('Location'))
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -800,7 +803,7 @@ to use this method.
     >>> response = user_webservice.named_post(
     ...     cprov_archive['self_link'], 'newSubscription',
     ...     subscriber=cprov_archive['owner_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -810,7 +813,7 @@ is already a current subscription:
     >>> response = cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'newSubscription',
     ...     subscriber=mark['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 400 Bad Request
     ...
     AlreadySubscribed: Mark Shuttleworth already has a current subscription
@@ -894,7 +897,7 @@ First we'll add an explicit dependency on the primary archive to
 cprov's PPA. We can't do this through the webservice yet.
 
     >>> from lp.soyuz.interfaces.component import IComponentSet
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> login('foo.bar@canonical.com')
     >>> cprov_ppa_db = getUtility(IPersonSet).getByName('cprov').archive
     >>> dep = cprov_ppa_db.addArchiveDependency(
