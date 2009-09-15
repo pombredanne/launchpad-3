@@ -5164,6 +5164,8 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
 class PersonOAuthTokensView(LaunchpadView):
     """Where users can see/revoke their non-expired access tokens."""
 
+    label = 'Authorized applications'
+
     def initialize(self):
         if self.request.method == 'POST':
             self.expireToken()
