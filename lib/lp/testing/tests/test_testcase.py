@@ -13,24 +13,18 @@ from zope.component import getUtility
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.code.interfaces.branch import IBranchSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import record_statements, TestCaseWithFactory
 
 
-class TestStormStatementCounter(TestCaseWithFactory):
-    """Test the statement counter."""
+class TestRecordStatements(TestCaseWithFactory):
+    """Test the statement recorder."""
 
     layer = DatabaseFunctionalLayer
 
     def test_counter_positive(self):
         # The base TestCase setUp adds a statement counter.
-        self.factory.makeBranch()
-        self.assertTrue(self.statement_count > 0)
-
-    def test_reset_counter(self):
-        # Resetting the counter sets the count to zero.
-        self.factory.makeBranch()
-        self.resetStatementCounter()
-        self.assertEquals(0, self.statement_count)
+        branch, statements = record_statements(self.factory.makeBranch)
+        self.assertTrue(len(statements) > 0)
 
     def test_store_invalidation_counts(self):
         # When creating objects with the factory, they stay in the storm
@@ -39,16 +33,13 @@ class TestStormStatementCounter(TestCaseWithFactory):
         # objects where there would normally be queries.
         branch = self.factory.makeBranch()
         store = Store.of(branch)
+
         # Make sure everything is in the database.
         store.flush()
         # Reset the store to clear the cache (not just invalidate).
         store.reset()
         branch = getUtility(IBranchSet).getByUniqueName(branch.unique_name)
-        # store.reload(branch)
-        self.resetStatementCounter()
-        # Access a referenced attribute.
-        owner = branch.owner
-        self.assertEquals(1, self.statement_count)
+        self.assertStatementCount(1, getattr, branch, "owner")
 
 
 def test_suite():

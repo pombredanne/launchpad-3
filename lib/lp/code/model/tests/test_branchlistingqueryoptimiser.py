@@ -18,6 +18,7 @@ from lp.code.enums import BranchType
 from lp.code.model.branchlistingqueryoptimiser import (
     BranchListingQueryOptimiser)
 from lp.code.interfaces.branch import IBranchListingQueryOptimiser
+from lp.code.tests.helpers import make_linked_package_branch
 from lp.testing import TestCaseWithFactory
 
 
@@ -33,8 +34,7 @@ class TestBranchListingQueryOptimiser(TestCaseWithFactory):
         self.assertProvides(utility, IBranchListingQueryOptimiser)
 
 
-class TestGetProductSeriesForBranches(
-    TestCaseWithFactory):
+class TestGetProductSeriesForBranches(TestCaseWithFactory):
     """Test getting series associated with branches."""
 
     layer = DatabaseFunctionalLayer
@@ -110,6 +110,58 @@ class TestGetProductSeriesForBranches(
         dev_focus = self.product.development_focus
         dev_focus.branch = branch
         self.assertSeriesBranches([dev_focus], [branch.id])
+
+
+class TestGetOfficialSourcePackageLinksForBranches(TestCaseWithFactory):
+    """Test getting official package links associated with branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Log in an admin as we are setting official branches, which is a
+        # protected activity.
+        super(TestGetOfficialSourcePackageLinksForBranches, self).setUp(
+            'admin@canonical.com')
+
+    def test_with_branches(self):
+        # Test the selection of the links.
+        # Make two package branches that we care about.
+        b1 = make_linked_package_branch(self.factory)
+        b2 = make_linked_package_branch(self.factory)
+        # And two we don't.
+        make_linked_package_branch(self.factory)
+        make_linked_package_branch(self.factory)
+        links = (BranchListingQueryOptimiser.
+                 getOfficialSourcePackageLinksForBranches([b1.id, b2.id]))
+        self.assertEqual(
+            sorted([b1, b2]),
+            sorted([link.branch for link in links]))
+
+    def test_objects_loaded(self):
+        # Traversing through the source package and the distribution should
+        # not cause more queries.
+
+        b1 = make_linked_package_branch(self.factory)
+        store = Store.of(b1)
+        # XXX: Tim Penhey 2009-09-15 bug TODO
+        # Constructing a distribution causes the "ubuntu" celebrity to be
+        # created which hits the database. So load it now.
+        store.flush()
+        store.reset()
+        getUtility(ILaunchpadCelebrities).ubuntu
+
+        (link, ) = self.assertStatementCount(
+            1, BranchListingQueryOptimiser.
+            getOfficialSourcePackageLinksForBranches, [b1.id])
+        # Accessing the source package doesn't hit the database.
+        sp = self.assertStatementCount(
+            0, getattr, link, "sourcepackage")
+        # Getting the distribution from the source package doesn't hit the
+        # database.
+        self.assertStatementCount(0, getattr, sp, "distribution")
+        # Nor does getting the path or displayname.
+        self.assertStatementCount(0, getattr, sp, "displayname")
+        self.assertStatementCount(0, getattr, sp, "path")
 
 
 def test_suite():

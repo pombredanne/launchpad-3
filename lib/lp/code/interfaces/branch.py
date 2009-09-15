@@ -1145,10 +1145,17 @@ class IBranchListingQueryOptimiser(Interface):
     """
 
     def getProductSeriesForBranches(branch_ids):
-        """Return the ProductSeries associated with a branch in branches.
+        """Return the ProductSeries associated with the branch_ids.
 
-        :param store: the `Store` to use.
         :param branch_ids: a list of branch ids.
+        :return: a list of `ProductSeries` objects.
+        """
+
+    def getOfficialSourcePackageLinksForBranches(branch_ids):
+        """The SeriesSourcePackageBranches associated with the branch_ids.
+
+        :param branch_ids: a list of branch ids.
+        :return: a list of `SeriesSourcePackageBranch` objects.
         """
 
 

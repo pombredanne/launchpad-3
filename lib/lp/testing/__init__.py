@@ -20,6 +20,7 @@ from bzrlib.errors import InvalidURLJoin
 from bzrlib.transport import get_transport
 
 import pytz
+from storm.expr import Variable
 from storm.store import Store
 from storm.tracer import install_tracer, remove_tracer_type
 
@@ -64,15 +65,42 @@ class FakeTime:
         return self._now
 
 
-class StormStatementCounter:
+class StormStatementRecorder:
     """A storm tracer to count queries."""
 
     def __init__(self):
-        self.count = 0
+        self.statements = []
 
-    def connection_raw_execute(self, *args):
+    def connection_raw_execute(self, ignored, raw_cursor, statement, params):
         """Increment the counter.  We don't care about the args."""
-        self.count += 1
+
+        raw_params = []
+        for param in params:
+            if isinstance(param, Variable):
+                raw_params.append(param.get())
+            else:
+                raw_params.append(param)
+        raw_params = tuple(raw_params)
+        self.statements.append("%r, %r" % (statement, raw_params))
+
+
+def record_statements(function, *args, **kwargs):
+    recorder = StormStatementRecorder()
+    try:
+        install_tracer(recorder)
+        ret = function(*args, **kwargs)
+    finally:
+        remove_tracer_type(StormStatementRecorder)
+    return (ret, recorder.statements)
+
+
+def run_with_storm_debug(function, *args, **kwargs):
+    from storm.tracer import debug
+    debug(True)
+    try:
+        return function(*args, **kwargs)
+    finally:
+        debug(False)
 
 
 class TestCase(unittest.TestCase):
@@ -368,17 +396,14 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
-        self._storm_statement_counter = StormStatementCounter()
-        install_tracer(self._storm_statement_counter)
-        self.addCleanup(remove_tracer_type, StormStatementCounter)
 
-    def resetStatementCounter(self):
-        """Reset the statement counter to zero."""
-        self._storm_statement_counter.count = 0
-
-    @property
-    def statement_count(self):
-        return self._storm_statement_counter.count
+    def assertStatementCount(self, expected_count, function, *args, **kwargs):
+        ret, statements = record_statements(function, *args, **kwargs)
+        if len(statements) != expected_count:
+            self.fail(
+                "Expected %d statements, got %d:\n%s"
+                % (expected_count, len(statements), "\n".join(statements)))
+        return ret
 
 
 class TestCaseWithFactory(TestCase):

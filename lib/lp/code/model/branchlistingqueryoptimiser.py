@@ -16,8 +16,12 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 from lp.code.interfaces.branch import IBranchListingQueryOptimiser
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
 
 
 class BranchListingQueryOptimiser:
@@ -41,3 +45,24 @@ class BranchListingQueryOptimiser:
                 ProductSeries.branchID.is_in(branch_ids),
                 ProductSeries.product == Product.id).order_by(
                 ProductSeries.name)]
+
+    @staticmethod
+    def getOfficialSourcePackageLinksForBranches(branch_ids):
+        """See `IBranchListingQueryOptimiser`."""
+        # Any real use of the official source package links is going to
+        # traverse through the distro_series, distribution and
+        # sourcepackagename objects.  For this reason, we get them all in the
+        # one query, and only return the SeriesSourcePackageBranch objects.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        realise_objects = (
+            Distribution, DistroSeries, SourcePackageName,
+            SeriesSourcePackageBranch)
+        return [
+            link for distro, ds, spn, link in store.find(
+                realise_objects,
+                SeriesSourcePackageBranch.branchID.is_in(branch_ids),
+                SeriesSourcePackageBranch.sourcepackagename ==
+                SourcePackageName.id,
+                SeriesSourcePackageBranch.distroseries ==
+                DistroSeries.id,
+                DistroSeries.distribution == Distribution.id)]
