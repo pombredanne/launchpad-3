@@ -8,6 +8,9 @@ __all__ = ['ExportTranslationsToBranch']
 
 
 import os.path
+from datetime import datetime, timedelta
+from pytz import UTC
+
 from zope.component import getUtility
 
 from storm.expr import Join, SQL
@@ -26,6 +29,19 @@ from lp.services.scripts.base import LaunchpadCronScript
 
 class ExportTranslationsToBranch(LaunchpadCronScript):
     """Commit translations to translations_branches where requested."""
+
+    commit_message = "Launchpad automatic translations update."
+
+    # Don't bother looking for a previous translations commit if it's
+    # longer than this ago.
+    previous_commit_cutoff_age = timedelta(days=7)
+
+    # We can find out when the last translations commit to a branch
+    # completed, and we can find out when the last transaction changing
+    # a POFile started.  This is exactly the wrong way around for
+    # figuring out which POFiles need a fresh export, so assume a fudge
+    # factor.
+    fudge_factor = timedelta(hours=6)
 
     def _checkForObjections(self, source):
         """Check for reasons why we can't commit to this branch.
@@ -46,17 +62,42 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 "Translations branch for %s has pending translations "
                 "changes.  Not committing." % source.title)
 
-    def _makeDirectBranchCommit(self, bzrbranch):
+    def _makeDirectBranchCommit(self, db_branch):
         """Create a `DirectBranchCommit`.
 
         This factory is a mock-injection point for tests.
+
+        :param db_branch: A `Branch` object as defined in Launchpad.
+        :return: A `DirectBranchCommit` for `db_branch`.
         """
-        return DirectBranchCommit(bzrbranch)
+        return DirectBranchCommit(db_branch)
 
     def _commit(self, source, committer):
         """Commit changes to branch.  Check for race conditions."""
         self._checkForObjections(source)
-        committer.commit("Launchpad automatic translations update.")
+        committer.commit(self.commit_message)
+
+    def _isTranslationsCommit(self, revision):
+        """Is `revision` an automatic translations commit?"""
+        return revision.message == self.commit_message
+
+    def _getLatestTranslationsCommit(self, branch):
+        """Get date of last translations commit to `branch`, if any."""
+        cutoff_date = datetime.now(UTC) - self.previous_commit_cutoff_age
+
+        revno, current_rev = branch.last_revision_info()
+        repository = branch.repository
+        for rev_id in repository.iter_reverse_revision_history(current_rev):
+            revision = repository.get_revision(rev_id)
+            revision_date = revision.timestamp
+            if self._isTranslationsCommit(revision):
+                return revision_date
+
+            if revision_date < cutoff_date:
+                # Going too far back in history.  Give up.
+                return None
+
+        return None
 
     def _exportToBranch(self, source):
         """Export translations for source into source.translations_branch.
@@ -68,6 +109,22 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         committer = self._makeDirectBranchCommit(source.translations_branch)
 
+        bzr_branch = committer.bzrbranch
+
+        last_commit_date = self._getLatestTranslationsCommit(bzr_branch)
+
+        if last_commit_date is None:
+            self.logger.debug("No previous translations commit found.")
+            changed_since = None
+        else:
+            # Export files that have been touched since the last export.
+            # Subtract a fudge factor because the last-export date marks
+            # the end of the previous export, and the POFiles'
+            # last-touched timestamp marks the beginning of the last
+            # transaction that changed them.
+            self.logger.debug("Last commit was at %s." % last_commit_date)
+            changed_since = last_commit_date - self.fudge_factor
+
         try:
             subset = getUtility(IPOTemplateSet).getSubset(
                 productseries=source, iscurrent=True)
@@ -75,6 +132,13 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 base_path = os.path.dirname(template.path)
 
                 for pofile in template.pofiles:
+
+                    has_changed = (
+                        changed_since is None or
+                        pofile.date_changed > changed_since)
+                    if not has_changed:
+                        continue
+
                     pofile_path = os.path.join(
                         base_path, pofile.getFullLanguageCode() + '.po')
                     pofile_contents = pofile.export()
@@ -86,6 +150,10 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     # transaction for too long.
                     if self.txn:
                         self.txn.commit()
+
+                    # We're done with this POFile.  Don't bother caching
+                    # anything about it any longer.
+                    template.clearPOFileCache()
 
             self._commit(source, committer)
         finally:
