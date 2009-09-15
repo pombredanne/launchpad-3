@@ -566,7 +566,7 @@ bad line
             'the key: value format.')
         self.assertErrorMessage(
             parser.submission_key,
-            "Line 2 in <udev>: No valid key:value data: 'bad line'")
+            "Line 1 in <udev>: No valid key:value data: 'bad line'")
 
     def testUdevPropertyLineWithoutEqualSign(self):
         """<udev> nodes with lines not in key: value format are rejected."""
@@ -585,10 +585,10 @@ E: bad property
             'not having the key=value format.')
         self.assertErrorMessage(
             parser.submission_key,
-            "Line 2 in <udev>: Property without valid key=value data: "
+            "Line 1 in <udev>: Property without valid key=value data: "
             "'E: bad property'")
 
-    def testUdevUdevDataWithDuplicateKey(self):
+    def testUdevDataWithDuplicateKey(self):
         """<udev> nodes with lines not in key: value format are rejected."""
         parser = SubmissionParser(self.log)
         parser.submission_key = 'Detect duplactae attributes in udev data'
@@ -613,7 +613,7 @@ W:2
             'attribute.')
         self.assertWarningMessage(
             parser.submission_key,
-            "Line 3 in <udev>: Duplicate attribute key: 'W:2'")
+            "Line 2 in <udev>: Duplicate attribute key: 'W:2'")
 
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""

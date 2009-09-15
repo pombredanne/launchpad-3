@@ -443,7 +443,7 @@ class SubmissionParser(object):
     def _parseUdev(self, udev_node):
         """Parse the <udev> node.
 
-        :return: A list of dictionaries, where each dicitionary
+        :return: A list of dictionaries, where each dictionary
             describes a udev device.
 
         The <udev> node contains the output produced by
@@ -494,9 +494,7 @@ class SubmissionParser(object):
         device = None
         line_number = 0
 
-        while len(udev_data) > 0:
-            line = udev_data.pop(0)
-            line_number += 1
+        for line_number, line in enumerate(udev_data):
             if len(line) == 0:
                 device = None
                 continue
