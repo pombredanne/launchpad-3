@@ -39,6 +39,7 @@ __all__ = [
     'PersonGPGView',
     'PersonIndexMenu',
     'PersonIndexView',
+    'PersonKarmaView',
     'PersonLanguagesView',
     'PersonLatestQuestionsView',
     'PersonNavigation',
@@ -568,11 +569,17 @@ class TeamInvitationView(LaunchpadFormView):
     implements(IBrowserPublisher)
 
     schema = ITeamMembershipInvitationAcknowledgementForm
-    label = 'Team membership invitation'
     field_names = ['acknowledger_comment']
     custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
     template = ViewPageTemplateFile(
         '../templates/teammembership-invitation.pt')
+
+    @property
+    def label(self):
+        return "Make %s a member of %s" % (
+            self.context.person.displayname, self.context.team.displayname)
+
+    page_title = label
 
     def __init__(self, context, request):
         # Only admins of the invited team can see the page in which they
@@ -2487,6 +2494,24 @@ class PersonLanguagesView(LaunchpadFormView):
             rootsite='answers')
 
 
+class PersonKarmaView(LaunchpadView):
+    """A view class used for ~person/+karma."""
+
+    @property
+    def label(self):
+        return 'Launchpad Karma for ' + cgi.escape(self.context.displayname)
+
+    @cachedproperty
+    def has_karma(self):
+        """Does the person have karma?"""
+        return bool(self.context.karma_category_caches)
+
+    @cachedproperty
+    def has_expired_karma(self):
+        """Did the person have karma?"""
+        return self.context.latestKarma().count() > 0
+
+
 class TeamJoinMixin:
     """Mixin class for views related to joining teams."""
 
@@ -2890,16 +2915,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return ', '.join(sorted(englishnames))
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
-
-    @cachedproperty
-    def has_karma(self):
-        """Does the have karma?"""
-        return bool(self.context.karma_category_caches)
-
-    @cachedproperty
-    def has_expired_karma(self):
-        """Did the user have karm?."""
-        return self.context.latestKarma().count() > 0
 
     @property
     def public_private_css(self):
