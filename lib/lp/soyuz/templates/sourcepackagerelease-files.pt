@@ -5,7 +5,7 @@
   omit-tag="">
  <ul tal:condition="context/files">
     <li tal:repeat="file context/files">
-      <a class="sprite"
+      <a class="sprite download"
          tal:content="file/libraryfile/filename"
          tal:attributes="href string:${context/fmt:url}/+files/${file/libraryfile/filename}" />
       (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
