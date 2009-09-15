@@ -10,7 +10,7 @@
     <h2>
       <span class="see-all">
         <a tal:attributes="href context/menu:overview/karma/url">
-          Show all activities
+          All activities
         </a>
       </span>
       Most active in
