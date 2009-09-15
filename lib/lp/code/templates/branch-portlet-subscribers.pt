@@ -20,12 +20,6 @@
       <dl>
         <dt>
           <tal:owner tal:replace="structure context/owner/fmt:link" />
-          <a
-            tal:define="link context_menu/edit"
-            tal:condition="link/enabled"
-            tal:attributes="href link/url">
-            <img src="/@@/edit" tal:attributes="alt link/text" />
-          </a>
         </dt>
       </dl>
     </div>
@@ -35,10 +29,6 @@
       <dl>
         <dt>
           <tal:owner tal:replace="structure context/code_reviewer/fmt:link" />
-          <a tal:define="link context_menu/reviewer"
-             tal:condition="link/enabled"
-             tal:attributes="href link/url"
-             ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
         </dt>
       </dl>
     </div>

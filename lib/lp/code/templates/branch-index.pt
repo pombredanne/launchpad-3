@@ -31,6 +31,7 @@
 <body>
 
 <metal:side fill-slot="side">
+  <div tal:replace="structure context/@@+global-actions" />
   <tal:public condition="not: context/private">
     <div id="privacy" class="portlet public">
       This branch is public
@@ -51,14 +52,6 @@
 
     <h1>
       <tal:branch replace="context/bzr_identity" />
-      <a tal:define="link context_menu/delete_branch"
-         tal:condition="link/enabled"
-         tal:attributes="href link/url"
-         ><img tal:attributes="alt link/text;title link/text" src="/@@/trash-icon" /></a>
-      <a tal:define="link context_menu/edit"
-         tal:condition="link/enabled"
-         tal:attributes="href link/url"
-         ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
     </h1>
 
   <div class="top-portlet">
@@ -114,12 +107,6 @@
       </div>
     </div>
 
-    <div
-      tal:define="link context/menu:context/edit_whiteboard"
-      tal:condition="link/enabled"
-      tal:content="structure link/render">
-      Edit whiteboard
-    </div>
   </div>
 
   <div class="yui-g">

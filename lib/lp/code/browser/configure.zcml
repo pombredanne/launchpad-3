@@ -574,7 +574,7 @@
     <browser:menus
         classes="
             BranchContextMenu
-            BranchNavigationMenu"
+            BranchEditMenu"
         module="lp.code.browser.branch"/>
     <browser:page
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"

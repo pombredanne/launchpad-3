@@ -16,7 +16,7 @@ __all__ = [
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
-    'BranchNavigationMenu',
+    'BranchEditMenu',
     'BranchInProductView',
     'BranchSparkView',
     'BranchURL',
@@ -163,44 +163,45 @@ class BranchNavigation(Navigation):
             if proposal.id == id:
                 return proposal
 
+class BranchEditMenu(NavigationMenu):
+    """Edit menu for IBranch."""
 
-class BranchNavigationMenu(NavigationMenu):
-    """Internal menu tabs."""
-
-    usedfor = IBranchNavigationMenu
+    usedfor = IBranch
     facet = 'branches'
-    links = ['details', 'merges', 'source']
+    title = 'Edit branch'
+    links = ['delete', 'edit', 'edit_import', 'edit_whiteboard', 'reviewer']
 
-    def __init__(self, context):
-        NavigationMenu.__init__(self, context)
-        if IBranch.providedBy(context):
-            self.branch = context
-        elif IBranchMergeProposal.providedBy(context):
-            self.branch = context.source_branch
-            self.disabled = True
-        elif IBranchSubscription.providedBy(context):
-            self.branch = context.branch
-        elif ICodeReviewComment.providedBy(context):
-            self.branch = context.branch_merge_proposal.source_branch
-            self.disabled = True
+    def branch_is_import(self):
+        return self.context.branch_type == BranchType.IMPORTED
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Edit branch details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete branch'
+        return Link('+delete', text, icon='remove')
+
+    def edit_whiteboard(self):
+        text = 'Edit whiteboard'
+        return Link(
+            '+whiteboard', text, icon='edit', enabled=self.branch_is_import())
+
+    def edit_import(self):
+        if self.context.branch_type == BranchType.IMPORTED:
+            enabled = True
         else:
-            raise AssertionError(
-                'Bad context type for branch navigation menu.')
+            enabled = False
+        text = 'Edit import source or review import'
+        return Link(
+            '+edit-import', text, icon='edit', enabled=self.branch_is_import())
 
-    def details(self):
-        url = canonical_url(self.branch)
-        return Link(url, 'Details')
-
-    def merges(self):
-        url = canonical_url(self.branch, view_name="+merges")
-        return Link(url, 'Merge Proposals')
-
-    def source(self):
-        """Return a link to the branch's file listing on codebrowse."""
-        text = 'Source Code'
-        enabled = self.branch.code_is_browseable
-        url = self.branch.codebrowse_url('files')
-        return Link(url, text, icon='info', enabled=enabled)
+    @enabled_with_permission('launchpad.Edit')
+    def reviewer(self):
+        text = 'Set branch reviewer'
+        return Link('+reviewer', text, icon='edit')
 
 
 class BranchContextMenu(ContextMenu):
@@ -208,30 +209,11 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
+    links = ['browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates',
-             'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
+             'link_bug', 'link_blueprint', 'source'
              ]
-
-    def edit_whiteboard(self):
-        text = 'Edit whiteboard'
-        return Link('+whiteboard', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change branch details'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def reviewer(self):
-        text = 'Set branch reviewer'
-        return Link('+reviewer', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def delete_branch(self):
-        text = 'Delete branch'
-        return Link('+delete', text)
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
@@ -293,9 +275,12 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.product is not None
         return Link('+linkblueprint', text, icon='add', enabled=enabled)
 
-    def edit_import(self):
-        text = 'Edit import source or review import'
-        return Link('+edit-import', text, icon='edit', enabled=True)
+    def source(self):
+        """Return a link to the branch's file listing on codebrowse."""
+        text = 'Source Code'
+        enabled = self.context.code_is_browseable
+        url = self.context.codebrowse_url('files')
+        return Link(url, text, icon='info', enabled=enabled)
 
 
 class DecoratedBug:
