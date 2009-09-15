@@ -7,7 +7,8 @@ Sample person has never signed a code of conduct.
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12/+codesofconduct')
     >>> print extract_text(find_main_content(browser.contents))
-    Code of conduct signatures
+    Codes of Conduct for Sample Person
+    Sample Person +codesofconduct
     Launchpad records codes of conduct you sign as commitments to the
     principles of collaboration, tolerance and open communication that
     drive the open source community.
@@ -82,7 +83,8 @@ And now Sample Person's Codes of Conduct page shows that he's signed it.
 
     >>> browser.open('http://launchpad.dev/~name12/+codesofconduct')
     >>> print extract_text(find_main_content(browser.contents))
-    Code of conduct signatures
+    Codes of Conduct for Sample Person
+    Sample Person +codesofconduct
     Launchpad records codes of conduct you sign as commitments to the
     principles of collaboration, tolerance and open communication that
     drive the open source community.

@@ -314,8 +314,6 @@ codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
 
-codeofconduct_index = ContextTitle('%s')
-
 codeofconduct_list = 'Ubuntu Codes of Conduct'
 
 def contact_user(context, view):
