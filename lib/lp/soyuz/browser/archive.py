@@ -606,7 +606,6 @@ class IPPAPackageFilter(Interface):
     status_filter = Choice(vocabulary=SimpleVocabulary((
         SimpleTerm(active_publishing_status, 'published', 'Published'),
         SimpleTerm(inactive_publishing_status, 'superseded', 'Superseded'),
-        SimpleTerm(None, 'any', 'Any status')
         )), required=False)
 
 
@@ -643,47 +642,51 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         requested_status_filter = self.request.query_string_params.get(
             'field.status_filter')
 
-        # If the request included a status filter, try to use it:
-        selected_status_filter = None
-        if requested_status_filter is not None:
-            selected_status_filter = (
-                self.widgets['status_filter'].vocabulary.getTermByToken(
-                    requested_status_filter[0]))
+        # If an empty status filter was specified, then it's explicitly
+        # been set to empty - so we use None.
+        if requested_status_filter == ['']:
+            return None
 
-        # If the request didn't include a status, or it was invalid, use
-        # the default:
-        if selected_status_filter is None:
-            selected_status_filter = self.default_status_filter
+        # If the requested status filter is none, then we use the default.
+        if requested_status_filter is None:
+            return self.default_status_filter
 
-        return selected_status_filter
+        # If the request included a status filter, try to use it - if it's
+        # invalid we use the default instead.
+        vocab = self.widgets['status_filter'].vocabulary
+        if vocab.by_token.has_key(requested_status_filter[0]):
+            return vocab.getTermByToken(requested_status_filter[0]).value
+        else:
+            return self.default_status_filter
 
     @property
     def plain_status_filter_widget(self):
         """Render a <select> control with no <div>s around it."""
         return self.widgets['status_filter'].renderValue(
-            self.selected_status_filter.value)
+            self.selected_status_filter)
 
     @property
     def selected_series_filter(self):
         """Return the currently selected filter or None."""
         requested_series_filter = self.request.query_string_params.get(
             'field.series_filter')
+
+        # If an empty series filter was specified, then it's explicitly
+        # been set to empty - so we use None.
         if requested_series_filter == ['']:
-            requested_series_filter = None
+            return None
 
-        # If the request included a series filter, try to use it:
-        selected_series_filter = None
-        if requested_series_filter is not None:
-            series_vocabulary = self.widgets['series_filter'].vocabulary
-            selected_series_filter = series_vocabulary.getTermByToken(
-                requested_series_filter[0])
-
-        # If the request didn't include a series, or it was invalid, use
-        # the default:
-        if selected_series_filter is None:
+        # If the requested series filter is none, then we use the default.
+        if requested_series_filter is None:
             return self.default_series_filter
 
-        return selected_series_filter.value
+        # If the request included a series filter, try to use it - if it's
+        # invalid we use the default.
+        vocab = self.widgets['series_filter'].vocabulary
+        if vocab.by_token.has_key(requested_series_filter[0]):
+            return vocab.getTermByToken(requested_series_filter[0]).value
+        else:
+            return self.default_series_filter
 
     @property
     def plain_series_filter_widget(self):
@@ -696,7 +699,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         """Return the source results for display after filtering."""
         return self.context.getPublishedSources(
             name=self.specified_name_filter,
-            status=self.selected_status_filter.value,
+            status=self.selected_status_filter,
             distroseries=self.selected_series_filter)
 
     @property
@@ -706,7 +709,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         Subclasses of ArchiveViewBase can override this when required.
         """
         return self.widgets['status_filter'].vocabulary.getTermByToken(
-            'published')
+            'published').value
 
     @property
     def default_series_filter(self):
@@ -714,7 +717,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
 
         Subclasses of ArchiveViewBase can override this when required.
         """
-        return self.widgets['series_filter'].vocabulary.getTermByToken('any')
+        return None
 
     @cachedproperty
     def batchnav(self):
@@ -783,7 +786,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         for term in vocabulary:
             if (term.value is not None and
                 term.value.version == version_number):
-                return term
+                return term.value
 
         # Otherwise we default to 'any'
         return None
@@ -1004,7 +1007,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     @property
     def default_status_filter(self):
         """Present records in any status by default."""
-        return self.widgets['status_filter'].vocabulary.getTermByToken('any')
+        return None
 
     @cachedproperty
     def filtered_sources(self):
@@ -1018,7 +1021,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         """
         return self.context.getSourcesForDeletion(
             name=self.specified_name_filter,
-            status=self.selected_status_filter.value,
+            status=self.selected_status_filter,
             distroseries=self.selected_series_filter.value)
 
     @cachedproperty
