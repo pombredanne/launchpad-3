@@ -249,7 +249,9 @@ def main():
     parser.add_option(
         '--extra-update-image-command', dest='extra_update_image_commands',
         action='append', metavar="CMD",
-        help=('XXX'))
+        help=('Run this command (with an ssh agent) on the image before '
+              'running the default update steps.  Can be passed more than '
+              'once, the commands will be run in the order specified.'))
     options, args = parser.parse_args()
     if options.debug:
         import pdb; pdb.set_trace()
