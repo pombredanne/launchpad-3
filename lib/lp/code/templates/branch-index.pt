@@ -63,12 +63,15 @@
 
   <div class="top-portlet">
     <tal:branch-errors tal:replace="structure context/@@+messages" />
-    <div class="description"
-         tal:condition="context/description"
-         tal:content="structure context/description/fmt:text-to-html">
-      The description of the branch usually goes here, but will be used so
-      rarely that it only shows if there is a description set.  To set a
-      description, one must do so through the "Edit details" navigation link.
+    <div id="description"
+        tal:condition="context/description">
+      <h2>Description</h2>
+      <div tal:content="structure context/description/fmt:text-to-html">
+        The description of the branch usually goes here, but will be used so
+        rarely that it only shows if there is a description set.  To set a
+        description, one must do so through the "Edit details" navigation
+        link.
+      </div>
     </div>
     <div id="related-bugs-and-blueprints">
       <h2>Related bugs and blueprints</h2>
