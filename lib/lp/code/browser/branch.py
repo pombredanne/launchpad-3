@@ -277,8 +277,9 @@ class BranchContextMenu(ContextMenu):
 
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
-        text = 'Source Code'
-        enabled = self.context.code_is_browseable
+        text = 'Browse this branch'
+        enabled = True
+        #enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
 

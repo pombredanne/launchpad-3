@@ -1,19 +1,27 @@
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  tal:define="context_menu context/menu:context">
 
-  <div id="browse-url"
-    tal:condition="context/code_is_browseable">
-    <label>Browse this branch:</label>
-    <tt>Link to Loggerhead</tt>
+  <div
+    id="browse_url"
+    class="portletBody portletContent"
+    style="margin-bottom: 1.5em"
+    tal:define="link context_menu/source"
+    tal:condition="link/enabled"
+    >
+    <a id="codebrowse-link"
+       class="sprite info"
+       tal:attributes="href link/url"
+       tal:content="link/text" >Browse this branch</a>
   </div>
 
-  <div id="download-url"
+  <dl id="download-url"
       tal:condition="view/bzr_download_url">
-    <label>Get this branch:</label>
-    <tt>bzr branch <tal:url replace="view/bzr_download_url" /></tt>
-  </div>
+    <dt>Get this branch:</dt>
+    <dd>bzr branch <tal:url replace="view/bzr_download_url" /></dd>
+  </dl>
 
   <tal:hosted-branch condition="context/branch_type/enumvalue:HOSTED">
     <tal:not-logged-in condition="not:view/user">
@@ -35,10 +43,10 @@
 
     <tal:logged-in condition="view/user">
       <tal:can-upload tal:condition="view/user_can_upload">
-        <div id="upload-url">
-          <label>Update this branch:</label>
-          <tt>bzr push <tal:url replace="view/bzr_download_url" /></tt>
-        </div>
+        <dl id="upload-url">
+          <dt>Update this branch:</dt>
+          <dd>bzr push <tal:url replace="view/bzr_download_url" /></dd>
+        </dl>
         <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
           To authenticate with the Launchpad branch upload service, you need
           to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">

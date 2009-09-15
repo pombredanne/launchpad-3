@@ -47,8 +47,7 @@
 
 </metal:side>
 
-<div metal:fill-slot="main"
-     tal:define="context_menu context/menu:context">
+<div metal:fill-slot="main">
 
     <h1>
       <tal:branch replace="context/bzr_identity" />
