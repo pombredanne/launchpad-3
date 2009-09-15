@@ -427,7 +427,6 @@
         <div tal:replace="structure context/bug/@@+portlet-specs" />
         <div tal:replace="structure context/bug/@@+portlet-attachments" />
         <div tal:replace="structure context/bug/@@+portlet-watch" />
-        <div tal:replace="structure context/@@+portlet-search" />
       </div>
       <div>
         <div id="duplicate-form-container"></div>
