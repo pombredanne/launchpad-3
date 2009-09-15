@@ -49,14 +49,14 @@
 
 <div metal:fill-slot="main">
 
-    <h1>
-      <tal:branch replace="context/bzr_identity" />
-    </h1>
+  <h1>
+    <tal:branch replace="context/bzr_identity" />
+  </h1>
 
   <div class="top-portlet">
     <tal:branch-errors tal:replace="structure context/@@+messages" />
     <div id="description"
-        tal:condition="context/description">
+         tal:condition="context/description">
       <h2>Description</h2>
       <div tal:content="structure context/description/fmt:text-to-html">
         The description of the branch usually goes here, but will be used so
@@ -65,7 +65,7 @@
         link.
       </div>
     </div>
-    <div id="related-bugs-and-blueprints">
+    <div id="related-bugs-and-blueprints" class="portlet">
       <h2>Related bugs and blueprints</h2>
       <tal:related-bugs-specs
           replace="structure context/@@++branch-related-bugs-specs" />
@@ -82,22 +82,27 @@
       </div>
     </div>
 
-    <div id="branch-management" class="yui-u">
-      <h2>Branch management</h2>
-      <tal:branch-management replace="structure context/@@++branch-management" />
+    <div class="yui-u">
+      <div id="branch-management" class="portlet">
+        <h2>Branch management</h2>
+        <tal:branch-management
+            replace="structure context/@@++branch-management" />
+      </div>
     </div>
 
   </div>
 
 
   <div id="branch-merges" class="yui-g">
-    <h2>Branch Pending Merges</h2>
-    <tal:branch-pending-merges
-        replace="structure context/@@++branch-pending-merges" />
+    <div class="portlet">
+      <h2>Branch Pending Merges</h2>
+      <tal:branch-pending-merges
+          replace="structure context/@@++branch-pending-merges" />
+    </div>
   </div>
 
   <div id="whiteboard" class="yui-g" tal:condition="view/show_whiteboard">
-    <div>
+    <div class="portlet">
       <h2>Whiteboard</h2>
       <div id="branch-whiteboard-value"
         tal:condition="context/whiteboard"
@@ -109,24 +114,30 @@
   </div>
 
   <div class="yui-g" tal:condition="view/pending_writes">
-    <div id="branch-pending-writes">
-      <h3>Updating branch...</h3>
-      <p>
-        Launchpad is processing new changes to this branch and will be
-        available in a few minutes. Reload to see the changes.
-      </p>
+    <div class="portlet">
+      <div id="branch-pending-writes">
+        <h3>Updating branch...</h3>
+        <p>
+          Launchpad is processing new changes to this branch and will be
+          available in a few minutes. Reload to see the changes.
+        </p>
+      </div>
     </div>
   </div>
 
   <div class="yui-g">
     <div class="yui-u first">
-      <h2>Recent revisions</h2>
-      <tal:branch-revisions replace="structure context/@@++branch-revisions" />
+      <div class="portlet">
+        <h2>Recent revisions</h2>
+        <tal:branch-revisions replace="structure context/@@++branch-revisions" />
+      </div>
     </div>
 
     <div class="yui-u">
-      <h2>Branch metadata</h2>
-      <tal:branch-metadata replace="structure context/@@++branch-metadata" />
+      <div class="portlet">
+        <h2>Branch metadata</h2>
+        <tal:branch-metadata replace="structure context/@@++branch-metadata" />
+      </div>
     </div>
   </div>
 
