@@ -201,14 +201,16 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
 
-    def run(self):
+    def run(self, _create_preview=True):
         """See `IMergeProposalCreatedJob`."""
+        # _create_preview can be set False for testing purposes.
         if self.branch_merge_proposal.review_diff is None:
             self.branch_merge_proposal.review_diff = self._makeReviewDiff()
             transaction.commit()
-        preview_diff = PreviewDiff.fromBranchMergeProposal(
-            self.branch_merge_proposal)
-        self.branch_merge_proposal.preview_diff = preview_diff
+        if _create_preview:
+            preview_diff = PreviewDiff.fromBranchMergeProposal(
+                self.branch_merge_proposal)
+            self.branch_merge_proposal.preview_diff = preview_diff
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
