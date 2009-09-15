@@ -794,7 +794,7 @@ def is_browser(request):
     We could massage one of the user-agent databases that are
     available into a usable, but we would gain little.
     """
-    try:
-        return _browser_re.search(request.headers['User-Agent']) is not None
-    except KeyError:
-        return False
+    user_agent = request.getHeader('User-Agent')
+    return (
+        user_agent is not None
+        and _browser_re.search(user_agent) is not None)
