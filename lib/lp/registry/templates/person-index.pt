@@ -110,13 +110,7 @@
   <tal:is-valid-person tal:condition="context/is_valid_person">
 
     <div class="yui-g">
-      <div class="first yui-u">
-        <div tal:content="structure context/@@+portlet-contact-details"/>
-      </div>
-      <div class="yui-u">
-        <div tal:content="structure context/@@+portlet-involvement"/>
-        <div tal:content="structure context/@@+portlet-ppas"/>
-      </div>
+      <div tal:content="structure context/@@+portlet-contact-details"/>
     </div>
 
     <div tal:content="structure context/@@+portlet-currentfocus"/>
@@ -124,6 +118,7 @@
     <div class="yui-g">
       <!-- First portlet column. -->
       <div class="first yui-u">
+        <div tal:content="structure context/@@+portlet-ppas"/>
         <div tal:content="structure context/@@+portlet-memberships"/>
       </div>
       <div class="yui-u">

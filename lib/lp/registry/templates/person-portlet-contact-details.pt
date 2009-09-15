@@ -9,7 +9,7 @@
 
   <h2>User information</h2>
 
-  <div class="two-column-list">
+  <div class="first yui-u">
     <dl>
       <dt>Email:</dt>
       <dd
@@ -45,13 +45,70 @@
       </dd>
     </dl>
 
-    <dl tal:condition="context/time_zone">
-      <dt>Time zone:</dt>
-      <dd tal:replace="context/time_zone">UTC</dd>
+    <dl tal:condition="context/jabberids">
+      <dt>Jabber:</dt>
+      <dd>
+        <tal:block repeat="jabberid context/jabberids">
+          <span tal:replace="jabberid/jabberid/fmt:obfuscate-email"
+            /><span tal:condition="not: repeat/jabberid/end">,</span>
+        </tal:block>
+      </dd>
     </dl>
+
+    <dl tal:condition="view/viewing_own_page" id="openid-info">
+      <dt>OpenID login:</dt>
+      <dd>
+        <img src="/@@/private" alt="" />
+        <tal:openid-login content="view/openid_identity_url" />
+        <a target="help" href="/+help/openid.html"
+           >(What&rsquo;s&nbsp;this?)</a>
+      </dd>
+    </dl>
+
+    <dl>
+      <dt>Member since:</dt>
+      <dd id="member-since"
+          tal:content="context/datecreated/fmt:date" />
+    </dl>
+
+    <div id="teams_with_icons"
+         tal:condition="context/@@+restricted-membership/teams_with_icons">
+      <a tal:repeat="team context/@@+restricted-membership/teams_with_icons"
+         tal:attributes="href team/fmt:url"
+        ><img tal:attributes="src team/icon/getURL;
+                              title string:Icon of ${team/name}"
+      /></a>
+    </div>
+
+    <dl tal:condition="context/is_ubuntu_coc_signer">
+      <dt>Signed Ubuntu Code of Conduct:</dt>
+      <dd>
+        <a
+          id="ubuntu_coc_signer"
+          tal:condition="context/required:launchpad.Edit"
+          tal:attributes="href overview_menu/codesofconduct/url"
+          >Yes</a>
+         <span
+           id="ubuntu_coc_signer"
+           tal:condition="not: context/required:launchpad.Edit">Yes</span>
+      </dd>
+    </dl>
+
+    <tal:not-ubuntu_coc_signer condition="not: context/is_ubuntu_coc_signer">
+      <tal:is_request_person condition="view/viewing_own_page">
+        <dl>
+          <dt>Signed Ubuntu Code of Conduct:</dt>
+          <dd>
+            <span id="ubuntu_coc_signer">No</span>
+            <a href="/codeofconduct"
+              ><img src="/@@/edit" alt="Sign the Ubuntu Code of Conduct" /></a>
+          </dd>
+        </dl>
+      </tal:is_request_person>
+    </tal:not-ubuntu_coc_signer>
   </div>
 
-  <div class="two-column-list">
+  <div class="yui-u two-column-list">
     <dl tal:condition="not: context/wiki_names/is_empty">
       <dt>Wiki:</dt>
       <dd>
@@ -63,22 +120,14 @@
         </span>
       </dd>
     </dl>
-    <dl tal:repeat="ircnick context/ircnicknames">
+    <dl tal:condition="context/ircnicknames">
       <dt>IRC:</dt>
-      <dd><code style="font-size: 120%"
-                tal:content="ircnick/nickname"/>
-          on network <code style="font-size: 120%"
-                           tal:content="ircnick/network" />
-      </dd>
-    </dl>
-
-    <dl tal:condition="context/jabberids">
-      <dt>Jabber:</dt>
       <dd>
-        <tal:block repeat="jabberid context/jabberids">
-          <span tal:replace="jabberid/jabberid/fmt:obfuscate-email"
-            /><span tal:condition="not: repeat/jabberid/end">,</span>
-        </tal:block>
+        <div tal:repeat="ircnick context/ircnicknames">
+          <strong tal:content="ircnick/nickname"/>
+          <span class="discreet">on network</span>
+          <strong tal:content="ircnick/network" />
+        </div>
       </dd>
     </dl>
 
@@ -128,6 +177,11 @@
       </dd>
     </dl>
 
+    <dl tal:condition="context/time_zone">
+      <dt>Time zone:</dt>
+      <dd tal:content="context/time_zone">UTC</dd>
+    </dl>
+
     <dl id="karma">
       <dt>Karma:</dt>
       <dd><a id="karma-total"
@@ -137,15 +191,6 @@
     </dl>
   </div>
 
-  <dl tal:condition="view/viewing_own_page" id="openid-info">
-    <dt>OpenID login:</dt>
-    <dd>
-      <img src="/@@/private" alt="" />
-      <tal:openid-login content="view/openid_identity_url" />
-      <a target="help" href="/+help/openid.html"
-         >(What&rsquo;s&nbsp;this?)</a>
-    </dd>
-  </dl>
 </div>
 
 </tal:root>
