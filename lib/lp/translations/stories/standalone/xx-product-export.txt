@@ -17,7 +17,7 @@ Another way of getting that same export would be to browse to the series
 first and requesting a download there.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('Download').click()
+    >>> user_browser.getLink('download').click()
     >>> user_browser.url
     'http://translations.launchpad.dev/evolution/trunk/+export'
 
