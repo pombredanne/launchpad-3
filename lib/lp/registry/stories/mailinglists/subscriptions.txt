@@ -412,8 +412,9 @@ The mailing list for Rosetta Admins has no subscribers.
 because his membership on Rosetta Admins hasn't been approved)
 
     >>> browser.getLink('View subscribers').click()
-    >>> print browser.title
-    Mailing list subscribers for the Rosetta Administrators team
+    >>> browser.title
+    '+mailing-list-subscribers : \xe2\x80\x9cRosetta Administrators\xe2\x80\x9d team'
+
     >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
     Nobody has subscribed to this team's mailing list yet.
 
