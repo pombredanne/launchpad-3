@@ -1005,14 +1005,7 @@ standardshipitrequest_edit = 'Edit standard option'
 
 team_index = ContextBrowsername('%s in Launchpad')
 
-team_invitations = ContextBrowsername("Invitations sent to %s")
-
 team_mailinglist = 'Configure mailing list'
-
-def teammembership_index(context, view):
-    """Return the page title to the persons status in a team."""
-    return smartquote("%s's membership status in %s") % (
-        context.person.displayname, context.team.displayname)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 
