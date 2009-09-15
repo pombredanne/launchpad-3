@@ -9,9 +9,6 @@
 <body>
 
   <div metal:fill-slot="main">
-
-    <h1 tal:content="view/page_title">Pillar Timeline</h1>
-
     <tal:vars define="auto_resize string:true; include_inactive string:true">
       <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
     </tal:vars>

@@ -1334,9 +1334,8 @@ class ProductAddSeriesView(LaunchpadFormView):
 class ProductSeriesView(ProductView):
     """A view for showing a product's series."""
 
-    def page_title(self):
-        """The HTML page title."""
-        return '%s timeline' % self.context.displayname
+    label = 'timeline'
+    page_title = label
 
 
 class ProductRdfView:

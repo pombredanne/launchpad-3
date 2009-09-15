@@ -811,10 +811,7 @@ class DistributionEditView(RegistryEditFormView):
 class DistributionSeriesView(LaunchpadView):
     """A view to list the distribution series"""
 
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return "%s version history" % self.context.title
+    label = 'Timeline'
 
     @cachedproperty
     def styled_series(self):
