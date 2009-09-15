@@ -187,6 +187,28 @@ automatically.
     [u'sub-one', u'sub-two']
 
 
+==== HWDB submission keys ====
+
+The HWDB-Submission key is turned into a list of of strings, available
+through the hwdb_submission_keys attribute.
+
+    >>> data = FileBugData()
+    >>> parser._setDataFromHeaders(
+    ...     data, {'HWDB-Submission': 'submission-one'})
+    >>> list(data.hwdb_submission_keys)
+    [u'submission-one']
+
+Two or more submission keys may be specified, separated by a comma,
+optionally followed by space characters.
+
+    >>> data = FileBugData()
+    >>> parser._setDataFromHeaders(
+    ...     data,
+    ...     {'HWDB-Submission': ' submission-one, two\t,three ,  \nfour  '})
+    >>> list(data.hwdb_submission_keys)
+    [u'submission-one', u'two', u'three', u'four']
+
+
 === Message Parts ===
 
 Different parts of the message gets treated differently. In short, we

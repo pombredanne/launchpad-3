@@ -26,6 +26,7 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
     LaunchpadEditFormView, action, canonical_url, ContextMenu, NavigationMenu,
     enabled_with_permission, Link, custom_widget)
+from lp.translations.utilities.pluralforms import make_friendly_plural_forms
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -155,6 +156,26 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
     def getTopContributors(self):
         return self.context.translators[:20]
+
+    @property
+    def friendly_plural_forms(self):
+        """Formats the plural forms' example list.
+
+        It takes the list of examples for each plural form and transforms in a
+        comma separated list to be displayed.
+        """
+        pluralforms_list = make_friendly_plural_forms(
+                self.context.pluralexpression, self.context.pluralforms)
+
+        for item in pluralforms_list:
+            examples = ", ".join(map(str, item['examples']))
+            if len(item['examples']) != 1:
+                examples += ", ..."
+            else:
+                examples += "."
+            item['examples'] = examples
+
+        return pluralforms_list
 
 
 class LanguageAdminView(LaunchpadEditFormView):

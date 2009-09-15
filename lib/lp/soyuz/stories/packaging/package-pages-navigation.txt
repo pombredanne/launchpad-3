@@ -31,7 +31,7 @@ also have a Translations page.)
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > ?alsa-utils? package > Bugs on alsa-utils
+    Hierarchy: Ubuntu > ?alsa-utils? package > Bugs in alsa-utils
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -60,7 +60,7 @@ source package.
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: 1.0.9a-4ubuntu1 version
+    Main heading: alsa-utils 1.0.9a-4ubuntu1 (source) in Ubuntu
 
 
 == Distribution source package release build ==
@@ -101,7 +101,7 @@ and Answers.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    Main heading: alsa-utils in Ubuntu Hoary
+    Main heading: alsa-utils package
 
 (XXX 20080612 mpt: That should eventually be "?alsa-utils? source package in
 Ubuntu Hoary".)
