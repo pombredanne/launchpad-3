@@ -88,16 +88,17 @@ First for a 3-0 page:
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
     &bull;...Launchpad...) devmode
-    >>> print find_tag_by_id(browser.contents, 'globalheader')
-    None
+    >>> len(find_tags_by_class(browser.contents, 'sitemessage'))
+    0
+
 
 And for a non-3-0 page:
 
     >>> browser.open('http://launchpad.dev/')
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
     |...Launchpad...) devmode
-    >>> print find_tag_by_id(browser.contents, 'globalheader')
-    None
+    >>> len(find_tags_by_class(browser.contents, 'sitemessage'))
+    0
 
 
 == Launchpad.net ==

@@ -234,9 +234,16 @@
           >Contact us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
         </div>
 
-        <div class="sitemessage" tal:content="structure site_message"
-             tal:condition="site_message">
-          This site is running pre-release code.
+        <div class="sitemessage" tal:condition="site_message">
+          <tal:site_message tal:content="structure site_message">
+            This site is running pre-release code.
+          </tal:site_message>
+          <tal:edge_only condition="is_edge">
+            <a href="#" class="js-action" onclick="setBetaRedirect(false)"
+               tal:condition="not:view/isRedirectInhibited">
+              Disable edge redirect.
+            </a>
+          </tal:edge_only>
         </div>
 
         <div id="lp-arcana">
