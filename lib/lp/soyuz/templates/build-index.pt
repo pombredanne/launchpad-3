@@ -218,10 +218,10 @@
     </tal:comment>
     <h2>Binary packages</h2>
 
-    <tal:upload_done condition="view/has_done_upload">
+    <tal:upload_done condition="view/has_published_binaries">
       <p class="discreet">Binary packages produced by this build:</p>
     </tal:upload_done>
-    <tal:upload_not_done condition="not: view/has_done_upload">
+    <tal:upload_not_done condition="not: view/has_published_binaries">
       <p class="discreet"
          tal:condition="view/package_upload/status/enumvalue:ACCEPTED"
         >Binary packages awaiting publication:</p>
@@ -233,7 +233,7 @@
     </tal:upload_not_done>
 
     <ul tal:define="linkify_binaries
-                    python: view.has_done_upload and not view.is_ppa;">
+                    python: view.has_published_binaries and not view.is_ppa;">
       <li tal:condition="linkify_binaries"
           tal:repeat="binpkg context/distroarchseriesbinarypackages">
         <a class="sprite package-binary"

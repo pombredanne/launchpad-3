@@ -171,12 +171,12 @@ not yet collected.
     >>> print cprov_failed_build_view.package_upload
     None
 
-Automatically, 'BuildView.has_done_upload' reflects this condition.
+Automatically, 'BuildView.has_published_binaries' reflects this condition.
 
-    >>> print cprov_failed_build_view.has_done_upload
+    >>> print cprov_failed_build_view.has_published_binaries
     False
 
-First lets create a package upload for this build:
+First let's create a package upload for this build:
 XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
     >>> from lp.registry.interfaces.pocket import (
@@ -193,7 +193,7 @@ XXX: noodles 2009-01-16 bug 317863: move this into the STP.
     NEW
 
 Now, our build has a package upload and its status is
-NEW. 'has_done_upload' remains False.
+NEW. 'has_published_binaries' remains False.
 
     >>> cprov_failed_build_view = create_initialized_view(
     ...     cprov_failed_build, '+index')
@@ -201,11 +201,12 @@ NEW. 'has_done_upload' remains False.
     >>> print cprov_failed_build_view.package_upload.status.name
     NEW
 
-    >>> print cprov_failed_build_view.has_done_upload
+    >>> print cprov_failed_build_view.has_published_binaries
     False
 
-The view 'package_upload' still available after it has been accepted
-and processed and finally 'has_done_upload' becomes True.
+The view 'package_upload' is still available after it has been
+accepted and processed. Afterwards 'has_published_binaries' becomes
+True.
 
     >>> login('foo.bar@canonical.com')
     >>> package_upload.setDone()
@@ -217,7 +218,7 @@ and processed and finally 'has_done_upload' becomes True.
     >>> print cprov_failed_build_view.package_upload.status.name
     DONE
 
-    >>> print cprov_failed_build_view.has_done_upload
+    >>> print cprov_failed_build_view.has_published_binaries
     True
 
 

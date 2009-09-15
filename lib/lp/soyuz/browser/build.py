@@ -156,7 +156,7 @@ class BuildView(LaunchpadView):
         return self.context.package_upload
 
     @cachedproperty
-    def has_done_upload(self):
+    def has_published_binaries(self):
         """Whether or not binaries were already published for this build."""
         # Binaries imported by gina (missing `PackageUpload` record)
         # are always published.
