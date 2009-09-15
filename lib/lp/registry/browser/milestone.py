@@ -459,7 +459,4 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
 class ObjectMilestonesView(LaunchpadView):
     """A view for listing the milestones for any `IHasMilestones` object"""
 
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return smartquote("%s's milestones" % self.context.title)
+    label = 'Milestones'

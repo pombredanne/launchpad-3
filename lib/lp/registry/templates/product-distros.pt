@@ -10,8 +10,6 @@
 <body>
 
 <div metal:fill-slot="main">
-  <h1 tal:content="view/page_title">Product packages in Launchpad</h1>
-
   <p class="documentDescription">
     This page shows the way
     <span tal:replace="context/displayname">Foomatic</span>

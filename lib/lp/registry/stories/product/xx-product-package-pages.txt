@@ -12,10 +12,9 @@ Launchpad can show you a product's packages by distribution, with links to each.
     4.10 (Warty)  evolution  Evolution trunk series ...
 
     >>> anon_browser.getLink(url='/ubuntu/warty/+source/evolution').click()
-    >>> print anon_browser.contents
-    <...
-    ...evolution in Ubuntu Warty...
-    ...
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'maincontent').h1)
+    evolution package
 
 It can also show the packages by product series. And if you have permission (for
 example, you're the owner of the product), Launchpad lets you register packages

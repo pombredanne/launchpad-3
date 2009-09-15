@@ -897,14 +897,6 @@ sourcepackage_changelog = 'Source package changelog'
 
 sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
-sourcepackage_gethelp = ContextTitle('Help and support options for %s')
-
-sourcepackage_packaging = ContextTitle('%s upstream links')
-
-def sourcepackage_index(context, view):
-    """Return the page title for a source package in a distroseries."""
-    return '%s source packages' % context.distroseries.title
-
 sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackagenames_index = 'Source package name set'
