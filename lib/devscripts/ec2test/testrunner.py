@@ -465,8 +465,9 @@ class EC2TestRunner:
         p('mv /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
         p('mkdir /var/launchpad/tmp/eggs')
         user_connection.run_with_ssh_agent(
-            'bzr co lp:lp-source-dependencies '
-            '/var/launchpad/tmp/download-cache')
+            'bzr pull lp:lp-source-dependencies '
+            '-d /var/launchpad/download-cache')
+        p('mv /var/launchpad/download-cache /var/launchpad/tmp/download-cache')
         if (self.include_download_cache_changes and
             self.download_cache_additions):
             sftp = user_connection.ssh.open_sftp()
