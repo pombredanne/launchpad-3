@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
- <ul class="download" tal:condition="context/files">
+ <ul tal:condition="context/files">
     <li tal:repeat="file context/files">
       <a class="sprite"
          tal:content="file/libraryfile/filename"

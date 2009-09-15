@@ -256,7 +256,7 @@
     </tal:comment>
     <h2>Built files</h2>
     <p class="discreet">Files resulting from this build:</p>
-    <ul class="download">
+    <ul>
       <li tal:repeat="file view/files">
         <img src="/@@/download" />
         <a tal:content="file/filename"
