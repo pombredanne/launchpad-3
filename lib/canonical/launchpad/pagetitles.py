@@ -711,8 +711,6 @@ person_specworkload = ContextDisplayName('Blueprint workload for %s')
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
-person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
-
 pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
 def pofile_translate(context, view):
