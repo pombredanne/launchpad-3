@@ -601,17 +601,9 @@
             name="+potlist"
             template="../templates/object-pots.pt"/>
         <browser:page
-            name="+translate"
-            template="../templates/sourcepackage-translate.pt"/>
-        <browser:page
             name="+translations"
-            template="../templates/object-translations.pt"/>
+            template="../templates/sourcepackage-translations.pt"/>
     </browser:pages>
-    <browser:page
-        name="+translate"
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        class="lp.translations.browser.translations.TranslateRedirectView"
-        permission="zope.Public"/>
 
 <!-- ProductSeries translation pages -->
 
@@ -899,6 +891,13 @@
         class="lp.translations.browser.distribution.DistributionLanguagePackAdminView"
         permission="launchpad.TranslationsAdmin"
         template="../../app/templates/generic-edit.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <!-- Language pack admin portlet -->
+    <browser:page
+        name="+language-pack-admin-info"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        permission="launchpad.View"
+        template="../templates/distribution-language-pack-admin-info.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 <!-- DistroSeries -->

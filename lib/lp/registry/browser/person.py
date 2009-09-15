@@ -568,11 +568,17 @@ class TeamInvitationView(LaunchpadFormView):
     implements(IBrowserPublisher)
 
     schema = ITeamMembershipInvitationAcknowledgementForm
-    label = 'Team membership invitation'
     field_names = ['acknowledger_comment']
     custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
     template = ViewPageTemplateFile(
         '../templates/teammembership-invitation.pt')
+
+    @property
+    def label(self):
+        return "Make %s a member of %s" % (
+            self.context.person.displayname, self.context.team.displayname)
+
+    page_title = label
 
     def __init__(self, context, request):
         # Only admins of the invited team can see the page in which they
@@ -1275,7 +1281,11 @@ class InactiveBatchNavigator(BatchNavigator):
 
 
 class TeamMembershipView(LaunchpadView):
-    """The view behins ITeam/+members."""
+    """The view behind ITeam/+members."""
+
+    @cachedproperty
+    def label(self):
+        return smartquote('Members of "%s"' % self.context.displayname)
 
     @cachedproperty
     def active_memberships(self):
@@ -2465,7 +2475,7 @@ class PersonKarmaView(LaunchpadView):
 
     @property
     def label(self):
-        return 'Launchpad Karma for ' + cgi.escape(self.user.displayname)
+        return 'Launchpad Karma for ' + cgi.escape(self.context.displayname)
 
     @cachedproperty
     def has_karma(self):
@@ -4507,9 +4517,13 @@ class PersonEditEmailsView(LaunchpadFormView):
 
 class TeamMugshotView(LaunchpadView):
     """A view for the team mugshot (team photo) page"""
+
+    label = "Who's in this team?"
+
     def initialize(self):
         """Cache images to avoid dying from a million cuts."""
         getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
+
 
     @cachedproperty
     def allmembers(self):
