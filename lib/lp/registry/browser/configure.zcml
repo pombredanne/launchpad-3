@@ -862,9 +862,6 @@
                 name="+portlet-emails"
                 template="../templates/person-portlet-emails.pt"/>
             <browser:page
-                name="+portlet-involvement"
-                template="../templates/person-portlet-involvement.pt"/>
-            <browser:page
                 name="+portlet-contact-details"
                 template="../templates/person-portlet-contact-details.pt"/>
             <browser:page
