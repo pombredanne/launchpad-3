@@ -348,17 +348,8 @@
       </form>
     </div>
 
-    <div class="sitemessage" tal:condition="site_message">
-      <tal:site_message tal:content="structure site_message">
-        This site is running pre-release code.
-      </tal:site_message>
-      <tal:redirect_only condition="view/canRedirect">
-        <a href="#" class="js-action" onclick="setBetaRedirect(false)"
-           tal:condition="not:view/isRedirectInhibited">
-          Disable edge redirect.
-        </a>
-      </tal:redirect_only>
-    </div>
+    <metal:site-message
+      use-macro="context/@@+base-layout-macros/site-message"/>
 
     <div class="colophon">
       &copy; 2004-2009
@@ -379,4 +370,19 @@
     </div>
   </div>
 </metal:footer>
+
+<metal:site-message define-macro="site-message">
+  <div class="sitemessage" tal:condition="site_message">
+    <tal:site_message tal:content="structure site_message">
+      This site is running pre-release code.
+    </tal:site_message>
+    <tal:redirect_only condition="view/canRedirect">
+      <a href="#" class="js-action" onclick="setBetaRedirect(false)"
+         tal:condition="not:view/isRedirectInhibited">
+        Disable edge redirect.
+      </a>
+    </tal:redirect_only>
+  </div>
+</metal:site-message>
+
 </macros>
