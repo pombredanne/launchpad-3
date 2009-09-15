@@ -9,8 +9,6 @@
 
     <div metal:fill-slot="main">
       <div class="top-portlet">
-        <h1 tal:content="view/page_title">Ubuntu packaging</h1>
-
         <p>
           This page is a quick way for you to link the
           <span tal:replace="context/product/displayname">Firefox</span>

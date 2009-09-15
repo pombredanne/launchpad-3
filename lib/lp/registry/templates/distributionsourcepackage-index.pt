@@ -152,7 +152,7 @@
                tal:replace="structure row/series_package/menu:overview/set_upstream/fmt:link"/>
             <tal:has_packaging condition="row/packaging">
               <img tal:replace="structure row/packaging/productseries/image:icon"/>
-              <tal:title replace="row/packaging/productseries/title"/>
+              <a tal:replace="structure row/packaging/productseries/fmt:link"/>
               <a tal:attributes="
                 href row/series_package/menu:overview/edit_packaging/url">
                 <img src="/@@/edit"/>
