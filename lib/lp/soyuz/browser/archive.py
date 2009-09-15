@@ -636,7 +636,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         else:
             return None
 
-    def getSelectedFilter(self, filter_name):
+    def getSelectedFilterValue(self, filter_name):
         """Return the selected filter or the default, given a filter name.
 
         This is needed because zope's form library does not consider
@@ -667,21 +667,21 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
     def plain_status_filter_widget(self):
         """Render a <select> control with no <div>s around it."""
         return self.widgets['status_filter'].renderValue(
-            self.getSelectedFilter('status_filter'))
+            self.getSelectedFilterValue('status_filter'))
 
     @property
     def plain_series_filter_widget(self):
         """Render a <select> control with no <div>s around it."""
         return self.widgets['series_filter'].renderValue(
-            self.getSelectedFilter('series_filter'))
+            self.getSelectedFilterValue('series_filter'))
 
     @property
     def filtered_sources(self):
         """Return the source results for display after filtering."""
         return self.context.getPublishedSources(
             name=self.specified_name_filter,
-            status=self.getSelectedFilter('status_filter'),
-            distroseries=self.getSelectedFilter('series_filter'))
+            status=self.getSelectedFilterValue('status_filter'),
+            distroseries=self.getSelectedFilterValue('series_filter'))
 
     @property
     def default_status_filter(self):
@@ -999,8 +999,8 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         """
         return self.context.getSourcesForDeletion(
             name=self.specified_name_filter,
-            status=self.getSelectedFilter('status_filter'),
-            distroseries=self.getSelectedFilter('series_filter'))
+            status=self.getSelectedFilterValue('status_filter'),
+            distroseries=self.getSelectedFilterValue('series_filter'))
 
     @cachedproperty
     def has_sources(self):

@@ -417,6 +417,17 @@ distroseries from the browser's user-agent, when applicable.
     >>> print view_warty.default_series_filter.name
     warty
 
+The archive index view also inherits the getSelectedFilterValue() method
+which can be used to find the currently selected value for both filters.
+
+    >>> print view_warty.getSelectedFilterValue('series_filter').name
+    warty
+
+    >>> for status in view_warty.getSelectedFilterValue('status_filter'):
+    ...     print status.name
+    PENDING
+    PUBLISHED
+
 
 == ArchivePackageView ==
 
