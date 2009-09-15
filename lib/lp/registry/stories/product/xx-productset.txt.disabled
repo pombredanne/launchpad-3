@@ -33,8 +33,8 @@ A member of the Launchpad registry experts team may successfully access the
     >>> registry_browser.getLink("Review projects").click()
     >>> registry_browser.url
     'http://launchpad.dev/projects/+review-licenses'
-    >>> registry_browser.title
-    'Review projects'
+    >>> print registry_browser.title
+    +review-licenses : Projects
 
 
 Searching from +review_licenses

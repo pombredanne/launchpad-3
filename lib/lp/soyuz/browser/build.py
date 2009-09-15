@@ -106,7 +106,7 @@ class BuildContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def retry(self):
         """Only enabled for build records that are active."""
-        text = 'Retry build'
+        text = 'Retry this build'
         return Link(
             '+retry', text, icon='retry',
             enabled=self.context.can_be_retried)
