@@ -662,9 +662,7 @@ class POFileTranslateView(BaseTranslationView):
     @property
     def label(self):
         """Return the page to translate a template into a language."""
-        return 'Translating %s into %s' % (
-            self.context.potemplate.displayname,
-            self.context.language.englishname)
+        return 'Translating into %s' % self.context.language.englishname
 
     def initialize(self):
         self.pofile = self.context
