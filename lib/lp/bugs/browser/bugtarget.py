@@ -1125,14 +1125,7 @@ class BugTargetBugListingView:
     """Helper methods for rendering bug listings."""
 
     @property
-    def series_buglistings(self):
-        """Return a buglisting for each series.
-
-        The list is sorted newest series to oldest.
-
-        The count only considers bugs that the user would actually be
-        able to see in a listing.
-        """
+    def series_list(self):
         if IDistribution(self.context, None):
             serieses = self.context.serieses
         elif IProduct(self.context, None):
@@ -1142,11 +1135,20 @@ class BugTargetBugListingView:
         elif IProductSeries(self.context, None):
             serieses = self.context.product.serieses
         else:
-            raise AssertionError, ("series_bug_counts called with "
-                                   "illegal context")
+            raise AssertionError, ("series_list called with illegal context")
+        return serieses
 
+    @property
+    def series_buglistings(self):
+        """Return a buglisting for each series.
+
+        The list is sorted newest series to oldest.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
         series_buglistings = []
-        for series in serieses:
+        for series in self.series_list:
             series_bug_count = series.open_bugtasks.count()
             if series_bug_count > 0:
                 series_buglistings.append(
@@ -1156,6 +1158,21 @@ class BugTargetBugListingView:
                         count=series_bug_count))
 
         return series_buglistings
+
+    @property
+    def milestone_buglistings(self):
+        """Return a buglisting for each milestone."""
+        milestone_buglistings = []
+        for series in self.series_list:
+            for milestone in series.milestones:
+                milestone_bug_count = milestone.open_bugtasks.count()
+                if milestone_bug_count > 0:
+                    milestone_buglistings.append(
+                        dict(
+                            title=milestone.name,
+                            url=canonical_url(milestone),
+                            count=milestone_bug_count))
+        return milestone_buglistings
 
 
 class BugCountDataItem:

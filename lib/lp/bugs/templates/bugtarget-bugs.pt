@@ -19,6 +19,9 @@
     <tal:releasecriticalbugs
       tal:condition="view/shouldShowReleaseCriticalPortlet"
       tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+    <tal:milestonecriticalbugs
+      tal:condition="view/shouldShowReleaseCriticalPortlet"
+      tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
   </metal:portlets>
   <body>
     <div metal:fill-slot="main" class="tab-bugs"
