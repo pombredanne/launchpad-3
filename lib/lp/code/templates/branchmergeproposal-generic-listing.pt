@@ -10,8 +10,6 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:content="view/heading">Bazaar branches</h1>
-
   <div>
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
