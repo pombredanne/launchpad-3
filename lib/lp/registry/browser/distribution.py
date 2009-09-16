@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DerivativeDistributionOverviewMenu',
     'DistributionAddView',
     'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
@@ -22,6 +23,7 @@ __all__ = [
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
+    'DistributionSeriesView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
     'DistributionSetActionNavigationMenu',
@@ -63,9 +65,11 @@ from lp.answers.browser.questiontarget import (
 from lp.soyuz.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
 from lp.registry.interfaces.distribution import (
-    IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
+    IDerivativeDistribution, IDistribution, IDistributionMirrorMenuMarker,
+    IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -94,7 +98,7 @@ class UsesLaunchpadMixin:
     def uses_launchpad_for(self):
         """Return a string of LP apps (comma-separated) this distro uses."""
         uses = []
-        href_template = """<a href="%s"><strong>%s</strong></a>"""
+        href_template = """<a href="%s">%s</a>"""
         if self.context.official_answers:
             url = canonical_url(self.context, rootsite='answers')
             uses.append(href_template % (url, 'Answers'))
@@ -409,6 +413,16 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         return Link('+ppas', text, icon='info')
 
 
+class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
+
+    usedfor = IDerivativeDistribution
+
+    @enabled_with_permission('launchpad.Append')
+    def addseries(self):
+        text = 'Add series'
+        return Link('+addseries', text, icon='add')
+
+
 class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
@@ -719,9 +733,13 @@ class DistributionPPASearchView(LaunchpadView):
 
 
 class DistributionAllPackagesView(LaunchpadView):
+    """A view to show all the packages in a distribution."""
+
     def initialize(self):
         results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
+
+    label = 'All packages'
 
 
 class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
@@ -804,6 +822,32 @@ class DistributionEditView(RegistryEditFormView):
         official_malone = data.get('official_malone', False)
         if not official_malone:
             data['enable_bug_expiration'] = False
+
+
+class DistributionSeriesView(LaunchpadView):
+    """A view to list the distribution series"""
+
+    label = 'Timeline'
+
+    @cachedproperty
+    def styled_series(self):
+        """A list of dicts; keys: series, css_class, is_development_focus"""
+        all_series = []
+        for series in self.context.serieses:
+            all_series.append({
+                'series': series,
+                'css_class': self.getCssClass(series),
+                })
+        return all_series
+
+    def getCssClass(self, series):
+        """The highlighted, unhighlighted, or dimmed CSS class."""
+        if series.status == DistroSeriesStatus.DEVELOPMENT:
+            return 'highlighted'
+        elif series.status == DistroSeriesStatus.OBSOLETE:
+            return 'dimmed'
+        else:
+            return 'unhighlighted'
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):

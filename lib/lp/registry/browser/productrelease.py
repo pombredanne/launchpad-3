@@ -61,32 +61,28 @@ class ProductReleaseNavigation(Navigation):
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = ['edit', 'add_file', 'administer', 'download', 'view_milestone']
+    links = ('edit', 'add_file', 'download', 'delete')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change details'
+        text = 'Change release details'
         summary = "Edit this release"
         return Link('+edit', text, summary=summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete release'
+        summary = "Delete release"
+        return Link('+delete', text, summary=summary, icon='remove')
 
     @enabled_with_permission('launchpad.Edit')
     def add_file(self):
         text = 'Add download file'
         return Link('+adddownloadfile', text, icon='add')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+review', text, icon='edit')
-
     def download(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    def view_milestone(self):
-        text = 'View milestone'
-        url = canonical_url(self.context.milestone)
-        return Link(url, text)
 
 
 class ProductReleaseAddViewBase(LaunchpadFormView):
@@ -365,7 +361,7 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
 
     page_title = label
 
-    @action('Delete this Release', name='delete')
+    @action('Delete Release', name='delete')
     def delete_action(self, action, data):
         series = self.context.productseries
         version = self.context.version

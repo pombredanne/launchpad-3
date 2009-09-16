@@ -28,11 +28,11 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from zope.event import notify
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bytes, Choice, Datetime, Int, Object, Text, TextLine)
+    Bytes, Bool, Choice, Datetime, Int, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
-from canonical.launchpad.interfaces import IBug
+from canonical.launchpad.interfaces import IBug, IPrivacy
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
@@ -85,7 +85,7 @@ BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
     )
 
 
-class IBranchMergeProposal(Interface):
+class IBranchMergeProposal(IPrivacy):
     """Branch merge proposals show intent of landing one branch on another."""
 
     export_as_webservice_entry()
@@ -120,6 +120,15 @@ class IBranchMergeProposal(Interface):
             description=_("The branch that the source branch branched from. "
                           "If this is the same as the target branch, then "
                           "leave this field blank.")))
+
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is determined by the involved branches.
+    private = exported(
+        Bool(
+            title=_("Proposal is confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "If True, this proposal is visible only to subscribers.")))
 
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
