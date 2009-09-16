@@ -217,7 +217,7 @@ an empty string is rendered.
       enabled: True
       linked: False
     http://translations.../evolution/+changetranslators
-      name: translators
+      name: settings
       enabled: False
       linked: True
     http://translations.../evolution/trunk/+export

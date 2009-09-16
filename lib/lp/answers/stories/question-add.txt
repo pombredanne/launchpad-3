@@ -16,8 +16,8 @@ Asking a new question requires logging in:
     Unauthorized...
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/')
     >>> user_browser.getLink('Ask a question').click()
-    >>> user_browser.title
-    'Ask a question about Ubuntu'
+    >>> print user_browser.title
+    +addquestion : Questions for Ubuntu Linux : Ubuntu
 
 
 == Get Help Online ==
@@ -32,10 +32,12 @@ associated with the source package of the used application.
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+sources/mozilla-firefox/+gethelp')
     >>> user_browser.title
-    'Help and support options for ...mozilla-firefox...'
-    >>> user_browser.getLink('Submit your question').click()
+    '+gethelp : ...mozilla-firefox... package : 5.04 : Ubuntu'
+
+    >>> user_browser.getLink('Ask a question').click()
     >>> user_browser.title
-    'Ask a question about mozilla-firefox in Ubuntu Hoary'
+    '+addquestion : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package
+    : 5.04 : Ubuntu'
 
 
 == Searching for Similar FAQs and Questions ==
@@ -154,18 +156,16 @@ redirect the user to the question page.
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
     >>> user_browser.title
-    'mozilla-firefox in ubuntu question #...Visiting a web page...'
+    '+index : Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package
+    in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+
     >>> contents = find_main_content(user_browser.contents)
-    >>> heading = contents.find('div', 'pageheading')
-    >>> heading.findChild(name='div')
+    >>> contents.findChild('div', id='question-details')
     <div...>Open<... Question #..., asked...by...No Privileges Person...
     >>> contents.find('div', 'report')
     <div class="report"><p>I use Ubuntu on AMD64 ...</div>
 
 The user automatically got subscribed to this new question.
 
-    >>> find_tag_by_id(user_browser.contents, 'portlet-subscribers')
-    <div class="portlet" id="portlet-subscribers">
-    ...<a href=".../~no-priv" class="sprite person">No Privileges Person</a>...
-    </div>
-
+    >>> find_tag_by_id(user_browser.contents, 'subscribers')
+    <div ...No Privileges Person...

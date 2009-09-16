@@ -189,6 +189,12 @@ class IPOFile(IRosettaStats):
         `date_created` with newest first.
         """
 
+    def makeTranslatableMessage(potmsgset):
+        """Factory method for an `ITranslatableMessage` object.
+
+        :param potmsgset: The `IPOTMsgSet` to combine this pofile with.
+        """
+
     def export(ignore_obsolete=False, export_utf8=False):
         """Export this PO file as string.
 

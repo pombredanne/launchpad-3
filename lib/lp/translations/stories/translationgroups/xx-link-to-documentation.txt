@@ -18,7 +18,7 @@ translators.
     ...     'http://translations.launchpad.dev/'
     ...     '+groups/testing-translation-team/es/+admin')
     >>> print carlos_browser.title
-    Edit Spanish translation team in Just a testing team
+    +admin : Just a testing team : Translation groups
 
 This way he can also set the documentation URL.
 
@@ -30,11 +30,12 @@ This way he can also set the documentation URL.
 
 The link now appears in the table next to the name of the team.
 
-    >>> info = first_tag_by_class(carlos_browser.contents, 'translator_info')
-    >>> info_a = info.findAll('a')
-    >>> print extract_text(info_a[0])
+    >>> team = first_tag_by_class(carlos_browser.contents, 'translator-team')
+    >>> print extract_text(team.findAll('a')[0])
     testing Spanish team
-    >>> print info_a[1]['href']
+
+    >>> link = first_tag_by_class(carlos_browser.contents, 'translator-link')
+    >>> print link.findAll('a')[0]['href']
     http://www.ubuntu.com/
 
 Back on the translations page, the link is now present, too.
@@ -56,7 +57,7 @@ Carlos appoints Sample Person as a translator for Esperanto.
     ...     '+groups/testing-translation-team/+appoint')
     >>> carlos_browser.getControl('Language').value = ['eo']
     >>> carlos_browser.getControl('Translator').value = 'name12'
-    >>> carlos_browser.getControl('Add').click()
+    >>> carlos_browser.getControl('Appoint').click()
     >>> print carlos_browser.url
     http://translations.launchpad.dev/+groups/testing-translation-team
 
@@ -76,7 +77,8 @@ the documentation url through the edit view.
     ...     'http://translations.launchpad.dev/'
     ...     '+groups/testing-translation-team/eo/+edit')
     >>> print test_browser.title
-    Set Esperanto guidelines for Just a testing team
+    +edit : Just a testing team : Translation groups
+
     >>> test_browser.getControl('Translation guidelines').value = (
     ...     'http://www.launchpad.net/')
     >>> test_browser.getControl('Set guidelines').click()
@@ -91,6 +93,7 @@ the documentation url through the edit view.
     Just a testing team
     Esperanto
     http://www.launchpad.net/
+    edit
 
 
 == Notification display ==

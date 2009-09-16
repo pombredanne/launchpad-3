@@ -108,7 +108,7 @@
         for="lp.blueprints.interfaces.sprint.ISprint"
         class="lp.blueprints.browser.specification.NewSpecificationFromSprintView"
         permission="launchpad.AnyPerson"
-        template="../templates/specification-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+register-a-blueprint-button"
         for="lp.blueprints.interfaces.sprint.ISprint"
@@ -165,9 +165,10 @@
         classes="
             SprintFacets
             SprintOverviewMenu
+            SprintSetFacets
+            SprintSetNavigationMenu
             SprintSpecificationsMenu
-            SprintSetContextMenu
-            SprintSetFacets"
+            "
         module="lp.blueprints.browser.sprint"/>
     <browser:defaultView
         for="lp.blueprints.interfaces.sprintspecification.ISprintSpecification"
@@ -551,7 +552,7 @@
         class="lp.blueprints.browser.specification.NewSpecificationFromDistributionView"
         facet="specifications"
         permission="launchpad.AnyPerson"
-        template="../templates/specification-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -563,7 +564,7 @@
         class="lp.blueprints.browser.specification.NewSpecificationFromDistroSeriesView"
         facet="specifications"
         permission="launchpad.AnyPerson"
-        template="../templates/specification-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
@@ -593,7 +594,7 @@
         class="lp.blueprints.browser.specification.NewSpecificationFromProjectView"
         facet="specifications"
         permission="launchpad.AnyPerson"
-        template="../templates/specification-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
 
     <browser:page
         name="+addspec"
@@ -601,7 +602,7 @@
         class="lp.blueprints.browser.specification.NewSpecificationFromProductView"
         facet="specifications"
         permission="launchpad.AnyPerson"
-        template="../templates/specification-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
 
     <browser:page
         name="+addspec"
@@ -609,5 +610,5 @@
         class="lp.blueprints.browser.specification.NewSpecificationFromProductSeriesView"
         facet="specifications"
         permission="launchpad.AnyPerson"
-        template="../templates/specification-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
 </configure>

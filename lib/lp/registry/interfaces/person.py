@@ -71,7 +71,7 @@ from canonical.launchpad.fields import (
     is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from lp.app.interfaces.rootcontext import IRootContext
+from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
@@ -592,12 +592,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     # which contains valid people but not teams, and we don't really need one
     # apart from here.
     registrant = Attribute('The user who created this profile.')
-    # bounty relations
-    ownedBounties = Attribute('Bounties issued by this person.')
-    reviewerBounties = Attribute('Bounties reviewed by this person.')
-    claimedBounties = Attribute('Bounties claimed by this person.')
-    subscribedBounties = Attribute(
-        'Bounties to which this person subscribes.')
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
@@ -1707,6 +1701,10 @@ class IPersonSet(Interface):
 
         The comment must be of the following form: "when %(action_details)s"
         (e.g. "when the foo package was imported into Ubuntu Breezy").
+
+        If the email address is already registered and bound to an
+        `IAccount`, the created `IPerson` will have 'hide_email_addresses'
+        flag set to True.
 
         XXX sabdfl 2005-06-14: this should be extended to be similar or
         identical to the other person creation argument lists, so we can

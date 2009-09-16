@@ -41,7 +41,7 @@ team.
     >>> user_browser.open('http://launchpad.dev/~doc')
     >>> user_browser.getLink('Is this a team you run?').click()
     >>> user_browser.title
-    'Claim team'
+    '+claimteam : Ubuntu Doc Team'
 
 Now we enter the doc team's email address to continue the process of
 turning that profile into a team.
@@ -106,8 +106,9 @@ page.
     Team claimed successfully
 
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'team-details'))
-    Team owned by No Privileges Person, ...
+    ...     find_tag_by_id(user_browser.contents, 'team-owner'))
+    Owner:
+    No Privileges Person
 
 
 Trying to access +claimteam for an already active team 404s as you would

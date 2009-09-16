@@ -221,7 +221,8 @@ class TestPerson(TestCaseWithFactory):
                 'a bugtask and a message.')
 
     def test_visibility_validator_product_subscription(self):
-        self.bzr.addSubscription(self.otherteam, self.guadamen)
+        self.bzr.addSubscription(
+            self.otherteam, getUtility(IPersonSet).getByName('name16'))
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except ImmutableVisibilityError, exc:

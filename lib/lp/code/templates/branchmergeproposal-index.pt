@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
@@ -26,6 +23,16 @@
 </metal:block>
 
 
+<metal:side fill-slot="side">
+  <div class="portlet" tal:define="link context/menu:context/resubmit"
+       tal:condition="link/enabled"
+       tal:content="structure link/render">
+       Resubmit proposal
+  </div>
+  <div tal:replace="structure context/@@+pagelet-subscribers" />
+</metal:side>
+
+
 <div metal:fill-slot="main"
      tal:define="context_menu context/menu:context">
 
@@ -36,10 +43,6 @@
        ><img src="/@@/trash-icon" tal:attributes="title link/text; alt link/text" />
     </a>
 </h1>
-
-  <div class="aside">
-    <aside tal:content="structure context/@@+pagelet-subscribers" />
-  </div>
 
   <div id="nonportlets">
 

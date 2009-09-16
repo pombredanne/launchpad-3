@@ -89,16 +89,15 @@ about the selected language.
     >>> print browser.url
     http://translations.launchpad.dev/+languages/es
 
-    >>> pluralforms_portlet = find_portlet(browser.contents, 'Plural Forms')
-    >>> print pluralforms_portlet
-    <...
-    The amount of plural forms for Spanish is: 2
-    ...
-    And its default plural form expression is:
-    ...
-    <pre>n != 1</pre>
-    ...
+    >>> print extract_text(find_portlet(browser.contents, 'Plural forms'
+    ...     ).renderContents())
+    Plural forms
+    Spanish has 2 plural forms:
+    Form 0 for 1.
+    Form 1 for 2, 3, 4, 5, 6, 7, ...
+    When ...
 
+    
     >>> translationteams_portlet = find_portlet(
     ...     browser.contents, 'Translation teams')
     >>> print translationteams_portlet

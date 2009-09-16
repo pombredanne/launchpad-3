@@ -188,29 +188,6 @@
       </tal:block>
     </ul>
 
-  <tal:mentors define="mentoring_offers context/mentoring_offers"
-               condition="mentoring_offers">
-    <p>
-      <img src="/@@/mentoring" alt="Mentoring"
-           title="People have offered to mentor this work" />
-      <b>Mentors:</b>
-      <tal:block repeat="mentoring_offer mentoring_offers">
-        <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
-      </tal:block>
-    </p>
-    <tal:block condition="not: context/is_complete">
-      <p tal:condition="view/userIsMentor">
-        &raquo;
-        <a href="+retractmentoring">Retract my offer of mentorship</a>
-      </p>
-    </tal:block>
-  </tal:mentors>
-
-  <p tal:condition="view/userCanMentor">
-    &raquo; <a href="+mentor">Offer to mentor someone implementing
-    this blueprint</a>
-  </p>
-
     <h2>Whiteboard
             <a tal:define="link context_menu/whiteboard"
                  tal:condition="link/enabled"

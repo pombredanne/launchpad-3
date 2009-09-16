@@ -1073,74 +1073,79 @@ class Bug(SQLBase):
 
     def addNomination(self, owner, target):
         """See `IBug`."""
+        if not self.canBeNominatedFor(target):
+            raise NominationError(
+                "This bug cannot be nominated for %s." %
+                    target.bugtargetdisplayname)
+
         distroseries = None
         productseries = None
         if IDistroSeries.providedBy(target):
             distroseries = target
-            target_displayname = target.fullseriesname
             if target.status == DistroSeriesStatus.OBSOLETE:
                 raise NominationSeriesObsoleteError(
-                    "%s is an obsolete series." % target_displayname)
+                    "%s is an obsolete series." % target.bugtargetdisplayname)
         else:
             assert IProductSeries.providedBy(target)
             productseries = target
-            target_displayname = target.title
-
-        if not self.canBeNominatedFor(target):
-            raise NominationError(
-                "This bug cannot be nominated for %s." % target_displayname)
 
         nomination = BugNomination(
             owner=owner, bug=self, distroseries=distroseries,
             productseries=productseries)
-        if nomination.canApprove(owner):
-            nomination.approve(owner)
-        else:
-            self.addChange(SeriesNominated(UTC_NOW, owner, target))
+        self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
-    def canBeNominatedFor(self, nomination_target):
+    def canBeNominatedFor(self, target):
         """See `IBug`."""
         try:
-            self.getNominationFor(nomination_target)
+            self.getNominationFor(target)
         except NotFoundError:
             # No nomination exists. Let's see if the bug is already
-            # directly targeted to this nomination_target.
-            if IDistroSeries.providedBy(nomination_target):
-                target_getter = operator.attrgetter("distroseries")
-            elif IProductSeries.providedBy(nomination_target):
-                target_getter = operator.attrgetter("productseries")
+            # directly targeted to this nomination target.
+            if IDistroSeries.providedBy(target):
+                series_getter = operator.attrgetter("distroseries")
+                pillar_getter = operator.attrgetter("distribution")
+            elif IProductSeries.providedBy(target):
+                series_getter = operator.attrgetter("productseries")
+                pillar_getter = operator.attrgetter("product")
             else:
-                raise AssertionError(
-                    "Expected IDistroSeries or IProductSeries target. "
-                    "Got %r." % nomination_target)
+                return False
 
             for task in self.bugtasks:
-                if target_getter(task) == nomination_target:
+                if series_getter(task) == target:
                     # The bug is already targeted at this
-                    # nomination_target.
+                    # nomination target.
                     return False
 
             # No nomination or tasks are targeted at this
-            # nomination_target.
-            return True
+            # nomination target. But we also don't want to nominate for a
+            # series of a product or distro for which we don't have a
+            # plain pillar task.
+            for task in self.bugtasks:
+                if pillar_getter(task) == pillar_getter(target):
+                    return True
+
+            # No tasks match the candidate's pillar. We must refuse.
+            return False
         else:
-            # The bug is already nominated for this nomination_target.
+            # The bug is already nominated for this nomination target.
             return False
 
-    def getNominationFor(self, nomination_target):
+    def getNominationFor(self, target):
         """See `IBug`."""
-        if IDistroSeries.providedBy(nomination_target):
-            filter_args = dict(distroseriesID=nomination_target.id)
+        if IDistroSeries.providedBy(target):
+            filter_args = dict(distroseriesID=target.id)
+        elif IProductSeries.providedBy(target):
+            filter_args = dict(productseriesID=target.id)
         else:
-            filter_args = dict(productseriesID=nomination_target.id)
+            return None
 
         nomination = BugNomination.selectOneBy(bugID=self.id, **filter_args)
 
         if nomination is None:
             raise NotFoundError(
                 "Bug #%d is not nominated for %s." % (
-                self.id, nomination_target.displayname))
+                self.id, target.displayname))
 
         return nomination
 

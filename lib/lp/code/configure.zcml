@@ -112,6 +112,14 @@
       for="lp.registry.interfaces.project.IProject"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
+  <adapter
+      for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_source_package"/>
+  <adapter
+      for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_distro_source_package"/>
   <securedutility
       class="lp.code.model.branchcollection.GenericBranchCollection"
       provides="lp.code.interfaces.branchcollection.IAllBranches">
@@ -125,6 +133,26 @@
       provides="lp.code.interfaces.revisioncache.IRevisionCache">
     <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
   </securedutility>
+  <adapter
+      for="lp.registry.interfaces.person.IPerson"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_person"/>
+  <adapter
+      for="lp.registry.interfaces.product.IProduct"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_product"/>
+  <adapter
+      for="lp.registry.interfaces.project.IProject"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_project"/>
+  <adapter
+      for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_source_package"/>
+  <adapter
+      for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_distro_source_package"/>
   <securedutility
       class="lp.code.model.branchpuller.BranchPuller"
       provides="lp.code.interfaces.branchpuller.IBranchPuller">
@@ -161,6 +189,7 @@
                     dependent_branch
                     whiteboard
                     queue_status
+                    private
                     reviewer
                     reviewed_revision_id
                     queuer
@@ -382,6 +411,7 @@
                     landing_candidates
                     dependent_branches
                     addLandingTarget
+                    scheduleDiffUpdates
                     getMergeQueue
                     revisions_since
                     code_is_browseable
@@ -805,6 +835,15 @@
       provides="lp.code.interfaces.revision.IRevisionSet" >
     <allow interface="lp.code.interfaces.revision.IRevisionSet" />
   </securedutility>
+
+  <securedutility
+      component="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob"
+      provides="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJobSource">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJobSource"/>
+  </securedutility>
+  <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
+    <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+  </class>
 
   <!-- Linked branches -->
   <adapter factory="lp.code.model.linkedbranch.ProductSeriesLinkedBranch" />

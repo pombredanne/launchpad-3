@@ -82,7 +82,7 @@ that group's page.
 
     >>> docs = find_tag_by_id(admin_browser.contents, 'documentation')
     >>> print extract_text(docs)
-    Please read translation instructions...
+    Please read the translation instructions...
     >>> docs_url = docs.find('a')
     >>> extract_link_from_tag(docs_url)
     u'https://help.launchpad.net/Translations/PolyglotPolicies'
@@ -113,7 +113,7 @@ By default, when a group is created, the creator is its owner.
 The Rosetta administrator assigns ownership of the group to Sample
 Person.
 
-    >>> browser.getLink('Reassign').click()
+    >>> browser.getLink(id='link-reassign').click()
     >>> browser.url
     'http://translations.launchpad.dev/+groups/monolingua/+reassign'
 
@@ -124,7 +124,7 @@ Person.
 
 The Rosetta administrator is still able to administer this group:
 
-    >>> browser.getLink('Appoint')
+    >>> browser.getLink('Appoint a new translation team')
     <...+appoint'>
 
 But Sample Person is now listed as its owner:
@@ -139,7 +139,7 @@ That means that Sample Person is allowed to administer "his" group.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'translations/groups/monolingua/')
-    >>> browser.getLink('Appoint')
+    >>> browser.getLink('Appoint a new translation team')
     <...+appoint'>
 
 The new groups should show up on the "Translation groups" page.
@@ -154,7 +154,6 @@ The new groups should show up on the "Translation groups" page.
     >>> for group_row in groups:
     ...     group = group_row.findNext('td')
     ...     print '%s: %s' % (group.a.string, group.a['href'])
-    Just a testing team: testing-translation-team
-    Single-language Translators: monolingua
-    The PolyGlot Translation Group: polyglot
-
+    Just a testing team: ...testing-translation-team
+    Single-language Translators: ...monolingua
+    The PolyGlot Translation Group: ...polyglot

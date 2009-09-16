@@ -165,7 +165,7 @@
           </table>
           <tal:multipage condition="batch/has_multiple_pages">
             <tal:navigation
-             replace="structure batch/@@+navigation-links-upper"/>
+             replace="structure batch/@@+navigation-links-lower"/>
           </tal:multipage>
         </tal:batch>
       </tal:search>

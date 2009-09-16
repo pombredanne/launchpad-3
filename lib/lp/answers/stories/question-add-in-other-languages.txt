@@ -14,7 +14,8 @@ link to enable to change his preferred languages:
 
     >>> user_browser.getLink('Change your preferred languages').click()
     >>> print user_browser.title
-    Your language preferences
+    +editlanguages : Questions involving No Privileges Person
+    : No Privileges Person
     >>> user_browser.url
     '.../~no-priv/+editlanguages'
 
@@ -77,8 +78,8 @@ from asking a question in the language of his choice.
     >>> browser.getControl('Add').click()
     >>> browser.url
     '.../ubuntu/+question/...'
-    >>> browser.title
-    'Ubuntu question #...Abrir uma pagina que requer...'
+    >>> print browser.title
+    +index : Questions for Ubuntu Linux : Ubuntu
 
 The page reports the question language both in the content and in the
 markup. Search engine robots and browsers will use the lang and dir
@@ -87,7 +88,7 @@ the language in the question details portlet.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
-    >>> print soup.html['lang']
+    >>> print soup.find('div', id='question')['lang']
     pt-BR
     >>> print soup.html['dir']
     ltr
@@ -154,8 +155,6 @@ new question.
     >>> browser.getControl('Add').click()
     >>> browser.url
     '.../ubuntu/+question/...'
-    >>> browser.title.decode('utf-8')
-    u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
+    >>> print browser.title.decode('utf-8')
+    +index : Questions for Ubuntu Linux : Ubuntu
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-details')
-    >>> print portlet.find('b', text='Language:').next.strip()
-    Japanese
