@@ -91,5 +91,5 @@ And now Sample Person's Codes of Conduct page shows that he's signed it.
     Active signatures
     If you change your mind about agreeing to a code of conduct,
     you can deactivate your signature.
-    2009-09-15: digitally signed by Sample Person (1024D/DFD20543)
+    ...: digitally signed by Sample Person (1024D/DFD20543)
     ...
