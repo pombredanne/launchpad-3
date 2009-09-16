@@ -15,21 +15,21 @@
   <div>
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
-        tal:attributes="action context/view/form_action|context/request/URL">
+        tal:attributes="action view/request/URL">
     <label for="field.status">
       Proposals with status:
     </label>
-    <tal:lifecycle-selector replace="structure context/view/widgets/status"/>
+    <tal:lifecycle-selector replace="structure view/widgets/status"/>
     <noscript>
       <input type="submit" value="Filter"/>
     </noscript>
   </form>
 <script type="text/javascript">
 
-YUI.use('node', function(Y) {
+YUI().use('node', function(Y) {
 
   function submit_filter() {
-    Y.get('filter_form').submit();
+    Y.get('#filter_form').submit();
   }
   Y.on('domready', function () {
     var field = Y.get("[id=field.status]");
