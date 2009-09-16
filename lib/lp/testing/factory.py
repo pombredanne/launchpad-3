@@ -108,7 +108,8 @@ from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
 from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProjectSet
-from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackage import (
+    ISourcePackage, SourcePackageUrgency)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
@@ -144,9 +145,9 @@ def default_master_store(func):
     return mergeFunctionMetadata(func, with_default_master_store)
 
 
-# We use this for default paramters where None has a specific meaning.  For
-# example, makeBranch(product=None) means "make a junk branch".
-# None, because None means "junk branch".
+# We use this for default parameters where None has a specific meaning. For
+# example, makeBranch(product=None) means "make a junk branch". None, because
+# None means "junk branch".
 _DEFAULT = object()
 
 
@@ -184,7 +185,7 @@ class ObjectFactory:
         """
         hex_number = '%x' % self.getUniqueInteger()
         if digits is not None:
-            hex_number.zfill(digits)
+            hex_number = hex_number.zfill(digits)
         return hex_number
 
     def getUniqueString(self, prefix=None):
@@ -269,11 +270,12 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
+        key_id = self.getUniqueHexString(digits=8).upper()
         return getUtility(IGPGKeySet).new(
             owner.id,
-            keyid=self.getUniqueHexString(digits=8).upper(),
+            keyid=key_id,
             fingerprint='A' * 40,
-            keysize=self.factory.getUniqueInteger(),
+            keysize=self.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
             active=True,
             can_encrypt=False)
@@ -1670,6 +1672,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
 
+    def getAnySourcePackageUrgency(self):
+        return SourcePackageUrgency.MEDIUM
+
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
                                            distroseries=None, maintainer=None,
                                            creator=None, component=None,
@@ -1708,7 +1713,12 @@ class LaunchpadObjectFactory(ObjectFactory):
         if status is None:
             status = PackagePublishingStatus.PENDING
 
-        section = getUtility(ISectionSet)[section]
+        if urgency is None:
+            urgency = self.getAnySourcePackageUrgency()
+
+        if section is None:
+            section = self.getUniqueString('section')
+        section = getUtility(ISectionSet).ensure(section)
 
         if maintainer is None:
             maintainer = self.makePerson()
@@ -1719,6 +1729,11 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         if creator is None:
             creator = self.makePerson()
+
+        if version is None:
+            version = self.getUniqueString('version')
+
+        gpg_key = self.makeGPGKey(creator)
 
         spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
@@ -1736,7 +1751,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
-            dscsigningkey=self.person.gpgkeys[0],
+            dscsigningkey=gpg_key,
             dsc_maintainer_rfc822=maintainer_email,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
