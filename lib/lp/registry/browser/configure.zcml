@@ -801,7 +801,7 @@
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonChangePasswordView"
             permission="launchpad.Edit"
-            template="../templates/person-changepassword.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:page
             name="+editlanguages"
             for="lp.registry.interfaces.person.IPerson"
