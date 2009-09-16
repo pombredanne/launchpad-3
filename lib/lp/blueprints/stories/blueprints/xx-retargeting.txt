@@ -17,6 +17,8 @@ mind.
     >>> back_link = admin_browser.getLink('Support Native SVG Objects')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
+    >>> browser.getLink('Cancel').url
+    'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
 
 We can move the blueprint to Evolution.
 
