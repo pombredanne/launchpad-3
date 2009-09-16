@@ -121,6 +121,17 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertNotIn('Related bugs:\n', ctrl.body)
 
+    def test_forCreation_with_review_request(self):
+        """Correctly format list of reviewers."""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        reviewer = self.factory.makePerson(name='review-person')
+        vote_reference = bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertIn(
+            'Requested reviews:\n    Review-person (review-person)\n\n-- \n',
+            ctrl.body)
+
     def test_to_addrs_includes_reviewers(self):
         """The addresses for the to header include requested reviewers"""
         request, requester = self.makeReviewRequest()
