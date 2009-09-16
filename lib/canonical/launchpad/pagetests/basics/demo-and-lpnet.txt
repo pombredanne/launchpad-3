@@ -101,6 +101,69 @@ And for a non-3-0 page:
     0
 
 
+== Launchpad Edge ==
+
+Additionally, when a server is running as an edge server, the site-message
+is appended with a link to disable edge redirects.
+
+In addition to this prominent display on the root page, each page will
+also include the disable-redirect link in the site_message - if the
+user is a member of the beta group and has not already disabled
+the redirects.
+
+    # Now setup an edge site-message config and re-check.
+    >>> edge_config_data = """
+    ...     [launchpad]
+    ...     site_message: This is a beta site.
+    ...     is_edge: True
+    ...     """
+    >>> config.push('edge_config_data', edge_config_data)
+    >>> beta_browser = setupBrowser(
+    ...     auth='Basic beta-admin@launchpad.net:test')
+    >>> beta_browser.open('http://launchpad.dev/ubuntu')
+    >>> site_message = find_tags_by_class(
+    ...     beta_browser.contents, 'sitemessage')[0]
+    >>> print extract_text(site_message)
+    This is a beta site. Disable edge redirect.
+    >>> print extract_text(site_message.find(
+    ...     'a', onclick="setBetaRedirect(false)"))
+    Disable edge redirect.
+
+The disable-redirect link will not appear in the site_message when
+browsed by non-beta users.
+
+    >>> browser.open('http://launchpad.dev/ubuntu')
+    >>> print extract_text(find_tags_by_class(
+    ...     browser.contents, 'sitemessage')[0])
+    This is a beta site.
+
+Similarly, once the redirection has been inhibited, the link will no longer
+appear in the footer of edge pages.
+
+    # Workaround bug in mechanize where you cannot use the Cookie
+    # header with the CookieJar
+    >>> from mechanize._clientcookie import Cookie
+    >>> cookiejar = (
+    ...     beta_browser.mech_browser._ua_handlers['_cookies'].cookiejar)
+    >>> cookiejar.set_cookie(
+    ...     Cookie(
+    ...         version=0, name='inhibit_beta_redirect', value='1', port=None,
+    ...         port_specified=False, domain='.launchpad.dev',
+    ...         domain_specified=True, domain_initial_dot=True, path='/',
+    ...         path_specified=True, secure=False, expires=None,
+    ...         discard=None, comment=None, comment_url=None, rest={}))
+    >>> beta_browser.open('http://launchpad.dev/ubuntu')
+    >>> site_message = find_tags_by_class(
+    ...     beta_browser.contents, 'sitemessage')[0]
+    >>> print extract_text(site_message)
+    This is a beta site.
+    >>> print site_message.find('a')
+    None
+
+    # Remove the specific site-message config data before continuing.
+    >>> dummy = config.pop('edge_config_data')
+
+
 == Launchpad.net ==
 
 On every instance except launchpad.net, Launchpad's version and

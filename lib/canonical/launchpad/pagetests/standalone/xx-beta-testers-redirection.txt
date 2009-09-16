@@ -126,40 +126,6 @@ redirection for 2 hours:
     for 2 hours</button></p>
     </div>
 
-In addition to this prominent display on the root page, each page will
-also include the disable-redirect link in the site_message.
-
-    # First ensure it's not there when there is no site-message to display.
-    >>> check(beta_browser.open, 'http://launchpad.dev')
-    >>> len(find_tags_by_class(beta_browser.contents, 'sitemessage'))
-    0
-
-    # Now setup a site-message config and re-check.
-    >>> site_msg_data = """
-    ...     [launchpad]
-    ...     site_message: This is a beta site.
-    ...     """
-    >>> config.push('site_msg_data', site_msg_data)
-    >>> check(beta_browser.open, 'http://launchpad.dev')
-    >>> site_message = find_tags_by_class(
-    ...     beta_browser.contents, 'sitemessage')[0]
-    >>> print extract_text(site_message)
-    This is a beta site. Disable edge redirect.
-    >>> print extract_text(site_message.find(
-    ...     'a', onclick="setBetaRedirect(false)"))
-    Disable edge redirect.
-
-The disable-redirect link will not appear in the site_message when
-browsed by non-beta users.
-
-    >>> check(user_browser.open, 'http://launchpad.dev')
-    >>> print extract_text(find_tags_by_class(
-    ...     user_browser.contents, 'sitemessage')[0])
-    This is a beta site.
-
-    # Remove the specific site-message config data before continuing.
-    >>> dummy = config.pop('site_msg_data')
-
 This is so that the user can make use of some client side JS on that
 page that sets a cookie to inhibit the redirection.  When the
 redirection is inhibited, the info message changes to one that lets
@@ -190,20 +156,6 @@ default is to redirect if no cookie exists):
     <p><button onclick="setBetaRedirect(true)">Enable beta site
     redirection</button></p>
     </div>
-
-Similarly, once the redirection has been inhibited, the link will no longer
-appear in the footer of edge pages.
-
-    >>> config.push('site_msg_data', site_msg_data)
-    >>> check(beta_browser.open, 'http://launchpad.dev')
-    >>> site_message = find_tags_by_class(
-    ...     beta_browser.contents, 'sitemessage')[0]
-    >>> print extract_text(site_message)
-    This is a beta site.
-    >>> print site_message.find('a')
-    None
-
-    >>> dummy = config.pop('site_msg_data')
 
 
 Now when they go to a page on the site, it loads as normal:

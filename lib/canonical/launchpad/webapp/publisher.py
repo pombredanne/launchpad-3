@@ -277,12 +277,6 @@ class LaunchpadView(UserAttributeCache):
         """Returns True if redirection has been inhibited."""
         return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
 
-    def canRedirect(self):
-        """Return True if the beta server is available to the user."""
-        return bool(
-            config.launchpad.beta_testers_redirection_host is not None and
-            self.isBetaUser)
-
     def __call__(self):
         self.initialize()
         if self._isRedirected():
