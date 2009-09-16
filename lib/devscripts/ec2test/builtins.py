@@ -1,4 +1,5 @@
 import code
+import pdb
 import traceback
 
 from bzrlib.commands import Command
@@ -26,8 +27,12 @@ def run_with_instance(instance, run, postmortem):
     :param postmortem: If this flag is true, any exceptions will be caught and
         an interactive session run to allow debugging the problem.
     """
-    shutdown = True
     try:
+        shutdown = False
+        user_key = get_user_key()
+        instance.start()
+        shutdown = True
+        instance.set_up_user(user_key)
         try:
             shutdown = run()
         except Exception:
@@ -144,14 +149,22 @@ def get_user_key():
     user_key = agent.get_keys()[0]
     return user_key
 
-def make_instance(instance_type, machine, demo_networks=None):
+
+def get_credentials():
+    try:
+        return EC2Credentials.load_from_file()
+    except CredentialsError, e:
+        error_and_quit(str(e))
+
+
+def make_instance(instance_type, machine, demo_networks=None,
+                  credentials=None):
     # Get the AWS identifier and secret identifier.
     if instance_type not in AVAILABLE_INSTANCE_TYPES:
         raise BzrCommandError('Unknown instance type.')
-    try:
-        credentials = EC2Credentials.load_from_file()
-    except CredentialsError, e:
-        error_and_quit(str(e))
+
+    if credentials is None:
+        credentials = get_credentials()
 
     return EC2Instance.make(
         credentials, EC2TestRunner.name, instance_type=instance_type,
@@ -239,7 +252,7 @@ class cmd_test(EC2Command):
             headless=False, debug=False, open_browser=False,
             include_download_cache_changes=False):
         if debug:
-            import pdb; pdb.set_trace()
+            pdb.set_trace()
         if trunk:
             if test_branch is not None:
                 raise BzrCommandError(
@@ -270,21 +283,16 @@ class cmd_test(EC2Command):
 
         instance = make_instance(instance_type, machine)
 
-        user_key = get_user_key()
-
         runner = EC2TestRunner(
             branch, email=email, file=file,
             test_options=test_options, headless=headless,
-            branches=branches,
-            pqm_message=submit_pqm_message,
+            branches=branches, pqm_message=submit_pqm_message,
             pqm_public_location=pqm_public_location,
             pqm_submit_location=pqm_submit_location,
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
 
-        instance.start()
-        instance.set_up_user(user_key)
         run_with_instance(
             instance, runner.run_tests, postmortem)
 
@@ -318,7 +326,7 @@ class cmd_demo(EC2Command):
             instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
             include_download_cache_changes=False, demo=None):
         if debug:
-            import pdb; pdb.set_trace()
+            pdb.set_trace()
         if trunk:
             if test_branch is not None:
                 raise BzrCommandError(
@@ -332,15 +340,10 @@ class cmd_demo(EC2Command):
 
         instance = make_instance(instance_type, machine, demo)
 
-        user_key = get_user_key()
-
         runner = EC2TestRunner(
             branch, branches=branches,
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
-
-        instance.start()
-        instance.set_up_user(user_key)
 
         def run_server():
             runner.run_demo_server()
@@ -372,5 +375,58 @@ class cmd_demo(EC2Command):
 
 
 class cmd_update_image(EC2Command):
-    def run(self):
-        print 'foo'
+    """Make a new AMI."""
+
+    takes_options = [
+        machine_id_option,
+        instance_type_option,
+        Option(
+            'postmortem', short_name='p',
+            help=('Drop to interactive prompt after the test and before shutting '
+                  'down the instance for postmortem analysis of the EC2 instance '
+                  'and/or of this script.')),
+        debug_option,
+        ListOption(
+            'extra-update-image-command', type=str,
+            help=('Run this command (with an ssh agent) on the image before '
+                  'running the default update steps.  Can be passed more than '
+                  'once, the commands will be run in the order specified.')),
+        ]
+
+    takes_args = ['ami_name']
+
+    def run(self, ami_name, machine=None, instance_type=DEFAULT_INSTANCE_TYPE,
+            debug=False, postmortem=False, extra_update_image_command=[]):
+        if debug:
+            pdb.set_trace()
+
+        credentials = get_credentials()
+
+        instance = make_instance(
+            instance_type, machine, credentials=credentials)
+        instance.check_bundling_prerequisites()
+
+        def update_image():
+            user_connection = instance.connect_as_user()
+            user_connection.perform('bzr launchpad-login %(launchpad-login)s')
+            for cmd in extra_update_image_command:
+                user_connection.run_with_ssh_agent(cmd)
+            user_connection.run_with_ssh_agent(
+                "rsync -avp --partial --delete "
+                "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
+                "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
+                "/var/launchpad/sourcecode/")
+            user_connection.run_with_ssh_agent(
+                'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
+            user_connection.run_with_ssh_agent(
+                'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
+            user_connection.close()
+            root_connection = instance.connect_as_root()
+            root_connection.perform(
+                'deluser --remove-home %(USER)s', ignore_failure=True)
+            root_connection.close()
+            instance.bundle(ami_name, credentials)
+            return True
+
+        run_with_instance(
+            instance, update_image, postmortem)
