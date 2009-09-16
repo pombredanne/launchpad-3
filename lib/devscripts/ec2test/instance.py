@@ -40,7 +40,8 @@ class EC2Instance:
     """A single EC2 instance."""
 
     @classmethod
-    def make(cls, credentials, name, instance_type, machine_id, demo_networks):
+    def make(cls, credentials, name, instance_type, machine_id,
+             demo_networks=None):
         """Construct an `EC2Instance`.
 
         :param credentials: An `EC2Credentials` object.

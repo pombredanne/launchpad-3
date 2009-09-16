@@ -1,9 +1,60 @@
+import code
+import traceback
+
 from bzrlib.commands import Command
+from bzrlib.errors import BzrCommandError
 from bzrlib.option import ListOption, Option
 
+import paramiko
+
+from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.commandline import (
     DEFAULT_INSTANCE_TYPE, AVAILABLE_INSTANCE_TYPES)
-from devscripts.ec2test.testrunner import TRUNK_BRANCH
+from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
+from devscripts.ec2test.instance import EC2Instance
+from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
+
+
+def run_with_instance(instance, run, postmortem):
+    """Call run(), then allow post mortem debugging and shut down `instance`.
+
+    :param instance: A running `EC2Instance`.  If `run` returns True, it will
+        be shut down before this function returns.
+    :param run: A callable that will be called with no arguments to do
+        whatever needs to be done with the instance.
+    :param postmortem: If this flag is true, any exceptions will be caught and
+        an interactive session run to allow debugging the problem.
+    """
+    shutdown = True
+    try:
+        try:
+            shutdown = run()
+        except Exception:
+            # If we are running in demo or postmortem mode, it is really
+            # helpful to see if there are any exceptions before it waits
+            # in the console (in the finally block), and you can't figure
+            # out why it's broken.
+            traceback.print_exc()
+    finally:
+        try:
+            if postmortem:
+                console = code.InteractiveConsole(locals())
+                console.interact((
+                    'Postmortem Console.  EC2 instance is not yet dead.\n'
+                    'It will shut down when you exit this prompt (CTRL-D).\n'
+                    '\n'
+                    'Tab-completion is enabled.'
+                    '\n'
+                    'Test runner instance is available as `runner`.\n'
+                    'Also try these:\n'
+                    '  http://%(dns)s/current_test.log\n'
+                    '  ssh -A %(dns)s') %
+                                 {'dns': instance.hostname})
+                print 'Postmortem console closed.'
+        finally:
+            if shutdown:
+                instance.shutdown()
+
 
 branch_option = ListOption(
     'branch', type=str, short_name='b', argname='BRANCH',
@@ -47,6 +98,10 @@ debug_option = Option(
     'debug', short_name='d',
     help=('Drop to pdb trace as soon as possible.'))
 
+trunk_option = Option(
+    'trunk', short_name='t',
+    help=('Run the trunk as the branch'))
+
 include_download_cache_changes_option = Option(
     'include-download-cache-changes', short_name='c',
     help=('Include any changes in the download cache (added or unknown) '
@@ -56,14 +111,6 @@ include_download_cache_changes_option = Option(
           'changes in your download cache, you must explicitly choose to '
           'include or ignore the changes.'))
 
-ignore_download_cache_changes_option = Option(
-    'ignore-download-cache-changes', short_name='g',
-    help=('Include any changes in the download cache (added or unknown) '
-          'in the download cache of the test run.  Note that, if you have '
-          'any changes in your download cache, trying to submit to pqm '
-          'will always raise an error.  Also note that, if you have any '
-          'changes in your download cache, you must explicitly choose to '
-          'include or ignore the changes.'))
 
 class EC2Command(Command):
     def _usage(self):
@@ -152,19 +199,87 @@ class cmd_test(EC2Command):
         Option(
             'open-browser',
             help=('Open the results page in your default browser')),
-        ignore_download_cache_changes_option,
         include_download_cache_changes_option,
         ]
 
     takes_args = ['test_branch?']
 
-    def run(self, test_branch='.', branch=[], machine=None,
+    def run(self, test_branch=None, branch=[], trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE,
             file=None, email=None, test_options='-vv', noemail=False,
             submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
-            headless=False, debug=False, open_browser=False):
-        print locals()
+            headless=False, debug=False, open_browser=False,
+            include_download_cache_changes=False):
+        if debug:
+            import pdb; pdb.set_trace()
+        if trunk:
+            if test_branch is not None:
+                raise BzrCommandError(
+                    "Cannot specify both a branch to test and --trunk")
+            else:
+                test_branch = TRUNK_BRANCH
+        else:
+            if test_branch is None:
+                test_branch = '.'
+        if ((postmortem or file) and headless):
+            raise BzrCommandError(
+                'Headless mode currently does not support postmortem or file '
+                ' options.')
+        if noemail:
+            if email:
+                raise BzrCommandError(
+                    'May not supply both --no-email and an --email address')
+        else:
+            if email == []:
+                email = True
+        if instance_type not in AVAILABLE_INSTANCE_TYPES:
+            raise BzrCommandError('Unknown instance type.')
+        branches = [data.split('=', 1) for data in branch]
+
+        if headless and not (email or submit_pqm_message):
+            raise ValueError('You have specified no way to get the results '
+                             'of your headless test run.')
+
+        agent = paramiko.Agent()
+        keys = agent.get_keys()
+        if len(keys) == 0:
+            error_and_quit(
+                'You must have an ssh agent running with keys installed that '
+                'will allow the script to rsync to devpad and get your '
+                'branch.\n')
+        user_key = agent.get_keys()[0]
+        # Get the AWS identifier and secret identifier.
+        try:
+            credentials = EC2Credentials.load_from_file()
+        except CredentialsError, e:
+            error_and_quit(str(e))
+
+        instance = EC2Instance.make(
+            credentials, EC2TestRunner.name, instance_type=instance_type,
+            machine_id=machine)
+
+        runner = EC2TestRunner(
+            branch, email=email, file=file,
+            test_options=test_options, headless=headless,
+            branches=branches,
+            pqm_message=submit_pqm_message,
+            pqm_public_location=pqm_public_location,
+            pqm_submit_location=pqm_submit_location,
+            open_browser=open_browser, pqm_email=pqm_email,
+            include_download_cache_changes=include_download_cache_changes,
+            instance=instance, vals=instance._vals)
+        def run_tests():
+            runner.configure_system()
+            runner.prepare_tests()
+            runner.run_tests()
+            return not headless
+        instance.start()
+        instance.set_up_user(user_key)
+
+        run_with_instance(
+            instance, run_tests, postmortem)
+
 
 class cmd_demo(EC2Command):
     def run(self):
