@@ -6,7 +6,7 @@ using Javascript after page load.
     >>> anon_browser.getLink(id='tags-content-link').click()
     >>> print anon_browser.url
     http://launchpad.dev/ubuntu/+bugtarget-portlet-tags-content
-    >>> tags_portlet = find_tags_by_class(anon_browser.contents, 'portletBody')[0]
+    >>> tags_portlet = find_tags_by_class(anon_browser.contents, 'section')[0]
     >>> for td_tag in tags_portlet('td'):
     ...     print td_tag.renderContents()
     <a ...>crash</a>
@@ -53,4 +53,3 @@ not available when no tags are relevant:
     ...     'http://launchpad.dev/tomcat/+bugtarget-portlet-tags-content')
     >>> print extract_text(anon_browser.contents)
     <BLANKLINE>
-
