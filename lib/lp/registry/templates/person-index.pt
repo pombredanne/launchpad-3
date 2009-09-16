@@ -82,32 +82,33 @@
   </div>
 </div>
 
-<div metal:fill-slot="heading"
-     tal:condition="context/is_valid_person_or_team">
-  <div
-    class="description"
-    tal:condition="context/homepage_content"
-    tal:content="structure context/homepage_content/fmt:text-to-html"
-  />
-  <ul class="horizontal">
-    <li
-      tal:define="link context/menu:overview/projects"
-      tal:condition="link/enabled"
-      tal:content="structure link/fmt:link" />
-    <li
-      tal:define="link context/menu:overview/maintained"
-      tal:condition="link/enabled"
-      tal:content="structure link/fmt:link" />
-    <li
-      tal:define="link context/menu:overview/ppa"
-      tal:condition="link/enabled"
-      tal:content="structure link/fmt:link" />
-  </ul>
-</div>
-
 <div metal:fill-slot="main"
   tal:define="overview_menu context/menu:overview">
   <tal:is-valid-person tal:condition="context/is_valid_person">
+
+    <div
+      class="description"
+      tal:condition="context/homepage_content"
+      tal:content="structure context/homepage_content/fmt:text-to-html"
+    />
+    <ul class="horizontal">
+      <li
+        tal:define="link context/menu:overview/projects"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link context/menu:overview/maintained"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link context/menu:overview/ppa"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link context/menu:overview/oauth_tokens"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+    </ul>
 
     <div class="yui-g">
       <div tal:content="structure context/@@+portlet-contact-details"/>
