@@ -475,7 +475,7 @@ class EC2TestRunner:
         # close ssh connection
         user_connection.close()
 
-    def run_demo_webserver(self):
+    def run_demo_server(self):
         """Turn ec2 instance into a demo server."""
         self.configure_system()
         self.prepare_tests()
