@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
-from lp.code.model.diff import StaticDiff
+from lp.code.model.diff import PreviewDiff
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import (
@@ -38,18 +38,19 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     def makeProposalWithSubscriber(self, diff_text=None,
                                    initial_comment=None):
         if diff_text is not None:
-            review_diff = StaticDiff.acquireFromText(
-                self.factory.getUniqueString('revid'),
-                self.factory.getUniqueString('revid'),
-                diff_text)
+            preview_diff = PreviewDiff.create(
+                diff_text,
+                unicode(self.factory.getUniqueString('revid')),
+                unicode(self.factory.getUniqueString('revid')),
+                None, None)
             transaction.commit()
         else:
-            review_diff = None
+            preview_diff = None
         registrant = self.factory.makePerson(
             name='bazqux', displayname='Baz Qux', email='baz.qux@example.com')
         product = self.factory.makeProduct(name='super-product')
         bmp = self.factory.makeBranchMergeProposal(
-            registrant=registrant, product=product, review_diff=review_diff,
+            registrant=registrant, product=product, preview_diff=preview_diff,
             initial_comment=initial_comment)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
@@ -344,8 +345,8 @@ new commit message
             request.merge_proposal.root_comment,
             mailer.comment)
         self.assertEqual(
-            request.merge_proposal.review_diff,
-            mailer.review_diff)
+            request.merge_proposal.preview_diff,
+            mailer.preview_diff)
         self.assertRecipientsMatches([request.recipient], mailer)
 
     def test_to_addrs_for_review_request(self):
