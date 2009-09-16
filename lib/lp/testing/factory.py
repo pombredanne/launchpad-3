@@ -34,13 +34,20 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.publishing import (
+    SecureSourcePackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
@@ -122,6 +129,7 @@ def default_master_store(func):
     password that needs to happen on the master store and this is forced.
     However, if we then read it back the default Store has to be used.
     """
+
     def with_default_master_store(*args, **kw):
         try:
             store_selector = getUtility(IStoreSelector)
@@ -1661,6 +1669,96 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
+
+    def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
+                                           distroseries=None, maintainer=None,
+                                           creator=None, component=None,
+                                           section=None, urgency=None,
+                                           version=None, archive=None,
+                                           builddepends=None,
+                                           builddependsindep=None,
+                                           build_conflicts=None,
+                                           build_conflicts_indep=None,
+                                           architecturehintlist='all',
+                                           dateremoved=None,
+                                           date_uploaded=UTC_NOW,
+                                           pocket=None,
+                                           status=None,
+                                           scheduleddeletiondate=None,
+                                           dsc_standards_version='3.6.2',
+                                           dsc_format='1.0',
+                                           dsc_binaries='foo-bin',
+                                           ):
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        spn = sourcepackagename
+
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+
+        if archive is None:
+            archive = self.makeArchive(distribution=distroseries.distribution)
+
+        if component is None:
+            component = self.makeComponent()
+
+        if pocket is None:
+            pocket = self.getAnyPocket()
+
+        if status is None:
+            status = PackagePublishingStatus.PENDING
+
+        section = getUtility(ISectionSet)[section]
+
+        if maintainer is None:
+            maintainer = self.makePerson()
+
+        maintainer_email = '%s <%s>' % (
+            maintainer.displayname,
+            maintainer.preferredemail.email)
+
+        if creator is None:
+            creator = self.makePerson()
+
+        spr = distroseries.createUploadedSourcePackageRelease(
+            sourcepackagename=spn,
+            maintainer=maintainer,
+            creator=creator,
+            component=component,
+            section=section,
+            urgency=urgency,
+            version=version,
+            builddepends=builddepends,
+            builddependsindep=builddependsindep,
+            build_conflicts=build_conflicts,
+            build_conflicts_indep=build_conflicts_indep,
+            architecturehintlist=architecturehintlist,
+            changelog_entry=None,
+            dsc=None,
+            copyright=self.getUniqueString(),
+            dscsigningkey=self.person.gpgkeys[0],
+            dsc_maintainer_rfc822=maintainer_email,
+            dsc_standards_version=dsc_standards_version,
+            dsc_format=dsc_format,
+            dsc_binaries=dsc_binaries,
+            archive=archive, dateuploaded=date_uploaded)
+
+        sspph = SecureSourcePackagePublishingHistory(
+            distroseries=distroseries,
+            sourcepackagerelease=spr,
+            component=spr.component,
+            section=spr.section,
+            status=status,
+            datecreated=date_uploaded,
+            dateremoved=dateremoved,
+            scheduleddeletiondate=scheduleddeletiondate,
+            pocket=pocket,
+            embargo=False,
+            archive=archive)
+
+        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
+        # of SSPPH and other useful attributes.
+        return SourcePackagePublishingHistory.get(sspph.id)
 
     def makePackageset(self, name=None, description=None, owner=None,
                        packages=()):
