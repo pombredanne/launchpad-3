@@ -227,7 +227,7 @@ if __name__ == '__main__':
     try:
         there = os.getcwd()
         os.chdir('${buildout:directory}')
-        result = testrunner.run()
+        result = testrunner.run([])
     finally:
         os.chdir(there)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
