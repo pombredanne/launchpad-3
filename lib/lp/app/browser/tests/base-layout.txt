@@ -475,7 +475,9 @@ test. The template controlled the heading.
 Page registering
 ----------------
 
-XXX
+The 'registering' slot is presented on the right side of the 'heading'
+and can be filled with the context registering information (registrant
+and date_created, normally).
 
     >>> class RegisteringView(LaunchpadView):
     ...     """A simple view to test base-layout."""
@@ -494,6 +496,8 @@ XXX
     <p>something nice about the context registering.</p>
     </div>
 
+Note that the slot itself will be already 'styled' and it rarely has
+to be changed.
 
 
 Public and private presentation
