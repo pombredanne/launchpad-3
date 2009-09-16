@@ -9,9 +9,9 @@ Admin Language
     >>> from canonical.launchpad.layers import TranslationsLayer
 
     >>> language_set = getUtility(ILanguageSet)
-    >>> language = language_set.getLanguageByCode('pt_BR')
+    >>> portuguese = language_set.getLanguageByCode('pt_BR')
     >>> language_admin_view = create_view(
-    ...     language, '+admin', layer=TranslationsLayer)
+    ...     portuguese, '+admin', layer=TranslationsLayer)
     >>> language_admin_view.initialize()
 
 The language +admin view provides a label and a page_title for the page.
@@ -72,4 +72,24 @@ The view provides also a cancel_url and a next_url:
 
     >>> print language_add_view.next_url
     http://translations.launchpad.dev/+languages/lp_US
+
+
+View Language
+------------------
+
+    >>> serbian = language_set.getLanguageByCode('sr')
+    >>> language_view = create_initialized_view(serbian, '+index',
+    ...     layer=TranslationsLayer)
+
+The friendlypluralforms function shows us a list of plural forms and a set of examples 
+for each one, so one won't need to understand the plural formula expression to see how it works.
+
+    >>> friendly_plural_forms = language_view.friendly_plural_forms
+
+    >>> for form_dict in friendly_plural_forms:
+    ...     print form_dict['form'], ':', form_dict['examples']
+    0 : 1.
+    1 : 2, 3, 4, ...
+    2 : 5, 6, 7, 8, 9, 10, ...
+
 
