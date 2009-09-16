@@ -173,5 +173,5 @@ class TestPOTemplateBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
              "http://translations.launchpad.dev/crumb-tester/test",
              "http://translations.launchpad.dev/crumb-tester/test"
              "/+pots/template"],
-            ["Crumb Tester", "Series test", "Translations", 
+            ["Crumb Tester", "Series test", "Translations",
              smartquote('Template "template"')])
