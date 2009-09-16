@@ -47,7 +47,7 @@ files into the branches.  We mock it up here.
     ...
     ...     def commit(self, message=None):
     ...         self._checkForRace()
-    ...         self.logger.info("Commit %d file(s)." % self.written_files)
+    ...         self.logger.info("Committed %d file(s)." % self.written_files)
     ...
     ...     def unlock(self):
     ...         self.logger.info("Unlock.")
@@ -152,7 +152,7 @@ translations to the DirectBranchCommit.
     <BLANKLINE>
     msgid "gazmod msgid"
     msgstr "gazmod msgstr"
-    INFO Commit 2 file(s).
+    INFO Committed 2 file(s).
     INFO Unlock.
     INFO Processed 1 item(s); 0 failure(s).
 
@@ -187,7 +187,7 @@ the time it last exported them, it won't export them again.
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
     DEBUG Last commit was at ....
-    INFO Commit 0 file(s).
+    INFO Committed 0 file(s).
     INFO Unlock.
     INFO Processed 1 item(s); 0 failure(s).
 
@@ -201,7 +201,7 @@ are not.
     DEBUG Last commit was at ...
     INFO Writing file 'po/main/nl.po':
     INFO ...
-    INFO Commit 1 file(s).
+    INFO Committed 1 file(s).
     INFO Unlock.
     INFO Processed 1 item(s); 0 failure(s).
 
