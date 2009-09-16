@@ -4479,7 +4479,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         Valid addresses are the ones presented as options for the mailing
         list widgets.
         """
-        names = [w.context.getName() for w in self.mailing_list_widgets]
+        names = [widget_dict['widget'].context.getName()
+                 for widget_dict in self.mailing_list_widgets]
         self.validate_widgets(data, names)
         return self.errors
 
@@ -4490,7 +4491,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         mailing_list_set = getUtility(IMailingListSet)
         dirty = False
         prefix_length = len('subscription.')
-        for widget in self.mailing_list_widgets:
+        for widget_dict in self.mailing_list_widgets:
+            widget = widget_dict['widget']
             mailing_list_name = widget.context.getName()[prefix_length:]
             mailing_list = mailing_list_set.get(mailing_list_name)
             new_value = data[widget.context.getName()]
