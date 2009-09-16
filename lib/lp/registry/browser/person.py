@@ -4195,9 +4195,10 @@ class PersonEditEmailsView(LaunchpadFormView):
         subscription = mailing_list.getSubscription(self.context)
         if subscription is None:
             return "Don't subscribe"
-        if subscription.email_address is None:
+        elif subscription.email_address is None:
             return 'Preferred address'
-        return subscription.email_address
+        else:
+            return subscription.email_address
 
     def _mailing_list_fields(self):
         """Creates a field for each mailing list the user can subscribe to.
@@ -4238,7 +4239,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         mailing_list_set = getUtility(IMailingListSet)
         widgets = []
         for widget in self.widgets:
-            if 'field.subscription.' in widget.name:
+            if widget.name.startswith('field.subscription.'):
                 team_name = widget.label
                 mailing_list = mailing_list_set.get(team_name)
                 assert mailing_list is not None, 'Missing mailing list'
