@@ -4,9 +4,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'TeamInvitationsView',
     'TeamMembershipEditView',
     ]
 
+
+import cgi
 import pytz
 from datetime import datetime
 
@@ -17,13 +20,14 @@ from zope.formlib import form
 from zope.schema import Date
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp import LaunchpadView, canonical_url
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from canonical.lazr.utils import smartquote
 from canonical.widgets import DateWidget
+
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
 
 class TeamMembershipEditView:
@@ -67,6 +71,31 @@ class TeamMembershipEditView:
         if not expires:
             self.expiration_widget.disabled = True
 
+    @property
+    def label(self):
+        # This reproduces the logic of the old H1's in the pre-3.0 UI view.
+        if self.isActive():
+            prefix = 'Active'
+        elif self.isInactive():
+            prefix = 'Inactive'
+        elif self.isProposed():
+            prefix = 'Proposed'
+        elif self.isDeclined():
+            prefix = 'Declined'
+        elif self.isInvited() or self.isInvitationDeclined():
+            prefix = 'Invited'
+        else:
+            raise AssertionError('status unknown')
+        return '%s member %s' % (prefix, self.context.person.displayname)
+
+    # XXX BarryWarsaw 2009-09-14 bug 429729.  This should really go away, but
+    # since there is no +hierarchy adapter for this view, there is no
+    # breadcrumbs, and thus no default reverse-breadcrumb page title.
+    @property
+    def page_title(self):
+        return smartquote("%s's membership status in %s") % (
+            self.context.person.displayname, self.context.team.displayname)
+
     # Boolean helpers
     def userIsTeamOwnerOrLPAdmin(self):
         return (self.user.inTeam(self.context.team.teamowner) or
@@ -97,6 +126,12 @@ class TeamMembershipEditView:
 
     def isDeactivated(self):
         return self.context.status == TeamMembershipStatus.DEACTIVATED
+
+    def isInvited(self):
+        return self.context.status == TeamMembershipStatus.INVITED
+
+    def isInvitationDeclined(self):
+        return self.context.status == TeamMembershipStatus.INVITATION_DECLINED
 
     def adminIsSelected(self):
         """Whether the admin radiobutton should be selected."""
@@ -299,3 +334,10 @@ class TeamMembershipEditView:
                            tzinfo=UTC)
         return expires
 
+
+class TeamInvitationsView(LaunchpadView):
+    """View for ~team/+invitations."""
+
+    @property
+    def label(self):
+        return 'Invitations for ' + self.context.displayname

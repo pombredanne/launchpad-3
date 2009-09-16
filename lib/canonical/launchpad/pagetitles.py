@@ -661,12 +661,6 @@ person_answer_contact_for = ContextDisplayName(
 
 person_changepassword = 'Change your password'
 
-person_claim = 'Claim account'
-
-person_claim_team = 'Claim team'
-
-person_deactivate_account = 'Deactivate your Launchpad account'
-
 person_codesofconduct = ContextDisplayName(
     smartquote("%s's code of conduct signatures"))
 
@@ -696,8 +690,6 @@ def person_mergeproposals(context, view):
     """Return the view's heading."""
     return view.heading
 
-person_oauth_tokens = "Applications you authorized to access Launchpad"
-
 person_packagebugs = ContextDisplayName("%s's package bug reports")
 
 person_packagebugs_overview = person_packagebugs
@@ -705,8 +697,6 @@ person_packagebugs_overview = person_packagebugs
 person_packagebugs_search = person_packagebugs
 
 person_participation = ContextTitle("Team participation by %s")
-
-person_review = ContextDisplayName("Review %s")
 
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
@@ -716,13 +706,6 @@ person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
-
-pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
-
-def pofile_translate(context, view):
-    """Return the page to translate a template into a language."""
-    return 'Translating %s into %s' % (
-        context.potemplate.displayname, context.language.englishname)
 
 # portlet_* are portlets
 
@@ -1009,20 +992,7 @@ standardshipitrequest_edit = 'Edit standard option'
 
 team_index = ContextBrowsername('%s in Launchpad')
 
-team_invitations = ContextBrowsername("Invitations sent to %s")
-
 team_mailinglist = 'Configure mailing list'
-
-team_map = ContextBrowsername('Map of %s participants')
-
-team_members = ContextBrowsername(smartquote('"%s" members'))
-
-team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
-
-def teammembership_index(context, view):
-    """Return the page title to the persons status in a team."""
-    return smartquote("%s's membership status in %s") % (
-        context.person.displayname, context.team.displayname)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 

@@ -94,8 +94,8 @@ Karl can now browse to a +translate page without being forwarded.
     ...              '+pots/alsa-utils/es/+translate')
     >>> browser.url
     'http://.../alsa-utils/trunk/+pots/alsa-utils/es/+translate'
-    >>> browser.title
-    'Translating alsa-utils in alsa-utils trunk into Spanish'
+    >>> print browser.title
+    Translations : Series trunk : alsa-utils
 
 
 == Permissions ==

@@ -435,7 +435,7 @@ other:
 
     >>> form_1 = 'n!=1'
     >>> form_2 = 'n==1'
-    >>> from lp.translations.utilities.gettext_po_parser import (
+    >>> from lp.translations.utilities.pluralforms import (
     ...     plural_form_mapper)
     >>> plural_form_mapper(form_1, form_2)
     {0: 1, 1: 0, 2: 2, 3: 3, 4: 4, 5: 5}
