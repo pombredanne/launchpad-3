@@ -380,7 +380,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'edit',
         'reassign',
         'top_contributors',
-        'mentorship',
         'distributions',
         'packages',
         'series',
@@ -401,10 +400,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     def distributions(self):
         text = 'Packaging information'
         return Link('+distributions', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-        return Link('+mentoring', text, icon='info')
 
     def packages(self):
         text = 'Show distribution packages'
