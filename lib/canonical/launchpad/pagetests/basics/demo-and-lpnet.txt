@@ -106,7 +106,7 @@ And for a non-3-0 page:
 Additionally, when a server is running as an edge server, the site-message
 is appended with a link to disable edge redirects.
 
-In addition to this prominent display on the root page, each page will
+In addition to this prominent display on the root page, most pages will
 also include the disable-redirect link in the site_message - if the
 user is a member of the beta group and has not already disabled
 the redirects.
