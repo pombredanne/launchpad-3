@@ -117,6 +117,13 @@ class BranchMergeProposal(SQLBase):
         enum=BranchMergeProposalStatus, notNull=True,
         default=BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
+    @property
+    def private(self):
+        return (
+            self.source_branch.private or self.target_branch.private or
+            (self.dependent_branch is not None and
+             self.dependent_branch.private))
+
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,

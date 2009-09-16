@@ -1009,6 +1009,8 @@ class TeamMapView(LaunchpadView):
     known locations.
     """
 
+    label = "Team member locations"
+
     def __init__(self, context, request):
         """Accept the 'preview' parameter to limit mapped participants."""
         super(TeamMapView, self).__init__(context, request)

@@ -13,6 +13,14 @@
       <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
     </tal:vars>
 
+    <ul class="horizontal"
+      tal:define="link context/menu:overview/series_add"
+      tal:condition="link/enabled">
+      <li>
+        <a tal:replace="structure link/fmt:link" />
+      </li>
+    </ul>
+
     <div tal:repeat="series view/sorted_series_list">
       <div style="margin-top: 1em;
                   border-bottom: 1px solid #ccc; max-width: 60em;"
