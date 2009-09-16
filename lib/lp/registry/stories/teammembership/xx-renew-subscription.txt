@@ -18,12 +18,12 @@ the 'Renew' button.
 He is redirected to the team page. He can see that his subscription
 is approved because he is in the active members table.
 
-    >>> browser.title
-    '...Ubuntu Gnome Team... members'
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> print backslashreplace(browser.title)
+    +members : \u201cUbuntu Gnome Team\u201d team
     >>> content = find_tag_by_id(browser.contents, 'activemembers')
     >>> print extract_text(content)
     Name               Member since  Expires  Status
     ...
     Mark Shuttleworth  2005-03-03    &ndash;  Approved
     ...
-
