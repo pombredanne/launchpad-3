@@ -7,6 +7,8 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.lazr.utils import smartquote
+
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
@@ -158,5 +160,20 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
             ["Crumb Tester", "Series test", "Translations", "Serbian (sr)"])
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestPOTemplateBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+    def test_potemplate(self):
+        product = self.factory.makeProduct(
+            name='crumb-tester', displayname="Crumb Tester")
+        series = self.factory.makeProductSeries(
+            name="test", product=product)
+        potemplate = self.factory.makePOTemplate(name="template",
+                                                 productseries=series)
+        self._testContextBreadcrumbs(
+            [product, series, potemplate],
+            ["http://launchpad.dev/crumb-tester",
+             "http://launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test"
+             "/+pots/template"],
+            ["Crumb Tester", "Series test", "Translations", 
+             smartquote('Template "template"')])
