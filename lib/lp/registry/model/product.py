@@ -1100,37 +1100,60 @@ class ProductSet:
             conditions.append(SQL(
                 'Product.fti @@ ftq(%s)' % sqlvalues(search_text)))
 
+        def dateToDatetime(date):
+            """Convert a datetime.date to a datetime.datetime
+
+            The returned time will have a zero time component and be based on
+            UTC.
+            """
+            return datetime.datetime.combine(
+                date, datetime.time(tzinfo=pytz.UTC))
+
         if created_after is not None:
             if not isinstance(created_after, datetime.datetime):
+                created_after = dateToDatetime(created_after)
                 created_after = datetime.datetime(
                     created_after.year, created_after.month,
                     created_after.day, tzinfo=pytz.utc)
             conditions.append(Product.datecreated >= created_after)
+
         if created_before is not None:
             if not isinstance(created_before, datetime.datetime):
-                created_before = datetime.datetime(
-                    created_before.year, created_before.month,
-                    created_before.day, tzinfo=pytz.utc)
+                created_before = dateToDatetime(created_before)
             conditions.append(Product.datecreated <= created_before)
 
         needs_join = False
+
         if subscription_expires_after is not None:
+            if not isinstance(subscription_expires_after, datetime.datetime):
+                subscription_expires_after = (
+                    dateToDatetime(subscription_expires_after))
             conditions.append(
                 CommercialSubscription.date_expires >=
                     subscription_expires_after)
             needs_join = True
+
         if subscription_expires_before is not None:
+            if not isinstance(subscription_expires_before, datetime.datetime):
+                subscription_expires_before = (
+                    dateToDatetime(subscription_expires_before))
             conditions.append(
                 CommercialSubscription.date_expires <=
                     subscription_expires_before)
             needs_join = True
 
         if subscription_modified_after is not None:
+            if not isinstance(subscription_modified_after, datetime.datetime):
+                subscription_modified_after = (
+                    dateToDatetime(subscription_modified_after))
             conditions.append(
                 CommercialSubscription.date_last_modified >=
                     subscription_modified_after)
             needs_join = True
         if subscription_modified_before is not None:
+            if not isinstance(subscription_modified_before, datetime.datetime):
+                subscription_modified_before = (
+                    dateToDatetime(subscription_modified_before))
             conditions.append(
                 CommercialSubscription.date_last_modified <=
                     subscription_modified_before)

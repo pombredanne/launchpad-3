@@ -437,18 +437,19 @@ was created.
 
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
-    ...     created_after=bzr.datecreated, created_before=bzr.datecreated):
+    ...     created_after=bzr.datecreated,
+    ...     created_before=bzr.datecreated):
     ...     print product.name
     bzr
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     created_before=bzr.datecreated-timedelta(seconds=1)):
     ...     print product.name
-    >>> date_expires = bzr.commercial_subscription.date_expires
 
 You can search for products based on the expiration date of
 its commercial subscription.
 
+    >>> date_expires = bzr.commercial_subscription.date_expires
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     subscription_expires_after=date_expires,
@@ -459,12 +460,32 @@ its commercial subscription.
     ...     search_text='bzr',
     ...     subscription_expires_after=date_expires+timedelta(seconds=1)):
     ...     print product.name
-    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
+
+You can also search using a datetime.date object, since that is what
+the web form delivers.
+
+    >>> one_day = timedelta(days=1)
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires.date(),
+    ...     subscription_expires_before=date_expires.date() + one_day):
+    ...     print product.name
+    bzr
+
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=bzr.datecreated.date(),
+    ...     created_before=bzr.datecreated.date() + one_day):
+    ...     print product.name
+    bzr
+
+
 
 You can search for products based on the date of that
 its commercial subscription was modified, which only
 happens when a voucher is redeemed.
 
+    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     subscription_modified_after=date_last_modified,
