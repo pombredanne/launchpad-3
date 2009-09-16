@@ -24,6 +24,8 @@ We will log in as Sample Person and edit the ubz sprint.
   >>> browser.getLink('Change details').click()
   >>> browser.url
   'http://launchpad.dev/sprints/ubz/+edit'
+  >>> browser.getLink('Cancel').url
+  'http://launchpad.dev/sprints/ubz'
 
 The sprint start and end times are expressed to the nearest minute, and
 not the second:
