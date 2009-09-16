@@ -707,8 +707,6 @@ person_translations_to_review = ContextDisplayName(
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
-pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
-
 # portlet_* are portlets
 
 poll_edit = ContextTitle(smartquote('Edit poll "%s"'))

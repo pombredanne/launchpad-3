@@ -203,14 +203,18 @@
             for="lp.translations.interfaces.pofile.IPOFile"
             name="+translate"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.translations.interfaces.pofile.IPOFile"
+            name="+details"
+            permission="zope.Public"
+            class="lp.translations.browser.pofile.POFileDetailsView"
+            layer="canonical.launchpad.layers.TranslationsLayer"
+            template="../templates/pofile-details.pt"/>
         <browser:pages
             for="lp.translations.interfaces.pofile.IPOFile"
             permission="zope.Public"
             class="lp.translations.browser.pofile.POFileView"
             layer="canonical.launchpad.layers.TranslationsLayer">
-            <browser:page
-                name="+details"
-                template="../templates/pofile-index.pt"/>
             <!-- POFile Portlets -->
             <browser:page
                 name="+contributors"
