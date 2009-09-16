@@ -698,13 +698,6 @@
         facet="branches"
         name="+activereviews"
         template="../templates/active-reviews.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.project.IProject"
-        class="lp.code.browser.branchmergeproposallisting.BranchMergeProposalListingView"
-        facet="branches"
-        permission="zope.Public"
-        name="+merges"
-        template="../templates/branchmergeproposal-generic-listing.pt"/>
     <facet
         facet="overview">
         <browser:menus
@@ -804,13 +797,6 @@
         facet="branches"
         name="+activereviews"
         template="../templates/active-reviews.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchmergeproposallisting.BranchMergeProposalListingView"
-        facet="branches"
-        permission="zope.Public"
-        name="+merges"
-        template="../templates/branchmergeproposal-generic-listing.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductCodeIndexView"
@@ -915,5 +901,13 @@
         template="../templates/person-codesummary.pt"
         permission="zope.Public"
         />
+
+    <browser:page
+        for="lp.code.interfaces.hasbranches.IHasMergeProposals"
+        class="lp.code.browser.branchmergeproposallisting.BranchMergeProposalListingView"
+        facet="branches"
+        permission="zope.Public"
+        name="+merges"
+        template="../templates/branchmergeproposal-generic-listing.pt"/>
 
 </configure>
