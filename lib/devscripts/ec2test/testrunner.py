@@ -475,10 +475,13 @@ class EC2TestRunner:
         # close ssh connection
         user_connection.close()
 
-    def start_demo_webserver(self):
+    def run_demo_webserver(self):
         """Turn ec2 instance into a demo server."""
+        self.configure_system()
+        self.prepare_tests()
         user_connection = self._instance.connect_as_user()
         p = user_connection.perform
+        p('make -C /var/launchpad/test schema')
         p('mkdir -p /var/tmp/bazaar.launchpad.dev/static')
         p('mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors')
         p('sudo a2enmod proxy > /dev/null')
@@ -508,6 +511,8 @@ class EC2TestRunner:
         user_connection.close()
 
     def run_tests(self):
+        self.configure_system()
+        self.prepare_tests()
         user_connection = self._instance.connect_as_user()
 
         # Make sure we activate the failsafe --shutdown feature.  This will
@@ -584,6 +589,7 @@ class EC2TestRunner:
                 sftp.get('/var/www/summary.log', self.file)
                 sftp.close()
         user_connection.close()
+        return not self.headless
 
     def get_remote_test_options(self):
         """Return the test command that will be passed to ec2test-remote.py.

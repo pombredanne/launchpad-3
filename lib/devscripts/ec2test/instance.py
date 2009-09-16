@@ -41,7 +41,7 @@ class EC2Instance:
 
     @classmethod
     def make(cls, credentials, name, instance_type, machine_id,
-             demo_networks=None):
+             demo_networks):
         """Construct an `EC2Instance`.
 
         :param credentials: An `EC2Credentials` object.
@@ -105,7 +105,7 @@ class EC2Instance:
             return
         start = time.time()
         self.private_key = self._account.acquire_private_key()
-        self._account.acquire_security_group(
+        self.security_group = self._account.acquire_security_group(
             demo_networks=self._demo_networks)
         reservation = self._image.run(
             key_name=self._name, security_groups=[self._name],

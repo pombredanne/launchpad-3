@@ -6,6 +6,7 @@ from bzrlib.errors import BzrCommandError
 from bzrlib.option import ListOption, Option
 
 import paramiko
+import socket
 
 from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.commandline import (
@@ -132,11 +133,37 @@ class EC2Command(Command):
         return s
 
 
+def get_user_key():
+    agent = paramiko.Agent()
+    keys = agent.get_keys()
+    if len(keys) == 0:
+        error_and_quit(
+            'You must have an ssh agent running with keys installed that '
+            'will allow the script to rsync to devpad and get your '
+            'branch.\n')
+    user_key = agent.get_keys()[0]
+    return user_key
+
+def make_instance(instance_type, machine, demo_networks=None):
+    # Get the AWS identifier and secret identifier.
+    if instance_type not in AVAILABLE_INSTANCE_TYPES:
+        raise BzrCommandError('Unknown instance type.')
+    try:
+        credentials = EC2Credentials.load_from_file()
+    except CredentialsError, e:
+        error_and_quit(str(e))
+
+    return EC2Instance.make(
+        credentials, EC2TestRunner.name, instance_type=instance_type,
+        machine_id=machine, demo_networks=demo_networks)
+
+
 class cmd_test(EC2Command):
     """Run the tests in ec2."""
 
     takes_options = [
         branch_option,
+        trunk_option,
         machine_id_option,
         instance_type_option,
         Option(
@@ -233,31 +260,17 @@ class cmd_test(EC2Command):
         else:
             if email == []:
                 email = True
-        if instance_type not in AVAILABLE_INSTANCE_TYPES:
-            raise BzrCommandError('Unknown instance type.')
         branches = [data.split('=', 1) for data in branch]
 
         if headless and not (email or submit_pqm_message):
-            raise ValueError('You have specified no way to get the results '
-                             'of your headless test run.')
+            raise BzrCommandError(
+                'You have specified no way to get the results '
+                'of your headless test run.')
 
-        agent = paramiko.Agent()
-        keys = agent.get_keys()
-        if len(keys) == 0:
-            error_and_quit(
-                'You must have an ssh agent running with keys installed that '
-                'will allow the script to rsync to devpad and get your '
-                'branch.\n')
-        user_key = agent.get_keys()[0]
-        # Get the AWS identifier and secret identifier.
-        try:
-            credentials = EC2Credentials.load_from_file()
-        except CredentialsError, e:
-            error_and_quit(str(e))
 
-        instance = EC2Instance.make(
-            credentials, EC2TestRunner.name, instance_type=instance_type,
-            machine_id=machine)
+        instance = make_instance(instance_type, machine)
+
+        user_key = get_user_key()
 
         runner = EC2TestRunner(
             branch, email=email, file=file,
@@ -269,21 +282,94 @@ class cmd_test(EC2Command):
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
-        def run_tests():
-            runner.configure_system()
-            runner.prepare_tests()
-            runner.run_tests()
-            return not headless
+
         instance.start()
         instance.set_up_user(user_key)
-
         run_with_instance(
-            instance, run_tests, postmortem)
+            instance, runner.run_tests, postmortem)
 
 
 class cmd_demo(EC2Command):
-    def run(self):
-        print 'foo'
+    """Start a demo instance of Launchpad.
+
+    See https://wiki.canonical.com/Launchpad/EC2Test/ForDemos
+    """
+
+    takes_options = [
+        branch_option,
+        trunk_option,
+        machine_id_option,
+        instance_type_option,
+        Option(
+            'postmortem', short_name='p',
+            help=('Drop to interactive prompt after the test and before shutting '
+                  'down the instance for postmortem analysis of the EC2 instance '
+                  'and/or of this script.')),
+        debug_option,
+        include_download_cache_changes_option,
+        ListOption(
+            'demo-network', type=str,
+            help="Allow this netmask to connect to the instance."),
+        ]
+
+    takes_args = ['test_branch?']
+
+    def run(self, test_branch=None, branch=[], trunk=False, machine=None,
+            instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
+            include_download_cache_changes=False, demo=None):
+        if debug:
+            import pdb; pdb.set_trace()
+        if trunk:
+            if test_branch is not None:
+                raise BzrCommandError(
+                    "Cannot specify both a branch to test and --trunk")
+            else:
+                test_branch = TRUNK_BRANCH
+        else:
+            if test_branch is None:
+                test_branch = '.'
+        branches = [data.split('=', 1) for data in branch]
+
+        instance = make_instance(instance_type, machine, demo)
+
+        user_key = get_user_key()
+
+        runner = EC2TestRunner(
+            branch, branches=branches,
+            include_download_cache_changes=include_download_cache_changes,
+            instance=instance, vals=instance._vals)
+
+        instance.start()
+        instance.set_up_user(user_key)
+
+        def run_server():
+            runner.run_demo_server()
+            demo_network_string = '\n'.join(
+                '  ' + network for network in demo)
+            ec2_ip = socket.gethostbyname(instance.hostname)
+            print (
+                "\n\n"
+                "********************** DEMO *************************\n"
+                "It may take 20 seconds for the demo server to start up."
+                "\nTo demo to other users, you still need to open up\n"
+                "network access to the ec2 instance from their IPs by\n"
+                "entering command like this in the interactive python\n"
+                "interpreter at the end of the setup. "
+                "\n  instance.security_group.authorize("
+                "'tcp', 443, 443, '10.0.0.5/32')\n\n"
+                "These demo networks have already been granted access on "
+                "port 80 and 443:\n" + demo_network_string +
+                "\n\nYou also need to edit your /etc/hosts to point\n"
+                "launchpad.dev at the ec2 instance's IP like this:\n"
+                "  " + ec2_ip + "    launchpad.dev\n\n"
+                "See "
+                "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
+                "\n*****************************************************"
+                "\n\n")
+
+        run_with_instance(
+            instance, run_server, True)
+
 
 class cmd_update_image(EC2Command):
     def run(self):
