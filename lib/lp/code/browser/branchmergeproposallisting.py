@@ -33,6 +33,7 @@ from lp.code.interfaces.branchcollection import (
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, IBranchMergeProposalGetter,
     IBranchMergeProposalListingBatchNavigator)
+from lp.code.interfaces.hasbranches import IHasMergeProposals
 
 
 class BranchMergeProposalListingItem:
@@ -168,7 +169,7 @@ class BranchMergeProposalListingView(LaunchpadFormView):
     @property
     def page_title(self):
         return "Merge Proposals for %s" % self.context.displayname
-    heading = page_title
+    label = page_title
 
     @property
     def initial_values(self):
@@ -189,7 +190,7 @@ class BranchMergeProposalListingView(LaunchpadFormView):
     def status_filter(self):
         """Return the status values to filter on."""
         if self.status_value == FilterableStatusValues.ALL:
-            return None
+            return BranchMergeProposalStatus.items
         else:
             return (BranchMergeProposalStatus.items[self.status_value.name], )
 
@@ -205,9 +206,8 @@ class BranchMergeProposalListingView(LaunchpadFormView):
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""
         # Adapt the context to a branch collection.
-        collection = IBranchCollection(self.context)
-        collection = collection.visibleByUser(self.user)
-        return collection.getMergeProposals(statuses=self.status_filter)
+        has_proposals = IHasMergeProposals(self.context)
+        return has_proposals.getMergeProposals(self.status_filter, self.user)
 
     @cachedproperty
     def proposal_count(self):
