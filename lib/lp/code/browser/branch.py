@@ -210,7 +210,7 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
-             'register_merge', 'landing_candidates',
+             'register_merge',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
