@@ -51,7 +51,8 @@ from lp.soyuz.model.publishing import (
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    default_name_by_purpose, IArchiveSet, ArchivePurpose)
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -1455,10 +1456,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             distribution = self.makeDistribution()
         if owner is None:
             owner = self.makePerson()
-        if name is None:
-            name = self.getUniqueString()
         if purpose is None:
             purpose = ArchivePurpose.PPA
+        if name is None:
+            try:
+                name = default_name_by_purpose[purpose]
+            except KeyError:
+                name = self.getUniqueString()
 
         # Making a distribution makes an archive, and there can be only one
         # per distribution.
