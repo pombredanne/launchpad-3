@@ -117,7 +117,7 @@ class POFileMenuMixin:
 
     def translate(self):
         text = 'Translate'
-        return Link('+translate', text, icon='languages')
+        return Link('+translate', text, icon='language')
 
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
@@ -441,6 +441,15 @@ class POFileView(LaunchpadView):
                     })
             groups.add(group)
         return managers
+
+
+class POFileDetailsView(POFileView):
+    """View for the detail page of a POFile"""
+
+    @property
+    def label(self):
+        return  _("Details for %s translation") % (
+                    self.context.language.englishname)
 
 
 class TranslationMessageContainer:
