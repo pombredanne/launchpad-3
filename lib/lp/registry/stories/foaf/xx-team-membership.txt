@@ -238,4 +238,3 @@ The Ubuntu Team is only a direct member of other teams:
     >>> indirect = find_portlet(browser.contents, 'Indirect membership')
     >>> print indirect
     None
-

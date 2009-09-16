@@ -747,12 +747,10 @@
                 PersonSetActionNavigationMenu
                 PersonSetContextMenu
                 PersonSpecsMenu
-                TeamBugsMenu
                 TeamEditMenu
                 TeamIndexMenu
                 TeamOverviewMenu
                 TeamOverviewNavigationMenu
-                TeamSpecsMenu
                 "/>
         <browser:menus
             module="lp.registry.browser.menu"
@@ -848,13 +846,17 @@
                 name="+karma"
                 template="../templates/person-karma.pt"/>
         </browser:pages>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            name="+participation"
+            class="lp.registry.browser.person.PersonParticipationView"
+            template="../templates/person-participation.pt"
+            />
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
             class="lp.registry.browser.person.PersonView">
-            <browser:page
-                name="+participation"
-                template="../templates/person-participation.pt"/>
             <browser:page
                 name="+sshkeys"
                 attribute="showSSHKeys"/>
@@ -943,21 +945,21 @@
             name="+table-specworkload"
             permission="zope.Public"
             class="lp.registry.browser.person.PersonSpecWorkloadTableView"
-            template="../templates/person-table-specworkload.pt"/>
+            template="../../blueprints/templates/person-table-specworkload.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+specfeedback"
             facet="specifications"
             class="lp.registry.browser.person.PersonSpecFeedbackView"
             permission="zope.Public"
-            template="../templates/person-specfeedback.pt"/>
+            template="../../blueprints/templates/person-specfeedback.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+specworkload"
             facet="specifications"
             class="lp.registry.browser.person.PersonSpecWorkloadView"
             permission="zope.Public"
-            template="../templates/person-specworkload.pt"/>
+            template="../../blueprints/templates/person-specworkload.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+rdf"
@@ -1029,7 +1031,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
-            class="lp.registry.browser.person.PersonView"
+            class="lp.registry.browser.team.TeamHierarchyView"
             name="+teamhierarchy"
             template="../templates/person-teamhierarchy.pt"/>
         <browser:page
@@ -1172,7 +1174,8 @@
             name="+invitations"
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.Edit"
-            template="../templates/team-invitations.pt"/>
+            template="../templates/team-invitations.pt"
+            class="lp.registry.browser.teammembership.TeamInvitationsView"/>
         <browser:page
             name="+addmember"
             for="lp.registry.interfaces.person.ITeam"
@@ -1945,6 +1948,7 @@
         template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
+            DerivativeDistributionOverviewMenu
             DistributionBugsMenu
             DistributionFacets
             DistributionMirrorsNavigationMenu

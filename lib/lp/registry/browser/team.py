@@ -10,14 +10,16 @@ __all__ = [
     'TeamBrandingView',
     'TeamContactAddressView',
     'TeamEditView',
+    'TeamHierarchyView',
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
     'TeamMailingListSubscribersView',
-    'TeamMapView',
     'TeamMapData',
+    'TeamMapView',
     'TeamMemberAddView',
     'TeamPrivacyAdapter',
     ]
+
 
 from urllib import quote
 from datetime import datetime
@@ -1009,6 +1011,8 @@ class TeamMapView(LaunchpadView):
     known locations.
     """
 
+    label = "Team member locations"
+
     def __init__(self, context, request):
         """Accept the 'preview' parameter to limit mapped participants."""
         super(TeamMapView, self).__init__(context, request)
@@ -1104,3 +1108,31 @@ class TeamMapData(TeamMapView):
             'content-type', 'application/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
+
+
+class TeamHierarchyView(LaunchpadView):
+    """View for ~team/+teamhierarchy page."""
+
+    @property
+    def label(self):
+        return 'Team relationships for ' + self.context.displayname
+
+    @property
+    def has_sub_teams(self):
+        return self.context.sub_teams.count() > 0
+
+    @property
+    def has_super_teams(self):
+        return self.context.super_teams.count() > 0
+
+    @property
+    def has_only_super_teams(self):
+        return self.has_super_teams and not self.has_sub_teams
+
+    @property
+    def has_only_sub_teams(self):
+        return not self.has_super_teams and self.has_sub_teams
+
+    @property
+    def has_relationships(self):
+        return self.has_sub_teams or self.has_super_teams

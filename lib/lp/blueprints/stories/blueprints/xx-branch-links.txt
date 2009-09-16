@@ -123,4 +123,4 @@ the spec-branch link.
 
     >>> browser.getLink('edit').click()
     >>> print browser.title
-    Edit blueprint branch status
+    +status : Blueprints for Mozilla Firefox : Mozilla Firefox
