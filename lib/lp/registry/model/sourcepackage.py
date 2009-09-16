@@ -51,6 +51,7 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.answers.interfaces.questioncollection import (
@@ -580,10 +581,18 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def default_archive(self):
         """See `ISourcePackage`."""
-        if self.latest_published_component.name == 'partner':
-            return getUtility(IArchiveSet).getByDistroPurpose(
-                self.distribution, ArchivePurpose.PARTNER)
-        return self.distribution.main_archive
+        latest_published_component = self.latest_published_component
+        distribution = self.distribution
+        if (latest_published_component is not None
+            and latest_published_component.name == 'partner'):
+            archive = getUtility(IArchiveSet).getByDistroPurpose(
+                distribution, ArchivePurpose.PARTNER)
+            if archive is None:
+                raise NoPartnerArchive(distribution)
+            else:
+                return archive
+        else:
+            return distribution.main_archive
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

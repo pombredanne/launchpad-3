@@ -12,6 +12,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
+from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -193,6 +194,20 @@ class TestSourcePackage(TestCaseWithFactory):
             distribution=distribution,
             purpose=ArchivePurpose.PARTNER)
         self.assertEqual(expected_archive, sourcepackage.default_archive)
+
+    def test_default_archive_partner_doesnt_exist(self):
+        # If the default archive ought to be the partner archive (because the
+        # last published upload was to a partner component) then
+        # default_archive will raise an exception.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackage.sourcepackagename,
+            distroseries=sourcepackage.distroseries,
+            component=partner,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertRaises(
+            NoPartnerArchive, lambda: sourcepackage.default_archive)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
