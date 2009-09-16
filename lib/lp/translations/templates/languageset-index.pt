@@ -43,7 +43,8 @@
             </p>
           </form>
           <div tal:condition="context/required:launchpad.Admin">
-            <a href="+add" class="add sprite">Add new language</a>
+            <a tal:attributes="href context/fmt:url/+add"
+               class="add sprite">Add new language</a>
           </div>
         </div>
       </div>
@@ -66,16 +67,15 @@
               matching languages
             </h2>
           </tal:more>
-          <dl condition="view/search_matches" class="languages">
+          <ul condition="view/search_matches" class="languages">
             <tal:language repeat="language results">
-              <dt>
+              <li>
                 <a tal:replace="structure language/fmt:link">
                   Serbian (sr)
                 </a>
-              </dt>
-              <dd></dd>
+              </li>
             </tal:language>
-          </dl>
+          </ul>
         </tal:block>
       </div>
     </div>
