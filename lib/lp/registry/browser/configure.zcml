@@ -747,12 +747,10 @@
                 PersonSetActionNavigationMenu
                 PersonSetContextMenu
                 PersonSpecsMenu
-                TeamBugsMenu
                 TeamEditMenu
                 TeamIndexMenu
                 TeamOverviewMenu
                 TeamOverviewNavigationMenu
-                TeamSpecsMenu
                 "/>
         <browser:menus
             module="lp.registry.browser.menu"
