@@ -578,13 +578,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         else:
             return None
 
-    @property
-    def default_archive(self):
+    def get_default_archive(self, component=None):
         """See `ISourcePackage`."""
-        latest_published_component = self.latest_published_component
+        if component is None:
+            component = self.latest_published_component
         distribution = self.distribution
-        if (latest_published_component is not None
-            and latest_published_component.name == 'partner'):
+        if component is not None and component.name == 'partner':
             archive = getUtility(IArchiveSet).getByDistroPurpose(
                 distribution, ArchivePurpose.PARTNER)
             if archive is None:

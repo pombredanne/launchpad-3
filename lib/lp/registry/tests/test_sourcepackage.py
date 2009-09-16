@@ -176,7 +176,7 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         distribution = sourcepackage.distribution
         self.assertEqual(
-            distribution.main_archive, sourcepackage.default_archive)
+            distribution.main_archive, sourcepackage.get_default_archive())
 
     def test_default_archive_partner(self):
         # If the source package was most recently uploaded to a partner
@@ -193,7 +193,21 @@ class TestSourcePackage(TestCaseWithFactory):
         expected_archive = self.factory.makeArchive(
             distribution=distribution,
             purpose=ArchivePurpose.PARTNER)
-        self.assertEqual(expected_archive, sourcepackage.default_archive)
+        self.assertEqual(
+            expected_archive, sourcepackage.get_default_archive())
+
+    def test_default_archive_specified_component(self):
+        # If the component is explicitly specified as partner, then we return
+        # the partner archive.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        distribution = sourcepackage.distribution
+        expected_archive = self.factory.makeArchive(
+            distribution=distribution,
+            purpose=ArchivePurpose.PARTNER)
+        self.assertEqual(
+            expected_archive,
+            sourcepackage.get_default_archive(component=partner))
 
     def test_default_archive_partner_doesnt_exist(self):
         # If the default archive ought to be the partner archive (because the
@@ -207,7 +221,7 @@ class TestSourcePackage(TestCaseWithFactory):
             component=partner,
             status=PackagePublishingStatus.PUBLISHED)
         self.assertRaises(
-            NoPartnerArchive, lambda: sourcepackage.default_archive)
+            NoPartnerArchive, sourcepackage.get_default_archive)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
