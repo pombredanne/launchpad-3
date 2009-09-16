@@ -157,7 +157,6 @@ default is to redirect if no cookie exists):
     redirection</button></p>
     </div>
 
-
 Now when they go to a page on the site, it loads as normal:
 
     >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
