@@ -730,6 +730,11 @@ class TeamMailingListSubscribersView(LaunchpadView):
 
     max_columns = 4
 
+    @property
+    def label(self):
+        return ('Mailing list subscribers for the %s team' %
+                self.context.displayname)
+
     @cachedproperty
     def subscribers(self):
         return BatchNavigator(
@@ -1003,6 +1008,8 @@ class TeamMapView(LaunchpadView):
     Also provides links to edit the locations of people in the team without
     known locations.
     """
+
+    label = "Team member locations"
 
     def __init__(self, context, request):
         """Accept the 'preview' parameter to limit mapped participants."""
