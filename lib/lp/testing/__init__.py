@@ -72,6 +72,21 @@ class FakeTime:
 class TestCase(unittest.TestCase):
     """Provide Launchpad-specific test facilities."""
 
+    # Python 2.4 monkeypatch:
+    if getattr(unittest.TestCase, '_exc_info', None) is None:
+        _exc_info = unittest.TestCase._TestCase__exc_info
+        # We would not expect to need to make this property writeable, but
+        # twisted.trial.unittest.TestCase.__init__ chooses to write to it in
+        # the same way that the __init__ of the standard library's
+        # unittest.TestCase.__init__ does, as part of its own method of
+        # arranging for pre-2.5 compatibility.
+        class MonkeyPatchDescriptor:
+            def __get__(self, obj, type):
+                return obj._TestCase__testMethodName
+            def __set__(self, obj, value):
+                obj._TestCase__testMethodName = value
+        _testMethodName = MonkeyPatchDescriptor()
+
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         self._cleanups = []
@@ -101,7 +116,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 ok = False
         return ok
 
@@ -323,14 +338,14 @@ class TestCase(unittest.TestCase):
         if result is None:
             result = self.defaultTestResult()
         result.startTest(self)
-        testMethod = getattr(self, self.__testMethodName)
+        testMethod = getattr(self, self._testMethodName)
         try:
             try:
                 self.setUp()
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 self._runCleanups(result)
                 return
 
@@ -339,11 +354,11 @@ class TestCase(unittest.TestCase):
                 testMethod()
                 ok = True
             except self.failureException:
-                result.addFailure(self, self.__exc_info())
+                result.addFailure(self, self._exc_info())
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
 
             cleanupsOk = self._runCleanups(result)
             try:
@@ -351,7 +366,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 ok = False
             if ok and cleanupsOk:
                 result.addSuccess(self)
