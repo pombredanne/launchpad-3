@@ -1198,39 +1198,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
             BugCountDataItem(status.title, count, self.status_color[status])
             for status, count in bug_counts]
 
-    def getChartJavascript(self):
-        """Return a snippet of Javascript that draws a pie chart."""
-        # XXX: Bjorn Tillenius 2007-02-13:
-        #      This snippet doesn't work in IE, since (I think) there
-        #      has to be a delay between creating the canvas element and
-        #      using it to draw the chart.
-        js_template = """
-            function drawGraph() {
-                var options = {
-                  "drawBackground": false,
-                  "colorScheme": [%(color_list)s],
-                  "xTicks": [%(label_list)s]};
-                var data = [%(data_list)s];
-                var plotter = PlotKit.EasyPlot(
-                    "pie", options, $("bugs-chart"), [data]);
-            }
-            registerLaunchpadFunction(drawGraph);
-            """
-        # The color list should inlude only colors for slices that will
-        # be drawn in the pie chart, so colors that don't have any bugs
-        # associated with them.
-        color_list = ', '.join(
-            data_item.color for data_item in self.bug_count_items
-            if data_item.count > 0)
-        label_list = ', '.join([
-            '{v:%i, label:"%s"}' % (index, data_item.label)
-            for index, data_item in enumerate(self.bug_count_items)])
-        data_list = ', '.join([
-            '[%i, %i]' % (index, data_item.count)
-            for index, data_item in enumerate(self.bug_count_items)])
-        return js_template % dict(
-            color_list=color_list, label_list=label_list, data_list=data_list)
-
     @property
     def uses_launchpad_bugtracker(self):
         """Whether this distro or product tracks bugs in launchpad.

@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/default2.0"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="malone"
 >
   <metal:block fill-slot="head_epilogue">
@@ -14,105 +14,73 @@
     <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
   </metal:block>
   <metal:portlets fill-slot="portlets">
-    <tal:block content="structure context/@@+portlet-bugfilters" />
-    <tal:block content="structure context/@@+portlet-bugtags" />
-    <tal:releasecriticalbugs
-      tal:condition="view/shouldShowReleaseCriticalPortlet"
-      tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
   </metal:portlets>
   <body>
-    <div metal:fill-slot="main" class="tab-bugs"
-         tal:define="search_url string:+bugs;
-                     advanced_search_url string:+bugs?advanced=1">
-      <h1>Bugs in <tal:context replace="context/title">Ubuntu</tal:context></h1>
-      <div style="text-align: center; clear: both;">
-        <metal:search
-          use-macro="context/@@+bugtarget-macros-search/simple-search-form"
-        />
+    <tal:side metal:fill-slot="side">
+      <div id="involvement" class="portlet involvement">
+        <ul>
+          <li style="border: none">
+            <a href="+filebug" class="menu-link-filebug sprite bugs">
+              Report a bug
+            </a>
+          </li>
+          <li>
+            <a href="+filebug" class="menu-link-filebug sprite answers">
+              Ask a question
+            </a>
+          </li>
+        </ul>
       </div>
-      <script type="text/javascript"><!--
-           $('field.searchtext').focus();
-      --></script>
-
-      <div class="columns">
-          <script type="text/javascript"
-               tal:content="structure view/getChartJavascript">
-          </script>
-        <div class="two column left">
-          <div id="bugs-chart" height="200" width="200">
-            <noscript>
-            <ul>
-              <li tal:repeat="bug_count view/bug_count_items"
-                  tal:content="string:${bug_count/count} ${bug_count/label} bugs">
-                12 Unconfirmed bugs
-              </li>
-            </ul>
-            </noscript>
-          </div>
-        </div>
-        <div class="two column right">
-          <h2>Key contacts</h2>
-          <table class="summary" style="width: 100%;">
-            <tbody>
-              <tr>
-                <th>Driver:</th>
-                <td colspan="2">
-                  <tal:none condition="not:context/driver">None set</tal:none>
-                  <a
-                    tal:condition="context/driver"
-                    tal:replace="structure context/driver/fmt:link"
-                  >John Smith</a>
-                </td>
-              </tr>
-              <tr tal:define="bug_supervisor context/bug_supervisor">
-                <th>Bug supervisor:</th>
-                <td>
-                  <tal:none condition="not:bug_supervisor"
-                  >None set</tal:none>
-                  <a
-                    tal:condition="bug_supervisor"
-                    tal:replace="structure bug_supervisor/fmt:link"
-                  >Bob Johnson</a>
-                </td>
-                <td>
-                  <tal:edit-bug-supervisor
-                      condition="context/menu:bugs/bugsupervisor|nothing">
-                    <a tal:define="link context/menu:bugs/bugsupervisor"
-                       tal:condition="link/enabled"
-                       tal:attributes="href link/url; title link/text">
-                      <img tal:attributes="alt link/text" src="/@@/edit" />
-                    </a>
-                  </tal:edit-bug-supervisor>
-                </td>
-              </tr>
-              <tr tal:define="securitycontact context/security_contact">
-                <th>Security contact:</th>
-                <td>
-                  <tal:none condition="not:securitycontact"
-                  >None set</tal:none>
-                  <a
-                    tal:condition="securitycontact"
-                    tal:replace="structure securitycontact/fmt:link"
-                  >Billy Anderson</a>
-                </td>
-                <td>
-                  <tal:edit-securitycontact
-                      condition="context/menu:bugs/securitycontact|nothing">
-                    <a tal:define="link context/menu:bugs/securitycontact"
-                       tal:condition="link/enabled"
-                       tal:attributes="href link/url; title link/text">
-                      <img tal:attributes="alt link/text" src="/@@/edit" />
-                    </a>
-                  </tal:edit-securitycontact>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="portlet">
+        <strong>Bug tracker:</strong>
+        <tal:bugtracker replace="structure view/bugtracker" />
+        <tal:subscribe
+            replace="structure context/menu:bugs/subscribe/render" />
+        <table class="summary" style="width: 100%;">
+        <tbody>
+          <tr tal:define="bug_supervisor context/bug_supervisor">
+          <th>Bug supervisor:</th>
+          <td>
+            <tal:none condition="not:bug_supervisor">None set</tal:none>
+            <a tal:condition="bug_supervisor"
+               tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
+          </td>
+          <td>
+           <tal:edit-bug-supervisor
+               condition="context/menu:bugs/bugsupervisor|nothing">
+             <a tal:define="link context/menu:bugs/bugsupervisor"
+                tal:condition="link/enabled"
+                tal:attributes="href link/url; title link/text">
+               <img tal:attributes="alt link/text" src="/@@/edit" />
+            </a>
+          </tal:edit-bug-supervisor>
+        </td>
+        </tr>
+        <tr tal:define="securitycontact context/security_contact">
+          <th>Security contact:</th>
+          <td>
+            <tal:none condition="not:securitycontact">None set</tal:none>
+            <a tal:condition="securitycontact"
+               tal:replace="structure securitycontact/fmt:link">
+              Billy Anderson
+            </a>
+        </td>
+        <td>
+          <tal:edit-securitycontact
+              condition="context/menu:bugs/securitycontact|nothing">
+            <a tal:define="link context/menu:bugs/securitycontact"
+               tal:condition="link/enabled"
+               tal:attributes="href link/url; title link/text">
+              <img tal:attributes="alt link/text" src="/@@/edit" />
+            </a>
+          </tal:edit-securitycontact>
+        </td>
+        </tr>
+        </tbody>
+        </table>
+      </div>
+      <div class="portlet">
           <ul class="cross-reference">
-            <li id="bugtracker">
-              <strong>Bug tracker:</strong>
-              <tal:bugtracker replace="structure view/bugtracker" />
-            </li>
             <li tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">
               <a tal:attributes="href fixed_elsewhere/url">
                 <strong tal:content="fixed_elsewhere/count">42</strong>
@@ -168,25 +136,27 @@
             <li style="font-weight: bold;">
               <a href="+bugs">List all open bugs</a>
             </li>
-            <li>
-              <tal:subscribe define="link context/menu:bugs/subscribe"
-                             replace="structure link/render" />
-            </li>
           </ul>
-          <ul class="rollover buttons">
-            <li>
-              <a href="+filebug">
-                <img
-                  alt="Report a bug"
-                  src="/+icing/but-sml-reportabug.gif"
-                />
-              </a>
-            </li>
-            <li tal:content="structure context/@@+ask-a-question-button" />
-          </ul>
-        </div><!-- two column right -->
-      </div><!-- columns -->
-      <div class="clear"></div>
+        <tal:block content="structure context/@@+portlet-bugfilters" />
+        <tal:releasecriticalbugs
+          tal:condition="view/shouldShowReleaseCriticalPortlet"
+          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+      </div>
+      <div tal:replace="structure context/@@+portlet-bugtags" />
+    </tal:side>
+    <div metal:fill-slot="main" class="tab-bugs"
+         tal:define="search_url string:+bugs;
+                     advanced_search_url string:+bugs?advanced=1">
+      <h1>Bugs in <tal:context replace="context/title">Ubuntu</tal:context></h1>
+      <div style="text-align: center; clear: both;">
+        <metal:search
+          use-macro="context/@@+bugtarget-macros-search/simple-search-form"
+        />
+      </div>
+      <script type="text/javascript"><!--
+           $('field.searchtext').focus();
+      --></script>
+
       <div class="left">
         <tal:reported replace="structure context/@@+portlet-latestbugs" />
       </div>
