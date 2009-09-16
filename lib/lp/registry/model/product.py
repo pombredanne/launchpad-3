@@ -19,8 +19,7 @@ import calendar
 import pytz
 import sets
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
-    StringCol)
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from storm.locals import And, Desc, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
@@ -1151,7 +1150,8 @@ class ProductSet:
                     subscription_modified_after)
             needs_join = True
         if subscription_modified_before is not None:
-            if not isinstance(subscription_modified_before, datetime.datetime):
+            if not isinstance(subscription_modified_before,
+                              datetime.datetime):
                 subscription_modified_before = (
                     dateToDatetime(subscription_modified_before))
             conditions.append(
