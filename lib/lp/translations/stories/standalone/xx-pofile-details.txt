@@ -3,37 +3,19 @@ contributors.
 
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
-    ...     'evolution-2.2/es')
+    ...     'evolution-2.2/es/+details')
     >>> print extract_text(find_main_content(anon_browser.contents)).encode(
     ...     'ascii', 'backslashreplace')
-    Description / Translate / Download
-    Template "evolution-2.2" in Evolution trunk
-    Overview for Spanish translation
+    Details for Spanish translation
+    ...
+    Latest contributor:
+    Carlos...
     Contributors to this translation
     The following people have made some contribution to this specific
     translation:
     Carlos... (filter)
     Mark Shuttleworth (filter)
     No Privileges Person (filter)
-    ...
-
-This page has a navigation menu for translating, importing translations
-into, or exporting translations from the template.  (The import option
-is not available to users without edit rights on the translation).
-
-    >>> navigation_tabs = find_tag_by_id(
-    ...     anon_browser.contents, 'context-navigation-tabs')
-    >>> for link in navigation_tabs.findAll('a'):
-    ...     print "%s:\n%s" % (extract_text(link), link['href'])
-    Translate:
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
-    Download:
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
-
-And has no actions menu:
-
-    >>> print find_tag_by_id(anon_browser.contents, 'actions')
-    None
 
 User can filter any contributions done by Carlos (the first person
 appearing among contributors), by choosing the 'filter' link:

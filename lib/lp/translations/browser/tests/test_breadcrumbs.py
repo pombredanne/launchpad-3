@@ -175,3 +175,31 @@ class TestPOTemplateBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
              "/+pots/template"],
             ["Crumb Tester", "Series test", "Translations",
              smartquote('Template "template"')])
+
+
+class TestPOFileBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+
+    def setUp(self):
+        super(TestPOFileBreadcrumbs, self).setUp()
+        self.language = getUtility(ILanguageSet)['eo']
+        self.product = self.factory.makeProduct(
+            name='crumb-tester', displayname="Crumb Tester")
+        self.series = self.factory.makeProductSeries(
+            name="test", product=self.product)
+        self.potemplate = self.factory.makePOTemplate(self.series,
+            name="test-template")
+        self.pofile = self.factory.makePOFile('eo', self.potemplate)
+
+    def test_pofiletranslate(self):
+        self._testContextBreadcrumbs(
+            [self.product, self.series, self.potemplate, self.pofile],
+            ["http://launchpad.dev/crumb-tester",
+             "http://launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test"
+               "/+pots/test-template",
+             "http://launchpad.dev/crumb-tester/test"
+               "/+pots/test-template/eo",
+             ],
+            ["Crumb Tester", "Series test", "Translations",
+             smartquote('Template "test-template"'), "Esperanto (eo)"])
