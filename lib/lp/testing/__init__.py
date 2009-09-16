@@ -43,6 +43,12 @@ from lp.testing._tales import test_tales
 
 from twisted.python.util import mergeFunctionMetadata
 
+# zope.exception demands more of frame objects than twisted.python.failure
+# provides in its fake frames.  This is enough to make it work with them
+# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
+from twisted.python.failure import _Frame
+_Frame.f_locals = property(lambda self: {})
+
 
 class FakeTime:
     """Provides a controllable implementation of time.time()."""

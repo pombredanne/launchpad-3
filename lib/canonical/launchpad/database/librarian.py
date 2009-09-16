@@ -98,7 +98,7 @@ class LibraryFileAlias(SQLBase):
 
     def getURL(self):
         """See ILibraryFileAlias.getURL"""
-        if config.vhosts.use_https:
+        if config.librarian.use_https:
             return self.https_url
         else:
             return self.http_url
