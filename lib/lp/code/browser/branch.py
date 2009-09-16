@@ -267,11 +267,6 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.target.supports_merge_proposals
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
-    def landing_candidates(self):
-        text = 'View landing candidates'
-        enabled = self.context.landing_candidates.count() > 0
-        return Link('+landing-candidates', text, icon='edit', enabled=enabled)
-
     def link_bug(self):
         if self.context.linked_bugs:
             text = 'Link to another bug report'
