@@ -1012,6 +1012,11 @@ class NascentUpload:
             if self.is_ppa:
                 return
 
+            # XXX: JonathanLange 2009-09-16: It would be nice to use
+            # ISourcePackage.get_default_archive here, since it has the same
+            # logic. However, I'm not sure whether we can get a SourcePackage
+            # object.
+
             # See if there is an archive to override with.
             distribution = self.policy.distroseries.distribution
             archive = distribution.getArchiveByComponent(
