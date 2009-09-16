@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'error_and_quit',
-    'main',
     ]
 
 import paramiko
@@ -26,6 +25,3 @@ def error_and_quit(msg):
     """Print error message and exit."""
     sys.stderr.write(msg)
     sys.exit(1)
-
-from devscripts.ec2test.commandline import main
-main # shut up pyflakes

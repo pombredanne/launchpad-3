@@ -10,10 +10,9 @@ import paramiko
 import socket
 
 from devscripts.ec2test import error_and_quit
-from devscripts.ec2test.commandline import (
-    DEFAULT_INSTANCE_TYPE, AVAILABLE_INSTANCE_TYPES)
 from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
-from devscripts.ec2test.instance import EC2Instance
+from devscripts.ec2test.instance import (
+    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 

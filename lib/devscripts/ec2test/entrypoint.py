@@ -1,10 +1,16 @@
-
+import readline
+import rlcompleter
 import sys
 
 import bzrlib.errors
 
 from devscripts.ec2test.command import CommandController
 from devscripts.ec2test.builtins import cmd_demo, cmd_test, cmd_update_image
+
+# Shut up pyflakes.
+rlcompleter
+
+readline.parse_and_bind('tab: complete')
 
 def main():
     controller = CommandController()
