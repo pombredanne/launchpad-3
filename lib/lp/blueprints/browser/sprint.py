@@ -270,6 +270,10 @@ class SprintAddView(LaunchpadFormView):
         assert self.sprint is not None, 'No sprint has been created'
         return canonical_url(self.sprint)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(ISprintSet))
+
 
 class SprintBrandingView(BrandingChangeView):
 
