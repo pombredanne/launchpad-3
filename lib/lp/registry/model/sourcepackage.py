@@ -25,6 +25,7 @@ from lp.code.model.branch import Branch
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.model.build import Build, BuildSet
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -579,6 +580,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def default_archive(self):
         """See `ISourcePackage`."""
+        if self.latest_published_component.name == 'partner':
+            return getUtility(IArchiveSet).getByDistroPurpose(
+                self.distribution, ArchivePurpose.PARTNER)
         return self.distribution.main_archive
 
     def getTranslationTemplates(self):

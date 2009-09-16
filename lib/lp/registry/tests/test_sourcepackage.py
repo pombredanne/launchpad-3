@@ -15,6 +15,9 @@ from canonical.launchpad.ftests import login_person, logout
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.testing import TestCaseWithFactory
@@ -173,6 +176,23 @@ class TestSourcePackage(TestCaseWithFactory):
         distribution = sourcepackage.distribution
         self.assertEqual(
             distribution.main_archive, sourcepackage.default_archive)
+
+    def test_default_archive_partner(self):
+        # If the source package was most recently uploaded to a partner
+        # component, then its default archive is the partner archive for the
+        # distribution.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackage.sourcepackagename,
+            distroseries=sourcepackage.distroseries,
+            component=partner,
+            status=PackagePublishingStatus.PUBLISHED)
+        distribution = sourcepackage.distribution
+        expected_archive = self.factory.makeArchive(
+            distribution=distribution,
+            purpose=ArchivePurpose.PARTNER)
+        self.assertEqual(expected_archive, sourcepackage.default_archive)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
