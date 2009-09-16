@@ -20,7 +20,9 @@ from bzrlib.errors import InvalidURLJoin
 from bzrlib.transport import get_transport
 
 import pytz
+from storm.expr import Variable
 from storm.store import Store
+from storm.tracer import install_tracer, remove_tracer_type
 
 import transaction
 from zope.component import getUtility
@@ -67,6 +69,50 @@ class FakeTime:
     def now(self):
         """Use this bound method instead of time.time in tests."""
         return self._now
+
+
+class StormStatementRecorder:
+    """A storm tracer to count queries."""
+
+    def __init__(self):
+        self.statements = []
+
+    def connection_raw_execute(self, ignored, raw_cursor, statement, params):
+        """Increment the counter.  We don't care about the args."""
+
+        raw_params = []
+        for param in params:
+            if isinstance(param, Variable):
+                raw_params.append(param.get())
+            else:
+                raw_params.append(param)
+        raw_params = tuple(raw_params)
+        self.statements.append("%r, %r" % (statement, raw_params))
+
+
+def record_statements(function, *args, **kwargs):
+    """Run the function and record the sql statements that are executed.
+
+    :return: a tuple containing the return value of the function,
+        and a list of sql statements.
+    """
+    recorder = StormStatementRecorder()
+    try:
+        install_tracer(recorder)
+        ret = function(*args, **kwargs)
+    finally:
+        remove_tracer_type(StormStatementRecorder)
+    return (ret, recorder.statements)
+
+
+def run_with_storm_debug(function, *args, **kwargs):
+    """A helper function to run a function with storm debug tracing on."""
+    from storm.tracer import debug
+    debug(True)
+    try:
+        return function(*args, **kwargs)
+    finally:
+        debug(False)
 
 
 class TestCase(unittest.TestCase):
@@ -377,6 +423,18 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
+
+    def assertStatementCount(self, expected_count, function, *args, **kwargs):
+        """Assert that the expected number of SQL statements occurred.
+
+        :return: Returns the result of calling the function.
+        """
+        ret, statements = record_statements(function, *args, **kwargs)
+        if len(statements) != expected_count:
+            self.fail(
+                "Expected %d statements, got %d:\n%s"
+                % (expected_count, len(statements), "\n".join(statements)))
+        return ret
 
 
 class TestCaseWithFactory(TestCase):
