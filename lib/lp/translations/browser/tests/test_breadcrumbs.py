@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.lazr.utils import smartquote
