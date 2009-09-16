@@ -65,8 +65,7 @@ private build:
     >>> print extract_text(find_main_content(anon_browser.contents))
     The frog builder...
     Current status
-    The frog builder
-    is deactivated.
+    Disabled
     ...
 
 
@@ -76,6 +75,7 @@ Launchpad Administrators are allowed to see the build:
     >>> print extract_text(find_main_content(admin_browser.contents))
     The frog builder...
     Current status
+    Building
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
     ...
 
@@ -86,7 +86,7 @@ Buildd Administrators are not allowed to see the build in the portlet:
     >>> print extract_text(find_main_content(name12_browser.contents))
     The frog builder...
     Current status
-    The frog builder is deactivated.
+    Disabled
     ...
 
 cprov is also allowed to see his own build:
@@ -97,6 +97,7 @@ cprov is also allowed to see his own build:
     >>> print extract_text(find_main_content(cprov_browser.contents))
     The frog builder...
     Current status
+    Building
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
     ...
 
@@ -244,7 +245,7 @@ Launchpad Buildd admins cannot see private builds.
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private build
+    frog  386        Disabled
     ...
 
 cprov can see his own private build:
@@ -266,7 +267,7 @@ Anonymous users cannot see the private build:
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private build
+    frog  386        Disabled
     ...
 
 

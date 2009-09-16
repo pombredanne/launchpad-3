@@ -26,6 +26,13 @@ containing the build queue status summary for each build domain.
     Processor  Builders  Queue
     386        0         empty
 
+When building, the 'Status' column contains a link to the
+corresponding 'Build' page.
+
+    >>> print anon_browser.getLink(
+    ...     'i386 build of mozilla-firefox 0.9').url
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/8
+
 The build status portlets contain the number of builds waiting
 in queue and the sum of their 'estimated_build_duration' for each
 supported processor on each separated build domain, 'official'
