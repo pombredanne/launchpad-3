@@ -191,7 +191,7 @@ class cmd_test(EC2Command):
             'noemail', short_name='n',
             help=('Do not try to email results.')),
         Option(
-            'test-options', short_name='o',
+            'test-options', short_name='o', type=str,
             help=('Test options to pass to the remote test runner.  Defaults to '
                   "``-o '-vv'``.  For instance, to run specific tests, you might "
                   "use ``-o '-vvt my_test_pattern'``.")),
@@ -283,7 +283,7 @@ class cmd_test(EC2Command):
         instance = make_instance(instance_type, machine)
 
         runner = EC2TestRunner(
-            branch, email=email, file=file,
+            test_branch, email=email, file=file,
             test_options=test_options, headless=headless,
             branches=branches, pqm_message=submit_pqm_message,
             pqm_public_location=pqm_public_location,
