@@ -163,7 +163,7 @@ class MemcachedService(Service):
         cmd = [
             'memcached',
             '-m', str(config.memcached.memory_size),
-            '-l', config.memcached.address,
+            '-l', str(config.memcached.address),
             '-p', str(config.memcached.port),
             '-U', str(config.memcached.port),
             ]
