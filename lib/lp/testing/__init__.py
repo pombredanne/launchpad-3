@@ -70,9 +70,10 @@ class TestCase(unittest.TestCase):
     if getattr(unittest.TestCase, '_exc_info', None) is None:
         _exc_info = unittest.TestCase._TestCase__exc_info
         # We would not expect to need to make this property writeable, but
-        # twisted.trial.unittest.TestCase.__init__ peculiarly chooses to write
-        # to it in the same way that the __init__ of the standard library's
-        # unittest.TestCase.__init__ does.
+        # twisted.trial.unittest.TestCase.__init__ chooses to write to it in
+        # the same way that the __init__ of the standard library's
+        # unittest.TestCase.__init__ does, as part of its own method of
+        # arranging for pre-2.5 compatibility.
         class MonkeyPatchDescriptor:
             def __get__(self, obj, type):
                 return obj._TestCase__testMethodName
