@@ -157,3 +157,5 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     def register_action(self, action, data):
         time_starts, time_ends = self.getDates(data)
         self.context.attend(data['attendee'], time_starts, time_ends)
+
+    label = 'Register someone else'
