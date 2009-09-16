@@ -53,7 +53,7 @@
         this person</a>
   </div>
 
-  <div id="participation" class="portlet involvement"
+  <div id="involvement" class="portlet involvement"
     tal:condition="context/is_valid_person">
     <h2>Participation</h2>
 
@@ -92,6 +92,10 @@
       tal:content="structure context/homepage_content/fmt:text-to-html"
     />
     <ul class="horizontal">
+      <li
+        tal:define="link context/menu:overview/related_software_summary"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
       <li
         tal:define="link context/menu:overview/projects"
         tal:condition="link/enabled"

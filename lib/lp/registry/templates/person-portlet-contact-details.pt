@@ -10,7 +10,7 @@
   <h2>User information</h2>
 
   <div class="first yui-u">
-    <dl>
+    <dl id="email-addresses">
       <dt>Email:
         <a tal:replace="structure overview_menu/editemailaddresses/fmt:icon" />
       </dt>
@@ -47,7 +47,7 @@
       </dd>
     </dl>
 
-    <dl tal:condition="view/should_show_jabberids_section">
+    <dl tal:condition="view/should_show_jabberids_section" id="jabber-ids">
       <dt>Jabber:
         <a tal:replace="structure overview_menu/editjabberids/fmt:icon" />
       </dt>
@@ -87,9 +87,9 @@
       /></a>
     </div>
 
-    <dl tal:condition="context/is_ubuntu_coc_signer">
+    <dl tal:condition="view/should_show_ubuntu_coc_section" id="ubuntu-coc">
       <dt>Signed Ubuntu Code of Conduct:</dt>
-      <dd>
+      <dd tal:condition="context/is_ubuntu_coc_signer">
         <a
           id="ubuntu_coc_signer"
           tal:condition="context/required:launchpad.Edit"
@@ -99,20 +99,12 @@
            id="ubuntu_coc_signer"
            tal:condition="not: context/required:launchpad.Edit">Yes</span>
       </dd>
+      <dd tal:condition="not: context/is_ubuntu_coc_signer">
+          <span id="ubuntu_coc_signer">No</span>
+          <a href="/codeofconduct"
+            ><img src="/@@/edit" alt="Sign the Ubuntu Code of Conduct" /></a>
+      </dd>
     </dl>
-
-    <tal:not-ubuntu_coc_signer condition="not: context/is_ubuntu_coc_signer">
-      <tal:is_request_person condition="view/viewing_own_page">
-        <dl>
-          <dt>Signed Ubuntu Code of Conduct:</dt>
-          <dd>
-            <span id="ubuntu_coc_signer">No</span>
-            <a href="/codeofconduct"
-              ><img src="/@@/edit" alt="Sign the Ubuntu Code of Conduct" /></a>
-          </dd>
-        </dl>
-      </tal:is_request_person>
-    </tal:not-ubuntu_coc_signer>
   </div>
 
   <div class="yui-u two-column-list">
@@ -145,7 +137,7 @@
       </dd>
     </dl>
 
-    <dl tal:condition="view/should_show_gpgkeys_section">
+    <dl tal:condition="view/should_show_gpgkeys_section" id="pgp-keys">
       <dt>OpenPGP keys:
         <a tal:replace="structure overview_menu/editpgpkeys/fmt:icon" />
       </dt>

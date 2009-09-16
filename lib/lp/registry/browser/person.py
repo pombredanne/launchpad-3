@@ -936,7 +936,13 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma',
              'administer', 'projects', 'activate_ppa', 'maintained',
-             'view_ppa_subscriptions', 'ppa', 'oauth_tokens']
+             'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
+             'related_software_summary']
+
+    def related_software_summary(self):
+        target = '+related-software'
+        text = 'Related software'
+        return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def oauth_tokens(self):
@@ -2583,6 +2589,16 @@ class TeamJoinMixin:
 
 class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
     """A View class used in almost all Person's pages."""
+
+    @property
+    def should_show_ubuntu_coc_section(self):
+        """Should the 'Code of Conduct' section be shown?
+
+        It's shown when the person has signed the code of conduct or has
+        rights to sign it.
+        """
+        return self.context.is_ubuntu_coc_signer or (
+            check_permission('launchpad.Edit', self.context))
 
     @property
     def should_show_ircnicknames_section(self):
