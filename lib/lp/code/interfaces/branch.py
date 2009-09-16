@@ -67,6 +67,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
@@ -311,7 +312,7 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
+class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.

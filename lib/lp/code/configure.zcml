@@ -429,6 +429,7 @@
                     getSubscriptionsByLevel
                     getBranchRevision
                     getMainlineBranchRevisions
+                    getMergeProposals
                     getStackedBranches
                     getStackedBranchesWithIncompleteMirrors
                     createBranchRevision
