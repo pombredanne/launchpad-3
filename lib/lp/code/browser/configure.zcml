@@ -698,6 +698,13 @@
         facet="branches"
         name="+activereviews"
         template="../templates/active-reviews.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.code.browser.branchmergeproposallisting.BranchMergeProposalListingView"
+        facet="branches"
+        permission="zope.Public"
+        name="+merges"
+        template="../templates/branchmergeproposal-generic-listing.pt"/>
     <facet
         facet="overview">
         <browser:menus
