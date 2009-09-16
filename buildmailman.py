@@ -41,6 +41,14 @@ def build_mailman():
     else:
         return 0
 
+    # sys.path_importer_cache is a mapping of elements of sys.path to importer
+    # objects used to handle them. In Python2.5+ when an element of sys.path is
+    # found to not exist on disk, a NullImporter is created and cached - this
+    # causes Python to never bother re-inspecting the disk for that path
+    # element. We must clear that cache element so that our second attempt to
+    # import MailMan after building it will actually check the disk.
+    del sys.path_importer_cache[mailman_path]
+
     # Make sure the target directories exist and have the correct
     # permissions, otherwise configure will complain.
     user, group = as_username_groupname(config.mailman.build_user_group)

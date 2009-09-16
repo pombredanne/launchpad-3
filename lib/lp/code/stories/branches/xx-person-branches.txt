@@ -65,7 +65,7 @@ There is also a link which points to the registered branches page.
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getLink('registered').click()
     >>> print browser.title
-    Bazaar branches registered by Sample Person
+    +registeredbranches : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -85,7 +85,7 @@ branches.
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getLink('subscribed').click()
     >>> print browser.title
-    Bazaar branches subscribed to by Sample Person
+    +subscribedbranches : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
