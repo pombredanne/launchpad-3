@@ -11,7 +11,6 @@ from datetime import datetime
 from difflib import unified_diff
 from unittest import TestCase, TestLoader
 
-from bzrlib import errors as bzr_errors
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
