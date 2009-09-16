@@ -448,7 +448,7 @@ class POFileDetailsView(POFileView):
 
     @property
     def label(self):
-        return  _("Details for %s translation") % (
+        return _("Details for %s translation") % (
                     self.context.language.englishname)
 
 
