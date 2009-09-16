@@ -1425,6 +1425,7 @@ class PersonClaimView(LaunchpadFormView):
     """The page where a user can claim an unvalidated profile."""
 
     schema = IPersonClaim
+    label = 'Claim account'
 
     def initialize(self):
         if self.context.is_valid_person_or_team:
@@ -1512,6 +1513,7 @@ class BeginTeamClaimView(PersonClaimView):
     This is actually just the first step, where you enter the email address
     of the team and we email further instructions to that address.
     """
+    label = 'Claim team'
 
     @action(_("Continue"), name="confirm")
     def confirm_action(self, action, data):
