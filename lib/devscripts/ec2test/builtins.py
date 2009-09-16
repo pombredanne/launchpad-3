@@ -315,7 +315,7 @@ class cmd_demo(EC2Command):
         debug_option,
         include_download_cache_changes_option,
         ListOption(
-            'demo-network', type=str,
+            'demo', type=str,
             help="Allow this netmask to connect to the instance."),
         ]
 
@@ -340,7 +340,7 @@ class cmd_demo(EC2Command):
         instance = make_instance(instance_type, machine, demo)
 
         runner = EC2TestRunner(
-            branch, branches=branches,
+            test_branch, branches=branches,
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
 
