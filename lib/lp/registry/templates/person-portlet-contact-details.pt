@@ -126,7 +126,7 @@
              tal:attributes="href wiki/url"
            >WikiName</a>
         </div>
-        <div tal:condition="not: context/wiki_names">
+        <div tal:condition="context/wiki_names/is_empty">
           No Wiki names registered.
         </div>
       </dd>
@@ -135,15 +135,13 @@
       <dt>IRC:
         <a tal:replace="structure overview_menu/editircnicknames/fmt:icon" />
       </dt>
-      <dd>
-        <div tal:repeat="ircnick context/ircnicknames">
-          <strong tal:content="ircnick/nickname"/>
-          <span class="discreet">on network</span>
-          <strong tal:content="ircnick/network" />
-        </div>
-        <div tal:condition="not: context/ircnicknames">
-          No IRC nicknames registered.
-        </div>
+      <dd tal:repeat="ircnick context/ircnicknames">
+        <strong tal:content="ircnick/nickname"/>
+        <span class="discreet">on network</span>
+        <strong tal:content="ircnick/network" />
+      </dd>
+      <dd tal:condition="not: context/ircnicknames">
+        No IRC nicknames registered.
       </dd>
     </dl>
 
