@@ -70,7 +70,8 @@ Guacamole agenda.
   >>> cprov_browser.getLink('Set agenda').click()
 
   >>> cprov_browser.title
-  'Review topics proposed for discussion at Ubuntu DevSummit Guacamole'
+  '+settopics : Blueprints for Ubuntu DevSummit Guacamole : Ubuntu
+  DevSummit Guacamole : Meetings'
 
   >>> cprov_browser.getControl('CD Media Integrity Check').selected = True
   >>> cprov_browser.getControl('Accept').click()
