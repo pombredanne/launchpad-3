@@ -280,20 +280,6 @@
                      tal:content="bugtask/bug/title/fmt:shorten/65">
                      Bug Title Here
                   </a>
-                  <tal:has-tags
-                    condition="bugtask/bug/tags|nothing">
-                    <br />
-                    <span id="tag-list">
-                      <a tal:repeat="tag bugtask/@@+index/official_tags"
-                         tal:content="tag"
-                         class="official-tag"
-                         tal:attributes="href string:${context/target/fmt:url:bugs}/+bugs?field.tag=${tag}">tag</a>
-                      <a tal:repeat="tag bugtask/@@+index/unofficial_tags"
-                         tal:content="tag"
-                         class="unofficial-tag"
-                         tal:attributes="href string:${context/target/fmt:url:bugs}/+bugs?field.tag=${tag}">tag</a>
-                    </span>
-                  </tal:has-tags>
                 </td>
                 <td style="padding-right: 5px; text-align:right">
                   <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
