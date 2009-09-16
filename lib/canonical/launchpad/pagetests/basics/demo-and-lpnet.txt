@@ -129,6 +129,15 @@ the redirects.
     ...     'a', onclick="setBetaRedirect(false)"))
     Disable edge redirect.
 
+The disable-redirect link will not appear for locationless pages, such
+as the login page, as the view does not inherit from LaunchpadView and
+so cannot support this functionality.
+
+    >>> beta_browser.open('http://launchpad.dev/+login')
+    >>> print extract_text(find_tags_by_class(
+    ...     beta_browser.contents, 'sitemessage')[0])
+    This is a beta site.
+
 The disable-redirect link will not appear in the site_message when
 browsed by non-beta users.
 
