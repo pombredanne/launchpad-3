@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -14,10 +11,9 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Help for <span
-    tal:replace="context/displayname" /> </h1>
+  <h1 tal:content="view/page_title" />
 
-
+  <div class="top-portlet">
   <h2>Ask your question!</h2>
 
   <p>
@@ -26,13 +22,15 @@
         modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/answers/rooturl">Launchpad
     answer</a> tracker.
   </p>
-    <ul>
-        <li><a tal:attributes="href
-        string:${context/fmt:url}/+questions">Search through existing questions</a></li>
-        <li><a tal:attributes="href
-        string:${context/fmt:url}/+addquestion">Submit your question</a></li>
+    <ul class="horizontal">
+        <li><a class="sprite info"
+          tal:attributes="href
+          string:${context/fmt:url}/+questions">Search through existing questions</a></li>
+        <li><a tal:replace="structure context/menu:answers/new/fmt:link" /></li>
     </ul>
+  </div>
 
+  <div>
   <h2>Other support options</h2>
 
   <p>
@@ -63,7 +61,7 @@
     Thanks!
   </p>
   </tal:needupstream>
-
+  </div>
 </div>
 </body>
 </html>

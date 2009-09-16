@@ -395,7 +395,7 @@ quickly 'retry' the failure.
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
 
     >>> cprov_browser.getLink('i386').click()
-    >>> cprov_browser.getLink("Retry build").click()
+    >>> cprov_browser.getLink("Retry this build").click()
     >>> cprov_browser.getControl("Retry Build").click()
 
 At this point anyone can also visualise that 'cdrkit' source is being

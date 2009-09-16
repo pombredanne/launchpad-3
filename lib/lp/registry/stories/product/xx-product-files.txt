@@ -484,7 +484,7 @@ to reset it when we're done.
 
     >>> from canonical.config import config
     >>> use_https_true_data = """
-    ...     [vhosts]
+    ...     [librarian]
     ...     use_https: True
     ...     """
     >>> config.push('use_https_true_data', use_https_true_data)

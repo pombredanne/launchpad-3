@@ -3,22 +3,14 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Blueprint workload</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
-
-  <p class="discreet">
+  <p>
     This page lists the specifications which are related to this person -
     either they were created by them, or they are in some way expected to
     work on the specs.
@@ -46,7 +38,7 @@
         can get a sense of the overall workload balance.
       </p>
 
-      <div class="lesser" id="top-navigation">
+      <div id="top-navigation" style="margin-bottom: 1em;">
         <tal:navigation content="structure view/members/@@+navigation-links-upper" />
       </div>
 
@@ -54,23 +46,24 @@
 
         <tal:specs define="specifications member/specifications">
 
-          <tal:has_work condition="specifications">
-            <a tal:replace="structure member/fmt:link">Foo Bar</a>'s
-            specifications:<br />
-            <div tal:replace="structure member/@@+table-specworkload" />
-          </tal:has_work>
+          <div style="margin-bottom: 1em;" tal:condition="specifications">
+            <p>
+              <a tal:replace="structure member/fmt:link">Foo Bar</a>'s
+              specifications:
+            </p>
 
-          <tal:has_no_work condition="not: specifications">
+            <div tal:replace="structure member/@@+table-specworkload" />
+          </div>
+
+          <p tal:condition="not: specifications">
             <a tal:replace="structure member/fmt:link">Foo Bar</a>
             has no outstanding specifications.<br />
-          </tal:has_no_work>
+          </p>
 
         </tal:specs>
-
-        <p />
       </tal:participants>
 
-      <div class="lesser">
+      <div>
         <tal:navigation content="structure view/members/@@+navigation-links-lower" />
       </div>
 
