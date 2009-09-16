@@ -205,7 +205,6 @@ class BranchMergeProposalListingView(LaunchpadFormView):
 
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""
-        # Adapt the context to a branch collection.
         has_proposals = IHasMergeProposals(self.context)
         return has_proposals.getMergeProposals(self.status_filter, self.user)
 

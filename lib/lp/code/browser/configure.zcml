@@ -366,9 +366,6 @@
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt"/>
         <browser:page
-            name="+merges"
-            template="../templates/branch-merges.pt"/>
-        <browser:page
             name="++bug-links"
             template="../templates/branch-bug-links.pt"/>
     </browser:pages>
