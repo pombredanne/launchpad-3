@@ -12,7 +12,6 @@ __all__ = [
     'ProjectAddView',
     'ProjectAnswersMenu',
     'ProjectBrandingView',
-    'ProjectBreadcrumb',
     'ProjectBugsMenu',
     'ProjectEditView',
     'ProjectFacets',
@@ -102,13 +101,6 @@ class ProjectSetNavigation(Navigation):
         if project is None:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(project))
-
-
-class ProjectBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IProject`."""
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class ProjectSetBreadcrumb(Breadcrumb):
@@ -425,7 +417,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 
     The new project will automatically be a part of the project group.
     """
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     @cachedproperty
     def label(self):
@@ -442,7 +434,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 class ProjectGroupAddStepTwo(ProjectAddStepTwo):
     """Step 2 (of 2) in the +newproduct project add wizard."""
 
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     def create_product(self, data):
         """Create the product from the user data."""
@@ -559,6 +551,7 @@ class ProjectAddView(LaunchpadFormView):
         ]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
+    page_title = label
     project = None
 
     @action(_('Add'), name='add')

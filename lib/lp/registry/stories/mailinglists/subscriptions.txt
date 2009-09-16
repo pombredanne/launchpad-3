@@ -228,8 +228,8 @@ Now Jdub can apply for team membership and mailing list access.
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins/+join'
 
-    >>> browser.getControl(name='mailinglist_subscribe').value = ['checked']
-    >>> browser.getControl(name='join').click()
+    >>> browser.getControl(name='field.mailinglist_subscribe').value = ['checked']
+    >>> browser.getControl(name='field.actions.join').click()
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins'
 
@@ -284,7 +284,7 @@ When he requests to re-join, the option to re-subscribe to the mailing
 list is not presented.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins/+leave')
-    >>> browser.getControl(name='leave').click()
+    >>> browser.getControl(name='field.actions.leave').click()
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
@@ -412,8 +412,9 @@ The mailing list for Rosetta Admins has no subscribers.
 because his membership on Rosetta Admins hasn't been approved)
 
     >>> browser.getLink('View subscribers').click()
-    >>> print browser.title
-    Mailing list subscribers for the Rosetta Administrators team
+    >>> browser.title
+    '+mailing-list-subscribers : \xe2\x80\x9cRosetta Administrators\xe2\x80\x9d team'
+
     >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
     Nobody has subscribed to this team's mailing list yet.
 
@@ -561,8 +562,8 @@ subscription settings will see the box checked by default.
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins/+join'
 
-    >>> print browser.getControl(name='mailinglist_subscribe').value
-    ['subscribe']
+    >>> print browser.getControl(name='field.mailinglist_subscribe').value
+    True
 
     # Change James' setting
     >>> browser.open('http://launchpad.dev/~jblack')
@@ -575,8 +576,8 @@ subscription settings will see the box checked by default.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
-    >>> print browser.getControl(name='mailinglist_subscribe').value
-    ['subscribe']
+    >>> print browser.getControl(name='field.mailinglist_subscribe').value
+    True
 
 Users who have chosen to never be auto-subscribed to mailing
 lists will not have the box checked.
@@ -592,8 +593,8 @@ lists will not have the box checked.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
-    >>> print browser.getControl(name='mailinglist_subscribe').value
-    []
+    >>> print browser.getControl(name='field.mailinglist_subscribe').value
+    False
 
     # Restore James' setting.
     >>> browser.open('http://launchpad.dev/~jblack')

@@ -101,7 +101,7 @@ to where we can edit imports.
   >>> 'Mozilla Firefox 1.0 series' in browser.contents
   True
   >>> browser.getLink(url='+imports/3')
-  <Link text='[IMG]' url='http://translations.launchpad.dev/+imports/3'>
+  <Link text='Change this entry' url='http://translations.launchpad.dev/+imports/3'>
   >>> browser.getControl(name='field.status_3').displayValue
   ['Needs Review']
 

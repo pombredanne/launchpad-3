@@ -597,18 +597,23 @@ class TestBuilddManagerScan(TrialTestCase):
     def testScanRescuesJobFromBrokenBuilder(self):
         # The job assigned to a broken builder is rescued.
 
-        # Sampledata builder is broken and is holding a active job.
-        broken_builder = getUtility(IBuilderSet)['bob']
-        self.assertFalse(broken_builder.builderok)
-        lost_job = broken_builder.currentjob
-        self.assertTrue(lost_job is not None)
-        self.assertBuildingJob(lost_job, broken_builder)
+        # Sampledata builder is enabled and is assigned to an active job.
+        builder = getUtility(IBuilderSet)['bob']
+        self.assertTrue(builder.builderok)
+        job = builder.currentjob
+        self.assertBuildingJob(job, builder)
+
+        # Disable the sampledata builder
+        login('foo.bar@canonical.com')
+        builder.builderok = False
+        transaction.commit()
+        login(ANONYMOUS)
 
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
         manager = self._getManager()
         d = defer.maybeDeferred(manager.scan)
-        d.addCallback(self._checkJobRescued, broken_builder, lost_job)
+        d.addCallback(self._checkJobRescued, builder, job)
         return d
 
     def _checkJobUpdated(self, recording_slaves, builder, job):

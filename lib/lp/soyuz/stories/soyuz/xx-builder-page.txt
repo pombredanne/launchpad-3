@@ -114,7 +114,7 @@ Celso changes the builder title and the change takes effect immediately.
     # We use backslashreplace because the page title includes smart quotes.
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> print backslashreplace(cprov_browser.title)
-    Change details for builder \u201cBob The Builder\u201d
+    +edit : Bob The Builder : Build Farm
 
     >>> title = cprov_browser.getControl(name="field.title")
     >>> original_title = title.value
@@ -124,7 +124,7 @@ Celso changes the builder title and the change takes effect immediately.
     # Submitting the change details form redirects to the index page
     # for the builder.
     >>> print backslashreplace(cprov_browser.title)
-    Builder \u201cDonkey builder\u201d
+    Donkey builder : Build Farm
 
 Then restores it once he realises his mistake.
 
@@ -196,7 +196,7 @@ transient failures or is used for another purpose.
     >>> cprov_browser.open('http://launchpad.dev/+builds')
     >>> cprov_browser.getLink('bob').click()
     >>> print backslashreplace(cprov_browser.title)
-    Builder \u201cBob The Builder\u201d
+    Bob The Builder : Build Farm
 
 Celso can toggle the active bit using the Change details form.
 
@@ -214,7 +214,6 @@ Farm list. Celso cannot see the link to it.
     >>> cprov_browser.getLink("Build Farm").click()
 
     >>> print extract_text(find_main_content(cprov_browser.contents))
-    The Launchpad build farm
     Register a new build machine
     0 available build machines, 1 disabled and 0 building of a total
     of 1 registered.
@@ -237,7 +236,7 @@ But Celso can access the deactivated builder via its URL.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds/bob')
     >>> print backslashreplace(cprov_browser.title)
-    Builder \u201cBob The Builder\u201d
+    Bob The Builder : Build Farm
 
 
 == Actions permissions ==

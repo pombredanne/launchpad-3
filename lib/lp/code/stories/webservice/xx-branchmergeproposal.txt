@@ -47,6 +47,7 @@ We use the webservice as an unrelated, unprivileged user.
     merge_reporter_link: None
     merged_revno: None
     preview_diff_link: None
+    private: False
     queue_position: None
     queue_status: u'Work in progress'
     queued_revno: None
@@ -196,9 +197,9 @@ merge would look like if the source branch was merged into the target branch.
 
     >>> diff_content = '''\
     ... === modified file 'fooix.txt'
-    ... --- fooix.txt 2009-01-01 12:00:00 +0000
-    ... +++ fooix.txt 2009-02-02 12:34:56 +0000
-    ... @@ some numbers @@
+    ... --- fooix.txt\t2009-01-01 12:00:00 +0000
+    ... +++ fooix.txt\t2009-02-02 12:34:56 +0000
+    ... @@ -206,7 +206,7 @@
     ...  original
     ... -removed
     ... +added
@@ -206,7 +207,7 @@ merge would look like if the source branch was merged into the target branch.
     >>> response = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'updatePreviewDiff',
     ...     diff_content=diff_content,
-    ...     diff_stat='M fooix.txt', source_revision_id='rev-a',
+    ...     source_revision_id='rev-a',
     ...     target_revision_id='rev-b', conflicts='oh, no conflicts')
     >>> print response
     HTTP/1.1 200 Ok
@@ -229,7 +230,7 @@ The diff is now visible through the merge proposal.
     diff_lines_count: 7
     diff_text_link:
       u'http://.../~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
-    diffstat: u'M fooix.txt'
+    diffstat: {u'fooix.txt': [0, 0]}
     removed_lines_count: None
     resource_type_link: u'http://.../#preview_diff'
     self_link:

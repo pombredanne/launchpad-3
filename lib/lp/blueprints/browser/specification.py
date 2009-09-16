@@ -81,6 +81,7 @@ from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 class NewSpecificationView(LaunchpadFormView):
     """An abstract view for creating a new specification."""
 
+    page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
 
     @action(_('Register Blueprint'), name='register')
@@ -143,6 +144,7 @@ class NewSpecificationFromTargetView(NewSpecificationView):
 
     The context must correspond to a unique specification target.
     """
+
     schema = Fields(INewSpecification,
                     INewSpecificationSprint)
 
@@ -195,6 +197,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
+
     def transform(self, data):
         data['distribution'] = IDistribution(data['target'], None)
         data['product'] = IProduct(data['target'], None)

@@ -14,9 +14,9 @@ the bug watch edit page.
 
     >>> user_browser.getLink(url='/+watch/3').click()
     >>> user_browser.title
-    'Bug #1 - Edit external bug watch (123543 in The Mozilla.org Bug Tracker)'
+    'Edit bug watch for bug 123543 in The Mozilla.org Bug Tracker on bug #1'
     >>> print find_portlet(
-    ...     user_browser.contents, 'Is linked to').span.renderContents()
+    ...     user_browser.contents, 'Bug watch links').span.renderContents()
     There are currently no links to this bug watch.
 
     >>> user_browser.getControl('Delete Bug Watch').click()

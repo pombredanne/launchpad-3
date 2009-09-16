@@ -17,13 +17,6 @@
   <div id="membership-summary" class="portletBody portletContent"
     style="margin-bottom: 1.5em;">
     <div id="membership-summary">
-      This is a
-      <span>
-        <strong id="subscription-policy"
-                tal:content="context/subscriptionpolicy/title" />.
-        <img src="/@@/maybe"
-          tal:attributes="title context/subscriptionpolicy/description" />
-      </span>
       <div>
         <img src="/@@/team" alt="team" />
         <strong><tal:active content="context/all_member_count" /></strong>
@@ -60,18 +53,18 @@
           <tal:user condition="not: context/teamowner/is_team">
             You are the owner of this team.
           </tal:user>
-          <tal:absentee-owner condition="not: view/userIsActiveMember">
+          <tal:absentee-owner condition="not: view/user_is_active_member">
             You are not currently an active member.
           </tal:absentee-owner>
       </tal:is-owner>
 
       <tal:not-owner condition="not: view/userIsOwner">
-        <tal:active-member tal:condition="view/userIsActiveMember">
-          <tal:can-leave condition="view/userCanRequestToLeave">
+        <tal:active-member tal:condition="view/user_is_active_member">
+          <tal:can-leave condition="view/user_can_request_to_leave">
             You are a member of this team.
           </tal:can-leave>
         </tal:active-member>
-        <tal:not-active-member tal:condition="not: view/userIsActiveMember">
+        <tal:not-active-member tal:condition="not: view/user_is_active_member">
           <div condition="not: view/userIsParticipant"
                style="margin-top: 1.5em">
             <a tal:define="link context/menu:overview/join"
@@ -128,4 +121,5 @@
     </tr>
   </table>
   </tal:can-view>
+</div>
 </tal:root>

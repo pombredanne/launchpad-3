@@ -3,12 +3,11 @@
 Each product in Launchpad has a Translations page.
 
     >>> anon_browser.open('http://translations.launchpad.dev/evolution')
-    >>> print anon_browser.contents
-    <...
-    ...Translations of The Evolution Groupware Application...
-    ...
-    ...Translation overview...
-    ...Translation for trunk...
+    >>> print anon_browser.title
+    Translations : Evolution
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Evolution
+    Translations
     ...
 
 A helper method to print out language chart.
@@ -79,9 +78,9 @@ contact the product's registrant.
     >>> unprivileged = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> unprivileged.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(unprivileged.contents))
-    Overview / Import queue
-    Translation setup needed
+    gnomebaker
     ...
+    Translation setup needed
     This project is not configured to use Launchpad for translations.
     The gnomebaker project is not set up for translation in Launchpad.
     You might want to talk with Foo Bar, the project registrant, about
@@ -121,9 +120,9 @@ registrant, so the text reflects both possibilities.
 
     >>> anon_browser.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Overview / Import queue
-    Translation setup needed
+    gnomebaker
     ...
+    Translation setup needed
     This project is not configured to use Launchpad for translations.
     The gnomebaker project is not set up for translation in Launchpad.
     If you are Foo Bar, log in to begin the setup process.
@@ -142,7 +141,7 @@ Translations...
 
     >>> anon_browser.getLink('Translations').click()
     >>> print anon_browser.title
-    Translations of Network Applet in Launchpad
+    Translations : NetApplet
     >>> print find_main_content(anon_browser.contents)
     <...
     ...Translation setup needed...
@@ -153,21 +152,12 @@ Translations, there is no language chart shown.
     >>> print find_tag_by_id(anon_browser.contents, 'language-chart')
     None
 
-When browsing it as an admin, we can see that it has some 'obsolete'
-translation templates, which is just that the product is not using
-them anymore.
+Even when browsing it as an admin, 'obsolete' translations are not
+shown since it is not marked as using Launchpad for translation.
 
     >>> admin_browser.open('http://translations.launchpad.dev/netapplet')
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents,
-    ...                    'portlet-obsolete-translatable-series'))
-    All product series with obsolete templates
-    NetApplet trunk series
-
-While we can see that anonymous people are not getting such information:
-
-    >>> print find_tag_by_id(anon_browser.contents,
-    ...                'portlet-obsolete-translatable-series')
+    >>> print find_tag_by_id(admin_browser.contents,
+    ...                      'portlet-obsolete-translatable-series')
     None
 
 If the netapplet project is updated to use Launchpad for translations...
@@ -188,7 +178,7 @@ If the netapplet project is updated to use Launchpad for translations...
 
     >>> admin_browser.getLink('Translations').click()
     >>> print admin_browser.title
-    Translations of Network Applet in Launchpad
+    Translations : NetApplet
     >>> print find_tag_by_id(admin_browser.contents,
     ...                'portlet-obsolete-translatable-series')
     None

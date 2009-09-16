@@ -6,32 +6,31 @@ links to each.
 Any user can see that a project with no releases has no downloads.
 
     >>> anon_browser.open('http://launchpad.dev/aptoncd')
-    >>> anon_browser.getLink('Downloads').click()
-    >>> anon_browser.url
-    'http://launchpad.dev/aptoncd/+download'
-    >>> anon_browser.title
-    'APTonCD project files'
-    >>> content = find_tag_by_id(anon_browser.contents, 'project-downloads')
+    >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
     >>> print extract_text(content)
-    No download files exist for this project.
-    You might want to check this project's Bazaar branches...
+    Downloads
+    APTonCD does not have any download files.
 
 Any user can see a project with a release without files has no downlaod files.
 
     >>> anon_browser.open('http://launchpad.dev/thunderbird')
-    >>> anon_browser.getLink('Downloads').click()
-    >>> anon_browser.url
-    'http://launchpad.dev/thunderbird/+download'
-    >>> content = find_tag_by_id(anon_browser.contents, 'project-downloads')
+    >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
     >>> print extract_text(content)
-    No download files exist for this project.
-    ...
+    Downloads
+    Mozilla Thunderbird does not have any download files.
 
 Any user can see a projects download files organised by series. For each
 series, the owner sees a heading, summary, table of files, and links to each
 release to add download files.
 
-    >>> anon_browser.open('http://launchpad.dev/firefox/+download')
+    >>> anon_browser.open('http://launchpad.dev/firefox')
+    >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
+    >>> print extract_text(content)
+    Downloads
+    Latest version is 0.9.2
+    firefox-0.9.2.orig.tar.gz...
+
+    >>> anon_browser.getLink('All downloads').click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'project-downloads'))
     0.9.2 (One (secure) Tree Hill) release, from the trunk series.
@@ -91,10 +90,10 @@ A project owner should not see the delete button when there are no files.
 
     >>> tbird_owner = setupBrowser(
     ...     auth='Basic foo.bar@canonical.com:test')
-    >>> tbird_owner.open('http://launchpad.dev/thunderbird')
-    >>> tbird_owner.getLink('Downloads').click()
-    >>> tbird_owner.title
-    'Mozilla Thunderbird project files'
+    >>> tbird_owner.open('http://launchpad.dev/thunderbird/+download')
+    >>> print tbird_owner.title
+    +download : Mozilla Thunderbird
+
     >>> main_content = find_main_content(tbird_owner.contents)
     >>> print extract_text(main_content)
     Download project files
@@ -178,8 +177,8 @@ To add a download file the release version link is used.
 
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> firefox_owner.getLink('1.0.0').click()
-    >>> firefox_owner.title
-    'Add a file to Mozilla Firefox 1.0.0'
+    >>> print firefox_owner.title
+    +adddownloadfile : Series 1.0 : Mozilla Firefox
 
 Ensure a non-owner doesn't see the 'Add download file' link after
 navigating to the product release page.
@@ -255,8 +254,8 @@ an admin can also delete a release file.
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
     File                Description    Downloads      Delete
-    bar.txt (md5)       Bar installer  -            
-    foo.txt (md5, sig)  Foo installer  -            
+    bar.txt (md5)       Bar installer  -
+    foo.txt (md5, sig)  Foo installer  -
 
     >>> checkbox_tag = table.find(attrs={'name': 'checkbox_0'})
     >>> admin_browser.getControl("Delete Files").click()
@@ -266,7 +265,7 @@ an admin can also delete a release file.
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
     File                Description    Downloads     Delete
-    foo.txt (md5, sig)  Foo installer  -           
+    foo.txt (md5, sig)  Foo installer  -
 
 Let's go back to the page where the files are listed and ensure it
 shows up now.  Just to be sure, do it as the non-owner. We also see
@@ -440,8 +439,8 @@ Non-administrators do not have the delete option.
     >>> table = find_tag_by_id(non_owner.contents, 'downloads')
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
-    File             Description     Downloads  
-    foo09.txt (md5)  Foo09 installer -          
+    File             Description     Downloads
+    foo09.txt (md5)  Foo09 installer -
 
 And no "Delete Files" button is shown.
 
@@ -459,7 +458,7 @@ so it is not shown.
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
     File             Description     Downloads  Delete
-    foo09.txt (md5)  Foo09 installer -          
+    foo09.txt (md5)  Foo09 installer -
 
 A "Delete Files" button is available.
 
@@ -485,7 +484,7 @@ to reset it when we're done.
 
     >>> from canonical.config import config
     >>> use_https_true_data = """
-    ...     [vhosts]
+    ...     [librarian]
     ...     use_https: True
     ...     """
     >>> config.push('use_https_true_data', use_https_true_data)

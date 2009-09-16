@@ -257,6 +257,8 @@ class TestPersonTranslationView(TestCaseWithFactory):
             descriptions[0]['target'])
 
     def test_suggestTargetsForTranslation(self):
+        # suggestTargetsForTranslation finds targets that the person
+        # could help translate.
         previous_contrib = self._makePOFiles(1, previously_worked_on=True)
         pofile = self._makePOFiles(1, previously_worked_on=False)[0]
         self._addUntranslatedMessages(pofile, 1)
@@ -267,6 +269,20 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertEqual(
             pofile.potemplate.productseries.product,
             descriptions[0]['target'])
+
+    def test_suggestTargetsForTranslation_limits_query(self):
+        # The max_fetch argument limits how many POFiles
+        # suggestTargetsForTranslation fetches.
+        previous_contrib = self._makePOFiles(1, previously_worked_on=True)
+        pofiles = self._makePOFiles(3, previously_worked_on=False)
+        for pofile in pofiles:
+            self._addUntranslatedMessages(pofile, 1)
+
+        descriptions = self.view._suggestTargetsForTranslation(max_fetch=2)
+
+        self.assertEqual(2, len(descriptions))
+        self.assertNotEqual(
+            descriptions[0]['target'], descriptions[1]['target'])
 
     def test_top_projects_and_packages_to_translate(self):
         # top_projects_and_packages_to_translate lists targets that the
@@ -335,6 +351,18 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         descriptions = self.view.top_projects_and_packages_to_translate
         self.assertEqual(10, len(descriptions))
+
+    def test_requires_preferred_languages(self):
+        # requires_preferred_languages tells the page whether this
+        # person still needs to set their preferred languages.
+        # In this case, our person has set a preferred language, so no,
+        # this is no longer required.
+        self.assertFalse(self.view.requires_preferred_languages)
+
+        # But the answer is True if the person has no preferred
+        # languages.
+        self.view.context.removeLanguage(self.dutch)
+        self.assertTrue(self.view.requires_preferred_languages)
 
 
 def test_suite():

@@ -87,7 +87,7 @@ def build_package_location(distribution_name, suite=None, purpose=None,
     # Avoid circular imports.
     from lp.registry.interfaces.distribution import IDistributionSet
     from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     try:
         distribution = getUtility(IDistributionSet)[distribution_name]

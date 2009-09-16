@@ -37,6 +37,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
@@ -44,15 +45,15 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
     IPublishingSet, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
-    ISourcePackagePublishingHistory, PackagePublishingPocket,
-    PackagePublishingPriority, PackagePublishingStatus,
-    PoolFileOverwriteError)
+    ISourcePackagePublishingHistory, PackagePublishingPriority,
+    PackagePublishingStatus, PoolFileOverwriteError)
 from lp.soyuz.interfaces.build import BuildSetStatus, BuildStatus, IBuildSet
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.components.decoratedresultset import (
@@ -779,17 +780,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def copyTo(self, distroseries, pocket, archive):
         """See `ISourcePackagePublishingHistory`."""
         current = self.secure_record
-        secure_copy = SecureSourcePackagePublishingHistory(
-            distroseries=distroseries,
-            pocket=pocket,
-            archive=archive,
-            sourcepackagerelease=current.sourcepackagerelease,
-            component=current.component,
-            section=current.section,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            embargo=False)
-        return SourcePackagePublishingHistory.get(secure_copy.id)
+        return getUtility(IPublishingSet).newSourcePublication(
+            archive,
+            current.sourcepackagerelease,
+            distroseries,
+            current.component,
+            current.section,
+            pocket
+            )
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1045,21 +1043,18 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         copies = []
         for architecture in destination_architectures:
-            copy = SecureBinaryPackagePublishingHistory(
-                archive=archive,
-                binarypackagerelease=self.binarypackagerelease,
-                distroarchseries=architecture,
-                component=current.component,
-                section=current.section,
-                priority=current.priority,
-                status=PackagePublishingStatus.PENDING,
-                datecreated=UTC_NOW,
-                pocket=pocket,
-                embargo=False)
+            copy = getUtility(IPublishingSet).newBinaryPublication(
+                archive,
+                self.binarypackagerelease,
+                architecture,
+                current.component,
+                current.section,
+                current.priority,
+                pocket
+                )
             copies.append(copy)
 
-        return [
-            BinaryPackagePublishingHistory.get(copy.id) for copy in copies]
+        return copies
 
     def getAncestry(self, archive=None, distroseries=None, pocket=None,
                     status=None):
@@ -1104,6 +1099,52 @@ class PublishingSet:
     """Utilities for manipulating publications in batches."""
 
     implements(IPublishingSet)
+
+    def newBinaryPublication(self, archive, binarypackagerelease,
+                             distroarchseries, component, section, priority,
+                             pocket):
+        """See `IPublishingSet`."""
+        if archive.is_ppa:
+            # PPA component must always be 'main', so we override it
+            # here.
+            component = getUtility(IComponentSet)['main']
+        pub = SecureBinaryPackagePublishingHistory(
+            archive=archive,
+            binarypackagerelease=binarypackagerelease,
+            distroarchseries=distroarchseries,
+            component=component,
+            section=section,
+            priority=priority,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=pocket,
+            embargo=False)
+
+        # One day, this will not be necessary when we have time to kill
+        # the Secure* records.
+        return BinaryPackagePublishingHistory.get(pub.id)
+
+    def newSourcePublication(self, archive, sourcepackagerelease,
+                             distroseries, component, section, pocket):
+        """See `IPublishingSet`."""
+        if archive.is_ppa:
+            # PPA component must always be 'main', so we override it
+            # here.
+            component = getUtility(IComponentSet)['main']
+        pub = SecureSourcePackagePublishingHistory(
+            distroseries=distroseries,
+            pocket=pocket,
+            archive=archive,
+            sourcepackagerelease=sourcepackagerelease,
+            component=component,
+            section=section,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False)
+
+        # One day, this will not be necessary when we have time to kill
+        # the Secure* records.
+        return SourcePackagePublishingHistory.get(pub.id)
 
     def getBuildsForSourceIds(
         self, source_publication_ids, archive=None, build_states=None):
