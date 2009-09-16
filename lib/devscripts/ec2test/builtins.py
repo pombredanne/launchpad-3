@@ -368,6 +368,7 @@ class cmd_demo(EC2Command):
                 "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
                 "\n*****************************************************"
                 "\n\n")
+            return True
 
         run_with_instance(
             instance, run_server, True)
