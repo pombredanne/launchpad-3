@@ -40,7 +40,7 @@ class TestGetProductSeriesForBranches(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        # Log in an admin as we are setting series branches, which is a
+        # Log in as an admin as we are setting series branches, which is a
         # protected activity.
         super(TestGetProductSeriesForBranches, self).setUp(
             'admin@canonical.com')
