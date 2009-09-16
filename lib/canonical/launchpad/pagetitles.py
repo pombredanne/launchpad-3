@@ -709,11 +709,6 @@ person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
 pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
-def pofile_translate(context, view):
-    """Return the page to translate a template into a language."""
-    return 'Translating %s into %s' % (
-        context.potemplate.displayname, context.language.englishname)
-
 # portlet_* are portlets
 
 poll_edit = ContextTitle(smartquote('Edit poll "%s"'))

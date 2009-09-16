@@ -158,5 +158,27 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
             ["Crumb Tester", "Series test", "Translations", "Serbian (sr)"])
 
 
+class TestPOFileBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+
+    def setUp(self):
+        super(TestPOFileBreadcrumbs, self).setUp()
+        self.language = getUtility(ILanguageSet)['eo']
+        self.product = self.factory.makeProduct(
+            name='crumb-tester', displayname="Crumb Tester")
+        self.series = self.factory.makeProductSeries(
+            name="test", product=self.product)
+        self.potemplate = self.factory.makePOTemplate(self.series,
+            name="test-template")
+        self.pofile = self.factory.makePOFile('eo', self.potemplate)
+
+    def test_pofiletranslate(self):
+        self._testContextBreadcrumbs(
+            [self.product, self.series, self.potemplate, self.pofile],
+            ["http://launchpad.dev/crumb-tester",
+             "http://launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test"],
+            ["Crumb Tester", "Series test", "Translations"])
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

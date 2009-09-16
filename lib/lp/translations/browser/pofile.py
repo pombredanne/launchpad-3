@@ -111,9 +111,9 @@ class POFileFacets(POTemplateFacets):
 class POFileMenuMixin:
     """Mixin class to share code between navigation and action menus."""
 
-    def description(self):
-        text = 'Description'
-        return Link('', text)
+    def details(self):
+        text = 'Translation details'
+        return Link('+details', text, icon='info')
 
     def translate(self):
         text = 'Translate'
@@ -121,11 +121,11 @@ class POFileMenuMixin:
 
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
-        text = 'Upload a file'
-        return Link('+upload', text, icon='edit')
+        text = 'Upload translation'
+        return Link('+upload', text, icon='add')
 
     def download(self):
-        text = 'Download'
+        text = 'Download translation'
         return Link('+export', text, icon='download')
 
 
@@ -133,7 +133,7 @@ class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
     facet = 'translations'
-    links = ('description', 'translate', 'upload', 'download')
+    links = ('details', 'translate', 'upload', 'download')
 
 
 class POFileBaseView(LaunchpadView):
@@ -658,6 +658,15 @@ class POFileTranslateView(BaseTranslationView):
 
     DEFAULT_SHOW = 'all'
     DEFAULT_SIZE = 10
+
+    @property
+    def label(self):
+        """Return the page to translate a template into a language."""
+        if self.form_is_writeable:
+            form_label = 'Translating into %s'
+        else:
+            form_label = 'Browsing %s translation'
+        return form_label % self.context.language.englishname
 
     def initialize(self):
         self.pofile = self.context
