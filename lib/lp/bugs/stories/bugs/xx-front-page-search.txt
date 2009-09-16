@@ -25,8 +25,8 @@ bug listing.
     >>> anon_browser.getControl('All projects').selected = True
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
-    >>> anon_browser.title
-    'Search all bug reports'
+    >>> print anon_browser.title
+    Search all bug reports
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
       mozilla-firefox (Debian) Unknown New
@@ -127,8 +127,8 @@ project.
     >>> anon_browser.getControl(name='field.scope.target').value = 'evolution'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
-    >>> anon_browser.title
-    'Bugs in The Evolution Groupware Application'
+    >>> print anon_browser.title
+    +bugs : Bugs in evolution : Evolution
     >>> anon_browser.url
     'http://bugs.launchpad.dev/evolution/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
@@ -157,8 +157,8 @@ project.
     >>> anon_browser.getControl(name='field.scope.target').value = 'ubuntu'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
-    >>> anon_browser.title
-    'Bugs in Ubuntu Linux'
+    >>> print anon_browser.title
+    +bugs : Bugs in ubuntu : Ubuntu
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)

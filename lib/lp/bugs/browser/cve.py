@@ -111,6 +111,8 @@ class CveUnlinkView(CveLinkView):
 
     page_title = label
 
+    heading = 'Remove links to bug reports'
+
 
 class CveSetView:
 

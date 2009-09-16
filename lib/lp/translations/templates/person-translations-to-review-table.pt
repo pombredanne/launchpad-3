@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<table class="listing" id="translations-to-review-table">
+<table class="summary" id="translations-to-review-table">
   <tr tal:repeat="target_info view/top_projects_and_packages_to_review">
     <td>
       <tal:product condition="target_info/is_product"

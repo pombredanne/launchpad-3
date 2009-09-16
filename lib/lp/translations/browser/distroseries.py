@@ -248,6 +248,10 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
 
+    @property
+    def is_translation_focus(self):
+        """Is this DistroSeries the translation focus."""
+        return self.context.distribution.translation_focus == self.context
 
 class DistroSeriesTranslationsMenu(NavigationMenu):
 

@@ -115,8 +115,8 @@ He clicks on the question title to obtain the question page where the
 details of the question are available.
 
     >>> browser.getLink('Slow system').click()
-    >>> browser.title
-    'Ubuntu question #7: ...Slow system...'
+    >>> print browser.title
+    +index : Questions for Ubuntu Linux : Ubuntu
     >>> soup = find_main_content(browser.contents)
     >>> soup('div', 'report')
     [<div class="report"><p>I get really poor hard drive performance.</p></div>]
@@ -139,7 +139,8 @@ to jump to the question.
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> locators = find_tags_by_class(browser.contents, 'main')
     >>> print backslashreplace(browser.title)
-    mozilla-firefox in ubuntu question #9: ...
+    +index : Questions for \u201cmozilla-firefox\u201d package in Ubuntu
+    : \u201cmozilla-firefox\u201d package : Ubuntu
 
 While reading the Ubuntu forums for a solution to his problem,
 Average Joe finds some unlinked text that refers to how to
@@ -151,7 +152,7 @@ the answer.
     >>> browser.getControl(name='field.search_text').value = ' #6 '
     >>> browser.getControl('Find Answers').click()
     >>> print backslashreplace(browser.title)
-    Mozilla Firefox question #6: ...
+    +index : Questions for Mozilla Firefox : Mozilla Firefox
 
 The Answer Tracker cannot identify Question ids within text. Average
 Joe finds a reference to question 8 in a blog. He copies 'question 8'
@@ -217,7 +218,8 @@ He clicks on the link to read the question description.
 
     >>> browser.getLink('Firefox is slow').click()
     >>> browser.title
-    'mozilla-firefox in ubuntu question #3:...Firefox is slow...'
+    '+index : Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package
+    in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
 
 The user must choose at least one status when searching questions. An
 error is displayed when the user forgets to select a status.

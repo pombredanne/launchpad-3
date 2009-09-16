@@ -12,6 +12,7 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
+    'ProductDistributionsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditNavigationMenu',
@@ -21,8 +22,10 @@ __all__ = [
     'ProductNavigation',
     'ProductNavigationMenu',
     'ProductOverviewMenu',
+    'ProductPackagesView',
     'ProductRdfView',
     'ProductReviewLicenseView',
+    'ProductSeriesView',
     'ProductSetBreadcrumb',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -54,6 +57,7 @@ from canonical.config import config
 from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+from lp.app.interfaces.headings import IEditableContextTitle
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
@@ -376,7 +380,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'edit',
         'reassign',
         'top_contributors',
-        'mentorship',
         'distributions',
         'packages',
         'series',
@@ -397,10 +400,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     def distributions(self):
         text = 'Packaging information'
         return Link('+distributions', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-        return Link('+mentoring', text, icon='info')
 
     def packages(self):
         text = 'Show distribution packages'
@@ -780,7 +779,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                   ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
-    implements(IProductActionMenu)
+    implements(IProductActionMenu, IEditableContextTitle)
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)
@@ -957,6 +956,18 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         """
         return (check_permission('launchpad.Edit', self.context) or
                 check_permission('launchpad.Commercial', self.context))
+
+
+class ProductPackagesView(ProductView):
+    """View for displaying product packaging"""
+
+    label = 'Packages in Launchpad'
+
+
+class ProductDistributionsView(ProductView):
+    """View for displaying product packaging by distribution"""
+
+    label = 'Package comparison by distribution'
 
 
 class ProductDownloadFilesView(LaunchpadView,
@@ -1308,6 +1319,13 @@ class ProductAddSeriesView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
+class ProductSeriesView(ProductView):
+    """A view for showing a product's series."""
+
+    label = 'timeline'
+    page_title = label
+
+
 class ProductRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
 
@@ -1407,6 +1425,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
 
     schema = IProductReviewSearch
+    label= 'Review projects'
 
     full_row_field_names = [
         'search_text',
@@ -1475,7 +1494,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         # Override the defaults with the form values if available.
         search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=10)
+                              self.request, size=100)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):

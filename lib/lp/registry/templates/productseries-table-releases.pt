@@ -9,7 +9,7 @@
                   class view/milestone_table_class">
   <thead>
     <tr>
-      <th>Version "Codename"</th>
+      <th>Version</th>
       <th>Expected</th>
       <th tal:condition="view/milestone_can_release">Released</th>
       <th>Summary</th>

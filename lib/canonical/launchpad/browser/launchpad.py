@@ -9,12 +9,10 @@ __all__ = [
     'ApplicationButtons',
     'BrowserWindowDimensions',
     'DoesNotExistView',
-    'get_launchpad_views',
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
     'LaunchpadRootNavigation',
-    'LaunchpadImageFolder',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
@@ -23,6 +21,7 @@ __all__ = [
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
+    'get_launchpad_views',
     ]
 
 

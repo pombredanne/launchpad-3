@@ -206,6 +206,11 @@ class SoyuzTestPublisher:
             filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
 
+        if status == PackagePublishingStatus.PUBLISHED:
+            datepublished = UTC_NOW
+        else:
+            datepublished = None
+
         sspph = SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
@@ -214,10 +219,12 @@ class SoyuzTestPublisher:
             status=status,
             datecreated=date_uploaded,
             dateremoved=dateremoved,
+            datepublished=datepublished,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
             embargo=False,
             archive=archive)
+
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.
