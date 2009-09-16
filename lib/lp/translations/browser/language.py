@@ -170,7 +170,7 @@ class LanguageView(TranslationsMixin, LaunchpadView):
         for item in pluralforms_list:
             examples = ", ".join(map(str, item['examples']))
             if len(item['examples']) != 1:
-                examples += ", ..."
+                examples += "..."
             else:
                 examples += "."
             item['examples'] = examples
