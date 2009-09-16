@@ -198,7 +198,7 @@ We'll start from the default blueprint registration form:
 Canceling creation, brings one back to the blueprints home page.
 
     >>> user_browser.getLink('Cancel').url
-    'http://blueprints.launchpad.dev'
+    'http://blueprints.launchpad.dev/'
 
 When a blueprint is registered from the Blueprints home page, Launchpad
 requires the user to specify a target for the new blueprint. This target
