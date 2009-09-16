@@ -846,6 +846,37 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
+    def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
+                             component, section, priority, pocket):
+        """Create a new `BinaryPackagePublishingHistory`.
+
+        :param archive: An `IArchive`
+        :param binarypackagerelease: An `IBinaryPackageRelease`
+        :param distroarchseries: An `IDistroArchSeries`
+        :param component: An `IComponent`
+        :param section: An `ISection`
+        :param priority: A `PackagePublishingPriority`
+        :param pocket: A `PackagePublishingPocket`
+
+        datecreated will be UTC_NOW.
+        status will be PackagePublishingStatus.PENDING
+        """
+
+    def newSourcePublication(archive, sourcepackagerelease, distroseries,
+                             component, section, pocket):
+        """Create a new `SourcePackagePublishingHistory`.
+
+        :param archive: An `IArchive`
+        :param sourcepackagerelease: An `ISourcePackageRelease`
+        :param distroseries: An `IDistroSeries`
+        :param component: An `IComponent`
+        :param section: An `ISection`
+        :param pocket: A `PackagePublishingPocket`
+
+        datecreated will be UTC_NOW.
+        status will be PackagePublishingStatus.PENDING
+        """
+
     def getByIdAndArchive(id, archive, source=True):
         """Return the publication matching id AND archive.
 
