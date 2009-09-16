@@ -643,13 +643,6 @@
         name="+branches"
         template="../templates/sourcepackage-branches.pt"/>
     <browser:page
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        class="lp.code.browser.branchmergeproposallisting.ActiveReviewsView"
-        permission="zope.Public"
-        facet="branches"
-        name="+activereviews"
-        template="../templates/active-reviews.pt"/>
-    <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.code.browser.branchlisting.DistributionBranchListingView"
         permission="zope.Public"
@@ -678,26 +671,12 @@
         name="+code-index"
         template="../templates/distributionsourcepackage-branches-grouped.pt"/>
     <browser:page
-        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        class="lp.code.browser.branchmergeproposallisting.ActiveReviewsView"
-        permission="zope.Public"
-        facet="branches"
-        name="+activereviews"
-        template="../templates/active-reviews.pt"/>
-    <browser:page
         for="lp.registry.interfaces.project.IProject"
         class="lp.code.browser.branchlisting.ProjectBranchesView"
         facet="branches"
         permission="zope.Public"
         name="+branches"
         template="../templates/project-branches.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.project.IProject"
-        class="lp.code.browser.branchmergeproposallisting.ActiveReviewsView"
-        permission="zope.Public"
-        facet="branches"
-        name="+activereviews"
-        template="../templates/active-reviews.pt"/>
     <facet
         facet="overview">
         <browser:menus
@@ -790,13 +769,6 @@
         permission="zope.Public"
         name="+code-index"
         template="../templates/product-branches.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchmergeproposallisting.ActiveReviewsView"
-        permission="zope.Public"
-        facet="branches"
-        name="+activereviews"
-        template="../templates/active-reviews.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductCodeIndexView"
@@ -909,5 +881,13 @@
         permission="zope.Public"
         name="+merges"
         template="../templates/branchmergeproposal-generic-listing.pt"/>
+
+    <browser:page
+        for="lp.code.interfaces.hasbranches.IHasMergeProposals"
+        class="lp.code.browser.branchmergeproposallisting.ActiveReviewsView"
+        permission="zope.Public"
+        facet="branches"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
 
 </configure>
