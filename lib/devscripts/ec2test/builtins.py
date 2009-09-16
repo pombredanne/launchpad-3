@@ -38,7 +38,7 @@ machine_id_option = Option(
           'recent one with an approved owner.'))
 
 instance_type_option = Option(
-    'instance', short_name='i', type=str, argname='instance_type',
+    'instance', short_name='i', type=str, param_name='instance_type',
     help=('The AWS instance type on which to base this run. '
           'Available options are %r. Defaults to `%s`.' %
           (AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE)))
@@ -158,7 +158,12 @@ class cmd_test(EC2Command):
 
     takes_args = ['test_branch?']
 
-    def run(self, branch=None, file=None, noemail=False, test_options='-vv', **kw):
+    def run(self, test_branch='.', branch=[], machine=None,
+            instance_type=DEFAULT_INSTANCE_TYPE,
+            file=None, email=None, test_options='-vv', noemail=False,
+            submit_pqm_message=None, pqm_public_location=None,
+            pqm_submit_location=None, pqm_email=None, postmortem=False,
+            headless=False, debug=False, open_browser=False):
         print locals()
 
 class cmd_demo(EC2Command):
