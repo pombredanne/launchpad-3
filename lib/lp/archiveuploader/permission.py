@@ -67,6 +67,36 @@ def components_valid_for(archive, person):
     return set(permission.component for permission in permissions)
 
 
+def can_upload(person, suitesourcepackage, archive=None):
+    # XXX: Docstring
+
+    # XXX: Tests
+
+    # XXX: Should we have a lower-level function that takes the components of
+    # suitesourcepackage?
+    sourcepackage = suitesourcepackage
+    if archive is None:
+        archive = sourcepackage.get_default_archive()
+    pocket = suitesourcepackage.pocket
+    distroseries = sourcepackage.distroseries
+    if not distroseries.canUploadToPocket(pocket):
+        # XXX: Better exception.
+
+        # XXX: Should we also do the PPA & Partner testing that uploadpolicy's
+        # checkUpload does? -- probably, yes
+        raise ValueError("Cannot upload to pocket.")
+
+    sourcepackagename = sourcepackage.sourcepackagename
+    component = sourcepackage.latest_published_component
+    # strict_component is True because the source package already exists,
+    # because otherwise we couldn't have a suitesourcepackage object.
+
+    # XXX: If we have a lower-level function, it should take strict_component
+    # as a parameter.
+    return verify_upload(
+        person, sourcepackagename, archive, component, strict_component=True)
+
+
 def verify_upload(person, sourcepackagename, archive, component,
                   strict_component=True):
     """Can 'person' upload 'sourcepackagename' to 'archive'?
