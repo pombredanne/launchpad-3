@@ -19,16 +19,16 @@
 
     <div id="full-subscribers" tal:condition="view/full_subscribers">
       <img src="/@@/mail"/> to all changes:
-      <tal:full tal:repeat="subscriber view/full_subscribers">
-        <div tal:content="structure subscriber/fmt:link"/>
-      </tal:full>
+      <ul tal:repeat="subscriber view/full_subscribers">
+        <li tal:content="structure subscriber/fmt:link"/>
+      </ul>
     </div>
 
     <div id="status-subscribers" tal:condition="view/status_subscribers">
       <img src="/@@/mail"/> to status/vote changes:
-      <tal:status tal:repeat="subscriber view/status_subscribers" >
-        <div tal:content="structure subscriber/fmt:link"/>
-      </tal:status>
+      <ul tal:repeat="subscriber view/status_subscribers" >
+        <li tal:content="structure subscriber/fmt:link"/>
+      </ul>
     </div>
   </div>
 </div>
