@@ -324,10 +324,6 @@ branches but with the state set to work-in-progress.
 
 This takes the user to the resubmission page.
 
-    >>> print eric_browser.title
-    +resubmit : Merge into main : scanned : Branches for GNOME Terminal
-    : GNOME Terminal
-
     >>> eric_browser.getControl('Resubmit').click()
 
 The new merge proposal is created as needs review, and there is
