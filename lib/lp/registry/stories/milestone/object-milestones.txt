@@ -122,13 +122,13 @@ associated with that milestone for products of this project:
 
     >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
     >>> print extract_text(specs)
-    Blueprint Product Priority Assignee Delivery
+    Blueprint Project Priority Assignee Delivery
     Title evolution specification   Evolution  High  Unknown
     Title gnomebaker specification  gnomebaker High  Unknown
 
     >>> bugtasks = find_tag_by_id(anon_browser.contents, 'milestone_bugtasks')
     >>> print extract_text(bugtasks)
-    Bug report Product Importance Assignee Status ...
+    Bug report Project Importance Assignee Status ...
     Milestone test bug for evolution  Evolution  Undecided Confirmed ...
     Milestone test bug for gnomebaker gnomebaker Undecided Confirmed ...
     Milestone test bug for evolution series trunk Undecided Confirmed
