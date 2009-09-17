@@ -161,7 +161,8 @@ and merging, so we have to settle for the sample data.
 
     >>> sample_browser.getLink('view proposal details').click()
     >>> print sample_browser.title
-    Proposal to merge lp://dev/~mark/firefox/release-0.9
+    Merge into main : release-0.9 : Branches for Mozilla Firefox
+    : Mozilla Firefox
 
 The details of the proposal shows initially the source and target
 branches, and the current status.
@@ -424,7 +425,8 @@ branches but with the state set to work-in-progress.
 This takes the user to the resubmission page.
 
     >>> print sample_browser.title
-    +resubmit : GNOME Terminal
+    +resubmit : Merge into main : scanned : Branches for GNOME Terminal
+    : GNOME Terminal
 
     >>> sample_browser.getControl('Resubmit').click()
 
