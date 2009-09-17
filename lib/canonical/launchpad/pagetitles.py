@@ -1022,10 +1022,4 @@ translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
 
-def translationmessage_translate(context, view):
-    """Return the page to translate a template into a language per message."""
-    return 'Translating %s into %s' % (
-        context.pofile.potemplate.displayname,
-        context.pofile.language.englishname)
-
 unauthorized = 'Error: Not authorized'
