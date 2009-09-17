@@ -1284,6 +1284,24 @@ class BugTargetBugTagsView(LaunchpadView):
         return tags[:10]
 
     @property
+    def tags_cloud_data(self):
+        """The data for rendering a tags cloud"""
+        official_tags = set(self.context.official_bug_tags)
+        tags = self.getUsedBugTagsWithURLs()
+        tags.sort(key=itemgetter('tag'))
+        max_count = max(tag['count'] for tag in tags)
+        for tag in tags:
+            if tag['tag'] in official_tags:
+                if tag['count'] == 0:
+                    tag['factor'] = 1
+                else:
+                    tag['factor'] = 1 + (tag['count'] / max_count)
+            else:
+                tag['factor'] = tag['count'] / max_count
+        print tags
+        return tags
+
+    @property
     def show_manage_tags_link(self):
         """Should a link to a "manage official tags" page be shown?"""
         return (IOfficialBugTagTargetRestricted.providedBy(self.context) and

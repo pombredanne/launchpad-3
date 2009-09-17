@@ -137,18 +137,18 @@
               <a href="+bugs">List all open bugs</a>
             </li>
           </ul>
-        <tal:block content="structure context/@@+portlet-bugfilters" />
-        <tal:releasecriticalbugs
+      </div>
+      <tal:block content="structure context/@@+portlet-bugfilters" />
+      <div tal:replace="structure context/@@+portlet-bugtags" />
+      <tal:releasecriticalbugs
           tal:condition="view/shouldShowReleaseCriticalPortlet"
           tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
-      </div>
-      <div tal:replace="structure context/@@+portlet-bugtags" />
     </tal:side>
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="search_url string:+bugs;
                      advanced_search_url string:+bugs?advanced=1">
       <h1>Bugs in <tal:context replace="context/title">Ubuntu</tal:context></h1>
-      <div style="text-align: center; clear: both;">
+      <div class="search-box" style="text-align: center; clear: both;">
         <metal:search
           use-macro="context/@@+bugtarget-macros-search/simple-search-form"
         />
@@ -157,12 +157,6 @@
            $('field.searchtext').focus();
       --></script>
 
-      <div class="left">
-        <tal:reported replace="structure context/@@+portlet-latestbugs" />
-      </div>
-      <div class="right">
-        <tal:touched replace="structure context/@@+portlet-recently-touched-bugs" />
-      </div>
     </div><!-- main -->
   </body>
 </html>
