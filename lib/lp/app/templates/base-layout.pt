@@ -119,7 +119,7 @@
               dir view/dir|string:ltr">
             <div tal:condition="view/macro:pagehas/applicationtabs">
               <div class="registering">
-                <div metal:define-slot="registering" />
+                <metal:registering define-slot="registering" />
               </div>
               <h1
                 tal:condition="view/label|nothing"
