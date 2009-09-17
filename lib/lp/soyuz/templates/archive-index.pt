@@ -70,7 +70,10 @@
 
       </div><!-- yui-gc -->
 
-      <div class="portlet" tal:condition="archive_active">
+      <div class="portlet" tal:condition="archive_active" id="packages">
+        <span class="see-all"
+              tal:content="structure view/menu:overview/packages/fmt:link">
+          View package details</span>
         <h2>Overview of all packages published in
           <form class="package-search-filter" action="" method="GET"
                 style="display:inline;font-size:90%">

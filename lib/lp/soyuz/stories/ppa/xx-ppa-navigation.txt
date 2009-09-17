@@ -92,8 +92,12 @@ The PPA breadcrumb follows the PPA displayname.
     Main heading: Default PPA
 
 The user can view all the package details using the 'View package details'
-link.
+link. This link is the first link displayed within
+the packages listing portlet.
 
+    >>> packages_portlet = find_tag_by_id(anon_browser.contents, 'packages')
+    >>> print packages_portlet.find('a').string
+    View package details
     >>> anon_browser.getLink('View package details').click()
     >>> print anon_browser.title
     +packages : Default PPA : Celso Providelo
