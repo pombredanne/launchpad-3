@@ -333,9 +333,6 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no such series.
         """
 
-    def getSeriesForBranches(branches):
-        """Return the ProductSeries associated with a branch in branches."""
-
 
 class NoSuchProductSeries(NameLookupFailed):
     """Raised when we try to find a product that doesn't exist."""

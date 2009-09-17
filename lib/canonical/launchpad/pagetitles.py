@@ -314,8 +314,6 @@ codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
 
-codeofconduct_index = ContextTitle('%s')
-
 codeofconduct_list = 'Ubuntu Codes of Conduct'
 
 def contact_user(context, view):
@@ -696,16 +694,12 @@ person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs
 
-person_participation = ContextTitle("Team participation by %s")
-
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
 person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
-
-person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
 # portlet_* are portlets
 
@@ -991,8 +985,6 @@ standardshipitrequest_new = 'Create a new standard option'
 standardshipitrequest_edit = 'Edit standard option'
 
 team_index = ContextBrowsername('%s in Launchpad')
-
-team_mailinglist = 'Configure mailing list'
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 

@@ -273,7 +273,7 @@ result will only contain packages SUPERSEDED or DELETED.
 The 'Any Status' filter is also available, so the user can search over
 any package ever published in the context PPA.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['any']
+    >>> anon_browser.getControl(name='field.status_filter').value = ['']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source             Published    Status     Series      Section  Build

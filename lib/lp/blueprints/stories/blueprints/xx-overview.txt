@@ -52,9 +52,11 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     >>> browser.getLink('Propose as goal').click()
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    Target to a product series
+    Mozilla Firefox
+    ...
     Support Native SVG Objects
-    Select the release series of Mozilla Firefox
-    for which this feature should be implemented...
+    ...
 
     >>> series = browser.getControl('Series Goal')
     >>> series.displayValue = ['firefox 1.0']
@@ -149,9 +151,11 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
     >>> browser.getLink('Propose as goal').click()
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    Target to a distribution series
+    Ubuntu
+    ...
     CD Media Integrity Check
-    Select the release of Ubuntu for which this blueprint should be
-    a feature goal...
+    ...
     >>> series = browser.getControl('Series Goal')
     >>> series.displayValue = ['ubuntu grumpy']
     >>> browser.getControl('Continue').click()
