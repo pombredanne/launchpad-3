@@ -211,7 +211,7 @@ will use another browser to inspect the results of our deletions.
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
 
     >>> cprov_browser.getControl(
-    ...    name='field.status_filter').value = ['any']
+    ...    name='field.status_filter').value = ['']
     >>> cprov_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
     Source            Published   Status     Series          Section  Build
@@ -274,7 +274,7 @@ previous state to check if the bug 185922 is really fixed.
 Any user can see that all packages present in Celso's PPA are deleted.
 
     >>> cprov_browser.getControl(
-    ...    name='field.status_filter').value = ['any']
+    ...    name='field.status_filter').value = ['']
     >>> cprov_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
     Source            Published   Status     Series          Section  Build
@@ -421,7 +421,7 @@ The list of 'deletable' sources can be filtered by status. The default
 filter is 'Any Status', but the user can choose another.
 
     >>> print user_browser.getControl(name='field.status_filter').value
-    ['any']
+    ['']
 
 When the user selects 'Published' filter and update the results, no
 records are presented.

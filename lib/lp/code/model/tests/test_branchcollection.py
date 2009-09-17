@@ -616,6 +616,15 @@ class TestBranchMergeProposals(TestCaseWithFactory):
             [BranchMergeProposalStatus.NEEDS_REVIEW])
         self.assertEqual([mp1], list(proposals))
 
+    def test_specifying_target_branch(self):
+        # If the target_branch is specified, only merge proposals where that
+        # branch is the target are returned.
+        mp1 = self.factory.makeBranchMergeProposal()
+        mp2 = self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposals(
+            target_branch=mp1.target_branch)
+        self.assertEqual([mp1], list(proposals))
+
 
 class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
     """Tests for IBranchCollection.getProposalsForReviewer()."""

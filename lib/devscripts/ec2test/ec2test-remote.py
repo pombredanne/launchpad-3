@@ -11,7 +11,6 @@ import optparse
 import os
 import pickle
 import re
-import shutil
 import subprocess
 import sys
 import textwrap
@@ -35,14 +34,9 @@ class BaseTestRunner:
         self.public_branch = public_branch
         self.public_branch_revno = public_branch_revno
 
-        # Set up the user-supplied and default testrunner options.
-        if isinstance(test_options, basestring):
-            test_options = test_options.split()
-        elif test_options is None:
-            test_options = ['-vv']
-        else:
-            # Use whatever the user passed in.
-            pass
+        # Set up the testrunner options.
+        if test_options is None:
+            test_options = '-vv'
         self.test_options = test_options
 
         # Configure paths.
@@ -190,8 +184,7 @@ class TestOnMergeRunner(BaseTestRunner):
 
     def build_test_command(self):
         """See BaseTestRunner.build_test_command()."""
-        command = ['bin/py', '-t', 'test_on_merge.py']
-        command.extend(self.test_options)
+        command = ['make', 'check', 'VERBOSITY=' + self.test_options]
         return command
 
     # Used to filter lines in the summary log. See
@@ -454,7 +447,7 @@ if __name__ == '__main__':
        pqm_message,
        options.public_branch,
        options.public_branch_revno,
-       args
+       ' '.join(args)
     )
 
     try:

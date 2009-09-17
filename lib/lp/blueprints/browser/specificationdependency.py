@@ -62,6 +62,10 @@ class SpecificationDependencyAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecificationDependencyRemoveView(LaunchpadFormView):
     schema = ISpecificationDependencyRemoval
@@ -73,3 +77,7 @@ class SpecificationDependencyRemoveView(LaunchpadFormView):
     def continue_action(self, action, data):
         self.context.removeDependency(data['dependency'])
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)

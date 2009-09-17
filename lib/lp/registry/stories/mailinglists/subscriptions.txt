@@ -85,8 +85,10 @@ it's currently the team contact method.
     >>> browser.open('http://launchpad.dev/~carlos')
     >>> browser.getLink("Change details").click()
     >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> print backslashreplace(browser.title)
+    +editemails : Carlos Perell\xf3 Mar\xedn
 
     >>> admins = browser.getControl(name='field.subscription.admins')
     >>> rosetta_admins = browser.getControl(
@@ -211,8 +213,8 @@ Admins team, and he should know if the list is available.
     >>> browser.open('http://launchpad.dev/~carlos')
     >>> browser.getLink("Change details").click()
     >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+    >>> print backslashreplace(browser.title)
+    +editemails : Carlos Perell\xf3 Mar\xedn
 
     >>> rosetta_admins = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -245,8 +247,8 @@ screen.
     >>> browser.open('http://launchpad.dev/~jdub')
     >>> browser.getLink("Change details").click()
     >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Jeff Waugh's e-mail addresses"
+    >>> print browser.title
+    +editemails : Jeff Waugh
 
     >>> browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -270,8 +272,8 @@ His mailing list subscription is now available to be managed.
     >>> browser.open('http://launchpad.dev/~jdub')
     >>> browser.getLink("Change details").click()
     >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Jeff Waugh's e-mail addresses"
+    >>> print browser.title
+    +editemails : Jeff Waugh
 
     >>> rosetta_team = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -472,8 +474,8 @@ list based on a setting in the person's Email preferences page.
     >>> browser.open('http://launchpad.dev/~carlos')
     >>> browser.getLink("Change details").click()
     >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+    >>> print backslashreplace(browser.title)
+    +editemails : Carlos Perell\xf3 Mar\xedn
 
 Carlos's default setting, 'Ask me when I join a team', is still in place.
 
