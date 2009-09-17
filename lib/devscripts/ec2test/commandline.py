@@ -242,10 +242,16 @@ def main():
               'changes in your download cache, you must explicitly choose to '
               'include or ignore the changes.'))
     parser.add_option(
-        '--update-bundle', dest='bundle', action='store',
+        '--update-image', dest='bundle', action='store',
         help=('Start the image, update the system packages, sourcecode and '
               'Launchpad branch then bundle, upload and register a new AMI '
               'with the given name.'))
+    parser.add_option(
+        '--extra-update-image-command', dest='extra_update_image_commands',
+        action='append', metavar="CMD",
+        help=('Run this command (with an ssh agent) on the image before '
+              'running the default update steps.  Can be passed more than '
+              'once, the commands will be run in the order specified.'))
     options, args = parser.parse_args()
     if options.debug:
         import pdb; pdb.set_trace()
@@ -335,6 +341,9 @@ def main():
         def make_new_image():
             user_connection = instance.connect_as_user()
             user_connection.perform('bzr launchpad-login %(launchpad-login)s')
+            if options.extra_update_image_commands:
+                for cmd in options.extra_update_image_commands:
+                    user_connection.run_with_ssh_agent(cmd)
             user_connection.run_with_ssh_agent(
                 "rsync -avp --partial --delete "
                 "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
@@ -342,6 +351,8 @@ def main():
                 "/var/launchpad/sourcecode/")
             user_connection.run_with_ssh_agent(
                 'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
+            user_connection.run_with_ssh_agent(
+                'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
             user_connection.close()
             root_connection = instance.connect_as_root()
             root_connection.perform(

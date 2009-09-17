@@ -262,6 +262,8 @@ class TestTemplateGuess(unittest.TestCase):
         self.factory = LaunchpadObjectFactory()
         self.templateset = POTemplateSet()
 
+    def _setUpProduct(self):
+        """Set up a `Product` with release series and two templates."""
         self.product = self.factory.makeProduct()
         self.productseries = self.factory.makeSeries(product=self.product)
         product_subset = POTemplateSubset(productseries=self.productseries)
@@ -270,6 +272,8 @@ class TestTemplateGuess(unittest.TestCase):
         self.producttemplate2 = product_subset.new(
             'test2', 'test2', 'test.pot', self.product.owner)
 
+    def _setUpDistro(self):
+        """Set up a `Distribution` with two templates."""
         self.distro = self.factory.makeDistribution()
         self.distroseries = self.factory.makeDistroRelease(
             distribution=self.distro)
@@ -283,9 +287,46 @@ class TestTemplateGuess(unittest.TestCase):
         self.distrotemplate2 = distro_subset.new(
             'test2', 'test2', 'test.pot', self.distro.owner)
 
+    def test_ByPathAndOrigin_product_duplicate(self):
+        # When multiple templates match for a product series,
+        # getPOTemplateByPathAndOrigin returns none.
+        self._setUpProduct()
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', productseries=self.productseries)
+        self.assertEqual(None, guessed_template)
+
+    def test_ByPathAndOrigin_package_duplicate(self):
+        # When multiple templates match on sourcepackagename,
+        # getPOTemplateByPathAndOrigin returns none.
+        self._setUpDistro()
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', sourcepackagename=self.packagename)
+        self.assertEqual(None, guessed_template)
+
+    def test_ByPathAndOrigin_from_package_duplicate(self):
+        # When multiple templates match on from_sourcepackagename,
+        # getPOTemplateByPathAndOrigin returns none.
+        self._setUpDistro()
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', sourcepackagename=self.from_packagename)
+        self.assertEqual(None, guessed_template)
+
+    def test_ByPathAndOrigin_preferred_match(self):
+        # getPOTemplateByPathAndOrigin prefers from_sourcepackagename
+        # matches over sourcepackagename matches.
+        self._setUpDistro()
+        match_package = SourcePackageNameSet().new('match-package')
+        self.distrotemplate1.sourcepackagename = match_package
+        self.distrotemplate2.from_sourcepackagename = match_package
+
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', sourcepackagename=match_package)
+        self.assertEqual(self.distrotemplate2, guessed_template)
+
     def test_ByPathAndOriginProductNonCurrentDuplicate(self):
         # If two templates for the same product series have the same
         # path, but only one is current, that one is returned.
+        self._setUpProduct()
         self.producttemplate1.iscurrent = False
         self.producttemplate2.iscurrent = True
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
@@ -294,6 +335,7 @@ class TestTemplateGuess(unittest.TestCase):
 
     def test_ByPathAndOriginProductNoCurrentTemplate(self):
         # Non-current templates in product series are ignored.
+        self._setUpProduct()
         self.producttemplate1.iscurrent = False
         self.producttemplate2.iscurrent = False
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
@@ -304,6 +346,7 @@ class TestTemplateGuess(unittest.TestCase):
         # If two templates for the same distroseries and source package
         # have the same  path, but only one is current, the current one
         # is returned.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = None
@@ -315,6 +358,7 @@ class TestTemplateGuess(unittest.TestCase):
 
     def test_ByPathAndOriginDistroNoCurrentTemplate(self):
         # Non-current templates in distroseries are ignored.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = False
         self.distrotemplate1.from_sourcepackagename = None
@@ -328,6 +372,7 @@ class TestTemplateGuess(unittest.TestCase):
         # If two templates for the same distroseries and original source
         # package have the same path, but only one is current, that one is
         # returned.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = self.from_packagename
@@ -340,6 +385,7 @@ class TestTemplateGuess(unittest.TestCase):
     def test_ByPathAndOriginDistroFromSourcePackageNoCurrentTemplate(self):
         # Non-current templates in distroseries are ignored by the
         # "from_sourcepackagename" match.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = False
         self.distrotemplate1.from_sourcepackagename = self.from_packagename
@@ -352,12 +398,14 @@ class TestTemplateGuess(unittest.TestCase):
     def test_ByTranslationDomain(self):
         # getPOTemplateByTranslationDomain looks up a template by
         # translation domain.
+        self._setUpDistro()
         subset = POTemplateSubset(distroseries=self.distroseries)
         potemplate = subset.getPOTemplateByTranslationDomain('test1')
         self.assertEqual(potemplate, self.distrotemplate1)
 
     def test_ByTranslationDomain_none(self):
         # Test getPOTemplateByTranslationDomain for the zero-match case.
+        self._setUpDistro()
         subset = POTemplateSubset(distroseries=self.distroseries)
         potemplate = subset.getPOTemplateByTranslationDomain('notesthere')
         self.assertEqual(potemplate, None)
@@ -365,6 +413,7 @@ class TestTemplateGuess(unittest.TestCase):
     def test_ByTranslationDomain_duplicate(self):
         # getPOTemplateByTranslationDomain returns no template if there
         # is more than one match.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = True
         other_package = SourcePackageNameSet().new('other-package')
         other_subset = POTemplateSubset(
@@ -385,6 +434,7 @@ class TestTemplateGuess(unittest.TestCase):
         # To tickle this condition, the user first has to upload a file
         # that's not attached to a template; then upload another one
         # that is, before the first one goes into auto-approval.
+        self._setUpProduct()
         queue = TranslationImportQueue()
         template = self.producttemplate1
 

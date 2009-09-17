@@ -20,7 +20,9 @@ from bzrlib.errors import InvalidURLJoin
 from bzrlib.transport import get_transport
 
 import pytz
+from storm.expr import Variable
 from storm.store import Store
+from storm.tracer import install_tracer, remove_tracer_type
 
 import transaction
 from zope.component import getUtility
@@ -43,6 +45,12 @@ from lp.testing._tales import test_tales
 
 from twisted.python.util import mergeFunctionMetadata
 
+# zope.exception demands more of frame objects than twisted.python.failure
+# provides in its fake frames.  This is enough to make it work with them
+# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
+from twisted.python.failure import _Frame
+_Frame.f_locals = property(lambda self: {})
+
 
 class FakeTime:
     """Provides a controllable implementation of time.time()."""
@@ -63,8 +71,67 @@ class FakeTime:
         return self._now
 
 
+class StormStatementRecorder:
+    """A storm tracer to count queries."""
+
+    def __init__(self):
+        self.statements = []
+
+    def connection_raw_execute(self, ignored, raw_cursor, statement, params):
+        """Increment the counter.  We don't care about the args."""
+
+        raw_params = []
+        for param in params:
+            if isinstance(param, Variable):
+                raw_params.append(param.get())
+            else:
+                raw_params.append(param)
+        raw_params = tuple(raw_params)
+        self.statements.append("%r, %r" % (statement, raw_params))
+
+
+def record_statements(function, *args, **kwargs):
+    """Run the function and record the sql statements that are executed.
+
+    :return: a tuple containing the return value of the function,
+        and a list of sql statements.
+    """
+    recorder = StormStatementRecorder()
+    try:
+        install_tracer(recorder)
+        ret = function(*args, **kwargs)
+    finally:
+        remove_tracer_type(StormStatementRecorder)
+    return (ret, recorder.statements)
+
+
+def run_with_storm_debug(function, *args, **kwargs):
+    """A helper function to run a function with storm debug tracing on."""
+    from storm.tracer import debug
+    debug(True)
+    try:
+        return function(*args, **kwargs)
+    finally:
+        debug(False)
+
+
 class TestCase(unittest.TestCase):
     """Provide Launchpad-specific test facilities."""
+
+    # Python 2.4 monkeypatch:
+    if getattr(unittest.TestCase, '_exc_info', None) is None:
+        _exc_info = unittest.TestCase._TestCase__exc_info
+        # We would not expect to need to make this property writeable, but
+        # twisted.trial.unittest.TestCase.__init__ chooses to write to it in
+        # the same way that the __init__ of the standard library's
+        # unittest.TestCase.__init__ does, as part of its own method of
+        # arranging for pre-2.5 compatibility.
+        class MonkeyPatchDescriptor:
+            def __get__(self, obj, type):
+                return obj._TestCase__testMethodName
+            def __set__(self, obj, value):
+                obj._TestCase__testMethodName = value
+        _testMethodName = MonkeyPatchDescriptor()
 
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
@@ -95,7 +162,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 ok = False
         return ok
 
@@ -317,14 +384,14 @@ class TestCase(unittest.TestCase):
         if result is None:
             result = self.defaultTestResult()
         result.startTest(self)
-        testMethod = getattr(self, self.__testMethodName)
+        testMethod = getattr(self, self._testMethodName)
         try:
             try:
                 self.setUp()
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 self._runCleanups(result)
                 return
 
@@ -333,11 +400,11 @@ class TestCase(unittest.TestCase):
                 testMethod()
                 ok = True
             except self.failureException:
-                result.addFailure(self, self.__exc_info())
+                result.addFailure(self, self._exc_info())
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
 
             cleanupsOk = self._runCleanups(result)
             try:
@@ -345,7 +412,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 ok = False
             if ok and cleanupsOk:
                 result.addSuccess(self)
@@ -356,6 +423,18 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
+
+    def assertStatementCount(self, expected_count, function, *args, **kwargs):
+        """Assert that the expected number of SQL statements occurred.
+
+        :return: Returns the result of calling the function.
+        """
+        ret, statements = record_statements(function, *args, **kwargs)
+        if len(statements) != expected_count:
+            self.fail(
+                "Expected %d statements, got %d:\n%s"
+                % (expected_count, len(statements), "\n".join(statements)))
+        return ret
 
 
 class TestCaseWithFactory(TestCase):

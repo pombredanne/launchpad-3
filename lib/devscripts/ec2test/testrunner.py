@@ -462,11 +462,12 @@ class EC2TestRunner:
         p = user_connection.perform
         p('rm -rf /var/launchpad/tmp')
         p('mkdir /var/launchpad/tmp')
-        p('cp -R /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
+        p('mv /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
         p('mkdir /var/launchpad/tmp/eggs')
         user_connection.run_with_ssh_agent(
-            'bzr co lp:lp-source-dependencies '
-            '/var/launchpad/tmp/download-cache')
+            'bzr pull lp:lp-source-dependencies '
+            '-d /var/launchpad/download-cache')
+        p('mv /var/launchpad/download-cache /var/launchpad/tmp/download-cache')
         if (self.include_download_cache_changes and
             self.download_cache_additions):
             sftp = user_connection.ssh.open_sftp()
@@ -483,8 +484,6 @@ class EC2TestRunner:
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database
         p('/var/launchpad/test/utilities/launchpad-database-setup %(USER)s')
-        p('cd /var/launchpad/test && make build')
-        p('cd /var/launchpad/test && make schema')
         # close ssh connection
         user_connection.close()
 
