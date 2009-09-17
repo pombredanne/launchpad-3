@@ -14,7 +14,7 @@ without problems.
 They should see a link to the +editlocation page (around the map image)
 and the person's time zone.
 
-    >>> editlink = nopriv_browser.getLink(url='+editlocation')
+    >>> editlink = nopriv_browser.getLink(url='+editlocation', index=1)
     >>> editlink.text
     '[IMG]'
     >>> print extract_text(find_tag_by_id(nopriv_browser.contents, 'portlet-map'))
