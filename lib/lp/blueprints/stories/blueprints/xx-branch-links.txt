@@ -40,8 +40,6 @@ product's blueprints.
     No spec branch links
 
     >>> browser.getLink('Link to a blueprint').click()
-    >>> print browser.title
-    +linkblueprint : Mozilla Firefox
 
     >>> browser.getControl('Blueprint').value = ['canvas']
     >>> browser.getControl('Continue').click()
