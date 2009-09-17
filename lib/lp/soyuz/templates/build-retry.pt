@@ -8,11 +8,6 @@
 >
 <body>
 
-  <div metal:fill-slot="heading">
-    <h1 tal:content="CONTEXTS/fmt:pagetitle">Retry i386 build of
-    alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE</h1>
-  </div> <!-- heading -->
-
   <div metal:fill-slot="main"
        tal:define="message view/retry_build; error view/error|nothing">
 

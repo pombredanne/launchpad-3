@@ -124,22 +124,9 @@ class BuildView(LaunchpadView):
     """Auxiliary view class for IBuild"""
     __used_for__ = IBuild
 
-    def retry_build(self):
-        """Check user confirmation and perform the build record retry."""
-        if not self.context.can_be_retried:
-            self.request.response.addErrorNotification(
-                'Build can not be retried')
-        else:
-            action = self.request.form.get('RETRY', None)
-            # No action, return None to present the form again.
-            if action is None:
-                return
-
-            # Invoke context method to retry the build record.
-            self.context.retry()
-            self.request.response.addInfoNotification('Build record active')
-
-        self.request.response.redirect(canonical_url(self.context))
+    @property
+    def label(self):
+        return self.context.title
 
     @property
     def user_can_retry_build(self):
@@ -198,11 +185,41 @@ class BuildView(LaunchpadView):
 
         return files
 
+class BuildRetryView(BuildView):
+    """View class for retrying `IBuild`s"""
+
+    __used_for__ = IBuild
+
+    @property
+    def label(self):
+        return 'Retry %s' % self.context.title
+
+    def retry_build(self):
+        """Check user confirmation and perform the build record retry."""
+        if not self.context.can_be_retried:
+            self.request.response.addErrorNotification(
+                'Build can not be retried')
+        else:
+            action = self.request.form.get('RETRY', None)
+            # No action, return None to present the form again.
+            if action is None:
+                return
+
+            # Invoke context method to retry the build record.
+            self.context.retry()
+            self.request.response.addInfoNotification('Build record active')
+
+        self.request.response.redirect(canonical_url(self.context))
+
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""
 
     schema = IBuildRescoreForm
+
+    @property
+    def label(self):
+        return 'Rescore %s' % self.context.title
 
     def initialize(self):
         """See `ILaunchpadFormView`.

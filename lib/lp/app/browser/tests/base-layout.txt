@@ -483,7 +483,6 @@ and date_created, normally).
     ...     """A simple view to test base-layout."""
     ...     __launchpad_facetname__ = 'overview'
     ...     template = ViewPageTemplateFile('testfiles/main-registering.pt')
-    ...     page_title = 'Test base-layout: registering'
 
     >>> view = RegisteringView(user, request)
     >>> html = view.render()

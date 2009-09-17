@@ -259,16 +259,6 @@ bugtask_view = BugTaskPageTitle()
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
-build_buildlog = ContextTitle('Build log for %s')
-
-build_changes = ContextTitle('Changes in %s')
-
-build_index = ContextTitle('%s')
-
-build_retry = ContextTitle('Retry %s')
-
-build_rescore = ContextTitle('Rescore %s')
-
 builders_index = 'Launchpad build farm'
 
 calendar_index = ContextTitle('%s')
