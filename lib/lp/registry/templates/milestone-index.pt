@@ -6,6 +6,15 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
 
+  <tal:css metal:fill-slot="head_epilogue"
+    condition="view/is_project_milestone">
+    <style id="hide-side-portlets" type="text/css">
+    .side {
+        background: #fff;
+        }
+    </style>
+  </tal:css>
+
   <body>
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="view/milestone/title" >project 1.x series</h1>
@@ -341,8 +350,7 @@
       </div>
     </div>
 
-    <tal:side metal:fill-slot="side"
-      define="overview_menu context/menu:overview">
+    <tal:side metal:fill-slot="side">
       <tal:menu replace="structure view/milestone/@@+global-actions" />
     </tal:side>
   </body>
