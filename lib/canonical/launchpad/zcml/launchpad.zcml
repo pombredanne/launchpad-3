@@ -322,11 +322,6 @@
       classes="LaunchpadRootFacets"
       />
 
-  <browser:menus
-      module="lp.bugs.browser.malone"
-      classes="MaloneContextMenu"
-      />
-
   <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
   <browser:page
       for="*"

@@ -12,7 +12,7 @@ import" that leads to the page to request such imports.
     ...                   'Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/')
-    >>> browser.getLink('Request Bazaar import').click()
+    >>> browser.getLink('Request an import from bazaar').click()
     >>> print browser.url
     http://translations.l...d.dev/evolution/trunk/+request-bzr-import
 
@@ -55,7 +55,7 @@ The request is made by clicking on a button labeled
     ...     browser.contents, 'field.actions.request_import')
     >>> print request_button
     <input type="submit"...value="Request one-time import"...
-    >>> browser.getControl('Request one-time import').click()
+    >>> browser.getControl("Request one-time import").click()
     >>> print browser.url
     http://translations.launchpad.dev/evolution/trunk
     >>> print "\n".join(get_feedback_messages(browser.contents))

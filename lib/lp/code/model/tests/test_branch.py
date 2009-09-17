@@ -43,7 +43,9 @@ from lp.code.interfaces.branch import (
     BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
+from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    InvalidBranchMergeProposal)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
@@ -1860,6 +1862,36 @@ class TestBranchSetTarget(TestCaseWithFactory):
         login_person(branch.owner)
         branch.setTarget(user=branch.owner)
         self.assertEqual(branch.owner, branch.target.context)
+
+
+class TestScheduleDiffUpdates(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_scheduleDiffUpdates(self):
+        """Create jobs for all merge proposals."""
+        bmp1 = self.factory.makeBranchMergeProposal()
+        bmp2 = self.factory.makeBranchMergeProposal(
+            source_branch=bmp1.source_branch)
+        jobs = bmp1.source_branch.scheduleDiffUpdates()
+        self.assertEqual(2, len(jobs))
+        bmps_to_update = set(
+            removeSecurityProxy(job).branch_merge_proposal for job in jobs)
+        self.assertEqual(set([bmp1, bmp2]), bmps_to_update)
+
+    def test_scheduleDiffUpdates_ignores_final(self):
+        """Diffs for proposals in final states aren't updated."""
+        source_branch = self.factory.makeBranch()
+        for state in FINAL_STATES:
+            self.factory.makeBranchMergeProposal(
+                source_branch=source_branch, set_state=state)
+        # Creating a superseded proposal has the side effect of creating a
+        # second proposal.  Delete the second proposal.
+        for bmp in source_branch.landing_targets:
+            if bmp.queue_status not in FINAL_STATES:
+                removeSecurityProxy(bmp).deleteProposal()
+        jobs = source_branch.scheduleDiffUpdates()
+        self.assertEqual(0, len(jobs))
 
 
 def test_suite():

@@ -9,12 +9,12 @@
 
 <body>
   <metal:heading fill-slot="heading">
-    <h1 tal:content="view/page_title"/>
+    <h2 tal:content="view/page_title"/>
   </metal:heading>
 
 <div metal:fill-slot="main">
 
-  <h2 tal:content="context/summary"/>
+  <h1 tal:content="context/summary"/>
 
   <tal:description replace="structure context/description/fmt:text-to-html">
       Package Description

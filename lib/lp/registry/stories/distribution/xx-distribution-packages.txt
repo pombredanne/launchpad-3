@@ -48,7 +48,7 @@ here first:
     ...     'http://localhost'
     ...     '/ubuntu/breezy-autotest/+package/mozilla-firefox')
     >>> print browser.title
-    Binary package “mozilla-firefox” in ubuntu breezy-autotest
+    mozilla-firefox : 6.6.6 : Ubuntu
 
 Now run a search for mozilla-firefox and check that it is found:
 
@@ -296,7 +296,6 @@ menu, a "Latest release" portlet and a "Bug subscriptions" portlet.
     Get Involved
     Report a bug
     Ask a question
-    Help translate
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'latest-release'))
@@ -324,9 +323,9 @@ distroseries.  The distroseries are presented in order, most recent first.
     >>> browser.open("http://launchpad.dev/ubuntutest/+source/netapplet/")
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages_list'))
     Mock Hoary (active development)                   Set upstream link
-      1.0.1a  release  (main)  (not published)
+      1.0.1a  release  (main)  ...
     Breezy Badger Autotest  (active development)      Set upstream link
-      1.3.1   release  (main)  (not published)
+      1.3.1   release  (main)  ...
 
 (See more about packaging in:
 registry/stories/distribution/xx-distributionsourcepackage-packaging.txt)

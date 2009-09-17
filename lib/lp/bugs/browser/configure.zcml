@@ -197,18 +197,16 @@
         permission="zope.Public"
         name="+index"
         template="../templates/malone-index.pt"/>
-    <browser:pages
+    <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         class="lp.bugs.browser.bug.MaloneView"
         facet="bugs"
-        permission="zope.Public">
-        <browser:page
-            name="+about"
-            template="../templates/malone-about.pt"/>
-        <browser:page
-            name="+portlet-stats"
-            template="../templates/malone-portlet-stats.pt"/>
-    </browser:pages>
+        permission="zope.Public"
+        name="+portlet-stats"
+        template="../templates/malone-portlet-stats.pt"/>
+    <browser:menus
+        classes="MaloneRelatedPages"
+        module="lp.bugs.browser.malone"/>
     <browser:page
         name="+filebug"
         for="lp.bugs.interfaces.malone.IMaloneApplication"
@@ -420,7 +418,8 @@
         <browser:menus
             module="lp.bugs.browser.bugtask"
             classes="
-                BugTaskContextMenu"/>
+                BugTaskContextMenu
+                BugTaskSearchListingMenu"/>
         <browser:page
             for="*"
             name="+bugtask-macros-tableview"
@@ -889,58 +888,6 @@
         attribute_to_parent="bug"
         rootsite="bugs"/>
     <facet
-        facet="overview">
-        <browser:pages
-            for="canonical.launchpad.interfaces.IHasMentoringOffers"
-            class="lp.registry.browser.mentoringoffer.HasMentoringOffersView"
-            permission="zope.Public">
-            <browser:page
-                name="+mentoring"
-                template="../templates/hasmentoringoffers-mentoring.pt"/>
-        </browser:pages>
-        <browser:page
-            name="+retractmentoring"
-            for="canonical.launchpad.interfaces.ICanBeMentored"
-            class="lp.registry.browser.mentoringoffer.MentoringOfferRetractView"
-            permission="launchpad.AnyPerson"
-            template="../templates/canbementored-retractmentoring.pt"/>
-        <browser:page
-            name="+mentor"
-            for="canonical.launchpad.interfaces.ICanBeMentored"
-            class="lp.registry.browser.mentoringoffer.MentoringOfferAddView"
-            permission="launchpad.AnyPerson"
-            template="../templates/canbementored-mentoringoffer.pt">
-        </browser:page>
-        <browser:url
-            for="canonical.launchpad.interfaces.IMentoringOfferSet"
-            path_expression="string:+mentoring"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
-        <browser:menus
-            module="lp.registry.browser.mentoringoffer"
-            classes="
-                MentoringOfferSetFacets
-                MentoringOfferSetOverviewMenu"/>
-        <browser:defaultView
-            for="canonical.launchpad.interfaces.IMentoringOfferSet"
-            name="+mentoring"/>
-        <browser:pages
-            for="canonical.launchpad.interfaces.IMentoringOfferSet"
-            class="lp.registry.browser.mentoringoffer.MentoringOfferSetView"
-            permission="launchpad.Admin">
-            
-            <!-- this is repeated here from IHasMentoringOffers because it has a
-                                 different (and stricter) permission. We want only admins to see the
-                                 overall mentoring picture. -->
-
-            <browser:page
-                name="+mentoring"
-                template="../templates/hasmentoringoffers-mentoring.pt"/>
-            <browser:page
-                name="+success"
-                template="../templates/mentoringofferset-success.pt"/>
-        </browser:pages>
-    </facet>
-    <facet
         facet="bugs">
         <browser:menus
             module="lp.bugs.browser.bug"
@@ -1007,9 +954,6 @@
             <browser:page
                 name="+portlet-duplicates"
                 template="../templates/bug-portlet-duplicates.pt"/>
-            <browser:page
-                name="+portlet-cve"
-                template="../templates/bug-portlet-cve.pt"/>
             <browser:page
                 name="+portlet-attachments"
                 template="../templates/bug-portlet-attachments.pt"/>
@@ -1106,12 +1050,5 @@
             module="lp.bugs.browser.bugwatch"
             classes="
                 BugWatchSetNavigation"/>
-        <browser:pages
-            for="lp.bugs.interfaces.bugwatch.IBugWatchSet"
-            permission="zope.Public">
-            <browser:page
-                name="+index"
-                template="../templates/watches-index.pt"/>
-        </browser:pages>
     </facet>
 </configure>

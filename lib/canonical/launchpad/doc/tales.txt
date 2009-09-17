@@ -214,6 +214,19 @@ To truncate a long string, use fmt:shorten:
     >>> test_tales('foo/fmt:shorten/8', foo='abcdefghij')
     'abcde...'
 
+To ellipsize the middle of a string. use fmt:ellipsize and pass the max
+length.
+
+    >>> print test_tales('foo/fmt:ellipsize/25',
+    ...     foo='foo-bar-baz-bazoo_22.443.tar.gz')
+    foo-bar-baz....443.tar.gz
+
+The string is not ellipsized if it is less than the max length.
+
+    >>> print test_tales('foo/fmt:ellipsize/25',
+    ...     foo='firefox-0.9.2.orig.tar.gz')
+    firefox-0.9.2.orig.tar.gz
+
 To preserve newlines in text when displaying as HTML, use fmt:nl_to_br:
 
     >>> test_tales('foo/fmt:nl_to_br',
@@ -333,6 +346,8 @@ to a content object.  There are currently links defined for:
   * blueprint-branch links
   * projects
   * questions
+  * distributions
+  * distroseries
 
 
 Person entries
@@ -632,6 +647,22 @@ Questions
     >>> question = getUtility(IQuestionSet).get(1)
     >>> test_tales("question/fmt:link", question=question)
     u'<a... class="sprite question">1:...</a>'
+
+
+Distributions
+.............
+
+    >>> distribution = factory.makeDistribution()
+    >>> test_tales("distribution/fmt:link", distribution=distribution)
+    u'<a... class="sprite distribution">...</a>'
+
+
+Distribution Series
+...................
+
+    >>> distroseries = factory.makeDistroArchSeries().distroseries
+    >>> test_tales("distroseries/fmt:link", distroseries=distroseries)
+    u'<a href="...">...</a>'
 
 
 The fmt: namespace for specially formatted object info

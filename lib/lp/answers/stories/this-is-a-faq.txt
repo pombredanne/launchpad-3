@@ -21,12 +21,11 @@ on 'Link to a FAQ' to answer the question:
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
     >>> print backslashreplace(user_browser.title)
-    Mozilla Firefox question #2:
-    \u201cProblem showing the SVG demo on W3C site\u201d
+    +index : Questions for Mozilla Firefox : Mozilla Firefox
 
     >>> user_browser.getLink('Link to a FAQ').click()
     >>> print backslashreplace(user_browser.title)
-    Is question #2 a FAQ?
+    +linkfaq : Questions for Mozilla Firefox : Mozilla Firefox
 
 This page lists the existing FAQs matching the question's title. In
 that listing, the radio labels only contain the FAQ id. The FAQ title is
@@ -74,7 +73,7 @@ button to update the list of available choices:
 The page is updated with a new list of FAQs:
 
     >>> print user_browser.title
-    Is question #2 a FAQ?
+    +linkfaq : Questions for Mozilla Firefox : Mozilla Firefox
     >>> printFAQOptions(user_browser.contents)
     (*) No existing FAQs are relevant
     ( ) 10: How do I install plugins (Shockwave, QuickTime, etc.)?
@@ -162,7 +161,7 @@ with an error message.
     There is 1 error.
     You didn't modify the linked FAQ.
 
-To remove the FAQ, the user selects the 'No existing...' option and 
+To remove the FAQ, the user selects the 'No existing...' option and
 submit the form again.
 
     >>> user_browser.getControl('No existing FAQs').selected = True
@@ -220,7 +219,7 @@ Sample Person who is the project owner does have that ability.
     >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+question/2/+createfaq
     >>> print owner_browser.title
-    Create a FAQ for Mozilla Firefox
+    +createfaq : Questions for Mozilla Firefox : Mozilla Firefox
 
 The FAQ title and content are pre-filled with the target question. He
 edits them to be more appropriate:
@@ -280,13 +279,7 @@ FAQ title to display the FAQ content.
     >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+faq/...
     >>> print backslashreplace(owner_browser.title)
-    Mozilla Firefox FAQ #...: \u201cDisplaying SVG in Firefox\u201d
-
-The FAQ's title appears as the prime heading:
-
-    >>> main_content = find_main_content(owner_browser.contents)
-    >>> print main_content.find('h2').renderContents()
-    Displaying SVG in Firefox
+    +index : Questions for Mozilla Firefox : Mozilla Firefox
 
 The FAQ keywords and content appears just below:
 
@@ -326,20 +319,22 @@ can also be linked to FAQs.
 
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+question/11')
-    >>> user_browser.title
-    'Ubuntu question #11:...'
+    >>> print user_browser.title
+    +index : Questions for Ubuntu Linux : Ubuntu
     >>> user_browser.getLink('Link to a FAQ').click()
     >>> print user_browser.title
-    Is question #11 a FAQ?
+    +linkfaq : Questions for Ubuntu Linux : Ubuntu
 
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
     ...     '/+question/8')
     >>> user_browser.title
-    'mozilla-firefox in ubuntu question #8:...'
+    '+index : Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package in
+    Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
     >>> user_browser.getLink('Link to a FAQ').click()
-    >>> print user_browser.title
-    Is question #8 a FAQ?
+    >>> user_browser.title
+    '+linkfaq : Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package
+    in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
 
 
 == Solved questions can be linked to a FAQ ==
@@ -361,7 +356,8 @@ information.
     >>> user_browser.getLink('Link to a FAQ').click()
 
     >>> print user_browser.title
-    Is question #9 a FAQ?
+    +linkfaq : Questions for “mozilla-firefox” package in Ubuntu
+    : “mozilla-firefox” package : Ubuntu
     >>> user_browser.getControl(name='field.faq-query').value = 'flash'
     >>> user_browser.getControl('Search', index=0).click()
     >>> user_browser.getControl('6').selected = True
@@ -373,7 +369,8 @@ added to the question, and his message was added to the question's
 discussion.
 
     >>> user_browser.title
-    'mozilla-firefox in ubuntu question #9:...'
+    '+index : Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package in
+    Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
     >>> print_question_status(user_browser)
     Solved...
 
@@ -408,4 +405,3 @@ Or you can just refer to FAQs in comments:
 The linkification also happens, incidentally, in bug comments and
 anywhere else the email-to-html formatter is used. See
 doc/displaying-paragraphs-of-text.txt for more details on this.
-

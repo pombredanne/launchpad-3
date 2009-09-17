@@ -319,6 +319,16 @@ class IPOTemplate(IRosettaStats):
     def __iter__():
         """Return an iterator over current `IPOTMsgSet` in this template."""
 
+    def clearPOFileCache():
+        """Clear `POFile`-related cached data.
+
+        As you work with a `POTemplate`, some data about its `POFile`s
+        gets cached.  But if you're iterating over the template's
+        translations one `POFile` at a time, you can drop any cached
+        data about a `POFile` as soon as you're done with it.  Use this
+        method to do that.
+        """
+
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
 

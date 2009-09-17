@@ -25,6 +25,7 @@ from canonical.database.sqlbase import sqlvalues
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.archive import Archive
@@ -45,7 +46,8 @@ from canonical.lazr.utils import smartquote
 
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
-                                StructuralSubscriptionTargetMixin):
+                                StructuralSubscriptionTargetMixin,
+                                HasBranchesMixin, HasMergeProposalsMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -266,7 +268,8 @@ class DistributionSourcePackage(BugTargetBase,
         # such as IArchive.rank, we will then be able to return distinct
         # results. As it is, we cannot return distinct results while ordering
         # by a non-selected column.
-        results.order_by(Desc(KarmaTotalCache.karma_total))
+        results.order_by(
+            Desc(KarmaTotalCache.karma_total), Archive.id)
 
         return results
 

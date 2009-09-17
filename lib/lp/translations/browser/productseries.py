@@ -123,7 +123,7 @@ class ProductSeriesTranslationsExportView(BaseExportView):
         return "Download translations for %s" % self.download_description
 
 
-class ProductSeriesTranslationsMixin(object):
+class ProductSeriesTranslationsMixin(TranslationsMixin):
     """Common properties for all ProductSeriesTranslations*View classes."""
 
     @property
@@ -327,13 +327,20 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                 " recognised as a file that can be imported.")
 
 
-class ProductSeriesView(LaunchpadView, TranslationsMixin):
+class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     """A view to show a series with translations."""
     def initialize(self):
         """See `LaunchpadFormView`."""
         # Whether there is more than one PO template.
         self.has_multiple_templates = (
             self.context.getCurrentTranslationTemplates().count() > 1)
+
+        self.has_exports_enabled = (
+            self.context.translations_branch is not None)
+
+        self.uses_bzr_sync = (
+            (self.context.branch is not None and self.has_imports_enabled) or
+            self.has_exports_enabled)
 
     @property
     def productserieslanguages(self):

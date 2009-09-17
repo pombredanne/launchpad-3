@@ -117,6 +117,13 @@ class BranchMergeProposal(SQLBase):
         enum=BranchMergeProposalStatus, notNull=True,
         default=BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
+    @property
+    def private(self):
+        return (
+            self.source_branch.private or self.target_branch.private or
+            (self.dependent_branch is not None and
+             self.dependent_branch.private))
+
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
@@ -464,12 +471,14 @@ class BranchMergeProposal(SQLBase):
         # a database query to identify if there are any active proposals
         # with the same source and target branches.
         self.syncUpdate()
+        review_requests = set(
+            (vote.reviewer, vote.review_type) for vote in self.votes)
         proposal = self.source_branch.addLandingTarget(
             registrant=registrant,
             target_branch=self.target_branch,
             dependent_branch=self.dependent_branch,
             whiteboard=self.whiteboard,
-            needs_review=True)
+            needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
         # properties of supersedes and superseded_by are visible to

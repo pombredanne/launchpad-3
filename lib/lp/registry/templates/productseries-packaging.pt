@@ -1,0 +1,43 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <div metal:fill-slot="extra_info"
+      tal:define="sourcepackages context/sourcepackages">
+      <p>
+        Tell Launchpad about a package of
+        <tal:name replace="context/displayname" /> in a release of any
+        supported distribution.
+        <tal:existing condition="sourcepackages">
+          This series is packaged in the following places:
+        </tal:existing>
+      </p>
+
+      <ul class="bulleted"
+        tal:condition="sourcepackages">
+        <li tal:repeat="package sourcepackages">
+           <tal:distro replace="package/distroseries/distribution/name" />
+           <tal:series replace="package/distroseries/name" />
+           <a tal:content="package/name"
+              tal:attributes="href package/fmt:url">apache</a>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
+</div>
+    
+</body>
+</html>
