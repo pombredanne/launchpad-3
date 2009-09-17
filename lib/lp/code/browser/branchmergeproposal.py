@@ -52,6 +52,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     stepthrough, stepto, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
 
@@ -80,6 +81,14 @@ class BranchMergeProposalPrimaryContext:
     def __init__(self, branch_merge_proposal):
         self.context = IPrimaryContext(
             branch_merge_proposal.source_branch).context
+
+
+class BranchMergeProposalBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` for a merge proposal."""
+
+    @property
+    def text(self):
+        return 'Merge into %s' % self.context.target_branch.name
 
 
 def notify(func):
@@ -383,7 +392,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     implements(IBranchMergeProposalActionMenu)
 
-    label = "Proposal to merge branches"
+    label = "Proposal to merge branch"
     __used_for__ = IBranchMergeProposal
     schema = ClaimButton
 

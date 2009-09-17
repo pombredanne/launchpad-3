@@ -31,6 +31,8 @@
 </metal:side>
 
 
+<div metal:fill-slot="main">
+
   <div id="nonportlets">
 
   <tal:summary replace="structure context/@@+pagelet-summary" />

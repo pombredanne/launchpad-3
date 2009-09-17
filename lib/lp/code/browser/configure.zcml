@@ -916,7 +916,13 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.branch.IBranch"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+        permission="zope.Public"/>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
+        factory="lp.code.browser.branchmergeproposal.BranchMergeProposalBreadcrumb"
         permission="zope.Public"/>
 
 </configure>
