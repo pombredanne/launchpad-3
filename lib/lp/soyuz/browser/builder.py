@@ -39,9 +39,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission, stepthrough)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from lazr.delegates import delegates
 from canonical.widgets import HiddenUserWidget
 
 
