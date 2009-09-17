@@ -220,7 +220,7 @@ class Hierarchy(LaunchpadView):
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
-        return self.request.traversed_objects[:-1]
+        return self.request.traversed_objects
 
     @cachedproperty
     def items(self):
@@ -266,12 +266,11 @@ class Hierarchy(LaunchpadView):
         one for our parent view's context, return None.
         """
         url = self.request.getURL()
-        last_segment = URI(url).path.split('/')[-1]
         from zope.security.proxy import removeSecurityProxy
         view = removeSecurityProxy(self.request.traversed_objects[-1])
-        obj = view.context
+        obj = self.request.traversed_objects[-2]
         default_view_name = zapi.getDefaultViewName(obj, self.request)
-        if last_segment.startswith('+') and last_segment != default_view_name:
+        if view.__name__ != default_view_name:
             title = getattr(view, 'page_title', None)
             if title is None:
                 template = getattr(view, 'template', None)
