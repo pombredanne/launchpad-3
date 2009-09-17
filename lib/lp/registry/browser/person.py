@@ -3238,12 +3238,11 @@ class PersonCodeOfConductEditView(LaunchpadView):
 
 
 class PersonEditWikiNamesView(LaunchpadView):
+    """View for ~person/+editwikinames"""
 
     @property
     def label(self):
         return smartquote("%s's wiki names" % self.context.displayname)
-
-    page_title = label
 
     @property
     def cancel_url(self):
