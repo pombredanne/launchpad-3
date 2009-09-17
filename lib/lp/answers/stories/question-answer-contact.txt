@@ -22,7 +22,7 @@ the user clicks on the 'Set answer Contact' link:
 
     >>> browser.getLink('Set answer contact').click()
     >>> print browser.title
-    +answer-contact : Ubuntu
+    Answer contact for...
 
     >>> description = find_main_content(browser.contents).p
     >>> print extract_text(description)
@@ -75,7 +75,7 @@ languages header with English and Spanish.
 
     >>> browser.getLink('Your preferred languages').click()
     >>> print browser.title
-    +editlanguages : Questions involving Sample Person : Sample Person
+    Your language preferences...
 
     >>> browser.getControl('English', index=0).selected
     True
@@ -128,7 +128,7 @@ The 'Set answer contact' action is also available on products:
     >>> browser.open('http://answers.launchpad.dev/firefox')
     >>> browser.getLink('Set answer contact').click()
     >>> print browser.title
-    +answer-contact : Questions for Mozilla Firefox : Mozilla Firefox
+    Answer contact for...
 
     >>> print browser.url
     http://answers.launchpad.dev/firefox/+answer-contact
@@ -168,7 +168,7 @@ languages. He must add Spanish to the team's preferred languages.
 
     >>> browser.getLink('Set preferred languages').click()
     >>> print browser.title
-    +editlanguages : “Landscape Developers” team
+    Landscape Developers's lang...
 
 Sample Person may be surprised to see English is already selected. Per
 the notification issued in the first example above, English was added to
@@ -193,7 +193,7 @@ subscribed to Spanish questions.
 
     >>> browser.getLink('Play DVDs in Totem').click()
     >>> print extract_text(browser.title)
-    +index : Questions for Ubuntu Linux : Ubuntu
+    Questions for...
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
     Language: English
@@ -210,7 +210,7 @@ Question:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/12')
     >>> print browser.title
-    +index : Questions for Ubuntu Linux : Ubuntu
+    Questions for...
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
     Language: Spanish

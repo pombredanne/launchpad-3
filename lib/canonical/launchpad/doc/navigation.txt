@@ -648,7 +648,7 @@ Check those from ThingSetNavigation4:
     >>> instance_of_dupenames.publishTraverse(request, 'bar')
     'bar'
 
-The doit() method still works though.
+The doit_*() methods still work though.
 
-    >>> instance_of_dupenames.doit()
+    >>> instance_of_dupenames.doit_bar()
     'bar'

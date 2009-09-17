@@ -274,6 +274,8 @@ class Hierarchy(LaunchpadView):
         if view.__name__ != default_view_name:
             title = getattr(view, 'page_title', None)
             if title is None:
+                title = getattr(view, 'label', None)
+            if title is None:
                 template = getattr(view, 'template', None)
                 if template is None:
                     template = view.index
