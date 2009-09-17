@@ -336,7 +336,7 @@
     <div class="lp-arcana">
       <div class="yui-g" tal:omit-tag="not:site_message">
         <div class="yui-u first">
-          <img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/>
+          <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
           &nbsp;&bull;&nbsp;
           <a href="/+tour">Take the tour</a>
           &nbsp;&bull;&nbsp;

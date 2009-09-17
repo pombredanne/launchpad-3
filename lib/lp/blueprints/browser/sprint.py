@@ -325,6 +325,10 @@ class SprintEditView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     """Custom view class to process the results of this unusual page.

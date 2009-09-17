@@ -54,7 +54,8 @@ class DistributionLanguagePackAdminView(LaunchpadEditFormView):
     """Browser view to change the language pack administrator."""
 
     schema = IDistribution
-    label = "Change the language pack administrator"
+    label = "Select the language pack administrator"
+    page_title = "Set language pack administrator"
     field_names = ['language_pack_admin']
 
     @property
@@ -77,6 +78,8 @@ class DistributionLanguagePackAdminView(LaunchpadEditFormView):
 
 class DistributionView(LaunchpadView):
     """Default Distribution view class."""
+
+    label = "Translations overview"
 
     @cachedproperty
     def translation_focus(self):
@@ -107,7 +110,8 @@ class DistributionView(LaunchpadView):
 
 
 class DistributionSettingsView(TranslationsMixin, DistributionEditView):
-    label = "Select a new translation group"
+    label = "Set permissions and policies"
+    page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]
 
     @property
