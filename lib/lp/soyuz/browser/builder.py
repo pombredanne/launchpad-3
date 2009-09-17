@@ -122,6 +122,10 @@ class BuilderSetView(LaunchpadView):
     """Default BuilderSet view class."""
     __used_for__ = IBuilderSet
 
+    @property
+    def label(self):
+        return self.context.title
+
     @cachedproperty
     def builders(self):
         """All active builders"""
