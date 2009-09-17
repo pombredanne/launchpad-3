@@ -146,8 +146,8 @@ browsed by non-beta users.
     ...     browser.contents, 'sitemessage')[0])
     This is a beta site.
 
-Similarly, once the redirection has been inhibited, the link will no longer
-appear in the footer of edge pages.
+Similarly, once the redirection has been inhibited, the link changes to
+enable redirects..
 
     # Workaround bug in mechanize where you cannot use the Cookie
     # header with the CookieJar
@@ -165,9 +165,11 @@ appear in the footer of edge pages.
     >>> site_message = find_tags_by_class(
     ...     beta_browser.contents, 'sitemessage')[0]
     >>> print extract_text(site_message)
-    This is a beta site.
-    >>> print site_message.find('a')
-    None
+    This is a beta site. Enable edge redirect.
+    >>> print extract_text(site_message.find(
+    ...     'a', onclick="setBetaRedirect(true)"))
+    Enable edge redirect.
+
 
     # Remove the specific site-message config data before continuing.
     >>> dummy = config.pop('edge_config_data')

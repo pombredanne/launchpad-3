@@ -392,6 +392,10 @@
              tal:condition="not:view/isRedirectInhibited">
             Disable edge redirect.
           </a>
+          <a href="#" class="js-action" onclick="setBetaRedirect(true)"
+             tal:condition="view/isRedirectInhibited">
+            Enable edge redirect.
+          </a>
         </tal:beta_user>
       </tal:normal_lp_view>
     </tal:edge_only>
