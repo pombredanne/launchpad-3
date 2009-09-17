@@ -11,8 +11,6 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Confirmation already concluded</h1>
-
   <p>
     You reached this page probably because you followed a link received by
     email. That link was sent to confirm you have access to the email

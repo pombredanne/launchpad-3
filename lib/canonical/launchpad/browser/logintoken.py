@@ -93,6 +93,7 @@ class LoginTokenView(LaunchpadView):
         }
     login_token_pages.update(auth_token_pages)
     PAGES = login_token_pages
+    page_title = label = 'Confirmation already concluded'
 
     def render(self):
         if self.context.date_consumed is None:
@@ -108,6 +109,11 @@ class BaseTokenView:
 
     expected_token_types = ()
     successfullyProcessed = False
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     def redirectIfInvalidOrConsumedToken(self):
         """If this is a consumed or invalid token redirect to the LoginToken
@@ -354,6 +360,15 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
     expected_token_types = (LoginTokenType.VALIDATEGPG,
                             LoginTokenType.VALIDATESIGNONLYGPG)
 
+    @property
+    def label(self):
+        if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
+            return 'Confirm sign-only OpenPGP key'
+        else:
+            assert self.context.tokentype == LoginTokenType.VALIDATEGPG, (
+                'unexpected token type: %r' % self.context.tokentype)
+            return 'Confirm OpenPGP key'
+
     def initialize(self):
         if not self.redirectIfInvalidOrConsumedToken():
             if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
@@ -571,6 +586,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
     schema = Interface
     field_names = []
     expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
+    label = 'Confirm e-mail address'
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
@@ -670,6 +686,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
 class ValidateTeamEmailView(ValidateEmailView):
 
     expected_token_types = (LoginTokenType.VALIDATETEAMEMAIL,)
+    # The desired label is the same as ValidateEmailView.
 
     def markEmailAsValid(self, email):
         """See `ValidateEmailView`"""
@@ -679,6 +696,7 @@ class ValidateTeamEmailView(ValidateEmailView):
 class MergePeopleView(BaseTokenView, LaunchpadView):
     expected_token_types = (LoginTokenType.ACCOUNTMERGE,)
     mergeCompleted = False
+    label = 'Merge Launchpad accounts'
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()

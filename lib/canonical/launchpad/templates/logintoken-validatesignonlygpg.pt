@@ -12,10 +12,6 @@
 
     <div metal:use-macro="context/@@launchpad_form/form">
 
-      <metal:heading fill-slot="heading">
-        <h1>Confirm your OpenPGP key</h1>
-      </metal:heading>
-
       <p metal:fill-slot="extra_info">
         Thanks for adding your OpenPGP key to Launchpad. So we can confirm that the key is yours, we need you to use the key to sign some text.
       </p>
