@@ -782,6 +782,15 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
     See `BaseTranslationView` for details on how this works.
     """
 
+    @property
+    def label(self):
+        """Return the page to translate a template into a language."""
+        if self.form_is_writeable:
+            form_label = 'Translating into %s'
+        else:
+            form_label = 'Browsing %s translation'
+        return form_label % self.context.language.englishname
+
     def initialize(self):
         self.pofile = self.context.browser_pofile
 
