@@ -96,14 +96,14 @@ link.
 
     >>> anon_browser.getLink('View package details').click()
     >>> print anon_browser.title
-    +packages : Default PPA : Celso Providelo
+    Packages in...
 
 You can see the build details of the packages in the archive by using
 the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
     >>> print anon_browser.title
-    +builds : Default PPA : Celso Providelo
+    Builds for...
 
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa/+builds'

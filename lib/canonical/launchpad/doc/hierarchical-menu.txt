@@ -82,6 +82,12 @@ IBreadcrumb adapters are registered for them.  The hierarchy builds a list of
 breadcrumbs starting with the breadcrumb closest to the hierarchy root.
 
     >>> from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+    >>> from canonical.launchpad.browser.launchpad import Hierarchy
+    # Monkey patch Hierarchy.makeBreadcrumbForRequestedPage so that we don't
+    # have to create fake views and other stuff to test breadcrumbs here. The
+    # functionality provided by that method is tested in
+    # webapp/tests/test_breadcrumbs.py.
+    >>> Hierarchy.makeBreadcrumbForRequestedPage = lambda self: None
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
     # give it a valid .text attribute.
@@ -171,7 +177,7 @@ and Python properties.
         text='Joy of cooking'>
 
 Breadcrumbs may have icons.  The icon is only set for a breadcrumb if
-the builder's context has an IPathAdapter registration.
+the adapter's context has an IPathAdapter registration.
 
     >>> from zope.traversing.interfaces import IPathAdapter
     >>> from canonical.launchpad.webapp.tales import (
@@ -220,7 +226,6 @@ The Hierarchy object should *not* construct the Breadcrumb objects
 itself.  It should let the IBreadcrumbBuilder handle it: this ensures
 consistency across the site.
 
-    >>> from canonical.launchpad.browser.launchpad import Hierarchy
     >>> class CustomHierarchy(Hierarchy):
     ...     @property
     ...     def objects(self):
