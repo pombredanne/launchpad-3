@@ -9,7 +9,6 @@
   <body>
     <div metal:fill-slot="main"
       tal:define="overview_menu context/menu:overview">
-      <h1>Change your personal details</h1>
 
       <div metal:use-macro="context/@@launchpad_form/form">
 
