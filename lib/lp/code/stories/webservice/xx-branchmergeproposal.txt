@@ -47,6 +47,7 @@ We use the webservice as an unrelated, unprivileged user.
     merge_reporter_link: None
     merged_revno: None
     preview_diff_link: None
+    private: False
     queue_position: None
     queue_status: u'Work in progress'
     queued_revno: None

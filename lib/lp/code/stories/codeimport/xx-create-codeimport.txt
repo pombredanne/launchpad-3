@@ -13,7 +13,7 @@ the code home page "Import your project".
 
     >>> browser.getLink(id="new-code-import").click()
     >>> print browser.title
-    Request a code import
+    +new : Code Import System
 
 There is a cancel link on this page near the buttons to take the
 user back to the main code page.

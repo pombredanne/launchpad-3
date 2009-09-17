@@ -555,8 +555,12 @@ class SourcePackageHandler:
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         displayname, emailaddress = src.maintainer
-        maintainer = ensure_person(
-            displayname, emailaddress, src.package, distroseries.displayname)
+        comment = 'when the %s package was imported into %s' % (
+            src.package, distroseries.displayname)
+        maintainer = getUtility(IPersonSet).ensurePerson(
+            emailaddress, displayname,
+            PersonCreationRationale.SOURCEPACKAGEIMPORT,
+            comment=comment)
 
         # XXX Debonzi 2005-05-16: Check it later.
         #         if src.dsc_signing_key_owner:
@@ -962,25 +966,3 @@ class BinaryPackagePublisher:
         if ret:
             return ret[0]
         return None
-
-
-
-def ensure_person(displayname, emailaddress, package_name, distroseries_name):
-    """Return a person by its email.
-
-    :package_name: The imported package that mentions the person with the
-                   given email address.
-    :distroseries_name: The distroseries into which the package is to be
-                         imported.
-
-    Create and return a new Person if it does not exist.
-    """
-    person = getUtility(IPersonSet).getByEmail(emailaddress)
-    if person is None:
-        comment = ('when the %s package was imported into %s'
-                 % (package_name, distroseries_name))
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,
-            comment=comment, displayname=displayname)
-    return person
-

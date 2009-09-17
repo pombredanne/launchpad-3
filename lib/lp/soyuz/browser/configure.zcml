@@ -234,15 +234,20 @@
         name="+macros"
         permission="zope.Public"
         template="../templates/archive-macros.pt"/>
-    <browser:pages
+    <browser:page
         for="lp.soyuz.interfaces.archive.IArchive"
         permission="launchpad.View"
-        class="lp.soyuz.browser.archive.ArchiveView">
-        <browser:page
-            template="../templates/archive-index.pt"
-            facet="overview"
-            name="+index"/>
-    </browser:pages>
+        name="+index"
+        template="../templates/archive-index.pt"
+        facet="overview"
+        class="lp.soyuz.browser.archive.ArchiveView"/>
+    <browser:page
+        for="lp.soyuz.interfaces.archive.IArchive"
+        permission="launchpad.View"
+        name="+packages"
+        template="../templates/archive-packages.pt"
+        facet="overview"
+        class="lp.soyuz.browser.archive.ArchivePackagesView"/>
     <browser:pages
         for="lp.soyuz.interfaces.archive.IArchive"
         permission="launchpad.View">
@@ -250,9 +255,6 @@
             template="../templates/archive-ppa-row.pt"
             facet="overview"
             name="+ppa-row"/>
-        <browser:page
-            name="+portlet-privacy"
-            template="../templates/archive-portlet-privacy.pt"/>
         <browser:page
             template="../templates/archive-repository-size.pt"
             name="+repository-size"/>
@@ -321,8 +323,9 @@
     </browser:pages>
     <browser:menus
         classes="
-            ArchiveContextMenu
-            ArchiveNavigationMenu"
+            ArchiveNavigationMenu
+            ArchiveIndexActionsMenu
+            ArchivePackagesActionMenu"
         module="lp.soyuz.browser.archive"/>
     <browser:url
         for="lp.soyuz.interfaces.archivepermission.IArchiveUploader"
@@ -749,7 +752,7 @@
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distroseries.IDistroSeries"
-            class="lp.registry.browser.distroseries.DistroSeriesView"
+            class="lp.soyuz.browser.distroseries.DistroSeriesBuildsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"
