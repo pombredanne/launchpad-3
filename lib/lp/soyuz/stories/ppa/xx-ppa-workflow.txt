@@ -172,8 +172,8 @@ anyone with 'launchpad.Edit' permission in the team in question:
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
 
-    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
-    Personal package archives
+    >>> print find_tag_by_id(cprov_browser.contents, 'ppas')
+    None
 
 Even if we try the URL directly:
 

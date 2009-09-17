@@ -79,12 +79,6 @@
       ${view/context/fmt:public-private-css}
       yui-skin-sam">
     <div class="yui-d0">
-      <div id="globalheader" xml:lang="en" lang="en" dir="ltr"
-           tal:condition="site_message">
-        <div class="sitemessage" tal:content="structure site_message">
-          This site is running pre-release code.
-        </div>
-      </div>
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->

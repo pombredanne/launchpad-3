@@ -128,8 +128,6 @@ archive_edit = ContextDisplayName('Edit %s')
 
 archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
-archive_index = ContextDisplayName('%s')
-
 archive_subscriber_edit = ContextDisplayName('Edit %s')
 
 archive_subscribers = ContextDisplayName('Manage access to %s')
@@ -657,14 +655,7 @@ person_archive_subscriptions = 'Private PPA access'
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
-person_changepassword = 'Change your password'
-
-person_codesofconduct = ContextDisplayName(
-    smartquote("%s's code of conduct signatures"))
-
 person_edit = ContextDisplayName(smartquote("%s's details"))
-
-person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
 # person_foaf is an rdf file
 
@@ -672,13 +663,6 @@ person_hwdb_submissions = ContextDisplayName(
     "Hardware Database submissions by %s")
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
-
-def person_index(context, view):
-    """Return the page title to the person index page."""
-    if context.is_valid_person_or_team:
-        return '%s in Launchpad' % context.displayname
-    else:
-        return "%s does not use Launchpad" % context.displayname
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
@@ -722,8 +706,6 @@ poll_options = ContextTitle(smartquote('Options for poll "%s"'))
 poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
-
-potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -986,8 +968,6 @@ standardshipitrequest_edit = 'Edit standard option'
 
 team_index = ContextBrowsername('%s in Launchpad')
 
-team_mailinglist = 'Configure mailing list'
-
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 
 team_newpoll = ContextTitle('New poll for team %s')
@@ -1008,26 +988,6 @@ temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 token_authorized = 'Almost finished ...'
 
-translationgroup_index = ContextTitle(
-    smartquote('"%s" Launchpad translation group'))
-
-translationgroup_appoint = ContextTitle(
-    smartquote('Appoint a new translator to "%s"'))
-
-translationgroup_edit = ContextTitle(smartquote(
-    'Edit "%s" translation group details'))
-
-translationgroup_reassignment = ContextTitle(smartquote(
-    'Change the owner of "%s" translation group'))
-
-translationgroups_index = 'Launchpad translation groups'
-
 translationimportqueueentry_index = 'Translation import queue entry'
-
-def translationmessage_translate(context, view):
-    """Return the page to translate a template into a language per message."""
-    return 'Translating %s into %s' % (
-        context.pofile.potemplate.displayname,
-        context.pofile.language.englishname)
 
 unauthorized = 'Error: Not authorized'
