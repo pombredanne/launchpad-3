@@ -17,8 +17,6 @@
     </li>
   </ul>
 
-  <h1>Translation status</h1>
-
   <div class="yui-b top-portlet">
     <p tal:condition="context/description">
       <tal:description

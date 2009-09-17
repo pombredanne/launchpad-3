@@ -666,13 +666,6 @@ person_hwdb_submissions = ContextDisplayName(
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
-def person_index(context, view):
-    """Return the page title to the person index page."""
-    if context.is_valid_person_or_team:
-        return '%s in Launchpad' % context.displayname
-    else:
-        return "%s does not use Launchpad" % context.displayname
-
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
@@ -715,8 +708,6 @@ poll_options = ContextTitle(smartquote('Options for poll "%s"'))
 poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
-
-potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
