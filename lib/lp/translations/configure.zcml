@@ -320,6 +320,15 @@
         for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueueEntry"
         provides="lp.translations.interfaces.translationimporter.ITranslationFormatImporter"
         factory="lp.translations.utilities.mozilla_xpi_importer.MozillaXpiImporter"/>
+
+        <!-- PO File -->
+
+    <adapter
+        name="translations"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.translations.interfaces.pofile.IPOFile"
+        factory="lp.translations.browser.translations.TranslationsLanguageBreadcrumb"
+        permission="zope.Public"/>
     <facet
         facet="translations">
         <class

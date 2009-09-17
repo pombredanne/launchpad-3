@@ -747,12 +747,10 @@
                 PersonSetActionNavigationMenu
                 PersonSetContextMenu
                 PersonSpecsMenu
-                TeamBugsMenu
                 TeamEditMenu
                 TeamIndexMenu
                 TeamOverviewMenu
                 TeamOverviewNavigationMenu
-                TeamSpecsMenu
                 "/>
         <browser:menus
             module="lp.registry.browser.menu"
@@ -803,7 +801,7 @@
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonChangePasswordView"
             permission="launchpad.Edit"
-            template="../templates/person-changepassword.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:page
             name="+editlanguages"
             for="lp.registry.interfaces.person.IPerson"
@@ -848,13 +846,17 @@
                 name="+karma"
                 template="../templates/person-karma.pt"/>
         </browser:pages>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            name="+participation"
+            class="lp.registry.browser.person.PersonParticipationView"
+            template="../templates/person-participation.pt"
+            />
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
             class="lp.registry.browser.person.PersonView">
-            <browser:page
-                name="+participation"
-                template="../templates/person-participation.pt"/>
             <browser:page
                 name="+sshkeys"
                 attribute="showSSHKeys"/>
@@ -1032,7 +1034,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
-            class="lp.registry.browser.person.PersonView"
+            class="lp.registry.browser.team.TeamHierarchyView"
             name="+teamhierarchy"
             template="../templates/person-teamhierarchy.pt"/>
         <browser:page
@@ -1062,7 +1064,7 @@
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
-            class="canonical.launchpad.browser.TeamMapData"
+            class="lp.registry.browser.team.TeamMapData"
             template="../templates/team-map-data.pt"
             name="+mapdata"/>
         <browser:page
@@ -1083,7 +1085,7 @@
             class="lp.registry.browser.person.TeamMugshotView"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            class="canonical.launchpad.browser.TeamMapView"
+            class="lp.registry.browser.team.TeamMapView"
             permission="zope.Public"
             name="+portlet-map"
             template="../templates/team-portlet-map.pt"/>
@@ -1102,31 +1104,31 @@
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.Edit"
-            class="canonical.launchpad.browser.TeamContactAddressView"
+            class="lp.registry.browser.team.TeamContactAddressView"
             name="+contactaddress"
             template="../templates/team-contactaddress.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.MailingListManager"
-            class="canonical.launchpad.browser.TeamMailingListConfigurationView"
+            class="lp.registry.browser.team.TeamMailingListConfigurationView"
             name="+mailinglist"
             template="../templates/team-mailinglist.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.Edit"
-            class="canonical.launchpad.browser.TeamMailingListModerationView"
+            class="lp.registry.browser.team.TeamMailingListModerationView"
             name="+mailinglist-moderate"
             template="../templates/team-mailinglist-moderate.pt"/>
         <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.ITeam"
-            class="canonical.launchpad.browser.TeamEditView"
+            class="lp.registry.browser.team.TeamEditView"
             permission="launchpad.Edit"
             template="../templates/team-edit.pt"/>
         <browser:page
             name="+branding"
             for="lp.registry.interfaces.person.ITeam"
-            class="canonical.launchpad.browser.TeamBrandingView"
+            class="lp.registry.browser.team.TeamBrandingView"
             permission="launchpad.Edit"
             template="../templates/object-branding.pt"/>
         <browser:page
@@ -1180,14 +1182,14 @@
         <browser:page
             name="+addmember"
             for="lp.registry.interfaces.person.ITeam"
-            class="canonical.launchpad.browser.TeamMemberAddView"
+            class="lp.registry.browser.team.TeamMemberAddView"
             permission="launchpad.Edit"
             template="../../app/templates/generic-edit.pt"/>
         <browser:page
             name="+editproposedmembers"
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.Edit"
-            class="canonical.launchpad.browser.ProposedTeamMembersEditView"
+            class="lp.registry.browser.team.ProposedTeamMembersEditView"
             template="../templates/team-editproposed.pt"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPersonSet"
@@ -1205,7 +1207,7 @@
         <browser:page
             name="+newteam"
             for="lp.registry.interfaces.person.IPersonSet"
-            class="canonical.launchpad.browser.TeamAddView"
+            class="lp.registry.browser.team.TeamAddView"
             permission="launchpad.AnyPerson"
             template="../templates/people-newteam.pt"/>
         <browser:pages
@@ -1231,7 +1233,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPersonSet"
             permission="launchpad.Admin"
-            class="canonical.launchpad.browser.AdminTeamMergeView"
+            class="lp.registry.browser.peoplemerge.AdminTeamMergeView"
             name="+adminteammerge"
             template="../templates/people-adminrequestmerge.pt"/>
         <browser:pages

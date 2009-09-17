@@ -6,7 +6,6 @@
 """Person-related view classes."""
 
 __metaclass__ = type
-
 __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
@@ -81,7 +80,6 @@ __all__ = [
     'TeamOverviewNavigationMenu',
     'TeamOverviewMenu',
     'TeamReassignmentView',
-    'TeamSpecsMenu',
     'archive_to_person',
     ]
 
@@ -238,6 +236,8 @@ from canonical.lazr.utils import smartquote
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
+
+COMMASPACE = ', '
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -731,7 +731,7 @@ class PersonBugsMenu(NavigationMenu):
     usedfor = IPerson
     facet = 'bugs'
     links = ['assignedbugs', 'commentedbugs', 'reportedbugs',
-             'subscribedbugs', 'relatedbugs', 'softwarebugs', 'mentoring']
+             'subscribedbugs', 'relatedbugs', 'softwarebugs']
 
     def relatedbugs(self):
         text = 'List all related bugs'
@@ -762,13 +762,6 @@ class PersonBugsMenu(NavigationMenu):
                    % self.context.displayname)
         return Link('+subscribedbugs', text, summary=summary)
 
-    def mentoring(self):
-        text = 'Mentoring offered'
-        summary = ('Lists bugs for which %s has offered to mentor someone.'
-                   % self.context.displayname)
-        enabled = bool(self.context.mentoring_offers)
-        return Link('+mentoring', text, enabled=enabled, summary=summary)
-
     def commentedbugs(self):
         text = 'List commented bugs'
         summary = ('Lists bug reports on which %s has commented.'
@@ -782,7 +775,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'mentoring']
+             'workload']
 
     def registrant(self):
         text = 'Registrant'
@@ -816,41 +809,10 @@ class PersonSpecsMenu(ApplicationMenu):
             self.context.displayname)
         return Link('+specfeedback', text, summary, icon='info')
 
-    def mentoring(self):
-        text = 'Mentoring offered'
-        enabled = bool(self.context.mentoring_offers)
-        return Link('+mentoring', text, enabled=enabled, icon='info')
-
     def workload(self):
         text = 'Workload'
         summary = 'Show all specification work assigned'
         return Link('+specworkload', text, summary, icon='info')
-
-
-class TeamSpecsMenu(PersonSpecsMenu):
-
-    usedfor = ITeam
-    facet = 'specifications'
-
-    def mentoring(self):
-        target = '+mentoring'
-        text = 'Mentoring offered'
-        summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, icon='info')
-
-
-class TeamBugsMenu(PersonBugsMenu):
-
-    usedfor = ITeam
-    facet = 'bugs'
-    links = ['assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs',
-             'mentorships']
-
-    def mentorships(self):
-        target = '+mentoring'
-        text = 'Mentoring offered'
-        summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, icon='info')
 
 
 class CommonMenuLinks:
@@ -913,9 +875,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
-             'mentoringoffers', 'codesofconduct', 'karma',
-             'administer', 'projects', 'activate_ppa', 'maintained',
-             'view_ppa_subscriptions']
+             'codesofconduct', 'karma', 'administer', 'projects',
+            'activate_ppa', 'maintained', 'view_ppa_subscriptions']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -983,12 +944,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+participation'
         text = 'Show team participation'
         return Link(target, text, icon='info')
-
-    def mentoringoffers(self):
-        target = '+mentoring'
-        text = 'Mentoring offered'
-        enabled = bool(self.context.mentoring_offers)
-        return Link(target, text, enabled=enabled, icon='info')
 
     @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
@@ -1211,12 +1166,6 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Show team participation'
         return Link(target, text, icon='info')
 
-    def mentorships(self):
-        target = '+mentoring'
-        text = 'Mentoring available'
-        summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, icon='info')
-
     @enabled_with_permission('launchpad.View')
     def mugshots(self):
         target = '+mugshots'
@@ -1308,7 +1257,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'memberships', 'received_invitations',
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
-             'add_poll', 'join', 'leave', 'add_my_teams', 'mentorships',
+             'add_poll', 'join', 'leave', 'add_my_teams',
              'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa']
 
 
@@ -1477,6 +1426,7 @@ class PersonClaimView(LaunchpadFormView):
     """The page where a user can claim an unvalidated profile."""
 
     schema = IPersonClaim
+    label = 'Claim account'
 
     def initialize(self):
         if self.context.is_valid_person_or_team:
@@ -1564,6 +1514,7 @@ class BeginTeamClaimView(PersonClaimView):
     This is actually just the first step, where you enter the email address
     of the team and we email further instructions to that address.
     """
+    label = 'Claim team'
 
     @action(_("Continue"), name="confirm")
     def confirm_action(self, action, data):
@@ -2837,17 +2788,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         assert self.user is not None
         return self.user.findPathToTeam(self.context)
 
-    def indirect_teams_via(self):
-        """Return a list of dictionaries, where each dictionary has a team
-        in which the person is an indirect member, and a path to membership
-        in that team.
-        """
-        return [{'team': team,
-                 'via': ', '.join(
-                    [viateam.displayname for viateam in
-                        self.context.findPathToTeam(team)[:-1]])}
-                for team in self.context.teams_indirectly_participated_in]
-
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
 
@@ -2979,6 +2919,31 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
                 return True
 
         return False
+
+
+class PersonParticipationView(LaunchpadView):
+    """View for the ~person/+participation page."""
+
+    @property
+    def label(self):
+        return 'Team participation for ' + self.context.displayname
+
+    @property
+    def indirect_teams_via(self):
+        """Information about indirect membership.
+
+        :return: A list of dictionaries, where each dictionary has a team in
+          which the person is an indirect member, and a path to membership in
+          that team.
+        :rtype: a list of dictionaries
+        """
+        indirect_teams = []
+        for team in self.context.teams_indirectly_participated_in:
+            via = COMMASPACE.join(viateam.displayname
+                                  for viateam
+                                  in self.context.findPathToTeam(team)[:-1])
+            indirect_teams.append(dict(team=team, via=via))
+        return indirect_teams
 
 
 class EmailAddressVisibleState:
@@ -3189,27 +3154,28 @@ class TeamIndexView(PersonIndexView):
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
+    """View for the ~person/+codesofconduct pages."""
 
-    def performCoCChanges(self):
-        """Make changes to code-of-conduct signature records for this
-        person.
-        """
+    @property
+    def label(self):
+        """See `LaunchpadView`."""
+        return 'Codes of Conduct for ' + self.context.displayname
+
+    def initialize(self):
+        """See `LaunchpadView`."""
+        # Make changes to code-of-conduct signature records for this person.
         sig_ids = self.request.form.get("DEACTIVATE_SIGNATURE")
 
         if sig_ids is not None:
             sCoC_util = getUtility(ISignedCodeOfConductSet)
-
-            # verify if we have multiple entries to deactive
+            # Verify that we have multiple entries to deactive.
             if not isinstance(sig_ids, list):
                 sig_ids = [sig_ids]
-
             for sig_id in sig_ids:
                 sig_id = int(sig_id)
-                # Deactivating signature
+                # Deactivating signature.
                 comment = 'Deactivated by Owner'
                 sCoC_util.modifySignature(sig_id, self.user, comment, False)
-
-            return True
 
 
 class PersonEditWikiNamesView(LaunchpadView):
@@ -4120,6 +4086,8 @@ class PersonEditEmailsView(LaunchpadFormView):
     custom_widget('mailing_list_auto_subscribe_policy',
                   LaunchpadRadioWidgetWithDescription)
 
+    label = 'Change your e-mail settings'
+
     def initialize(self):
         if self.context.is_team:
             # +editemails is not available on teams.
@@ -4225,13 +4193,12 @@ class PersonEditEmailsView(LaunchpadFormView):
         which the user is subscribed to this mailing list.
         """
         subscription = mailing_list.getSubscription(self.context)
-        if subscription is not None:
-            if subscription.email_address is None:
-                return "Preferred address"
-            else:
-                return subscription.email_address
-        else:
+        if subscription is None:
             return "Don't subscribe"
+        elif subscription.email_address is None:
+            return 'Preferred address'
+        else:
+            return subscription.email_address
 
     def _mailing_list_fields(self):
         """Creates a field for each mailing list the user can subscribe to.
@@ -4241,10 +4208,12 @@ class PersonEditEmailsView(LaunchpadFormView):
         """
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
-        terms = [SimpleTerm("Preferred address"),
-                 SimpleTerm("Don't subscribe")]
-        terms += [SimpleTerm(email, email.email)
-                   for email in self.validated_addresses]
+        terms = [
+            SimpleTerm("Preferred address"),
+            SimpleTerm("Don't subscribe"),
+            ]
+        for email in self.validated_addresses:
+            terms.append(SimpleTerm(email, email.email))
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
             if mailing_list is not None and mailing_list.is_usable:
@@ -4267,8 +4236,22 @@ class PersonEditEmailsView(LaunchpadFormView):
     @property
     def mailing_list_widgets(self):
         """Return all the mailing list subscription widgets."""
-        return [widget for widget in self.widgets
-                if 'field.subscription.' in widget.name]
+        mailing_list_set = getUtility(IMailingListSet)
+        widgets = []
+        for widget in self.widgets:
+            if widget.name.startswith('field.subscription.'):
+                team_name = widget.label
+                mailing_list = mailing_list_set.get(team_name)
+                assert mailing_list is not None, 'Missing mailing list'
+                widget_dict = dict(
+                    team=mailing_list.team,
+                    widget=widget,
+                    )
+                widgets.append(widget_dict)
+                # We'll put the label in the first column, so don't include it
+                # in the second column.
+                widget.display_label = False
+        return widgets
 
     def _validate_selected_address(self, data, field='VALIDATED_SELECTED'):
         """A generic validator for this view's actions.
@@ -4513,7 +4496,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         Valid addresses are the ones presented as options for the mailing
         list widgets.
         """
-        names = [w.context.getName() for w in self.mailing_list_widgets]
+        names = [widget_dict['widget'].context.getName()
+                 for widget_dict in self.mailing_list_widgets]
         self.validate_widgets(data, names)
         return self.errors
 
@@ -4524,7 +4508,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         mailing_list_set = getUtility(IMailingListSet)
         dirty = False
         prefix_length = len('subscription.')
-        for widget in self.mailing_list_widgets:
+        for widget_dict in self.mailing_list_widgets:
+            widget = widget_dict['widget']
             mailing_list_name = widget.context.getName()[prefix_length:]
             mailing_list = mailing_list_set.get(mailing_list_name)
             new_value = data[widget.context.getName()]

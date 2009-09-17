@@ -15,7 +15,7 @@ import datetime
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In, Sum
+from storm.expr import Sum
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -62,8 +62,6 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -593,12 +591,3 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
-
-    def getSeriesForBranches(self, branches):
-        """See `IProductSeriesSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        branch_ids = [branch.id for branch in branches]
-        return store.find(
-            ProductSeries,
-            In(ProductSeries.branchID, branch_ids)).order_by(
-            ProductSeries.name)
