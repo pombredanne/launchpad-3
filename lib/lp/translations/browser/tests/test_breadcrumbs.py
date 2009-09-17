@@ -198,7 +198,7 @@ class TestPOFileBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
              "http://translations.launchpad.dev/crumb-tester/test",
              "http://translations.launchpad.dev/crumb-tester/test"
                "/+pots/test-template",
-             "http://launchpad.dev/crumb-tester/test"
+             "http://translations.launchpad.dev/crumb-tester/test"
                "/+pots/test-template/eo",
              ],
             ["Crumb Tester", "Series test", "Translations",

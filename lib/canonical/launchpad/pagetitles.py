@@ -128,8 +128,6 @@ archive_edit = ContextDisplayName('Edit %s')
 
 archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
-archive_index = ContextDisplayName('%s')
-
 archive_subscriber_edit = ContextDisplayName('Edit %s')
 
 archive_subscribers = ContextDisplayName('Manage access to %s')
@@ -708,8 +706,6 @@ poll_options = ContextTitle(smartquote('Options for poll "%s"'))
 poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
-
-potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
