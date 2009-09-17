@@ -139,10 +139,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
-        # Can't add a comment to Merged, Superseded or Rejected.
-        enabled = self.context.isMergable()
-        return Link('+comment', 'Add a review or comment', icon='add',
-                    enabled=enabled)
+        return Link('+comment', 'Add a review or comment', icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -461,8 +458,7 @@ class DecoratedCodeReviewVoteReference:
     def __init__(self, context, user, users_vote):
         self.context = context
         proposal = self.context.branch_merge_proposal
-        is_mergable = proposal.isMergable()
-        self.can_change_review = (user == context.reviewer) and is_mergable
+        self.can_change_review = (user == context.reviewer)
         self.trusted = proposal.target_branch.isPersonTrustedReviewer(
             context.reviewer)
         if user is None:
@@ -470,9 +466,8 @@ class DecoratedCodeReviewVoteReference:
         else:
             # The user cannot review for a requested team review if the user
             # has already reviewed this proposal.
-            self.user_can_review = (
-                is_mergable and (self.can_change_review or
-                 (user.inTeam(context.reviewer) and (users_vote is None))))
+            self.user_can_review = (self.can_change_review or
+                 (user.inTeam(context.reviewer) and (users_vote is None)))
         if context.reviewer == user:
             self.user_can_claim = False
         else:
