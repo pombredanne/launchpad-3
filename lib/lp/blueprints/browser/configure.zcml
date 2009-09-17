@@ -522,6 +522,13 @@
                 name="+nomatches"
                 template="../templates/hasspecifications-nomatches.pt"/>
         </browser:pages>
+        <browser:page
+            name="+documentation"
+            for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
+            class="lp.blueprints.browser.specificationtarget.SpecificationDocumentationView"
+            template="../templates/specificationtarget-documentation.pt"
+            permission="zope.Public"
+            />
         <browser:pages
             for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
             class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
@@ -529,9 +536,6 @@
             <browser:page
                 name="+specs"
                 template="../templates/hasspecifications-specs.pt"/>
-            <browser:page
-                name="+documentation"
-                template="../templates/specificationtarget-documentation.pt"/>
             <browser:page
                 name="+assignments"
                 template="../templates/specificationtarget-assignments.pt"/>

@@ -9,7 +9,6 @@
 
 <body>
   <metal:main fill-slot="main" tal:define="specs view/documentation">
-    <h1>Current documentation</h1>
     <p>
       To classify a blueprint as documentation, check the
       &#8220;Is Informational&#8221; box on its &#8220;Edit Details&#8221;
