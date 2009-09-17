@@ -7,8 +7,6 @@
 <body>
   <div metal:fill-slot="main">
 
-    <h1>Translatable applications</h1>
-
     <div class="top-portlet">
       <p tal:condition="context/translatables">
         Select a project you want to translate into your own language.
