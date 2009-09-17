@@ -100,8 +100,8 @@ A POTMsgSet sequence number is also a link to edit a translation.
     >>> anon_browser.getLink('14.').click()
     >>> anon_browser.url
     'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/14/+translate'
-    >>> anon_browser.title
-    'Translations : Series trunk : Evolution'
+    >>> print anon_browser.title
+    Translations : Series trunk : Evolution
 
 
 == Invalid input ==
