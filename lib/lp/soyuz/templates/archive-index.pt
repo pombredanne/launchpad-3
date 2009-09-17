@@ -63,32 +63,10 @@
           </tal:package-copy-request-list>
         </div>
 
-        <div class="yui-u"><div class="portlet">
-          <h2><tal:archive_label replace="archive_label" /> statistics</h2>
-          <dl tal:define="num_updates view/num_updates_over_last_days;
-                          pkg_build_counts view/num_pkgs_building">
-            <dt>Activity</dt>
-            <dd><span tal:replace="num_updates">10</span>
-              update<tal:plural content="string:s"
-                                condition="python:num_updates!=1"/>
-              added during the past month.</dd>
-            <dd tal:condition="pkg_build_counts/total">
-              Currently
-              <a tal:attributes="href context/menu:overview/builds_building/fmt:url"
-                 tal:omit-tag="not:pkg_build_counts/building">
-              <span tal:replace="pkg_build_counts/building">2</span>
-              package<tal:plural content="string:s"
-                                 condition="python:pkg_build_counts['building']!=1"
-                       /> building</a> and
-              <a tal:attributes="href context/menu:overview/builds_pending/fmt:url"
-                 tal:omit-tag="not:pkg_build_counts/waiting">
-              <span tal:replace="pkg_build_counts/waiting">2</span>
-              package<tal:plural content="string:s"
-                                 condition="python:pkg_build_counts['waiting']!=1"
-                       />
-              waiting to build</a>.</dd>
-          </dl>
-        </div></div>
+        <div class="yui-u">
+          <metal:ppa-statistics-portlet
+            use-macro="template/macros/ppa-statistics-portlet" />
+        </div>
 
       </div><!-- yui-gc -->
 
@@ -279,6 +257,37 @@ YUI({
     </div> <!-- ppa-install -->
   </metal:ppa-install-portlet>
 
+  <metal:ppa-statistics-portlet define-macro="ppa-statistics-portlet">
+    <tal:comment replace="nothing">
+      Present the statistics for a PPA in a portlet.
+    </tal:comment>
+    <div class="portlet">
+      <h2><tal:archive_label replace="archive_label" /> statistics</h2>
+      <dl tal:define="num_updates view/num_updates_over_last_days;
+                      pkg_build_counts view/num_pkgs_building">
+        <dt>Activity</dt>
+        <dd><span tal:replace="num_updates">10</span>
+          update<tal:plural content="string:s"
+                            condition="python:num_updates!=1"/>
+          added during the past month.</dd>
+        <dd tal:condition="pkg_build_counts/total">
+          Currently
+          <a tal:attributes="href context/menu:overview/builds_building/fmt:url"
+             tal:omit-tag="not:pkg_build_counts/building">
+          <span tal:replace="pkg_build_counts/building">2</span>
+          package<tal:plural content="string:s"
+                             condition="python:pkg_build_counts['building']!=1"
+                  /> building</a> and
+          <a tal:attributes="href context/menu:overview/builds_pending/fmt:url"
+             tal:omit-tag="not:pkg_build_counts/waiting">
+           <span tal:replace="pkg_build_counts/waiting">2</span>
+          package<tal:plural content="string:s"
+                             condition="python:pkg_build_counts['waiting']!=1"
+                  />
+          waiting to build</a>.</dd>
+      </dl>
+    </div>
+  </metal:ppa-statistics-portlet>
 </metal:macros>
 
   </body>
