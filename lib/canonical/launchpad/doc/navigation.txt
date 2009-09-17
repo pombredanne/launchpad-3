@@ -635,11 +635,11 @@ Check those from ThingSetNavigation4:
     >>> class DupeNames(Navigation):
     ...
     ...     @stepto('foo')
-    ...     def doit(self):
+    ...     def doit_foo(self):
     ...         return 'foo'
     ...
     ...     @stepto('bar')
-    ...     def doit(self):
+    ...     def doit_bar(self):
     ...         return 'bar'
 
     >>> instance_of_dupenames = DupeNames(thingset, request)

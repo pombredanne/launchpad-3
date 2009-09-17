@@ -1425,7 +1425,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
 
     schema = IProductReviewSearch
-    label= 'Review projects'
+    label = 'Review projects'
 
     full_row_field_names = [
         'search_text',
