@@ -861,10 +861,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         # A package is not counted as waiting if it already has at least
         # one build building.
         # XXX Michael Nelson 20090917 bug 431203. Because neither the
-        # 'difference' method or the '_find_spec'
-        # property are exposed via storm.zope.interfaces.IResultSet,
-        # we need to remove the proxy for both results to use
-        # the difference method.
+        # 'difference' method or the '_find_spec' property are exposed via
+        # storm.zope.interfaces.IResultSet, we need to remove the proxy for
+        # both results to use the difference method.
         naked_sprs_waiting = removeSecurityProxy(sprs_waiting)
         naked_sprs_building = removeSecurityProxy(sprs_building)
 
