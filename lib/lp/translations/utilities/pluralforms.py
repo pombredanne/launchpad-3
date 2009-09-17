@@ -25,9 +25,6 @@ def make_friendly_plural_forms(expression, pluralforms_count):
         forms.setdefault(form, [])
         # If all the plural forms for this language have examples (max. of 6
         # numbers per plural form), it stops.
-        if (len(forms[form]) == MAX_EXAMPLES and
-                len(forms) == pluralforms_count):
-            break
         if len(forms[form]) == MAX_EXAMPLES:
             continue
         forms[form].append(number)

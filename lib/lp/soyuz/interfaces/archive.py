@@ -739,6 +739,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: True if the person is allowed to upload the source package.
         """
 
+    def getSourcePackageReleases(build_status=None):
+        """Return the releases for this archive.
+
+        :param build_status: If specified, only the distinct releases with
+            builds in the specified build status will be returned.
+        :return: A `ResultSet` of distinct `SourcePackageReleases` for this
+            archive.
+        """
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
