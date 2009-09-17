@@ -942,14 +942,13 @@ class IProductReviewSearch(Interface):
         title=_('Description of additional licenses'),
         description=_('Either this field or any one of the selected licenses'
                       ' must match.'),
-        vocabulary=emptiness_vocabulary, required=False, default=False)
+        vocabulary=emptiness_vocabulary, required=False, default=None)
 
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
-        default=set(
-            [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
+        default=set())
 
     has_zero_licenses = Choice(
         title=_('Or has no license specified'),

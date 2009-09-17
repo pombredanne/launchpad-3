@@ -28,7 +28,7 @@ __all__ = [
     'IBranchBatchNavigator',
     'IBranchCloud',
     'IBranchDelta',
-    'IBranchBatchNavigator',
+    'IBranchListingQueryOptimiser',
     'IBranchNavigationMenu',
     'IBranchSet',
     'NoSuchBranch',
@@ -67,6 +67,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
@@ -311,7 +312,7 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
+class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
@@ -1132,6 +1133,31 @@ class IBranchSet(Interface):
     @collection_default_content()
     def getBranches(limit=50):
         """Return a collection of branches."""
+
+
+class IBranchListingQueryOptimiser(Interface):
+    """Interface for a helper utility to do efficient queries for branches.
+
+    Branch listings show several pieces of information and need to do batch
+    queries to the database to avoid many small queries.
+
+    Instead of having branch related queries scattered over other utility
+    objects, this interface and utility object brings them together.
+    """
+
+    def getProductSeriesForBranches(branch_ids):
+        """Return the ProductSeries associated with the branch_ids.
+
+        :param branch_ids: a list of branch ids.
+        :return: a list of `ProductSeries` objects.
+        """
+
+    def getOfficialSourcePackageLinksForBranches(branch_ids):
+        """The SeriesSourcePackageBranches associated with the branch_ids.
+
+        :param branch_ids: a list of branch ids.
+        :return: a list of `SeriesSourcePackageBranch` objects.
+        """
 
 
 class IBranchDelta(Interface):

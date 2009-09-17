@@ -19,16 +19,85 @@ import rlcompleter
 # Shut up pyflakes.
 rlcompleter
 
+import paramiko
 
-from devscripts.ec2test.testrunner import (
-    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2TestRunner,
-    TRUNK_BRANCH)
+from devscripts.ec2test import error_and_quit
+from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
+from devscripts.ec2test.instance import (
+    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 readline.parse_and_bind('tab: complete')
+
 
 # XXX: JonathanLange 2009-05-31: Strongly considering turning this into a
 # Bazaar plugin -- probably would make the option parsing and validation
 # easier.
+
+def run_with_instance(instance, run, demo_networks, postmortem):
+    """Call run(), then allow post mortem debugging and shut down `instance`.
+
+    :param instance: A running `EC2Instance`.  If `run` returns True, it will
+        be shut down before this function returns.
+    :param run: A callable that will be called with no arguments to do
+        whatever needs to be done with the instance.
+    :param demo_networks: ???
+    :param postmortem: If this flag is true, any exceptions will be caught and
+        an interactive session run to allow debugging the problem.
+    """
+    shutdown = True
+    try:
+        try:
+            shutdown = run()
+        except Exception:
+            # If we are running in demo or postmortem mode, it is really
+            # helpful to see if there are any exceptions before it waits
+            # in the console (in the finally block), and you can't figure
+            # out why it's broken.
+            traceback.print_exc()
+    finally:
+        try:
+            if demo_networks:
+                demo_network_string = '\n'.join(
+                    '  ' + network for network in demo_networks)
+                ec2_ip = socket.gethostbyname(instance.hostname)
+                print (
+                    "\n\n"
+                    "********************** DEMO *************************\n"
+                    "It may take 20 seconds for the demo server to start up."
+                    "\nTo demo to other users, you still need to open up\n"
+                    "network access to the ec2 instance from their IPs by\n"
+                    "entering command like this in the interactive python\n"
+                    "interpreter at the end of the setup. "
+                    "\n  runner.security_group.authorize("
+                    "'tcp', 443, 443, '10.0.0.5/32')\n\n"
+                    "These demo networks have already been granted access on "
+                    "port 80 and 443:\n" + demo_network_string +
+                    "\n\nYou also need to edit your /etc/hosts to point\n"
+                    "launchpad.dev at the ec2 instance's IP like this:\n"
+                    "  " + ec2_ip + "    launchpad.dev\n\n"
+                    "See "
+                    "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
+                    "\n*****************************************************"
+                    "\n\n")
+            if postmortem:
+                console = code.InteractiveConsole(locals())
+                console.interact((
+                    'Postmortem Console.  EC2 instance is not yet dead.\n'
+                    'It will shut down when you exit this prompt (CTRL-D).\n'
+                    '\n'
+                    'Tab-completion is enabled.'
+                    '\n'
+                    'Test runner instance is available as `runner`.\n'
+                    'Also try these:\n'
+                    '  http://%(dns)s/current_test.log\n'
+                    '  ssh -A %(dns)s') %
+                                 {'dns': instance.hostname})
+                print 'Postmortem console closed.'
+        finally:
+            if shutdown:
+                instance.shutdown()
+
 
 def main():
     parser = optparse.OptionParser(
@@ -172,6 +241,17 @@ def main():
               'will always raise an error.  Also note that, if you have any '
               'changes in your download cache, you must explicitly choose to '
               'include or ignore the changes.'))
+    parser.add_option(
+        '--update-image', dest='bundle', action='store',
+        help=('Start the image, update the system packages, sourcecode and '
+              'Launchpad branch then bundle, upload and register a new AMI '
+              'with the given name.'))
+    parser.add_option(
+        '--extra-update-image-command', dest='extra_update_image_commands',
+        action='append', metavar="CMD",
+        help=('Run this command (with an ssh agent) on the image before '
+              'running the default update steps.  Can be passed more than '
+              'once, the commands will be run in the order specified.'))
     options, args = parser.parse_args()
     if options.debug:
         import pdb; pdb.set_trace()
@@ -210,83 +290,80 @@ def main():
         branches = ()
     else:
         branches = [data.split('=', 1) for data in options.branches]
-    runner = EC2TestRunner(
-        branch, email=email, file=options.file,
-        test_options=options.test_options, headless=options.headless,
-        branches=branches,
-        machine_id=options.machine_id, instance_type=options.instance_type,
-        pqm_message=options.pqm_message,
-        pqm_public_location=options.pqm_public_location,
-        pqm_submit_location=options.pqm_submit_location,
-        demo_networks=options.demo_networks,
-        open_browser=options.open_browser, pqm_email=options.pqm_email,
-        include_download_cache_changes=options.include_download_cache_changes,
-        )
-    e = None
+
+    agent = paramiko.Agent()
+    keys = agent.get_keys()
+    if len(keys) == 0:
+        error_and_quit(
+            'You must have an ssh agent running with keys installed that '
+            'will allow the script to rsync to devpad and get your '
+            'branch.\n')
+    user_key = agent.get_keys()[0]
+
+    if options.demo_networks is None:
+        demo_networks = ()
+    else:
+        demo_networks = options.demo_networks
+
+    # Get the AWS identifier and secret identifier.
     try:
-        try:
-            runner.start()
+        credentials = EC2Credentials.load_from_file()
+    except CredentialsError, e:
+        error_and_quit(str(e))
+
+    instance = EC2Instance.make(
+        credentials, EC2TestRunner.name, instance_type=options.instance_type,
+        machine_id=options.machine_id, demo_networks=demo_networks)
+
+    if not options.bundle:
+        runner = EC2TestRunner(
+            branch, email=email, file=options.file,
+            test_options=options.test_options, headless=options.headless,
+            branches=branches,
+            pqm_message=options.pqm_message,
+            pqm_public_location=options.pqm_public_location,
+            pqm_submit_location=options.pqm_submit_location,
+            open_browser=options.open_browser, pqm_email=options.pqm_email,
+            include_download_cache_changes=options.include_download_cache_changes,
+            instance=instance, vals=instance._vals,
+            )
+        def run_tests():
             runner.configure_system()
             runner.prepare_tests()
-            if options.demo_networks:
+            if demo_networks:
                 runner.start_demo_webserver()
             else:
                 runner.run_tests()
-        except Exception, e:
-            # If we are running in demo or postmortem mode, it is really
-            # helpful to see if there are any exceptions before it waits
-            # in the console (in the finally block), and you can't figure
-            # out why it's broken.
-            traceback.print_exc()
-    finally:
-        try:
-            # XXX: JonathanLange 2009-06-02: Blackbox alert! This gets at the
-            # private _instance variable of runner. Instead, it should do
-            # something smarter. For example, the demo networks stuff could be
-            # extracted out to different, non-TestRunner class that has an
-            # instance.
-            if options.demo_networks and runner._instance is not None:
-                demo_network_string = '\n'.join(
-                    '  ' + network for network in options.demo_networks)
-                # XXX: JonathanLange 2009-06-02: Blackbox alert! See above.
-                ec2_ip = socket.gethostbyname(runner._instance.hostname)
-                print (
-                    "\n\n"
-                    "********************** DEMO *************************\n"
-                    "It may take 20 seconds for the demo server to start up."
-                    "\nTo demo to other users, you still need to open up\n"
-                    "network access to the ec2 instance from their IPs by\n"
-                    "entering command like this in the interactive python\n"
-                    "interpreter at the end of the setup. "
-                    "\n  runner.security_group.authorize("
-                    "'tcp', 443, 443, '10.0.0.5/32')\n\n"
-                    "These demo networks have already been granted access on "
-                    "port 80 and 443:\n" + demo_network_string +
-                    "\n\nYou also need to edit your /etc/hosts to point\n"
-                    "launchpad.dev at the ec2 instance's IP like this:\n"
-                    "  " + ec2_ip + "    launchpad.dev\n\n"
-                    "See "
-                    "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
-                    "\n*****************************************************"
-                    "\n\n")
-             # XXX: JonathanLange 2009-06-02: Blackbox alert! This uses the
-             # private '_instance' variable and assumes that the runner has
-             # exactly one instance.
-            if options.postmortem and runner._instance is not None:
-                console = code.InteractiveConsole({'runner': runner, 'e': e})
-                console.interact((
-                    'Postmortem Console.  EC2 instance is not yet dead.\n'
-                    'It will shut down when you exit this prompt (CTRL-D).\n'
-                    '\n'
-                    'Tab-completion is enabled.'
-                    '\n'
-                    'Test runner instance is available as `runner`.\n'
-                    'Also try these:\n'
-                    '  http://%(dns)s/current_test.log\n'
-                    '  ssh -A %(dns)s') %
-                                 # XXX: JonathanLange 2009-06-02: Blackbox
-                                 # alert! See above.
-                                 {'dns': runner._instance.hostname})
-                print 'Postmortem console closed.'
-        finally:
-            runner.shutdown()
+            return not options.headless
+        run = run_tests
+    else:
+        instance.check_bundling_prerequisites()
+        def make_new_image():
+            user_connection = instance.connect_as_user()
+            user_connection.perform('bzr launchpad-login %(launchpad-login)s')
+            if options.extra_update_image_commands:
+                for cmd in options.extra_update_image_commands:
+                    user_connection.run_with_ssh_agent(cmd)
+            user_connection.run_with_ssh_agent(
+                "rsync -avp --partial --delete "
+                "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
+                "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
+                "/var/launchpad/sourcecode/")
+            user_connection.run_with_ssh_agent(
+                'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
+            user_connection.run_with_ssh_agent(
+                'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
+            user_connection.close()
+            root_connection = instance.connect_as_root()
+            root_connection.perform(
+                'deluser --remove-home %(USER)s', ignore_failure=True)
+            root_connection.close()
+            instance.bundle(options.bundle, credentials)
+            return True
+        run = make_new_image
+
+    instance.start()
+    instance.set_up_user(user_key)
+
+    run_with_instance(
+        instance, run, options.demo_networks, options.postmortem)

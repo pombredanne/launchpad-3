@@ -334,7 +334,7 @@
 <metal:footer define-macro="footer">
   <div id="footer" class="footer">
     <div class="lp-arcana">
-      <img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/>
+      <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
       &nbsp;&bull;&nbsp;
       <a href="/+tour">Take the tour</a>
       &nbsp;&bull;&nbsp;

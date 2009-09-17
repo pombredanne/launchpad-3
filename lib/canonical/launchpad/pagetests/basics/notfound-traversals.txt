@@ -200,10 +200,6 @@ translations site. This way, we don't break existing links to it. Before
 removing this, you must be completely sure that no supported Ubuntu release
 is still pointing to this old URL (see bug #138090).
 
->>> check_redirect("/ubuntu/hoary/+source/evolution/+translate",
-...     host="launchpad.dev", status=301)
->>> check("/ubuntu/hoary/+source/evolution/+translate",
-...       host='translations.launchpad.dev' )
 >>> check_redirect("/ubuntu/hoary/+source/evolution/+translations", status=301)
 >>> check("/ubuntu/hoary/+source/evolution/+translations",
 ...       host='translations.launchpad.dev')
