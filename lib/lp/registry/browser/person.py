@@ -35,13 +35,13 @@ __all__ = [
     'PersonEditWikiNamesView',
     'PersonFacets',
     'PersonGPGView',
+    'PersonIndexMenu',
     'PersonIndexView',
     'PersonKarmaView',
     'PersonLanguagesView',
     'PersonLatestQuestionsView',
     'PersonNavigation',
     'PersonOAuthTokensView',
-    'PersonOverviewNavigationMenu',
     'PersonOverviewMenu',
     'PersonRdfContentsView',
     'PersonRdfView',
@@ -867,7 +867,34 @@ class CommonMenuLinks:
         return Link(target, text, icon='info')
 
 
-class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
+class PersonMenuMixin(CommonMenuLinks):
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        target = '+branding'
+        text = 'Change branding'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editpassword(self):
+        target = '+changepassword'
+        text = 'Change your password'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        target = '+edit'
+        text = 'Change details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        target = '+review'
+        text = 'Administer'
+        return Link(target, text, icon='edit')
+
+
+class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
 
     usedfor = IPerson
     facet = 'overview'
@@ -876,19 +903,22 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'codesofconduct', 'karma', 'administer', 'projects',
-            'activate_ppa', 'maintained', 'view_ppa_subscriptions']
+             'activate_ppa', 'maintained', 'view_ppa_subscriptions',
+             'ppa', 'oauth_tokens', 'related_software_summary']
+
+    def related_software_summary(self):
+        target = '+related-software'
+        text = 'Related software'
+        return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        target = '+edit'
-        text = 'Change details'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def branding(self):
-        target = '+branding'
-        text = 'Change branding'
-        return Link(target, text, icon='edit')
+    def oauth_tokens(self):
+        target = '+oauth-tokens'
+        text = 'Authorized applications'
+        access_tokens = self.context.oauth_access_tokens
+        request_tokens = self.context.oauth_request_tokens
+        enabled = bool(access_tokens or request_tokens)
+        return Link(target, text, enabled=enabled, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -918,12 +948,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def editjabberids(self):
         target = '+editjabberids'
         text = 'Update Jabber IDs'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def editpassword(self):
-        target = '+changepassword'
-        text = 'Change your password'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.EditLocation')
@@ -972,12 +996,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             'Agreements to abide by the rules of a distribution or project')
         return Link(target, text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        target = '+review'
-        text = 'Administer'
-        return Link(target, text, icon='edit')
-
     @enabled_with_permission('launchpad.Edit')
     def view_ppa_subscriptions(self):
         target = "+archivesubscriptions"
@@ -1013,33 +1031,6 @@ class PPANavigationMenuMixIn:
         else:
             enabled = True
         return Link(target, text, enabled=enabled)
-
-
-class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
-    """The top-level menu of actions a Person may take."""
-
-    usedfor = IPerson
-    facet = 'overview'
-    links = ('profile', 'related_software', 'karma', 'ppas')
-
-    def __init__(self, context):
-        context = IPerson(context)
-        super(PersonOverviewNavigationMenu, self).__init__(context)
-
-    def profile(self):
-        target = ''
-        text = 'Profile'
-        return Link(target, text, menu=IPersonEditMenu)
-
-    def related_software(self):
-        target = '+related-software'
-        text = 'Related software'
-        return Link(target, text, menu=IPersonRelatedSoftwareMenu)
-
-    def karma(self):
-        target = '+karma'
-        text = 'Karma'
-        return Link(target, text)
 
 
 class PersonRelatedSoftwareNavigationMenu(NavigationMenu, CommonMenuLinks):
@@ -2564,6 +2555,66 @@ class TeamJoinMixin:
 class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
     """A View class used in almost all Person's pages."""
 
+    @property
+    def should_show_ubuntu_coc_section(self):
+        """Should the 'Code of Conduct' section be shown?
+
+        It's shown when the person has signed the code of conduct or has
+        rights to sign it.
+        """
+        return self.context.is_ubuntu_coc_signer or (
+            check_permission('launchpad.Edit', self.context))
+
+    @property
+    def should_show_ircnicknames_section(self):
+        """Should the 'IRC nicknames' section be shown?
+
+        It's shown when the person has IRC nicknames registered or has rights
+        to register new ones.
+        """
+        return bool(self.context.ircnicknames) or (
+            check_permission('launchpad.Edit', self.context))
+
+    @property
+    def should_show_wikinames_section(self):
+        """Should the 'Wiki names' section be shown?
+
+        It's shown when the person has Wiki names registered or has rights
+        to register new ones.
+        """
+        return not self.context.wiki_names.is_empty() or (
+            check_permission('launchpad.Edit', self.context))
+
+    @property
+    def should_show_jabberids_section(self):
+        """Should the 'Jabber IDs' section be shown?
+
+        It's shown when the person has Jabber IDs registered or has rights
+        to register new ones.
+        """
+        return bool(self.context.jabberids) or (
+            check_permission('launchpad.Edit', self.context))
+
+    @property
+    def should_show_sshkeys_section(self):
+        """Should the 'SSH keys' section be shown?
+
+        It's shown when the person has SSH keys registered or has rights
+        to register new ones.
+        """
+        return bool(self.context.sshkeys) or (
+            check_permission('launchpad.Edit', self.context))
+
+    @property
+    def should_show_gpgkeys_section(self):
+        """Should the 'OpenPGP keys' section be shown?
+
+        It's shown when the person has OpenPGP keys registered or has rights
+        to register new ones.
+        """
+        return bool(self.context.gpgkeys) or (
+            check_permission('launchpad.Edit', self.context))
+
     @cachedproperty
     def recently_approved_members(self):
         members = self.context.getMembersByStatus(
@@ -2886,7 +2937,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
 
     @cachedproperty
     def languages(self):
-        """The user's preferred languages, or English is none are set."""
+        """The user's preferred languages, or English if none are set."""
         languages = list(self.context.languages)
         if len(languages) > 0:
             englishnames = [language.englishname for language in languages]
@@ -3032,6 +3083,14 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
             self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
+
+    @property
+    def page_title(self):
+        context = self.context
+        if context.is_valid_person_or_team:
+            return '%s in Launchpad' % context.displayname
+        else:
+            return "%s does not use Launchpad" % context.displayname
 
     @cachedproperty
     def enable_xrds_discovery(self):
@@ -5674,6 +5733,17 @@ class EmailToPersonView(LaunchpadFormView):
             return 'Contact this user'
 
 
+class IPersonIndexMenu(Interface):
+    """A marker interface for the +index navigation menu."""
+
+
+class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
+    usedfor = IPersonIndexMenu
+    facet = 'overview'
+    title = 'Change person'
+    links = ('edit', 'administer', 'branding', 'editpassword')
+
+
 class ITeamIndexMenu(Interface):
     """A marker interface for the +index navigation menu."""
 
@@ -5711,3 +5781,4 @@ class TeamEditMenu(TeamNavigationMenuBase):
 
 classImplements(TeamIndexView, ITeamIndexMenu)
 classImplements(TeamEditView, ITeamEditMenu)
+classImplements(PersonIndexView, IPersonIndexMenu)
