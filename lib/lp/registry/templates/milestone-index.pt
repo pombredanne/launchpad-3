@@ -214,7 +214,7 @@
                 <th colspan="2">Blueprint</th>
                 <th style="width: 14em"
                   tal:condition="view/is_project_milestone">
-                  Product
+                  Project
                 </th>
                 <th style="width: 9em;">Priority</th>
                 <th style="width: 14em;">Assignee</th>
@@ -270,7 +270,7 @@
                 <th colspan="4">Bug report</th>
                 <th style="width: 14em"
                   tal:condition="view/is_project_milestone">
-                  Product
+                  Project
                 </th>
                 <th style="width: 9em;">Importance</th>
                 <th style="width: 14em;">Assignee</th>
