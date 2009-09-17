@@ -905,4 +905,11 @@
         permission="zope.Public"
         />
 
+    <adapter
+        name="code"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.hasbranches.IHasBranches"
+        factory="lp.code.browser.branchlisting.HasBranchesBreadcrumb"
+        permission="zope.Public"/>
+
 </configure>

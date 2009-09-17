@@ -12,6 +12,7 @@ __all__ = [
     'DistributionSourcePackageBranchesView',
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
+    'HasBranchesBreadcrumb',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -63,6 +64,7 @@ from canonical.launchpad.webapp.authorization import (
     check_permission, precache_permission_for_objects)
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -86,9 +88,9 @@ from lp.registry.browser.product import (
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
+
 
 def get_plural_text(count, singular, plural):
     """Return 'singular' if 'count' is 1, 'plural' otherwise."""
@@ -96,6 +98,14 @@ def get_plural_text(count, singular, plural):
         return singular
     else:
         return plural
+
+
+class HasBranchesBreadcrumb(Breadcrumb):
+    rootsite = 'code'
+
+    @property
+    def text(self):
+        return 'Branches for %s' % self.context.displayname
 
 
 class BranchBadges(HasBadgeBase):
