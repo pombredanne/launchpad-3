@@ -250,7 +250,7 @@ class Hierarchy(LaunchpadView):
                 if extra_breadcrumb is not None:
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
-        if len(breadcrumbs):
+        if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
             if page_crumb:
                 breadcrumbs.append(page_crumb)
