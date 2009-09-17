@@ -80,7 +80,7 @@
     </tr>
   </table>
 
-  <div class="formControls" style="padding-top: 1em;">
+  <div class="actions">
     <input type="submit" value="Save Changes" name="SAVE" />
     or&nbsp; <a tal:attributes="href view/cancel_url">Cancel</a>
   </div>
