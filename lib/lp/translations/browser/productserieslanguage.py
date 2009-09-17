@@ -22,10 +22,7 @@ class ProductSeriesLanguageView(LaunchpadView):
     """View class to render translation status for an `IProductSeries`."""
 
     pofiles = None
-
-    @property
-    def page_title(self):
-        return self.context.title
+    label = "Translatable templates"
 
     def initialize(self):
         self.form = self.request.form

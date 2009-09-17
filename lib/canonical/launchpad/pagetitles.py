@@ -666,13 +666,6 @@ person_hwdb_submissions = ContextDisplayName(
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
-def person_index(context, view):
-    """Return the page title to the person index page."""
-    if context.is_valid_person_or_team:
-        return '%s in Launchpad' % context.displayname
-    else:
-        return "%s does not use Launchpad" % context.displayname
-
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
@@ -998,20 +991,6 @@ template_new = 'EXAMPLE NEW TITLE'
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 token_authorized = 'Almost finished ...'
-
-translationgroup_index = ContextTitle(
-    smartquote('"%s" Launchpad translation group'))
-
-translationgroup_appoint = ContextTitle(
-    smartquote('Appoint a new translator to "%s"'))
-
-translationgroup_edit = ContextTitle(smartquote(
-    'Edit "%s" translation group details'))
-
-translationgroup_reassignment = ContextTitle(smartquote(
-    'Change the owner of "%s" translation group'))
-
-translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
 
