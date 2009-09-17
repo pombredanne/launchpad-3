@@ -62,13 +62,6 @@
         </li>
       </ul>
 
-      <h1>
-        Translation templates for
-        <tal:title replace="context/title">
-          evolution in Ubuntu Feisty
-        </tal:title>
-      </h1>
-
       <div class="yui-b top-portlet">
         <p>
           This is a listing of all the translatable templates
