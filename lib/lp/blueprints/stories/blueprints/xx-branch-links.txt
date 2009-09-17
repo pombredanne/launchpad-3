@@ -86,7 +86,7 @@ Again, attempting to link to the same branch gives an error.
     There is 1 error.
     This branch has already been linked to the blueprint
 
-    >>> browser.getControl('Cancel').click()
+    >>> browser.getLink('Cancel').click()
 
 
 == Deleting a Branch Link ==
@@ -123,4 +123,5 @@ the spec-branch link.
 
     >>> browser.getLink('edit').click()
     >>> print browser.title
-    Edit blueprint branch status
+    +status : Support <canvas> Objects : Blueprints for Mozilla Firefox :
+    Mozilla Firefox

@@ -846,13 +846,17 @@
                 name="+karma"
                 template="../templates/person-karma.pt"/>
         </browser:pages>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            name="+participation"
+            class="lp.registry.browser.person.PersonParticipationView"
+            template="../templates/person-participation.pt"
+            />
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
             class="lp.registry.browser.person.PersonView">
-            <browser:page
-                name="+participation"
-                template="../templates/person-participation.pt"/>
             <browser:page
                 name="+sshkeys"
                 attribute="showSSHKeys"/>
@@ -1030,7 +1034,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
-            class="lp.registry.browser.person.PersonView"
+            class="lp.registry.browser.team.TeamHierarchyView"
             name="+teamhierarchy"
             template="../templates/person-teamhierarchy.pt"/>
         <browser:page
