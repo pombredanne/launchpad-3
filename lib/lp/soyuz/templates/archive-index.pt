@@ -13,7 +13,7 @@
         PPA for user
       </h1>
       <h1 tal:condition="not: context/enabled"
-          tal:content="CONTEXTS/fmt:pagetitle"
+          tal:content="context/displayname"
           class="disabled">
         PPA for user
       </h1>
