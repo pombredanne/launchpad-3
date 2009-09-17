@@ -3,12 +3,24 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/search"
+  metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad">
   <body>
+    <div metal:fill-slot="head_epilogue">
+       <style type="text/css">
+       #homepage-whatslaunchpad ul {
+         margin-top: 0.5em;
+         margin-left: 1em;
+       }
+       #homepage-whatslaunchpad li {
+         margin-bottom: 0.5em;
+       }
+       .blogdate {
+         color: darkgray;
+         font-size: 85%;
+       }
+       </style>
+    </div>
     <div metal:fill-slot="main">
 
       <div class="informational message" tal:condition="view/canRedirect">
@@ -40,6 +52,7 @@
         tal:attributes="action string:${rooturl}+search"
         method="get"
         accept-charset="UTF-8"
+        class="top-portlet"
         style="text-align: center"
       >
         <img src="/@@/launchpad-logo-and-name.png"
@@ -58,13 +71,78 @@
         <strong tal:content="view/blueprint_count/fmt:intcomma">123</strong>&nbsp;blueprints,
         and&nbsp;counting...
       </div>
-      <div id="home-description">
-        Launchpad is a code hosting and software collaboration platform.<br />
-        <span class="smaller">Launchpad is open source -- you can <a href="https://dev.launchpad.net/">join the community</a> of people
-        who help improve it.</span>
-      </div>
-      <div id="home-page" style="width:90%; max-width:80em; margin:auto;">
-        <div class="three column left" id="featured-projects">
+
+      <div class="yui-gc" style="width:90%; max-width:80em; margin:auto;">
+
+        <div class="yui-u first">
+        <div id="homepage-whatslaunchpad" class="portlet">
+          <h2>Launchpad is a software collaboration platform that provides:</h2>
+          <ul>
+          <li>Bug tracking</li>
+          <li>Code hosting using <a href="http://bazaar-vcs.org//">bazaar</a></li>
+          <li>Code reviews</li>
+          <li>Ubuntu package building and hosting</li>
+          <li>Translations</li>
+          <li>Answer tracking and FAQs</li>
+          <li>Specification tracking</li>
+          </ul>
+          <a href="/+tour"><img src="/@@/tour-icon" alt=""
+                  /></a> <a href="/+tour">Take the tour</a>
+        </div>
+         <div id="homepage-blogposts" class="portlet">
+          <h2>Latest blog posts</h2>
+          <ul style="padding: 0; margin: auto;">
+           <li class="news">
+              <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
+                  Launchpad now open source!</a><span class="blogdate"> - 11 Sep 2009</span><br />
+                  Get the code to Launchpad and join our development community.
+           </li>
+           <li class="news">
+              <a href="http://blog.launchpad.net/general/exporting-translations-to-a-bazaar-branch">
+                Export translations to Bazaar branches</a><span class="blogdate"> - 11 Sep 2009</span><br />
+                  Have Launchpad automatically commit your project's translations to a branch of code.
+           </li>
+           <li class="news">
+              <a href="http://blog.launchpad.net/cool-new-stuff/automatically-import-files-to-launchpad-using-product-release-finder">
+                Automatic release file imports</a><span class="blogdate"> - 11 Sep 2009</span><br />
+                  Launchpad will find and automatically import your project's release files.
+           </li>
+           <li class="news">
+              <a href="http://blog.launchpad.net/translations/sharing-translations">
+                Share translations between releases</a><span class="blogdate"> - 11 Sep 2009</span><br />
+                  Translate a phrase once, have it show up in all your releases.
+           </li>
+           <li class="news">
+              <a href="http://blog.launchpad.net/?p=551">
+                Launchpad for commercial projects</a><span class="blogdate"> - 11 Sep 2009</span><br />
+                Find out more about Launchpad's privacy features for your commercial projects.
+           </li>
+          </ul>
+          <div class="discreet" style="text-align: right">
+            Updated 2009-08-03.<br />
+            <a href="http://blog.launchpad.net">&gt; Older posts</a>
+          </div>
+          </div>
+        </div>
+
+        <div class="yui-u">
+          <div id="homepage-getstarted" class="portlet">
+              <h2>Get started</h2>
+                If you're new to Launchpad you can test it out in our
+                <a href="https://staging.launchpad.net/">sandbox environment</a>.<br />
+                If you're ready, just <a href="">create an account</a> and you're good to go.
+                <ul>
+                  <li><a href="/projects/+new"><img src="/@@/add"
+                  /></a> <a href="/projects/+new">Create a new project</a></li>
+                  <li><a href="/people/+newteam"><img src="/@@/add"
+                  /></a> <a href="/people/+newteam">Create a new team</a></li>
+                  <li><a href="/people/+newteam"><img src="/@@/tour-icon"
+                  /></a> <a href="/+tour">Take the tour</a></li>
+                  <li><a href="https://help.launchpad.net/"><img src="/@@/maybe" alt=""
+                  /></a> <a href="https://help.launchpad.net/">Get help</a></li>
+                </ul>
+          </div>
+         <div id="featured-projects" class="portlet">
           <h2>Featured projects</h2>
           <div style="margin:auto;">
             <ul>
@@ -82,71 +160,10 @@
               <a href="+featuredprojects">&raquo; Manage featured project list</a>
             </div>
           </div>
+          </div>
         </div>
 
-        <div class="three column middle">
-          <h2>What&#8217;s new?</h2>
-          <ul style="padding: 0; margin: auto;">
-           <li class="news">
-              <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
-                <strong>Launchpad now open source!</strong><br />
-           		  Get the code to Launchpad and join our development community.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://blog.launchpad.net/general/exporting-translations-to-a-bazaar-branch">
-                <strong>Export translations to Bazaar branches</strong><br />
-           		  Have Launchpad automatically commit your project's translations to a branch of code.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://blog.launchpad.net/cool-new-stuff/automatically-import-files-to-launchpad-using-product-release-finder">
-                <strong>Automatic release file imports</strong><br />
-           		  Launchpad will find and automatically import your project's release files.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://blog.launchpad.net/translations/sharing-translations">
-                <strong>Share translations between releases</strong><br />
-           		  Translate a phrase once, have it show up in all your releases.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://blog.launchpad.net/?p=551">
-                <strong>Launchpad for commercial projects</strong><br />
-                Find out more about Launchpad's privacy features for your commercial projects.
-              </a>
-           </li>
-          </ul>
-          <div class="discreet" style="text-align: right">
-            Updated 2009-08-03.
-            <a href="http://blog.launchpad.net">Read our blog!</a>
-          </div>
-        </div>
-        <div class="three column right">
-          <div style="margin:auto; width:230px;">
-            <h2>Get started</h2>
-              <div class="home-banners">
-                <a href="/projects/+new"><img src="/@@/add"
-                /></a> <a href="/projects/+new">Create a new project</a><br/>
-                <a href="/people/+newteam"><img src="/@@/add"
-                /></a> <a href="/people/+newteam">Create a new team</a>
-              </div>
-              <div class="home-banners">
-                <a href="/projects"><img src="/@@/project" alt=""
-                /></a> <a href="/projects">Browse projects</a><br/>
-                <a href="/people"><img src="/@@/crowd" alt=""
-                /></a> <a href="/people">Browse people &amp; teams</a>
-              </div>
-              <div class="home-banners">
-                <a href="/+tour"><img src="/@@/tour-icon" alt=""
-                /></a> <a href="/+tour">Take the tour</a><br/>
-                <a href="https://help.launchpad.net/"><img src="/@@/maybe" alt=""
-                /></a> <a href="https://help.launchpad.net/">Read the guide</a>
-              </div>
-          </div>
-        </div>
-      </div><!-- 3 cols -->
+      </div><!-- yui-g -->
     </div><!--main-->
   </body>
 </html>
