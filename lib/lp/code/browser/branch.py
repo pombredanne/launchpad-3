@@ -223,7 +223,7 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
-             'register_merge', 'landing_candidates',
+             'register_merge',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
@@ -279,11 +279,6 @@ class BranchContextMenu(ContextMenu):
         text = 'Propose for merging into another branch'
         enabled = self.context.target.supports_merge_proposals
         return Link('+register-merge', text, icon='add', enabled=enabled)
-
-    def landing_candidates(self):
-        text = 'View landing candidates'
-        enabled = self.context.landing_candidates.count() > 0
-        return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
     def link_bug(self):
         if self.context.linked_bugs:

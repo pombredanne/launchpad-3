@@ -324,6 +324,7 @@
         <!-- PO File -->
 
     <adapter
+        name="translations"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.translations.interfaces.pofile.IPOFile"
         factory="lp.translations.browser.translations.TranslationsLanguageBreadcrumb"
@@ -414,11 +415,6 @@
                 permission="launchpad.Admin"
                 set_attributes="name translation_domain productseries distroseries                                                                                                 sourcepackagename sourcepackageversion                                                                                                 binarypackagename languagepack path header                                                                                                 iscurrent from_sourcepackagename date_last_updated                                                                                                 source_file source_file_format"/>
         </class>
-        <adapter
-           provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-           for="lp.translations.interfaces.potemplate.IPOTemplate"
-           factory="lp.translations.browser.potemplate.POTemplateBreadcrumb"
-           permission="zope.Public"/>
         <adapter
             name="all_messages"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
