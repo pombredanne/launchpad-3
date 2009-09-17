@@ -126,6 +126,10 @@ class BuilderSetView(LaunchpadView):
     def label(self):
         return self.context.title
 
+    @property
+    def page_title(self):
+        return self.label
+
     @cachedproperty
     def builders(self):
         """All active builders"""
