@@ -23,13 +23,15 @@ from lazr.restful.declarations import (
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.distribution import IDistribution
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
 
-class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
+class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
+                                 IStructuralSubscriptionTarget):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking

@@ -393,12 +393,12 @@ filter.
 
 == Filtering an archive ==
 
-The default series filter is 'any' which means that by default the
+The default series filter is '' which means that by default the
 results will include packages from any distro series. A user can
 explicitly set the 'Any Series' filter and get the same result:
 
     >>> anon_browser.getControl(name='field.series_filter').value = (
-    ...     ['any'])
+    ...     [''])
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Package             Version         Uploaded by
