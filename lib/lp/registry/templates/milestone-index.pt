@@ -192,11 +192,11 @@
         </div>
       </div>
 
-    <div class="wide"
+    <div class="full-page-width"
       tal:condition="view/release"
       tal:content="structure view/milestone/@@+productrelease-data" />
 
-    <div class="portlet wide">
+    <div class="portlet full-page-width">
         <h2>
           <span id="specification-count" style="color: #3594bb;"
             tal:content="structure view/specification_count_text">2</span>
