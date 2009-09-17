@@ -1200,6 +1200,11 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         BugTaskStatus.UNKNOWN: 'purple',
     }
 
+    @property
+    def label(self):
+        """The display label for the view."""
+        return 'Bugs in %s' % self.context.title
+
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
