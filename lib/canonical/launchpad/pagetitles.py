@@ -857,13 +857,9 @@ sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
 sourcepackage_builds = ContextTitle('Builds for %s')
 
-sourcepackage_translate = ContextTitle('Help translate %s')
-
 sourcepackage_changelog = 'Source package changelog'
 
 sourcepackage_filebug = ContextTitle("Report a bug about %s")
-
-sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackagenames_index = 'Source package name set'
 
