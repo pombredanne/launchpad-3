@@ -54,21 +54,9 @@ class Breadcrumb:
         else:
             return self._url
 
-    @property
-    def icon(self):
-        """See `IBreadcrumb`."""
-        # Get the <img> tag from the path adapter.
-        return queryAdapter(
-            self.context, IPathAdapter, name='image').icon()
-
     def __repr__(self):
-        if self.icon is not None:
-            icon_repr = " icon='%s'" % self.icon
-        else:
-            icon_repr = ""
-
-        return "<%s url='%s' text='%s'%s>" % (
-            self.__class__.__name__, self.url, self.text, icon_repr)
+        return "<%s url='%s' text='%s'>" % (
+            self.__class__.__name__, self.url, self.text)
 
 
 class DisplaynameBreadcrumb(Breadcrumb):
