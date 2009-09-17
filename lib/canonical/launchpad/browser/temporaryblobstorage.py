@@ -20,6 +20,7 @@ from canonical.librarian.interfaces import UploadFailed
 class TemporaryBlobStorageAddView(LaunchpadFormView):
     schema = ITemporaryBlobStorage
     label = 'Store BLOB'
+    page_title = 'Store a BLOB temporarily in Launchpad'
     field_names = ['blob']
     for_input = True
 

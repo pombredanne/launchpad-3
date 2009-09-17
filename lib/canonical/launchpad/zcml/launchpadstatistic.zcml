@@ -35,6 +35,7 @@
   <browser:pages
     for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
     facet="overview"
+    class="canonical.launchpad.browser.LaunchpadStatisticSet"
     permission="launchpad.Admin">
     <browser:page
       name="+index"
