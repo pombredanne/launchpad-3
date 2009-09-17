@@ -12,6 +12,7 @@ __all__ = [
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
+    'LaunchpadImageFolder',
     'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
