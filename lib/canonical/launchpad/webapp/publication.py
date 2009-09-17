@@ -10,6 +10,7 @@ __all__ = [
 
 import gc
 import os
+import re
 import thread
 import threading
 import traceback
@@ -601,7 +602,12 @@ class LaunchpadBrowserPublication(
                     OpStats.stats['503s'] += 1
 
                 # Increment counters for status code groups.
-                OpStats.stats[str(status)[0] + 'XXs'] += 1
+                status_group = str(status)[0] + 'XXs'
+                OpStats.stats[status_group] += 1
+
+                # Increment counter for 5XXs_b.
+                if is_browser(request) and status_group == '5XXs':
+                    OpStats.stats['5XXs_b'] += 1
 
         # Reset all Storm stores when not running the test suite. We could
         # reset them when running the test suite but that'd make writing tests
@@ -770,3 +776,30 @@ class DefaultPrimaryContext:
 
     def __init__(self, context):
         self.context = context
+
+
+_browser_re = re.compile(r"""(?x)^(
+    Mozilla |
+    Opera |
+    Lynx |
+    Links |
+    w3m
+    )""")
+
+def is_browser(request):
+    """Return True if we believe the request was from a browser.
+
+    There will be false positives and false negatives, as we can
+    only tell this from the User-Agent: header and this cannot be
+    trusted.
+
+    Almost all web browsers provide a User-Agent: header starting
+    with 'Mozilla'. This is good enough for our uses. We also
+    add a few other common matches as well for good measure.
+    We could massage one of the user-agent databases that are
+    available into a usable, but we would gain little.
+    """
+    user_agent = request.getHeader('User-Agent')
+    return (
+        user_agent is not None
+        and _browser_re.search(user_agent) is not None)
