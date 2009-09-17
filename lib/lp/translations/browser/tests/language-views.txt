@@ -22,8 +22,9 @@ The language +admin view provides a label and a page_title for the page.
     >>> print language_admin_view.page_title
     Edit Portuguese (Brazil) (pt_BR)
 
-The view provides also a cancel_url and a next_url, but they're the same because
-the previous and next steps of editing a language are returning to its index.
+The view provides also a cancel_url and a next_url, but they're the same
+because the previous and next steps of editing a language are returning
+to its index.
 
     >>> print language_admin_view.cancel_url
     http://translations.launchpad.dev/+languages/pt_BR
@@ -35,7 +36,7 @@ the previous and next steps of editing a language are returning to its index.
 Add Language
 ------------------
 
-    >>> language_add_view = create_view(language_set, '+add', 
+    >>> language_add_view = create_view(language_set, '+add',
     ...     layer=TranslationsLayer)
 
     >>> print language_add_view.label
@@ -50,7 +51,8 @@ The view provides also a cancel_url and a next_url:
     http://translations.launchpad.dev/+languages
 
     >>> print language_add_view.field_names
-    ['code', 'englishname', 'nativename', 'pluralforms', 'pluralexpression', 'visible', 'direction']
+    ['code', 'englishname', 'nativename', 'pluralforms',
+    'pluralexpression', 'visible', 'direction']
 
     >>> login("admin@canonical.com")
     >>> form = {
@@ -81,15 +83,16 @@ View Language
     >>> language_view = create_initialized_view(serbian, '+index',
     ...     layer=TranslationsLayer)
 
-The friendlypluralforms function shows us a list of plural forms and a set of examples 
-for each one, so one won't need to understand the plural formula expression to see how it works.
+The friendlypluralforms function shows us a list of plural forms and
+a set of examples for each one, so one won't need to understand the plural
+formula expression to see how it works.
 
     >>> friendly_plural_forms = language_view.friendly_plural_forms
 
     >>> for form_dict in friendly_plural_forms:
     ...     print form_dict['form'], ':', form_dict['examples']
-    0 : 1.
-    1 : 2, 3, 4, ...
-    2 : 5, 6, 7, 8, 9, 10, ...
+    0 : 1, 21, 31, 41, 51, 61...
+    1 : 2, 3, 4, 22, 23, 24...
+    2 : 5, 6, 7, 8, 9, 10...
 
 

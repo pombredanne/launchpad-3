@@ -87,10 +87,10 @@ URL.
     'http://translations.../evolution/trunk/+pots/evolution-2.2/es'
 
     >>> print_menu_view_links(nav_menu_view)
-    http://translations.../evolution/trunk/+pots/evolution-2.2/es
-      name: description
+    http://translations.../evolution/trunk/+pots/evolution-2.2/es/+details
+      name: details
       enabled: True
-      linked: False
+      linked: True
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/+translate
       name: translate
       enabled: True
@@ -117,8 +117,8 @@ is requested.
 
     >>> nav_menu_view.initialize()
     >>> print_menu_view_links(nav_menu_view)
-    http://translations.../evolution/trunk/+pots/evolution-2.2/es
-      name: description
+    http://translations.../evolution/trunk/+pots/evolution-2.2/es/+details
+      name: details
       enabled: True
       linked: True
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/+translate
@@ -142,14 +142,14 @@ in devmode.
     >>> from lp.translations.browser.pofile import POFileNavigationMenu
 
     >>> original_enable_only = POFileNavigationMenu.enable_only
-    >>> POFileNavigationMenu.enable_only = ['description', 'translate']
+    >>> POFileNavigationMenu.enable_only = ['details', 'translate']
     >>> config.devmode
     True
 
     >>> nav_menu_view.initialize()
     >>> print_menu_view_links(nav_menu_view)
-    http://translations.../evolution/trunk/+pots/evolution-2.2/es
-      name: description
+    http://translations.../evolution/trunk/+pots/evolution-2.2/es/+details
+      name: details
       enabled: True
       linked: True
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/+translate
@@ -172,8 +172,8 @@ When devmode is False, the links are not included.
 
     >>> nav_menu_view.initialize()
     >>> print_menu_view_links(nav_menu_view)
-    http://translations.../evolution/trunk/+pots/evolution-2.2/es
-      name: description
+    http://translations.../evolution/trunk/+pots/evolution-2.2/es/+details
+      name: details
       enabled: True
       linked: True
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/+translate
