@@ -16,8 +16,6 @@
         </a>
       </li>
     </ul>
-    <h1>Translations</h1>
-
     <tal:translation_focus condition="view/translation_focus"
                            define="target view/translation_focus">
 
