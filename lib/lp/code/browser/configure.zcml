@@ -315,7 +315,8 @@
         template="../templates/branchmergeproposal-macros.pt"/>
     <browser:menus
         classes="
-            BranchMergeProposalContextMenu"
+            BranchMergeProposalContextMenu
+            BranchMergeProposalActionNavigationMenu"
         module="lp.code.browser.branchmergeproposal"/>
     <browser:page
         for="lp.code.interfaces.branchsubscription.IBranchSubscription"
@@ -910,6 +911,12 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.hasbranches.IHasBranches"
         factory="lp.code.browser.branchlisting.HasBranchesBreadcrumb"
+        permission="zope.Public"/>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.branch.IBranch"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
 
 </configure>

@@ -23,26 +23,13 @@
 </metal:block>
 
 
-<metal:side fill-slot="side">
-  <div class="portlet" tal:define="link context/menu:context/resubmit"
-       tal:condition="link/enabled"
-       tal:content="structure link/render">
-       Resubmit proposal
-  </div>
+<metal:side fill-slot="side"
+            tal:define="context_menu context/menu:context">
+
+  <tal:menu replace="structure view/@@+global-actions" />
   <div tal:replace="structure context/@@+pagelet-subscribers" />
 </metal:side>
 
-
-<div metal:fill-slot="main"
-     tal:define="context_menu context/menu:context">
-
-  <h1>Proposal to merge branch
-    <a tal:define="link context_menu/delete"
-       tal:condition="link/enabled"
-       tal:attributes="href link/url"
-       ><img src="/@@/trash-icon" tal:attributes="title link/text; alt link/text" />
-    </a>
-</h1>
 
   <div id="nonportlets">
 

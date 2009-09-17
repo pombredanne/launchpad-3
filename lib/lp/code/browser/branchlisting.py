@@ -527,6 +527,10 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             'displayname': self.context.displayname,
             'title': getattr(self.context, 'title', 'no-title')}
 
+    # Provide a default page_title for distros and other things without
+    # breadcrumbs..
+    page_title = label
+
     @property
     def initial_values(self):
         return {
