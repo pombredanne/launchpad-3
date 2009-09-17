@@ -8,8 +8,6 @@ by us to the address they want to add and confirm the registration.
 Sample Person will now add a couple email addresses to his account.
 
     >>> from lp.services.mail import stub
-    >>> assert not stub.test_emails, (
-    ...     "stub.test_emails should be empty at the start of the test.")
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12')
