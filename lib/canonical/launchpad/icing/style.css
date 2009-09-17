@@ -2257,8 +2257,13 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   -webkit-border-radius: 5px;
 }
 
-.search-box form {
+.bug-links td.bugs-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
 
+.bug-links td.bugs-link {
+  text-align: left;
 }
 
 /* --- Other --- */

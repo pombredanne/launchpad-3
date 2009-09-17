@@ -2683,6 +2683,47 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         url = "%s/+expirable-bugs" % canonical_url(self.context)
         return dict(count=count, url=url, label=label)
 
+    @property
+    def new_bugs_info(self):
+        """Return a dict with new bugs info."""
+        return dict(
+            count=self.context.new_bugtasks.count,
+            url=get_buglisting_search_filter_url(
+                status=BugTaskStatus.NEW.title))
+
+    @property
+    def open_bugs_info(self):
+        """Return a dict with open bugs info."""
+        return dict(
+            count=self.context.open_bugtasks.count,
+            url=get_buglisting_search_filter_url(
+                status=[status.title for status
+                        in UNRESOLVED_BUGTASK_STATUSES]))
+
+    @property
+    def critical_bugs_info(self):
+        """Return a dict with critical bugs info."""
+        return dict(
+            count=self.context.critical_bugtasks.count,
+            url=get_buglisting_search_filter_url(
+                status=[status.title for status
+                        in UNRESOLVED_BUGTASK_STATUSES],
+                importance=BugTaskImportance.CRITICAL.title))
+
+    @property
+    def my_bugs_info(self):
+        """Return a dict with info on bugs assigned to the user, or None."""
+        if self.user:
+            return dict(
+                count=self.context.searchTasks(
+                    BugTaskSearchParams(
+                        user=self.user, assignee=self.user,
+                        status=any(*UNRESOLVED_BUGTASK_STATUSES),
+                        omit_dupes=True)).count(),
+                url=get_buglisting_search_filter_url(assignee=self.user.name))
+        else:
+            return None
+
 
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""

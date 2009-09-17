@@ -76,30 +76,50 @@
         </ul>
       </div>
       <div class="portlet">
-          <ul class="cross-reference">
-            <li tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">
+        <table class="bug-links">
+          <tr tal:define="open_bugs_info view/open_bugs_info">
+            <td class="bugs-count" tal:content="open_bugs_info/count" />
+            <td class="bugs-link">
+              <a tal:attributes="href open_bugs_info/url">Open bugs</a>
+            </td>
+          </tr>
+          <tr tal:condition="view/user"
+              tal:define="my_bugs_info view/my_bugs_info">
+            <td class="bugs-count" tal:content="my_bugs_info/count" />
+            <td class="bugs-link">
+              <a tal:attributes="href my_bugs_info/url">Bugs assigned to me</a>
+            </td>
+          </tr>
+          <tr tal:define="critical_bugs_info view/critical_bugs_info">
+            <td class="bugs-count" tal:content="critical_bugs_info/count" />
+            <td class="bugs-link">
+              <a tal:attributes="href critical_bugs_info/url">Critical bugs</a>
+            </td>
+          </tr>
+          <tr tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">
+            <td class="bugs-count" tal:content="fixed_elsewhere/count" />
+            <td class="bugs-link">
               <a tal:attributes="href fixed_elsewhere/url">
-                <strong tal:content="fixed_elsewhere/count">42</strong>
-                <tal:label
-                  tal:replace="fixed_elsewhere/label">bugs</tal:label>
-                fixed elsewhere
+                Bugs fixed elsewhere
               </a>
-            </li>
-            <li tal:define="cve_bugs view/open_cve_bugs_info">
-              <a tal:attributes="href cve_bugs/url">
-                <strong tal:content="cve_bugs/count"></strong>
-                open CVE
-                <tal:label tal:replace="cve_bugs/label">bugs</tal:label>
-              </a>
-              <tal:cve-reports
-                  condition="context/menu:bugs/cve|nothing">
-                -<a tal:define="link context/menu:bugs/cve"
-                   tal:replace="structure link/render"
-                   tal:condition="link/enabled">
-                  CVE reports
-                </a>
-              </tal:cve-reports>
-            </li>
+            </td>
+          </tr>
+          <tr tal:define="new_bugs_info view/new_bugs_info">
+            <td class="bugs-count" tal:content="new_bugs_info/count" />
+            <td class="bugs-link">
+              <a tal:attributes="href new_bugs_info/url">New bugs</a>
+            </td>
+          </tr>
+          <tr tal:define="cve_bugs_info view/open_cve_bugs_info">
+            <td class="bugs-count" tal:content="cve_bugs_info/count" />
+            <td class="bugs-link">
+              <a tal:attributes="href cve_bugs_info/url">Open CVE bugs</a>
+              -
+              <a href="+cve">CVE reports</a>
+            </td>
+          </tr>
+        </table>
+          <ul class="cross-reference">
             <li tal:define="pending_bugwatches view/pending_bugwatches_info"
                 tal:condition="pending_bugwatches">
               <a tal:attributes="href pending_bugwatches/url">
@@ -129,12 +149,8 @@
                    tal:content="link/text" />
               </li>
             </tal:review-nominations>
-            <li style="font-weight: bold;">
-              <a href="+bugs">List all open bugs</a>
-            </li>
           </ul>
       </div>
-      <tal:block content="structure context/@@+portlet-bugfilters" />
       <div tal:replace="structure context/@@+portlet-bugtags" />
       <tal:releasecriticalbugs
           tal:condition="view/shouldShowReleaseCriticalPortlet"
