@@ -179,6 +179,39 @@
            $('field.searchtext').focus();
       --></script>
 
+      <h2 style="margin-top: 1em">Hot bugs</h2>
+
+      <table class="listing" id="hot-bugs">
+        <thead>
+          <tr>
+            <th colspan="3">Summary</th>
+            <th>Status</th>
+            <th>Importance</th>
+            <th>Last changed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="bugtask view/hot_bugtasks">
+            <td class="icon left">
+              <img alt="" src="/@@/bug" />
+            </td>
+            <td style="text-align: right">
+              #<span tal:replace="bugtask/id" />
+            </td>
+            <td>
+              <a tal:attributes="href bugtask/fmt:url"
+                 tal:content="bugtask/title" />
+            </td>
+            <td tal:attributes="class string:status${bugtask/status/name}"
+                tal:content="bugtask/status/title" />
+            <td tal:attributes="
+                  class string:importance${bugtask/importance/name}"
+                tal:content="bugtask/importance/title" />
+            <td tal:content="bugtask/bug/date_last_updated/fmt:displaydate" />
+          </tr>
+        </tbody>
+      </table>
+
     </div><!-- main -->
   </body>
 </html>

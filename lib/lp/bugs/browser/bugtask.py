@@ -2724,6 +2724,14 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         else:
             return None
 
+    @property
+    def hot_bugtasks(self):
+        """Return the 10 most recently updated bugtasks for this target."""
+        params = BugTaskSearchParams(
+            orderby="-date_last_updated", omit_dupes=True, user=self.user)
+        return list(self.context.searchTasks(params)[:10])
+
+
 
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
