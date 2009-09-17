@@ -3,9 +3,9 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
+
+from canonical.lazr.utils import smartquote
 
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
@@ -158,6 +158,25 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
             ["Crumb Tester", "Series test", "Translations", "Serbian (sr)"])
 
 
+class TestPOTemplateBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+    def test_potemplate(self):
+        product = self.factory.makeProduct(
+            name='crumb-tester', displayname="Crumb Tester")
+        series = self.factory.makeProductSeries(
+            name="test", product=product)
+        potemplate = self.factory.makePOTemplate(name="template",
+                                                 productseries=series)
+        self._testContextBreadcrumbs(
+            [product, series, potemplate],
+            ["http://launchpad.dev/crumb-tester",
+             "http://launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test"
+             "/+pots/template"],
+            ["Crumb Tester", "Series test", "Translations",
+             smartquote('Template "template"')])
+
+
 class TestPOFileBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
 
     def setUp(self):
@@ -176,9 +195,11 @@ class TestPOFileBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
             [self.product, self.series, self.potemplate, self.pofile],
             ["http://launchpad.dev/crumb-tester",
              "http://launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test"],
-            ["Crumb Tester", "Series test", "Translations"])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+             "http://translations.launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test"
+               "/+pots/test-template",
+             "http://launchpad.dev/crumb-tester/test"
+               "/+pots/test-template/eo",
+             ],
+            ["Crumb Tester", "Series test", "Translations",
+             smartquote('Template "test-template"'), "Esperanto (eo)"])
