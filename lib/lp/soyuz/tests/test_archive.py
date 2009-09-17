@@ -287,7 +287,7 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
             build.buildstate = BuildStatus.NEEDSBUILD
 
         result = self.archive.getSourcePackageReleases(
-            buildstatus=BuildStatus.NEEDSBUILD)
+            build_status=BuildStatus.NEEDSBUILD)
 
         self.failUnlessEqual(1, result.count())
         self.failUnlessEqual(

@@ -852,15 +852,16 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         """Return the number of building/waiting to build packages."""
 
         sprs_building = self.context.getSourcePackageReleases(
-            buildstatus = BuildStatus.BUILDING)
+            build_status = BuildStatus.BUILDING)
         sprs_waiting = self.context.getSourcePackageReleases(
-            buildstatus = BuildStatus.NEEDSBUILD)
+            build_status = BuildStatus.NEEDSBUILD)
 
         pkgs_building_count = sprs_building.count()
 
         # A package is not counted as waiting if it already has at least
         # one build building.
-        # Note: because neither the 'difference' method or the '_find_spec'
+        # XXX Michael Nelson 20090917 bug 431203. Because neither the
+        # 'difference' method or the '_find_spec'
         # property are exposed via storm.zope.interfaces.IResultSet,
         # we need to remove the proxy for both results to use
         # the difference method.

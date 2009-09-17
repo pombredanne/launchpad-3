@@ -1186,15 +1186,16 @@ class Archive(SQLBase):
 
         return subscription
 
-    def getSourcePackageReleases(self, buildstatus=None):
+    def getSourcePackageReleases(self, build_status=None):
         """See `IArchive`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(self)
 
         extra_exprs = []
-        if buildstatus is not None:
-            extra_exprs.append(Build.buildstate == buildstatus)
+        if build_status is not None:
+            extra_exprs.append(Build.buildstate == build_status)
 
-        result_set = store.find(SourcePackageRelease, 
+        result_set = store.find(
+            SourcePackageRelease, 
             Build.sourcepackagereleaseID == SourcePackageRelease.id,
             Build.archive == self,
             *extra_exprs)
