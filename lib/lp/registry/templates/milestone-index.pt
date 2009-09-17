@@ -9,9 +9,9 @@
   <tal:css metal:fill-slot="head_epilogue"
     condition="view/is_project_milestone">
     <style id="hide-side-portlets" type="text/css">
-    .side {
-        background: #fff;
-        }
+        .side {
+            background: #fff;
+            }
     </style>
   </tal:css>
 
@@ -192,11 +192,11 @@
         </div>
       </div>
 
-    <tal:release
-      condition="view/release"
-      replace="structure view/milestone/@@+productrelease-data" />
+    <div class="wide"
+      tal:condition="view/release"
+      tal:content="structure view/milestone/@@+productrelease-data" />
 
-    <div class="portlet">
+    <div class="portlet wide">
         <h2>
           <span id="specification-count" style="color: #3594bb;"
             tal:content="structure view/specification_count_text">2</span>
