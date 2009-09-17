@@ -657,14 +657,7 @@ person_archive_subscriptions = 'Private PPA access'
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
-person_changepassword = 'Change your password'
-
-person_codesofconduct = ContextDisplayName(
-    smartquote("%s's code of conduct signatures"))
-
 person_edit = ContextDisplayName(smartquote("%s's details"))
-
-person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
 # person_foaf is an rdf file
 
@@ -979,8 +972,6 @@ standardshipitrequest_edit = 'Edit standard option'
 
 team_index = ContextBrowsername('%s in Launchpad')
 
-team_mailinglist = 'Configure mailing list'
-
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 
 team_newpoll = ContextTitle('New poll for team %s')
@@ -1016,11 +1007,5 @@ translationgroup_reassignment = ContextTitle(smartquote(
 translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
-
-def translationmessage_translate(context, view):
-    """Return the page to translate a template into a language per message."""
-    return 'Translating %s into %s' % (
-        context.pofile.potemplate.displayname,
-        context.pofile.language.englishname)
 
 unauthorized = 'Error: Not authorized'

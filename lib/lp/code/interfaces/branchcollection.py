@@ -66,15 +66,18 @@ class IBranchCollection(Interface):
         Branch table itself.
         """
 
-    def getMergeProposals(statuses=None, for_branches=None):
+    def getMergeProposals(statuses=None, for_branches=None,
+                          target_branch=None):
         """Return a result set of merge proposals for the branches in this
         collection.
 
         :param statuses: If specified, only return merge proposals with these
             statuses. If not, return all merge proposals.
         :param for_branches: An iterable of branches what will restrict the
-            resulting set of merge proposals to be only those for the
-            branches specified.
+            resulting set of merge proposals to be only those where the source
+            branch is one of the branches specified.
+        :param target_branch: If specified, only return merge proposals
+            that target the specified branch.
         """
 
     def getMergeProposalsForPerson(person, status=None):
