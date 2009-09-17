@@ -42,6 +42,10 @@
                 replace="structure context/menu:bugs/subscribe/render" />
           </li>
           <li tal:define="bug_supervisor context/bug_supervisor">
+            Bug supervisor:
+            <tal:none condition="not:bug_supervisor">None set</tal:none>
+            <a tal:condition="bug_supervisor"
+               tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
             <tal:edit-bug-supervisor
                 condition="context/menu:bugs/bugsupervisor|nothing">
               <a tal:define="link context/menu:bugs/bugsupervisor"
@@ -50,12 +54,14 @@
                 <img tal:attributes="alt link/text" src="/@@/edit" />
               </a>
             </tal:edit-bug-supervisor>
-            Bug supervisor:
-            <tal:none condition="not:bug_supervisor">None set</tal:none>
-            <a tal:condition="bug_supervisor"
-               tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
           </li>
           <li tal:define="securitycontact context/security_contact">
+            Security contact:
+            <tal:none condition="not:securitycontact">None set</tal:none>
+            <a tal:condition="securitycontact"
+               tal:replace="structure securitycontact/fmt:link">
+              Billy Anderson
+            </a>
             <tal:edit-securitycontact
                 condition="context/menu:bugs/securitycontact|nothing">
               <a tal:define="link context/menu:bugs/securitycontact"
@@ -64,12 +70,6 @@
                 <img tal:attributes="alt link/text" src="/@@/edit" />
               </a>
             </tal:edit-securitycontact>
-            Security contact:
-            <tal:none condition="not:securitycontact">None set</tal:none>
-            <a tal:condition="securitycontact"
-               tal:replace="structure securitycontact/fmt:link">
-              Billy Anderson
-            </a>
           </li>
           <li>
           </li>
@@ -116,6 +116,16 @@
               <a tal:attributes="href cve_bugs_info/url">Open CVE bugs</a>
               -
               <a href="+cve">CVE reports</a>
+            </td>
+          </tr>
+          <tr tal:define="expirable_bugs_info view/expirable_bugs_info"
+              tal:condition="expirable_bugs_info">
+            <td class="bugs-count" tal:content="expirable_bugs_info/count" />
+            <td class="bugs-link">
+              <a tal:attributes="href expirable_bugs_info/url">
+                Incomplete bugs
+              </a>
+              (can expire)
             </td>
           </tr>
         </table>
