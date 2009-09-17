@@ -18,11 +18,8 @@ __all__ = [
     'IArchiveAppend',
     'IArchiveView',
     'IArchiveEditDependenciesForm',
-    'IArchivePackageCopyingForm',
-    'IArchivePackageDeletionForm',
     'IArchivePublic',
     'IArchiveSet',
-    'IArchiveSourceSelectionForm',
     'IDistributionArchive',
     'InvalidComponent',
     'IPPA',
@@ -133,6 +130,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
         StrippedTextLine(
             title=_("Displayname"), required=True,
             description=_("Displayname for this archive.")))
+
+    title = TextLine(title=_("Name"), required=False, readonly=True)
 
     enabled = Bool(
         title=_("Enabled"), required=False,
@@ -740,6 +739,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: True if the person is allowed to upload the source package.
         """
 
+    def getSourcePackageReleases(build_status=None):
+        """Return the releases for this archive.
+
+        :param build_status: If specified, only the distinct releases with
+            builds in the specified build status will be returned.
+        :return: A `ResultSet` of distinct `SourcePackageReleases` for this
+            archive.
+        """
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -1077,23 +1084,6 @@ class IPPAActivateForm(Interface):
     accepted = Bool(
         title=_("I have read and accepted the PPA Terms of Service."),
         required=True, default=False)
-
-
-class IArchiveSourceSelectionForm(Interface):
-    """Schema used to select sources within an archive."""
-
-
-class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
-    """Schema used to delete packages within an archive."""
-
-    deletion_comment = TextLine(
-        title=_("Deletion comment"), required=False,
-        description=_("The reason why the package is being deleted."))
-
-
-class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
-    """Schema used to copy packages across archive."""
-
 
 
 class IArchiveEditDependenciesForm(Interface):

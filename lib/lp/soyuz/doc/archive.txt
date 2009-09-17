@@ -348,7 +348,7 @@ Using 'distroseries' filter:
 
 Using 'pocket' filter:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> cprov_archive.getPublishedSources(
     ...     distroseries=warty,
     ...     pocket=PackagePublishingPocket.RELEASE).count()
@@ -886,6 +886,25 @@ decreases.
 
     >>> cprov_archive.number_of_binaries
     2
+
+
+== Getting an Archive's source-package releases ==
+
+The method getSourcePackageReleases() is provided to return the unique
+source-package releases for the archive. By default, all releases will
+be returned, but you can also ask for releases with builds in a certain
+state.
+
+    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> releases = cprov_archive.getSourcePackageReleases(
+    ...     build_status=BuildStatus.FULLYBUILT)
+    >>> for release in releases:
+    ...     print release.title
+    mozilla-firefox - 0.9
+    pmount - 0.1-1
+    iceweasel - 1.0
+
+For further details see the `TestGetSourcePackageReleases` unit-test.
 
 
 == Sources available for deletions ==

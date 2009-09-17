@@ -9,7 +9,9 @@ __all__ = [
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
+    'SourcePackageHelpView',
     'SourcePackageNavigation',
+    'SourcePackagePackaging',
     'SourcePackageView',
     ]
 
@@ -19,14 +21,13 @@ from zope.app.form.interfaces import IInputWidget
 
 from canonical.launchpad import helpers
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
@@ -140,7 +141,8 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class SourcePackageView(BuildRecordsView):
+class SourcePackageView:
+    """A view for (distro series) source packages."""
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -155,6 +157,11 @@ class SourcePackageView(BuildRecordsView):
         self.status_message = None
         self.error_message = None
         self.processForm()
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return '%s package' % self.context.name
 
     @property
     def cancel_url(self):
@@ -246,16 +253,14 @@ class SourcePackageView(BuildRecordsView):
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
 
-    @property
-    def search_name(self):
-        return False
 
-    @property
-    def default_build_state(self):
-        """Default build state for sourcepackage builds.
+class SourcePackagePackaging(SourcePackageView):
+    """A View to show where the package is packged."""
 
-        This overrides the default that is set on BuildRecordsView."""
-        # None maps to "all states". The reason we display all states on
-        # this page is because it's unlikely that there will be so
-        # many builds that the listing will be overwhelming.
-        return None
+    page_title = 'Upstream links'
+
+
+class SourcePackageHelpView:
+    """A View to show Answers help."""
+
+    page_title = 'Help and support options'

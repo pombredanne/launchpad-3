@@ -3,21 +3,16 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
 <div metal:fill-slot="main">
-
-    <h1><span tal:replace="context/title"/> change logs</h1>
+    <h1 tal:content="view/label"/>
 
     <tal:block condition="context/distinctreleases">
-      <p>Change logs for this package:</p>
 
     <div id="changelogs">
       <ul tal:condition="context/distinctreleases">
@@ -25,7 +20,7 @@
           <div tal:replace="structure spr/@@+changelog"/>
         </li>
       </ul>
-      <p tal:condition="not: context/distinctreleases" 
+      <p tal:condition="not: context/distinctreleases"
          class="informational message">
         There are no change logs associated with this source package.
       </p>
@@ -33,12 +28,6 @@
 
     </tal:block>
 
-
     </div>
-    <p metal:fill-slot="help">
-      The change log is uploaded by the package maintainer when a new
-      package release is made. It should document all the latest information
-      we have for this release of the package.
-    </p>
   </body>
 </html>

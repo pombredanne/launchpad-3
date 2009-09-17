@@ -12,7 +12,6 @@ __all__ = [
     'ProjectAddView',
     'ProjectAnswersMenu',
     'ProjectBrandingView',
-    'ProjectBreadcrumb',
     'ProjectBugsMenu',
     'ProjectEditView',
     'ProjectFacets',
@@ -104,13 +103,6 @@ class ProjectSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(project))
 
 
-class ProjectBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IProject`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
 class ProjectSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProjectSet`."""
     text = 'Project Groups'
@@ -197,7 +189,7 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
     usedfor = IProject
     facet = 'overview'
     links = [
-        'branding', 'driver', 'reassign', 'top_contributors', 'mentorship',
+        'branding', 'driver', 'reassign', 'top_contributors',
         'announce', 'announcements', 'branch_visibility', 'rdf',
         'new_product', 'administer', 'milestones']
 
@@ -209,15 +201,6 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
     def top_contributors(self):
         text = 'More contributors'
         return Link('+topcontributors', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-
-        # We disable this link if the project has no products. This is for
-        # consistency with the way the overview buttons behave in the same
-        # circumstances.
-        return Link('+mentoring', text, icon='info',
-                    enabled=self.context.hasProducts())
 
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
@@ -425,7 +408,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 
     The new project will automatically be a part of the project group.
     """
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     @cachedproperty
     def label(self):
@@ -442,7 +425,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 class ProjectGroupAddStepTwo(ProjectAddStepTwo):
     """Step 2 (of 2) in the +newproduct project add wizard."""
 
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     def create_product(self, data):
         """Create the product from the user data."""
@@ -559,6 +542,7 @@ class ProjectAddView(LaunchpadFormView):
         ]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
+    page_title = label
     project = None
 
     @action(_('Add'), name='add')

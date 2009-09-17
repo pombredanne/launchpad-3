@@ -205,6 +205,7 @@
                     dependent_branch
                     whiteboard
                     queue_status
+                    private
                     reviewer
                     reviewed_revision_id
                     queuer
@@ -426,6 +427,7 @@
                     landing_candidates
                     dependent_branches
                     addLandingTarget
+                    scheduleDiffUpdates
                     getMergeQueue
                     revisions_since
                     code_is_browseable
@@ -443,6 +445,7 @@
                     getSubscriptionsByLevel
                     getBranchRevision
                     getMainlineBranchRevisions
+                    getMergeProposals
                     getStackedBranches
                     getStackedBranchesWithIncompleteMirrors
                     createBranchRevision
@@ -537,6 +540,22 @@
   <class class="lp.code.model.branch.BranchSet">
     <allow interface="lp.code.interfaces.branch.IBranchSet"/>
   </class>
+  <securedutility
+      class="lp.code.model.branch.BranchSet"
+      provides="lp.code.interfaces.branch.IBranchSet">
+    <allow interface="lp.code.interfaces.branch.IBranchSet"/>
+  </securedutility>
+
+  <!-- BranchListingQueryOptimiser -->
+
+  <class class="lp.code.model.branchlistingqueryoptimiser.BranchListingQueryOptimiser">
+    <allow interface="lp.code.interfaces.branch.IBranchListingQueryOptimiser"/>
+  </class>
+  <securedutility
+      class="lp.code.model.branchlistingqueryoptimiser.BranchListingQueryOptimiser"
+      provides="lp.code.interfaces.branch.IBranchListingQueryOptimiser">
+    <allow interface="lp.code.interfaces.branch.IBranchListingQueryOptimiser"/>
+  </securedutility>
 
   <!-- BranchVisibilityPolicy -->
 
@@ -549,11 +568,6 @@
   <class class="lp.code.adapters.branch.BranchDelta">
     <allow interface="lp.code.interfaces.branch.IBranchDelta"/>
   </class>
-  <securedutility
-      class="lp.code.model.branch.BranchSet"
-      provides="lp.code.interfaces.branch.IBranchSet">
-    <allow interface="lp.code.interfaces.branch.IBranchSet"/>
-  </securedutility>
   <securedutility
       class="lp.code.model.branch.BranchCloud"
       provides="lp.code.interfaces.branch.IBranchCloud">
@@ -849,6 +863,15 @@
       provides="lp.code.interfaces.revision.IRevisionSet" >
     <allow interface="lp.code.interfaces.revision.IRevisionSet" />
   </securedutility>
+
+  <securedutility
+      component="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob"
+      provides="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJobSource">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJobSource"/>
+  </securedutility>
+  <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
+    <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+  </class>
 
   <!-- Linked branches -->
   <adapter factory="lp.code.model.linkedbranch.ProductSeriesLinkedBranch" />

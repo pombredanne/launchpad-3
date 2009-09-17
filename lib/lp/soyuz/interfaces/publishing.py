@@ -19,14 +19,12 @@ __all__ = [
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
     'NotInPool',
-    'PackagePublishingPocket',
     'PackagePublishingPriority',
     'PackagePublishingStatus',
     'PoolFileOverwriteError',
     'active_publishing_status',
     'inactive_publishing_status',
     'name_priority_map',
-    'pocketsuffix'
     ]
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
@@ -36,6 +34,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
@@ -115,57 +114,6 @@ class PackagePublishingStatus(DBEnumeratedType):
         """)
 
 
-class PackagePublishingPocket(DBEnumeratedType):
-    """Package Publishing Pocket
-
-    A single distroseries can at its heart be more than one logical
-    distroseries as the tools would see it. For example there may be a
-    distroseries called 'hoary' and a SECURITY pocket subset of that would
-    be referred to as 'hoary-security' by the publisher and the distro side
-    tools.
-    """
-
-    RELEASE = DBItem(0, """
-        Release
-
-        The package versions that were published
-        when the distribution release was made.
-        For releases that are still under development,
-        packages are published here only.
-        """)
-
-    SECURITY = DBItem(10, """
-        Security
-
-        Package versions containing security fixes for the released
-        distribution.
-        It is a good idea to have security updates turned on for your system.
-        """)
-
-    UPDATES = DBItem(20, """
-        Updates
-
-        Package versions including new features after the distribution
-        release has been made.
-        Updates are usually turned on by default after a fresh install.
-        """)
-
-    PROPOSED = DBItem(30, """
-        Proposed
-
-        Package versions including new functions that should be widely
-        tested, but that are not yet part of a default installation.
-        People who "live on the edge" will test these packages before they
-        are accepted for use in "Updates".
-        """)
-
-    BACKPORTS = DBItem(40, """
-        Backports
-
-        Backported packages.
-        """)
-
-
 class PackagePublishingPriority(DBEnumeratedType):
     """Package Publishing Priority
 
@@ -221,13 +169,14 @@ name_priority_map = {
     'standard': PackagePublishingPriority.STANDARD,
     'optional': PackagePublishingPriority.OPTIONAL,
     'extra': PackagePublishingPriority.EXTRA,
-    '': None
+    '': None,
     }
 
 
 #
 # Base Interfaces
 #
+
 
 class ICanPublishPackages(Interface):
     """Denotes the ability to publish associated publishing records."""
@@ -420,6 +369,7 @@ class IFilePublishing(Interface):
 # Source package publishing
 #
 
+
 class ISourcePackageFilePublishing(IFilePublishing):
     """Source package release files and their publishing status"""
     file_type_name = Attribute(
@@ -482,7 +432,7 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             title=_('Pocket'),
             description=_('The pocket into which this entry is published'),
             vocabulary=PackagePublishingPocket,
-            required=True, readonly=True
+            required=True, readonly=True,
             ))
     archive = exported(
         Reference(
@@ -708,6 +658,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
 # Binary package publishing
 #
 
+
 class IBinaryPackageFilePublishing(IFilePublishing):
     """Binary package files and their publishing status"""
     # Note that it is really /source/ package name below, and not a
@@ -782,7 +733,7 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             title=_('Pocket'),
             description=_('The pocket into which this entry is published'),
             vocabulary=PackagePublishingPocket,
-            required=True, readonly=True
+            required=True, readonly=True,
             ))
     supersededby = Int(
             title=_('The build which superseded this one'),
@@ -894,6 +845,37 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
+
+    def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
+                             component, section, priority, pocket):
+        """Create a new `BinaryPackagePublishingHistory`.
+
+        :param archive: An `IArchive`
+        :param binarypackagerelease: An `IBinaryPackageRelease`
+        :param distroarchseries: An `IDistroArchSeries`
+        :param component: An `IComponent`
+        :param section: An `ISection`
+        :param priority: A `PackagePublishingPriority`
+        :param pocket: A `PackagePublishingPocket`
+
+        datecreated will be UTC_NOW.
+        status will be PackagePublishingStatus.PENDING
+        """
+
+    def newSourcePublication(archive, sourcepackagerelease, distroseries,
+                             component, section, pocket):
+        """Create a new `SourcePackagePublishingHistory`.
+
+        :param archive: An `IArchive`
+        :param sourcepackagerelease: An `ISourcePackageRelease`
+        :param distroseries: An `IDistroSeries`
+        :param component: An `IComponent`
+        :param section: An `ISection`
+        :param pocket: A `PackagePublishingPocket`
+
+        datecreated will be UTC_NOW.
+        status will be PackagePublishingStatus.PENDING
+        """
 
     def getByIdAndArchive(id, archive, source=True):
         """Return the publication matching id AND archive.
@@ -1095,15 +1077,6 @@ class IPublishingSet(Interface):
         the source_package_pub, allowing the use of the cached results.
         """
 
-pocketsuffix = {
-    PackagePublishingPocket.RELEASE: "",
-    PackagePublishingPocket.SECURITY: "-security",
-    PackagePublishingPocket.UPDATES: "-updates",
-    PackagePublishingPocket.PROPOSED: "-proposed",
-    PackagePublishingPocket.BACKPORTS: "-backports",
-}
-
-
 active_publishing_status = (
     PackagePublishingStatus.PENDING,
     PackagePublishingStatus.PUBLISHED,
@@ -1118,4 +1091,3 @@ inactive_publishing_status = (
 
 
 # Circular import problems fixed in _schema_circular_imports.py
-

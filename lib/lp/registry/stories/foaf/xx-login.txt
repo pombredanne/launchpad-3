@@ -1,0 +1,83 @@
+======
+Log in
+======
+
+New user Foo chooses to log into Launchpad.
+
+    >>> browser = setupBrowser()
+    >>> browser.open('http://launchpad.dev/')
+    >>> browser.getLink('Log in / Register').click()
+    >>> print browser.title
+    Log in or register with Launchpad
+
+If Foo inadvertently use a non-ascii character in his password, an error
+message is displayed.
+
+    >>> browser.getControl(
+    ...     'E-mail address:', index=0).value = 'foo@baz.com'
+    >>> browser.getControl('Password').value = 't\xC3\xA9st'
+    >>> browser.getControl('Log In').click()
+    >>> print browser.title
+    Log in or register with Launchpad
+
+    >>> print_feedback_messages(browser.contents)
+    The password provided contains non-ASCII characters.
+
+When the user logs in, his browser is redirected to the page he was on
+before the login page.
+
+    >>> browser.getControl('E-mail address:', index=0).value = 'foo@baz.com'
+    >>> browser.getControl('Password').value = 'f'
+    >>> browser.getControl('Log In').click()
+    >>> print browser.title
+    Log in or register with Launchpad
+
+
+Users with suspended account cannot log in
+==========================================
+
+Users with suspended accounts cannot log into Launchpad.
+
+    # Open up the black box and shine a light on the test's inner workings.
+    # Create a user with a SUSPENDED account.
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+
+    # Only admins can suspend an account.
+    >>> login('admin@canonical.com')
+    >>> bad_user = factory.makePerson(
+    ...     email='bad-user@canonical.com',
+    ...     name='bad-user',
+    ...     password='test')
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
+    >>> logout()
+    >>> transaction.commit()
+
+Bad User has a suspended account. He discovers that his account is disabled
+when he visits his profile page.
+
+    >>> browser = setupBrowser()
+    >>> browser.open('http://launchpad.dev/~bad-user')
+    >>> print browser.title
+    Bad-user does not use Launchpad
+
+He believes he can still use his Launchpad profile because he knows his
+password.
+
+    >>> browser.getLink('Log in / Register').click()
+    >>> print browser.title
+    Log in or register with Launchpad
+
+    >>> browser.getControl('E-mail address:', index=0).value = (
+    ... 'bad-user@canonical.com')
+    >>> browser.getControl('Password').value = 'test'
+    >>> browser.getControl('Log In').click()
+    >>> print browser.title
+    Log in or register with Launchpad
+
+But he cannot log in.  He sees a error message that states he needs to contact
+a Launchpad admin.
+
+    >>> print_errors(browser.contents)
+    The email address belongs to a suspended account. Contact a Launchpad
+    admin about this issue.

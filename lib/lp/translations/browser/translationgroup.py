@@ -7,11 +7,11 @@ __metaclass__ = type
 __all__ = [
     'TranslationGroupAddTranslatorView',
     'TranslationGroupAddView',
-    'TranslationGroupBreadcrumb',
     'TranslationGroupEditView',
     'TranslationGroupNavigation',
     'TranslationGroupReassignmentView',
     'TranslationGroupSetBreadcrumb',
+    'TranslationGroupSetView',
     'TranslationGroupSetNavigation',
     'TranslationGroupView',
     ]
@@ -46,16 +46,14 @@ class TranslationGroupSetNavigation(GetitemNavigation):
 
 class TranslationGroupSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITranslationGroupSet`."""
-
     text = u"Translation groups"
 
 
-class TranslationGroupBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `ITranslationGroup`."""
+class TranslationGroupSetView:
+    """Translation groups overview."""
+    page_title = "Translation groups"
+    label = page_title
 
-    @property
-    def text(self):
-        return self.context.title
 
 class TranslationGroupView:
 
@@ -63,6 +61,14 @@ class TranslationGroupView:
         self.context = context
         self.request = request
         self.translation_groups = getUtility(ITranslationGroupSet)
+
+    @property
+    def label(self):
+        return "%s translation group" % self.context.title
+
+    @property
+    def page_title(self):
+        return self.context.title
 
     @property
     def translator_list(self):
@@ -120,7 +126,7 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return 'Apoint a translation team in "%s"' % (self.context.title)
+        return self.label
 
 
 class TranslationGroupEditView(LaunchpadEditFormView):
@@ -128,6 +134,8 @@ class TranslationGroupEditView(LaunchpadEditFormView):
 
     schema = ITranslationGroup
     field_names = ['name', 'title', 'summary', 'translation_guide_url']
+
+    page_title = "Change details"
 
     @action("Change")
     def change_action(self, action, data):
@@ -159,11 +167,7 @@ class TranslationGroupEditView(LaunchpadEditFormView):
 
     @property
     def label(self):
-        return "Change %s details" % (self.context.title)
-
-    @property
-    def page_title(self):
-        return 'Change "%s" translation group details' % (self.context.title)
+        return "Change %s details" % self.context.title
 
 
 class TranslationGroupAddView(LaunchpadFormView):
@@ -172,7 +176,7 @@ class TranslationGroupAddView(LaunchpadFormView):
     schema = ITranslationGroup
     field_names = ['name', 'title', 'summary', 'translation_guide_url']
     label = "Create a new translation group"
-    page_title = "Create a new Launchpad translation group"
+    page_title = label
 
     @action("Create", name="create")
     def create_action(self, action, data):

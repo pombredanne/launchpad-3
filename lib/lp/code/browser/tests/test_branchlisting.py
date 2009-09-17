@@ -23,7 +23,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.code.model.branch import Branch
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCase, TestCaseWithFactory, time_counter
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -107,20 +107,6 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         self.bug.linkBranch(self.branches[0], self.barney)
         self.spec = self.factory.makeSpecification()
         self.spec.linkBranch(self.branches[1], self.barney)
-
-    def test_branch_sparks(self):
-        # branch_sparks should return a simplejson list for the branches with
-        # the value being [id, url]
-        branch_sparks = ('['
-        '["b-1", "http://code.launchpad.dev/~barney/bambam/branch9/+spark"], '
-        '["b-2", "http://code.launchpad.dev/~barney/bambam/branch10/+spark"], '
-        '["b-3", "http://code.launchpad.dev/~barney/bambam/branch11/+spark"], '
-        '["b-4", "http://code.launchpad.dev/~barney/bambam/branch12/+spark"], '
-        '["b-5", "http://code.launchpad.dev/~barney/bambam/branch13/+spark"]'
-        ']')
-
-        view = create_initialized_view(self.barney, name="+branches")
-        self.assertEqual(view.branches().branch_sparks, branch_sparks)
 
     def test_branch_ids_with_bug_links(self):
         # _branches_for_current_batch should return a list of all branches in

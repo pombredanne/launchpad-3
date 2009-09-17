@@ -73,7 +73,7 @@ from lp.code.enums import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchType)
 from lp.code.interfaces.branch import (
     bazaar_identity, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchBatchNavigator)
+    IBranchBatchNavigator, IBranchListingQueryOptimiser)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -320,7 +320,7 @@ class BranchListingItemsMixin:
     def branch_sparks(self):
         """Return a simplejson string for [id, url] for branch sparks."""
         spark_lines = []
-        for count, branch in enumerate(self._branches_for_current_batch):
+        for count, branch in enumerate(self.visible_branches_for_view):
             if self.view.showSparkLineForBranch(branch):
                 element_id = 'b-%s' % (count + 1)
                 element_url = canonical_url(branch, view_name='+spark')
@@ -328,16 +328,14 @@ class BranchListingItemsMixin:
         return simplejson.dumps(spark_lines)
 
     @cachedproperty
-    def _branches_for_current_batch(self):
-        """Get all the branches from the BatchNavigator."""
-        branches = list(self.currentBatch())
-        # XXX: TimPenhey 2009-04-08 bug=324546
-        # Until there is an API to do this nicely, shove the launchpad.view
-        # permission into the request cache directly.  This is done because
-        # the security proxy sometimes causes extra requests to be made.
-        request = self.view.request
-        precache_permission_for_objects(request, 'launchpad.View', branches)
-        return branches
+    def _query_optimiser(self):
+        """Return the branch listing query optimiser utility."""
+        return getUtility(IBranchListingQueryOptimiser)
+
+    @cachedproperty
+    def _visible_branch_ids(self):
+        """Return a list of the branch ids that are visible."""
+        return [branch.id for branch in self.visible_branches_for_view]
 
     @cachedproperty
     def product_series_map(self):
@@ -346,8 +344,8 @@ class BranchListingItemsMixin:
         While this code is still valid with package branches is it a query
         that isn't needed.
         """
-        series_resultset = getUtility(IProductSeriesSet).getSeriesForBranches(
-            self.visible_branches_for_view)
+        series_resultset = self._query_optimiser.getProductSeriesForBranches(
+            self._visible_branch_ids)
         result = {}
         for series in series_resultset:
             result.setdefault(series.branch.id, []).append(series)
@@ -462,20 +460,8 @@ class BranchListingBatchNavigator(TableBatchNavigator,
         return self.view._getCollection().visibleByUser(self.view.user)
 
     @cachedproperty
-    def branch_sparks(self):
-        return simplejson.dumps([
-                ('b-%s' % (count+1),
-                 canonical_url(branch, view_name='+spark'))
-                for count, branch
-                in enumerate(self.visible_branches_for_view)
-                ])
-
-    @cachedproperty
     def visible_branches_for_view(self):
         branches = list(self.currentBatch())
-        # XXX: TimPenhey 2009-04-08 bug=324546
-        # Until there is an API to do this nicely, shove the launchpad.view
-        # permission into the request cache directly.
         request = self.view.request
         precache_permission_for_objects(request, 'launchpad.View', branches)
         return branches
