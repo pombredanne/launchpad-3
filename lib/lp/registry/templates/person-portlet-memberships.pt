@@ -5,7 +5,14 @@
   omit-tag="">
   <div class="portlet"
        tal:define="memberships context/@@+restricted-membership/getLatestApprovedMembershipsForPerson">
-    <h2>Latest memberships</h2>
+    <h2>
+      <span class="see-all" tal:condition="memberships">
+        <a tal:attributes="href context/menu:overview/memberships/url">
+          All memberships
+        </a>
+      </span>
+      Latest memberships
+    </h2>
 
     <tal:memberships condition="memberships">
       <table id="participation">
@@ -13,12 +20,6 @@
             tal:replace="structure membership/@@+listing-simple" />
       </table>
 
-      <p>
-        <a href="+participation">
-          &raquo; See all teams in which
-          <tal:name replace="context/title">Foo Bar</tal:name> participates
-        </a>
-      </p>
     </tal:memberships>
 
     <p tal:condition="not: memberships">

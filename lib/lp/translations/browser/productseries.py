@@ -107,6 +107,9 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     select languages, and templates are always included.
     """
 
+    label = "Download translations"
+    page_title = "Download"
+
     @property
     def download_description(self):
         """Current context description used inline in paragraphs."""
@@ -117,10 +120,6 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-    @property
-    def page_title(self):
-        return "Download translations for %s" % self.download_description
 
 
 class ProductSeriesTranslationsMixin(TranslationsMixin):
@@ -164,6 +163,10 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
 
 class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
     """A view for uploading translations into productseries."""
+
+    label = "Upload translation files"
+    page_title = "Upload"
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         self.form = self.request.form
@@ -172,12 +175,6 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-    @property
-    def page_title(self):
-        return "Upload translations to %s %s" % (
-            self.context.product.displayname,
-            self.context.displayname)
 
     def processForm(self):
         """Process a form if it was submitted."""
@@ -329,6 +326,9 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
 
 class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     """A view to show a series with translations."""
+
+    label = "Translation status by language"
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         # Whether there is more than one PO template.
@@ -410,6 +410,10 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
     """Edit settings for translations import and export."""
 
     schema = IProductSeries
+
+    label = "Translations synchronization settings"
+    page_title = "Settings"
+
     field_names = ['translations_autoimport_mode']
     settings_widget = custom_widget('translations_autoimport_mode',
                   SettingsRadioWidget)
@@ -443,15 +447,11 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
     field_names = []
 
     label = "Request one-time import of translations"
+    page_title = "Import translations from a branch"
 
     @property
     def next_url(self):
         return canonical_url(self.context)
-
-    @property
-    def page_title(self):
-        return "One-time import of %s %s translations from bazaar" % (
-            self.context.product.displayname, self.context.displayname)
 
     def __init__(self, context, request):
         super(ProductSeriesTranslationsBzrImportView, self).__init__(
@@ -481,6 +481,8 @@ class ProductSeriesTemplatesView(LaunchpadView):
     """Show a list of all templates for the ProductSeries."""
 
     is_distroseries = False
+    label = "Translation templates"
+    page_title = "All templates"
 
     def iter_templates(self):
         """Return an iterator of all `IPOTemplates` for the series."""
@@ -499,6 +501,7 @@ class LinkTranslationsBranchView(LaunchpadEditFormView):
     field_names = ['translations_branch']
 
     label = "Set translations export branch"
+    page_title = "Export to branch"
 
     @property
     def cancel_url(self):
@@ -507,10 +510,6 @@ class LinkTranslationsBranchView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context) + '/+translations-settings'
-
-    @property
-    def page_title(self):
-        return "Set translations export branch for %s" % (self.context.title)
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
