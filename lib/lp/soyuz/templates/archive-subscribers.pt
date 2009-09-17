@@ -18,11 +18,13 @@
          from your PPA.
       </p>
 
-      <div class="subscribers">
-        <p tal:condition="not: view/has_subscriptions" id="no-subscribers">
-          No one has access to install software from this PPA.
-        </p>
+      <p tal:condition="not: view/has_subscriptions" id="no-subscribers">
+        No one has access to install software from this PPA.
+      </p>
 
+      <div id="add-subscriber-placeholder"></div>
+
+      <div id="subscribers">
         <p class="error message" tal:condition="view/errors"
            tal:content="view/error_count" />
 
@@ -45,7 +47,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr style="background-color:#eeeeff;">
+            <tr class="add-subscriber" style="background-color:#eeeeff;">
               <tal:single-row-form define="widgets widgets|view/widgets"
                                    repeat="widget widgets">
 
@@ -91,6 +93,41 @@
         </form>
       </div><!-- class="portlet" -->
     </div>
+    <script type="text/javascript">
+YUI({
+        base: '../../lib/yui/current/build/',
+        filter: 'raw'
+    }).use('node', 'event', 'lazr.effects', function(Y) {
+
+    // Hide the add-subscriber row.
+    var add_subscriber_row = Y.get('#archive-subscribers .add-subscriber');
+    add_subscriber_row.setStyle('display', 'none');
+
+    // If there are no subscribers, then hide the complete section.
+    var subscribers = Y.get('#subscribers');
+    if(Y.get('#no-subscribers') !== null){
+        subscribers.setStyle('display', 'none');
+    }
+
+    // Add a link to open the add-subscriber row.
+    var placeholder = Y.get('#add-subscriber-placeholder');
+    placeholder.set('innerHTML', '<a class="js-action sprite add" />');
+    var add_subscriber_node = Y.get("#add-subscriber-placeholder a");
+    add_subscriber_node.set('innerHTML', 'Add access');
+
+    // We only ever do the slide animation once.
+    var slide;
+    function show_add_subscriber(e) {
+        subscribers.setStyle('display', 'block');
+        add_subscriber_row.setStyle('display', 'table-row');
+    }
+
+    Y.on('click', show_add_subscriber,
+         '#add-subscriber-placeholder a');
+
+});
+    </script>
+
 
   </div>
 </body>
