@@ -45,10 +45,11 @@ class BaseBreadcrumbTestCase(TestCaseWithFactory):
         also appending the view that the given URL points to, to mimic how
         request.traversed_objects behave in a real request.
 
-        XXX: salgado, 2009-09-17: Instead of setting request.traversed_objects
-        manually, we should duplicate parts of zope.publisher.publish.publish
-        here (or in make_fake_request()) so that tests don't have to specify
-        the list of traversed objects for us to set here.
+        XXX: salgado, bug=432025, 2009-09-17: Instead of setting
+        request.traversed_objects manually, we should duplicate parts of
+        zope.publisher.publish.publish here (or in make_fake_request()) so
+        that tests don't have to specify the list of traversed objects for us
+        to set here.
         """
         request = make_fake_request(url, traversed_objects=traversed_objects)
         if self.request_layer is not None:
