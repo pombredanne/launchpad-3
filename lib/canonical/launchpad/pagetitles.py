@@ -1006,20 +1006,6 @@ temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 token_authorized = 'Almost finished ...'
 
-translationgroup_index = ContextTitle(
-    smartquote('"%s" Launchpad translation group'))
-
-translationgroup_appoint = ContextTitle(
-    smartquote('Appoint a new translator to "%s"'))
-
-translationgroup_edit = ContextTitle(smartquote(
-    'Edit "%s" translation group details'))
-
-translationgroup_reassignment = ContextTitle(smartquote(
-    'Change the owner of "%s" translation group'))
-
-translationgroups_index = 'Launchpad translation groups'
-
 translationimportqueueentry_index = 'Translation import queue entry'
 
 def translationmessage_translate(context, view):

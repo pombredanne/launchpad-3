@@ -522,6 +522,7 @@
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
+            class="lp.translations.browser.translationgroup.TranslationGroupSetView"
             permission="zope.Public"
             template="../templates/translationgroups-index.pt"
             name="+index"
