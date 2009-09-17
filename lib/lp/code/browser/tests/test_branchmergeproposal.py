@@ -154,9 +154,13 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
     def testNoVotes(self):
         # No votes should return empty lists
+        login_person(self.factory.makePerson())
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
         self.assertEqual([], view.current_reviews)
         self.assertEqual([], view.requested_reviews)
+        # The vote table should not be shown, because there are no votes, and
+        # the logged-in user cannot request reviews.
+        self.assertFalse(view.show_table)
 
     def testRequestedOrdering(self):
         # No votes should return empty lists

@@ -527,9 +527,7 @@ class BranchMergeProposalVoteView(LaunchpadView):
 
         # Show the table if there are review to show, or the user can review,
         # or if the user can request a review.
-        return (len(self.reviews) > 0 or
-                self.show_user_review_link or
-                can_request_review)
+        return (len(self.reviews) > 0 or can_request_review)
 
     @cachedproperty
     def reviews(self):
@@ -556,15 +554,6 @@ class BranchMergeProposalVoteView(LaunchpadView):
         # Now sort so the most recently created is first.
         return sorted(reviews, key=operator.attrgetter('date_created'),
                       reverse=True)
-
-    @cachedproperty
-    def show_user_review_link(self):
-        """Show self in the review table if can review and not asked."""
-        if self.user is None or not self.context.isMergable():
-            return False
-        reviewers = [review.reviewer for review in self.reviews]
-        # The owner of the source branch should not get a review link.
-        return self.user not in reviewers
 
 
 class IReviewRequest(Interface):
