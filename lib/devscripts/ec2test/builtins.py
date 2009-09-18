@@ -1,3 +1,11 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""The command classes for the 'ec2' utility."""
+
+__metaclass__ = type
+__all__ = []
+
 import pdb
 
 from bzrlib.commands import Command
