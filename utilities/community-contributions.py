@@ -78,6 +78,8 @@ known_canonical_devs = (
     u'Dafydd Harries',
     u'Daniel Silverstone',
     u'Danilo Šegan',
+    u'Данило Шеган',
+    u'данило шеган',
     u'David Allouche',
     u'Deryck Hodge',
     u'Diogo Matsubara',
