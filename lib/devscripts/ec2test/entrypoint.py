@@ -4,16 +4,21 @@ import sys
 
 import bzrlib.errors
 
-from devscripts.ec2test.command import CommandController
 from devscripts.ec2test.builtins import cmd_demo, cmd_test, cmd_update_image
+from devscripts.ec2test.controller import (
+    CommandRegistry, HelpTopicRegistry, CommandExecutionMixin)
 
 # Shut up pyflakes.
 rlcompleter
 
 readline.parse_and_bind('tab: complete')
 
+class EC2CommandController(CommandRegistry, HelpTopicRegistry,
+                           CommandExecutionMixin):
+    pass
+
 def main():
-    controller = CommandController()
+    controller = EC2CommandController()
     controller.install_bzrlib_hooks()
     controller.register_command('test', cmd_test)
     controller.register_command('demo', cmd_demo)

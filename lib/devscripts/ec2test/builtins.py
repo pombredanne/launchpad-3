@@ -35,10 +35,9 @@ def run_with_instance(instance, run, postmortem):
         try:
             shutdown = run()
         except Exception:
-            # If we are running in demo or postmortem mode, it is really
-            # helpful to see if there are any exceptions before it waits
-            # in the console (in the finally block), and you can't figure
-            # out why it's broken.
+            # When running in postmortem mode, it is really helpful to see if
+            # there are any exceptions before it waits in the console (in the
+            # finally block), and you can't figure out why it's broken.
             traceback.print_exc()
     finally:
         try:
@@ -86,6 +85,7 @@ branch_option = ListOption(
           '``-b launchpad=lp:~launchpad-pqm/launchpad/db-devel``.'
           % (TRUNK_BRANCH,)))
 
+
 machine_id_option = Option(
     'machine', short_name='m', type=str,
     help=('The AWS machine identifier (AMI) on which to base this run. '
@@ -93,19 +93,23 @@ machine_id_option = Option(
           'testing new AWS images. Defaults to trying to find the most '
           'recent one with an approved owner.'))
 
+
 instance_type_option = Option(
     'instance', short_name='i', type=str, param_name='instance_type',
     help=('The AWS instance type on which to base this run. '
           'Available options are %r. Defaults to `%s`.' %
           (AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE)))
 
+
 debug_option = Option(
     'debug', short_name='d',
     help=('Drop to pdb trace as soon as possible.'))
 
+
 trunk_option = Option(
     'trunk', short_name='t',
     help=('Run the trunk as the branch'))
+
 
 include_download_cache_changes_option = Option(
     'include-download-cache-changes', short_name='c',
@@ -118,6 +122,12 @@ include_download_cache_changes_option = Option(
 
 
 class EC2Command(Command):
+    """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
+
+    When https://bugs.edge.launchpad.net/bzr/+bug/431054 is fixed, we can
+    delete this class.
+    """
+
     def _usage(self):
         """Return single-line grammar for this command.
 
@@ -138,6 +148,10 @@ class EC2Command(Command):
 
 
 def get_user_key():
+    """Get a SSH key from the agent.  Exit if not found.
+
+    This key will be used to let the user log in (as $USER) to the instance.
+    """
     agent = paramiko.Agent()
     keys = agent.get_keys()
     if len(keys) == 0:
@@ -150,6 +164,7 @@ def get_user_key():
 
 
 def get_credentials():
+    """Load credentials from ~/.ec2/aws_id.  Exit if not found."""
     try:
         return EC2Credentials.load_from_file()
     except CredentialsError, e:
@@ -292,8 +307,7 @@ class cmd_test(EC2Command):
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
 
-        run_with_instance(
-            instance, runner.run_tests, postmortem)
+        run_with_instance(instance, runner.run_tests, postmortem)
 
 
 class cmd_demo(EC2Command):
@@ -428,5 +442,4 @@ class cmd_update_image(EC2Command):
             instance.bundle(ami_name, credentials)
             return True
 
-        run_with_instance(
-            instance, update_image, postmortem)
+        run_with_instance(instance, update_image, postmortem)

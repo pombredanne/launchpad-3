@@ -1,4 +1,9 @@
-#!/usr/bin/python
+# This file is incuded almost verbatim from commandant,
+# https://launchpad.net/commandant.  The only changes are removing some code
+# we don't use that depends on other parts of commandant.  When Launchpad is
+# on Python 2.5 we can include commandant as an egg.
+
+
 # Commandant is a framework for building command-oriented tools.
 # Copyright (C) 2009 Jamshed Kakar.
 #
@@ -18,21 +23,13 @@
 
 """Infrastructure to run C{bzrlib.commands.Command}s and L{HelpTopic}s."""
 
+import os
 import sys
 
 from bzrlib.commands import run_bzr, Command
 
 
-class CommandController(object):
-    """C{bzrlib.commands.Command} discovery and execution controller.
-
-    A L{CommandController} is a container for named
-    C{bzrlib.commands.Command}s. The L{register_command} method registers
-    C{bzrlib.commands.Command}s with the controller.
-
-    A controller is an execution engine for commands.  The L{run} method
-    accepts command line arguments, finds a matching command, and runs it.
-    """
+class CommandRegistry(object):
 
     def __init__(self):
         self._commands = {}
@@ -86,6 +83,40 @@ class CommandController(object):
         """
         self._commands[name] = command_class
 
+
+class HelpTopicRegistry(object):
+
+    def __init__(self):
+        self._help_topics = {}
+
+    def register_help_topic(self, name, help_topic_class):
+        """Register a C{bzrlib.commands.Command} to this controller.
+
+        @param name: The name to register the command with.
+        @param command_class: A type object, typically a subclass of
+            C{bzrlib.commands.Command} to use when the command is invoked.
+        """
+        self._help_topics[name] = help_topic_class
+
+    def get_help_topic_names(self):
+        """Get a C{set} of help topic names."""
+        return set(self._help_topics.iterkeys())
+
+    def get_help_topic(self, name):
+        """
+        Get the help topic matching C{name} or C{None} if a match isn't found.
+        """
+        try:
+            help_topic = self._help_topics[name]()
+        except KeyError:
+            return None
+        help_topic.controller = self
+        return help_topic
+
+
+
+class CommandExecutionMixin(object):
+
     def run(self, argv):
         """Run the C{bzrlib.commands.Command} specified in C{argv}.
 
@@ -93,3 +124,35 @@ class CommandController(object):
         """
         run_bzr(argv)
 
+
+
+def import_module(filename, file_path, package_path):
+    """Import a module and make it a child of C{commandant_command}.
+
+    The module source in C{filename} at C{file_path} is copied to a temporary
+    directory, a Python package called C{commandant_command}.
+
+    @param filename: The name of the module file.
+    @param file_path: The path to the module file.
+    @param package_path: The path for the new C{commandant_command} package.
+    @return: The new module.
+    """
+    module_path = os.path.join(package_path, "commandant_command")
+    if not os.path.exists(module_path):
+        os.mkdir(module_path)
+
+    init_path = os.path.join(module_path, "__init__.py")
+    open(init_path, "w").close()
+
+    source_code = open(file_path, "r").read()
+    module_file_path = os.path.join(module_path, filename)
+    module_file = open(module_file_path, "w")
+    module_file.write(source_code)
+    module_file.close()
+
+    name = filename[:-3]
+    sys.path.append(package_path)
+    try:
+        return __import__("commandant_command.%s" % (name,), fromlist=[name])
+    finally:
+        sys.path.pop()
