@@ -279,7 +279,8 @@ class FileBugViewBase(LaunchpadFormView):
             # The user is trying to file a new Ubuntu bug via the web
             # interface and without using apport. Redirect to a page
             # explaining the preferred bug-filing procedure.
-            self.request.response.redirect(config.malone.ubuntu_bug_filing_url)
+            self.request.response.redirect(
+                config.malone.ubuntu_bug_filing_url)
         if self.extra_data_token is not None:
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
