@@ -9,20 +9,14 @@
 
   <body>
 
-    <div metal:fill-slot="heading">
-      <div style="float: left;">
-      <h1 tal:content="CONTEXTS/fmt:pagetitle">i386 build of
-        alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE</h1>
-      </div>
-      <div style="float: right;">
-      <p class="discreet">
-        Created <span
-          tal:attributes="title context/datecreated/fmt:datetime"
-          tal:content="context/datecreated/fmt:displaydate"
-          >2005-10-05 5:45</span>
+    <tal:registering metal:fill-slot="registering">
+      <p>
+        created
+        <span tal:content="context/datecreated/fmt:displaydate"
+              tal:attributes="title context/datecreated/fmt:datetime"
+          >on 2005-01-01</span>
       </p>
-      </div>
-    </div> <!-- heading -->
+    </tal:registering>
 
     <div metal:fill-slot="main">
 
@@ -42,24 +36,17 @@
 
       </div> <!-- yui-g  -->
 
-      <div class="yui-g">
+      <tal:binaries condition="context/binarypackages">
 
-        <div id="binaries" class="yui-u first"
-             tal:define="uploaded view/has_done_upload;"
-             tal:condition="context/binarypackages">
-          <div class="portlet">
-            <div metal:use-macro="template/macros/binaries" />
-          </div>
+        <div id="binaries" class="portlet">
+          <div metal:use-macro="template/macros/binaries" />
         </div>
 
-        <div id="files" class="yui-u"
-             tal:condition="context/binarypackages">
-          <div class="portlet">
-            <div metal:use-macro="template/macros/files" />
-          </div>
+        <div id="files" class="portlet">
+          <div metal:use-macro="template/macros/files" />
         </div>
 
-      </div> <!-- yui-g  -->
+      </tal:binaries>
 
       <div id="buildlog" class="portlet"
            tal:condition="context/buildstate/enumvalue:BUILDING">
@@ -141,10 +128,6 @@
       <span tal:attributes="
             class string:buildstatus${context/buildstate/name};"
             tal:content="context/buildstate/title">Fully built</span>
-      <tal:retry
-        define="link context/menu:context/retry"
-        condition="link/enabled"
-        replace="structure link/fmt:icon" />
       <tal:building condition="context/buildstate/enumvalue:BUILDING">
         on <a tal:content="view/buildqueue/builder/title"
               tal:attributes="href view/buildqueue/builder/fmt:url"/>
@@ -153,6 +136,9 @@
         on <a tal:content="context/builder/title"
               tal:attributes="href context/builder/fmt:url"/>
       </tal:built>
+      <tal:retry define="link context/menu:context/retry"
+                 condition="link/enabled"
+                 replace="structure link/fmt:link" />
     </p>
 
     <ul>
@@ -198,22 +184,22 @@
       </li>
       <li tal:define="file context/buildlog"
           tal:condition="file">
-        <img src="/@@/download" />
-        <a tal:attributes="href context/build_log_url"
+        <a class="sprite download"
+           tal:attributes="href context/build_log_url"
            tal:content="string: buildlog">BUILDLOG</a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
       <li tal:define="file context/upload_log"
           tal:condition="file">
-        <img src="/@@/download" />
-        <a tal:attributes="href context/upload_log_url"
+        <a class="sprite download"
+           tal:attributes="href context/upload_log_url"
            tal:content="string: uploadlog">UPLOADLOG</a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
       <li tal:define="changesfile view/changesfile;"
           tal:condition="changesfile">
-        <img src="/@@/download" />
-        <a tal:attributes="href changesfile/http_url"
+        <a class="sprite download"
+           tal:attributes="href changesfile/http_url"
            tal:content="changesfile/filename">CHANGESFILE</a>
         (<span tal:replace="changesfile/content/filesize/fmt:bytes" />)
       </li>
@@ -225,38 +211,35 @@
       Binaries section.
     </tal:comment>
     <h2>Binary packages</h2>
-    <tal:non_ppa condition="not: view/is_ppa">
-      <tal:upload_done condition="uploaded">
-        <p class="discreet">Binary packages produced by this build:</p>
-        <ul>
-          <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
-            <img src="/@@/package-binary" />
-            <a tal:attributes="href binpkg/fmt:url"
-               tal:content="binpkg/displayname">
-             foopkg 1.2-3
-            </a>
-          </li>
-        </ul>
-      </tal:upload_done>
-      <tal:upload_not_done condition="not: uploaded">
-        <p class="discreet">Binary packages awaiting publication:</p>
-        <ul>
-          <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
-            <img src="/@@/package-binary" />
-            <span tal:replace="binpkg/displayname">foopkg 1.2-3</span>
-          </li>
-        </ul>
-      </tal:upload_not_done>
-    </tal:non_ppa>
-    <tal:ppa condition="view/is_ppa">
-    <p class="discreet">Binary packages produced by this build:</p>
-    <ul>
-      <li tal:repeat="binpkg context/binarypackages">
-        <img src="/@@/package-binary" />
-        <span tal:replace="binpkg/title">foopkg - 1.2-3</span>
+
+    <tal:upload_done condition="view/has_published_binaries">
+      <p class="discreet">Binary packages produced by this build:</p>
+    </tal:upload_done>
+    <tal:upload_not_done condition="not: view/has_published_binaries">
+      <p class="discreet"
+         tal:condition="view/package_upload/status/enumvalue:ACCEPTED"
+        >Binary packages awaiting publication:</p>
+      <p class="discreet"
+         tal:condition="not: view/package_upload/status/enumvalue:ACCEPTED"
+        >Binary packages awaiting approval
+         in <span tal:replace="view/package_upload/status/name"
+              >NEW</span> queue:</p>
+    </tal:upload_not_done>
+
+    <ul tal:define="linkify_binaries
+                    python: view.has_published_binaries and not view.is_ppa;">
+      <li tal:condition="linkify_binaries"
+          tal:repeat="binpkg context/distroarchseriesbinarypackages">
+        <a class="sprite package-binary"
+           tal:attributes="href binpkg/fmt:url"
+           tal:content="binpkg/displayname">foopkg 1.2-3</a>
+      </li>
+      <li tal:condition="not: linkify_binaries"
+          tal:repeat="binpkg context/binarypackages">
+        <span class="sprite package-binary"
+              tal:content="binpkg/title">foopkg-1.2-3</span>
       </li>
     </ul>
-    </tal:ppa>
   </metal:macro>
 
   <metal:macro define-macro="files">
@@ -265,10 +248,10 @@
     </tal:comment>
     <h2>Built files</h2>
     <p class="discreet">Files resulting from this build:</p>
-    <ul class="download">
+    <ul>
       <li tal:repeat="file view/files">
-        <img src="/@@/download" />
-        <a tal:content="file/filename"
+        <a class="sprite download"
+           tal:content="file/filename"
            tal:attributes="href file/http_url"></a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>

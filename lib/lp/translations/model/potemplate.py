@@ -24,7 +24,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, LeftJoin, SQL
+from storm.expr import Alias, And, LeftJoin, Or, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
@@ -38,6 +38,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
@@ -182,8 +183,12 @@ class POTemplate(SQLBase, RosettaStats):
     _uses_english_msgids = None
 
     def __storm_invalidated__(self):
-        self._cached_pofiles_by_language = None
+        self.clearPOFileCache()
         self._uses_english_msgids = None
+
+    def clearPOFileCache(self):
+        """See `IPOTemplate`."""
+        self._cached_pofiles_by_language = None
 
     @property
     def uses_english_msgids(self):
@@ -1209,46 +1214,52 @@ class POTemplateSet:
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
         distroseries=None, sourcepackagename=None):
         """See `IPOTemplateSet`."""
-        if productseries is not None:
-            return POTemplate.selectOne('''
-                    POTemplate.iscurrent IS TRUE AND
-                    POTemplate.productseries = %s AND
-                    POTemplate.path = %s''' % sqlvalues(
-                        productseries.id,
-                        path)
-                    )
-        elif sourcepackagename is not None:
-            # The POTemplate belongs to a distribution and it could come from
-            # another package that the one it's linked at the moment so we
-            # first check to find it at IPOTemplate.from_sourcepackagename
-            potemplate = POTemplate.selectOne('''
-                    POTemplate.iscurrent IS TRUE AND
-                    POTemplate.distroseries = %s AND
-                    POTemplate.from_sourcepackagename = %s AND
-                    POTemplate.path = %s''' % sqlvalues(
-                        distroseries.id,
-                        sourcepackagename.id,
-                        path)
-                    )
-            if potemplate is not None:
-                # There is no potemplate in that 'path' and
-                # 'from_sourcepackagename' so we do a search using the usual
-                # sourcepackagename.
-                return potemplate
+        assert (productseries is None) != (sourcepackagename is None), (
+            "Must specify either productseries or sourcepackagename.")
 
-            return POTemplate.selectOne('''
-                    POTemplate.iscurrent IS TRUE AND
-                    POTemplate.distroseries = %s AND
-                    POTemplate.sourcepackagename = %s AND
-                    POTemplate.path = %s''' % sqlvalues(
-                        distroseries.id,
-                        sourcepackagename.id,
-                        path)
-                    )
+        conditions = And(
+            POTemplate.iscurrent == True,
+            POTemplate.path == path,
+            POTemplate.productseries == productseries,
+            Or(
+                POTemplate.from_sourcepackagename == sourcepackagename,
+                POTemplate.sourcepackagename == sourcepackagename))
+
+        store = IStore(POTemplate)
+        matches = helpers.shortlist(store.find(POTemplate, conditions))
+
+        if len(matches) == 0:
+            # Nope.  Sorry.
+            return None
+        elif len(matches) == 1:
+            # Yup.  Great.
+            return matches[0]
+        elif sourcepackagename is None:
+            # Multiple matches, and for a product not a package.
+            logging.warn(
+                "Found %d templates with path '%s' for productseries %s" % (
+                    len(matches), path, productseries.title))
+            return None
         else:
-            raise AssertionError(
-                'Either productseries or sourcepackagename arguments must be'
-                ' not None.')
+            # Multiple matches, for a distribution package.  Prefer a
+            # match on from_sourcepackagename: the file may have been
+            # uploaded for another package than the one it is meant to
+            # be imported into.
+            preferred_matches = [
+                match
+                for match in matches
+                if match.from_sourcepackagename == sourcepackagename
+            ]
+
+            if len(preferred_matches) == 1:
+                return preferred_matches[0]
+            else:
+                logging.warn(
+                    "Found %d templates with path '%s' for package %s "
+                    "(%d matched on from_sourcepackagename)." % (
+                        len(matches), path, sourcepackagename.name,
+                        len(preferred_matches)))
+                return None
 
     @staticmethod
     def compareSharingPrecedence(left, right):

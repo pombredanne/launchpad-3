@@ -309,26 +309,6 @@
         </tal:comment-list-truncated>
       </tal:comments>
 
-      <div id="mentoring" style="margin-top: 4em">
-        <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
-                     condition="mentoring_offers">
-          <p>
-            <b>Mentors:</b>
-            <tal:block repeat="mentoring_offer mentoring_offers">
-              <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
-            </tal:block>
-          </p>
-          <tal:block condition="not: context/bug/is_complete">
-            <div tal:condition="view/userIsMentor" class="actions">
-              <img class="inlineLinkIcon sprite remove" alt=""/><a href="+retractmentoring">Retract my offer of mentorship</a>
-            </div>
-          </tal:block>
-        </tal:mentors>
-        <p tal:define="link context_menu/offermentoring"
-             tal:condition="link/enabled"
-             tal:content="structure link/render"
-        />
-      </div>
       <div class="related">
         <h2>What next?</h2>
         <ul>

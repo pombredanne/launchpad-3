@@ -9,8 +9,6 @@
 <body>
 
 <div metal:fill-slot="main">
-  <h1>Download translations</h1>
-
   <div class="main-portlet">
 
     <h2>Select files to download</h2>

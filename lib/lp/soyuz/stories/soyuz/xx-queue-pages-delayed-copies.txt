@@ -23,6 +23,7 @@ We will create a testing delayed-copy for Ubuntu/breezy-autotest.
     >>> [bin_hppa, bin_i386] = stp.getPubBinaries(archive=cprov.archive)
     >>> build = bin_hppa.binarypackagerelease.build
     >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
+    >>> stp.addFakeChroots(breezy_autotest)
     >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
     ...     archive=ubuntu.main_archive, distroseries=breezy_autotest,
     ...     pocket=PackagePublishingPocket.RELEASE, signing_key=None)
@@ -100,14 +101,18 @@ archive, nothing else.
     http://launchpad.dev/~cprov/+archive/ppa
 
 When the delayed-copy is processed (moved to DONE queue) its contents
-becomes available to everyone.
+become available to everyone.
 
-    # Process the delayed-copy.
-    >>> login('foo.bar@canonical.com')
-    >>> stp.addFakeChroots(breezy_autotest)
-    >>> unused = delayed_copy.realiseUpload()
-    >>> transaction.commit()
-    >>> logout()
+    # Process the delayed-copy using an external script call.  Since some
+    # DB objects that have no security adapter are modified during the
+    # delayed copy, the modification must be done in Zopeless mode.
+    >>> import os.path
+    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from canonical.config import config
+    >>> script = os.path.join(config.root, "scripts/process-accepted.py")
+    >>> result, stdout, stderr = run_script(script, ["ubuntu"])
+    >>> if result != 0:
+    ...     print stderr
 
 Any user can access the DONE queue and access the delayed-copy
 'changesfile' and view its files in the expandable area.

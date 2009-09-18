@@ -63,13 +63,9 @@ class ProductTranslationsMenu(NavigationMenu):
 
 
 class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
-    label = "Select a new translation group"
+    label = "Set permissions and policies"
+    page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]
-
-    @property
-    def page_title(self):
-        return "Set translation permissions for %s" % (
-            self.context.displayname)
 
     @property
     def cancel_url(self):
@@ -83,6 +79,8 @@ class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
 class ProductView(LaunchpadView):
 
     __used_for__ = IProduct
+
+    label = "Translation overview"
 
     @cachedproperty
     def uses_translations(self):

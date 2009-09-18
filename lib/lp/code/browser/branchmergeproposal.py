@@ -8,6 +8,7 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeCandidateView',
+    'BranchMergeProposalActionNavigationMenu',
     'BranchMergeProposalAddVoteView',
     'BranchMergeProposalChangeStatusView',
     'BranchMergeProposalCommitMessageEditView',
@@ -44,10 +45,19 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from lp.code.adapters.branch import BranchMergeProposalDelta
-from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
+    stepthrough, stepto, Navigation)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.launchpad.webapp.menu import NavigationMenu
+
+from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
     CodeReviewVote)
@@ -58,12 +68,6 @@ from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.comments.interfaces.conversation import IConversation
-from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    stepthrough, stepto, Navigation)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
@@ -77,6 +81,14 @@ class BranchMergeProposalPrimaryContext:
     def __init__(self, branch_merge_proposal):
         self.context = IPrimaryContext(
             branch_merge_proposal.source_branch).context
+
+
+class BranchMergeProposalBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` for a merge proposal."""
+
+    @property
+    def text(self):
+        return 'Merge into %s' % self.context.target_branch.name
 
 
 def notify(func):
@@ -119,23 +131,8 @@ class BranchMergeCandidateView(LaunchpadView):
         return friendly_texts[self.context.queue_status]
 
 
-class BranchMergeProposalContextMenu(ContextMenu):
-    """Context menu for branches."""
-
-    usedfor = IBranchMergeProposal
-    links = [
-        'edit',
-        'edit_commit_message',
-        'delete',
-        'request_review',
-        'add_comment',
-        'merge',
-        'enqueue',
-        'dequeue',
-        'resubmit',
-        'update_merge_revno',
-        'edit_status',
-        ]
+class BranchMergeProposalMenuMixin:
+    """Mixin class for merge proposal menus."""
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
@@ -166,18 +163,19 @@ class BranchMergeProposalContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         text = 'Delete proposal to merge'
-        return Link('+delete', text, icon='remove')
+        return Link('+delete', text, icon='trash-icon')
 
     def _enabledForStatus(self, next_state):
         """True if the next_state is a valid transition for the current user.
 
         Return False if the current state is next_state.
         """
-        status = self.context.queue_status
+        bmp = self.branch_merge_proposal
+        status = bmp.queue_status
         if status == next_state:
             return False
         else:
-            return self.context.isValidTransition(next_state, self.user)
+            return bmp.isValidTransition(next_state, self.user)
 
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
@@ -223,6 +221,48 @@ class BranchMergeProposalContextMenu(ContextMenu):
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.SUPERSEDED)
         return Link('+resubmit', text, enabled=enabled, icon='edit')
+
+
+class BranchMergeProposalContextMenu(ContextMenu,
+                                     BranchMergeProposalMenuMixin):
+    """Context menu for merge proposals."""
+
+    usedfor = IBranchMergeProposal
+    links = [
+        'edit',
+        'edit_commit_message',
+        'delete',
+        'request_review',
+        'add_comment',
+        'merge',
+        'enqueue',
+        'dequeue',
+        'resubmit',
+        'update_merge_revno',
+        'edit_status',
+        ]
+
+    @property
+    def branch_merge_proposal(self):
+        return self.context
+
+
+class IBranchMergeProposalActionMenu(Interface):
+    """A marker interface for the global action navigation menu."""
+
+
+class BranchMergeProposalActionNavigationMenu(NavigationMenu,
+                                              BranchMergeProposalMenuMixin):
+    """A sub-menu for acting upon a Product."""
+
+    usedfor = IBranchMergeProposalActionMenu
+    facet = 'branches'
+    links = ('resubmit', 'delete')
+
+    @property
+    def branch_merge_proposal(self):
+        # This context is the view, the view's context is the bmp.
+        return self.context.context
 
 
 class UnmergedRevisionsMixin:
@@ -339,6 +379,7 @@ class CodeReviewConversation:
     def __init__(self, comments):
         self.comments = comments
 
+
 class ClaimButton(Interface):
     """A simple interface to populate the form to enqueue a proposal."""
 
@@ -349,7 +390,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
 
-    label = "Proposal to merge branches"
+    implements(IBranchMergeProposalActionMenu)
+
+    label = "Proposal to merge branch"
     __used_for__ = IBranchMergeProposal
     schema = ClaimButton
 
