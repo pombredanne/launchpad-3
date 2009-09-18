@@ -62,7 +62,7 @@ class BazaarBranchStore:
         except NotBranchError:
             return BzrDir.create_standalone_workingtree(
                 target_path, required_format)
-        # XXX Tim Penhey 2009-09-18 bug abc Automatic upgrade of import
+        # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
         # branches disabled.  Need an orderly upgrade process.
         if False and bzr_dir.needs_format_conversion(format=required_format):
             try:
