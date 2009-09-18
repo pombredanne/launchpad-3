@@ -860,8 +860,6 @@ specification_edit = 'Edit blueprint details'
 
 specification_linksprint = 'Put blueprint on sprint agenda'
 
-specification_index = ContextTitle(smartquote('Blueprint: "%s"'))
-
 specification_subscription = 'Subscribe to blueprint'
 
 specification_queue = 'Queue blueprint for review'

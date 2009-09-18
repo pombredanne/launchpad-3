@@ -53,6 +53,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 
+from canonical.lazr.utils import smartquote
+
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
@@ -285,7 +287,7 @@ class SpecificationContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit title and summary'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     def givefeedback(self):
@@ -462,6 +464,10 @@ class SpecificationView(SpecificationSimpleView):
     """Used to render the main view of a specification."""
 
     __used_for__ = ISpecification
+
+    @property
+    def label(self):
+        return smartquote('Blueprint: "%s"' % self.context.title)
 
     def initialize(self):
         # The review that the user requested on this spec, if any.
