@@ -8,6 +8,7 @@ __all__ = [
     'EC2Instance',
     ]
 
+import code
 import glob
 import os
 import select
@@ -15,13 +16,16 @@ import socket
 import subprocess
 import sys
 import time
+import traceback
 
+from bzrlib.errors import BzrCommandError
 from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
-from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.sshconfig import SSHConfig
+from devscripts.ec2test.credentials import EC2Credentials
+
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
 AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
@@ -36,22 +40,44 @@ class AcceptAllPolicy:
         pass
 
 
+def get_user_key():
+    """Get a SSH key from the agent.  Raise an error if not found.
+
+    This key will be used to let the user log in (as $USER) to the instance.
+    """
+    agent = paramiko.Agent()
+    keys = agent.get_keys()
+    if len(keys) == 0:
+        raise BzrCommandError(
+            'You must have an ssh agent running with keys installed that '
+            'will allow the script to rsync to devpad and get your '
+            'branch.\n')
+    user_key = agent.get_keys()[0]
+    return user_key
+
+
 class EC2Instance:
     """A single EC2 instance."""
 
     @classmethod
-    def make(cls, credentials, name, instance_type, machine_id, demo_networks):
+    def make(cls, name, instance_type, machine_id,
+             demo_networks=None, credentials=None):
         """Construct an `EC2Instance`.
 
-        :param credentials: An `EC2Credentials` object.
         :param name: The name to use for the key pair and security group for
             the instance.
         :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
-        :param machine_id: ???
-        :param demo_networks: ???
+        :param machine_id: The AMI to use, or None to do the usual regexp
+            matching.
+        :param demo_networks: A list of networks to add to the security group
+            to allow access to the instance.
+        :param credentials: An `EC2Credentials` object.
         """
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
+
+        if credentials is None:
+            credentials = EC2Credentials.load_from_file()
 
         # Make the EC2 connection.
         account = credentials.connect(name)
@@ -71,7 +97,7 @@ class EC2Instance:
         vals = os.environ.copy()
         login = get_lp_login()
         if not login:
-            error_and_quit(
+            raise BzrCommandError(
                 'you must have set your launchpad login in bzr.')
         vals['launchpad-login'] = login
 
@@ -104,7 +130,7 @@ class EC2Instance:
             return
         start = time.time()
         self.private_key = self._account.acquire_private_key()
-        self._account.acquire_security_group(
+        self.security_group = self._account.acquire_security_group(
             demo_networks=self._demo_networks)
         reservation = self._image.run(
             key_name=self._name, security_groups=[self._name],
@@ -123,7 +149,7 @@ class EC2Instance:
             self._output = self._boto_instance.get_console_output()
             self.log(self._output.output)
         else:
-            error_and_quit(
+            raise BzrCommandError(
                 'failed to start: %s\n' % self._boto_instance.state)
 
     def shutdown(self):
@@ -241,6 +267,50 @@ class EC2Instance:
         as_root('rm -fr /var/tmp/*')
         root_connection.close()
 
+    def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
+        """Start, set up a user account, run `func` and then maybe shut down.
+
+        :param postmortem: If true, any exceptions will be caught and an
+            interactive session run to allow debugging the problem.
+        :param shutdown: If true, shut down the instance after `func` and
+            postmortem (if any) are completed.
+        :param func: A callable that will be called when the instance is
+            running and a user account has been set up on it.
+        :param args: Passed to `func`.
+        :param kw: Passed to `func`.
+        """
+        user_key = get_user_key()
+        self.start()
+        try:
+            self.set_up_user(user_key)
+            try:
+                return func(*args, **kw)
+            except Exception:
+                # When running in postmortem mode, it is really helpful to see if
+                # there are any exceptions before it waits in the console (in the
+                # finally block), and you can't figure out why it's broken.
+                traceback.print_exc()
+        finally:
+            try:
+                if postmortem:
+                    console = code.InteractiveConsole(locals())
+                    console.interact((
+                        'Postmortem Console.  EC2 instance is not yet dead.\n'
+                        'It will shut down when you exit this prompt (CTRL-D).\n'
+                        '\n'
+                        'Tab-completion is enabled.'
+                        '\n'
+                        'EC2Instance is available as `instance`.\n'
+                        'Also try these:\n'
+                        '  http://%(dns)s/current_test.log\n'
+                        '  ssh -A %(dns)s') %
+                                     {'dns': self.hostname})
+                    print 'Postmortem console closed.'
+            finally:
+                if shutdown:
+                    self.shutdown()
+        
+
     def _copy_single_file(self, sftp, local_path, remote_dir):
         """Copy `local_path` to `remote_dir` on this instance.
 
@@ -281,7 +351,7 @@ class EC2Instance:
         pattern = os.path.join(local_dir, pattern)
         matches = glob.glob(pattern)
         if len(matches) != 1:
-            error_and_quit(
+            raise BzrCommandError(
                 '%r must match a single %s file' % (pattern, file_kind))
         return matches[0]
 
@@ -290,12 +360,12 @@ class EC2Instance:
         """
         local_ec2_dir = os.path.expanduser('~/.ec2')
         if not os.path.exists(local_ec2_dir):
-            error_and_quit(
+            raise BzrCommandError(
                 "~/.ec2 must exist and contain aws_user, aws_id, a private "
                 "key file and a certificate.")
         aws_user_file = os.path.expanduser('~/.ec2/aws_user')
         if not os.path.exists(aws_user_file):
-            error_and_quit(
+            raise BzrCommandError(
                 "~/.ec2/aws_user must exist and contain your numeric AWS id.")
         self.aws_user = open(aws_user_file).read().strip()
         self.local_cert = self._check_single_glob_match(
