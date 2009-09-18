@@ -2696,9 +2696,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         """Return a dict with open bugs info."""
         return dict(
             count=self.context.open_bugtasks.count,
-            url=get_buglisting_search_filter_url(
-                status=[status.title for status
-                        in UNRESOLVED_BUGTASK_STATUSES]))
+            url=canonical_url(
+                self.context, rootsite='bugs', view_name='+bugs'))
 
     @property
     def critical_bugs_info(self):
