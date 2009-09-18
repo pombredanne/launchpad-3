@@ -145,6 +145,7 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
 class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     """A view used to register someone else's attendance at a sprint."""
 
+    label = page_title = 'Register someone to attend this meeting'
     field_names = ['attendee', 'time_starts', 'time_ends']
 
     @property
