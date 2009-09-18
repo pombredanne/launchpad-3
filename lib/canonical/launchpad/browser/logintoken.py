@@ -93,7 +93,8 @@ class LoginTokenView(LaunchpadView):
         }
     login_token_pages.update(auth_token_pages)
     PAGES = login_token_pages
-    page_title = label = 'Confirmation already concluded'
+    page_title = 'You have already done this'
+    label = 'Confirmation already concluded'
 
     def render(self):
         if self.context.date_consumed is None:
