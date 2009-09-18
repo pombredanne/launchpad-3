@@ -182,7 +182,7 @@ class BranchEditMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         text = 'Delete branch'
-        return Link('+delete', text, icon='remove')
+        return Link('+delete', text, icon='trash-icon')
 
     def edit_whiteboard(self):
         text = 'Edit whiteboard'
@@ -277,7 +277,7 @@ class BranchContextMenu(ContextMenu):
 
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
-        text = 'Browse this branch'
+        text = 'View the branch content'
         enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
