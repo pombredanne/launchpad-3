@@ -15,8 +15,9 @@ Here are some imports we need to get this test running.
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.model.potemplate import POTemplateSubset
-    >>> from lp.translations.scripts.po_import import (
-    ...     AutoApproveProcess, ImportProcess)
+    >>> from lp.translations.scripts.po_import import ImportProcess
+    >>> from lp.translations.scripts.import_approval import (
+    ...     AutoApproveProcess)
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -683,7 +684,7 @@ entries from the queue. Running at this point, all it does is purge the
 two hand-approved Welsh translations that have just been imported.
 
     >>> process = AutoApproveProcess(transaction, FakeLogger())
-    >>> process.run()
+    >>> process.main()
     INFO    Removed 2 entries from the queue.
     >>> transaction.commit()
 
