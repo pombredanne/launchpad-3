@@ -24,6 +24,7 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 from lazr.lifecycle.event import ObjectModifiedEvent
 
+from canonical.launchpad.interfaces import IPrivacy
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp.testing import verifyObject
 from lp.code.event.branchmergeproposal import (
@@ -33,11 +34,12 @@ from canonical.launchpad.ftests import (
     ANONYMOUS, import_secret_test_key, login, syncUpdate)
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
+    BranchType, CodeReviewNotificationLevel, CodeReviewVote,
+    BranchVisibilityRule)
 from lp.code.interfaces.branchmergeproposal import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposalGetter, IBranchMergeProposalJob,
+    IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, notify_modified, WrongBranchMergeProposal)
 from lp.code.model.branchmergeproposaljob import (
@@ -54,6 +56,51 @@ from lp.testing import (
     capture_events, login_person, TestCaseWithFactory, time_counter)
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
+
+
+class TestBranchMergeProposalInterface(TestCaseWithFactory):
+    """Ensure that BranchMergeProposal implements its interface."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_BranchMergeProposal_implements_interface(self):
+        """Ensure that BranchMergeProposal implements its interface."""
+        bmp = self.factory.makeBranchMergeProposal()
+        verifyObject(IBranchMergeProposal, bmp)
+
+
+class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
+    """Ensure that BranchMergeProposal implements privacy."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_BranchMergeProposal_implements_interface(self):
+        """Ensure that BranchMergeProposal implements privacy."""
+        bmp = self.factory.makeBranchMergeProposal()
+        verifyObject(IPrivacy, bmp)
+
+    @staticmethod
+    def setPrivate(branch):
+        """Force a branch to be private."""
+        login_person(branch.owner)
+        branch.product.setBranchVisibilityTeamPolicy(
+            branch.owner, BranchVisibilityRule.PRIVATE)
+        branch.setPrivate(True)
+
+    def test_private(self):
+        """Private flag should be True if True for any involved branch."""
+        bmp = self.factory.makeBranchMergeProposal()
+        self.assertFalse(bmp.private)
+        self.setPrivate(bmp.source_branch)
+        self.assertTrue(bmp.private)
+        bmp.source_branch.setPrivate(False)
+        self.setPrivate(bmp.target_branch)
+        self.assertTrue(bmp.private)
+        bmp.target_branch.setPrivate(False)
+        removeSecurityProxy(bmp).dependent_branch = self.factory.makeBranch(
+            product=bmp.source_branch.product)
+        self.setPrivate(bmp.dependent_branch)
+        self.assertTrue(bmp.private)
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -1473,6 +1520,46 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(comment, vote.comment)
         # Still only one vote.
         self.assertEqual(1, len(list(merge_proposal.votes)))
+
+class TestBranchMergeProposalResubmit(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_resubmit(self):
+        """Ensure that resubmit performs its basic function.
+
+        It should create a new merge proposal, mark the old one as superseded,
+        and set its status to superseded.
+        """
+        bmp1 = self.factory.makeBranchMergeProposal()
+        login_person(bmp1.registrant)
+        bmp2 = bmp1.resubmit(bmp1.registrant)
+        self.assertNotEqual(bmp1.id, bmp2.id)
+        self.assertEqual(
+            bmp1.queue_status, BranchMergeProposalStatus.SUPERSEDED)
+        self.assertEqual(
+            bmp2.queue_status, BranchMergeProposalStatus.NEEDS_REVIEW)
+        self.assertEqual(
+            bmp2, bmp1.superseded_by)
+
+    def test_resubmit_re_requests_review(self):
+        """Resubmit should request new reviews.
+
+        Both those who have already reviewed and those who have been nominated
+        to review should be requested to review the new proposal.
+        """
+        bmp1 = self.factory.makeBranchMergeProposal()
+        nominee = self.factory.makePerson()
+        login_person(bmp1.registrant)
+        bmp1.nominateReviewer(nominee, bmp1.registrant, 'nominee')
+        reviewer = self.factory.makePerson()
+        bmp1.createComment(
+            reviewer, 'I like', vote=CodeReviewVote.APPROVE,
+            review_type='specious')
+        bmp2 = bmp1.resubmit(bmp1.registrant)
+        self.assertEqual(
+            set([(nominee, 'nominee'), (reviewer, 'specious')]),
+            set((vote.reviewer, vote.review_type) for vote in bmp2.votes))
 
 
 class TestCreateMergeProposalJob(TestCaseWithFactory):

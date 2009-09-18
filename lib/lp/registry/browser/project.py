@@ -189,7 +189,7 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
     usedfor = IProject
     facet = 'overview'
     links = [
-        'branding', 'driver', 'reassign', 'top_contributors', 'mentorship',
+        'branding', 'driver', 'reassign', 'top_contributors',
         'announce', 'announcements', 'branch_visibility', 'rdf',
         'new_product', 'administer', 'milestones']
 
@@ -201,15 +201,6 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
     def top_contributors(self):
         text = 'More contributors'
         return Link('+topcontributors', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-
-        # We disable this link if the project has no products. This is for
-        # consistency with the way the overview buttons behave in the same
-        # circumstances.
-        return Link('+mentoring', text, icon='info',
-                    enabled=self.context.hasProducts())
 
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
@@ -551,6 +542,7 @@ class ProjectAddView(LaunchpadFormView):
         ]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
+    page_title = label
     project = None
 
     @action(_('Add'), name='add')

@@ -9,12 +9,11 @@ __all__ = [
     'ApplicationButtons',
     'BrowserWindowDimensions',
     'DoesNotExistView',
-    'get_launchpad_views',
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
-    'LaunchpadRootNavigation',
     'LaunchpadImageFolder',
+    'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
@@ -23,6 +22,7 @@ __all__ = [
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
+    'get_launchpad_views',
     ]
 
 
@@ -250,7 +250,7 @@ class Hierarchy(LaunchpadView):
                 if extra_breadcrumb is not None:
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
-        if len(breadcrumbs):
+        if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
             if page_crumb:
                 breadcrumbs.append(page_crumb)

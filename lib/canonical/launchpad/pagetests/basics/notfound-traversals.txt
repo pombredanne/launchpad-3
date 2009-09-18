@@ -67,8 +67,6 @@ status is returned.
 >>> check_redirect("/+index", host='feeds.launchpad.dev', status=301)
 >>> check("/+graphics")
 
->>> check("/translations/+about")
-
 >>> check("/+imports", host='translations.launchpad.dev')
 >>> check("/+imports/1/+index", auth=True, host='translations.launchpad.dev')
 >>> check_not_found("/+imports/foo", host='translations.launchpad.dev')
@@ -202,10 +200,6 @@ translations site. This way, we don't break existing links to it. Before
 removing this, you must be completely sure that no supported Ubuntu release
 is still pointing to this old URL (see bug #138090).
 
->>> check_redirect("/ubuntu/hoary/+source/evolution/+translate",
-...     host="launchpad.dev", status=301)
->>> check("/ubuntu/hoary/+source/evolution/+translate",
-...       host='translations.launchpad.dev' )
 >>> check_redirect("/ubuntu/hoary/+source/evolution/+translations", status=301)
 >>> check("/ubuntu/hoary/+source/evolution/+translations",
 ...       host='translations.launchpad.dev')
@@ -408,7 +402,6 @@ And this is for a person:
 >>> check("/~name16/+edithomepage", auth=True)
 >>> check("/~name16/+review", auth=True)
 >>> check("/~name16/+portlet-emails")
->>> check("/~name16/+portlet-details")
 >>> check("/~name16/+portlet-team-assignedbugs")
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')

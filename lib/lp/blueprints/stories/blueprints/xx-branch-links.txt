@@ -40,8 +40,6 @@ product's blueprints.
     No spec branch links
 
     >>> browser.getLink('Link to a blueprint').click()
-    >>> browser.title
-    'Link branch \xe2\x80\x9clp://dev/~name12/firefox/main\xe2\x80\x9d to a blueprint'
 
     >>> browser.getControl('Blueprint').value = ['canvas']
     >>> browser.getControl('Continue').click()
@@ -86,7 +84,7 @@ Again, attempting to link to the same branch gives an error.
     There is 1 error.
     This branch has already been linked to the blueprint
 
-    >>> browser.getControl('Cancel').click()
+    >>> browser.getLink('Cancel').click()
 
 
 == Deleting a Branch Link ==
@@ -123,4 +121,5 @@ the spec-branch link.
 
     >>> browser.getLink('edit').click()
     >>> print browser.title
-    Edit blueprint branch status
+    +status : Support <canvas> Objects : Blueprints for Mozilla Firefox :
+    Mozilla Firefox

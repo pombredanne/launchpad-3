@@ -101,10 +101,6 @@ question' or 'Help translate' buttons.
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
-    >>> user_browser.getLink(url='+mentoring')
-    Traceback (most recent call last):
-      ..
-    LinkNotFoundError...
 
 Also, the bugs, blueprints, translations and answers facets will be disabled:
 
@@ -143,8 +139,8 @@ the new product form for the project group.
 
     >>> admin_browser.getLink(
     ...     'register another project that is part of Test Group').click()
-    >>> admin_browser.title
-    'Register a project in your project group'
+    >>> print admin_browser.title
+    +newproduct : Test Group
 
 == Products of a project ==
 
@@ -186,4 +182,4 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/mozilla/+subscribe
     >>> print user_browser.title
-    Bug subscriptions for The Mozilla Project
+    Subscribe to Bugs in The Mozilla Project

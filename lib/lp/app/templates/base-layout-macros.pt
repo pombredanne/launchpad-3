@@ -334,18 +334,24 @@
 <metal:footer define-macro="footer">
   <div id="footer" class="footer">
     <div class="lp-arcana">
-      <img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/>
-      &nbsp;&bull;&nbsp;
-      <a href="/+tour">Take the tour</a>
-      &nbsp;&bull;&nbsp;
-      <a href="https://help.launchpad.net/">Read the guide</a>
-      &nbsp;
-      <form id="globalsearch" method="get" accept-charset="UTF-8"
-        class="sprite-after search-icon"
-        tal:condition="view/macro:pagehas/globalsearch"
-        tal:attributes="action string:${rooturl}+search">
-        <input type="search" id="search-text" name="field.text" />
-      </form>
+      <div class="yui-g" tal:omit-tag="not:site_message">
+        <div class="yui-u first">
+          <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
+          &nbsp;&bull;&nbsp;
+          <a href="/+tour">Take the tour</a>
+          &nbsp;&bull;&nbsp;
+          <a href="https://help.launchpad.net/">Read the guide</a>
+          &nbsp;
+          <form id="globalsearch" method="get" accept-charset="UTF-8"
+            class="sprite-after search-icon"
+            tal:condition="view/macro:pagehas/globalsearch"
+            tal:attributes="action string:${rooturl}+search">
+            <input type="search" id="search-text" name="field.text" />
+          </form>
+        </div>
+        <metal:site-message
+          use-macro="context/@@+base-layout-macros/site-message"/>
+      </div>
     </div>
 
     <div class="colophon">
@@ -367,4 +373,33 @@
     </div>
   </div>
 </metal:footer>
+
+<metal:site-message define-macro="site-message">
+  <div class="sitemessage yui-u" tal:condition="site_message">
+    <tal:site_message tal:content="structure site_message">
+      This site is running pre-release code.
+    </tal:site_message>
+    <tal:edge_only condition="is_edge">
+      <tal:normal_lp_view condition="view/macro:pagehas/applicationtabs">
+        <tal:comment replace="nothing">
+          Some locationless pages - such as login/register use views that
+          do not inherit from LPView, and will not have isBetaUser() etc.
+          Checking for applicationtabs ensures that we are not on a
+          locationless view.
+        </tal:comment>
+        <tal:beta_user condition="view/isBetaUser">
+          <a href="#" class="js-action" onclick="setBetaRedirect(false)"
+             tal:condition="not:view/isRedirectInhibited">
+            Disable edge redirect.
+          </a>
+          <a href="#" class="js-action" onclick="setBetaRedirect(true)"
+             tal:condition="view/isRedirectInhibited">
+            Enable edge redirect.
+          </a>
+        </tal:beta_user>
+      </tal:normal_lp_view>
+    </tal:edge_only>
+  </div>
+</metal:site-message>
+
 </macros>

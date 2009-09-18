@@ -347,6 +347,11 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         # Check the form submission.
         self.processForm()
 
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return self.context.title
+
     def processForm(self):
         """Process a form if it was submitted."""
         if not self.request.method == "POST":
@@ -469,10 +474,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 class ProductSeriesUbuntuPackagingView(ProductSeriesView):
     """A view to show series package in Ubuntu."""
 
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return 'Ubuntu source packaging'
+    label = 'Ubuntu source packaging'
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
