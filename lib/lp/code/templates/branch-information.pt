@@ -15,7 +15,7 @@
       <dd tal:content="structure context/owner/fmt:link" />
     </dl>
 
-    <dl id="default-reviewer">
+    <dl id="default-reviewer" tal:condition="not:view/owner_is_reviewer">
       <dt>Review team:</dt>
       <dd tal:content="structure context/code_reviewer/fmt:link" />
     </dl>

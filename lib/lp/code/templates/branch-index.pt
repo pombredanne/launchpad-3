@@ -72,8 +72,7 @@
       </div>
     </div>
 
-    <div class="yui-u"
-         tal:condition="not:context/branch_type/enumvalue:IMPORTED">
+    <div class="yui-u">
       <div class="portlet" id="branch-merges">
         <h2>Branch Pending Merges</h2>
         <tal:branch-pending-merges

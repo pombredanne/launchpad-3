@@ -195,12 +195,14 @@ class BranchEditMenu(NavigationMenu):
         text = 'Delete branch'
         return Link('+delete', text, icon='trash-icon')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def edit_whiteboard(self):
         text = 'Edit whiteboard'
         enabled = self.branch_is_import()
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
+    @enabled_with_permission('launchpad.Edit')
     def edit_import(self):
         text = 'Edit import source or review import'
         enabled = self.branch_is_import()
@@ -253,7 +255,9 @@ class BranchContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
         text = 'Propose for merging into another branch'
-        enabled = self.context.target.supports_merge_proposals
+        enabled = (
+            self.context.target.supports_merge_proposals and
+            not self.context.branch_type == BranchType.IMPORTED)
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def link_bug(self):
@@ -342,6 +346,12 @@ class BranchView(LaunchpadView, FeedsMixin):
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
         return self.context.owner == self.context.registrant
+
+    def owner_is_reviewer(self):
+        """Is the branch owner the default reviewer?"""
+        if self.context.reviewer == None:
+            return True
+        return self.context.owner == self.context.reviewer
 
     def show_whiteboard(self):
         """Return whether or not the whiteboard should be shown.
@@ -433,6 +443,15 @@ class BranchView(LaunchpadView, FeedsMixin):
         candidates = self.context.landing_candidates
         return [DecoratedMergeProposal(proposal) for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
+
+    @property
+    def is_import_branch_with_no_landing_candidates(self):
+        """Is the branch an import branch with no landing candidates?"""
+        if self.landing_candidates:
+            return False
+        if not self.context.branch_type == BranchType.IMPORTED:
+            return False
+        return True
 
     def _getBranchCountText(self, count):
         """Help to show user friendly text."""

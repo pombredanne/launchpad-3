@@ -9,6 +9,11 @@
     <div id="merge-summary">
 
       <div id="landing-candidates"
+           tal:condition="view/is_import_branch_with_no_landing_candidates">
+        This import branch has no branches proposed for merge into it.
+      </div>
+
+      <div id="landing-candidates"
            tal:condition="view/landing_candidates">
         <img src="/@@/merge-proposal-icon" />
         <a href="+merges" tal:content="structure view/landing_candidate_count_text">
