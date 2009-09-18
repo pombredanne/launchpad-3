@@ -48,8 +48,11 @@ machine_id_option = Option(
 
 
 def _convert_instance_type(arg):
+    """Ensure that `arg` is acceptable as an instance type."""
     if arg not in AVAILABLE_INSTANCE_TYPES:
         raise BzrCommandError('Unknown instance type %r' % arg)
+    return arg
+
 
 instance_type_option = Option(
     'instance', short_name='i', type=_convert_instance_type,
@@ -83,7 +86,8 @@ class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
 
     When https://bugs.edge.launchpad.net/bzr/+bug/431054 is fixed, we can
-    delete this class.
+    delete this class, or at least make it less of a copy/paste/hack of the
+    superclass.
     """
 
     def _usage(self):
@@ -106,7 +110,7 @@ class EC2Command(Command):
 
 
 class cmd_test(EC2Command):
-    """Run the tests in ec2."""
+    """Run the test suite in ec2."""
 
     takes_options = [
         branch_option,
@@ -381,11 +385,10 @@ class cmd_help(EC2Command):
 
     def run(self, topic=None):
         """
-        Show help for the C{bzrlib.commands.Command} or L{HelpTopic} matching
-        C{name}.
+        Show help for the C{bzrlib.commands.Command} matching C{topic}.
 
         @param topic: Optionally, the name of the topic to show.  Default is
-            C{basic}.
+            to show some basic usage information.
         """
         if topic is None:
             print >>self.outf, 'Usage:    ec2 <command> <options>'
