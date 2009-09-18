@@ -23,6 +23,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, exported)
+from lazr.restful.fields import CollectionField, Reference
 
 class CveStatus(DBEnumeratedType):
     """The Status of this item in the CVE Database.
@@ -91,8 +92,8 @@ class ICve(Interface):
     bugs = exported(
         CollectionField(
             title=_('Bugs related to this CVE entry.'),
-            value_type=Reference(schema=IBug),
-            readonly=True))
+            readonly=True,
+            value_type=Reference(schema=Interface))) # Redefined in bug.py
     bug_links = Attribute('Links between this CVE entry and bugs.')
 
     # other attributes
