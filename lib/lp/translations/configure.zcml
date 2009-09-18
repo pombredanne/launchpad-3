@@ -511,7 +511,7 @@
                 set_schema="lp.translations.interfaces.languagepack.ILanguagePack"/>
         </class>
 
-        <!-- LanguageSet -->
+        <!-- LanguagePackSet -->
 
         <securedutility
             class="lp.translations.model.languagepack.LanguagePackSet"

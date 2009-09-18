@@ -73,7 +73,7 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/firefox/+milestone/1.0/+subscribe
     >>> print user_browser.title
-    Bug subscriptions for Mozilla Firefox 1.0
+    Subscribe to Bugs in Mozilla Firefox 1.0
 
 
 == Deleting milestones ==

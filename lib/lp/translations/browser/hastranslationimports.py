@@ -49,15 +49,12 @@ class HasTranslationImportsView(LaunchpadFormView):
     translation_import_queue_macros = ViewPageTemplateFile(
         '../templates/translation-import-queue-macros.pt')
 
-    @property
-    def page_title(self):
-        """See `LaunchpadFormView`."""
-        return "Translation import queue for %s" % self.context.displayname
+    page_title = "Import queue"
 
     @property
     def label(self):
         """See `LaunchpadFormView`."""
-        return self.page_title
+        return "Translation import queue for %s" % self.context.displayname
 
     @property
     def initial_values(self):

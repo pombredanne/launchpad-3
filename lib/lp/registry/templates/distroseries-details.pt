@@ -81,7 +81,4 @@
     </dl>
   </div>
 
-  <p>
-  Registered by <a tal:replace="structure context/owner/fmt:link" />
-  </p>
 </div>

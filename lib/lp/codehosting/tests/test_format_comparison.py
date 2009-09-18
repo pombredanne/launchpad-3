@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from lp.codehosting.puller import worker
+from lp.codehosting.bzrutils import identical_formats
 
 
 # Define a bunch of different fake format classes to pass to identical_formats
@@ -52,7 +52,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return True when both branches have the same
         # bzrdir, repository, and branch formats.
         self.failUnless(
-            worker.identical_formats(
+            identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA())))
 
@@ -60,7 +60,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return False when both branches have the
         # different bzrdir formats.
         self.failIf(
-            worker.identical_formats(
+            identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatB(), RepoFormatA(), BranchFormatA())))
 
@@ -68,7 +68,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return False when both branches have the
         # different repository formats.
         self.failIf(
-            worker.identical_formats(
+            identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatB(), BranchFormatA())))
 
@@ -76,11 +76,10 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return False when both branches have the
         # different branch formats.
         self.failIf(
-            worker.identical_formats(
+            identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatB())))
 
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
