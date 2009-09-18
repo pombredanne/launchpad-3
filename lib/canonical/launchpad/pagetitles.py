@@ -770,8 +770,6 @@ projects_request = 'Launchpad Translations: Request a project group'
 
 projects_search = 'Search for project groups in Launchpad'
 
-rdf_index = "Launchpad RDF"
-
 # redirect_up is a redirect
 
 def reference_index(context, view):

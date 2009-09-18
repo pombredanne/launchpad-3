@@ -19,6 +19,7 @@ __all__ = [
     'MaintenanceMessage',
     'MenuBox',
     'NavigationMenuTabs',
+    'RDFIndexView',
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
@@ -1004,3 +1005,8 @@ class DoesNotExistView:
 
     def __call__(self):
         raise NotFound(self.context, self.__name__)
+
+
+class RDFIndexView(LaunchpadView):
+    """View for /rdf page."""
+    page_title = label = "Launchpad RDF"
