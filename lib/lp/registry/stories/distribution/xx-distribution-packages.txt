@@ -70,7 +70,7 @@ The search page will also present commercial packages:
     >>> field.value = 'commercialpackage'
     >>> browser.getControl('Search', index=0).click()
     >>> extract_text(find_main_content(browser.contents))
-    u'...commercialpackage... package...'
+    u"...commercialpackage... package..."
 
 Now try searching for text that we know to be in a change log entry, to
 prove that FTI works on change logs.  The text we're looking for is

@@ -27,7 +27,7 @@ class FAQTargetNavigationMixin:
         try:
             id_ = int(name)
         except ValueError:
-            return NotFoundError
+            raise NotFoundError(name)
         return self.context.getFAQ(id_)
 
 

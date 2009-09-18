@@ -121,5 +121,4 @@ the spec-branch link.
 
     >>> browser.getLink('edit').click()
     >>> print browser.title
-    +status : Support <canvas> Objects : Blueprints for Mozilla Firefox :
-    Mozilla Firefox
+    Support <canvas> Objects...

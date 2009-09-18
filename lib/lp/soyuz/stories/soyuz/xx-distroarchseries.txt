@@ -195,7 +195,7 @@ architectures in this DistroSeries.
     >>> admin_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> admin_browser.getLink("Add architecture").click()
     >>> print admin_browser.title
-    +addport : 5.04 : Ubuntu
+    Add a port of The Hoary Hedgehog...
 
 Ubuntu hoary already has i386 & hppa distroarchseries and should not
 allow duplications.

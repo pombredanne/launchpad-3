@@ -1569,7 +1569,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    page_title = "Register a project in Launchpad"
+    page_title = ProjectAddStepOne.page_title
 
     product = None
 
@@ -1691,6 +1691,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 class ProductAddView(MultiStepView):
     """The controlling view for product/+new."""
 
+    page_title = ProjectAddStepOne.page_title
     total_steps = 2
 
     @property

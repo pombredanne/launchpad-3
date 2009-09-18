@@ -474,6 +474,9 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
+    # This is needed for our breadcrumbs, as there's no <browser:page>
+    # declaration for this view.
+    __name__ = '+self-renewal'
     schema = ITeamMembership
     field_names = []
     template = ViewPageTemplateFile(
@@ -568,6 +571,9 @@ class TeamInvitationView(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
+    # This is needed for our breadcrumbs, as there's no <browser:page>
+    # declaration for this view.
+    __name__ = '+invitation'
     schema = ITeamMembershipInvitationAcknowledgementForm
     field_names = ['acknowledger_comment']
     custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)

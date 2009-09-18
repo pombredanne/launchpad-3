@@ -36,7 +36,7 @@ can quickly activate one via the link in his PPA section.
     >>> sample_browser.getLink("Create a new PPA").click()
 
     >>> print sample_browser.title
-    +activate-ppa : Sample Person
+    Activate Personal Package Archive...
 
 This page presents a pointer to the current PPA-ToS (terms of service)
 with mandatory 'displayname' and checkbox ('accepted') fields. The
@@ -136,7 +136,7 @@ user can't have an emtpy displayname on his PPA.
     >>> sample_browser.getControl("Save").click()
 
     >>> print sample_browser.title
-    +edit : Sample testing PPA : Sample Person
+    Edit Sample testing PPA...
 
     >>> for error in get_feedback_messages(sample_browser.contents):
     ...     print error
@@ -194,7 +194,7 @@ Let's proceed with the required permissions:
     >>> sample_browser.getLink('Create a new PPA').click()
 
     >>> sample_browser.title
-    '+activate-ppa : \xe2\x80\x9cLandscape Developers\xe2\x80\x9d team'
+    'Activate Personal Package Archive...
 
     >>> sample_browser.getControl(
     ...     name="field.displayname").value = 'Devel PPA'
@@ -228,7 +228,7 @@ exactly the same as for a user-PPA, see above:
     >>> sample_browser.getLink("Change details").click()
 
     >>> sample_browser.title
-    '+edit : Devel PPA : \xe2\x80\x9cLandscape Developers\xe2\x80\x9d team'
+    'Edit Devel PPA...
 
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Yay, I can change it.')
@@ -318,7 +318,7 @@ they need to be able to make PPAs private.
     >>> admin_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> admin_browser.getLink("Administer archive").click()
     >>> print admin_browser.title
-    +admin : Hack PPA : James Blackwell
+    Administer Hack PPA...
 
     >>> commercial_browser = setupBrowser(
     ...     auth='Basic commercial-member@canonical.com:test')
@@ -529,7 +529,7 @@ all his PPAs.
     >>> cprov_browser.getLink("Create a new PPA").click()
 
     >>> print cprov_browser.title
-    +activate-ppa : Celso Providelo
+    Activate Personal Package Archive...
 
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Existing PPAs

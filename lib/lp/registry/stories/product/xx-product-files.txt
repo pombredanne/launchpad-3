@@ -92,7 +92,7 @@ A project owner should not see the delete button when there are no files.
     ...     auth='Basic foo.bar@canonical.com:test')
     >>> tbird_owner.open('http://launchpad.dev/thunderbird/+download')
     >>> print tbird_owner.title
-    +download : Mozilla Thunderbird
+    Mozilla Thunderbird project files...
 
     >>> main_content = find_main_content(tbird_owner.contents)
     >>> print extract_text(main_content)
@@ -178,7 +178,7 @@ To add a download file the release version link is used.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> firefox_owner.getLink('1.0.0').click()
     >>> print firefox_owner.title
-    +adddownloadfile : Series 1.0 : Mozilla Firefox
+    Add a download file to Mozilla Firefox...
 
 Ensure a non-owner doesn't see the 'Add download file' link after
 navigating to the product release page.
