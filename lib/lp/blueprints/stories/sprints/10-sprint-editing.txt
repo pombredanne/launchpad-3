@@ -2,8 +2,8 @@ We should be able to edit the details on a sprint but the menus are only
 available to those who have permissions to edit that sprint.
 
   >>> anon_browser.open('http://launchpad.dev/sprints/ubz')
-  >>> anon_browser.title
-  'Ubuntu Below Zero (sprint or meeting)'
+  >>> print anon_browser.title
+  Ubuntu Below Zero : Meetings
 
   >>> anon_browser.getLink('Change details')
   Traceback (most recent call last):
@@ -15,8 +15,8 @@ We will log in as Sample Person and edit the ubz sprint.
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
 
   >>> browser.open('http://launchpad.dev/sprints/ubz')
-  >>> browser.title
-  'Ubuntu Below Zero (sprint or meeting)'
+  >>> print browser.title
+  Ubuntu Below Zero : Meetings
 
   >>> address = 'Holiday Inn Select, Downtown Montreal, Canada'
   >>> address in browser.contents
@@ -64,19 +64,14 @@ sprint home page.
   'http://launchpad.dev/sprints/ubz'
 
 
-The address of the sprint is now visible in the sprint details portlet.
+The address of the sprint is now visible.
 
-  >>> details_portlet = find_portlet(browser.contents, 'Meeting details')
-  >>> address in details_portlet.renderContents()
-  True
+  >>> print extract_text(find_tag_by_id(browser.contents, 'sprint-address'))
+  Address: Holiday Inn Select, Downtown Montreal, Canada
 
-  >>> print details_portlet
-  <...
-  ...Starts:...
-  2006-01-10 08:30 EST...
-  ...Ends:...
-  2006-02-12 17:00 EST...
-  ...
+  >>> print extract_text(find_tag_by_id(browser.contents, 'start-end'))
+  Starts: 08:30 EST on Tuesday, 2006-01-10
+  Ends: 17:00 EST on Sunday, 2006-02-12
 
 
 If we just change the time zone on the edit form, the start and finish
@@ -88,11 +83,7 @@ dates will be changed too, since they follow local time:
   >>> print browser.url
   http://launchpad.dev/sprints/ubz
 
-  >>> print find_portlet(browser.contents, 'Meeting details')
-  <...
-  ...Starts:...
-  2006-01-10 08:30 CST...
-  ...Ends:...
-  2006-02-12 17:00 CST...
-  ...
+  >>> print extract_text(find_tag_by_id(browser.contents, 'start-end'))
+  Starts: 08:30 CST on Tuesday, 2006-01-10
+  Ends: 17:00 CST on Sunday, 2006-02-12
 

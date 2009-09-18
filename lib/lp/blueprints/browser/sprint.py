@@ -32,6 +32,7 @@ from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
+from lp.app.interfaces.headings import IMajorHeadingView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
@@ -43,7 +44,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
+    LaunchpadFormView, LaunchpadView, Link, Navigation, NavigationMenu,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -69,7 +70,7 @@ class SprintNavigation(Navigation):
     usedfor = ISprint
 
 
-class SprintOverviewMenu(ApplicationMenu):
+class SprintOverviewMenu(NavigationMenu):
 
     usedfor = ISprint
     facet = 'overview'
@@ -154,6 +155,8 @@ class SprintView(HasSpecificationsView, LaunchpadView):
 
     __used_for__ = ISprint
 
+    implements(IMajorHeadingView)
+
     def initialize(self):
         self.notices = []
         self.latest_specs_limit = 5
@@ -200,7 +203,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
         dt = dt.astimezone(self.tzinfo)
         return dt.strftime('%Y-%m-%d')
 
-    _local_timeformat = '%H:%M on %A, %Y-%m-%d'
+    _local_timeformat = '%H:%M %Z on %A, %Y-%m-%d'
     @property
     def local_start(self):
         """The sprint start time, in the local time zone, as text."""
