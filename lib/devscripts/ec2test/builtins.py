@@ -388,8 +388,9 @@ class cmd_help(EC2Command):
             C{basic}.
         """
         if topic is None:
-            print >>self.outf, 'XXX help goes here'
-        elif topic == 'commands':
+            print >>self.outf, 'Usage:    ec2 <command> <options>'
+            print >>self.outf
+            print >>self.outf, 'Available commands:'
             help_commands(self.outf)
         else:
             command = self.controller._get_command(None, topic)

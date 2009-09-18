@@ -2,7 +2,6 @@ import readline
 import rlcompleter
 import sys
 
-from bzrlib.builtins import cmd_help
 from bzrlib.errors import BzrCommandError
 
 from devscripts.ec2test import builtins
@@ -24,12 +23,10 @@ def main():
     controller.install_bzrlib_hooks()
     controller.load_module(builtins)
 
-    if len(sys.argv) < 2:
-        command_names = controller._commands.iterkeys()
-        sys.exit(
-            "You must supply a command, one of: %s."
-            % ', '.join(sorted(command_names)))
+    args = sys.argv[1:]
+    if not args:
+        args = ['help']
     try:
-        controller.run(sys.argv[1:])
+        controller.run(args)
     except BzrCommandError, e:
         sys.exit('ec2: ERROR: ' + str(e))
