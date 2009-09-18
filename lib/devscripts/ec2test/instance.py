@@ -8,6 +8,7 @@ __all__ = [
     'EC2Instance',
     ]
 
+import code
 import glob
 import os
 import select
@@ -15,6 +16,7 @@ import socket
 import subprocess
 import sys
 import time
+import traceback
 
 from bzrlib.plugins.launchpad.account import get_lp_login
 
@@ -34,6 +36,22 @@ class AcceptAllPolicy:
     # we are connecting to is the correct one.
     def missing_host_key(self, client, hostname, key):
         pass
+
+
+def get_user_key():
+    """Get a SSH key from the agent.  Exit if not found.
+
+    This key will be used to let the user log in (as $USER) to the instance.
+    """
+    agent = paramiko.Agent()
+    keys = agent.get_keys()
+    if len(keys) == 0:
+        error_and_quit(
+            'You must have an ssh agent running with keys installed that '
+            'will allow the script to rsync to devpad and get your '
+            'branch.\n')
+    user_key = agent.get_keys()[0]
+    return user_key
 
 
 class EC2Instance:
@@ -241,6 +259,50 @@ class EC2Instance:
         # Clean out left-overs from the instance image.
         as_root('rm -fr /var/tmp/*')
         root_connection.close()
+
+    def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
+        """Start and set up, run `func` and then optionally shut down.
+
+        :param postmortem: If true, any exceptions will be caught and an
+            interactive session run to allow debugging the problem.
+        :param shutdown: If true, the instance will be shut down before this
+            function returns.
+        :param func: A callable that will be called when the instance is
+            running and a user account has been set up on it.
+        :param args: Passed to `func`.
+        :param kw: Passed to `func`.
+        """
+        user_key = get_user_key()
+        self.start()
+        try:
+            self.set_up_user(user_key)
+            try:
+                return func(*args, **kw)
+            except Exception:
+                # When running in postmortem mode, it is really helpful to see if
+                # there are any exceptions before it waits in the console (in the
+                # finally block), and you can't figure out why it's broken.
+                traceback.print_exc()
+        finally:
+            try:
+                if postmortem:
+                    console = code.InteractiveConsole(locals())
+                    console.interact((
+                        'Postmortem Console.  EC2 instance is not yet dead.\n'
+                        'It will shut down when you exit this prompt (CTRL-D).\n'
+                        '\n'
+                        'Tab-completion is enabled.'
+                        '\n'
+                        'EC2Instance is available as `instance`.\n'
+                        'Also try these:\n'
+                        '  http://%(dns)s/current_test.log\n'
+                        '  ssh -A %(dns)s') %
+                                     {'dns': self.hostname})
+                    print 'Postmortem console closed.'
+            finally:
+                if shutdown:
+                    self.shutdown()
+        
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
         """Copy `local_path` to `remote_dir` on this instance.

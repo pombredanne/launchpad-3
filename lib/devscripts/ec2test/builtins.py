@@ -1,6 +1,4 @@
-import code
 import pdb
-import traceback
 
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
@@ -14,51 +12,6 @@ from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
 from devscripts.ec2test.instance import (
     AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
-
-
-def run_with_instance(instance, postmortem, shutdown, func, *args, **kw):
-    """Start and set up the instance, run `func` and optionally shut down.
-
-    :param instance: A not-yet-running `EC2Instance`.
-    :param postmortem: If this flag is true, any exceptions will be caught and
-        an interactive session run to allow debugging the problem.
-    :param shutdown: If true, the instance will be shut down before this
-        function returns.
-    :param func: A callable that will be called when the instance is running
-        and a user account has been set up on it.
-    :param args: Passed to `func`.
-    :param kw: Passed to `func`.
-    """
-    user_key = get_user_key()
-    instance.start()
-    try:
-        instance.set_up_user(user_key)
-        try:
-            return func(*args, **kw)
-        except Exception:
-            # When running in postmortem mode, it is really helpful to see if
-            # there are any exceptions before it waits in the console (in the
-            # finally block), and you can't figure out why it's broken.
-            traceback.print_exc()
-    finally:
-        try:
-            if postmortem:
-                console = code.InteractiveConsole(locals())
-                console.interact((
-                    'Postmortem Console.  EC2 instance is not yet dead.\n'
-                    'It will shut down when you exit this prompt (CTRL-D).\n'
-                    '\n'
-                    'Tab-completion is enabled.'
-                    '\n'
-                    'EC2Instance is available as `instance`.\n'
-                    'Also try these:\n'
-                    '  http://%(dns)s/current_test.log\n'
-                    '  ssh -A %(dns)s') %
-                                 {'dns': instance.hostname})
-                print 'Postmortem console closed.'
-        finally:
-            if shutdown:
-                instance.shutdown()
 
 
 branch_option = ListOption(
@@ -151,22 +104,6 @@ class EC2Command(Command):
             s += aname + ' '
         s = s[:-1]      # remove last space
         return s
-
-
-def get_user_key():
-    """Get a SSH key from the agent.  Exit if not found.
-
-    This key will be used to let the user log in (as $USER) to the instance.
-    """
-    agent = paramiko.Agent()
-    keys = agent.get_keys()
-    if len(keys) == 0:
-        error_and_quit(
-            'You must have an ssh agent running with keys installed that '
-            'will allow the script to rsync to devpad and get your '
-            'branch.\n')
-    user_key = agent.get_keys()[0]
-    return user_key
 
 
 def get_credentials():
@@ -310,8 +247,7 @@ class cmd_test(EC2Command):
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
 
-        run_with_instance(
-            instance, postmortem, not headless, runner.run_tests)
+        instance.set_up_and_run(postmortem, not headless, runner.run_tests)
 
 
 class cmd_demo(EC2Command):
@@ -388,8 +324,7 @@ class cmd_demo(EC2Command):
                 "\n\n")
             return True
 
-        run_with_instance(
-            instance, True, False, run_server)
+        instance.set_up_and_run(True, False, run_server)
 
 
 class cmd_update_image(EC2Command):
@@ -446,4 +381,4 @@ class cmd_update_image(EC2Command):
             instance.bundle(ami_name, credentials)
             return True
 
-        run_with_instance(instance, postmortem, True, update_image)
+        instance.set_up_and_run(postmortem, True, update_image)
