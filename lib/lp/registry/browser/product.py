@@ -804,6 +804,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             id='programminglang', title='Edit programming languages',
             tag='span', public_attribute='programming_language',
             accept_empty=True,
+            width='9em',
             **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
