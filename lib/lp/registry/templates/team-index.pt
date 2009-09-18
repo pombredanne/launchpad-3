@@ -34,17 +34,6 @@
     Contact this team
   </metal:contact>
 
-  <ul id="join-team"
-      class="super-add-action"
-      tal:define="link context/menu:overview/join"
-      tal:condition="link/enabled"
-      >
-    <li>
-      <a tal:attributes="href link/fmt:url"
-         tal:content="link/text" />
-    </li>
-  </ul>
-
   <tal:menu replace="structure view/@@+global-actions" />
   <tal:polls replace="structure context/@@+portlet-polls" />
 
