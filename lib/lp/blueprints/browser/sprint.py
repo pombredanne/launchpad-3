@@ -50,6 +50,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.helpers import shortlist
 from canonical.widgets.date import DateTimeWidget
+from canonical.lazr.utils import smartquote
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -327,7 +328,15 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
 
     It is unusual because we want to display multiple objects with
     checkboxes, then process the selected items, which is not the usual
-    add/edit metaphor."""
+    add/edit metaphor.
+    """
+
+    @property
+    def label(self):
+        return smartquote(
+            'Review discussion topics for "%s" sprint' % self.context.title)
+
+    page_title = label
 
     def initialize(self):
         self.status_message = None
