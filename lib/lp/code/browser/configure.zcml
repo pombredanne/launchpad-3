@@ -316,6 +316,7 @@
     <browser:menus
         classes="
             BranchMergeProposalContextMenu
+            BranchMergeProposalEditMenu
             BranchMergeProposalActionNavigationMenu"
         module="lp.code.browser.branchmergeproposal"/>
     <browser:page

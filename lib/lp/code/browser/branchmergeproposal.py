@@ -15,6 +15,7 @@ __all__ = [
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
     'BranchMergeProposalDequeueView',
+    'BranchMergeProposalEditMenu',
     'BranchMergeProposalEditView',
     'BranchMergeProposalEnqueueView',
     'BranchMergeProposalInlineDequeueView',
@@ -223,6 +224,21 @@ class BranchMergeProposalMenuMixin:
         return Link('+resubmit', text, enabled=enabled, icon='edit')
 
 
+class BranchMergeProposalEditMenu(NavigationMenu,
+                                  BranchMergeProposalMenuMixin):
+    """Edit menu for Branch Merge Proposals."""
+
+    usedfor = IBranchMergeProposal
+    title = 'Edit Proposal'
+    facet = 'branches'
+    links = [
+        'edit', 'edit_status', 'edit_commit_message', 'delete', 'resubmit']
+
+    @property
+    def branch_merge_proposal(self):
+        return self.context
+
+
 class BranchMergeProposalContextMenu(ContextMenu,
                                      BranchMergeProposalMenuMixin):
     """Context menu for merge proposals."""
@@ -230,8 +246,6 @@ class BranchMergeProposalContextMenu(ContextMenu,
     usedfor = IBranchMergeProposal
     links = [
         'edit',
-        'edit_commit_message',
-        'delete',
         'request_review',
         'add_comment',
         'merge',
@@ -239,7 +253,6 @@ class BranchMergeProposalContextMenu(ContextMenu,
         'dequeue',
         'resubmit',
         'update_merge_revno',
-        'edit_status',
         ]
 
     @property
