@@ -14,8 +14,6 @@
           </a>
         </li>
       </ul>
-      <h1>Translation status by language</h1>
-
       <div class="top-portlet">
         <p tal:condition="not:view/is_translation_focus">
           Launchpad currently recommends translating

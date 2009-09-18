@@ -237,7 +237,10 @@ span.nolink {
     padding: 0 0 0.5em 0;
     margin: 0 0 1em;
     }
-
+.full-page-width {
+    z-index: 10;
+    width: 131%;
+    }
 .warning.message {
     margin-top: 17px;
     }
@@ -527,6 +530,15 @@ div.watermark-apps-portlet h1 {
 }
 .watermark-apps-portlet li.disabled-tab {
     color: #747474;
+}
+
+/* Registering slot */
+.registering {
+    float: right;
+    padding-top: 10px;
+    font-size: 85%;
+    color: #666;
+    font-style: italic;
 }
 
 /* Side content exceptions */

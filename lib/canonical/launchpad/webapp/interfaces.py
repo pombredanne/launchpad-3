@@ -256,8 +256,6 @@ class IBreadcrumb(Interface):
 
     text = Attribute('Text of this breadcrumb.')
 
-    icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
-
 
 #
 # Canonical URLs
