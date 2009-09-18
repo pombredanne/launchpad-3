@@ -70,7 +70,12 @@ class CommandRegistry(object):
         try:
             local_command = self._commands[name]()
         except KeyError:
-            return command
+            for cmd in self._commands.itervalues():
+                if name in cmd.aliases:
+                    local_command = cmd()
+                    break
+            else:
+                return command
         local_command.controller = self
         return local_command
 
@@ -82,6 +87,21 @@ class CommandRegistry(object):
             C{bzrlib.commands.Command} to use when the command is invoked.
         """
         self._commands[name] = command_class
+
+    def load_module(self, module):
+        """Load C{bzrlib.commands.Command}s and L{HelpTopic}s from C{module}.
+
+        Objects found in the module with names that start with C{cmd_} are
+        treated as C{bzrlib.commands.Command}s and objects with names that
+        start with C{topic_} are treated as L{HelpTopic}s.
+        """
+        for name in module.__dict__:
+            if name.startswith("cmd_"):
+                sanitized_name = name[4:].replace("_", "-")
+                self.register_command(sanitized_name, module.__dict__[name])
+            elif name.startswith("topic_"):
+                sanitized_name = name[6:].replace("_", "-")
+                self.register_help_topic(sanitized_name, module.__dict__[name])
 
 
 class HelpTopicRegistry(object):

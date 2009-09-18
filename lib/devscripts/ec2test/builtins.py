@@ -2,6 +2,7 @@ import pdb
 
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
+from bzrlib.help import help_commands
 from bzrlib.option import ListOption, Option
 
 import socket
@@ -370,3 +371,30 @@ class cmd_update_image(EC2Command):
             'deluser --remove-home %(USER)s', ignore_failure=True)
         root_connection.close()
         instance.bundle(ami_name, credentials)
+
+
+class cmd_help(EC2Command):
+    """Show general help or help for a command."""
+
+    aliases = ["?", "--help", "-?", "-h"]
+    takes_args = ["topic?"]
+
+    def run(self, topic=None):
+        """
+        Show help for the C{bzrlib.commands.Command} or L{HelpTopic} matching
+        C{name}.
+
+        @param topic: Optionally, the name of the topic to show.  Default is
+            C{basic}.
+        """
+        if topic is None:
+            print >>self.outf, 'XXX help goes here'
+        elif topic == 'commands':
+            help_commands(self.outf)
+        else:
+            command = self.controller._get_command(None, topic)
+            if command is None:
+                print >>self.outf, "%s is an unknown command." % (topic,)
+            text = command.get_help_text()
+            if text:
+                print >>self.outf, text
