@@ -580,7 +580,6 @@ class TestCleanup(TestCaseWithFactory):
         super(TestCleanup, self).setUp()
         self.queue = TranslationImportQueue()
         self.store = IMasterStore(TranslationImportQueueEntry)
-        self.now = datetime.now(UTC)
 
     def _makeProductEntry(self):
         """Simulate upload for a product."""
@@ -607,17 +606,18 @@ class TestCleanup(TestCaseWithFactory):
             TranslationImportQueueEntry.id == entry_id).any()
         return entry is not None
 
-    def _setStatus(self, entry, status, when):
+    def _setStatus(self, entry, status, when=None):
         """Simulate status on queue entry having been set at a given time."""
         entry.setStatus(status)
-        entry.date_status_changed = when
+        if when is not None:
+            entry.date_status_changed = when
         entry.syncUpdate()
 
     def test_cleanUpObsoleteEntries_unaffected_statuses(self):
         # _cleanUpObsoleteEntries leaves entries in non-terminal states
         # (Needs Review, Approved, Blocked) alone no matter how old they
         # are.
-        one_year_ago = self.now - timedelta(days=366)
+        one_year_ago = datetime.now(UTC) - timedelta(days=366)
         entry = self._makeProductEntry()
         entry_id = entry.id
 
@@ -638,7 +638,7 @@ class TestCleanup(TestCaseWithFactory):
         # (Imported, Failed, Deleted) after a few days.  The exact
         # period depends on the state.
         entry = self._makeProductEntry()
-        self._setStatus(entry, RosettaImportStatus.IMPORTED, self.now)
+        self._setStatus(entry, RosettaImportStatus.IMPORTED, None)
         entry_id = entry.id
 
         self.queue._cleanUpObsoleteEntries(self.store)
