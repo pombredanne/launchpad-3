@@ -56,18 +56,12 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     # The homepage has two columns to hold featured projects. This
     # determines the number of projects we display in each column.
     FEATURED_PROJECT_ROWS = 5
-    MAX_FEATURED_PROJECTS = FEATURED_PROJECT_ROWS*2+1
-    MAX_SUMMARY_LENGTH = 200
 
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
         return bool(
             config.launchpad.beta_testers_redirection_host is not None and
             self.isBetaUser)
-
-    @property
-    def is_logged_in(self):
-        return self.user is not None
 
     @cachedproperty
     def apphomes(self):
@@ -93,19 +87,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         return self.featured_projects[0]
 
     @property
-    def featured_projects_top_summary(self):
-        """Return the summary of the topmost featured project.
-
-        If the summary is too long (MAX_SUMMARY_LENGTH) it is truncated and
-        a horizontal ellipsis is appended.
-        """
-        summary = self.featured_projects_top.summary
-        if len(summary) > self.MAX_SUMMARY_LENGTH:
-            return summary[:self.MAX_SUMMARY_LENGTH]+"&hellip;"
-        else:
-            return summary
-
-    @property
     def featured_projects_col_a(self):
         """Return a list of featured projects."""
         return self.featured_projects[1:self.FEATURED_PROJECT_ROWS+1]
@@ -116,18 +97,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         index_from = self.FEATURED_PROJECT_ROWS+1
         index_to = self.MAX_FEATURED_PROJECTS
         return self.featured_projects[index_from:index_to]
-
-    @property
-    def project_count_not_featured(self):
-        """The number of not-featured projects.
-
-        The total number of projects minus the number of displayed
-        featured projects.
-        """
-        project_count_featured = len(self.featured_projects)
-        if project_count_featured > self.MAX_FEATURED_PROJECTS:
-            project_count_featured = self.MAX_FEATURED_PROJECTS
-        return self.project_count - project_count_featured
 
     @property
     def branch_count(self):

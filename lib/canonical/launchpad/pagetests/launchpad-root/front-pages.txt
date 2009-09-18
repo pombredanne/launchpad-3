@@ -21,14 +21,10 @@ And links to the important applications and facets:
   >>> code_link.url
   'http://code.launchpad.dev/'
 
-  >>> code_link.text
-  '[IMG]'
-
 It also includes a search form...
 
-  >>> ('<input id="search" type="submit" '+
-  ...  'value="Search Launchpad"') in browser.contents
-  True
+  >>> print browser.getControl('Search Launchpad').value
+  Search Launchpad
 
 ...and lists of featured projects and marketing material.
 
@@ -49,15 +45,10 @@ Now there are links to create projects and teams:
   >>> project_link = user_browser.getLink(url='/projects')
   >>> project_link.url
   'http://launchpad.dev/projects/+new'
-  >>> project_link.text
-  '[IMG]'
 
   >>> people_link = user_browser.getLink(url='/people')
   >>> people_link.url
   'http://launchpad.dev/people/+newteam'
-  >>> people_link.text
-  '[IMG]'
-
 
 The front pages for the other applications, however, do have
 application tabs. On these pages, the tab normally named "Overview"
