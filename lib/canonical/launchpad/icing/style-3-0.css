@@ -532,6 +532,15 @@ div.watermark-apps-portlet h1 {
     color: #747474;
 }
 
+/* Registering slot */
+.registering {
+    float: right;
+    padding-top: 10px;
+    font-size: 85%;
+    color: #666;
+    font-style: italic;
+}
+
 /* Side content exceptions */
 .side {
     padding: 0.5em;
