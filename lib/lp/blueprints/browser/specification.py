@@ -467,7 +467,7 @@ class SpecificationView(SpecificationSimpleView):
 
     @property
     def label(self):
-        return smartquote('Blueprint: "%s"' % self.context.title)
+        return self.context.title
 
     def initialize(self):
         # The review that the user requested on this spec, if any.

@@ -134,7 +134,7 @@
               </dd>
             </dl>
 
-            <dl>
+            <dl id="series-goal">
               <dt>Series goal:</dt>
               <dd>
                 <tal:block condition="context/goal">
@@ -163,7 +163,7 @@
               </dd>
             </dl>
 
-            <dl>
+            <dl id="milestone-target">
               <dt>Milestone target:</dt>
               <dd>
               <a tal:attributes="href context/milestone/fmt:url"
@@ -348,7 +348,17 @@
 
   <tal:side metal:fill-slot="side">
     <div class="portlet">
-      <a tal:replace="structure context/menu:context/edit/fmt:link" />
+      <ul>
+        <li tal:condition="context/menu:context/edit/enabled">
+          <a tal:replace="structure context/menu:context/edit/fmt:link" />
+        </li>
+        <li tal:condition="context/menu:context/supersede/enabled">
+          <a tal:replace="structure context/menu:context/supersede/fmt:link" />
+        </li>
+        <li tal:condition="context/menu:context/retarget/enabled">
+          <a tal:replace="structure context/menu:context/retarget/fmt:link" />
+        </li>
+      </ul>
     </div>
 
     <div tal:replace="structure context/@@+portlet-subscribers" />
