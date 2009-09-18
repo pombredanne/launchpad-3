@@ -101,27 +101,29 @@ YUI({
 
     // If there are no errors then we hide the add-subscriber row and
     // potentially the whole table if there are no subscribers.
-    if (Y.get('p.error.message') == null){
+    if (Y.Lang.isNull(Y.get('p.error.message'))) {
 
         // Hide the add-subscriber row.
-        var add_subscriber_row = Y.get('#archive-subscribers .add-subscriber');
+        var add_subscriber_row = Y.get(
+            '#archive-subscribers .add-subscriber');
         add_subscriber_row.setStyle('display', 'none');
 
         // If there are no subscribers, then hide the complete section.
         var subscribers = Y.get('#subscribers');
-        if (Y.get('#no-subscribers') !== null){
+        if (Y.Lang.isObject(Y.get('#no-subscribers'))) {
             subscribers.setStyle('display', 'none');
         }
     }
 
     // Add a link to open the add-subscriber row.
     var placeholder = Y.get('#add-subscriber-placeholder');
-    placeholder.set('innerHTML', '<a class="js-action sprite add" href="#" />');
+    placeholder.set(
+        'innerHTML', '<a class="js-action sprite add" href="#" />');
     var add_subscriber_node = Y.get("#add-subscriber-placeholder a");
     add_subscriber_node.set('innerHTML', 'Add access');
 
-    // We only ever do the slide animation once.
-    var slide;
+    // Unfortunately we can't use the lazr slider, as it uses display:block
+    // which breaks table rows (they use display:table-row).
     function show_add_subscriber(e) {
         e.preventDefault();
         subscribers.setStyle('display', 'block');
