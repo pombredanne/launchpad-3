@@ -78,40 +78,44 @@
           <li><a tal:attributes="href apphomes/blueprints"><img src="/@@/blueprint" alt="" /></a>
             <a tal:attributes="href apphomes/blueprints">Specification tracking</a></li>
           </ul>
-          <a href="/+tour"><img src="/@@/tour-icon" alt=""
-                  /></a> <a href="/+tour">Take the tour</a>
+          <div id="homepage-whatslaunchpad-tour">
+            <a href="/+tour"><img src="/@@/tour-icon" alt=""
+                    /></a> <a href="/+tour">Take the tour</a>
+           </div>
         </div>
          <div id="homepage-blogposts" class="homepage-portlet">
-          <h2>Latest blog posts</h2>
+          <h2>Recent Launchpad blog posts</h2>
           <ul>
            <li class="news">
+              <a href="http://blog.launchpad.net/?p=1010">
+                  Welcome to Launchpad 3.0</a><span class="blogdate"> &ndash; 23 Sep 2009</span><br />
+                  Find out what's new in the latest version of Launchpad..
+           </li>
+           <li class="news">
+              <a href="http://blog.launchpad.net/?p=1019">
+                Talking about Launchpad's new UI</a><span class="blogdate"> &ndash; 23 Sep 2009</span><br />
+                Martin Albisetti &mdash; Launchpad's design guy &mdash; on the new
+                web interface.
+           </li>
+           <li class="news">
+              <a href="http://blog.launchpad.net/?p=1021">
+                Under the hood</a><span class="blogdate"> &ndash; 23 Sep 2009</span><br />
+                Bj&ouml;rn Tillenius &mdash; Launchpad technical architect &mdash; talks
+                about the inner workings of Launchpad.
+           </li>
+           <li class="news">
               <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
-                  Launchpad now open source!</a><span class="blogdate"> - 11 Sep 2009</span><br />
-                  Get the code to Launchpad and join our development community.
-           </li>
-           <li class="news">
-              <a href="http://blog.launchpad.net/general/exporting-translations-to-a-bazaar-branch">
-                Export translations to Bazaar branches</a><span class="blogdate"> - 11 Sep 2009</span><br />
-                  Have Launchpad automatically commit your project's translations to a branch of code.
-           </li>
-           <li class="news">
-              <a href="http://blog.launchpad.net/cool-new-stuff/automatically-import-files-to-launchpad-using-product-release-finder">
-                Automatic release file imports</a><span class="blogdate"> - 11 Sep 2009</span><br />
-                  Launchpad will find and automatically import your project's release files.
-           </li>
-           <li class="news">
-              <a href="http://blog.launchpad.net/translations/sharing-translations">
-                Share translations between releases</a><span class="blogdate"> - 11 Sep 2009</span><br />
+                Launchpad now open source!</a><span class="blogdate"> &ndash; 21 Jul 2009</span><br />
                   Translate a phrase once, have it show up in all your releases.
            </li>
            <li class="news">
               <a href="http://blog.launchpad.net/?p=551">
-                Launchpad for commercial projects</a><span class="blogdate"> - 11 Sep 2009</span><br />
+                Launchpad for commercial projects</a><span class="blogdate"> &ndash; 25 Feb 2009</span><br />
                 Find out more about Launchpad's privacy features for your commercial projects.
            </li>
           </ul>
           <div id="homepage-blogposts-older">
-            <a href="http://blog.launchpad.net">&gt; Older posts</a>
+            <a href="http://blog.launchpad.net">&gt; Read the blog</a>
           </div>
           </div>
         </div>
@@ -130,7 +134,7 @@
                 <ul tal:define="apphomes view/apphomes">
                   <li><a href="https://help.launchpad.net/">
                     <img src="/@@/info" alt="" /></a>
-                    <a href="https://help.launchpad.net/"> Read the manual</a></li>
+                    <a href="https://help.launchpad.net/"> Read the user guide</a></li>
                   <li><a href="/projects/+new"><img src="/@@/add" /></a>
                     <a href="/projects/+new">Create a new project</a></li>
                   <li><a href="/people/+newteam"><img src="/@@/add" /></a>

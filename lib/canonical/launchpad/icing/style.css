@@ -1590,6 +1590,7 @@ Launchpad but that does actually look quite good ... ;-).*/
 
 .homepage-portlet h2 {
     margin-bottom: 0.5em;
+    font-size: 131%;
 }
 
 /* Home: search form */
@@ -1613,6 +1614,13 @@ Launchpad but that does actually look quite good ... ;-).*/
     margin-bottom: 0.5em;
 }
 
+#homepage-whatslaunchpad ul,
+#homepage-whatslaunchpad-tour {
+    font-size: 116%;
+    font-weight: bold;
+}
+/* Home: blog posts */
+
 #homepage-blogposts {
     padding-right: 4em;
 }
@@ -1633,6 +1641,7 @@ Launchpad but that does actually look quite good ... ;-).*/
 }
 
 /* Home: Featured projects */
+
 #homepage-featured {
     width: 100%;
 }
