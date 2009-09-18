@@ -96,39 +96,6 @@
             </td>
           </tr>
         </table>
-        <!--    
-          <ul class="cross-reference">
-            <li tal:define="pending_bugwatches view/pending_bugwatches_info"
-                tal:condition="pending_bugwatches">
-              <a tal:attributes="href pending_bugwatches/url">
-                <strong tal:content="pending_bugwatches/count"></strong>
-                <tal:label
-                  tal:replace="pending_bugwatches/label">bugs</tal:label>
-                <tal:need-or-needs
-                    define="count pending_bugwatches/count"
-                    content="python:(count == 1) and 'needs' or 'need'" />
-                forwarding upstream
-              </a>
-            </li>
-            <li tal:define="expirable_bugs view/expirable_bugs_info"
-              tal:condition="expirable_bugs">
-              <a tal:attributes="href expirable_bugs/url">
-                <strong tal:content="expirable_bugs/count"></strong>
-                incomplete
-                <tal:label
-                  tal:replace="expirable_bugs/label">bugs</tal:label>
-                can expire
-              </a>
-            </li>
-            <tal:review-nominations
-                condition="context/menu:bugs/nominations|nothing">
-              <li tal:define="link context/menu:bugs/nominations">
-                <a tal:attributes="href link/url"
-                   tal:content="link/text" />
-              </li>
-            </tal:review-nominations>
-          </ul>
-        -->
       </div>
       <div tal:replace="structure context/@@+portlet-bugtags" />
       <tal:releasecriticalbugs
