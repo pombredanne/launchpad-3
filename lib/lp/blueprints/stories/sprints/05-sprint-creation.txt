@@ -82,7 +82,7 @@ that time zone:
 
   >>> print extract_text(find_tag_by_id(user_browser.contents, 'start-end'))
   Starts: 09:15 UTC on Tuesday, 2006-10-10
-  Ends:16:00 UTC on Friday, 2006-10-13
+  Ends: 16:00 UTC on Friday, 2006-10-13
 
 Because this is a brand new sprint, it will have no specs, and we should see
 a warning to that effect on the page.
