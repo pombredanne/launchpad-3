@@ -73,6 +73,8 @@
         define="link context_menu/linktocve"
         condition="link/enabled"
         replace="structure link/render" />
+  </div>
+  <div>
     <tal:unlinkcve
         define="link context_menu/unlinkcve"
         condition="link/enabled"

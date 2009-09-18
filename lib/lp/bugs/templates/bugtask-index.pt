@@ -56,7 +56,7 @@
     <h1 tal:replace="structure view/bug_title_edit_widget">
       Bug title
     </h1>
-    <div class="object">
+    <div class="object" id="bug">
       Bug #<tal:block content="context/bug/id"/> reported
       by <tal:reporter replace="structure context/bug/owner/fmt:link" />
       <span
