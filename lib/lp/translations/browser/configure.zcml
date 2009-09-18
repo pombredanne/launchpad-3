@@ -193,7 +193,8 @@
         <browser:url
             for="lp.translations.interfaces.pofile.IPOFile"
             path_expression="language/code"
-            attribute_to_parent="potemplate"/>
+            attribute_to_parent="potemplate"
+            rootsite="translations"/>
         <browser:menus
             module="lp.translations.browser.pofile"
             classes="
@@ -530,7 +531,8 @@
         <browser:url
             for="lp.translations.interfaces.translationmessage.ITranslationMessage"
             path_expression="string:${potmsgset/sequence}"
-            attribute_to_parent="browser_pofile"/>
+            attribute_to_parent="browser_pofile"
+            rootsite="translations"/>
         <browser:menus
             module="lp.translations.browser.translationmessage"
             classes="
@@ -742,7 +744,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+translations-to-review"
-            class="lp.translations.browser.person.PersonTranslationView"
+            class="lp.translations.browser.person.PersonTranslationReviewView"
             permission="zope.Public"
             template="../templates/person-translations-to-review.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>

@@ -128,8 +128,6 @@ archive_edit = ContextDisplayName('Edit %s')
 
 archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
-archive_index = ContextDisplayName('%s')
-
 archive_subscriber_edit = ContextDisplayName('Edit %s')
 
 archive_subscribers = ContextDisplayName('Manage access to %s')
@@ -258,16 +256,6 @@ bugtask_view = BugTaskPageTitle()
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
-
-build_buildlog = ContextTitle('Build log for %s')
-
-build_changes = ContextTitle('Changes in %s')
-
-build_index = ContextTitle('%s')
-
-build_retry = ContextTitle('Retry %s')
-
-build_rescore = ContextTitle('Rescore %s')
 
 builders_index = 'Launchpad build farm'
 
@@ -708,8 +696,6 @@ poll_options = ContextTitle(smartquote('Options for poll "%s"'))
 poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
-
-potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
