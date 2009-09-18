@@ -380,12 +380,13 @@
       This site is running pre-release code.
     </tal:site_message>
     <tal:edge_only condition="is_edge">
-      <tal:normal_lp_view condition="view/macro:pagehas/applicationtabs">
+      <tal:normal_lp_view condition="python: hasattr(view, 'isBetaUser')">
         <tal:comment replace="nothing">
           Some locationless pages - such as login/register use views that
-          do not inherit from LPView, and will not have isBetaUser() etc.
-          Checking for applicationtabs ensures that we are not on a
-          locationless view.
+          do not inherit from LPView, as do some very old LP browser views.
+          These views will not have the isBetaUser method. The only safe
+          way we can check here is to ensure the isBetaUser attribute
+          exists.
         </tal:comment>
         <tal:beta_user condition="view/isBetaUser">
           <a href="#" class="js-action" onclick="setBetaRedirect(false)"
