@@ -589,7 +589,6 @@ class EC2TestRunner:
                 sftp.get('/var/www/summary.log', self.file)
                 sftp.close()
         user_connection.close()
-        return not self.headless
 
     def get_remote_test_options(self):
         """Return the test command that will be passed to ec2test-remote.py.

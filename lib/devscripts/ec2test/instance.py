@@ -24,6 +24,7 @@ import paramiko
 
 from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.sshconfig import SSHConfig
+from devscripts.ec2test.credentials import EC2Credentials
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
 AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
@@ -58,19 +59,24 @@ class EC2Instance:
     """A single EC2 instance."""
 
     @classmethod
-    def make(cls, credentials, name, instance_type, machine_id,
-             demo_networks):
+    def make(cls, name, instance_type, machine_id,
+             demo_networks=None, credentials=None):
         """Construct an `EC2Instance`.
 
-        :param credentials: An `EC2Credentials` object.
         :param name: The name to use for the key pair and security group for
             the instance.
         :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
-        :param machine_id: ???
-        :param demo_networks: ???
+        :param machine_id: The AMI to use, or None to do the usual regexp
+            matching.
+        :param demo_networks: The networks to add to the security group to
+            allow access to the instance.
+        :param credentials: An `EC2Credentials` object.
         """
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
+
+        if credentials is None:
+            credentials = EC2Credentials.load_from_file()
 
         # Make the EC2 connection.
         account = credentials.connect(name)

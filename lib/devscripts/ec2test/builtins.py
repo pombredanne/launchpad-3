@@ -104,17 +104,6 @@ class EC2Command(Command):
         return s
 
 
-def make_instance(instance_type, machine, demo_networks=None,
-                  credentials=None):
-    # Get the AWS identifier and secret identifier.
-    if credentials is None:
-        credentials = EC2Credentials.load_from_file()
-
-    return EC2Instance.make(
-        credentials, EC2TestRunner.name, instance_type=instance_type,
-        machine_id=machine, demo_networks=demo_networks)
-
-
 class cmd_test(EC2Command):
     """Run the tests in ec2."""
 
@@ -225,7 +214,7 @@ class cmd_test(EC2Command):
                 'of your headless test run.')
 
 
-        instance = make_instance(instance_type, machine)
+        instance = EC2Instance(EC2TestRunner.name, instance_type, machine)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
@@ -281,7 +270,8 @@ class cmd_demo(EC2Command):
                 test_branch = '.'
         branches = [data.split('=', 1) for data in branch]
 
-        instance = make_instance(instance_type, machine, demo)
+        instance = EC2Instance.make(
+            EC2TestRunner.name, instance_type, machine, demo)
 
         runner = EC2TestRunner(
             test_branch, branches=branches,
@@ -349,8 +339,9 @@ class cmd_update_image(EC2Command):
 
         credentials = EC2Credentials.load_from_file()
 
-        instance = make_instance(
-            instance_type, machine, credentials=credentials)
+        instance = EC2Instance.make(
+            EC2TestRunner.name, instance_type, machine,
+            credentials=credentials)
         instance.check_bundling_prerequisites()
 
         instance.set_up_and_run(
@@ -378,4 +369,3 @@ class cmd_update_image(EC2Command):
             'deluser --remove-home %(USER)s', ignore_failure=True)
         root_connection.close()
         instance.bundle(ami_name, credentials)
-        return True
