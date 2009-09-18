@@ -62,14 +62,21 @@
              tal:condition="not:view/is_logged_in">
           <h2>Launchpad is a software collaboration platform that provides:</h2>
           <ul tal:define="apphomes view/apphomes">
-          <li>&ndash; <a tal:attributes="href apphomes/bugs">Bug tracking</a></li>
-          <li>&ndash; <a tal:attributes="href apphomes/code">Code hosting</a>
-            using <a href="http://bazaar-vcs.org//">bazaar</a></li>
-          <li>&ndash; Code reviews</li>
-          <li>&ndash; <a tal:attributes="href apphomes/translations">Ubuntu package building and hosting</a></li>
-          <li>&ndash; <a tal:attributes="href apphomes/translations">Translations</a></li>
-          <li>&ndash; <a tal:attributes="href apphomes/answers">Answer tracking and FAQs</a></li>
-          <li>&ndash; <a tal:attributes="href apphomes/blueprints">Specification tracking</a></li>
+          <li><a tal:attributes="href apphomes/bugs"><img src="/@@/bug" alt="" /></a>
+            <a tal:attributes="href apphomes/bugs">Bug tracking</a></li>
+          <li><a tal:attributes="href apphomes/code"><img src="/@@/branch" alt="" /></a>
+            <a tal:attributes="href apphomes/code">Code hosting</a>
+            using <a href="http://bazaar-vcs.org/">bazaar</a></li>
+          <li><a tal:attributes="href apphomes/code"><img src="/@@/yes" alt="" /></a>
+            <a tal:attributes="href apphomes/code">Code reviews</a></li>
+          <li><a tal:attributes="href apphomes/ubuntu"><img src="/@@/ubuntu-icon" alt="" /></a>
+            <a tal:attributes="href apphomes/ubuntu">Ubuntu package building and hosting</a></li>
+          <li><a tal:attributes="href apphomes/translations"><img src="/@@/translation" alt="" /></a>
+            <a tal:attributes="href apphomes/translations">Translations</a></li>
+          <li><a tal:attributes="href apphomes/answers"><img src="/@@/question" alt="" /></a>
+            <a tal:attributes="href apphomes/answers">Answer tracking and FAQs</a></li>
+          <li><a tal:attributes="href apphomes/blueprints"><img src="/@@/blueprint" alt="" /></a>
+            <a tal:attributes="href apphomes/blueprints">Specification tracking</a></li>
           </ul>
           <a href="/+tour"><img src="/@@/tour-icon" alt=""
                   /></a> <a href="/+tour">Take the tour</a>
@@ -122,19 +129,23 @@
                 If you're ready, you can:
                 <ul tal:define="apphomes view/apphomes">
                   <li><a href="https://help.launchpad.net/">
-                    <img src="/@@/info" alt="" /> Read the manual</a></li>
-                  <li><a href="/projects/+new"><img src="/@@/add"
-                    /></a> <a href="/projects/+new">Create a new project</a></li>
-                  <li><a href="/people/+newteam"><img src="/@@/add"
-                    /></a> <a href="/people/+newteam">Create a new team</a></li>
+                    <img src="/@@/info" alt="" /></a>
+                    <a href="https://help.launchpad.net/"> Read the manual</a></li>
+                  <li><a href="/projects/+new"><img src="/@@/add" /></a>
+                    <a href="/projects/+new">Create a new project</a></li>
+                  <li><a href="/people/+newteam"><img src="/@@/add" /></a>
+                    <a href="/people/+newteam">Create a new team</a></li>
                   <li><a tal:attributes="href apphomes/bugs">
-                    <img src="/@@/bug" /> Browse bugs</a></li>
+                    <img src="/@@/bug" /></a>
+                    <a tal:attributes="href apphomes/bugs">Browse bugs</a></li>
                   <li><a tal:attributes="href apphomes/translations">
-                    <img src="/@@/translation" /> Help translate</a></li>
+                    <img src="/@@/translation" /></a>
+                    <a tal:attributes="href apphomes/translations">Help translate</a></li>
                   <li><a tal:attributes="href apphomes/answers">
-                    <img src="/@@/maybe" alt="" /> Find answers</a></li>
-                  <li><a href="/people/+newteam"><img src="/@@/tour-icon"
-                    /> Take the tour</a></li>
+                    <img src="/@@/question" alt="" /></a>
+                    <a tal:attributes="href apphomes/answers">Find answers</a></li>
+                  <li><a href="/+tour"><img src="/@@/tour-icon" /></a>
+                     <a href="/+tour">Take the tour</a></li>
                 </ul>
                 </tal:logged_in>
           </div>

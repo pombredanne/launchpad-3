@@ -1569,6 +1569,14 @@ beside the mugshot. */
 
 /* --- Home --- */
 
+/* The following style works around the fact that the locationbar, which is
+only used of the Login/Register links in 3.0 UI, is accessible on
+"locationless" pages. It adds extra space at the top of every page in
+Launchpad but that does actually look quite good ... ;-).*/
+#locationbar {
+    height: 1em;
+}
+
 #homepage {
     margin: auto;
     width: 90%;
@@ -1591,8 +1599,7 @@ beside the mugshot. */
 }
 
 #homepage-stats {
-    text-align: center;
-    max-width: 45em;
+    max-width: 50em;
     margin: auto;
     padding-top: 0.5em;
     color: gray;
