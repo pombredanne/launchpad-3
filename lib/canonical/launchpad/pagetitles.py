@@ -928,8 +928,6 @@ def specificationsubscription_edit(context, view):
     """Return the page title for subscribing to a specification."""
     return "Subscription of %s" % context.person.displayname
 
-specificationtarget_documentation = ContextTitle('Documentation for %s')
-
 specificationtarget_index = ContextTitle('Blueprint listing for %s')
 
 def specificationtarget_specs(context, view):
