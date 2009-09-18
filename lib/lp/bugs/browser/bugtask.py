@@ -2879,6 +2879,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Cache some values, so that we don't have to recalculate them
         # for each bug task.
         self.bugtasks = list(self.context.bugtasks)
+        self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
         distro_packages = {}
@@ -2943,6 +2944,8 @@ class BugTasksAndNominationsView(LaunchpadView):
             (context, self.request), name='+edit-form')
         view.edit_view.milestone_source = self.cached_milestone_source
         view.edit_view.user_is_subscribed = self.user_is_subscribed
+        # Hint to optimize when there are many bugtasks.
+        view.many_bugtasks = self.many_bugtasks
         return view
 
     def getBugTaskAndNominationViews(self):
@@ -3054,6 +3057,7 @@ class BugTaskTableRowView(LaunchpadView):
     is_conjoined_slave = None
     is_converted_to_question = None
     target_link_title = None
+    many_bugtasks = False
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
