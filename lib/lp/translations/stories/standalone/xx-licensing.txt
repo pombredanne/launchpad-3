@@ -16,9 +16,8 @@ that this page has information about relicensing.
     >>> print browser.title
     +licensing : Translations : Karl Tilbury
     >>> print extract_text(find_main_content(browser.contents))
-    Karl Tilbury
+    Translations licensing by Karl Tilbury
     ...
-    Sorry to interrupt...
 
 Karl is asked whether he wants to license his translations.
 
@@ -95,7 +94,8 @@ Karl can now browse to a +translate page without being forwarded.
     >>> browser.url
     'http://.../alsa-utils/trunk/+pots/alsa-utils/es/+translate'
     >>> print browser.title
-    Translations : Series trunk : alsa-utils
+    Spanish (es) : Template ...alsa-utils... : Translations :
+    Series trunk : alsa-utils
 
 
 == Permissions ==
