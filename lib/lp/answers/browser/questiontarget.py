@@ -108,6 +108,10 @@ class UserSupportLanguagesMixin:
 class QuestionCollectionLatestQuestionsView:
     """View used to display the latest questions on a question target."""
 
+    @property
+    def page_title(self):
+        return 'Latest questions for %s' % (self.context.displayname)
+
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
         """Return <quantity> latest questions created for this target. This
@@ -149,6 +153,39 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                   orientation='horizontal')
 
     template = ViewPageTemplateFile('../templates/question-listing.pt')
+
+    @property
+    def page_title(self):
+        """Heading to display above the search results."""
+
+        if IQuestionSet.providedBy(self.context):
+            return _(
+                'Questions matching "${search_text}"',
+                mapping=dict(search_text=self.search_text))
+
+        replacements = dict(
+            context=self.context.displayname,
+            search_text=self.search_text)
+        # Check if the set of selected status has a special title.
+        status_set_title = self.status_title_map.get(
+            frozenset(self.status_filter))
+        if status_set_title:
+            replacements['status'] = status_set_title
+            if self.search_text:
+                return _('${status} questions matching "${search_text}" '
+                         'for ${context}', mapping=replacements)
+            else:
+                return _('${status} questions for ${context}',
+                         mapping=replacements)
+        else:
+            if self.search_text:
+                return _('Questions matching "${search_text}" for '
+                         '${context}', mapping=replacements)
+            else:
+                return _('Questions for ${context}',
+                         mapping=replacements)
+
+    label = page_title
 
     @property
     def display_target_column(self):
@@ -226,38 +263,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     def context_is_project(self):
         """Return True when the context is a project."""
         return IProject.providedBy(self.context)
-
-    @property
-    def page_title(self):
-        """Page title."""
-        return self.pageheading
-
-    label = page_title
-
-    @property
-    def pageheading(self):
-        """Heading to display above the search results."""
-        replacements = dict(
-            context=self.context.displayname,
-            search_text=self.search_text)
-        # Check if the set of selected status has a special title.
-        status_set_title = self.status_title_map.get(
-            frozenset(self.status_filter))
-        if status_set_title:
-            replacements['status'] = status_set_title
-            if self.search_text:
-                return _('${status} questions matching "${search_text}" '
-                         'for ${context}', mapping=replacements)
-            else:
-                return _('${status} questions for ${context}',
-                         mapping=replacements)
-        else:
-            if self.search_text:
-                return _('Questions matching "${search_text}" for '
-                         '${context}', mapping=replacements)
-            else:
-                return _('Questions for ${context}',
-                         mapping=replacements)
 
     @property
     def unspoken_languages(self):
@@ -460,7 +465,6 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
             return _('Questions you asked about ${context}',
                      mapping={'context': self.context.displayname})
 
-    pageheading = page_title
     label = page_title
 
     @property
@@ -502,7 +506,6 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
             return _('Questions needing your attention for ${context}',
                      mapping={'context': self.context.displayname})
 
-    pageheading = page_title
     label = page_title
 
     @property
@@ -565,7 +568,6 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
             return _('${language} questions in ${context}',
                       mapping=mapping)
 
-    pageheading = page_title
     label = page_title
 
     @property

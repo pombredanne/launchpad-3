@@ -169,7 +169,7 @@ involving a person.
     >>> print browser.title
     Questions involving Foo Bar : Foo Bar
     >>> print find_main_content(browser.contents).first('h1').renderContents()
-    Questions involving Foo Bar
+    Questions for Foo Bar
     >>> browser.getLink('Slow system').url
     '.../ubuntu/+question/7'
 

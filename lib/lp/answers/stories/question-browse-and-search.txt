@@ -530,7 +530,7 @@ assigned.
 
     >>> browser.getLink('Assigned').click()
     >>> print browser.title
-    Questions assigned to $name : Foo Bar
+    Questions for ${context} : Foo Bar
     >>> print find_main_content(browser.contents).first('p').renderContents()
     No questions assigned to Foo Bar found with the requested statuses.
 
@@ -542,7 +542,7 @@ answerer.
 
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    Questions answered by $name : Foo Bar
+    Questions for ${context} : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -556,7 +556,7 @@ questions commented on by the person.
 
     >>> browser.getLink('Commented').click()
     >>> print browser.title
-    Questions commented on by $name  : Foo Bar
+    Questions for ${context} : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -574,7 +574,7 @@ asked by the person.
 
     >>> browser.getLink('Asked').click()
     >>> print browser.title
-    Questions asked by $name : Foo Bar
+    Questions for ${context} : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -589,7 +589,7 @@ the attention of that person.
 
     >>> browser.getLink('Need attention').click()
     >>> print browser.title
-    Questions needing $name's attention : Foo Bar
+    Questions for ${context} : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -604,7 +604,7 @@ visiting the 'Subscribed' link in the 'Answers' facet.
 
     >>> browser.getLink('Subscribed').click()
     >>> print browser.title
-    Questions $name is subscribed to : Foo Bar
+    Questions for ${context} : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
