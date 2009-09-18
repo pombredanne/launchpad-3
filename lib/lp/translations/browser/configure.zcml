@@ -193,7 +193,8 @@
         <browser:url
             for="lp.translations.interfaces.pofile.IPOFile"
             path_expression="language/code"
-            attribute_to_parent="potemplate"/>
+            attribute_to_parent="potemplate"
+            rootsite="translations"/>
         <browser:menus
             module="lp.translations.browser.pofile"
             classes="
@@ -298,6 +299,7 @@
         <browser:navigation
             module="lp.translations.browser.language"
             classes="
+                LanguageNavigation
                 LanguageSetNavigation"/>
         <browser:defaultView
             for="canonical.launchpad.interfaces.ILanguage"
@@ -345,7 +347,8 @@
         <browser:url
             for="canonical.launchpad.interfaces.ILanguageSet"
             path_expression="string:+languages"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            rootsite="translations"/>
         <browser:page
             for="canonical.launchpad.interfaces.ILanguageSet"
             class="lp.translations.browser.language.LanguageSetView"
@@ -530,7 +533,8 @@
         <browser:url
             for="lp.translations.interfaces.translationmessage.ITranslationMessage"
             path_expression="string:${potmsgset/sequence}"
-            attribute_to_parent="browser_pofile"/>
+            attribute_to_parent="browser_pofile"
+            rootsite="translations"/>
         <browser:menus
             module="lp.translations.browser.translationmessage"
             classes="
@@ -742,7 +746,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+translations-to-review"
-            class="lp.translations.browser.person.PersonTranslationView"
+            class="lp.translations.browser.person.PersonTranslationReviewView"
             permission="zope.Public"
             template="../templates/person-translations-to-review.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
