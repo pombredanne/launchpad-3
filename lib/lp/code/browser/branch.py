@@ -176,7 +176,7 @@ class BranchEditMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit branch details'
+        text = 'Change branch details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
