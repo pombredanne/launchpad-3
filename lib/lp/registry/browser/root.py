@@ -118,7 +118,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         return self.featured_projects[index_from:index_to]
 
     @property
-    def projects_count_not_featured(self):
+    def project_count_not_featured(self):
         """The number of not-featured projects.
 
         The total number of projects minus the number of displayed

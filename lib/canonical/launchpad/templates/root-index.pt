@@ -67,12 +67,14 @@
           <li><a tal:attributes="href apphomes/code"><img src="/@@/branch" alt="" /></a>
             <a tal:attributes="href apphomes/code">Code hosting</a>
             using <a href="http://bazaar-vcs.org/">bazaar</a></li>
-          <li><a tal:attributes="href apphomes/code"><img src="/@@/yes" alt="" /></a>
-            <a tal:attributes="href apphomes/code">Code reviews</a></li>
+          <li><a href="https://help.launchpad.net/Code/Review"><img src="/@@/yes" alt="" /></a>
+            <a href="https://help.launchpad.net/Code/Review">Code reviews</a></li>
           <li><a tal:attributes="href apphomes/ubuntu"><img src="/@@/ubuntu-icon" alt="" /></a>
             <a tal:attributes="href apphomes/ubuntu">Ubuntu package building and hosting</a></li>
           <li><a tal:attributes="href apphomes/translations"><img src="/@@/translation" alt="" /></a>
             <a tal:attributes="href apphomes/translations">Translations</a></li>
+          <li><a href="https://help.launchpad.net/Teams/MailingLists"><img src="/@@/mail" alt="" /></a>
+            <a href="https://help.launchpad.net/Teams/MailingLists">Mailing lists</a></li>
           <li><a tal:attributes="href apphomes/answers"><img src="/@@/question" alt="" /></a>
             <a tal:attributes="href apphomes/answers">Answer tracking and FAQs</a></li>
           <li><a tal:attributes="href apphomes/blueprints"><img src="/@@/blueprint" alt="" /></a>
@@ -80,7 +82,7 @@
           </ul>
           <div id="homepage-whatslaunchpad-tour">
             <a href="/+tour"><img src="/@@/tour-icon" alt=""
-                    /></a> <a href="/+tour">Take the tour</a>
+                    /></a> <a href="/+tour">Take the tour!</a>
            </div>
         </div>
          <div id="homepage-blogposts" class="homepage-portlet">
@@ -89,7 +91,7 @@
            <li class="news">
               <a href="http://blog.launchpad.net/?p=1010">
                   Welcome to Launchpad 3.0</a><span class="blogdate"> &ndash; 23 Sep 2009</span><br />
-                  Find out what's new in the latest version of Launchpad..
+                  Find out what's new in the latest version of Launchpad.
            </li>
            <li class="news">
               <a href="http://blog.launchpad.net/?p=1019">
@@ -123,12 +125,13 @@
         <div class="yui-u">
           <div id="homepage-getstarted" class="homepage-portlet">
               <h2>Get started</h2>
-                If you're new to Launchpad you can test it out in our
-                <a href="https://staging.launchpad.net/">sandbox environment</a>.<br />
                 <tal:logged_out condition="not:view/is_logged_in" omit-tag="">
-                If you're ready, just <a href="/+login">create an account</a>
-                and you're good to go.
-                </tal:logged_out>
+                <a href="/+login">Creating an account</a> allows you to start
+                working within Launchpad.<br />
+                </tal:logged_out>You can test Launchpad's functionality
+                in our sandbox environment.
+                (<a href="https://help.launchpad.net/StagingServer">What's this?</a>)<br />
+                
                 <tal:logged_in condition="view/is_logged_in" omit-tag="">
                 If you're ready, you can:
                 <ul tal:define="apphomes view/apphomes">
@@ -178,9 +181,8 @@
               </li>
             </ul>
             <div id="homepage-featured-more">
-              &hellip; and
-              <strong tal:content="view/projects_count_not_featured">42</strong>
-              <a href="/projects">more projects</a>!
+              <a href="/projects">Browse all <strong
+                tal:content="view/project_count">42</strong> projects</a>!
             </div>
             <div tal:condition="context/required:launchpad.Admin"
                  style="margin:auto; clear:both; text-align: center; padding-top: 1em;">

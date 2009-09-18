@@ -17,32 +17,46 @@ Launchpad is alive:
 
 And links to the important applications and facets:
 
-  >>> people_link = browser.getLink(url='/people')
-  >>> people_link.url
-  'http://launchpad.dev/people/+newteam'
-
-  >>> people_link.text
-  '[IMG]'
-
   >>> code_link = browser.getLink(url='code')
   >>> code_link.url
   'http://code.launchpad.dev/'
 
   >>> code_link.text
-  'Code'
+  '[IMG]'
 
 It also includes a search form...
 
-  >>> '<input type="submit" value="Search Launchpad"' in browser.contents
+  >>> ('<input id="search" type="submit" '+
+  ...  'value="Search Launchpad"') in browser.contents
   True
 
 ...and lists of featured projects and marketing material.
 
-  >>> for tag in find_tags_by_class(browser.contents, 'three column left'):
-  ...     print extract_text(tag.renderContents())
+  >>> featured = find_tag_by_id(browser.contents, 'homepage-featured')
+  >>> print extract_text(featured.renderContents())
   Featured projects
   ...
   Ubuntu
+  ...
+
+The homepage looks different when the use is logged in:
+
+  >>> user_browser = setupBrowser(auth="Basic test@canonical.com:test")
+  >>> user_browser.open('http://launchpad.dev/')
+
+Now there are links to create projects and teams:
+
+  >>> project_link = user_browser.getLink(url='/projects')
+  >>> project_link.url
+  'http://launchpad.dev/projects/+new'
+  >>> project_link.text
+  '[IMG]'
+
+  >>> people_link = user_browser.getLink(url='/people')
+  >>> people_link.url
+  'http://launchpad.dev/people/+newteam'
+  >>> people_link.text
+  '[IMG]'
 
 
 The front pages for the other applications, however, do have
