@@ -10,10 +10,6 @@
                  condition="view/display_breadcrumbs">
   <li>
     <a tal:attributes="href breadcrumb/url">
-      <tal:icon condition="breadcrumb/icon"
-                replace="structure breadcrumb/icon">
-        <span title="Undecided" class="sprite bug-undecided" />
-      </tal:icon>
       <tal:text replace="breadcrumb/text">
         Bugs on redfish
       </tal:text>

@@ -299,6 +299,7 @@
         <browser:navigation
             module="lp.translations.browser.language"
             classes="
+                LanguageNavigation
                 LanguageSetNavigation"/>
         <browser:defaultView
             for="canonical.launchpad.interfaces.ILanguage"
@@ -346,7 +347,8 @@
         <browser:url
             for="canonical.launchpad.interfaces.ILanguageSet"
             path_expression="string:+languages"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            rootsite="translations"/>
         <browser:page
             for="canonical.launchpad.interfaces.ILanguageSet"
             class="lp.translations.browser.language.LanguageSetView"
@@ -744,7 +746,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+translations-to-review"
-            class="lp.translations.browser.person.PersonTranslationView"
+            class="lp.translations.browser.person.PersonTranslationReviewView"
             permission="zope.Public"
             template="../templates/person-translations-to-review.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
