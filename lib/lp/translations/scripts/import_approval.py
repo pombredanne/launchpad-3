@@ -37,7 +37,9 @@ class AutoApproveProcess(LaunchpadCronScript):
         if removed_entries > 0:
             self.logger.info('Removed %d entries from the queue.' %
                 removed_entries)
-        self.txn.commit()
+
+        if self.txn:
+            self.txn.commit()
 
         blocked_entries = (
             translation_import_queue.executeOptimisticBlock(self.txn))

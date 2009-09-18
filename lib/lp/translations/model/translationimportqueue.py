@@ -23,7 +23,7 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
-from storm.expr import And, Or
+from storm.expr import And, Join, Or
 from storm.locals import Int, Reference
 
 from canonical.database.sqlbase import (
@@ -1179,16 +1179,18 @@ class TranslationImportQueue:
         :param store: The Store to delete from.
         :return: Number of entries deleted.
         """
-        # Avoid circular imports.
-        from lp.registry.model.product import Product
-        from lp.registry.model.productseries import ProductSeries
-
-        entries = store.using(ProductSeries, Product).find(
-            TranslationImportQueueEntry,
-            ProductSeries.id == TranslationImportQueueEntry.productseries_id,
-            Product.id == ProductSeries.productID,
-            Product.active == False)
-        return entries.remove()
+        # XXX JeroenVermeulen 2009-09-18 bug=271938: Stormify this once
+        # the Storm remove() syntax starts working properly for joins.
+        cur = cursor()
+        cur.execute("""
+            DELETE FROM TranslationImportQueueEntry AS Entry
+            USING ProductSeries, Product
+            WHERE
+                ProductSeries.id = Entry.productseries AND
+                Product.id = ProductSeries.product AND
+                Product.active IS FALSE
+            """)
+        return cur.rowcount
 
     def _cleanUpObsoleteDistroEntries(self, store):
         """Delete some queue entries for obsolete `DistroSeries`.
@@ -1196,15 +1198,23 @@ class TranslationImportQueue:
         :param store: The Store to delete from.
         :return: Number of entries deleted.
         """
-        entries = store.using(DistroSeries, Distribution).find(
-            TranslationImportQueueEntry,
-            DistroSeries.id == TranslationImportQueueEntry.distroseries,
-            Distribution == DistroSeries.distribution,
-            Distribution.releasestatus == DistroSeriesStatus.OBSOLETE)
+        # XXX JeroenVermeulen 2009-09-18 bug=271938,432484: Stormify
+        # this once Storm's remove() supports joins and slices.
+        cur = cursor()
+        cur.execute("""
+            DELETE FROM TranslationImportQueueEntry
+            WHERE id IN (
+                SELECT Entry.id
+                FROM TranslationImportQueueEntry Entry
+                JOIN DistroSeries ON
+                    DistroSeries.id = Entry.distroseries
+                JOIN Distribution ON
+                    Distribution.id = DistroSeries.distribution
+                WHERE DistroSeries.releasestatus = %s
+                LIMIT 100)
+            """ % quote(DistroSeriesStatus.OBSOLETE))
+        return cur.rowcount
 
-        # Limit this to avoid overloading the database.
-        return entries[:100].remove()
- 
     def cleanUpQueue(self):
         """See `ITranslationImportQueue`."""
         store = IMasterStore(TranslationImportQueueEntry)

@@ -683,9 +683,13 @@ that it thinks should be blocked, and also purges deleted or completed
 entries from the queue. Running at this point, all it does is purge the
 two hand-approved Welsh translations that have just been imported.
 
-    >>> process = AutoApproveProcess(transaction, FakeLogger())
+    >>> import logging
+    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> process = AutoApproveProcess('approver', test_args=[])
+    >>> process.logger = MockLogger()
+    >>> process.logger.setLevel(logging.INFO)
     >>> process.main()
-    INFO    Removed 2 entries from the queue.
+    log>    Removed 2 entries from the queue.
     >>> transaction.commit()
 
 If users upload two versions of the same file, they are imported in the
@@ -766,9 +770,11 @@ The auto-approval script runs again. This time it sees the two
 submitted translations and approves them for import based on some
 heuristic intelligence.
 
-    >>> process = AutoApproveProcess(transaction, FakeLogger())
-    >>> process.run()
-    INFO    The automatic approval system approved some entries.
+    >>> process = AutoApproveProcess('approver', test_args=[])
+    >>> process.logger = MockLogger()
+    >>> process.logger.setLevel(logging.INFO)
+    >>> process.main()
+    log>    The automatic approval system approved some entries.
     >>> print entry.status.name
     APPROVED
     >>> syncUpdate(entry)
