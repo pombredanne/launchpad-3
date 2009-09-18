@@ -21,6 +21,11 @@ from devscripts.ec2test.instance import (
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 
+# Options accepted by more than one command.
+
+# Branches is a complicated option that lets the user specify which branches
+# to use in the sourcecode directory.  Most of the complexity is still in
+# EC2TestRunner.__init__, which probably isn't ideal.
 branch_option = ListOption(
     'branch', type=str, short_name='b', argname='BRANCH',
     help=('Branches to include in this run in sourcecode. '
@@ -77,7 +82,8 @@ debug_option = Option(
 
 trunk_option = Option(
     'trunk', short_name='t',
-    help=('Run the trunk as the branch'))
+    help=('Run the trunk as the branch, rather than the branch of the '
+          'current working directory.'))
 
 
 include_download_cache_changes_option = Option(
@@ -121,6 +127,26 @@ class EC2Command(Command):
             s += aname + ' '
         s = s[:-1]      # remove last space
         return s
+
+def _get_branches_and_test_branch(trunk, branch, test_branch):
+    """Interpret the command line options to find which branch to test.
+
+    :param trunk: The value of the --trunk option.
+    :param branch: The value of the --branch options.
+    :param test_branch: The value of the TEST_BRANCH argument.
+    """
+    if trunk:
+        if test_branch is not None:
+            raise BzrCommandError(
+                "Cannot specify both a branch to test and --trunk")
+        else:
+            test_branch = TRUNK_BRANCH
+    else:
+        if test_branch is None:
+            test_branch = '.'
+    branches = [data.split('=', 1) for data in branch]
+    return branches, test_branch
+
 
 
 class cmd_test(EC2Command):
@@ -201,16 +227,8 @@ class cmd_test(EC2Command):
             include_download_cache_changes=False):
         if debug:
             pdb.set_trace()
-        if trunk:
-            if test_branch is not None:
-                raise BzrCommandError(
-                    "Cannot specify both a branch to test and --trunk")
-            else:
-                test_branch = TRUNK_BRANCH
-        else:
-            if test_branch is None:
-                test_branch = '.'
-        branches = [data.split('=', 1) for data in branch]
+        branches, test_branch = _get_branches_and_test_branch(
+            trunk, branch, test_branch)
         if ((postmortem or file) and headless):
             raise BzrCommandError(
                 'Headless mode currently does not support postmortem or file '
@@ -271,16 +289,8 @@ class cmd_demo(EC2Command):
             include_download_cache_changes=False, demo=None):
         if debug:
             pdb.set_trace()
-        if trunk:
-            if test_branch is not None:
-                raise BzrCommandError(
-                    "Cannot specify both a branch to test and --trunk")
-            else:
-                test_branch = TRUNK_BRANCH
-        else:
-            if test_branch is None:
-                test_branch = '.'
-        branches = [data.split('=', 1) for data in branch]
+        branches, test_branch = _get_branches_and_test_branch(
+            trunk, branch, test_branch)
 
         instance = EC2Instance.make(
             EC2TestRunner.name, instance_type, machine, demo)
@@ -293,8 +303,12 @@ class cmd_demo(EC2Command):
         demo_network_string = '\n'.join(
             '  ' + network for network in demo)
 
+        # Wait until the user exits the postmortem session, then kill the
+        # instance.
+        postmortem = True
+        shutdown = True
         instance.set_up_and_run(
-            True, False, self.run_server, runner,
+            postmortem, shutdown, self.run_server, runner,
             demo_network_string)
 
     def run_server(self, runner, instance, demo_network_string):
@@ -308,7 +322,7 @@ class cmd_demo(EC2Command):
             "network access to the ec2 instance from their IPs by\n"
             "entering command like this in the interactive python\n"
             "interpreter at the end of the setup. "
-            "\n  instance.security_group.authorize("
+            "\n  self.security_group.authorize("
             "'tcp', 443, 443, '10.0.0.5/32')\n\n"
             "These demo networks have already been granted access on "
             "port 80 and 443:\n" + demo_network_string +

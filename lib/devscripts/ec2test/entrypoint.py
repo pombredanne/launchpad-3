@@ -28,6 +28,10 @@ class EC2CommandController(CommandRegistry, CommandExecutionMixin):
 
 
 def main():
+    """The entry point for the 'ec2' script.
+
+    We run the specified command, or give help if none was specified.
+    """
     controller = EC2CommandController()
     controller.install_bzrlib_hooks()
     controller.load_module(builtins)
