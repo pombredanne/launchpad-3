@@ -16,24 +16,25 @@ from devscripts.ec2test.instance import (
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 
-def run_with_instance(instance, run, postmortem):
-    """Call run(), then allow post mortem debugging and shut down `instance`.
+def run_with_instance(instance, postmortem, shutdown, func, *args, **kw):
+    """Start and set up the instance, run `func` and optionally shut down.
 
-    :param instance: A running `EC2Instance`.  If `run` returns True, it will
-        be shut down before this function returns.
-    :param run: A callable that will be called with no arguments to do
-        whatever needs to be done with the instance.
+    :param instance: A not-yet-running `EC2Instance`.
     :param postmortem: If this flag is true, any exceptions will be caught and
         an interactive session run to allow debugging the problem.
+    :param shutdown: If true, the instance will be shut down before this
+        function returns.
+    :param func: A callable that will be called when the instance is running
+        and a user account has been set up on it.
+    :param args: Passed to `func`.
+    :param kw: Passed to `func`.
     """
+    user_key = get_user_key()
+    instance.start()
     try:
-        shutdown = False
-        user_key = get_user_key()
-        instance.start()
-        shutdown = True
         instance.set_up_user(user_key)
         try:
-            shutdown = run()
+            return func(*args, **kw)
         except Exception:
             # When running in postmortem mode, it is really helpful to see if
             # there are any exceptions before it waits in the console (in the
@@ -49,7 +50,7 @@ def run_with_instance(instance, run, postmortem):
                     '\n'
                     'Tab-completion is enabled.'
                     '\n'
-                    'Test runner instance is available as `runner`.\n'
+                    'EC2Instance is available as `instance`.\n'
                     'Also try these:\n'
                     '  http://%(dns)s/current_test.log\n'
                     '  ssh -A %(dns)s') %
@@ -309,7 +310,8 @@ class cmd_test(EC2Command):
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
 
-        run_with_instance(instance, runner.run_tests, postmortem)
+        run_with_instance(
+            instance, postmortem, not headless, runner.run_tests)
 
 
 class cmd_demo(EC2Command):
@@ -387,7 +389,7 @@ class cmd_demo(EC2Command):
             return True
 
         run_with_instance(
-            instance, run_server, True)
+            instance, True, False, run_server)
 
 
 class cmd_update_image(EC2Command):
@@ -444,4 +446,4 @@ class cmd_update_image(EC2Command):
             instance.bundle(ami_name, credentials)
             return True
 
-        run_with_instance(instance, update_image, postmortem)
+        run_with_instance(instance, postmortem, True, update_image)
