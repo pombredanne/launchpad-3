@@ -1606,6 +1606,19 @@ beside the mugshot. */
     margin-bottom: 0.5em;
 }
 
+#homepage-blogposts {
+    padding-right: 4em;
+}
+
+#homepage-blogposts .blogdate {
+    font-size: 85%;
+    color: grey;
+}
+
+#homepage-blogposts-older {
+    text-align: right;
+}
+
 /* Home: Get started */
 
 #homepage-getstarted ul {
@@ -1646,8 +1659,15 @@ beside the mugshot. */
 }
 
 #homepage-featured-top-text {
-    }
+    margin-top: 0.5em;
+    margin-bottom: 1em;
+}
 
+#homepage-featured-more {
+    margin-top: 0.5em;
+    text-align: right;
+    clear: both;
+}
 
 /* -- Notices -- */
 

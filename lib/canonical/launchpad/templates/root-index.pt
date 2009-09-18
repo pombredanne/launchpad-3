@@ -103,8 +103,7 @@
                 Find out more about Launchpad's privacy features for your commercial projects.
            </li>
           </ul>
-          <div class="discreet">
-            Updated 2009-08-03.<br />
+          <div id="homepage-blogposts-older">
             <a href="http://blog.launchpad.net">&gt; Older posts</a>
           </div>
           </div>
@@ -163,6 +162,11 @@
                 <a tal:replace="structure project/fmt:link" />
               </li>
             </ul>
+            <div id="homepage-featured-more">
+              &hellip; and
+              <strong tal:content="view/projects_count_not_featured">42</strong>
+              <a href="/projects">more projects</a>!
+            </div>
             <div tal:condition="context/required:launchpad.Admin"
                  style="margin:auto; clear:both; text-align: center; padding-top: 1em;">
               <a href="+featuredprojects">&raquo; Manage featured project list</a>
