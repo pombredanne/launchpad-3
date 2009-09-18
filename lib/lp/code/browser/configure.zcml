@@ -315,7 +315,8 @@
         template="../templates/branchmergeproposal-macros.pt"/>
     <browser:menus
         classes="
-            BranchMergeProposalContextMenu"
+            BranchMergeProposalContextMenu
+            BranchMergeProposalActionNavigationMenu"
         module="lp.code.browser.branchmergeproposal"/>
     <browser:page
         for="lp.code.interfaces.branchsubscription.IBranchSubscription"
@@ -886,5 +887,24 @@
         facet="branches"
         name="+activereviews"
         template="../templates/active-reviews.pt"/>
+
+    <adapter
+        name="code"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.hasbranches.IHasBranches"
+        factory="lp.code.browser.branchlisting.HasBranchesBreadcrumb"
+        permission="zope.Public"/>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.branch.IBranch"
+        factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+        permission="zope.Public"/>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
+        factory="lp.code.browser.branchmergeproposal.BranchMergeProposalBreadcrumb"
+        permission="zope.Public"/>
 
 </configure>
