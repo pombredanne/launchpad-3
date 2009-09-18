@@ -282,8 +282,6 @@ class Hierarchy(LaunchpadView):
                 template_api = PageTemplateContextsAPI(
                     dict(context=obj, template=template, view=view))
                 title = template_api.pagetitle()
-            if len(title) > 30:
-                title = "%s..." % title[:30]
             breadcrumb = Breadcrumb(None)
             breadcrumb._url = url
             breadcrumb.text = title
