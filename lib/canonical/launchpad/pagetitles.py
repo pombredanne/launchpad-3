@@ -615,8 +615,6 @@ person_archive_subscriptions = 'Private PPA access'
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
-person_edit = ContextDisplayName(smartquote("%s's details"))
-
 # person_foaf is an rdf file
 
 person_hwdb_submissions = ContextDisplayName(
