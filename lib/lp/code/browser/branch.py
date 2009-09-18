@@ -76,15 +76,13 @@ from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import BranchType, UICreatableBranchType
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch, IBranchNavigationMenu)
+    BranchCreationForbidden, BranchExists, IBranch)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
-from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -199,17 +197,15 @@ class BranchEditMenu(NavigationMenu):
 
     def edit_whiteboard(self):
         text = 'Edit whiteboard'
+        enabled = self.branch_is_import()
         return Link(
-            '+whiteboard', text, icon='edit', enabled=self.branch_is_import())
+            '+whiteboard', text, icon='edit', enabled=enabled)
 
     def edit_import(self):
-        if self.context.branch_type == BranchType.IMPORTED:
-            enabled = True
-        else:
-            enabled = False
         text = 'Edit import source or review import'
+        enabled = self.branch_is_import()
         return Link(
-            '+edit-import', text, icon='edit', enabled=self.branch_is_import())
+            '+edit-import', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def reviewer(self):
