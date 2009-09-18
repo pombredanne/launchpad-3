@@ -128,6 +128,7 @@ class EC2Command(Command):
         s = s[:-1]      # remove last space
         return s
 
+
 def _get_branches_and_test_branch(trunk, branch, test_branch):
     """Interpret the command line options to find which branch to test.
 
@@ -146,7 +147,6 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
             test_branch = '.'
     branches = [data.split('=', 1) for data in branch]
     return branches, test_branch
-
 
 
 class cmd_test(EC2Command):
