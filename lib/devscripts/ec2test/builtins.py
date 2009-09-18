@@ -214,7 +214,8 @@ class cmd_test(EC2Command):
                 'of your headless test run.')
 
 
-        instance = EC2Instance(EC2TestRunner.name, instance_type, machine)
+        instance = EC2Instance(
+            EC2TestRunner.name, instance_type, machine)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
