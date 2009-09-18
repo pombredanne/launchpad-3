@@ -102,7 +102,7 @@ Entering a string that does not look like an email address causes an
 error to be displayed.
 
     >>> print browser.title
-    +editemails : Guilherme Salgado
+    Change your e-mail settings...
 
     >>> browser.getControl('Add a new address').value = 'foo'
     >>> browser.getControl('Add', index=1).click()

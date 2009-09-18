@@ -61,7 +61,7 @@ For DistroArchSeries, same as Distribution:
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary/i386")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    The Hoary Hedgehog Release for i386 builds...
+    The Hoary Hedgehog Release for i386 (x86) builds...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present

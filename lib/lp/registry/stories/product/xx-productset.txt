@@ -214,4 +214,4 @@ The commercial user can also view "+new".
 
     >>> registry_browser.open('http://launchpad.dev/projects/+new')
     >>> print registry_browser.title
-    +new : Projects
+    Register a project in Launchpad...

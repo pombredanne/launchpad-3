@@ -593,7 +593,7 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
     >>> anon_browser.open("http://launchpad.dev/ubuntutest")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print anon_browser.title
-    Ubuntu Test Personal Package Archives
+    Ubuntu Test Personal Package Archives...
 
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
     0
