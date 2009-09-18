@@ -8,9 +8,11 @@ __metaclass__ = type
 __all__ = [
     'HasSpecificationsView',
     'RegisterABlueprintButtonView',
+    'SpecificationDocumentationView',
     ]
 
 from operator import itemgetter
+from zope.component import queryMultiAdapter
 
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -33,7 +35,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter
+from canonical.lazr.utils import smartquote
 
 
 class HasSpecificationsView(LaunchpadView):
@@ -309,6 +311,15 @@ class HasSpecificationsView(LaunchpadView):
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
             quantity=quantity, prejoin_people=False)
+
+
+class SpecificationDocumentationView(HasSpecificationsView):
+    """View for blueprints +documentation page."""
+
+    @property
+    def label(self):
+        return smartquote('Current documentation for "%s"' %
+                          self.context.displayname)
 
 
 class RegisterABlueprintButtonView:

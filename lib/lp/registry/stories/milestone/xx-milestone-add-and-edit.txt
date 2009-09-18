@@ -105,7 +105,7 @@ access the delete page. Sample Person is the driver so he has those rights.
     Mozilla Firefox 0.9.2 "One (secure) Tree Hill"
     >>> driver_browser.getLink('Delete milestone').click()
     >>> print driver_browser.title
-    +delete : Mozilla Firefox
+    Delete Mozilla Firefox 0.9.2...
 
 The 0.9.2 release has a release and files associated with it. Sample
 Person reads that they will be deleted too.

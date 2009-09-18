@@ -257,8 +257,6 @@ bugtask_view = BugTaskPageTitle()
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
-builders_index = 'Launchpad build farm'
-
 calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add event to %s')
@@ -438,8 +436,6 @@ launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Need a new Launchpad password?'
 
-launchpad_graphics = 'Overview of Launchpad graphics and icons'
-
 template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_css is a css file
@@ -461,8 +457,6 @@ launchpad_unexpectedformdata = 'Error: Unexpected form data'
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
-
-launchpadstatisticset_index = 'Launchpad statistics'
 
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
@@ -614,8 +608,6 @@ person_archive_subscriptions = 'Private PPA access'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
-
-person_edit = ContextDisplayName(smartquote("%s's details"))
 
 # person_foaf is an rdf file
 
@@ -884,8 +876,6 @@ def specificationsubscription_edit(context, view):
     """Return the page title for subscribing to a specification."""
     return "Subscription of %s" % context.person.displayname
 
-specificationtarget_documentation = ContextTitle('Documentation for %s')
-
 specificationtarget_index = ContextTitle('Blueprint listing for %s')
 
 def specificationtarget_specs(context, view):
@@ -939,8 +929,6 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
-
-temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 token_authorized = 'Almost finished ...'
 

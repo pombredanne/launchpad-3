@@ -136,10 +136,7 @@ class BranchMergeProposalMenuMixin:
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
-        # Can't add a comment to Merged, Superseded or Rejected.
-        enabled = self.context.isMergable()
-        return Link('+comment', 'Add a review or comment', icon='add',
-                    enabled=enabled)
+        return Link('+comment', 'Add a review or comment', icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -442,15 +439,27 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         return result
 
     @cachedproperty
-    def review_diff(self):
+    def preview_diff(self):
+        """Return a `Diff` of the preview.
+
+        If no preview is available, try using the review diff.
+        """
+        if self.context.preview_diff is not None:
+            return self.context.preview_diff
+        if self.context.review_diff is not None:
+            return self.context.review_diff.diff
+        return None
+
+    @cachedproperty
+    def preview_diff_text(self):
         """Return a (hopefully) intelligently encoded review diff."""
-        if self.context.review_diff is None:
+        preview_diff = self.preview_diff
+        if preview_diff is None:
             return None
         try:
-            diff = self.context.review_diff.diff.text.decode('utf-8')
+            diff = preview_diff.text.decode('utf-8')
         except UnicodeDecodeError:
-            diff = self.context.review_diff.diff.text.decode('windows-1252',
-                                                             'replace')
+            diff = preview_diff.text.decode('windows-1252', 'replace')
         # Strip off the trailing carriage returns.
         return diff.rstrip('\n')
 
@@ -463,12 +472,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         lines is over the max_format_lines, then it is cut off at the fmt:diff
         processing.
         """
-        review_diff = self.context.review_diff
+        review_diff = self.preview_diff
         if review_diff is None:
             return False
-        if review_diff.diff.oversized:
+        if review_diff.oversized:
             return True
-        diff_text = self.review_diff
+        diff_text = self.preview_diff_text
         return diff_text.count('\n') >= config.diff.max_format_lines
 
     @property
@@ -504,8 +513,7 @@ class DecoratedCodeReviewVoteReference:
     def __init__(self, context, user, users_vote):
         self.context = context
         proposal = self.context.branch_merge_proposal
-        is_mergable = proposal.isMergable()
-        self.can_change_review = (user == context.reviewer) and is_mergable
+        self.can_change_review = (user == context.reviewer)
         self.trusted = proposal.target_branch.isPersonTrustedReviewer(
             context.reviewer)
         if user is None:
@@ -513,9 +521,8 @@ class DecoratedCodeReviewVoteReference:
         else:
             # The user cannot review for a requested team review if the user
             # has already reviewed this proposal.
-            self.user_can_review = (
-                is_mergable and (self.can_change_review or
-                 (user.inTeam(context.reviewer) and (users_vote is None))))
+            self.user_can_review = (self.can_change_review or
+                 (user.inTeam(context.reviewer) and (users_vote is None)))
         if context.reviewer == user:
             self.user_can_claim = False
         else:
@@ -575,9 +582,7 @@ class BranchMergeProposalVoteView(LaunchpadView):
 
         # Show the table if there are review to show, or the user can review,
         # or if the user can request a review.
-        return (len(self.reviews) > 0 or
-                self.show_user_review_link or
-                can_request_review)
+        return (len(self.reviews) > 0 or can_request_review)
 
     @cachedproperty
     def reviews(self):
@@ -604,15 +609,6 @@ class BranchMergeProposalVoteView(LaunchpadView):
         # Now sort so the most recently created is first.
         return sorted(reviews, key=operator.attrgetter('date_created'),
                       reverse=True)
-
-    @cachedproperty
-    def show_user_review_link(self):
-        """Show self in the review table if can review and not asked."""
-        if self.user is None or not self.context.isMergable():
-            return False
-        reviewers = [review.reviewer for review in self.reviews]
-        # The owner of the source branch should not get a review link.
-        return self.user not in reviewers
 
 
 class IReviewRequest(Interface):
