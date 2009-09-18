@@ -3099,6 +3099,8 @@ class PageMacroDispatcher:
             return self.pagetype()
         elif name == 'show_actions_menu':
             return self.show_actions_menu()
+        elif name == 'isbetauser':
+            return getattr(self.context, 'isBetaUser', False)
         else:
             raise TraversalError(name)
 
