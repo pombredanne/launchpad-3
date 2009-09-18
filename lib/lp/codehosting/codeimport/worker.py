@@ -62,7 +62,9 @@ class BazaarBranchStore:
         except NotBranchError:
             return BzrDir.create_standalone_workingtree(
                 target_path, required_format)
-        if bzr_dir.needs_format_conversion(format=required_format):
+        # XXX Tim Penhey 2009-09-18 bug abc Automatic upgrade of import
+        # branches disabled.  Need an orderly upgrade process.
+        if False and bzr_dir.needs_format_conversion(format=required_format):
             try:
                 bzr_dir.root_transport.delete_tree('backup.bzr')
             except NoSuchFile:
@@ -478,10 +480,6 @@ class CSCVSImportWorker(ImportWorker):
 
 class PullingImportWorker(ImportWorker):
     """An import worker for imports that can be done by a bzr plugin."""
-
-    # XXX 2009-03-05, MichaelHudson, bug=338061: There should be a way to find
-    # the 'default' rich-root format.
-    required_format = format_registry.get('1.9-rich-root')()
 
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
