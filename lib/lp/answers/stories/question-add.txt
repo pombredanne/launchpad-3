@@ -32,8 +32,9 @@ associated with the source package of the used application.
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+sources/mozilla-firefox/+gethelp')
     >>> user_browser.title
-    'Help and support options for ...mozilla-firefox...'
-    >>> user_browser.getLink('Submit your question').click()
+    '+gethelp : ...mozilla-firefox... package : 5.04 : Ubuntu'
+
+    >>> user_browser.getLink('Ask a question').click()
     >>> user_browser.title
     '+addquestion : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package
     : 5.04 : Ubuntu'

@@ -90,14 +90,12 @@ packages by status.
     ...     print term.title
     Published
     Superseded
-    Any status
 
 An ArchiveView inherits the series-filter widget for filtering packages
 by series.
 
     >>> for term in ppa_archive_view.widgets['series_filter'].vocabulary:
     ...     print term.title
-    Any Series
     Breezy Badger Autotest
     Warty
 
@@ -406,8 +404,8 @@ to be building:
 The archive index view overrides the default series filter to use the
 distroseries from the browser's user-agent, when applicable.
 
-    >>> print view.default_series_filter.token
-    any
+    >>> print view.default_series_filter
+    None
 
     >>> view_warty = create_view(
     ...     cprov.archive, name="+index",
@@ -416,8 +414,25 @@ distroseries from the browser's user-agent, when applicable.
     ...                     'Gecko/2009042523 Ubuntu/4.10 (whatever) '
     ...                     'Firefox/3.0.10')
     >>> view_warty.initialize()
-    >>> print view_warty.default_series_filter.token
+    >>> print view_warty.default_series_filter.name
     warty
+
+The archive index view also inherits the getSelectedFilterValue() method
+which can be used to find the currently selected value for both filters.
+
+    >>> print view_warty.getSelectedFilterValue('series_filter').name
+    warty
+
+    >>> for status in view_warty.getSelectedFilterValue('status_filter'):
+    ...     print status.name
+    PENDING
+    PUBLISHED
+
+To enable the inline editing of the archive displayname, ArchiveView
+also provides a custom widget, displayname_edit_widget.
+
+    >>> print view.displayname_edit_widget.title
+    Edit the displayname
 
 
 == ArchivePackageView ==
@@ -558,7 +573,6 @@ which the available options already exclude the deleted items.
     ...     form={
     ...         'field.actions.delete': 'Delete Packages',
     ...         'field.name_filter': '',
-    ...         'field.status_filter': 'any',
     ...         'field.deletion_comment': 'Go away',
     ...         'field.selected_sources': ['27', '28', '29'],
     ...         'field.selected_sources-empty-marker': 1,
@@ -579,7 +593,6 @@ situation and ignore it. See bug #185922 for reference.
     ...     form={
     ...         'field.actions.delete': 'Delete Packages',
     ...         'field.name_filter': '',
-    ...         'field.status_filter': 'any',
     ...         'field.deletion_comment': 'Go away',
     ...         'field.selected_sources': ['27', '28', '29'],
     ...         'field.selected_sources-empty-marker': 1,
@@ -1009,7 +1022,7 @@ All sources in Celso's PPA were just-deleted, so we have to tweak the
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages",
-    ...     query_string="field.status_filter=any")
+    ...     query_string="field.status_filter=")
 
     >>> [pub.status.name for pub in view.batched_sources]
     ['DELETED', 'DELETED', 'DELETED']
@@ -1289,7 +1302,6 @@ the public Ubuntu-team PPA, which is empty.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages",
     ...     form={
-    ...         'field.status_filter': 'any',
     ...         'field.selected_sources': [str(private_source.id)],
     ...         'field.destination_archive': 'ubuntu-team/ppa',
     ...         'field.destination_series': '',

@@ -18,8 +18,14 @@ from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
 
 class PackagingAddView(LaunchpadFormView):
     schema = IPackaging
-    label = 'Add distribution packaging record'
     field_names = ['distroseries', 'sourcepackagename', 'packaging']
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Packaging of %s in distributions' % self.context.displayname
+
+    page_title = label
 
     def validate(self, data):
         productseries = self.context
