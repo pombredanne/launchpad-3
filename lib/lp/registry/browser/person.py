@@ -3797,6 +3797,7 @@ class PersonEditView(BasePersonEditView):
     implements(IPersonEditMenu)
 
     label = 'Change your personal details'
+    page_title = label
 
     # Will contain an hidden input when the user is renaming his
     # account with full knowledge of the consequences.
