@@ -415,12 +415,6 @@ def hasspecifications_specs(context, view):
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
-hwdb_fingerprint_submissions = (
-    "Hardware Database submissions for a fingerprint")
-
-hwdb_submit_hardware_data = (
-    'Submit New Data to the Launchpad Hardware Database')
-
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
@@ -437,8 +431,6 @@ launchpad_forbidden = 'Forbidden'
 launchpad_forgottenpassword = 'Need a new Launchpad password?'
 
 launchpad_graphics = 'Overview of Launchpad graphics and icons'
-
-template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_css is a css file
 
@@ -550,8 +542,6 @@ announcement_retract = 'Retract this announcement'
 
 announcements_all = 'Announcements from all projects hosted in Launchpad'
 
-notification_test = 'Notification test'
-
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
 def object_driver(context, view):
@@ -614,9 +604,6 @@ person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
 # person_foaf is an rdf file
-
-person_hwdb_submissions = ContextDisplayName(
-    "Hardware Database submissions by %s")
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
