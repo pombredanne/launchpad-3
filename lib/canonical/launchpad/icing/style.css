@@ -93,6 +93,7 @@ span.invisible {left:-9999em;display:block;}
 .external-link {background:url(icon-sprites) 0 -704px no-repeat;}
 .mail {background:url(icon-sprites) 0 -736px no-repeat;}
 .cve {background:url(icon-sprites) 0 -768px no-repeat;}
+.cves {float: right; text-align: right;}
 .bug {background:url(icon-sprites) 0 -800px no-repeat;}
 .bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
 .bug-high {background:url(icon-sprites) 0 -864px no-repeat;}

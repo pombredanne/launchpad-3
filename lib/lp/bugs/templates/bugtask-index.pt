@@ -210,7 +210,7 @@
           </tal:bug-branches>
         </div><!-- branches -->
 
-        <div tal:condition="context/bug/cves" style="float: right">
+        <div tal:condition="context/bug/cves" class="cves">
           <h2>CVE References</h2>
           <ul>
             <li class="sprite cve" tal:repeat="cve context/bug/cves">
