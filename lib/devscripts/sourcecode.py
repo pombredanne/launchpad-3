@@ -134,7 +134,7 @@ def update_branches(sourcecode_directory, update_branches,
             remote_branch.bzrdir.root_transport)
         try:
             local_tree.pull(
-                remote_branch,
+                remote_branch, overwrite=True,
                 possible_transports=possible_transports)
         except BzrError:
             if optional:
