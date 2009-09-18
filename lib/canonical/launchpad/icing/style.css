@@ -1606,6 +1606,12 @@ beside the mugshot. */
     margin-bottom: 0.5em;
 }
 
+/* Home: Get started */
+
+#homepage-getstarted ul {
+    margin-top: 0.5em;
+}
+
 /* Home: Featured projects */
 #homepage-featured {
     width: 100%;
