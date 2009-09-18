@@ -13,6 +13,7 @@ __all__ = [
     'IcingContribFolder',
     'IcingFolder',
     'LaunchpadImageFolder',
+    'LaunchpadGraphics',
     'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
@@ -966,6 +967,10 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
+
+
+class LaunchpadGraphics(LaunchpadView):
+    label = page_title = 'Overview of Launchpad graphics and icons'
 
 
 def get_launchpad_views(cookies):
