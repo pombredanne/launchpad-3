@@ -21,7 +21,7 @@ on 'Link to a FAQ' to answer the question:
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
     >>> print backslashreplace(user_browser.title)
-    +index : Questions for Mozilla Firefox : Mozilla Firefox
+    Questions for Mozilla Firefox...
 
     >>> user_browser.getLink('Link to a FAQ').click()
     >>> print backslashreplace(user_browser.title)

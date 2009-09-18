@@ -327,7 +327,7 @@ The history of the question is available on the 'History' page.
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> anon_browser.getLink('History').click()
     >>> print anon_browser.title
-    +history : Questions for Mozilla Firefox : Mozilla Firefox
+    History of question #2...
 
 It lists all the actions performed through workflow on the question:
 

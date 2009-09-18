@@ -20,7 +20,7 @@ is approved because he is in the active members table.
 
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> print backslashreplace(browser.title)
-    +members : \u201cUbuntu Gnome Team\u201d team
+    Members of \u201cUbuntu Gnome Team\u201d...
     >>> content = find_tag_by_id(browser.contents, 'activemembers')
     >>> print extract_text(content)
     Name               Member since  Expires  Status
