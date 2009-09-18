@@ -380,7 +380,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'edit',
         'reassign',
         'top_contributors',
-        'mentorship',
         'distributions',
         'packages',
         'series',
@@ -401,10 +400,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     def distributions(self):
         text = 'Packaging information'
         return Link('+distributions', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-        return Link('+mentoring', text, icon='info')
 
     def packages(self):
         text = 'Show distribution packages'
@@ -809,6 +804,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             id='programminglang', title='Edit programming languages',
             tag='span', public_attribute='programming_language',
             accept_empty=True,
+            width='9em',
             **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
@@ -1430,7 +1426,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
 
     schema = IProductReviewSearch
-    label= 'Review projects'
+    label = 'Review projects'
 
     full_row_field_names = [
         'search_text',

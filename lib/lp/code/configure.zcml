@@ -113,6 +113,14 @@
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
   <adapter
+      for="lp.registry.interfaces.distribution.IDistribution"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_distribution"/>
+  <adapter
+      for="lp.registry.interfaces.distroseries.IDistroSeries"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_distro_series"/>
+  <adapter
       for="lp.registry.interfaces.sourcepackage.ISourcePackage"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_source_package"/>
@@ -145,6 +153,14 @@
       for="lp.registry.interfaces.project.IProject"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
       factory="lp.code.adapters.revisioncache.revision_cache_for_project"/>
+  <adapter
+      for="lp.registry.interfaces.distribution.IDistribution"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_distribution"/>
+  <adapter
+      for="lp.registry.interfaces.distroseries.IDistroSeries"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_distro_series"/>
   <adapter
       for="lp.registry.interfaces.sourcepackage.ISourcePackage"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
@@ -429,6 +445,7 @@
                     getSubscriptionsByLevel
                     getBranchRevision
                     getMainlineBranchRevisions
+                    getMergeProposals
                     getStackedBranches
                     getStackedBranchesWithIncompleteMirrors
                     createBranchRevision
@@ -523,6 +540,22 @@
   <class class="lp.code.model.branch.BranchSet">
     <allow interface="lp.code.interfaces.branch.IBranchSet"/>
   </class>
+  <securedutility
+      class="lp.code.model.branch.BranchSet"
+      provides="lp.code.interfaces.branch.IBranchSet">
+    <allow interface="lp.code.interfaces.branch.IBranchSet"/>
+  </securedutility>
+
+  <!-- BranchListingQueryOptimiser -->
+
+  <class class="lp.code.model.branchlistingqueryoptimiser.BranchListingQueryOptimiser">
+    <allow interface="lp.code.interfaces.branch.IBranchListingQueryOptimiser"/>
+  </class>
+  <securedutility
+      class="lp.code.model.branchlistingqueryoptimiser.BranchListingQueryOptimiser"
+      provides="lp.code.interfaces.branch.IBranchListingQueryOptimiser">
+    <allow interface="lp.code.interfaces.branch.IBranchListingQueryOptimiser"/>
+  </securedutility>
 
   <!-- BranchVisibilityPolicy -->
 
@@ -535,11 +568,6 @@
   <class class="lp.code.adapters.branch.BranchDelta">
     <allow interface="lp.code.interfaces.branch.IBranchDelta"/>
   </class>
-  <securedutility
-      class="lp.code.model.branch.BranchSet"
-      provides="lp.code.interfaces.branch.IBranchSet">
-    <allow interface="lp.code.interfaces.branch.IBranchSet"/>
-  </securedutility>
   <securedutility
       class="lp.code.model.branch.BranchCloud"
       provides="lp.code.interfaces.branch.IBranchCloud">

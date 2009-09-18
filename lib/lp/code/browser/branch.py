@@ -86,7 +86,6 @@ from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
-from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
@@ -123,7 +122,21 @@ class BranchHierarchy(Hierarchy):
     @property
     def objects(self):
         """See `Hierarchy`."""
-        return IHasBranchTarget(self.context).target.components
+        traversed = list(self.request.traversed_objects)
+        # Pass back the root object.
+        yield traversed.pop(0)
+        # Now pop until we find the branch.
+        branch = traversed.pop(0)
+        while not IBranch.providedBy(branch):
+            branch = traversed.pop(0)
+        # Now pass back the branch components.
+        for component in branch.target.components:
+            yield component
+        # Now the branch.
+        yield branch
+        # Now whatever is left.
+        for obj in traversed:
+            yield obj
 
 
 class BranchNavigation(Navigation):
@@ -210,7 +223,7 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
-             'register_merge', 'landing_candidates',
+             'register_merge',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
@@ -266,11 +279,6 @@ class BranchContextMenu(ContextMenu):
         text = 'Propose for merging into another branch'
         enabled = self.context.target.supports_merge_proposals
         return Link('+register-merge', text, icon='add', enabled=enabled)
-
-    def landing_candidates(self):
-        text = 'View landing candidates'
-        enabled = self.context.landing_candidates.count() > 0
-        return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
     def link_bug(self):
         if self.context.linked_bugs:

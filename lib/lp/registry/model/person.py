@@ -40,7 +40,7 @@ from zope.event import notify
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    SQLRelatedJoin, StringCol)
+    StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
 from storm.expr import And, In, Join, Lower, Not, Or, SQL
@@ -478,18 +478,20 @@ class Person(
     @property
     def oauth_access_tokens(self):
         """See `IPerson`."""
-        return OAuthAccessToken.select("""
-            person = %s
-            AND (date_expires IS NULL OR date_expires > %s)
-            """ % sqlvalues(self, UTC_NOW))
+        return Store.of(self).find(
+            OAuthAccessToken,
+            OAuthAccessToken.person == self,
+            Or(OAuthAccessToken.date_expires == None,
+               OAuthAccessToken.date_expires > UTC_NOW))
 
     @property
     def oauth_request_tokens(self):
         """See `IPerson`."""
-        return OAuthRequestToken.select("""
-            person = %s
-            AND (date_expires IS NULL OR date_expires > %s)
-            """ % sqlvalues(self, UTC_NOW))
+        return Store.of(self).find(
+            OAuthRequestToken,
+            OAuthRequestToken.person == self,
+            Or(OAuthRequestToken.date_expires == None,
+               OAuthRequestToken.date_expires > UTC_NOW))
 
     @cachedproperty('_location')
     def location(self):

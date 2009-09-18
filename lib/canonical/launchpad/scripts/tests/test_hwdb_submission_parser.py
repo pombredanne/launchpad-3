@@ -510,6 +510,111 @@ class TestHWDBSubmissionParser(TestCase):
                            'model': 'MD 4394'}],
                          'Invalid parsing result for <aliases>')
 
+    def testUdev(self):
+        """The content of the <udev> node is converted into a list of dicts.
+        """
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring("""
+<udev>P: /devices/LNXSYSTM:00
+E: UDEV_LOG=3
+E: DEVPATH=/devices/LNXSYSTM:00
+E: MODALIAS=acpi:LNXSYSTM:
+
+P: /devices/pci0000:00/0000:00:1a.0
+E: UDEV_LOG=3
+E: DEVPATH=/devices/pci0000:00/0000:00:1a.0
+S: char/189:256
+</udev>
+""")
+        result = parser._parseUdev(node)
+        self.assertEqual(
+            [
+                {
+                    'P': '/devices/LNXSYSTM:00',
+                    'E': {
+                        'UDEV_LOG': '3',
+                        'DEVPATH': '/devices/LNXSYSTM:00',
+                        'MODALIAS': 'acpi:LNXSYSTM:',
+                        },
+                    'S': [],
+                    },
+                {
+                    'P': '/devices/pci0000:00/0000:00:1a.0',
+                    'E': {
+                        'UDEV_LOG': '3',
+                        'DEVPATH': '/devices/pci0000:00/0000:00:1a.0',
+                        },
+                    'S': ['char/189:256'],
+                    },
+                ],
+            result,
+            'Invalid parsing result for <udev>')
+
+    def testUdevLineWithoutColon(self):
+        """<udev> nodes with lines not in key: value format are rejected."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Detect udev lines not in key:value format'
+        node = etree.fromstring("""
+<udev>P: /devices/LNXSYSTM:00
+bad line
+</udev>
+""")
+        result = parser._parseUdev(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result for a <udev> node with a line not having '
+            'the key: value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <udev>: No valid key:value data: 'bad line'")
+
+    def testUdevPropertyLineWithoutEqualSign(self):
+        """<udev> nodes with lines not in key: value format are rejected."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect udev property lines not in key=value format')
+        node = etree.fromstring("""
+<udev>P: /devices/LNXSYSTM:00
+E: bad property
+</udev>
+""")
+        result = parser._parseUdev(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result for a <udev> node with a property line '
+            'not having the key=value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <udev>: Property without valid key=value data: "
+            "'E: bad property'")
+
+    def testUdevDataWithDuplicateKey(self):
+        """<udev> nodes with lines not in key: value format are rejected."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Detect duplactae attributes in udev data'
+        node = etree.fromstring("""
+<udev>P: /devices/LNXSYSTM:00
+W:1
+W:2
+</udev>
+""")
+        result = parser._parseUdev(node)
+        self.assertEqual(
+            [
+                {
+                    'P': '/devices/LNXSYSTM:00',
+                    'E': {},
+                    'S': [],
+                    'W': '2',
+                    },
+                ],
+            result,
+            'Invalid parsing result for a <udev> node with a duplicate '
+            'attribute.')
+        self.assertWarningMessage(
+            parser.submission_key,
+            "Line 2 in <udev>: Duplicate attribute key: 'W:2'")
+
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
         test = self

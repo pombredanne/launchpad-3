@@ -20,8 +20,8 @@ This test verifies the basic claim a GPG key workflow.
 Start out with a clean page containing no imported keys:
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open("http://launchpad.dev/~name12/+edit")
-    >>> browser.getLink('OpenPGP Keys').click()
+    >>> browser.open("http://launchpad.dev/~name12")
+    >>> browser.getLink(url='+editpgpkeys').click()
     >>> print browser.title
     +editpgpkeys : Sample Person
 

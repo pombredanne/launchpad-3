@@ -54,10 +54,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     # determines the number of projects we display in each column.
     FEATURED_PROJECT_ROWS = 10
 
-    def isRedirectInhibited(self):
-        """Returns True if redirection has been inhibited."""
-        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
-
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
         return bool(
