@@ -41,7 +41,7 @@
                id="archive-subscribers" class="listing">
           <thead>
             <tr class="archive_subscriber_row">
-              <th>Name</th>
+              <th style="width:30%">Name</th>
               <th>Expires</th>
               <th colspan="2">Comment</th>
             </tr>
@@ -99,25 +99,31 @@ YUI({
         filter: 'raw'
     }).use('node', 'event', 'lazr.effects', function(Y) {
 
-    // Hide the add-subscriber row.
-    var add_subscriber_row = Y.get('#archive-subscribers .add-subscriber');
-    add_subscriber_row.setStyle('display', 'none');
+    // If there are no errors then we hide the add-subscriber row and
+    // potentially the whole table if there are no subscribers.
+    if (Y.get('p.error.message') == null){
 
-    // If there are no subscribers, then hide the complete section.
-    var subscribers = Y.get('#subscribers');
-    if(Y.get('#no-subscribers') !== null){
-        subscribers.setStyle('display', 'none');
+        // Hide the add-subscriber row.
+        var add_subscriber_row = Y.get('#archive-subscribers .add-subscriber');
+        add_subscriber_row.setStyle('display', 'none');
+
+        // If there are no subscribers, then hide the complete section.
+        var subscribers = Y.get('#subscribers');
+        if (Y.get('#no-subscribers') !== null){
+            subscribers.setStyle('display', 'none');
+        }
     }
 
     // Add a link to open the add-subscriber row.
     var placeholder = Y.get('#add-subscriber-placeholder');
-    placeholder.set('innerHTML', '<a class="js-action sprite add" />');
+    placeholder.set('innerHTML', '<a class="js-action sprite add" href="#" />');
     var add_subscriber_node = Y.get("#add-subscriber-placeholder a");
     add_subscriber_node.set('innerHTML', 'Add access');
 
     // We only ever do the slide animation once.
     var slide;
     function show_add_subscriber(e) {
+        e.preventDefault();
         subscribers.setStyle('display', 'block');
         add_subscriber_row.setStyle('display', 'table-row');
     }
