@@ -298,33 +298,37 @@ class cmd_demo(EC2Command):
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
 
-        def run_server():
-            runner.run_demo_server()
-            demo_network_string = '\n'.join(
-                '  ' + network for network in demo)
-            ec2_ip = socket.gethostbyname(instance.hostname)
-            print (
-                "\n\n"
-                "********************** DEMO *************************\n"
-                "It may take 20 seconds for the demo server to start up."
-                "\nTo demo to other users, you still need to open up\n"
-                "network access to the ec2 instance from their IPs by\n"
-                "entering command like this in the interactive python\n"
-                "interpreter at the end of the setup. "
-                "\n  instance.security_group.authorize("
-                "'tcp', 443, 443, '10.0.0.5/32')\n\n"
-                "These demo networks have already been granted access on "
-                "port 80 and 443:\n" + demo_network_string +
-                "\n\nYou also need to edit your /etc/hosts to point\n"
-                "launchpad.dev at the ec2 instance's IP like this:\n"
-                "  " + ec2_ip + "    launchpad.dev\n\n"
-                "See "
-                "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
-                "\n*****************************************************"
-                "\n\n")
-            return True
+        demo_network_string = '\n'.join(
+            '  ' + network for network in demo)
 
-        instance.set_up_and_run(True, False, run_server)
+        instance.set_up_and_run(
+            True, False, self.run_server, runner,
+            instance.hostname, demo_network_string)
+
+
+    def run_server(self, runner, hostname, demo_network_string):
+        runner.run_demo_server()
+        ec2_ip = socket.gethostbyname(hostname)
+        print (
+            "\n\n"
+            "********************** DEMO *************************\n"
+            "It may take 20 seconds for the demo server to start up."
+            "\nTo demo to other users, you still need to open up\n"
+            "network access to the ec2 instance from their IPs by\n"
+            "entering command like this in the interactive python\n"
+            "interpreter at the end of the setup. "
+            "\n  instance.security_group.authorize("
+            "'tcp', 443, 443, '10.0.0.5/32')\n\n"
+            "These demo networks have already been granted access on "
+            "port 80 and 443:\n" + demo_network_string +
+            "\n\nYou also need to edit your /etc/hosts to point\n"
+            "launchpad.dev at the ec2 instance's IP like this:\n"
+            "  " + ec2_ip + "    launchpad.dev\n\n"
+            "See "
+            "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
+            "\n*****************************************************"
+            "\n\n")
+
 
 
 class cmd_update_image(EC2Command):
@@ -348,7 +352,7 @@ class cmd_update_image(EC2Command):
 
     takes_args = ['ami_name']
 
-    def run(self, ami_name, machine=None, instance_type=DEFAULT_INSTANCE_TYPE,
+    def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=[]):
         if debug:
             pdb.set_trace()
@@ -359,26 +363,29 @@ class cmd_update_image(EC2Command):
             instance_type, machine, credentials=credentials)
         instance.check_bundling_prerequisites()
 
-        def update_image():
-            user_connection = instance.connect_as_user()
-            user_connection.perform('bzr launchpad-login %(launchpad-login)s')
-            for cmd in extra_update_image_command:
-                user_connection.run_with_ssh_agent(cmd)
-            user_connection.run_with_ssh_agent(
-                "rsync -avp --partial --delete "
-                "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
-                "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
-                "/var/launchpad/sourcecode/")
-            user_connection.run_with_ssh_agent(
-                'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
-            user_connection.run_with_ssh_agent(
-                'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
-            user_connection.close()
-            root_connection = instance.connect_as_root()
-            root_connection.perform(
-                'deluser --remove-home %(USER)s', ignore_failure=True)
-            root_connection.close()
-            instance.bundle(ami_name, credentials)
-            return True
+        instance.set_up_and_run(
+            postmortem, True, self.update_image, instance,
+            extra_update_image_command, ami_name, credentials)
 
-        instance.set_up_and_run(postmortem, True, update_image)
+    def update_image(self, instance, extra_update_image_command, ami_name,
+                     credentials):
+        user_connection = instance.connect_as_user()
+        user_connection.perform('bzr launchpad-login %(launchpad-login)s')
+        for cmd in extra_update_image_command:
+            user_connection.run_with_ssh_agent(cmd)
+        user_connection.run_with_ssh_agent(
+            "rsync -avp --partial --delete "
+            "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
+            "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
+            "/var/launchpad/sourcecode/")
+        user_connection.run_with_ssh_agent(
+            'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
+        user_connection.run_with_ssh_agent(
+            'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
+        user_connection.close()
+        root_connection = instance.connect_as_root()
+        root_connection.perform(
+            'deluser --remove-home %(USER)s', ignore_failure=True)
+        root_connection.close()
+        instance.bundle(ami_name, credentials)
+        return True
