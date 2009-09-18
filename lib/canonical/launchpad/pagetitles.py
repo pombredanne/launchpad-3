@@ -383,12 +383,6 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-def faq_index(context, view):
-    """Return the FAQ index page title."""
-    return (
-        smartquote('%s FAQ #%d: "%s"') %
-        (context.target.displayname, context.id, context.title))
-
 def hasmentoringoffers_mentoring(context, view):
     """Return the mentoring title for the context."""
     if IPerson.providedBy(context):

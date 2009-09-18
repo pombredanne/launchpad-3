@@ -215,7 +215,7 @@ from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, get_current_view, LaunchpadEditFormView,
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView,
     LaunchpadFormView, Link, Navigation, NavigationMenu, structured,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission, stepthrough, stepto)
@@ -225,6 +225,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
+from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from lazr.uri import URI, InvalidURIError
