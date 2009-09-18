@@ -23,7 +23,7 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
-from storm.expr import And, Join, Or
+from storm.expr import And, Or
 from storm.locals import Int, Reference
 
 from canonical.database.sqlbase import (
@@ -69,6 +69,7 @@ from lp.registry.interfaces.person import validate_public_person
 entry_gc_age = {
     RosettaImportStatus.DELETED: datetime.timedelta(days=3),
     RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
+    RosettaImportStatus.FAILED: datetime.timedelta(days=30),
 }
 
 
