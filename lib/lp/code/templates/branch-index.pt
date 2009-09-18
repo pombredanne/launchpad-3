@@ -53,10 +53,32 @@
     <tal:branch replace="context/bzr_identity" />
   </h1>
 
-  <div class="top-portlet">
+  <div class="yui-g first">
     <tal:branch-errors tal:replace="structure context/@@+messages" />
-    <div id="branch-description"
-         tal:condition="context/description">
+  </div>
+
+  <div class="yui-g">
+    <div class="yui-u first">
+      <div id="related-bugs-and-blueprints" class="portlet">
+        <h2>Related bugs and blueprints</h2>
+        <tal:related-bugs-specs
+            replace="structure context/@@++branch-related-bugs-specs" />
+      </div>
+    </div>
+
+    <div class="yui-u"
+         tal:condition="not:context/branch_type/enumvalue:IMPORTED">
+      <div class="portlet" id="branch-merges">
+        <h2>Branch Pending Merges</h2>
+        <tal:branch-pending-merges
+            replace="structure context/@@++branch-pending-merges" />
+      </div>
+    </div>
+  </div>
+
+
+  <div class="yui-g" tal:condition="context/description">
+    <div id="branch-description">
       <h2>Description</h2>
       <div tal:content="structure context/description/fmt:text-to-html">
         The description of the branch usually goes here, but will be used so
@@ -64,11 +86,6 @@
         description, one must do so through the "Edit details" navigation
         link.
       </div>
-    </div>
-    <div id="related-bugs-and-blueprints" class="portlet">
-      <h2>Related bugs and blueprints</h2>
-      <tal:related-bugs-specs
-          replace="structure context/@@++branch-related-bugs-specs" />
     </div>
   </div>
 
@@ -92,14 +109,13 @@
 
   </div>
 
-
-  <div id="branch-merges"
+  <div id="branch-mirror-details"
        class="yui-g"
-       tal:condition="not:context/branch_type/enumvalue:IMPORTED">
+       tal:condition="context/branch_type/enumvalue:MIRRORED">
     <div class="portlet">
-      <h2>Branch Pending Merges</h2>
+      <h2>Mirror details</h2>
       <tal:branch-pending-merges
-          replace="structure context/@@++branch-pending-merges" />
+          replace="structure context/@@+mirror-status" />
     </div>
   </div>
 
