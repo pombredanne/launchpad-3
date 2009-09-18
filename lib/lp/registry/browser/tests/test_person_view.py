@@ -25,11 +25,11 @@ class TestPersonView(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.view = PersonView(
             person, LaunchpadTestRequest())
-        self.makeKarmaCache(
+        self._makeKarmaCache(
             person, product, KarmaCategory.byName('bugs'))
-        self.makeKarmaCache(
+        self._makeKarmaCache(
             person, product, KarmaCategory.byName('answers'))
-        self.makeKarmaCache(
+        self._makeKarmaCache(
             person, product, KarmaCategory.byName('code'))
 
     def test_karma_category_sort(self):
@@ -41,9 +41,14 @@ class TestPersonView(TestCaseWithFactory):
         self.assertEqual(category_names, [u'code', u'bugs', u'answers'], 
                          'Categories are not sorted correctly')
 
-    def makeKarmaCache(self, person, product, category, value=10):
-        # karmacacheupdater is the only db user who has write access to
-        # the KarmaCache table so we switch to it here
+    def _makeKarmaCache(self, person, product, category, value=10):
+        """ Create and return a KarmaCache entry with the given arguments.
+
+        In order to create the KarmaCache record we must switch to the DB
+        user 'karma', so tests that need a different user after calling 
+        this method should do run switchDbUser() themselves.
+        """
+
         LaunchpadZopelessLayer.switchDbUser('karma')
 
         cache_manager = getUtility(IKarmaCacheManager)
@@ -57,9 +62,9 @@ class TestPersonView(TestCaseWithFactory):
             cache_manager.new(
                 value, person.id, category_id=None, product_id=product.id)
 
+        # We must commit here so that the change is seen in other transactions
+        # (e.g. when the callsite issues a switchDbUser() after we return).
         LaunchpadZopelessLayer.commit()
-        LaunchpadZopelessLayer.switchDbUser('launchpad')
-
         return karmacache
 
 
