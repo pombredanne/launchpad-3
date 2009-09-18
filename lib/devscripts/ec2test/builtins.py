@@ -94,8 +94,13 @@ machine_id_option = Option(
           'recent one with an approved owner.'))
 
 
+def _convert_instance_type(arg):
+    if arg not in AVAILABLE_INSTANCE_TYPES:
+        raise BzrCommandError('Unknown instance type %r' % arg)
+
 instance_type_option = Option(
-    'instance', short_name='i', type=str, param_name='instance_type',
+    'instance', short_name='i', type=_convert_instance_type,
+    param_name='instance_type',
     help=('The AWS instance type on which to base this run. '
           'Available options are %r. Defaults to `%s`.' %
           (AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE)))
@@ -174,9 +179,6 @@ def get_credentials():
 def make_instance(instance_type, machine, demo_networks=None,
                   credentials=None):
     # Get the AWS identifier and secret identifier.
-    if instance_type not in AVAILABLE_INSTANCE_TYPES:
-        raise BzrCommandError('Unknown instance type.')
-
     if credentials is None:
         credentials = get_credentials()
 
