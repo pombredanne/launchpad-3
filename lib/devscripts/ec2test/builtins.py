@@ -4,11 +4,9 @@ from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
 from bzrlib.option import ListOption, Option
 
-import paramiko
 import socket
 
-from devscripts.ec2test import error_and_quit
-from devscripts.ec2test.credentials import CredentialsError, EC2Credentials
+from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
     AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
@@ -106,19 +104,11 @@ class EC2Command(Command):
         return s
 
 
-def get_credentials():
-    """Load credentials from ~/.ec2/aws_id.  Exit if not found."""
-    try:
-        return EC2Credentials.load_from_file()
-    except CredentialsError, e:
-        error_and_quit(str(e))
-
-
 def make_instance(instance_type, machine, demo_networks=None,
                   credentials=None):
     # Get the AWS identifier and secret identifier.
     if credentials is None:
-        credentials = get_credentials()
+        credentials = EC2Credentials.load_from_file()
 
     return EC2Instance.make(
         credentials, EC2TestRunner.name, instance_type=instance_type,
@@ -357,7 +347,7 @@ class cmd_update_image(EC2Command):
         if debug:
             pdb.set_trace()
 
-        credentials = get_credentials()
+        credentials = EC2Credentials.load_from_file()
 
         instance = make_instance(
             instance_type, machine, credentials=credentials)
