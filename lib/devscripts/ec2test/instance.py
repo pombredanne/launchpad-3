@@ -18,11 +18,11 @@ import sys
 import time
 import traceback
 
+from bzrlib.errors import BzrCommandError
 from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
-from devscripts.ec2test import error_and_quit
 from devscripts.ec2test.sshconfig import SSHConfig
 from devscripts.ec2test.credentials import EC2Credentials
 
@@ -47,7 +47,7 @@ def get_user_key():
     agent = paramiko.Agent()
     keys = agent.get_keys()
     if len(keys) == 0:
-        error_and_quit(
+        raise BzrCommandError(
             'You must have an ssh agent running with keys installed that '
             'will allow the script to rsync to devpad and get your '
             'branch.\n')
@@ -96,7 +96,7 @@ class EC2Instance:
         vals = os.environ.copy()
         login = get_lp_login()
         if not login:
-            error_and_quit(
+            raise BzrCommandError(
                 'you must have set your launchpad login in bzr.')
         vals['launchpad-login'] = login
 
@@ -148,7 +148,7 @@ class EC2Instance:
             self._output = self._boto_instance.get_console_output()
             self.log(self._output.output)
         else:
-            error_and_quit(
+            raise BzrCommandError(
                 'failed to start: %s\n' % self._boto_instance.state)
 
     def shutdown(self):
@@ -350,7 +350,7 @@ class EC2Instance:
         pattern = os.path.join(local_dir, pattern)
         matches = glob.glob(pattern)
         if len(matches) != 1:
-            error_and_quit(
+            raise BzrCommandError(
                 '%r must match a single %s file' % (pattern, file_kind))
         return matches[0]
 
@@ -359,12 +359,12 @@ class EC2Instance:
         """
         local_ec2_dir = os.path.expanduser('~/.ec2')
         if not os.path.exists(local_ec2_dir):
-            error_and_quit(
+            raise BzrCommandError(
                 "~/.ec2 must exist and contain aws_user, aws_id, a private "
                 "key file and a certificate.")
         aws_user_file = os.path.expanduser('~/.ec2/aws_user')
         if not os.path.exists(aws_user_file):
-            error_and_quit(
+            raise BzrCommandError(
                 "~/.ec2/aws_user must exist and contain your numeric AWS id.")
         self.aws_user = open(aws_user_file).read().strip()
         self.local_cert = self._check_single_glob_match(

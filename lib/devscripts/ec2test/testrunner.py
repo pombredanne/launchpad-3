@@ -14,9 +14,6 @@ import pickle
 import re
 import sys
 
-
-from bzrlib.plugin import load_plugins
-load_plugins()
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.config import GlobalConfig
