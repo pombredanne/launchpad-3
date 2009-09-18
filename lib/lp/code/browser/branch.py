@@ -346,12 +346,13 @@ class BranchView(LaunchpadView, FeedsMixin):
         else:
             return False
 
-    def has_formats(self):
-        """Return whether the branch has had its format fields populated."""
+    def has_metadata(self):
+        """Return whether there is branch metadata to display."""
         return (
             self.context.branch_format or
             self.context.repository_format or
-            self.context.control_format)
+            self.context.control_format or
+            self.context.stacked_on)
 
     @property
     def codebrowse_url(self):

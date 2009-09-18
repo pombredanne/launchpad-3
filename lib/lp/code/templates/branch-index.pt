@@ -55,7 +55,7 @@
 
   <div class="top-portlet">
     <tal:branch-errors tal:replace="structure context/@@+messages" />
-    <div id="description"
+    <div id="branch-description"
          tal:condition="context/description">
       <h2>Description</h2>
       <div tal:content="structure context/description/fmt:text-to-html">
@@ -138,14 +138,14 @@
   </div>
 
   <div class="yui-g">
-    <div class="yui-u first">
+    <div class="yui-u first" id="recent-revisions">
       <div class="portlet">
         <h2>Recent revisions</h2>
         <tal:branch-revisions replace="structure context/@@++branch-revisions" />
       </div>
     </div>
 
-    <div class="yui-u" tal:condition="view/has_formats">
+    <div class="yui-u" tal:condition="view/has_metadata">
       <div class="portlet">
         <h2>Branch metadata</h2>
         <tal:branch-metadata replace="structure context/@@++branch-metadata" />
