@@ -53,20 +53,20 @@
     </metal:side>
 
     <metal:heading fill-slot="heading" tal:define="context_menu context/menu:context">
-    <h1 tal:replace="structure view/bug_title_edit_widget">
-      Bug title
-    </h1>
-    <div class="object" id="bug">
-      Bug #<tal:block content="context/bug/id"/> reported
-      by <tal:reporter replace="structure context/bug/owner/fmt:link" />
-      <span
-          tal:attributes="title context/bug/datecreated/fmt:datetime"
-          tal:content="context/bug/datecreated/fmt:displaydate" />
-      <tal:activitylog
-        define="link context_menu/activitylog"
-        condition="link/enabled"
-      >(<tal:link replace="structure link/render" />)</tal:activitylog>
-    </div>
+      <h1 tal:replace="structure view/bug_title_edit_widget">
+        Bug title
+      </h1>
+      <div class="object" id="bug">
+        Bug #<tal:block content="context/bug/id"/> reported
+        by <tal:reporter replace="structure context/bug/owner/fmt:link" />
+        <span
+            tal:attributes="title context/bug/datecreated/fmt:datetime"
+            tal:content="context/bug/datecreated/fmt:displaydate" />
+        <tal:activitylog
+          define="link context_menu/activitylog"
+          condition="link/enabled"
+        >(<tal:link replace="structure link/render" />)</tal:activitylog>
+      </div>
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
@@ -107,7 +107,7 @@
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
       <div id="maincontentsub">
-        <div id="nonportlets">
+        <div><!-- id="nonportlets"> -->
         <div class="top-portlet">
 
       <div class="report">
@@ -188,7 +188,7 @@
         <div id="branches"
             tal:define="linked_branches view/linked_branches"
             tal:condition="linked_branches"
-            class="float: left">
+            style="float: left">
 
           <h2>Related branches</h2>
 
