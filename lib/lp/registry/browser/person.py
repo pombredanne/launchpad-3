@@ -5769,7 +5769,8 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'add_member', 'add_my_teams', 'leave')
+    links = ('edit', 'join', 'add_member', 'add_my_teams',
+             'leave')
 
 
 class TeamEditMenu(TeamNavigationMenuBase):
