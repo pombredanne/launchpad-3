@@ -1,23 +1,25 @@
-= A person's contact email address =
+================================
+A person's contact email address
+================================
 
 A person may have many confirmed email address which he may use to
 login with, but only one email address will be the contact email
 address.
 
 
-== Setting the contact email address ==
+Setting the contact email address
+=================================
 
 Sample Person chooses to change his contact email address to the
 address he prefers to login with.
 
     >>> browser = setupBrowser(auth='Basic testing@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12')
-    >>> browser.getLink('Change details').click()
-    >>> browser.getLink('E-mail Settings').click()
-    >>> browser.url
-    'http://launchpad.dev/~name12/+editemails'
-    >>> browser.title
-    "Sample Person's e-mail addresses"
+    >>> browser.getLink(url='+editemails').click()
+    >>> print browser.url
+    http://launchpad.dev/~name12/+editemails
+    >>> print browser.title
+    +editemails : Sample Person
 
 Sample Person has a second browser open to the same page; maybe he is
 absent minded.
@@ -62,13 +64,14 @@ contact address.
     testing@canonical.com is already set as your contact address.
 
 
-== Unclaimed users ==
+Unclaimed users
+===============
 
 An unclaimed user will probably have no contact email address.
 
    >>> admin_browser.open('http://launchpad.dev/~matsubara')
-   >>> admin_browser.title
-   'Diogo Matsubara does not use Launchpad'
+   >>> print admin_browser.title
+   Diogo Matsubara does not use Launchpad
    >>> admin_browser.getLink('Change e-mail settings').click()
    >>> print find_tag_by_id(admin_browser.contents,
    ...                      'no-contact-address').string

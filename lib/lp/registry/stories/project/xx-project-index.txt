@@ -182,4 +182,4 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/mozilla/+subscribe
     >>> print user_browser.title
-    Bug subscriptions for The Mozilla Project
+    Subscribe to Bugs in The Mozilla Project

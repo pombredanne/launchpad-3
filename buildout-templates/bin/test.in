@@ -201,6 +201,9 @@ if __name__ == '__main__':
     options.parser.add_option(
         '--subunit', action='callback', callback=use_subunit)
 
+    # tests_pattern is a regexp, so the parsed value is hard to compare
+    # with the default value in the loop below.
+    options.parser.defaults['tests_pattern'] = defaults['tests_pattern']
     local_options = options.get_options(args=args)
     # Set our default options, if the options aren't specified.
     for name, value in defaults.items():

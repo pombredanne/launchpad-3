@@ -15,8 +15,6 @@
         </li>
       </ul>
 
-      <h1>Translation templates</h1>
-
       <div class="yui-g">
         <div class="yui-u first">
           <div class="portlet">
@@ -40,7 +38,7 @@
               If you want to manually integrate translations for this package,
               you can
               <a tal:attributes="href context/menu:navigation/download/url">
-                download full tarball</a> with translations.
+                download a full tarball</a> with translations.
             </p>
           </div>
         </div>
