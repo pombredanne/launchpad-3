@@ -228,9 +228,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return IProject.providedBy(self.context)
 
     @property
-    def pagetitle(self):
+    def page_title(self):
         """Page title."""
         return self.pageheading
+
+    label = page_title
 
     @property
     def pageheading(self):
@@ -447,7 +449,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     matching_faqs_count = 0
 
     @property
-    def pageheading(self):
+    def page_title(self):
         """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions you asked matching "${search_text}" for '
@@ -457,6 +459,9 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
         else:
             return _('Questions you asked about ${context}',
                      mapping={'context': self.context.displayname})
+
+    pageheading = page_title
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -486,7 +491,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     matching_faqs_count = 0
 
     @property
-    def pageheading(self):
+    def page_title(self):
         """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions matching "${search_text}" needing your '
@@ -496,6 +501,9 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
         else:
             return _('Questions needing your attention for ${context}',
                      mapping={'context': self.context.displayname})
+
+    pageheading = page_title
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -544,7 +552,7 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
                 canonical_url(self.context, rootsite='answers'))
 
     @property
-    def pageheading(self):
+    def page_title(self):
         """See `SearchQuestionsView`."""
         mapping = dict(context=self.context.displayname,
                        search_text=self.search_text,
@@ -556,6 +564,9 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
         else:
             return _('${language} questions in ${context}',
                       mapping=mapping)
+
+    pageheading = page_title
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -594,6 +605,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
     def page_title(self):
         return 'Answer contact for %s' % self.context.title
 
+    label = page_title
     custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
