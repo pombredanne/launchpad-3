@@ -10,11 +10,6 @@
       <dd tal:content="structure context/product/fmt:link" />
     </dl>
 
-    <dl id="registrant" tal:condition="not:view/owner_is_registrant">
-      <dt>Registered by:</dt>
-      <dd tal:content="structure context/registrant/fmt:link" />
-    </dl>
-
     <dl id="owner">
       <dt>Owner:</dt>
       <dd tal:content="structure context/owner/fmt:link" />

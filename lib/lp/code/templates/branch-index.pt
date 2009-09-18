@@ -47,11 +47,17 @@
 
 </metal:side>
 
-<div metal:fill-slot="main">
+<tal:registering metal:fill-slot="registering">
+  Created by
+    <tal:registrant replace="structure context/registrant/fmt:link" />
+  on
+    <tal:created-on replace="structure context/date_created/fmt:date" />
+  and last modified on 
+    <tal:last-modified replace="structure context/date_last_modified/fmt:date" />
+</tal:registering>
 
-  <h1>
-    <tal:branch replace="context/bzr_identity" />
-  </h1>
+
+<div metal:fill-slot="main">
 
   <div class="yui-g first">
     <tal:branch-errors tal:replace="structure context/@@+messages" />

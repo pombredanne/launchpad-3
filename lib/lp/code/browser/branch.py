@@ -307,6 +307,12 @@ class BranchView(LaunchpadView, FeedsMixin):
         BranchFeedLink,
         )
 
+    @property
+    def page_title(self):
+        return self.context.bzr_identity
+
+    label = page_title
+
     def initialize(self):
         self.notices = []
         self._add_subscription_notice()
