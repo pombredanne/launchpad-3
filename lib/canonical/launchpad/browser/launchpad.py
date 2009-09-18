@@ -103,6 +103,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
+from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -263,16 +264,27 @@ class Hierarchy(LaunchpadView):
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the requested page (as specified in self.request) is the default
-        one for the last traversed object, return None.
+        one for our parent view's context, return None.
         """
         url = self.request.getURL()
-        last_segment = URI(url).path.split('/')[-1]
-        default_view_name = zapi.getDefaultViewName(
-            self.request.traversed_objects[-1], self.request)
-        if last_segment.startswith('+') and last_segment != default_view_name:
+        from zope.security.proxy import removeSecurityProxy
+        view = removeSecurityProxy(self.request.traversed_objects[-1])
+        obj = self.request.traversed_objects[-2]
+        default_view_name = zapi.getDefaultViewName(obj, self.request)
+        if view.__name__ != default_view_name:
+            title = getattr(view, 'page_title', None)
+            if title is None:
+                title = getattr(view, 'label', None)
+            if title is None or title == '':
+                template = getattr(view, 'template', None)
+                if template is None:
+                    template = view.index
+                template_api = PageTemplateContextsAPI(
+                    dict(context=obj, template=template, view=view))
+                title = template_api.pagetitle()
             breadcrumb = Breadcrumb(None)
             breadcrumb._url = url
-            breadcrumb.text = last_segment
+            breadcrumb.text = title
             return breadcrumb
         else:
             return None

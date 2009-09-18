@@ -475,6 +475,9 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
+    # This is needed for our breadcrumbs, as there's no <browser:page>
+    # declaration for this view.
+    __name__ = '+self-renewal'
     schema = ITeamMembership
     field_names = []
     template = ViewPageTemplateFile(
@@ -569,6 +572,9 @@ class TeamInvitationView(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
+    # This is needed for our breadcrumbs, as there's no <browser:page>
+    # declaration for this view.
+    __name__ = '+invitation'
     schema = ITeamMembershipInvitationAcknowledgementForm
     field_names = ['acknowledger_comment']
     custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
@@ -2664,7 +2670,9 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         categories = set()
         for contrib in self.contributions:
             categories.update(category for category in contrib['categories'])
-        return sorted(categories, key=attrgetter('title'))
+        sort = {'code': 0, 'bugs': 1, 'blueprints': 2, 'translations': 3,
+                'answers': 4, 'specs': 5, 'soyuz': 6}
+        return sorted(categories, key=lambda category: sort[category.name])
 
     @cachedproperty
     def context_is_probably_a_team(self):

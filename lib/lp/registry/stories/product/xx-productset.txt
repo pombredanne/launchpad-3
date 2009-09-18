@@ -34,7 +34,7 @@ A member of the Launchpad registry experts team may successfully access the
     >>> registry_browser.url
     'http://launchpad.dev/projects/+review-licenses'
     >>> print registry_browser.title
-    +review-licenses : Projects
+    Review projects...
 
 
 Searching from +review_licenses
@@ -186,13 +186,13 @@ The unprivileged user can see "+all".
 
     >>> user_browser.open('http://launchpad.dev/projects/+all')
     >>> print user_browser.title
-    +all : Projects
+    Projects registered in Launchpad...
 
 The commercial user can also view "+all".
 
     >>> registry_browser.open('http://launchpad.dev/projects/+all')
     >>> print registry_browser.title
-    +all : Projects
+    Projects registered in Launchpad...
 
 
 Create a project
@@ -202,10 +202,16 @@ The unprivileged user can see "+new".
 
     >>> user_browser.open('http://launchpad.dev/projects/+new')
     >>> print user_browser.title
-    +new : Projects
+    Register a project in Launchpad...
 
 The commercial user can also view "+new".
 
     >>> registry_browser.open('http://launchpad.dev/projects/+new')
     >>> print registry_browser.title
-    +new : Projects
+    Register a project in Launchpad...
+
+The commercial user can also view "+new".
+
+    >>> registry_browser.open('http://launchpad.dev/projects/+new')
+    >>> print registry_browser.title
+    Register a project in Launchpad...

@@ -17,7 +17,7 @@ Asking a new question requires logging in:
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for Ubuntu Linux: Ubuntu
+    Ask a question...
 
 
 == Get Help Online ==
@@ -32,12 +32,11 @@ associated with the source package of the used application.
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+sources/mozilla-firefox/+gethelp')
     >>> user_browser.title
-    '+gethelp : ...mozilla-firefox... package : 5.04 : Ubuntu'
+    'Help and support...
 
     >>> user_browser.getLink('Ask a question').click()
     >>> user_browser.title
-    '+addquestion : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package
-    : 5.04 : Ubuntu'
+    'Ask a question...
 
 
 == Searching for Similar FAQs and Questions ==
@@ -156,8 +155,7 @@ redirect the user to the question page.
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
     >>> user_browser.title
-    '+index : Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package
-    in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    'Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package...
 
     >>> contents = find_main_content(user_browser.contents)
     >>> contents.findChild('div', id='question-details')
