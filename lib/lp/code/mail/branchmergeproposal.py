@@ -220,7 +220,8 @@ class BMPMailer(BranchMailer):
                                 review.review_type))
         if len(requested_reviews) > 0:
             requested_reviews.insert(0, 'Requested reviews:')
-            params['reviews'] = ('\n    '.join(requested_reviews))
+            params['reviews'] = (''.join('    %s\n' % review
+                                 for review in requested_reviews))
 
         if self.comment is not None:
             params['comment'] = (self.comment.message.text_contents)
