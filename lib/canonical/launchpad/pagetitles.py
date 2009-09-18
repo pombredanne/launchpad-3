@@ -480,30 +480,7 @@ def loginservice_authorize(context, view):
 
 loginservice_login = 'Launchpad Login Service'
 
-logintoken_claimprofile = 'Claim Launchpad profile'
-
-logintoken_claimteam = 'Claim Launchpad team'
-
-# This page will always redirect the user to another page specific to the
-# login token in question, except when the token has been consumed already, in
-# which case the user will see the title.
-logintoken_index = 'You have already done this'
-
-logintoken_mergepeople = 'Merge Launchpad accounts'
-
-logintoken_newaccount = 'Create a new Launchpad account'
-
-logintoken_resetpassword = 'Forgotten your password?'
-
 loginservice_standalone_login = loginservice_login
-
-logintoken_validateemail = 'Confirm e-mail address'
-
-logintoken_validategpg = 'Confirm OpenPGP key'
-
-logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
-
-logintoken_validateteamemail = 'Confirm e-mail address'
 
 # main_template has the code to insert one of these titles.
 
