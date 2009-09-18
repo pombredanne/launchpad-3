@@ -40,7 +40,6 @@ Branch URLs are not valid for hosted branches.
     Branch information
     Project: Redfish (Unspecified)
     Owner: Sample Person
-    Review team: Sample Person
     Status: Development
 
 
@@ -75,7 +74,6 @@ Branch URLs are required for mirrored branches.
     Branch information
     Project: Redfish (Unspecified)
     Owner: Sample Person
-    Review team: Sample Person
     Status: Development
     Location: http://example.com/mirrored-branch
     Last mirrored: Not mirrored yet
@@ -101,7 +99,6 @@ A remote branch may have a URL, but doesn't have to.
     Branch information
     Project: Redfish (Unspecified)
     Owner: Sample Person
-    Review team: Sample Person
     Status: Development
     Location: http://example.com/remote-branch
 
@@ -150,9 +147,10 @@ matching for the angle brackets of an enclosing tag.
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'privacy'))
     This branch is public
     >>> print extract_text(find_main_content(user_browser.contents))
-    Gnome Applets ...
+    Created by No Privileges Person on ... and last modified on ...
     lp://dev/~no-priv/applets/main ...
-    ...http://example.com/applets/main...
+    Gnome Applets ...
+    http://example.com/applets/main...
 
 
 This page includes a link to other branches associated
