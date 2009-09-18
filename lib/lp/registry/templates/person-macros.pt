@@ -74,7 +74,7 @@
 
 <!-- contact macro -->
 <metal:macro define-macro="contact">
-  <div class="portlet"
+  <div class="portlet" id="contact-user"
     tal:condition="view/can_contact">
     <a href="+contactuser" class="sprite mail"
       tal:attributes="title view/contact_link_title"
