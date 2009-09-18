@@ -83,7 +83,7 @@ class BazaarBranchStore:
         except NotBranchError:
             branch_to = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
-        branch_to.pull(branch_from)
+        branch_to.pull(branch_from, overwrite=True)
 
 
 def get_default_bazaar_branch_store():
