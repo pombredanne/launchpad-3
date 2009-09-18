@@ -78,6 +78,6 @@ series, we can create structural bug subscriptions.
     http://launchpad.dev/ubuntu/warty/+subscribe
 
     >>> print admin_browser.title
-    Bug subscriptions for The Warty Warthog Release
+    Subscribe to Bugs in The Warty Warthog Release
 
 

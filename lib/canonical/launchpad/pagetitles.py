@@ -351,9 +351,6 @@ distributionsourcepackage_index = ContextTitle('%s')
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
-structural_subscriptions_manage = ContextTitle(
-    'Bug subscriptions for %s')
-
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
 distroarchseries_builds = ContextTitle('%s builds')
