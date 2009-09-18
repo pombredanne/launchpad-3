@@ -6,21 +6,6 @@
   metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="head_epilogue">
-       <style type="text/css">
-       #homepage-whatslaunchpad ul {
-         margin-top: 0.5em;
-         margin-left: 1em;
-       }
-       #homepage-whatslaunchpad li {
-         margin-bottom: 0.5em;
-       }
-       .blogdate {
-         color: darkgray;
-         font-size: 85%;
-       }
-       </style>
-    </div>
     <div metal:fill-slot="main">
 
       <div class="informational message" tal:condition="view/canRedirect">
@@ -47,22 +32,19 @@
       </tal:comment>
       <!-- Is your project registered yet? -->
 
-      <form
+  <div id="homepage">
+    <div class="top-portlet">
+      <img src="/@@/launchpad-logo-and-name.png"
+           alt=""
+           style="margin: 0 9em 1em 0"/>
+      <form id="homepage-searchform"
         xml:lang="en" lang="en" dir="ltr"
         tal:attributes="action string:${rooturl}+search"
-        method="get"
-        accept-charset="UTF-8"
-        class="top-portlet"
-        style="text-align: center"
-      >
-        <img src="/@@/launchpad-logo-and-name.png"
-             alt=""
-             style="margin: 0 9em 1em 0"/>
-        <br />
-        <input id="text" type="text" name="field.text" size="50" />
-        <input type="submit" value="Search Launchpad" />
+        method="get" accept-charset="UTF-8">
+        <input id="text" type="text" name="field.text" size="45" />
+        <input id="search" type="submit" value="Search Launchpad" />
       </form>
-      <div id="home-stats">
+      <div id="homepage-stats">
         <strong tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,
         <strong tal:content="view/bug_count/fmt:intcomma">123</strong>&nbsp;bugs,
         <strong tal:content="view/branch_count/fmt:intcomma">123</strong>&nbsp;branches,
@@ -71,27 +53,30 @@
         <strong tal:content="view/blueprint_count/fmt:intcomma">123</strong>&nbsp;blueprints,
         and&nbsp;counting...
       </div>
+    </div>
 
-      <div class="yui-gc" style="width:90%; max-width:80em; margin:auto;">
+      <div class="yui-gc">
 
         <div class="yui-u first">
-        <div id="homepage-whatslaunchpad" class="portlet">
+        <div id="homepage-whatslaunchpad" class="homepage-portlet"
+             tal:condition="not:view/is_logged_in">
           <h2>Launchpad is a software collaboration platform that provides:</h2>
-          <ul>
-          <li>Bug tracking</li>
-          <li>Code hosting using <a href="http://bazaar-vcs.org//">bazaar</a></li>
-          <li>Code reviews</li>
-          <li>Ubuntu package building and hosting</li>
-          <li>Translations</li>
-          <li>Answer tracking and FAQs</li>
-          <li>Specification tracking</li>
+          <ul tal:define="apphomes view/apphomes">
+          <li>&ndash; <a tal:attributes="href apphomes/bugs">Bug tracking</a></li>
+          <li>&ndash; <a tal:attributes="href apphomes/code">Code hosting</a>
+            using <a href="http://bazaar-vcs.org//">bazaar</a></li>
+          <li>&ndash; Code reviews</li>
+          <li>&ndash; <a tal:attributes="href apphomes/translations">Ubuntu package building and hosting</a></li>
+          <li>&ndash; <a tal:attributes="href apphomes/translations">Translations</a></li>
+          <li>&ndash; <a tal:attributes="href apphomes/answers">Answer tracking and FAQs</a></li>
+          <li>&ndash; <a tal:attributes="href apphomes/blueprints">Specification tracking</a></li>
           </ul>
           <a href="/+tour"><img src="/@@/tour-icon" alt=""
                   /></a> <a href="/+tour">Take the tour</a>
         </div>
-         <div id="homepage-blogposts" class="portlet">
+         <div id="homepage-blogposts" class="homepage-portlet">
           <h2>Latest blog posts</h2>
-          <ul style="padding: 0; margin: auto;">
+          <ul>
            <li class="news">
               <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
                   Launchpad now open source!</a><span class="blogdate"> - 11 Sep 2009</span><br />
@@ -118,7 +103,7 @@
                 Find out more about Launchpad's privacy features for your commercial projects.
            </li>
           </ul>
-          <div class="discreet" style="text-align: right">
+          <div class="discreet">
             Updated 2009-08-03.<br />
             <a href="http://blog.launchpad.net">&gt; Older posts</a>
           </div>
@@ -126,11 +111,15 @@
         </div>
 
         <div class="yui-u">
-          <div id="homepage-getstarted" class="portlet">
+          <div id="homepage-getstarted" class="homepage-portlet">
               <h2>Get started</h2>
                 If you're new to Launchpad you can test it out in our
                 <a href="https://staging.launchpad.net/">sandbox environment</a>.<br />
+                <tal:logged_out condition="not:view/is_logged_in" omit-tag="">
                 If you're ready, just <a href="">create an account</a> and you're good to go.
+                </tal:logged_out>
+                <tal:logged_in condition="view/is_logged_in" omit-tag="">
+                If you're ready, you can:
                 <ul>
                   <li><a href="/projects/+new"><img src="/@@/add"
                   /></a> <a href="/projects/+new">Create a new project</a></li>
@@ -141,16 +130,28 @@
                   <li><a href="https://help.launchpad.net/"><img src="/@@/maybe" alt=""
                   /></a> <a href="https://help.launchpad.net/">Get help</a></li>
                 </ul>
+                </tal:logged_in>
           </div>
-         <div id="featured-projects" class="portlet">
+         <div id="homepage-featured" class="homepage-portlet">
           <h2>Featured projects</h2>
-          <div style="margin:auto;">
-            <ul>
+          <div id="homepage-featured-top"
+               tal:define="topproject view/featured_projects_top">
+            <a tal:attributes="href topproject/fmt:url">
+              <img tal:replace="structure topproject/image:logo" />
+              <div id="homepage-featured-top-title">
+                <span tal:content="topproject/displayname">Foo project</span>
+              </div>
+            </a>
+          <div id="homepage-featured-top-text"
+               tal:content="structure view/featured_projects_top_summary">
+               Foo project is great... </div>
+          </div>
+            <ul id="homepage-featured-left">
               <li tal:repeat="project view/featured_projects_col_a">
                 <a tal:replace="structure project/fmt:link" />
               </li>
             </ul>
-            <ul>
+            <ul id="homepage-featured-right">
               <li tal:repeat="project view/featured_projects_col_b">
                 <a tal:replace="structure project/fmt:link" />
               </li>
@@ -160,10 +161,10 @@
               <a href="+featuredprojects">&raquo; Manage featured project list</a>
             </div>
           </div>
-          </div>
         </div>
 
       </div><!-- yui-g -->
+      </div><!-- homepage -->
     </div><!--main-->
   </body>
 </html>

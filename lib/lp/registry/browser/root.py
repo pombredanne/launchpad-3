@@ -18,11 +18,14 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
+
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
+from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
@@ -52,7 +55,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     # The homepage has two columns to hold featured projects. This
     # determines the number of projects we display in each column.
-    FEATURED_PROJECT_ROWS = 10
+    FEATURED_PROJECT_ROWS = 5
+    MAX_SUMMARY_LENGTH = 200
 
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
@@ -60,20 +64,55 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             config.launchpad.beta_testers_redirection_host is not None and
             self.isBetaUser)
 
+    @property
+    def is_logged_in(self):
+        return self.user is not None
+
+    @cachedproperty
+    def apphomes(self):
+        return {
+            'answers': canonical_url(self.context, rootsite='answers'),
+            'blueprints': canonical_url(self.context, rootsite='blueprints'),
+            'bugs': canonical_url(self.context, rootsite='bugs'),
+            'code': canonical_url(self.context, rootsite='code'),
+            'translations': canonical_url(self.context,
+                                          rootsite='translations'),
+            'ubuntu': canonical_url(
+                getUtility(ILaunchpadCelebrities).ubuntu),
+            }
+
     @cachedproperty
     def featured_projects(self):
         """Return a list of featured projects."""
         return getUtility(IPillarNameSet).featured_projects
 
     @property
+    def featured_projects_top(self):
+        """Return the topmost featured project."""
+        return self.featured_projects[0]
+
+    @property
+    def featured_projects_top_summary(self):
+        """Return the summary topmost featured project.
+
+        If the summary is too long (MAX_SUMMARY_LENGTH) it is truncated and
+        a horizontal ellipsis is appended.
+        """
+        summary = self.featured_projects[0].summary
+        if len(summary) > self.MAX_SUMMARY_LENGTH:
+            return summary[:self.MAX_SUMMARY_LENGTH]+"&hellip;"
+        else:
+            return summary
+
+    @property
     def featured_projects_col_a(self):
         """Return a list of featured projects."""
-        return self.featured_projects[:self.FEATURED_PROJECT_ROWS]
+        return self.featured_projects[1:self.FEATURED_PROJECT_ROWS+1]
 
     @property
     def featured_projects_col_b(self):
         """The list of featured projects."""
-        return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
+        return self.featured_projects[self.FEATURED_PROJECT_ROWS+1:]
 
     @property
     def branch_count(self):
