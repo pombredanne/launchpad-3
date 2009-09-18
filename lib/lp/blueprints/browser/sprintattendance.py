@@ -145,7 +145,7 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
 class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     """A view used to register someone else's attendance at a sprint."""
 
-    label = page_title = 'Register someone to attend this meeting'
+    label = 'Register someone else'
     field_names = ['attendee', 'time_starts', 'time_ends']
 
     @property
@@ -158,5 +158,3 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     def register_action(self, action, data):
         time_starts, time_ends = self.getDates(data)
         self.context.attend(data['attendee'], time_starts, time_ends)
-
-    label = 'Register someone else'
