@@ -92,6 +92,13 @@ jscheck: build
 	@echo
 	bin/test $(VERBOSITY) --layer=BugsWindmillLayer
 	bin/test $(VERBOSITY) --layer=CodeWindmillLayer
+
+jscheck_functest: build
+    # Run the old functest Windmill integration tests.  The test runner
+    # takes care of setting up the test environment.
+	@echo
+	@echo "Running Windmill funtest integration test suite"
+	@echo
 	bin/jstest
 
 check_mailman: build
