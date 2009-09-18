@@ -219,7 +219,7 @@ class cmd_test(EC2Command):
                 'of your headless test run.')
 
 
-        instance = EC2Instance(
+        instance = EC2Instance.make(
             EC2TestRunner.name, instance_type, machine)
 
         runner = EC2TestRunner(
