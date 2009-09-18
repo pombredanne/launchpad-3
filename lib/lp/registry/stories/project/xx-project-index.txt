@@ -54,26 +54,20 @@ project. It is only available to users which have 'Admin' privileges on the
 project.
 
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> browser.getLink('Register another project')
+    >>> browser.getLink('Register a project in the Mozilla Project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-    >>> browser.getLink('Register another project')
+    >>> browser.getLink('Register a project in the Mozilla Project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> admin_browser.open('http://launchpad.dev/mozilla')
-    >>> admin_browser.getLink('Register another project').url
+    >>> admin_browser.getLink('Register a project in the Mozilla Project').url
     'http://launchpad.dev/mozilla/+newproduct'
-
-Also, it has a link to help translate it.
-
-    >>> admin_browser.getLink('Help translate').click()
-    >>> print admin_browser.title
-    Translatable projects for The Mozilla Project
 
 
 == Empty Project Groups ==
@@ -104,10 +98,6 @@ question' or 'Help translate' buttons.
       ..
     LinkNotFoundError...
     >>> user_browser.getLink('Help translate')
-    Traceback (most recent call last):
-      ..
-    LinkNotFoundError...
-    >>> user_browser.getLink(url='+mentoring')
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
@@ -149,8 +139,8 @@ the new product form for the project group.
 
     >>> admin_browser.getLink(
     ...     'register another project that is part of Test Group').click()
-    >>> admin_browser.title
-    'Register a project in your project group'
+    >>> print admin_browser.title
+    +newproduct : Test Group
 
 == Products of a project ==
 
@@ -192,4 +182,4 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/mozilla/+subscribe
     >>> print user_browser.title
-    Bug subscriptions for The Mozilla Project
+    Subscribe to Bugs in The Mozilla Project

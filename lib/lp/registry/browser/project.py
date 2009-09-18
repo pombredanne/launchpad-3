@@ -6,26 +6,25 @@
 __metaclass__ = type
 
 __all__ = [
+    'ProjectActionMenu',
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
     'ProjectAnswersMenu',
-    'ProjectBountiesMenu',
     'ProjectBrandingView',
-    'ProjectBreadcrumbBuilder',
     'ProjectBugsMenu',
     'ProjectEditView',
     'ProjectFacets',
     'ProjectMaintainerReassignmentView',
     'ProjectNavigation',
+    'ProjectOverviewMenu',
     'ProjectRdfView',
     'ProjectReviewView',
-    'ProjectActionMenu',
-    'ProjectOverviewMenu',
     'ProjectSeriesSpecificationsMenu',
-    'ProjectSetBreadcrumbBuilder',
+    'ProjectSetBreadcrumb',
     'ProjectSetContextMenu',
     'ProjectSetNavigation',
+    'ProjectSetNavigationMenu',
     'ProjectSetView',
     'ProjectSpecificationsMenu',
     'ProjectView',
@@ -49,10 +48,14 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.registry.browser.product import (
     ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
@@ -64,10 +67,11 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
     canonical_url, custom_widget, enabled_with_permission, stepthrough,
     structured)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 
-class ProjectNavigation(Navigation):
+class ProjectNavigation(Navigation,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IProject
 
@@ -99,14 +103,7 @@ class ProjectSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(project))
 
 
-class ProjectBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `IProject`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
-class ProjectSetBreadcrumbBuilder(BreadcrumbBuilder):
+class ProjectSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProjectSet`."""
     text = 'Project Groups'
 
@@ -192,27 +189,18 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
     usedfor = IProject
     facet = 'overview'
     links = [
-        'branding', 'driver', 'reassign', 'top_contributors', 'mentorship',
+        'branding', 'driver', 'reassign', 'top_contributors',
         'announce', 'announcements', 'branch_visibility', 'rdf',
         'new_product', 'administer', 'milestones']
 
     @enabled_with_permission('launchpad.Edit')
     def new_product(self):
-        text = 'Register another project in %s' % self.context.displayname
-        return Link('+newproduct', text, icon='edit')
+        text = 'Register a project in %s' % self.context.displayname
+        return Link('+newproduct', text, icon='add')
 
     def top_contributors(self):
         text = 'More contributors'
         return Link('+topcontributors', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-
-        # We disable this link if the project has no products. This is for
-        # consistency with the way the overview buttons behave in the same
-        # circumstances.
-        return Link('+mentoring', text, icon='info',
-                    enabled=self.context.hasProducts())
 
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
@@ -221,13 +209,13 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'More announcements'
+        text = 'Read all announcements'
         enabled = bool(self.context.getAnnouncements())
-        return Link('+announcements', text, enabled=enabled)
+        return Link('+announcements', text, icon='info', enabled=enabled)
 
     def milestones(self):
         text = 'See all milestones'
-        return Link('+milestones', text)
+        return Link('+milestones', text, icon='info')
 
     def rdf(self):
         text = structured(
@@ -277,21 +265,6 @@ class ProjectEditNavigationMenu(NavigationMenu, ProjectEditMenuMixin):
     facet = 'overview'
     title = 'Change project group'
     links = ('branding', 'reassign', 'driver', 'administer')
-
-
-class ProjectBountiesMenu(ApplicationMenu):
-
-    usedfor = IProject
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register a bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
 
 
 class ProjectSpecificationsMenu(ApplicationMenu):
@@ -344,6 +317,15 @@ class ProjectBugsMenu(ApplicationMenu):
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
     implements(IProjectActionMenu)
+
+    @cachedproperty
+    def has_many_projects(self):
+        """Does the projectgroup have many sub projects.
+
+        The number of sub projects can break the preferred layout so the
+        template may want to plan for a long list.
+        """
+        return self.context.products.count() > 10
 
 
 class ProjectEditView(LaunchpadEditFormView):
@@ -426,7 +408,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 
     The new project will automatically be a part of the project group.
     """
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     @cachedproperty
     def label(self):
@@ -443,7 +425,7 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
 class ProjectGroupAddStepTwo(ProjectAddStepTwo):
     """Step 2 (of 2) in the +newproduct project add wizard."""
 
-    heading = "Register a project in your project group"
+    page_title = "Register a project in your project group"
 
     def create_product(self, data):
         """Create the product from the user data."""
@@ -475,9 +457,33 @@ class ProjectAddProductView(ProductAddView):
         return ProjectGroupAddStepOne
 
 
-class ProjectSetView(LaunchpadView):
+class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for project group index."""
+    usedfor = IProjectSet
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        'register_project_group',
+        'view_all_project_groups',
+        ]
 
-    header = "Project groups registered in Launchpad"
+    @enabled_with_permission('launchpad.ProjectReview')
+    def register_project_group(self):
+        text = 'Register a project group'
+        return Link('+new', text, icon='add')
+
+    def view_all_project_groups(self):
+        text = 'View all project groups'
+        return Link('+all', text, icon='list')
+
+
+class ProjectSetView(LaunchpadView):
+    """View for project group index page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = "Project groups registered in Launchpad"
 
     def __init__(self, context, request):
         super(ProjectSetView, self).__init__(context, request)
@@ -487,17 +493,26 @@ class ProjectSetView(LaunchpadView):
         self.malone = self.form.getOne('malone', None)
         self.bazaar = self.form.getOne('bazaar', None)
         self.text = self.form.getOne('text', None)
-        self.searchrequested = False
+        self.search_requested = False
+        self.search_string = None
         if (self.text is not None or
             self.bazaar is not None or
             self.malone is not None or
             self.rosetta is not None or
             self.soyuz is not None):
-            self.searchrequested = True
+            self.search_requested = True
         self.results = None
         self.matches = 0
 
-    def searchresults(self):
+    def initialize(self):
+        """See `LaunchpadView`."""
+        form = self.request.form_ng
+        self.search_string = form.getOne('text')
+        if self.search_string is not None:
+            self.search_requested = True
+
+    @cachedproperty
+    def search_results(self):
         """Use searchtext to find the list of Projects that match
         and then present those as a list. Only do this the first
         time the method is called, otherwise return previous results.
@@ -527,6 +542,7 @@ class ProjectAddView(LaunchpadFormView):
         ]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
+    page_title = label
     project = None
 
     @action(_('Add'), name='add')
@@ -620,7 +636,7 @@ class ProjectAddQuestionView(QuestionAddView):
             render_context=self.render_context)
 
     @property
-    def pagetitle(self):
+    def page_title(self):
         """The current page title."""
         return _('Ask a question about a project in ${project}',
                  mapping=dict(project=self.context.displayname))

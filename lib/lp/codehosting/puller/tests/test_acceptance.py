@@ -298,7 +298,7 @@ class TestBranchPuller(PullerBranchTestCase):
         elif branch_type == BranchType.MIRRORED:
             # For mirrored branches, we serve the branch over HTTP, point the
             # database branch at this HTTP server and call requestMirror()
-            self.setUpMirroredBranch(default_branch, format='1.6')
+            self.setUpMirroredBranch(default_branch)
             transaction.commit()
         else:
             raise AssertionError(
@@ -315,7 +315,7 @@ class TestBranchPuller(PullerBranchTestCase):
         default_branch = self._makeDefaultStackedOnBranch()
         db_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=default_branch.product)
-        tree = self.setUpMirroredBranch(db_branch, format='1.6')
+        tree = self.setUpMirroredBranch(db_branch)
         transaction.commit()
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
@@ -335,7 +335,7 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch = self.factory.makeProductBranch(
             branch_type=BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
-        self.pushBranch(db_branch, format='1.6')
+        self.pushBranch(db_branch)
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         mirrored_branch = self.assertMirrored(db_branch)
@@ -358,7 +358,7 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch = self.factory.makeProductBranch(
             branch_type=BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
-        self.pushBranch(db_branch, format='1.6')
+        self.pushBranch(db_branch)
         # Because Bazaar can't access branches over bzr+ssh in this test, we
         # cheat and set the stacking information directly.
         branch_config = TransportConfig(
@@ -383,7 +383,7 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=default_branch.product)
 
-        tree = self.setUpMirroredBranch(db_branch, format='1.6')
+        tree = self.setUpMirroredBranch(db_branch)
         transaction.commit()
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)

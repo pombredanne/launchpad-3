@@ -27,7 +27,8 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from canonical.launchpad.interfaces.launchpad import IBazaarApplication
 from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, LaunchpadView, Link)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link)
 
 
 class BazaarBranchesMenu(ApplicationMenu):
@@ -147,6 +148,17 @@ class ProductInfo:
             commit = (
                 "last commit %d days old" % self.elapsed_since_commit.days)
         return "%s, %s" % (size, commit)
+
+
+class BazaarProjectsRedirect(LaunchpadView):
+    """Redirect the user to /projects on the code rootsite."""
+
+    def initialize(self):
+        # Redirect to the caller to the new location.
+        product_set = getUtility(IProductSet)
+        redirect_url = canonical_url(product_set, rootsite="code")
+        # Moved permanently.
+        self.request.response.redirect(redirect_url, status=301)
 
 
 class BazaarProductView:

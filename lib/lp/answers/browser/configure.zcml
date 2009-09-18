@@ -76,7 +76,7 @@
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+answer-contact"
     permission="launchpad.AnyPerson"
-    class="canonical.launchpad.browser.ManageAnswerContactView"
+    class="lp.answers.browser.questiontarget.ManageAnswerContactView"
     template="../templates/questiontarget-manage-answercontacts.pt"
     />
   <browser:renamed-page
@@ -114,9 +114,15 @@
     classes="QuestionCollectionAnswersMenu QuestionTargetAnswersMenu"
     />
   <browser:menus
-    module=".question"
-    classes="QuestionContextMenu QuestionSetContextMenu"
+    module="canonical.launchpad.browser"
+    classes="FAQNavigationMenu"
     />
+  <browser:menus
+    module="lp.answers.browser.question"
+    classes="
+        QuestionEditMenu
+        QuestionExtrasMenu
+        QuestionSetContextMenu" />
 
   <browser:defaultView
     for="lp.answers.interfaces.question.IQuestion"
@@ -134,10 +140,6 @@
     for="lp.answers.interfaces.question.IQuestion"
     permission="zope.Public"
     >
-    <browser:page
-      name="+history"
-      template="../templates/question-history.pt"
-      />
     <browser:page
       name="+portlet-reopenings"
       template="../templates/question-portlet-reopenings.pt"
@@ -172,6 +174,14 @@
     />
 
   <browser:page
+    name="+history"
+    for="lp.answers.interfaces.question.IQuestion"
+    class=".question.QuestionHistoryView"
+    permission="zope.Public"
+    template="../templates/question-history.pt"
+    />
+
+  <browser:page
     name="+confirm"
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionConfirmAnswerView"
@@ -200,7 +210,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionEditView"
     permission="launchpad.AnyPerson"
-    template="../templates/question-edit.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:page
@@ -224,7 +234,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionCreateFAQView"
     permission="launchpad.Moderate"
-    template="../templates/question-createfaq.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:page
@@ -293,7 +303,7 @@
     for="lp.answers.interfaces.faqtarget.IFAQTarget"
     class=".faqtarget.FAQCreateView"
     permission="launchpad.Moderate"
-    template="../templates/questiontarget-createfaq.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:url
@@ -330,11 +340,7 @@
     for="lp.answers.interfaces.faq.IFAQ"
     class=".faq.FAQEditView"
     permission="launchpad.Edit"
-    template="../templates/faq-edit.pt"
-    />
-  <browser:menus
-    module="canonical.launchpad.browser"
-    classes="FAQContextMenu"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:defaultView

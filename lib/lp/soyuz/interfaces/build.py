@@ -26,10 +26,11 @@ from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.builder import IBuilder
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, ISourcePackagePublishingHistory)
+    ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from lazr.restful.fields import Reference
@@ -528,6 +529,6 @@ class IBuildRescoreForm(Interface):
     """Form for rescoring a build."""
 
     priority = Int(
-        title=_("Priority"), required=True, max=((2 ** 31) - 1),
+        title=_("Priority"), required=True, min=-2 ** 31, max=2 ** 31,
         description=_("Build priority, the build with the highest value will "
                       "be dispatched first."))

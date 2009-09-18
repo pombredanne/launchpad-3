@@ -35,7 +35,7 @@ def test_subscribers_portlet():
     # The details for ~foobar are present inside the portlet,
     # which means that the contents were loaded correctly.
     client.asserts.assertNode(
-        xpath=u"//div[@id='portlet-subscribers']//a[@href='/~name16']")
+        xpath=u"//div[@id='portlet-subscribers']//a[@name='Foo Bar']")
 
 
 def test_bugfilters_portlet():

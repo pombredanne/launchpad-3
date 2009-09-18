@@ -8,9 +8,11 @@ __metaclass__ = type
 __all__ = [
     'HasSpecificationsView',
     'RegisterABlueprintButtonView',
+    'SpecificationDocumentationView',
     ]
 
 from operator import itemgetter
+from zope.component import queryMultiAdapter
 
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -29,10 +31,11 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter
+from canonical.lazr.utils import smartquote
 
 
 class HasSpecificationsView(LaunchpadView):
@@ -310,6 +313,15 @@ class HasSpecificationsView(LaunchpadView):
             quantity=quantity, prejoin_people=False)
 
 
+class SpecificationDocumentationView(HasSpecificationsView):
+    """View for blueprints +documentation page."""
+
+    @property
+    def label(self):
+        return smartquote('Current documentation for "%s"' %
+                          self.context.displayname)
+
+
 class RegisterABlueprintButtonView:
     """View that renders a button to register a blueprint on its context."""
 
@@ -331,3 +343,18 @@ class RegisterABlueprintButtonView:
               </a>
         """ % canonical_url(target, rootsite='blueprints')
 
+
+class HasSpecificationsOnBlueprintsVHostBreadcrumb(Breadcrumb):
+    rootsite = 'blueprints'
+
+    @property
+    def text(self):
+        return 'Blueprints for %s' % self.context.title
+
+
+class PersonOnBlueprintsVHostBreadcrumb(Breadcrumb):
+    rootsite = 'blueprints'
+
+    @property
+    def text(self):
+        return 'Blueprints involving %s' % self.context.displayname

@@ -3,17 +3,12 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
 
 <div metal:fill-slot="main">
-
-  <h1>Upload new translation resources</h1>
 
   <p
     class="not-translated-in-launchpad"
@@ -38,20 +33,19 @@
     >Read the translations import policy</a>)
   </p>
 
-  <form action="+translations-upload" method="post" enctype="multipart/form-data">
-    <table>
-      <tr>
-        <th><label for="file_input">File:</label></th>
-        <td><input id="file_input" name="file" type="file" /></td>
-      </tr>
-      <tr>
-        <th></th>
-        <td>
-          <input name="translations_upload" type="submit"
-                 value="Request Upload"/>
-        </td>
-      </tr>
-    </table>
+  <form action="+translations-upload" method="post"
+        enctype="multipart/form-data" class="translations">
+    <div class="fields">
+      <label for="file_input">File:</label>
+      <input id="file_input" name="file" type="file" />
+    </div>
+    <div class="actions">
+      <p>
+        <input name="translations_upload" type="submit"
+               value="Upload"/>
+        or <a tal:attributes="href view/cancel_url">Cancel</a>
+      </p>
+    </div>
   </form>
 </div>
 

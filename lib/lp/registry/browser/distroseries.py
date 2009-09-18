@@ -8,10 +8,11 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesAddView',
     'DistroSeriesAdminView',
-    'DistroSeriesBreadcrumbBuilder',
+    'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesPackageSearchView',
+    'DistroSeriesPackagesView',
     'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
@@ -37,12 +38,14 @@ from lp.registry.interfaces.distroseries import (
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
@@ -51,9 +54,11 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.registry.browser import MilestoneOverlayMixin
 
 
-class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistroSeries
 
@@ -121,7 +126,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return getUtility(IPackageUploadSet).get(id)
 
 
-class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
     @property
     def text(self):
@@ -140,7 +145,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
     usedfor = IDistroSeries
     facet = 'overview'
     links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'add_milestone', 'admin', 'builds', 'queue',
+             'add_port', 'create_milestone', 'admin', 'builds', 'queue',
              'subscribe']
 
     @enabled_with_permission('launchpad.Admin')
@@ -160,7 +165,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def add_milestone(self):
+    def create_milestone(self):
         text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
@@ -266,6 +271,8 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
         """See `AbstractPackageSearchView`."""
         return self.context.searchPackages(self.text)
 
+    label = 'Search packages'
+
 
 class DistroSeriesStatusMixin:
     """A mixin that provides status field support."""
@@ -308,12 +315,19 @@ class DistroSeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView):
+class DistroSeriesView(BuildRecordsView, QueueItemsView,
+                       MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
+
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return '%s %s in Launchpad' % (
+        self.context.distribution.title, self.context.version)
 
     @cachedproperty
     def cached_packagings(self):
@@ -348,6 +362,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         See `BuildRecordsView` for further details."""
         return True
 
+    milestone_can_release = False
+
 
 class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
@@ -361,7 +377,17 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     @property
     def label(self):
         """See `LaunchpadFormView`."""
-        return 'Change %s details' % self.context.title
+        return 'Edit %s details' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
@@ -379,7 +405,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     def change_action(self, action, data):
         """Update the context and redirects to its overviw page."""
         if not self.context.distribution.full_functionality:
-                self.updateDateReleased(data.get('status'))
+            self.updateDateReleased(data.get('status'))
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
@@ -399,6 +425,16 @@ class DistroSeriesAdminView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Administer %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.
@@ -431,12 +467,16 @@ class DistroSeriesAddView(LaunchpadFormView):
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description', 'version',
         'parent_series']
-    label = "Register a new series"
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Register a series in %s' % self.context.displayname
 
     @property
     def page_title(self):
         """The page title."""
-        return 'Register a series in %s' % self.context.displayname
+        return self.label
 
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):
@@ -461,3 +501,9 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class DistroSeriesPackagesView(DistroSeriesView):
+    """A View to show series package to upstream package relationships."""
+
+    label = 'Mapping series packages to upstream project series'

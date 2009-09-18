@@ -9,12 +9,11 @@ __all__ = [
     'ApplicationButtons',
     'BrowserWindowDimensions',
     'DoesNotExistView',
-    'get_launchpad_views',
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
-    'LaunchpadRootNavigation',
     'LaunchpadImageFolder',
+    'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
@@ -23,6 +22,7 @@ __all__ = [
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
+    'get_launchpad_views',
     ]
 
 
@@ -33,8 +33,8 @@ import re
 import time
 import urllib
 from datetime import timedelta, datetime
-from urlparse import urlunsplit
 
+from zope.app import zapi
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
@@ -44,6 +44,7 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
@@ -52,7 +53,6 @@ from canonical.launchpad.layers import WebServiceLayer
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
-from canonical.launchpad.interfaces.bounty import IBountySet
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import InvalidNamespace
@@ -96,13 +96,14 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
     stepto)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
-from canonical.launchpad.webapp.url import urlparse, urlappend
+from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -136,7 +137,7 @@ class MenuBox(LaunchpadView):
             if link.enabled or config.devmode],
             key=operator.attrgetter('sort_key'))
         facet = menuapi.selectedfacetname()
-        if facet not in ('unknown', 'bounties'):
+        if facet != 'unknown':
             # XXX sinzui 2008-06-23 bug=242453:
             # Why are we getting unknown? Bounties are borked. We need
             # to end the facet hacks to get a clear state for the menus.
@@ -216,144 +217,72 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    @property
+    def objects(self):
+        """The objects for which we want breadcrumbs."""
+        return self.request.traversed_objects
+
+    @cachedproperty
     def items(self):
         """Return a list of `IBreadcrumb` objects visible in the hierarchy.
 
         The list starts with the breadcrumb closest to the hierarchy root.
         """
-        urlparts = urlparse(self.request.getURL(0, path_only=False))
-        baseurl = urlunsplit((urlparts[0], urlparts[1], '', '', ''))
-
-        # Construct a list of complete URLs for each URL path segment.
-        pathurls = []
-        working_url = baseurl
-        for segment in urlparts[2].split('/'):
-            working_url = urlappend(working_url, segment)
-            # Segments starting with '+' should be ignored because they
-            # will never correspond to an object in navigation.
-            if segment.startswith('+'):
-                continue
-            pathurls.append(working_url)
-
-        # We assume a 1:1 relationship between the traversed_objects list and
-        # the URL path segments.  Note that there may be more segments than
-        # there are objects.
-        object_urls = zip(self.request.traversed_objects, pathurls)
-        return self._breadcrumbs(object_urls)
-
-    def _breadcrumbs(self, object_urls):
-        """Generate the breadcrumb list.
-
-        :param object_urls: A sequence of (object, url) pairs.
-        :return: A list of 'IBreadcrumb' objects.
-        """
         breadcrumbs = []
-        for obj, url in object_urls:
-            crumb = self.breadcrumb_for(obj, url)
-            if crumb is not None:
-                breadcrumbs.append(crumb)
+        for obj in self.objects:
+            breadcrumb = queryAdapter(obj, IBreadcrumb)
+            if breadcrumb is not None:
+                breadcrumbs.append(breadcrumb)
+
+        host = URI(self.request.getURL()).host
+        mainhost = allvhosts.configs['mainsite'].hostname
+        if len(breadcrumbs) != 0 and host != mainhost:
+            # We have breadcrumbs and we're not on the mainsite, so we'll
+            # sneak an extra breadcrumb for the vhost we're on.
+            vhost = host.split('.')[0]
+
+            # Iterate over the context of our breadcrumbs in reverse order and
+            # for the first one we find an adapter named after the vhost we're
+            # on, generate an extra breadcrumb and insert it in our list.
+            for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
+                extra_breadcrumb = queryAdapter(
+                    breadcrumb.context, IBreadcrumb, name=vhost)
+                if extra_breadcrumb is not None:
+                    breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                    break
+        if len(breadcrumbs) > 0:
+            page_crumb = self.makeBreadcrumbForRequestedPage()
+            if page_crumb:
+                breadcrumbs.append(page_crumb)
         return breadcrumbs
 
-    def breadcrumb_for(self, obj, url):
-        """Return the breadcrumb for the an object, using the supplied URL.
+    def makeBreadcrumbForRequestedPage(self):
+        """Return an `IBreadcrumb` for the requested page.
 
-        :return: An `IBreadcrumb` object, or None if a breadcrumb adaptation
-            for the object doesn't exist.
+        The `IBreadcrumb` for the requested page is created using the current
+        URL and the page's name (i.e. the last path segment of the URL).
+
+        If the requested page (as specified in self.request) is the default
+        one for the last traversed object, return None.
         """
-        # If the object has an IBreadcrumbBuilder adaptation then the
-        # object is intended to be shown in the hierarchy.
-        builder = queryAdapter(obj, IBreadcrumbBuilder)
-        if builder is not None:
-            # The breadcrumb builder hasn't been given a URL yet.
-            builder.url = url
-            return builder.make_breadcrumb()
-        return None
-
-    def render(self):
-        """Render the hierarchy HTML.
-
-        The hierarchy elements are taken from the request.breadcrumbs list.
-        For each element, element.text is cgi escaped.
-        """
-        elements = self.items()
-
-        if config.launchpad.site_message:
-            site_message = (
-                '<div id="globalheader" xml:lang="en" lang="en" dir="ltr">'
-                '<div class="sitemessage">%s</div></div>'
-                % config.launchpad.site_message)
+        url = self.request.getURL()
+        last_segment = URI(url).path.split('/')[-1]
+        default_view_name = zapi.getDefaultViewName(
+            self.request.traversed_objects[-1], self.request)
+        if last_segment.startswith('+') and last_segment != default_view_name:
+            breadcrumb = Breadcrumb(None)
+            breadcrumb._url = url
+            breadcrumb.text = last_segment
+            return breadcrumb
         else:
-            site_message = ""
+            return None
 
-        if len(elements) > 0:
-            # We're not on the home page.
-            prefix = ('<div id="lp-hierarchy">'
-                     '<span class="first-rounded"></span>')
-            suffix = ('</div><span class="last-rounded">&nbsp;</span>'
-                     '%s<div class="apps-separator"><!-- --></div>'
-                     % site_message)
-
-            if len(elements) == 1:
-                first_class = 'before-last item'
-            else:
-                first_class = 'item'
-
-            steps = []
-            steps.append(
-                '<span class="%s">'
-                '<a href="/" class="breadcrumb container"'
-                ' id="homebreadcrumb">'
-                '<img alt="Launchpad"'
-                ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
-                '</a>&nbsp;</span>' % first_class)
-
-            last_element = elements[-1]
-            if len(elements) > 1:
-                before_last_element = elements[-2]
-            else:
-                before_last_element = None
-
-            for element in elements:
-
-                if element is before_last_element:
-                    css_class = 'before-last'
-                elif element is last_element:
-                    css_class = 'last'
-                else:
-                    # No extra CSS class.
-                    css_class = ''
-
-                steps.append(
-                    self.getHtmlForBreadcrumb(element, css_class))
-
-            hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
-        else:
-            # We're on the home page.
-            hierarchy = ('<div id="lp-hierarchy" class="home">'
-                        '<a href="/" class="breadcrumb">'
-                        '<img alt="Launchpad" '
-                        ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
-                        '</a></div>'
-                        '%s<div class="apps-separator"><!-- --></div>' %
-                        site_message)
-
-        return hierarchy
-
-    def getHtmlForBreadcrumb(self, breadcrumb, extra_css_class=''):
-        """Return the HTML to display an `IBreadcrumb` object.
-
-        :param extra_css_class: A string of additional CSS classes
-            to apply to the breadcrumb.
-        """
-        bodytext = cgi.escape(breadcrumb.text)
-
-        if breadcrumb.icon is not None:
-            bodytext = '%s %s' % (breadcrumb.icon, bodytext)
-
-        css_class = 'item ' + extra_css_class
-        return (
-            '<span class="%s"><a href="%s">%s</a></span>'
-            % (css_class, breadcrumb.url, bodytext))
+    @property
+    def display_breadcrumbs(self):
+        """Return whether the breadcrumbs should be displayed."""
+        # If there is only one breadcrumb then it does not make sense
+        # to display it as it will simply repeat the context.title.
+        return len(self.items) > 1
 
 
 class MaintenanceMessage:
@@ -435,12 +364,6 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         target = ''
         text = 'Blueprints'
         summary = 'Launchpad feature specification tracker.'
-        return Link(target, text, summary)
-
-    def bounties(self):
-        target = 'bounties'
-        text = 'Bounties'
-        summary = 'The Launchpad Universal Bounty Tracker'
         return Link(target, text, summary)
 
     def branches(self):
@@ -588,7 +511,6 @@ class LaunchpadRootNavigation(Navigation):
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,
-        'bounties': IBountySet,
         'bugs': IMaloneApplication,
         'builders': IBuilderSet,
         '+code': IBazaarApplication,

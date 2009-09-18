@@ -8,11 +8,13 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from difflib import unified_diff
 import unittest
 
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
@@ -22,7 +24,7 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
-from lp.code.model.diff import StaticDiff
+from lp.code.model.diff import PreviewDiff, StaticDiff
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -160,7 +162,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertFalse(view.requested_reviews[0].user_can_claim)
 
     def test_user_can_claim_member(self):
-        """Someone can claim a review already assigned their team."""
+        """Someone can claim a review already assigned to their team."""
         albert = self.factory.makePerson()
         review_team = self.factory.makeTeam()
         albert.join(review_team)
@@ -192,15 +194,18 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         return view.requested_reviews[0]
 
     def test_user_can_reassign_assignee(self):
+        """The user can reassign if they are the assignee."""
         review_request = self.makeReviewRequest()
         self.assertTrue(review_request.user_can_reassign)
 
     def test_user_can_reassign_registrant(self):
+        """The user can reassign if they are the registrant."""
         registrant = self.factory.makePerson()
         review_request = self.makeReviewRequest(registrant, registrant)
         self.assertTrue(review_request.user_can_reassign)
 
-    def test_user_can_reassign_random_person(self):
+    def test_user_cannot_reassign_random_person(self):
+        """Random people cannot reassign reviews."""
         viewer = self.factory.makePerson()
         review_request = self.makeReviewRequest(viewer)
         self.assertFalse(review_request.user_can_reassign)
@@ -451,27 +456,69 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertRaises(Unauthorized, view.claim_action.success,
                           {'review_id': review.id})
 
-    def test_review_diff_with_no_diff(self):
+    def test_preview_diff_text_with_no_diff(self):
         """review_diff should be None when there is no context.review_diff."""
         view = self._createView()
-        self.assertIs(None, view.review_diff)
+        self.assertIs(None, view.preview_diff_text)
 
     def test_review_diff_utf8(self):
         """A review_diff in utf-8 should be converted to utf-8."""
         text = ''.join(unichr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text.encode('utf-8'))
+        diff_bytes = ''.join(unified_diff('', text)).encode('utf-8')
+        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
-        self.assertEqual(text, self._createView().review_diff)
+        self.assertEqual(diff_bytes.decode('utf-8'),
+                         self._createView().preview_diff_text)
 
     def test_review_diff_all_chars(self):
         """review_diff should work on diffs containing all possible bytes."""
         text = ''.join(chr(x) for x in range(255))
-        diff = StaticDiff.acquireFromText('x', 'y', text)
+        diff_bytes = ''.join(unified_diff('', text))
+        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
-        self.assertEqual(text.decode('windows-1252', 'replace'),
-                         self._createView().review_diff)
+        self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
+                         self._createView().preview_diff_text)
+
+    def addReviewDiff(self):
+        review_diff_bytes = ''.join(unified_diff('', 'review'))
+        review_diff = StaticDiff.acquireFromText('x', 'y', review_diff_bytes)
+        self.bmp.review_diff = review_diff
+        return review_diff
+
+    def addBothDiffs(self):
+        self.addReviewDiff()
+        preview_diff_bytes = ''.join(unified_diff('', 'preview'))
+        preview_diff = PreviewDiff.create(
+            preview_diff_bytes, u'a', u'b', None, u'')
+        removeSecurityProxy(self.bmp).preview_diff = preview_diff
+        return preview_diff
+
+    def test_preview_diff_prefers_preview_diff(self):
+        """The preview will be used for BMP with both a review and preview."""
+        preview_diff = self.addBothDiffs()
+        self.assertEqual(preview_diff, self._createView().preview_diff)
+
+    def test_preview_diff_uses_review_diff(self):
+        """The review diff will be used if there is no preview."""
+        review_diff = self.addReviewDiff()
+        self.assertEqual(review_diff.diff,
+                         self._createView().preview_diff)
+
+    def test_review_diff_text_prefers_preview_diff(self):
+        """The preview will be used for BMP with both a review and preview."""
+        preview_diff = self.addBothDiffs()
+        transaction.commit()
+        self.assertEqual(
+            preview_diff.text, self._createView().preview_diff_text)
+
+    def test_linked_bugs_excludes_mutual_bugs(self):
+        """List bugs that are linked to the source only."""
+        bug = self.factory.makeBug()
+        self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
+        self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
+        self.assertEqual([], self._createView().linked_bugs)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
@@ -503,10 +550,11 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
             sorted(tokens), vocab_tokens)
 
     def assertAllStatusesAvailable(self, user, except_for=None):
-        # All options should be available to the user.
+        # All options should be available to the user, except for SUPERSEDED,
+        # which is only provided through resubmit.
         desired_statuses = set([
             'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
-            'REJECTED', 'SUPERSEDED'])
+            'REJECTED'])
         if except_for is not None:
             desired_statuses -= set(except_for)
         self.assertStatusVocabTokens(desired_statuses, user)
@@ -516,7 +564,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         # able to approve or reject their own code (assuming they don't have
         # rights on the target branch).
         status_options = [
-            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'SUPERSEDED']
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED']
         self.assertStatusVocabTokens(
             status_options, user=self.proposal.source_branch.owner)
         self.assertStatusVocabTokens(
@@ -534,8 +582,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.proposal.approveBranch(
             self.proposal.target_branch.owner, 'some-revision')
         status_options = [
-            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED',
-            'SUPERSEDED']
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED']
         self.assertStatusVocabTokens(
             status_options, user=self.proposal.source_branch.owner)
         self.assertStatusVocabTokens(

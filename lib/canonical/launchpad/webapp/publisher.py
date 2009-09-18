@@ -39,6 +39,7 @@ from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
@@ -272,6 +273,10 @@ class LaunchpadView(UserAttributeCache):
         """
         return self.request.response.getStatus() in [301, 302, 303, 307]
 
+    def isRedirectInhibited(self):
+        """Returns True if redirection has been inhibited."""
+        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
+
     def __call__(self):
         self.initialize()
         if self._isRedirected():
@@ -504,10 +509,10 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    if request is None and rootsite is not None:
+    if request is None:
+        if rootsite is None:
+            rootsite = 'mainsite'
         root_url = allvhosts.configs[rootsite].rooturl
-    elif request is None:
-        root_url = allvhosts.configs['mainsite'].rooturl
     else:
         root_url = request.getRootURL(rootsite)
 
@@ -542,13 +547,17 @@ def nearest(obj, *interfaces):
     The object returned might be the object given as an argument, if that
     object provides one of the given interfaces.
 
-    Return None is no suitable object is found.
+    Return None is no suitable object is found or if there is no canonical_url
+    defined for the object.
     """
-    for current_obj in canonical_url_iterator(obj):
-        for interface in interfaces:
-            if interface.providedBy(current_obj):
-                return current_obj
-    return None
+    try:
+        for current_obj in canonical_url_iterator(obj):
+            for interface in interfaces:
+                if interface.providedBy(current_obj):
+                    return current_obj
+        return None
+    except NoCanonicalUrl:
+        return None
 
 
 class RootObject:

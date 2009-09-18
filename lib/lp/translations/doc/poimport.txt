@@ -50,7 +50,7 @@ POFile.importFromQueue and POTemplate.importFromQueue methods.
 Here's the person who'll be doing the import.
 
     >>> person_set = getUtility(IPersonSet)
-    >>> person = person_set.getByName('sabdfl')
+    >>> person = person_set.getByName('mark')
 
 And this is the POTemplate where the import will be done.
 
@@ -1000,3 +1000,42 @@ Import fails and email is sent out even though it's a published upload.
     True
     >>> subject
     u'Import problem - Serbian (sr) - ...'
+
+
+No Contact Address
+------------------
+
+Not every user has a valid email address.  For instance, Kermit the
+Hermit has none at the moment.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> hermit = factory.makePerson(
+    ...     name='hermit', email_address_status=EmailAddressStatus.OLD)
+
+    >>> len(get_contact_email_addresses(hermit))
+    0
+
+Kermit uploads a translation, which gets approved.
+
+    >>> pofile = factory.makePOFile('lo')
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     'lo.po', 'Invalid content', True, hermit,
+    ...     pofile=pofile, potemplate=pofile.potemplate,
+    ...     productseries=pofile.potemplate.productseries)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> transaction.commit()
+
+The import fails.  The importer would like to send Kermit an email about
+this, but is unable to.  This is unfortunate, but does not faze the
+importer.  It completes normally.
+
+    >>> process = ImportProcess(transaction, FakeLogger())
+    >>> process.run()
+    INFO Importing: Lao ...
+    INFO Import requests completed.
+
+    >>> print entry.status.name
+    FAILED

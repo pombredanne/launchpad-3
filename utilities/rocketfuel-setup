@@ -209,7 +209,7 @@ if [ $? -ne 0 ]; then
 Host bazaar.launchpad.dev
     Hostname launchpad.dev
     HostKeyAlias bazaar.launchpad.dev
-    User sabdfl
+    User mark
     Port 5022
     IdentityFile ~/.ssh/launchpad_id_dsa
 ------------------------------------------------------------
@@ -372,6 +372,12 @@ if [ ! -d $LP_TRUNK_NAME ]; then
 fi
 
 cd $LP_TRUNK_NAME
+bzr st -q
+if [ $? -ne 0 ]; then
+  echo "ERROR: Your trunk branch in $LP_TRUNK_PATH is corrupted.
+       Please delete $LP_TRUNK_PATH and run rocketfuel-setup again."
+       exit 1
+fi
 if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
   "//bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/" ]; then
   echo "ERROR: Your trunk branch in $LP_TRUNK_PATH has an

@@ -70,12 +70,12 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingPocket,
-    PackagePublishingStatus, IPublishingSet)
+    active_publishing_status, PackagePublishingStatus, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.scripts.packagecopier import CannotCopy, do_copy
 from canonical.launchpad.webapp.interfaces import (
@@ -185,6 +185,11 @@ class Archive(SQLBase):
             alsoProvides(self, IPPA)
         else:
             alsoProvides(self, IDistributionArchive)
+
+    @property
+    def title(self):
+        """See `IArchive`."""
+        return self.displayname
 
     @property
     def is_ppa(self):
@@ -1181,6 +1186,22 @@ class Archive(SQLBase):
 
         return subscription
 
+    def getSourcePackageReleases(self, build_status=None):
+        """See `IArchive`."""
+        store = Store.of(self)
+
+        extra_exprs = []
+        if build_status is not None:
+            extra_exprs.append(Build.buildstate == build_status)
+
+        result_set = store.find(
+            SourcePackageRelease, 
+            Build.sourcepackagereleaseID == SourcePackageRelease.id,
+            Build.archive == self,
+            *extra_exprs)
+
+        result_set.config(distinct=True).order_by(SourcePackageRelease.id)
+        return result_set
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1577,4 +1598,4 @@ class ArchiveSet:
             DistroSeries.distribution == distribution,
             )
 
-        return results
+        return results.order_by(SourcePackagePublishingHistory.id)

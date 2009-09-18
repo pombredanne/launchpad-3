@@ -23,6 +23,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.testing import TestCase, TestCaseWithFactory
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import OAuthPermission
+from canonical.launchpad.webapp.publication import is_browser
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest, WebServicePublication)
 
@@ -74,27 +75,38 @@ class TestWebServicePublication(TestCaseWithFactory):
 
         # Ensure that OOPS reports are generated for database
         # disconnections, as per Bug #373837.
-        for exception in (DisconnectionError, TransactionRollbackError):
-            request = LaunchpadTestRequest()
-            publication = WebServicePublication(None)
-            da.set_request_started()
-            try:
-                raise exception('Fake')
-            except exception:
-                self.assertRaises(
-                    Retry,
-                    publication.handleException,
-                    None, request, sys.exc_info(), True)
-            da.clear_request_started()
-            next_oops = error_reporting_utility.getLastOopsReport()
+        request = LaunchpadTestRequest()
+        publication = WebServicePublication(None)
+        da.set_request_started()
+        try:
+            raise DisconnectionError('Fake')
+        except DisconnectionError:
+            self.assertRaises(
+                Retry,
+                publication.handleException,
+                None, request, sys.exc_info(), True)
+        da.clear_request_started()
+        next_oops = error_reporting_utility.getLastOopsReport()
 
-            # Ensure the OOPS mentions the correct exception
-            self.assertNotEqual(repr(next_oops).find(exception.__name__), -1)
+        # Ensure the OOPS mentions the correct exception
+        self.assertNotEqual(repr(next_oops).find("DisconnectionError"), -1)
 
-            # Ensure that it is different to the last logged OOPS.
-            self.assertNotEqual(repr(last_oops), repr(next_oops))
+        # Ensure that it is different to the last logged OOPS.
+        self.assertNotEqual(repr(last_oops), repr(next_oops))
 
-            last_oops = next_oops
+    def test_is_browser(self):
+        # No User-Agent: header.
+        request = LaunchpadTestRequest()
+        self.assertFalse(is_browser(request))
+
+        # Browser User-Agent: header.
+        request = LaunchpadTestRequest(environ={
+            'USER_AGENT': 'Mozilla/42 Extreme Edition'})
+        self.assertTrue(is_browser(request))
+
+        # Robot User-Agent: header.
+        request = LaunchpadTestRequest(environ={'USER_AGENT': 'BottyBot'})
+        self.assertFalse(is_browser(request))
 
 
 def test_suite():

@@ -14,12 +14,11 @@ he is not a designated translator.
     ...     'Translation permissions policy').value = ['RESTRICTED']
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/+settings
+    http://translations.launchpad.dev/ubuntu
 
-    >>> for tag in find_tags_by_class(
-    ...     admin_browser.contents, 'informational message'):
-    ...     print tag.renderContents()
-    Updated on ...
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'translation-permissions'))
+    Ubuntu is translated by ... with Restricted permissions...
 
 The translation group does not assign anyone to tend to the Southern
 Sotho translation, so for that language, No Privileges can't even make
@@ -88,7 +87,7 @@ team, of which No Privileges however is not a member.
     ...     'http://translations.launchpad.dev/+groups/polyglot/+appoint')
     >>> admin_browser.getControl('Language').value=['st']
     >>> admin_browser.getControl('Translator').value='name21'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Appoint').click()
 
 No Privileges Person can now enter text, but the page does warn that it
 will only accept suggestions.
@@ -139,7 +138,7 @@ as well as to upload files.
     ...     '+pots/evolution-2.2/cy/+translate')
 
     >>> print_menu_option(browser.contents, 'upload')
-    <...Upload a file...
+    Upload translation
 
 No Privileges person is going to translate here.  Message number 137 is
 not yet translated.
