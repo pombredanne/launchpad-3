@@ -6,7 +6,7 @@ which support is desired:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu')
     >>> print browser.title
-    Questions for Ubuntu Linux: Ubuntu
+    Questions for Ubuntu Linux : Ubuntu
 
 Asking a new question requires logging in:
 
@@ -31,12 +31,12 @@ associated with the source package of the used application.
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+sources/mozilla-firefox/+gethelp')
-    >>> user_browser.title
-    'Help and support...
+    >>> print user_browser.title
+    Help and support...
 
     >>> user_browser.getLink('Ask a question').click()
-    >>> user_browser.title
-    'Ask a question...
+    >>> print user_browser.title
+    Ask a question...
 
 
 == Searching for Similar FAQs and Questions ==
