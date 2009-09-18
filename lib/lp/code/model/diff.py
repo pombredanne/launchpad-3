@@ -99,8 +99,8 @@ class Diff(SQLBase):
                 base_revision = graph.find_unique_lca(
                     source_revision, merge_target.get_revision_id())
                 repo = source_branch.repository
-                merge_source, merge_base = repo.revision_trees(
-                    [source_revision, base_revision])
+                merge_source = repo.revision_tree(source_revision)
+                merge_base = repo.revision_tree(base_revision)
                 merger = Merge3Merger(
                     merge_target, merge_target, merge_base, merge_source,
                     do_merge=False)
