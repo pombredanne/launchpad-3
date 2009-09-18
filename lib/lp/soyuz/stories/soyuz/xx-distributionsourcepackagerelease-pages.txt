@@ -53,7 +53,7 @@ they all point to the `DistributionSourcePackage` (parent) url.
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntutest/+source/testing-dspr
-    Main heading: testing-dspr 1.0 (source) in ubuntutest
+    Main heading: ?testing-dspr? 1.0 source package in ubuntutest
 
 The first section presented ('top-porlet') contains the source package
 release changelog. It shows the reason why this version of the package
@@ -167,9 +167,9 @@ of this source in the context distribution are listed.
     : ubuntutest'
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    ubuntutest
+    “testing-dspr” 1.0 source package in ubuntutest
     ...
-    Publishing history of testing-dspr 1.0 (source) in ubuntutest
+    Publishing history of "testing-dspr" 1.0 source package in ubuntutest
     Date  Status     Target     Pocket   Component  Section  Version
     ...   Published  Breezy...  release  main       base     1.0
     ...

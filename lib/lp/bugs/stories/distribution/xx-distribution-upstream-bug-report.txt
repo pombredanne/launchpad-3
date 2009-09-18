@@ -201,7 +201,8 @@ link them):
     >>> user_browser.getLink('link').click()
     >>> user_browser.title
     '+edit-packaging : Bugs in linux-source-2.6.15
-    : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : 5.04 : Ubuntu'
+    : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d source package : 5.04
+    : Ubuntu'
 
 If you are logged in and can edit the upstream project, you can also set
 a bug tracker and a bug supervisor. Let's first fix Firefox to stop using
