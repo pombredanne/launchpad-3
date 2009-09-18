@@ -16,7 +16,7 @@ somebody had a similar problem.
 He discovers that there are no questions on the Kubuntu Answers page:
 
     >>> print browser.title
-    Questions for Kubuntu
+    Questions for Kubuntu - Free KDE-based Linux : Kubuntu
 
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
@@ -35,8 +35,8 @@ He realises that support for Kubuntu is probably going on in the Ubuntu
 Answers page and goes there to check.
 
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
-    >>> browser.title
-    'Questions for Ubuntu'
+    >>> print browser.title
+    +questions : Ubuntu
 
 He sees a listing of the current questions posted on Ubuntu:
 
@@ -54,8 +54,8 @@ there is another page of questions, so he goes to the next page of
 results. There, he finds only one other question:
 
     >>> browser.getLink('Next').click()
-    >>> browser.title
-    'Questions for Ubuntu'
+    >>> print browser.title
+    +questions : Ubuntu
     >>> soup = find_main_content(browser.contents)
     >>> for question in soup.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -187,7 +187,7 @@ enters his search key and hit the 'Search' button.
 Unfortunately, the search doesn't return any similar questions:
 
     >>> print browser.title
-    Questions matching "firefox is slow" for Ubuntu
+    +questions : Ubuntu
     >>> search_summary = find_main_content(browser.contents)
     >>> print search_summary
     <...
@@ -246,7 +246,7 @@ source package's question listing.
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('mozilla-firefox').click()
     >>> browser.title
-    'Questions for mozilla-firefox in ubuntu'
+    'Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
     >>> soup = find_main_content(browser.contents)
     >>> soup('table', 'listing')
     [<table...
@@ -284,7 +284,7 @@ recent questions on Mozilla Firefox.
     >>> browser.open('http://launchpad.dev/firefox/+questions')
     >>> browser.getLink('Open').click()
     >>> print browser.title
-    Open questions for Mozilla Firefox
+    +questions : Mozilla Firefox
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -321,7 +321,7 @@ questions.)
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    Answered questions for Ubuntu
+    +questions : Ubuntu
     >>> statuses = browser.getControl(name='field.status').displayValue
     >>> [strip_label(status) for status in statuses]
     ['Answered', 'Solved']
@@ -368,7 +368,7 @@ He needs to login to access that page:
     ...     '+questions')
     >>> sample_person_browser.getLink('My questions').click()
     >>> print sample_person_browser.title
-    Questions you asked about mozilla-firefox in ubuntu
+    +myquestions : “mozilla-firefox” package : Ubuntu
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
@@ -428,7 +428,7 @@ He needs to login to access that page:
     ...     'http://launchpad.dev/distros/ubuntu/+questions')
     >>> sample_person_browser.getLink('Need attention').click()
     >>> print sample_person_browser.title
-    Questions needing your attention for Ubuntu
+    +need-attention : Ubuntu
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
@@ -442,7 +442,7 @@ Like all other report, this one is searchable:
     ...     name='field.search_text').value = 'evolution'
     >>> sample_person_browser.getControl('Search', index=0).click()
     >>> print sample_person_browser.title
-    Questions matching "evolution" needing your attention for Ubuntu
+    +need-attention : Ubuntu
     >>> search_summary = find_main_content(sample_person_browser.contents)
     >>> print search_summary
     <...
@@ -473,7 +473,7 @@ commented on.
     >>> browser.open('http://launchpad.dev/~name16')
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions involving Foo Bar
+    Questions involving Foo Bar : Foo Bar
 
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
@@ -503,8 +503,8 @@ questions was made.
 These contexts are links to the context question listing.
 
     >>> browser.getLink('mozilla-firefox in ubuntu').click()
-    >>> print browser.title
-    Questions for mozilla-firefox in ubuntu
+    >>> print repr(browser.title)
+    'Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
 
 The listing is searchable and can restrict also the list of displayed
 questions to a particular status:
@@ -532,7 +532,7 @@ assigned.
 
     >>> browser.getLink('Assigned').click()
     >>> print browser.title
-    Questions assigned to Foo Bar
+    +assignedquestions : Foo Bar
     >>> print find_main_content(browser.contents).first('p').renderContents()
     No questions assigned to Foo Bar found with the requested statuses.
 
@@ -544,7 +544,7 @@ answerer.
 
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    Questions answered by Foo Bar
+    +answeredquestions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -558,7 +558,7 @@ questions commented on by the person.
 
     >>> browser.getLink('Commented').click()
     >>> print browser.title
-    Questions commented on by Foo Bar
+    +commentedquestions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -576,7 +576,7 @@ asked by the person.
 
     >>> browser.getLink('Asked').click()
     >>> print browser.title
-    Questions asked by Foo Bar
+    +createdquestions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -591,7 +591,7 @@ the attention of that person.
 
     >>> browser.getLink('Need attention').click()
     >>> print browser.title
-    Questions needing Foo Bar's attention
+    +needattentionquestions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -606,7 +606,7 @@ visiting the 'Subscribed' link in the 'Answers' facet.
 
     >>> browser.getLink('Subscribed').click()
     >>> print browser.title
-    Questions Foo Bar is subscribed to
+    +subscribedquestions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -621,7 +621,7 @@ questions filed against any of the project's products is displayed.
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions for the Mozilla Project
+    Questions for The Mozilla Project : the Mozilla Project
 
 The results are displayed in a format similar to the Person reports:
 there is an 'In' column displaying where the questions were filed.
@@ -654,21 +654,21 @@ The same standard reports than on regular QuestionTarget are available:
 
     >>> browser.getLink('Open').click()
     >>> print browser.title
-    Open questions for the Mozilla Project
+    Questions for The Mozilla Project : the Mozilla Project
 
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    Answered questions for the Mozilla Project
+    Questions for The Mozilla Project : the Mozilla Project
 
     # The next two reports are only available to a logged-in user.
     >>> user_browser.open('http://launchpad.dev/mozilla/+questions')
     >>> user_browser.getLink('My questions').click()
     >>> print user_browser.title
-    Questions you asked about the Mozilla Project
+    +myquestions : the Mozilla Project
 
     >>> user_browser.getLink('Need attention').click()
     >>> print user_browser.title
-    Questions needing your attention for the Mozilla Project
+    +need-attention : the Mozilla Project
 
 
 == Searching All Questions ==
@@ -768,7 +768,7 @@ The form field can be filled manually without using the ajax widget.
     >>> anon_browser.getControl(name='field.scope.target').value = 'mozilla'
     >>> anon_browser.getControl('Find Answers').click()
     >>> print anon_browser.title
-    Questions matching "plugins" for the Mozilla Project
+    Questions for The Mozilla Project : the Mozilla Project
 
 This works also with distributions:
 
@@ -778,7 +778,7 @@ This works also with distributions:
     >>> anon_browser.getControl(name='field.scope.target').value = 'ubuntu'
     >>> anon_browser.getControl('Find Answers').click()
     >>> print anon_browser.title
-    Questions matching "firefox" for Ubuntu
+    Questions for Ubuntu Linux : Ubuntu
 
 And also with products:
 
@@ -788,5 +788,5 @@ And also with products:
     >>> anon_browser.getControl(name='field.scope.target').value = 'firefox'
     >>> anon_browser.getControl('Find Answers').click()
     >>> print anon_browser.title
-    Questions matching "plugins" for Mozilla Firefox
+    Questions for Mozilla Firefox : Mozilla Firefox
 

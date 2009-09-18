@@ -80,7 +80,7 @@ The distribution home page also has a link to the 'Answers' facet:
     'http://answers.launchpad.dev/ubuntu'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions for Ubuntu
+    Questions for Ubuntu Linux : Ubuntu
     >>> browser.getLink('Ask a question')
     <Link...>
 
@@ -125,7 +125,7 @@ page:
     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions for mozilla-firefox in ubuntu
+    Questions for “mozilla-firefox” package in Ubuntu : “mozilla-firefox” package : Ubuntu
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/+source/mozilla-firefox/+addquestion'
     >>> browser.getLink('Open').url
@@ -166,8 +166,8 @@ involving a person.
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/~name16'
     >>> browser.getLink('Answers').click()
-    >>> browser.title
-    'Questions involving Foo Bar'
+    >>> print browser.title
+    Questions involving Foo Bar : Foo Bar
     >>> print find_main_content(browser.contents).first('h1').renderContents()
     Questions involving Foo Bar
     >>> browser.getLink('Slow system').url

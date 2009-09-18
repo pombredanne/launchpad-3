@@ -6,7 +6,7 @@ which support is desired:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu')
     >>> print browser.title
-    Questions for Ubuntu
+    Questions for Ubuntu Linux: Ubuntu
 
 Asking a new question requires logging in:
 
@@ -17,7 +17,7 @@ Asking a new question requires logging in:
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for Ubuntu Linux : Ubuntu
+    +addquestion : Questions for Ubuntu Linux: Ubuntu
 
 
 == Get Help Online ==
