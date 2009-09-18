@@ -231,8 +231,9 @@ produced by this source. Each binary links to its specific
 `DistroSeriesBinaryPackage` page.
 
     >>> print extract_text(
-    ...     find_portlet(anon_browser.contents, 'Binary packages'))
-    Binary packages
+    ...     find_portlet(anon_browser.contents,
+    ...     'Binary packages built by this source'))
+    Binary packages built by this source
     foo-bin:
     No summary available for foo-bin in ubuntutest breezy-autotest.
     No description available for foo-bin in ubuntutest breezy-autotest.
@@ -263,7 +264,8 @@ package caches (see doc/package-cache.txt).
 
     >>> anon_browser.reload()
     >>> print extract_text(
-    ...     find_portlet(anon_browser.contents, 'Binary packages'))
-    Binary packages
+    ...     find_portlet(anon_browser.contents,
+    ...     'Binary packages built by this source'))
+    Binary packages built by this source
     foo-bin: Foo app is great
     Well ... it does nothing, though
