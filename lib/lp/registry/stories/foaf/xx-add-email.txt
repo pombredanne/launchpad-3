@@ -7,15 +7,11 @@ by us to the address they want to add and confirm the registration.
 
 Sample Person will now add a couple email addresses to his account.
 
-    # Workaround while https://launchpad.net/launchpad/+bug/39016 is not
-    # fixed.
     >>> from lp.services.mail import stub
-    >>> stub.test_emails[:] = []
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12')
-    >>> browser.getLink('Change details').click()
-    >>> browser.getLink('E-mail Settings').click()
+    >>> browser.getLink(url='+editemails').click()
     >>> browser.url
     'http://launchpad.dev/~name12/+editemails'
 
@@ -72,11 +68,10 @@ Follow the token link, to confirm the new email address.
 
 Now that the address is confirmed he sees it in the list of his confirmed
 addresses.
-    
+
     >>> from canonical.launchpad.testing.pages import strip_label
 
-    >>> browser.getLink('Change details').click()
-    >>> browser.getLink('E-mail Settings').click()
+    >>> browser.getLink(url='+editemails').click()
     >>> confirmed = browser.getControl(name="field.VALIDATED_SELECTED")
     >>> [strip_label(option) for option in confirmed.displayOptions]
     ['test@canonical.com', 'test2@canonical.com', 'testing@canonical.com']

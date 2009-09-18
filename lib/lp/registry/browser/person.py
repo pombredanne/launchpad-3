@@ -2387,7 +2387,7 @@ class PersonLanguagesView(LaunchpadFormView):
         else:
             return "%s's language preferences" % self.context.displayname
 
-    page_title = label
+    page_title = "Language preferences"
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -3795,6 +3795,9 @@ class PersonEditView(BasePersonEditView):
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
+
+    label = 'Change your personal details'
+    page_title = label
 
     # Will contain an hidden input when the user is renaming his
     # account with full knowledge of the consequences.

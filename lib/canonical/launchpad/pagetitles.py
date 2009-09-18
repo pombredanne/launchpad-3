@@ -351,9 +351,6 @@ distributionsourcepackage_index = ContextTitle('%s')
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
-structural_subscriptions_manage = ContextTitle(
-    'Bug subscriptions for %s')
-
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
 distroarchseries_builds = ContextTitle('%s builds')
@@ -426,10 +423,6 @@ hwdb_fingerprint_submissions = (
 hwdb_submit_hardware_data = (
     'Submit New Data to the Launchpad Hardware Database')
 
-language_index = ContextDisplayName("%s in Launchpad")
-
-languageset_index = 'Languages in Launchpad'
-
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
@@ -484,30 +477,7 @@ def loginservice_authorize(context, view):
 
 loginservice_login = 'Launchpad Login Service'
 
-logintoken_claimprofile = 'Claim Launchpad profile'
-
-logintoken_claimteam = 'Claim Launchpad team'
-
-# This page will always redirect the user to another page specific to the
-# login token in question, except when the token has been consumed already, in
-# which case the user will see the title.
-logintoken_index = 'You have already done this'
-
-logintoken_mergepeople = 'Merge Launchpad accounts'
-
-logintoken_newaccount = 'Create a new Launchpad account'
-
-logintoken_resetpassword = 'Forgotten your password?'
-
 loginservice_standalone_login = loginservice_login
-
-logintoken_validateemail = 'Confirm e-mail address'
-
-logintoken_validategpg = 'Confirm OpenPGP key'
-
-logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
-
-logintoken_validateteamemail = 'Confirm e-mail address'
 
 # main_template has the code to insert one of these titles.
 
@@ -644,8 +614,6 @@ person_archive_subscriptions = 'Private PPA access'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
-
-person_edit = ContextDisplayName(smartquote("%s's details"))
 
 # person_foaf is an rdf file
 
@@ -840,13 +808,9 @@ sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
 sourcepackage_builds = ContextTitle('Builds for %s')
 
-sourcepackage_translate = ContextTitle('Help translate %s')
-
 sourcepackage_changelog = 'Source package changelog'
 
 sourcepackage_filebug = ContextTitle("Report a bug about %s")
-
-sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackagenames_index = 'Source package name set'
 
@@ -917,8 +881,6 @@ specificationgoal_setgoals = ContextTitle('Set goals for %s')
 def specificationsubscription_edit(context, view):
     """Return the page title for subscribing to a specification."""
     return "Subscription of %s" % context.person.displayname
-
-specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Blueprint listing for %s')
 
