@@ -57,7 +57,7 @@ class TranslatorAdminView(LaunchpadEditFormView):
     @property
     def page_title(self):
         """Page title for the edit form."""
-        return self.label
+        return "Edit %s translation team" % self.context.language.englishname
 
     @property
     def cancel_url(self):
@@ -89,7 +89,7 @@ class TranslatorEditView(LaunchpadEditFormView):
     @property
     def page_title(self):
         """Page title for the edit form."""
-        return self.label
+        return "Set %s guidelines" % self.context.language.englishname
 
     @property
     def cancel_url(self):
@@ -125,7 +125,7 @@ class TranslatorRemoveView(LaunchpadFormView):
     @property
     def page_title(self):
         """Page title for the edit form."""
-        return self.label
+        return "Remove translation team"
 
     @property
     def cancel_url(self):

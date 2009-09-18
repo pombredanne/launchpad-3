@@ -7,18 +7,6 @@
   metal:use-macro="view/macro:page/main_side"
 >
 <body>
-  <h1 metal:fill-slot="heading">
-    Overview of 
-    <tal:has_nativename condition="context/nativename">
-      <tal:nativename replace="context/nativename">
-        Espa&ntilde;ol
-      </tal:nativename> (
-    </tal:has_nativename>
-    <tal:englishname replace="context/englishname">Spain</tal:englishname>
-    <tal:has_nativename condition="context/nativename">)</tal:has_nativename>
-    in Launchpad
-  </h1>
-
   <tal:side metal:fill-slot="side">
     <div tal:replace="structure context/@@+global-actions" />
     <div tal:replace="structure context/@@+portlet-details" />
