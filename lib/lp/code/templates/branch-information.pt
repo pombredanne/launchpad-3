@@ -33,11 +33,14 @@
         tal:content="structure context/lifecycle_status/title" />
     </dl>
 
-    <dl id="mirror-location"
-        tal:condition="context/branch_type/enumvalue:MIRRORED">
-      <dt>Location:</dt>
-      <dd tal:content="structure context/@@+mirror-status" />
-    </dl>
+    <tal:mirror-branch condition="context/branch_type/enumvalue:MIRRORED">
+      <dl id="mirror-location"
+          tal:condition="view/mirror_location">
+        <dt>Location:</dt>
+        <dd tal:content="view/mirror_location" />
+      </dl>
+      <dl tal:replace="structure context/@@+mirror-status" />
+    </tal:mirror-branch>
 
     <dl id="remote-location"
         tal:condition="context/branch_type/enumvalue:REMOTE">
