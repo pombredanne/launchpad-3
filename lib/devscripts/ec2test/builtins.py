@@ -89,6 +89,12 @@ include_download_cache_changes_option = Option(
           'changes in your download cache, you must explicitly choose to '
           'include or ignore the changes.'))
 
+postmortem_option = Option(
+    'postmortem', short_name='p',
+    help=('Drop to interactive prompt after the test and before shutting '
+          'down the instance for postmortem analysis of the EC2 instance '
+          'and/or of this script.'))
+
 
 class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
@@ -171,11 +177,7 @@ class cmd_test(EC2Command):
                   'If the branch is local, then the bzr configuration is '
                   'consulted; for remote branches "Launchpad PQM '
                   '<launchpad@pqm.canonical.com>" is used by default.')),
-        Option(
-            'postmortem', short_name='p',
-            help=('Drop to interactive prompt after the test and before shutting '
-                  'down the instance for postmortem analysis of the EC2 instance '
-                  'and/or of this script.')),
+        postmortem_option,
         Option(
             'headless',
             help=('After building the instance and test, run the remote tests '
@@ -208,6 +210,7 @@ class cmd_test(EC2Command):
         else:
             if test_branch is None:
                 test_branch = '.'
+        branches = [data.split('=', 1) for data in branch]
         if ((postmortem or file) and headless):
             raise BzrCommandError(
                 'Headless mode currently does not support postmortem or file '
@@ -219,7 +222,6 @@ class cmd_test(EC2Command):
         else:
             if email == []:
                 email = True
-        branches = [data.split('=', 1) for data in branch]
 
         if headless and not (email or submit_pqm_message):
             raise BzrCommandError(
@@ -254,11 +256,7 @@ class cmd_demo(EC2Command):
         trunk_option,
         machine_id_option,
         instance_type_option,
-        Option(
-            'postmortem', short_name='p',
-            help=('Drop to interactive prompt after the test and before shutting '
-                  'down the instance for postmortem analysis of the EC2 instance '
-                  'and/or of this script.')),
+        postmortem_option,
         debug_option,
         include_download_cache_changes_option,
         ListOption(
@@ -299,7 +297,6 @@ class cmd_demo(EC2Command):
             True, False, self.run_server, runner,
             demo_network_string)
 
-
     def run_server(self, runner, instance, demo_network_string):
         runner.run_demo_server()
         ec2_ip = socket.gethostbyname(instance.hostname)
@@ -331,11 +328,7 @@ class cmd_update_image(EC2Command):
     takes_options = [
         machine_id_option,
         instance_type_option,
-        Option(
-            'postmortem', short_name='p',
-            help=('Drop to interactive prompt after the test and before shutting '
-                  'down the instance for postmortem analysis of the EC2 instance '
-                  'and/or of this script.')),
+        postmortem_option,
         debug_option,
         ListOption(
             'extra-update-image-command', type=str,
@@ -364,6 +357,23 @@ class cmd_update_image(EC2Command):
 
     def update_image(self, instance, extra_update_image_command, ami_name,
                      credentials):
+        """Bring the image up to date.
+
+        The steps we take are:
+
+         * run any commands specified with --extra-update-image-command
+         * update sourcecode via rsync.
+         * update the launchpad branch to the tip of the trunk branch.
+         * update the copy of the download-cache.
+         * remove the user account.
+         * bundle the image
+
+        :param instance: `EC2Instance` to operate on.
+        :param extra_update_image_command: List of commands to run on the
+            instance in addition to the usual ones.
+        :param ami_name: The name to give the created AMI.
+        :param credentials: An `EC2Credentials` object.
+        """
         user_connection = instance.connect_as_user()
         user_connection.perform('bzr launchpad-login %(launchpad-login)s')
         for cmd in extra_update_image_command:
@@ -399,14 +409,13 @@ class cmd_help(EC2Command):
             to show some basic usage information.
         """
         if topic is None:
-            print >>self.outf, 'Usage:    ec2 <command> <options>'
-            print >>self.outf
-            print >>self.outf, 'Available commands:'
+            self.outf.write('Usage:    ec2 <command> <options>\n\n')
+            self.outf.write('Available commands:\n')
             help_commands(self.outf)
         else:
             command = self.controller._get_command(None, topic)
             if command is None:
-                print >>self.outf, "%s is an unknown command." % (topic,)
+                self.outf.write("%s is an unknown command.\n" % (topic,))
             text = command.get_help_text()
             if text:
-                print >>self.outf, text
+                self.outf.write(text)

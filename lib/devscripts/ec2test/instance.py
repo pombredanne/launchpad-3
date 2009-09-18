@@ -26,6 +26,7 @@ import paramiko
 from devscripts.ec2test.sshconfig import SSHConfig
 from devscripts.ec2test.credentials import EC2Credentials
 
+
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
 AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 
@@ -40,7 +41,7 @@ class AcceptAllPolicy:
 
 
 def get_user_key():
-    """Get a SSH key from the agent.  Exit if not found.
+    """Get a SSH key from the agent.  Raise an error if not found.
 
     This key will be used to let the user log in (as $USER) to the instance.
     """
@@ -68,8 +69,8 @@ class EC2Instance:
         :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
         :param machine_id: The AMI to use, or None to do the usual regexp
             matching.
-        :param demo_networks: The networks to add to the security group to
-            allow access to the instance.
+        :param demo_networks: A list of networks to add to the security group
+            to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
@@ -267,12 +268,12 @@ class EC2Instance:
         root_connection.close()
 
     def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
-        """Start and set up, run `func` and then optionally shut down.
+        """Start, set up a user account, run `func` and then maybe shut down.
 
         :param postmortem: If true, any exceptions will be caught and an
             interactive session run to allow debugging the problem.
-        :param shutdown: If true, the instance will be shut down before this
-            function returns.
+        :param shutdown: If true, shut down the instance after `func` and
+            postmortem (if any) are completed.
         :param func: A callable that will be called when the instance is
             running and a user account has been set up on it.
         :param args: Passed to `func`.
