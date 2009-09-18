@@ -20,7 +20,7 @@ The language +admin view provides a label and a page_title for the page.
     Edit Portuguese (Brazil) in Launchpad
 
     >>> print language_admin_view.page_title
-    Edit Portuguese (Brazil) (pt_BR)
+    Change details
 
 The view provides also a cancel_url and a next_url, but they're the same
 because the previous and next steps of editing a language are returning
@@ -43,7 +43,7 @@ Add Language
     Register a language in Launchpad
 
     >>> print language_add_view.page_title
-    Add a new language to Launchpad
+    Register a language
 
 The view provides also a cancel_url and a next_url:
 
