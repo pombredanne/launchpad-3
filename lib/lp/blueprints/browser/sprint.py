@@ -30,17 +30,9 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from lp.registry.browser.branding import BrandingChangeView
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
-    SpecificationSort)
-from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+from canonical.launchpad import _
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -48,9 +40,18 @@ from canonical.launchpad.webapp import (
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.helpers import shortlist
-from canonical.widgets.date import DateTimeWidget
 from canonical.lazr.utils import smartquote
+from canonical.widgets.date import DateTimeWidget
+
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsView)
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
+    SpecificationSort)
+from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -335,8 +336,6 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     def label(self):
         return smartquote(
             'Review discussion topics for "%s" sprint' % self.context.title)
-
-    page_title = label
 
     def initialize(self):
         self.status_message = None

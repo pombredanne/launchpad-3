@@ -69,9 +69,9 @@ Guacamole agenda.
   'http://blueprints.launchpad.dev/sprints/uds-guacamole'
   >>> cprov_browser.getLink('Set agenda').click()
 
-  >>> cprov_browser.title
-  '+settopics : Blueprints for Ubuntu DevSummit Guacamole : Ubuntu
-  DevSummit Guacamole : Meetings'
+  >>> print cprov_browser.title
+  +settopics : Blueprints for Ubuntu DevSummit Guacamole : Ubuntu
+  DevSummit Guacamole : Meetings
 
   >>> cprov_browser.getControl('CD Media Integrity Check').selected = True
   >>> cprov_browser.getControl('Accept').click()
