@@ -9,10 +9,6 @@
 
 <body>
 
-<div metal:fill-slot="heading">
-  <h1 tal:content="view/page_title">foo-bar 1.0 (source) in ubuntu</h1>
-</div>
-
 <div metal:fill-slot="main">
 
   <div id="source-changelog" class="top-portlet">

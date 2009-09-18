@@ -23,6 +23,8 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
+from canonical.lazr.utils import smartquote
+
 
 class DistributionSourcePackageReleaseNavigation(Navigation):
     usedfor = IDistributionSourcePackageRelease
@@ -45,8 +47,8 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
     usedfor = IDistributionSourcePackageRelease
 
     @property
-    def page_title(self):
-        return self.context.title
+    def label(self):
+        return smartquote(self.context.title)
 
     @cachedproperty
     def _cached_publishing_history(self):

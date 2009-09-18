@@ -72,7 +72,7 @@ class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     @property
     def text(self):
-        return smartquote('"%s" package') % (self.context.name)
+        return smartquote('"%s" source package') % (self.context.name)
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -161,7 +161,8 @@ class SourcePackageView:
     @property
     def page_title(self):
         """The HTML page title."""
-        return '%s package' % self.context.name
+        return smartquote('"%s" source package in %s') % (
+            self.context.name, self.context.distroseries.title)
 
     @property
     def cancel_url(self):
