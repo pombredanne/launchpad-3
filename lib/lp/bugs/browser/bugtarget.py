@@ -1200,6 +1200,8 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         BugTaskStatus.UNKNOWN: 'purple',
     }
 
+    override_title_breadcrumbs = True
+
     @property
     def label(self):
         """The display label for the view."""
