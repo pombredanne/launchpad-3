@@ -10,9 +10,17 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
+from canonical.lazr.utils import smartquote
 
 
 class SprintSpecificationDecideView(LaunchpadView):
+
+    @property
+    def label(self):
+        return smartquote(
+            'Accept agenda for "%s"' % self.context.sprint.title)
+
+    page_title = label
 
     def initialize(self):
         accept = self.request.form.get('accept')
