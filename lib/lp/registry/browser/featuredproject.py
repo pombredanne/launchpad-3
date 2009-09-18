@@ -41,7 +41,8 @@ class FeaturedProjectForm(Interface):
 class FeaturedProjectsView(LaunchpadFormView):
     """A view for adding and removing featured projects."""
 
-    page_title = label = 'Manage featured projects in Launchpad'
+    label = 'Manage featured projects in Launchpad'
+    page_title = label
 
     schema = FeaturedProjectForm
     custom_widget('remove', LabeledMultiCheckBoxWidget)
