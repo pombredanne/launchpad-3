@@ -10,6 +10,8 @@ __all__ = [
     ]
 
 
+import fcntl
+
 import logging
 import Queue as queue
 
@@ -72,3 +74,8 @@ class SMTPController(QueueController):
     def _make_server(self, host, port):
         """See `QueueController`."""
         self.server = SMTPServer(host, port, self.queue)
+        # Set FD_CLOEXEC on the port's file descriptor, so that forked
+        # processes like uuidd won't steal the port.
+        flags = fcntl.fcntl(self.server._fileno, fcntl.F_GETFD)
+        flags |= fcntl.FD_CLOEXEC
+        fcntl.fcntl(self.server._fileno, fcntl.F_SETFD, flags)

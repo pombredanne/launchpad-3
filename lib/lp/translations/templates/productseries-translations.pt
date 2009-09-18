@@ -14,8 +14,7 @@
           </a>
         </li>
       </ul>
-
-      <h1>Translation status by language</h1>
+      <div style="clear:both;"></div>
 
       <tal:no-languages condition="not:view/productserieslanguages">
         <div class="yui-b top-portlet">
