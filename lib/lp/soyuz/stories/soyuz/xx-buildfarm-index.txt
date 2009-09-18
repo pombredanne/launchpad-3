@@ -13,6 +13,7 @@ in the 'Status' column. There are also 2 portlets on the right-side
 containing the build queue status summary for each build domain.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
+    The Launchpad build farm
     1 available build machine, 1 disabled and 1 building of a total of
     2 registered.
     Builders
@@ -25,6 +26,13 @@ containing the build queue status summary for each build domain.
     PPA build status
     Processor  Builders  Queue
     386        0         empty
+
+When building, the 'Status' column contains a link to the
+corresponding 'Build' page.
+
+    >>> print anon_browser.getLink(
+    ...     'i386 build of mozilla-firefox 0.9').url
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/8
 
 The build status portlets contain the number of builds waiting
 in queue and the sum of their 'estimated_build_duration' for each
