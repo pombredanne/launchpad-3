@@ -289,12 +289,12 @@ class cmd_demo(EC2Command):
 
         instance.set_up_and_run(
             True, False, self.run_server, runner,
-            instance.hostname, demo_network_string)
+            demo_network_string)
 
 
-    def run_server(self, runner, hostname, demo_network_string):
+    def run_server(self, runner, instance, demo_network_string):
         runner.run_demo_server()
-        ec2_ip = socket.gethostbyname(hostname)
+        ec2_ip = socket.gethostbyname(instance.hostname)
         print (
             "\n\n"
             "********************** DEMO *************************\n"
