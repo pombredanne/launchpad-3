@@ -4,10 +4,12 @@
      class="portletBody">
   <div class="section">
     <h2>Tags</h2>
-    <a tal:repeat="tag_info view/tags_cloud_data"
-       tal:content="tag_info/tag"
-       tal:attributes="href tag_info/url;
-                       style string:font-size: ${tag_info/factor}em" />
+    <div style="text-align: justify">
+      <a tal:repeat="tag_info view/tags_cloud_data"
+         tal:content="tag_info/tag"
+         tal:attributes="href tag_info/url;
+                         style string:font-size: ${tag_info/factor}em" />
+    </div>
   </div>
 </div>
 

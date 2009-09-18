@@ -1294,15 +1294,15 @@ class BugTargetBugTagsView(LaunchpadView):
         official_tags = set(self.context.official_bug_tags)
         tags = self.getUsedBugTagsWithURLs()
         tags.sort(key=itemgetter('tag'))
-        max_count = max(tag['count'] for tag in tags)
+        max_count = float(max(tag['count'] for tag in tags))
         for tag in tags:
             if tag['tag'] in official_tags:
                 if tag['count'] == 0:
-                    tag['factor'] = 1
+                    tag['factor'] = 1.5
                 else:
-                    tag['factor'] = 1 + (tag['count'] / max_count)
+                    tag['factor'] = 1.5 + (tag['count'] / max_count)
             else:
-                tag['factor'] = tag['count'] / max_count
+                tag['factor'] = 1 + (tag['count'] / max_count)
         print tags
         return tags
 
