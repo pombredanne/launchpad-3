@@ -14,6 +14,7 @@ import unittest
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
@@ -23,7 +24,7 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
-from lp.code.model.diff import StaticDiff
+from lp.code.model.diff import PreviewDiff, StaticDiff
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -455,10 +456,10 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertRaises(Unauthorized, view.claim_action.success,
                           {'review_id': review.id})
 
-    def test_review_diff_with_no_diff(self):
+    def test_preview_diff_text_with_no_diff(self):
         """review_diff should be None when there is no context.review_diff."""
         view = self._createView()
-        self.assertIs(None, view.review_diff)
+        self.assertIs(None, view.preview_diff_text)
 
     def test_review_diff_utf8(self):
         """A review_diff in utf-8 should be converted to utf-8."""
@@ -468,7 +469,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         transaction.commit()
         self.bmp.review_diff = diff
         self.assertEqual(diff_bytes.decode('utf-8'),
-                         self._createView().review_diff)
+                         self._createView().preview_diff_text)
 
     def test_review_diff_all_chars(self):
         """review_diff should work on diffs containing all possible bytes."""
@@ -478,7 +479,39 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         transaction.commit()
         self.bmp.review_diff = diff
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
-                         self._createView().review_diff)
+                         self._createView().preview_diff_text)
+
+    def addReviewDiff(self):
+        review_diff_bytes = ''.join(unified_diff('', 'review'))
+        review_diff = StaticDiff.acquireFromText('x', 'y', review_diff_bytes)
+        self.bmp.review_diff = review_diff
+        return review_diff
+
+    def addBothDiffs(self):
+        self.addReviewDiff()
+        preview_diff_bytes = ''.join(unified_diff('', 'preview'))
+        preview_diff = PreviewDiff.create(
+            preview_diff_bytes, u'a', u'b', None, u'')
+        removeSecurityProxy(self.bmp).preview_diff = preview_diff
+        return preview_diff
+
+    def test_preview_diff_prefers_preview_diff(self):
+        """The preview will be used for BMP with both a review and preview."""
+        preview_diff = self.addBothDiffs()
+        self.assertEqual(preview_diff, self._createView().preview_diff)
+
+    def test_preview_diff_uses_review_diff(self):
+        """The review diff will be used if there is no preview."""
+        review_diff = self.addReviewDiff()
+        self.assertEqual(review_diff.diff,
+                         self._createView().preview_diff)
+
+    def test_review_diff_text_prefers_preview_diff(self):
+        """The preview will be used for BMP with both a review and preview."""
+        preview_diff = self.addBothDiffs()
+        transaction.commit()
+        self.assertEqual(
+            preview_diff.text, self._createView().preview_diff_text)
 
     def test_linked_bugs_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""
