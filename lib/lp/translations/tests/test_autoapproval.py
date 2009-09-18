@@ -8,8 +8,13 @@ Documentation-style tests go in there, ones that go systematically
 through the possibilities should go here.
 """
 
+from datetime import datetime, timedelta
+from pytz import UTC
 import unittest
 
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
     SourcePackageName,
@@ -20,7 +25,7 @@ from lp.translations.model.potemplate import (
     POTemplateSet,
     POTemplateSubset)
 from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue)
+    TranslationImportQueue, TranslationImportQueueEntry)
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
@@ -564,6 +569,116 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory):
 
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertEqual(None, pofile)
+
+
+class TestCleanup(TestCaseWithFactory):
+    """Test `TranslationImportQueueEntry` garbage collection."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestCleanup, self).setUp()
+        self.queue = TranslationImportQueue()
+        self.store = IMasterStore(TranslationImportQueueEntry)
+        self.now = datetime.now(UTC)
+
+    def _makeProductEntry(self):
+        """Simulate upload for a product."""
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        trunk = product.getSeries('trunk')
+        return self.queue.addOrUpdateEntry(
+            'foo.pot', '# contents', False, product.owner,
+            productseries=trunk)
+
+    def _makeDistroEntry(self):
+        """Simulate upload for a distribution package."""
+        package = self.factory.makeSourcePackage()
+        owner = package.distroseries.owner
+        return self.queue.addOrUpdateEntry(
+            'bar.pot', '# contents', False, owner,
+            sourcepackagename=package.sourcepackagename,
+            distroseries=package.distroseries)
+
+    def _exists(self, entry_id):
+        """Is the entry with the given id still on the queue?"""
+        entry = self.store.find(
+            TranslationImportQueueEntry,
+            TranslationImportQueueEntry.id == entry_id).any()
+        return entry is not None
+
+    def _setStatus(self, entry, status, when):
+        """Simulate status on queue entry having been set at a given time."""
+        entry.setStatus(status)
+        entry.date_status_changed = when
+        entry.syncUpdate()
+
+    def test_cleanUpObsoleteEntries_unaffected_statuses(self):
+        # _cleanUpObsoleteEntries leaves entries in non-terminal states
+        # (Needs Review, Approved, Blocked) alone no matter how old they
+        # are.
+        one_year_ago = self.now - timedelta(days=366)
+        entry = self._makeProductEntry()
+        entry_id = entry.id
+
+        self._setStatus(entry, RosettaImportStatus.APPROVED, one_year_ago)
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        self._setStatus(entry, RosettaImportStatus.BLOCKED, one_year_ago)
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        self._setStatus(entry, RosettaImportStatus.NEEDS_REVIEW, one_year_ago)
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+    def test_cleanUpObsoleteEntries_affected_statuses(self):
+        # _cleanUpObsoleteEntries deletes entries in terminal states
+        # (Imported, Failed, Deleted) after a few days.  The exact
+        # period depends on the state.
+        entry = self._makeProductEntry()
+        self._setStatus(entry, RosettaImportStatus.IMPORTED, self.now)
+        entry_id = entry.id
+
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        entry.date_status_changed -= timedelta(days=7)
+        entry.syncUpdate()
+
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
+
+    def test_cleanUpInactiveProductEntries(self):
+        # After a product is deactivated, _cleanUpInactiveProductEntries
+        # will clean up any entries it may have on the queue.
+        entry = self._makeProductEntry()
+        entry_id = entry.id
+
+        self.queue._cleanUpInactiveProductEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        entry.productseries.product.active = False
+        entry.productseries.product.syncUpdate()
+
+        self.queue._cleanUpInactiveProductEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
+
+    def test_cleanUpObsoleteDistroEntries(self):
+        # _cleanUpObsoleteDistroEntries cleans up entries for
+        # distroseries that are in the Obsolete state.
+        entry = self._makeDistroEntry()
+        entry_id = entry.id
+
+        self.queue._cleanUpObsoleteDistroEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        entry.distroseries.status = DistroSeriesStatus.OBSOLETE
+        entry.distroseries.syncUpdate()
+
+        self.queue._cleanUpObsoleteDistroEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
 
 
 def test_suite():
