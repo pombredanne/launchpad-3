@@ -15,7 +15,6 @@
   </tal:block>
 
   <tal:block condition="view/pofiles">
-    <h1>Translatable templates</h1>
     <div class="top-portlet">
       <tal:with_group condition="view/translation_group">
         <p tal:condition="view/translation_team">

@@ -98,12 +98,6 @@
         <input type="search" id="search-text" name="field.text" />
       </form>
       <tal:hierarchy replace="structure context/@@+hierarchy" />
-    <div id="globalheader" xml:lang="en" lang="en" dir="ltr"
-         tal:condition="site_message">
-      <div class="sitemessage" tal:content="structure site_message">
-        This site is running pre-release code.
-      </div>
-    </div>
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu view/menu:facet"
@@ -239,6 +233,10 @@
           <a tal:condition="request/lp:person" href="/feedback"
           >Contact us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
         </div>
+
+        <metal:site-message
+          use-macro="context/@@+base-layout-macros/site-message"/>
+
         <div id="lp-arcana">
             &copy;&nbsp;2004-2009&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>

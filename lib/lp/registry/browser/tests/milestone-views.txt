@@ -259,6 +259,29 @@ not have edit permission.
 
     >>> login_person(person)
 
+
+Project milestones
+------------------
+
+The projectgroup milestones are virtual and cannot be modified. The template
+generates CSS that hides the space occupied by the side portlets.
+
+    >>> projectgroup = factory.makeProject(name='flock')
+    >>> product.project = projectgroup
+    >>> project_milestone = projectgroup.getMilestone('kakapo')
+    >>> view = create_initialized_view(
+    ...     project_milestone, '+index', principal=person)
+    >>> print find_tag_by_id(view.render(), 'hide-side-portlets')['type']
+    text/css
+
+A normal milestone does not have the CSS rule.
+
+    >>> view = create_initialized_view(
+    ...     milestone, '+index', principal=person)
+    >>> print find_tag_by_id(content, 'hide-side-portlets')
+    None
+
+
 Editing milestones
 ------------------
 

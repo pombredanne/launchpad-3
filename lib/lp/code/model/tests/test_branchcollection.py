@@ -55,13 +55,25 @@ class TestBranchCollectionAdaptation(TestCaseWithFactory):
         collection = IBranchCollection(person, None)
         self.assertIsNot(None, collection)
 
+    def test_distribution(self):
+        # A distribution can be adapted to a branch collection.
+        distribution = self.factory.makeDistribution()
+        collection = IBranchCollection(distribution, None)
+        self.assertIsNot(None, collection)
+
+    def test_distro_series(self):
+        # A distro series can be adapted to a branch collection.
+        distro_series = self.factory.makeDistroRelease()
+        collection = IBranchCollection(distro_series, None)
+        self.assertIsNot(None, collection)
+
     def test_source_package(self):
         # A source package can be adapted to a branch collection.
         source_package = self.factory.makeSourcePackage()
         collection = IBranchCollection(source_package, None)
         self.assertIsNot(None, collection)
 
-    def test_distribution_source__package(self):
+    def test_distribution_source_package(self):
         # A distribution source pakcage can be adapted to a branch collection.
         distro_source_package = self.factory.makeDistributionSourcePackage()
         collection = IBranchCollection(distro_source_package, None)
@@ -614,6 +626,15 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         collection = self.all_branches.inProduct(product)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual([mp1], list(proposals))
+
+    def test_specifying_target_branch(self):
+        # If the target_branch is specified, only merge proposals where that
+        # branch is the target are returned.
+        mp1 = self.factory.makeBranchMergeProposal()
+        mp2 = self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposals(
+            target_branch=mp1.target_branch)
         self.assertEqual([mp1], list(proposals))
 
 

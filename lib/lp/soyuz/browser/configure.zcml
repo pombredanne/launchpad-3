@@ -358,7 +358,7 @@
     </browser:pages>
     <browser:pages
         for="lp.soyuz.interfaces.build.IBuild"
-        class="lp.soyuz.browser.build.BuildView"
+        class="lp.soyuz.browser.build.BuildRetryView"
         permission="launchpad.Edit">
         <browser:page
             name="+retry"

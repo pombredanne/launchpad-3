@@ -39,6 +39,7 @@ from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
@@ -271,6 +272,10 @@ class LaunchpadView(UserAttributeCache):
         Check if the response status is one of 301, 302, 303 or 307.
         """
         return self.request.response.getStatus() in [301, 302, 303, 307]
+
+    def isRedirectInhibited(self):
+        """Returns True if redirection has been inhibited."""
+        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
 
     def __call__(self):
         self.initialize()
