@@ -7,9 +7,6 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:pageheading fill-slot="heading">
-      <h1>Hardware Database</h1>
-    </metal:pageheading>
 
     <div metal:fill-slot="main"
        tal:define="batchnav view/getAllBatched;

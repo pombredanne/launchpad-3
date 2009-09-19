@@ -317,8 +317,6 @@ cve_unlinkbugs = ContextDisplayName('Remove links between %s and bug reports')
 
 debug_root_index = 'Launchpad Debug Home Page'
 
-default_editform = 'Default "Edit" Page'
-
 distributionmirror_index = ContextTitle('Mirror %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
@@ -417,13 +415,6 @@ hassprints_sprints = ContextTitle("Events related to %s")
 
 # launchpad_debug doesn't need a title.
 
-def launchpad_addform(context, view):
-    """Return the page_title of the view, or None."""
-    # Returning None results in the default Launchpad page title being used.
-    return getattr(view, 'page_title', None)
-
-launchpad_editform = launchpad_addform
-
 launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
@@ -516,8 +507,6 @@ mentoringofferset_success = "Successful mentorships over the past year."
 # messagechunk_snippet is a fragment
 
 # messages_index is a redirect
-
-message_add = ContextBugId('Bug #%d - Add a comment')
 
 milestone_add = ContextTitle('Add new milestone for %s')
 
