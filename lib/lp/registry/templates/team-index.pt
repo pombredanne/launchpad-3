@@ -30,6 +30,10 @@
     <span tal:content="view/visibility_info">Viewable by team members.</span>
   </div>
 
+  <metal:contact use-macro="context/@@+person-macros/contact">
+    Contact this team
+  </metal:contact>
+
   <tal:menu replace="structure view/@@+global-actions" />
   <tal:polls replace="structure context/@@+portlet-polls" />
 
