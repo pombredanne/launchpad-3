@@ -2001,6 +2001,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 #branch-pending-writes {
   background: #FFF59C;
   width: 40em;
+  margin: 1em auto;
   padding-left: 1em;
   padding-right: 1em;
   padding-top: 0.2em;
