@@ -9,7 +9,7 @@ accessed by clicking on the 'Related Software' menu item.
     >>> anon_browser.getLink('Related software').click()
 
     >>> print anon_browser.title
-    +related-software : Mark Shuttleworth
+    Software related to Mark Shuttleworth...
     >>> print anon_browser.url
     http://launchpad.dev/~mark/+related-software
 

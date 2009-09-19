@@ -58,6 +58,10 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
         urls = self._getBreadcrumbsURLs(
             downloads_url, [self.root, self.product])
         self.assertEquals(urls, [self.product_url, downloads_url])
+        texts = self._getBreadcrumbsTexts(
+            downloads_url, [self.root, self.product])
+        self.assertEquals(texts[-1],
+                          '%s project files' % self.product.displayname)
 
 
 class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):

@@ -117,10 +117,10 @@
 
   </div><!-- non-portlets-->
 
-  <div id="review-diff" tal:condition="context/review_diff">
-  <h2>Review Diff</h2>
+  <div id="review-diff" tal:condition="view/preview_diff">
+  <h2>Preview Diff</h2>
   <div class="boardComment attachment"
-       tal:define="attachment context/review_diff/diff/diff_text">
+       tal:define="attachment view/preview_diff/diff_text">
     <tal:real-diff condition="attachment">
       <div class="boardCommentDetails filename">
         <a tal:attributes="href attachment/getURL">
@@ -129,7 +129,7 @@
         </a>
       </div>
       <div class="boardCommentBody attachmentBody">
-        <tal:diff replace="structure view/review_diff/fmt:diff" />
+        <tal:diff replace="structure view/preview_diff_text/fmt:diff" />
       </div>
       <div class="boardCommentFooter"
            tal:condition="view/review_diff_oversized">
