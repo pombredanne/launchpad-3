@@ -9,9 +9,10 @@ __all__ = []
 import unittest
 
 from canonical.testing.layers import BaseWindmillLayer, DatabaseLayer
+from lp.testing import TestCase
 
 
-class TestBaseWindmillLayer(unittest.TestCase):
+class TestBaseWindmillLayer(TestCase):
 
     layer_to_test = BaseWindmillLayer
 
