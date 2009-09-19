@@ -71,6 +71,7 @@ class SprintNavigation(Navigation):
 
 
 class SprintOverviewMenu(NavigationMenu):
+    """Defines a menu used for the global actions."""
 
     usedfor = ISprint
     facet = 'overview'
