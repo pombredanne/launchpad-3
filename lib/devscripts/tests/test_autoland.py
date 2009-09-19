@@ -7,7 +7,8 @@ __metaclass__ = type
 
 import unittest
 
-from devscripts.autoland import get_bugs_clause, get_reviewer_handle
+from devscripts.autoland import (
+    get_bugs_clause, get_reviewer_clause, get_reviewer_handle)
 
 
 class FakeBug:
@@ -88,6 +89,51 @@ class TestGetReviewerHandle(unittest.TestCase):
         person = self.makePerson(
             name='foo', irc_handles=[FakeIRC('bar', 'irc.efnet.net')])
         self.assertEqual('foo', get_reviewer_handle(person))
+
+
+class TestGetReviewerClause(unittest.TestCase):
+    """Tests for `get_reviewer_clause`."""
+
+    def makePerson(self, name):
+        return FakePerson(name, [])
+
+    def get_reviewer_clause(self, reviewers):
+        return get_reviewer_clause(reviewers)
+
+    def test_one_reviewer_no_type(self):
+        # It's very common for a merge proposal to be reviewed by one person
+        # with no specified type of review. It such cases the review clause is
+        # '[r=<person>][ui=none]'.
+        clause = self.get_reviewer_clause({None: [self.makePerson('foo')]})
+        self.assertEqual('[r=foo][ui=none]', clause)
+
+    def test_two_reviewers_no_type(self):
+        # Branches can have more than one reviewer.
+        clause = self.get_reviewer_clause(
+            {None: [self.makePerson('foo'), self.makePerson('bar')]})
+        self.assertEqual('[r=foo,bar][ui=none]', clause)
+
+    def test_code_reviewer_counts(self):
+        # Some people explicitly specify the 'code' type when they do code
+        # reviews, these are treated in the same way as reviewers without any
+        # given type.
+        clause = self.get_reviewer_clause({'code': [self.makePerson('foo')]})
+        self.assertEqual('[r=foo][ui=none]', clause)
+
+    def test_db_reviewer_counts(self):
+        # There's no special way of annotating database reviews in Launchpad
+        # commit messages, so they are included with the code reviews.
+        clause = self.get_reviewer_clause({'db': [self.makePerson('foo')]})
+        self.assertEqual('[r=foo][ui=none]', clause)
+
+    def test_ui_reviewers(self):
+        # If someone has done a UI review, then that appears in the clause
+        # separately from the code reviews.
+        clause = self.get_reviewer_clause(
+            {'code': [self.makePerson('foo')],
+             'ui': [self.makePerson('bar')],
+             })
+        self.assertEqual('[r=foo][ui=bar]', clause)
 
 
 def test_suite():
