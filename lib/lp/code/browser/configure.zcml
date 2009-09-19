@@ -369,6 +369,29 @@
         <browser:page
             name="++bug-links"
             template="../templates/branch-bug-links.pt"/>
+
+        <browser:page
+            name="++branch-information"
+            template="../templates/branch-information.pt" />
+        <browser:page
+            name="++branch-management"
+            template="../templates/branch-management.pt" />
+        <browser:page
+            name="++branch-pending-merges"
+            template="../templates/branch-pending-merges.pt" />
+        <browser:page
+            name="++branch-import-details"
+            template="../templates/branch-import-details.pt" />
+        <browser:page
+            name="++branch-revisions"
+            template="../templates/branch-revisions.pt" />
+        <browser:page
+            name="++branch-metadata"
+            template="../templates/branch-metadata.pt" />
+        <browser:page
+            name="++branch-related-bugs-specs"
+            template="../templates/branch-related-bugs-specs.pt" />
+
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branch.IBranch"
@@ -548,7 +571,7 @@
     <browser:menus
         classes="
             BranchContextMenu
-            BranchNavigationMenu"
+            BranchEditMenu"
         module="lp.code.browser.branch"/>
     <browser:page
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
