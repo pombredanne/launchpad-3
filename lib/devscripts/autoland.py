@@ -4,7 +4,7 @@ from pprint import pprint
 import os
 import sys
 
-from launchpadlib.launchpad import Launchpad
+from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
 from lazr.uri import URI
 
 # Given the merge proposal URL, get:
@@ -44,6 +44,7 @@ class LaunchpadBranchLander:
     @classmethod
     def load(cls, service_root):
         cache_dir = os.path.expanduser(cls.cache_dir)
+        # XXX: If cached data invalid, hard to delete & try again.
         launchpad = Launchpad.login_with(cls.name, service_root, cache_dir)
         return cls(launchpad)
 
@@ -61,6 +62,11 @@ class LaunchpadBranchLander:
 
 
 def get_bugs_clause(bugs):
+    """Return the bugs clause of a commit message.
+
+    :param bugs: A collection of `IBug` objects.
+    :return: A string of the form "[bug=A,B,C]".
+    """
     if not bugs:
         return ''
     return '[bug=%s]' % ','.join(str(bug.id) for bug in bugs)
@@ -69,11 +75,30 @@ def get_bugs_clause(bugs):
 def get_reviews(mp):
     reviews = {}
     for vote in mp.votes:
-        if vote.comment.vote != "Approve":
+        comment = vote.comment
+        if comment is None or comment.vote != "Approve":
             continue
         reviewers = reviews.setdefault(vote.review_type, [])
         reviewers.append(vote.reviewer)
     return reviews
+
+
+def get_reviewer_handle(reviewer):
+    """Get the handle for 'reviewer'.
+
+    The handles of reviewers are included in the commit message for Launchpad
+    changes. Historically, these handles have been the IRC nicks. Thus, if
+    'reviewer' has an IRC nickname for Freenode, we use that. Otherwise we use
+    their Launchpad username.
+
+    :param reviewer: A launchpadlib `IPerson` object.
+    :return: A UTF-8 encoded string.
+    """
+    irc_handles = reviewer.irc_nicknames
+    for handle in irc_handles:
+        if handle.network == 'irc.freenode.net':
+            return handle.nickname
+    return reviewer.name
 
 
 def get_bugs(mp):
@@ -83,14 +108,14 @@ def get_bugs(mp):
 def get_lp_commit_message(mp, commit_message=None):
     if commit_message is None:
         commit_message = mp.commit_message
+    pprint([irc.nickname for irc in mp.registrant.irc_nicknames])
     pprint(commit_message)
     pprint(list(get_bugs(mp)))
     pprint(get_reviews(mp))
 
 
 def main(argv):
-    DEV_SERVICE_ROOT = 'https://api.launchpad.dev/beta/'
-    lander = LaunchpadBranchLander.load(DEV_SERVICE_ROOT)
+    lander = LaunchpadBranchLander.load(EDGE_SERVICE_ROOT)
     mp = lander.load_merge_proposal(argv[1])
     get_lp_commit_message(mp)
     return 0
