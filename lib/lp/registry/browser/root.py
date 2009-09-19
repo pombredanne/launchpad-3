@@ -56,6 +56,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     # The homepage has two columns to hold featured projects. This
     # determines the number of projects we display in each column.
     FEATURED_PROJECT_ROWS = 5
+    MAX_FEATURED_PROJECTS = FEATURED_PROJECT_ROWS * 2 + 1
 
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
