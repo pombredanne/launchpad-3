@@ -513,6 +513,7 @@ class POFileFilteredView(LaunchpadView):
         else:
             return self.person.displayname
 
+    @property
     def page_title(self):
         """See `LaunchpadView`."""
         return smartquote('Translations by %s in "%s"') % (

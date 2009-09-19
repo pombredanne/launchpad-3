@@ -26,7 +26,7 @@ Project in this case.
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for The Mozilla Project : the Mozilla Project
+    Ask a question...
 
 The workflow is identical to the regular one, except that the user
 must select one of the Project's Products. The page displays a list of
@@ -129,7 +129,7 @@ regular workflow. (see 30-question-workflow.txt for the details).
     >>> user_browser.url
     '.../thunderbird/+question/...'
     >>> print user_browser.title
-    +index : Questions for Mozilla Thunderbird : Mozilla Thunderbird
+    Questions for...
 
 
 == Supported Language behaviour ==
@@ -150,7 +150,7 @@ non-English languages. Dafydd speaks Japanese, so we will use him.
     >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> print daf_browser.title
-    +editlanguages : Dafydd Harries
+    Language preferences...
 
     >>> daf_browser.getControl('Japanese').selected
     True
@@ -158,7 +158,7 @@ non-English languages. Dafydd speaks Japanese, so we will use him.
     >>> daf_browser.open(
     ...     'http://answers.launchpad.dev/thunderbird/+support-contact')
     >>> print daf_browser.title
-    +answer-contact : Questions for Mozilla Thunderbird : Mozilla Thunderbird
+    Answer contact for...
 
     >>> daf_browser.getControl('I want to be an answer contact for '
     ...                        'Mozilla Thunderbird').selected = True
@@ -177,7 +177,7 @@ behaviour.
     >>> user_browser.open(
     ...     'http://launchpad.dev/~no-priv/+editlanguages')
     >>> print user_browser.title
-    +editlanguages : No Privileges Person
+    Language preferences...
 
     >>> user_browser.getControl('Japanese').selected = True
     >>> user_browser.getControl('Save').click()
@@ -219,7 +219,7 @@ Japanese.
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for The Mozilla Project : the Mozilla Project
+    Ask a question...
 
 The page displays a list of products associated with the project.
 The first item in the list is the default value, and it will be
@@ -286,7 +286,7 @@ his question.
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for The Mozilla Project : the Mozilla Project
+    Ask a question...
 
     >>> user_browser.getControl('Mozilla Thunderbird').selected = True
 
@@ -329,4 +329,4 @@ again--the question is created.
     >>> user_browser.url
     '.../thunderbird/+question/...'
     >>> print user_browser.title
-    +index : Questions for Mozilla Thunderbird : Mozilla Thunderbird
+    Questions for...

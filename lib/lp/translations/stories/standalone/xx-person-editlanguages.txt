@@ -227,7 +227,7 @@ The nag message links to the languages editing page.
 
     >>> noi_browser.getLink(id='set-languages').click()
     >>> print noi_browser.title
-    +editlanguages : Translations : Noi
+    Language preferences...
 
 Once Noi has set one or more preferred languages, the nag message goes
 away.

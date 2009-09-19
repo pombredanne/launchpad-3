@@ -110,7 +110,7 @@ Ubuntu Hoary".)
     ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
     Hierarchy: Ubuntu > 5.04 > ?alsa-utils? source package >
-        Questions for alsa-utils in Ubuntu Hoary
+        Questions for alsa-utils...
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
