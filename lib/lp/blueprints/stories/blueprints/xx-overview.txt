@@ -46,8 +46,7 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     >>> browser = admin_browser
     >>> browser.open('http://launchpad.dev/firefox/+specs')
     >>> browser.getLink('svg-support').click()
-    >>> main = find_main_content(browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    >>> print browser.title
     Support Native SVG Objects...
     >>> browser.getLink('Propose as goal').click()
     >>> main = find_main_content(browser.contents)
@@ -62,8 +61,7 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     >>> series.displayValue = ['firefox 1.0']
     >>> browser.getControl('Continue').click()
     >>> main = find_main_content(browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    Support Native SVG Objects...
+    >>> print extract_text(find_tag_by_id(main, 'series-goal'))
     Series goal: Accepted for 1.0...
 
 We'll also target the blueprint to a milestone. First we'll create a milestone:
@@ -90,8 +88,7 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> milestones.displayValue = ['Mozilla Firefox 1.0.9']
     >>> browser.getControl('Change').click()
     >>> main = find_main_content(browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    Support Native SVG Objects...
+    >>> print extract_text(find_tag_by_id(main, 'milestone-target'))
     Milestone target:...1.0.9...
 
 Now the blueprint listing for the 1.0 series includes an entry for our chosen
@@ -146,7 +143,7 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
     >>> browser.open('http://launchpad.dev/ubuntu/+specs')
     >>> browser.getLink('media-integrity-check').click()
     >>> main = find_main_content(browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    >>> print browser.title
     CD Media Integrity Check...
     >>> browser.getLink('Propose as goal').click()
     >>> main = find_main_content(browser.contents)
@@ -160,8 +157,7 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
     >>> series.displayValue = ['ubuntu grumpy']
     >>> browser.getControl('Continue').click()
     >>> main = find_main_content(browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    CD Media Integrity Check...
+    >>> print extract_text(find_tag_by_id(browser.contents, 'series-goal'))
     Series goal: Accepted for grumpy...
 
 We'll also target the blueprint to a milestone. First we'll create a milestone:
@@ -186,10 +182,8 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> milestones = browser.getControl('Milestone')
     >>> milestones.displayValue = ['Ubuntu drift-1']
     >>> browser.getControl('Change').click()
-    >>> main = find_main_content(browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    CD Media Integrity Check...
-    Milestone target:...drift-1...
+    >>> print extract_text(find_tag_by_id(browser.contents, 'milestone-target'))
+    Milestone target: drift-1
 
 Finally, the blueprint listing for Grumpy includes an entry for our chosen
 blueprint. It also lists the milestone to which the blueprint is targeted:

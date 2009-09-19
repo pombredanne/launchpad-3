@@ -73,6 +73,7 @@ The blueprint page shows the linked branches in a portlet.
     ...     'linked_branches'))
     Related branches
     lp://dev/~mark/firefox/release-0.8
+    Link to another branch
 
 Again, attempting to link to the same branch gives an error.
 
@@ -101,7 +102,10 @@ The branch is now no longer listed in the portlet:
 
     >>> user_browser.open(
     ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
-    >>> find_tag_by_id(user_browser.contents, 'linked_branches')
+    >>> print extract_text(find_tag_by_id(user_browser.contents,
+    ...     'linked_branches'))
+    Related branches
+    Link a related branch
 
 
 == Inline editing from the branch page ==

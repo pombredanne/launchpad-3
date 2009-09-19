@@ -257,7 +257,7 @@ Jdub will become a member of the team's mailing list as soon as he has
 been approved for the team.
 
     >>> admin_browser.open('http://launchpad.dev/~rosetta-admins')
-    >>> admin_browser.getLink('Show all members').click()
+    >>> admin_browser.getLink('All members').click()
     >>> admin_browser.getLink(
     ...     url='/~rosetta-admins/+member/jdub').click()
     >>> admin_browser.url
