@@ -19,7 +19,7 @@ send notifications to that team.  The possible contact methods are:
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink(url='+contactaddress').click()
     >>> browser.title
-    '+contactaddress : \xe2\x80\x9cLandscape Developers\xe2\x80\x9d team'
+    'Landscape Developers contact address...
 
 As we can see, the landscape-developers team has no contact address.
 
@@ -75,7 +75,7 @@ Follow the token link, to confirm the new email address.
 
     >>> browser.getLink(url='+contactaddress').click()
     >>> browser.title
-    '+contactaddress : \xe2\x80\x9cLandscape Developers\xe2\x80\x9d team'
+    'Landscape Developers contact address...
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]
     ['Another e-mail address']

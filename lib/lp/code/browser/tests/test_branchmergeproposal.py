@@ -19,8 +19,9 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
-    BranchMergeProposalMergedView, BranchMergeProposalView,
-    BranchMergeProposalVoteView)
+    BranchMergeProposalContextMenu, BranchMergeProposalMergedView,
+    BranchMergeProposalView, BranchMergeProposalVoteView,
+    DecoratedCodeReviewVoteReference)
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
@@ -48,6 +49,33 @@ class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):
         self.assertEqual(
             IPrimaryContext(bmp).context,
             IPrimaryContext(bmp.source_branch).context)
+
+
+class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_add_comment_enabled_when_not_mergeable(self):
+        """It should be possible to comment on an unmergeable proposal."""
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.REJECTED)
+        login_person(bmp.registrant)
+        menu = BranchMergeProposalContextMenu(bmp)
+        link = menu.add_comment()
+        self.assertTrue(menu.add_comment().enabled)
+
+class TestDecoratedCodeReviewVoteReference(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_commentEnabled(self):
+        """It should be possible to review an unmergeable proposal."""
+        request = self.factory.makeCodeReviewVoteReference()
+        bmp = request.branch_merge_proposal
+        bmp.rejectBranch(bmp.target_branch.owner, 'foo')
+        d = DecoratedCodeReviewVoteReference(request, request.reviewer, None)
+        self.assertTrue(d.user_can_review)
+        self.assertTrue(d.can_change_review)
 
 
 class TestBranchMergeProposalMergedView(TestCaseWithFactory):
@@ -127,9 +155,13 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
     def testNoVotes(self):
         # No votes should return empty lists
+        login_person(self.factory.makePerson())
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
         self.assertEqual([], view.current_reviews)
         self.assertEqual([], view.requested_reviews)
+        # The vote table should not be shown, because there are no votes, and
+        # the logged-in user cannot request reviews.
+        self.assertFalse(view.show_table)
 
     def testRequestedOrdering(self):
         # No votes should return empty lists

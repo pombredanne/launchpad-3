@@ -71,7 +71,7 @@
           tal:attributes="href context/fmt:url:translations">Translations</a>
       </li>
       <li>
-        <a class="sprite blueprints"
+        <a class="sprite code"
           tal:attributes="href context/fmt:url:code">Code</a>
       </li>
       <li>
