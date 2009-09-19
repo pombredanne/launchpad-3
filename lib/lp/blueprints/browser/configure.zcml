@@ -23,6 +23,13 @@
         for="lp.blueprints.interfaces.sprint.ISprint"
         path_expression="name"
         parent_utility="lp.blueprints.interfaces.sprint.ISprintSet"/>
+    <browser:page
+        for="lp.blueprints.interfaces.sprint.ISprint"
+        name="+hierarchy"
+        class="lp.blueprints.browser.sprint.SprintIndexHierarchy"
+        template="../../app/templates/launchpad-hierarchy.pt"
+        permission="zope.Public"
+        />
     <browser:pages
         for="lp.blueprints.interfaces.sprint.ISprint"
         class="lp.blueprints.browser.sprint.SprintView"

@@ -22,8 +22,6 @@
                  has_any_specs view/has_any_specifications">
 
   <div class="top-portlet">
-    <h2>Meeting overview</h2>
-
     <p>
       <span tal:replace="context/summary">
         Sprint Summary Goes Here
@@ -47,19 +45,21 @@
       <dt>Address:</dt>
       <dd><span tal:replace="context/address" /></dd>
     </dl>
-
-    <dl id="meeting-drivers">
-      <dt>Meeting drivers:</dt>
-      <dd tal:repeat="driver context/drivers" style="margin-bottom:0.2em">
-        <span tal:replace="structure driver/fmt:link" />
-      </dd>
-    </dl>
+  </div>
+  <div class="portlet">
+    <h2>Meeting drivers</h2>
 
     <p>
       Each meeting has a person, or team, responsible for deciding which
       items are accepted for the agenda. This team is called the "meeting
       driver" and for <tal:meeting replace="context/title" /> they are:
     </p>
+
+    <ul id="meeting-drivers">
+      <li tal:repeat="driver context/drivers" style="margin-bottom:0.2em">
+        <span tal:replace="structure driver/fmt:link" />
+      </li>
+    </ul>
 
     <p>
       You should contact the meeting driver if you have any additional

@@ -10,6 +10,7 @@ __all__ = [
     'SprintBrandingView',
     'SprintEditView',
     'SprintFacets',
+    'SprintIndexHierarchy',
     'SprintMeetingExportView',
     'SprintNavigation',
     'SprintOverviewMenu',
@@ -47,6 +48,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation, NavigationMenu,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
+from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.helpers import shortlist
@@ -150,6 +152,12 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
     usedfor = ISprintSet
     enable_only = ['overview', ]
+
+
+class SprintIndexHierarchy(Hierarchy):
+    """We force the breadcrumbs not to display for the sprint index."""
+
+    display_breadcrumbs = False
 
 
 class SprintView(HasSpecificationsView, LaunchpadView):
@@ -292,6 +300,8 @@ class SprintEditView(LaunchpadEditFormView):
 
     schema = ISprint
     label = "Edit sprint details"
+    page_title = label
+
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
                    'time_zone', 'time_starts', 'time_ends', 'address',
                    ]
