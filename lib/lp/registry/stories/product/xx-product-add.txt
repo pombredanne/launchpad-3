@@ -7,12 +7,12 @@ from the Launchpad home page or the projects home page.
     >>> user_browser.open('http://launchpad.dev')
     >>> user_browser.getLink('Create a new project').click()
     >>> print user_browser.title
-    +new : Projects
+    Register a project in Launchpad...
 
     >>> user_browser.open('http://launchpad.dev/projects')
     >>> user_browser.getLink('Register a project').click()
     >>> print user_browser.title
-    +new : Projects
+    Register a project in Launchpad...
 
 The page includes both a direct link and a button to order Ubuntu CDs.
 
@@ -67,7 +67,7 @@ The project is not yet created; instead, the project basics are successfully
 validated and the second step of the process is entered.
 
     >>> print user_browser.title
-    +new : Projects
+    Register a project in Launchpad...
 
 
 Completing the registration
@@ -116,7 +116,7 @@ Firefox.
     >>> user_browser.open('http://launchpad.dev')
     >>> user_browser.getLink('Create a new project').click()
     >>> print user_browser.title
-    +new : Projects
+    Register a project in Launchpad...
 
     >>> user_browser.getControl('Name').value = 'Snowdog'
     >>> user_browser.getControl('URL').value = 'snowdog'
@@ -145,7 +145,7 @@ location at /projects/+new.
 
     >>> user_browser.open('http://launchpad.dev/projects/+new-guided')
     >>> print user_browser.title
-    +new : Projects
+    Register a project in Launchpad...
 
     >>> print user_browser.url
     http://launchpad.dev/projects/+new

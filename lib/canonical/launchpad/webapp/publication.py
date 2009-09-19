@@ -428,6 +428,11 @@ class LaunchpadBrowserPublication(
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
         zopepublication """
+        # In some cases we seem to be called more than once for a given
+        # traversed object, so we need to be careful here and only append an
+        # object the first time we see it.
+        if ob not in request.traversed_objects:
+            request.traversed_objects.append(ob)
         notify(BeforeTraverseEvent(ob, request))
 
     def afterTraversal(self, request, ob):
