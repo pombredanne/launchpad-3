@@ -1315,6 +1315,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 
+    def makeCodeReviewVoteReference(self):
+        bmp = removeSecurityProxy(self.makeBranchMergeProposal())
+        candidate = self.makePerson()
+        return bmp.nominateReviewer(candidate, bmp.registrant)
+
     def makeMessage(self, subject=None, content=None, parent=None,
                     owner=None):
         if subject is None:

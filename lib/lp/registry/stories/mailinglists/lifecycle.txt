@@ -15,7 +15,7 @@ The owner of Landscape Developers applies for a mailing list.
     >>> browser.getLink(url='+mailinglist').click()
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> print backslashreplace(browser.title)
-    +mailinglist : \u201cLandscape Developers\u201d team
+    Mailing list configuration...
 
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title

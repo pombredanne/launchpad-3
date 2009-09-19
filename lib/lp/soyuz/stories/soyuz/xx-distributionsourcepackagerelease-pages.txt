@@ -163,8 +163,7 @@ of this source in the context distribution are listed.
     >>> anon_browser.getLink('See full publishing history').click()
 
     >>> anon_browser.title
-    '+publishinghistory : \xe2\x80\x9ctesting-dspr\xe2\x80\x9d package
-    : ubuntutest'
+    'testing-dspr 1.0 (source) in...
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     ubuntutest

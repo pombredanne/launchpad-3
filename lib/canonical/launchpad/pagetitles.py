@@ -421,8 +421,6 @@ launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Need a new Launchpad password?'
 
-launchpad_graphics = 'Overview of Launchpad graphics and icons'
-
 # launchpad_css is a css file
 
 # launchpad_js is standard javascript
@@ -442,8 +440,6 @@ launchpad_unexpectedformdata = 'Error: Unexpected form data'
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
-
-launchpadstatisticset_index = 'Launchpad statistics'
 
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
@@ -836,8 +832,6 @@ specification_edit = 'Edit blueprint details'
 
 specification_linksprint = 'Put blueprint on sprint agenda'
 
-specification_index = ContextTitle(smartquote('Blueprint: "%s"'))
-
 specification_subscription = 'Subscribe to blueprint'
 
 specification_queue = 'Queue blueprint for review'
@@ -909,8 +903,6 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
-
-temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 token_authorized = 'Almost finished ...'
 
