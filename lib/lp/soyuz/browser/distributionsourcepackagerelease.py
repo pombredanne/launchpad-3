@@ -50,6 +50,10 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
     def label(self):
         return smartquote(self.context.title)
 
+    @property
+    def page_title(self):
+        return self.label
+
     @cachedproperty
     def _cached_publishing_history(self):
         """Local copy of the context 'publishing_history' values."""

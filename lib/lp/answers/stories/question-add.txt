@@ -36,7 +36,7 @@ associated with the source package of the used application.
 
     >>> user_browser.getLink('Ask a question').click()
     >>> user_browser.title
-    '+addquestion : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package
+    '+addquestion : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d source package
     : 5.04 : Ubuntu'
 
 

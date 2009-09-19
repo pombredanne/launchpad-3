@@ -493,8 +493,8 @@ an ILibraryFileAlias:
 
    >>> firefox_srcrel =  warty.getSourcePackage(
    ...    'mozilla-firefox').currentrelease
-   >>> firefox_srcrel.title
-   u'mozilla-firefox 0.9 (source) in ubuntu warty'
+   >>> print firefox_srcrel.title
+   "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
    >>> firefox_srcrel.changesfile
    <LibraryFileAlias at ...>
@@ -1014,7 +1014,7 @@ Each element is an IDistroSeriesSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
     ...     print upload.title
-    mozilla-firefox 0.9 (source) in ubuntu warty
+    "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:
