@@ -135,20 +135,21 @@ def get_reviewer_clause(reviewers):
         ui_clause)
 
 
-def get_lp_commit_message(mp, commit_message=None):
-    if commit_message is None:
-        commit_message = mp.commit_message
-    pprint([irc.nickname for irc in mp.registrant.irc_nicknames])
-    pprint(commit_message)
-    pprint(list(get_bugs(mp)))
-    pprint(get_reviews(mp))
-    pprint(get_reviewer_clause(get_reviews(mp)))
+def get_lp_commit_message(mp):
+    """Get the Launchpad-style commit message for a merge proposal."""
+    # XXX: Point to docs describing the rules for this.
+    reviews = get_reviews(mp)
+    bugs = get_bugs(mp)
+    return '%s%s %s' % (
+        get_reviewer_clause(reviews),
+        get_bugs_clause(bugs),
+        mp.commit_message)
 
 
 def main(argv):
     lander = LaunchpadBranchLander.load(DEV_SERVICE_ROOT)
     mp = lander.load_merge_proposal(argv[1])
-    get_lp_commit_message(mp)
+    print get_lp_commit_message(mp)
     return 0
 
 
