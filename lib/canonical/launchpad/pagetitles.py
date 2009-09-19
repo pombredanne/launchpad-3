@@ -255,8 +255,6 @@ bugtask_view = BugTaskPageTitle()
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
-builders_index = 'Launchpad build farm'
-
 calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add event to %s')

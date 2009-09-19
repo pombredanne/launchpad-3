@@ -608,7 +608,7 @@ Create merge proposal with a review diff, and go to its index page.
 
 The text of the review diff is in the page.
     >>> print repr(extract_text(get_review_diff()))
-    u'Review Diff\nDownload diff\n1\n...Fake Diff\u1010'
+    u'Preview Diff\nDownload diff\n1\n...Fake Diff\u1010'
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')
@@ -623,5 +623,5 @@ If the review diff is empty, then we say it is empty.
     >>> bmp.review_diff = StaticDiff.acquireFromText('c', 'd', '')
     >>> logout()
     >>> print extract_text(get_review_diff())
-    Review Diff
+    Preview Diff
     Empty

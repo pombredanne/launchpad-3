@@ -10,18 +10,21 @@ When subscribers subscribe to branches, they can specify what level of
 notification they would like to receive.
 
     >>> from difflib import unified_diff
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchmergeproposal import (
     ...     IMergeProposalCreatedJobSource)
     >>> from lp.code.interfaces.diff import IStaticDiffSource
+    >>> from lp.code.model.diff import PreviewDiff
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')
     >>> diff_bytes = ''.join(unified_diff('', 'c'))
-    >>> diff = getUtility(IStaticDiffSource).acquireFromText(
+    >>> review_diff = getUtility(IStaticDiffSource).acquireFromText(
     ...     'a', 'b', diff_bytes)
+    >>> preview_diff = PreviewDiff.create(diff_bytes, u'a', u'b', None, None)
     >>> # Make Librarian happy.
     >>> transaction.commit()
     >>> bmp = factory.makeBranchMergeProposal()
@@ -99,11 +102,12 @@ is created.  When those jobs are run, the email is sent from the registrant.
     >>> notifications = pop_notifications()
     >>> registrant = factory.makePerson(
     ...     displayname="Eric", email="eric@example.com")
-    >>> # To avoid trying to access branches, pre-populate review_diff.
+    >>> # To avoid needing to access branches, pre-populate diffs.
     >>> bmp = source_branch.addLandingTarget(
-    ...     registrant, target_branch, review_diff=diff)
+    ...     registrant, target_branch, review_diff=review_diff)
+    >>> removeSecurityProxy(bmp).preview_diff = preview_diff
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> _unused_diff = job.run()
+    >>> _unused_diff = job.run(_create_preview=False)
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
 
@@ -151,10 +155,12 @@ in the email.
     ...     """)
     >>> bmp.deleteProposal()
     >>> bmp = source_branch.addLandingTarget(
-    ...     registrant, target_branch, review_diff=diff,
-    ...     initial_comment=initial_comment, review_requests=reviewers)
+    ...     registrant, target_branch,
+    ...     initial_comment=initial_comment, review_requests=reviewers,
+    ...     review_diff=review_diff)
+    >>> removeSecurityProxy(bmp).preview_diff = preview_diff
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> _unused_diff = job.run()
+    >>> _unused_diff = job.run(_create_preview=False)
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:
