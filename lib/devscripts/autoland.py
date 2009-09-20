@@ -1,13 +1,14 @@
 """Land an approved merge proposal."""
 
-from pprint import pprint
 import os
 import sys
 
-from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
+from launchpadlib.launchpad import (
+    Launchpad, EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT)
 from lazr.uri import URI
 
 DEV_SERVICE_ROOT = 'https://api.launchpad.dev/beta/'
+LPNET_SERVICE_ROOT = 'https://api.launchpad.net/beta/'
 
 # Given the merge proposal URL, get:
 # - the reviewer
@@ -144,6 +145,24 @@ def get_lp_commit_message(mp):
         get_reviewer_clause(reviews),
         get_bugs_clause(bugs),
         mp.commit_message)
+
+
+def get_bazaar_host(api_root):
+    """Get the Bazaar service for the given API root."""
+    # XXX: This is only needed because Launchpad doesn't expose the push URL
+    # for branches.
+    if api_root == EDGE_SERVICE_ROOT:
+        return 'bazaar.launchpad.net'
+    elif api_root == DEV_SERVICE_ROOT:
+        return 'bazaar.launchpad.dev'
+    elif api_root == STAGING_SERVICE_ROOT:
+        return 'bazaar.staging.launchpad.net'
+    elif api_root == LPNET_SERVICE_ROOT:
+        return 'bazaar.launchpad.net'
+    else:
+        raise ValueError(
+            'Cannot determine Bazaar host. "%s" not a recognized Launchpad '
+            'API root.' % (api_root,))
 
 
 def main(argv):

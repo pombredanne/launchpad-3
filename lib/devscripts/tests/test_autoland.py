@@ -7,8 +7,11 @@ __metaclass__ = type
 
 import unittest
 
+from launchpadlib.launchpad import EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT
+
 from devscripts.autoland import (
-    get_bugs_clause, get_reviewer_clause, get_reviewer_handle)
+    get_bazaar_host, get_bugs_clause, get_reviewer_clause,
+    get_reviewer_handle)
 
 
 class FakeBug:
@@ -134,6 +137,40 @@ class TestGetReviewerClause(unittest.TestCase):
              'ui': [self.makePerson('bar')],
              })
         self.assertEqual('[r=foo][ui=bar]', clause)
+
+
+class TestGetBazaarHost(unittest.TestCase):
+    """Tests for `get_bazaar_host`."""
+
+    def test_dev_service(self):
+        # The Bazaar host for the dev service is bazaar.launchpad.dev.
+        self.assertEqual(
+            'bazaar.launchpad.dev',
+            get_bazaar_host('https://api.launchpad.dev/beta/'))
+
+    def test_edge_service(self):
+        # The Bazaar host for the edge service is bazaar.launchpad.net, since
+        # there's no edge codehosting service.
+        self.assertEqual(
+            'bazaar.launchpad.net', get_bazaar_host(EDGE_SERVICE_ROOT))
+
+    def test_production_service(self):
+        # The Bazaar host for the production service is bazaar.launchpad.net.
+        self.assertEqual(
+            'bazaar.launchpad.net',
+            get_bazaar_host('https://api.launchpad.net/beta/'))
+
+    def test_staging_service(self):
+        # The Bazaar host for the staging service is
+        # bazaar.staging.launchpad.net.
+        self.assertEqual(
+            'bazaar.staging.launchpad.net',
+            get_bazaar_host(STAGING_SERVICE_ROOT))
+
+    def test_unrecognized_service(self):
+        # Any unrecognized URL will raise a ValueError.
+        self.assertRaises(
+            ValueError, get_bazaar_host, 'https://api.lunchpad.net')
 
 
 def test_suite():
