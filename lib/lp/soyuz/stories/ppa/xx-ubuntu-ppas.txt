@@ -540,6 +540,7 @@ help wiki are presented in the PPA index page.
 
     >>> print extract_text(signing_key_section)
     Signing key: 1024D/12345678 (What is this?)
+    Fingerprint: ABCDEF0123456789ABCDDCBA0000111112345678
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
