@@ -139,6 +139,7 @@ class MergeProposal:
 
 
 def get_email(person):
+    """Get the preferred email address for 'person'."""
     email_object = person.preferred_email_address
     # XXX: This raises a very obscure error when the email address isn't set.
     # e.g. with name12 in the sample data. Not sure why this is -- file a bug.
