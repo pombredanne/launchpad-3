@@ -58,17 +58,24 @@ class LaunchpadBranchLander:
 
 
 class MergeProposal:
+    """Wrapper around launchpadlib `IBranchMergeProposal` for landing."""
 
     def __init__(self, mp):
+        """Construct a merge proposal.
+
+        :param mp: A launchpadlib `IBranchMergeProposal`.
+        """
         self._mp = mp
         self._launchpad = mp._root
 
     @property
     def source_branch(self):
+        """The push URL of the source branch."""
         return str(self._get_push_url(self._mp.source_branch))
 
     @property
     def target_branch(self):
+        """The push URL of the target branch."""
         return str(self._get_push_url(self._mp.source_branch))
 
     def get_stakeholder_emails(self):
@@ -103,6 +110,7 @@ class MergeProposal:
         return reviews
 
     def get_bugs(self):
+        """Return a collection of bugs linked to the source branch."""
         return self._mp.source_branch.linked_bugs
 
     def _get_push_url(self, branch):
