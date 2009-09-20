@@ -60,5 +60,5 @@ see which bugs will expire if they are not confirmed.
 
     >>> expirable_bugs_link.click()
     >>> print anon_browser.title
-    +expirable-bugs : Bugs in warty : 4.10 : Ubuntu
+    Bugs that can expire in The...
 

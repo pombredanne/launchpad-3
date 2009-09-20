@@ -12,6 +12,7 @@ from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Navigation, stepthrough)
+from canonical.lazr.utils import smartquote
 
 
 class DistroSeriesSourcePackageReleaseOverviewMenu(ApplicationMenu):
@@ -50,3 +51,6 @@ class DistroSeriesSourcePackageReleaseView:
         self.context = context
         self.request = request
 
+    @property
+    def label(self):
+        return smartquote(self.context.title)
