@@ -441,28 +441,28 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
 
     # XXX gary 2009-09-19 bug=433323
     # Disabled because of spurious test failure.
-    # def test_proponent_is_stored(self):
-    #     for status in [TeamMembershipStatus.DEACTIVATED,
-    #                    TeamMembershipStatus.EXPIRED,
-    #                    TeamMembershipStatus.DECLINED]:
-    #         tm = TeamMembership(
-    #             person=self.no_priv, team=self.ubuntu_team, status=status)
-    #         self.failIf(
-    #             tm.proposed_by, "There can be no proponent at this point.")
-    #         self.failIf(
-    #             tm.date_proposed, "There can be no proposed date this point.")
-    #         self.failIf(tm.proponent_comment,
-    #                     "There can be no proponent comment at this point.")
-    #         tm.setStatus(
-    #             TeamMembershipStatus.PROPOSED, self.foobar,
-    #             "Did it 'cause I can")
-    #         self.failUnlessEqual(tm.proposed_by, self.foobar)
-    #         self.failUnlessEqual(tm.proponent_comment, "Did it 'cause I can")
-    #         self.failUnless(
-    #             tm.date_proposed <= datetime.now(pytz.timezone('UTC')))
-    #         # Destroy the membership so that we can create another in a
-    #         # different state.
-    #         tm.destroySelf()
+    def disabled_test_proponent_is_stored(self):
+        for status in [TeamMembershipStatus.DEACTIVATED,
+                       TeamMembershipStatus.EXPIRED,
+                       TeamMembershipStatus.DECLINED]:
+            tm = TeamMembership(
+                person=self.no_priv, team=self.ubuntu_team, status=status)
+            self.failIf(
+                tm.proposed_by, "There can be no proponent at this point.")
+            self.failIf(
+                tm.date_proposed, "There can be no proposed date this point.")
+            self.failIf(tm.proponent_comment,
+                        "There can be no proponent comment at this point.")
+            tm.setStatus(
+                TeamMembershipStatus.PROPOSED, self.foobar,
+                "Did it 'cause I can")
+            self.failUnlessEqual(tm.proposed_by, self.foobar)
+            self.failUnlessEqual(tm.proponent_comment, "Did it 'cause I can")
+            self.failUnless(
+                tm.date_proposed <= datetime.now(pytz.timezone('UTC')))
+            # Destroy the membership so that we can create another in a
+            # different state.
+            tm.destroySelf()
 
     def test_acknowledger_is_stored(self):
         for status in [TeamMembershipStatus.APPROVED,
