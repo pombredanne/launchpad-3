@@ -54,9 +54,58 @@ class LaunchpadBranchLander:
         web_mp_uri = URI(mp_url)
         api_mp_uri = self._launchpad._root_uri.append(
             web_mp_uri.path.lstrip('/'))
-        return self._launchpad.load(str(api_mp_uri))
+        return MergeProposal(self._launchpad.load(str(api_mp_uri)))
 
-    def get_push_url(self, branch):
+
+class MergeProposal:
+
+    def __init__(self, mp):
+        self._mp = mp
+        self._launchpad = mp._root
+
+    @property
+    def source_branch(self):
+        return str(self._get_push_url(self._mp.source_branch))
+
+    @property
+    def target_branch(self):
+        return str(self._get_push_url(self._mp.source_branch))
+
+    def get_stakeholder_emails(self):
+        """Return a collection of people who should know about branch landing.
+
+        Used to determine who to email with the ec2 test results.
+
+        :return: A set of `IPerson`s.
+        """
+        # XXX: Should this also include the registrant?
+        # XXX: Untested.
+        return map(
+            get_email,
+            set([self._mp.source_branch.owner, self._launchpad.me]))
+
+    def get_reviews(self):
+        """Return a dictionary of all Approved reviews.
+
+        Used to determine who has actually approved a branch for landing. The
+        key of the dictionary is the type of review, and the value is the list
+        of people who have voted Approve with that type.
+
+        Common types include 'code', 'db', 'ui' and of course `None`.
+        """
+        reviews = {}
+        for vote in self._mp.votes:
+            comment = vote.comment
+            if comment is None or comment.vote != "Approve":
+                continue
+            reviewers = reviews.setdefault(vote.review_type, [])
+            reviewers.append(vote.reviewer)
+        return reviews
+
+    def get_bugs(self):
+        return self._mp.source_branch.linked_bugs
+
+    def _get_push_url(self, branch):
         """Return the push URL for 'branch'.
 
         This function is a work-around for Launchpad's lack of exposing the
@@ -70,17 +119,16 @@ class LaunchpadBranchLander:
         # then doesn't insert the '/' in the final product.
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
-    def get_stakeholders(self, mp):
-        """Return a collection of people who should know about branch landing.
-
-        Used to determine who to email with the ec2 test results.
-
-        :param mp: A merge proposal.
-        :return: A set of `IPerson`s.
-        """
-        # XXX: Should this also include the registrant?
-        # XXX: Untested.
-        return set([mp.source_branch.owner, self._launchpad.me])
+    def get_commit_message(self, commit_text):
+        """Get the Launchpad-style commit message for a merge proposal."""
+        # XXX: Point to docs describing the rules for this.
+        # XXX: Handle testfix mode
+        reviews = self.get_reviews()
+        bugs = self.get_bugs()
+        return '%s%s %s' % (
+            get_reviewer_clause(reviews),
+            get_bugs_clause(bugs),
+            commit_text)
 
 
 def get_email(person):
@@ -103,25 +151,6 @@ def get_bugs_clause(bugs):
     return '[bug=%s]' % ','.join(str(bug.id) for bug in bugs)
 
 
-def get_reviews(mp):
-    """Return a dictionary of all Approved reviewes on 'mp'.
-
-    Used to determine who has actually approved a branch for landing. The key
-    of the dictionary is the type of review, and the value is the list of
-    people who have voted Approve with that type.
-
-    Common types include 'code', 'db', 'ui' and of course `None`.
-    """
-    reviews = {}
-    for vote in mp.votes:
-        comment = vote.comment
-        if comment is None or comment.vote != "Approve":
-            continue
-        reviewers = reviews.setdefault(vote.review_type, [])
-        reviewers.append(vote.reviewer)
-    return reviews
-
-
 def get_reviewer_handle(reviewer):
     """Get the handle for 'reviewer'.
 
@@ -138,10 +167,6 @@ def get_reviewer_handle(reviewer):
         if handle.network == 'irc.freenode.net':
             return handle.nickname
     return reviewer.name
-
-
-def get_bugs(mp):
-    return mp.source_branch.linked_bugs
 
 
 def get_reviewer_clause(reviewers):
@@ -162,18 +187,6 @@ def get_reviewer_clause(reviewers):
     return '[r=%s][ui=%s]' % (
         ','.join(reviewer.name for reviewer in code_reviewers),
         ui_clause)
-
-
-def get_lp_commit_message(mp, commit_text):
-    """Get the Launchpad-style commit message for a merge proposal."""
-    # XXX: Point to docs describing the rules for this.
-    # XXX: Handle testfix mode
-    reviews = get_reviews(mp)
-    bugs = get_bugs(mp)
-    return '%s%s %s' % (
-        get_reviewer_clause(reviews),
-        get_bugs_clause(bugs),
-        commit_text)
 
 
 def get_bazaar_host(api_root):

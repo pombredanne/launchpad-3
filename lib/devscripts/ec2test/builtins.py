@@ -16,8 +16,7 @@ from bzrlib.option import ListOption, Option
 
 import socket
 
-from devscripts.autoland import (
-    get_email, get_lp_commit_message, LaunchpadBranchLander)
+from devscripts.autoland import LaunchpadBranchLander
 
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
@@ -308,14 +307,12 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
-        commit_message = get_lp_commit_message(mp, commit_text)
-        source_url = lander.get_push_url(mp.source_branch)
-        target_url = lander.get_push_url(mp.target_branch)
+        commit_message = mp.get_commit_message(commit_text)
         # XXX: maybe make a version that just does a pqm-submit w/ no tests
         # XXX: maybe make a version that only tests
         self.land_branch(
-            source_url, target_url, commit_message,
-            map(get_email, lander.get_stakeholders(mp)))
+            mp.source_branch, mp.target_branch, commit_message,
+            mp.get_stakeholder_emails())
 
 
 class cmd_demo(EC2Command):
