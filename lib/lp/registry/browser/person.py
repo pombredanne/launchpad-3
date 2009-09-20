@@ -2688,7 +2688,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             "This can only be used when the context has no account.")
         emails = getUtility(IEmailAddressSet).getByPerson(self.context)
         for email in emails:
-            if '@lists.' in email.email:
+            if '@lists.' in removeSecurityProxy(email).email:
                 return True
         return False
 
