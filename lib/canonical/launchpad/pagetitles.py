@@ -842,8 +842,6 @@ specificationbranch_status = 'Edit blueprint branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
-specificationgoal_setgoals = ContextTitle('Set goals for %s')
-
 def specificationsubscription_edit(context, view):
     """Return the page title for subscribing to a specification."""
     return "Subscription of %s" % context.person.displayname
