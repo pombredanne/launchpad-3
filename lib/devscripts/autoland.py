@@ -1,7 +1,6 @@
 """Land an approved merge proposal."""
 
 import os
-import sys
 
 from launchpadlib.launchpad import (
     Launchpad, EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT)
@@ -213,18 +212,3 @@ def get_bazaar_host(api_root):
         raise ValueError(
             'Cannot determine Bazaar host. "%s" not a recognized Launchpad '
             'API root.' % (api_root,))
-
-
-def main(argv):
-    lander = LaunchpadBranchLander.load(DEV_SERVICE_ROOT)
-    mp = lander.load_merge_proposal(argv[1])
-    commit_message = get_lp_commit_message(mp)
-    source_url = lander.get_push_url(mp.source_branch)
-    target_url = lander.get_push_url(mp.target_branch)
-    emails = map(get_email, lander.get_stakeholders(mp))
-    print assemble_command_line(emails, source_url, target_url, commit_message)
-    return 0
-
-
-if __name__ == '__main__':
-    os._exit(main(sys.argv))
