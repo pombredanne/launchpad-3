@@ -30,8 +30,8 @@ portlet.
     >>> anon_browser.open("http://bugs.launchpad.dev/firefox")
     >>> portlet = find_portlet(
     ...     anon_browser.contents, "Milestone-targeted bugs")
-    >>> portlet is None
-    True
+    >>> print portlet
+    None
 
 To enable the portlet, a bugtask needs to have a milestone associated with it.
 Bug 4 has a Firefox bugtask, which can be used once a milestone is selected.

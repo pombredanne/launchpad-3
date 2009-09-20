@@ -1136,7 +1136,7 @@ class BugTargetBugListingView:
         elif IProductSeries(self.context, None):
             serieses = self.context.product.serieses
         else:
-            raise AssertionError, ("series_list called with illegal context")
+            raise AssertionError("series_list called with illegal context")
         return serieses
 
     @property
@@ -1156,7 +1156,8 @@ class BugTargetBugListingView:
                     dict(
                         title=series.name,
                         url=canonical_url(series) + "/+bugs",
-                        count=series_bug_count))
+                        count=series_bug_count,
+                        ))
 
         return series_buglistings
 
@@ -1172,7 +1173,8 @@ class BugTargetBugListingView:
                         dict(
                             title=milestone.name,
                             url=canonical_url(milestone),
-                            count=milestone_bug_count))
+                            count=milestone_bug_count,
+                            ))
         return milestone_buglistings
 
 
