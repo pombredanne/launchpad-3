@@ -31,6 +31,8 @@ LPNET_SERVICE_ROOT = 'https://api.launchpad.net/beta/'
 
 # XXX: How do you do TDD of a launchpadlib program?
 
+# XXX: What's the right way to write docstrings for launchpadlib programs?
+
 
 class LaunchpadBranchLander:
 
@@ -54,10 +56,18 @@ class LaunchpadBranchLander:
             web_mp_uri.path.lstrip('/'))
         return self._launchpad.load(str(api_mp_uri))
 
-    def get_codehosting_url(self, branch):
-        self._launchpad._root_uri.replace(
-            path=branch.unique_name,
-            scheme='bzr+ssh')
+    def get_push_url(self, branch):
+        """Return the push URL for 'branch'.
+
+        This function is a work-around for Launchpad's lack of exposing the
+        branch's push URL.
+
+        :param branch: A launchpadlib `IBranch`.
+        """
+        host = get_bazaar_host(str(self._launchpad._root_uri))
+        # XXX: Bug in lazr.uri -- it allows a path without a leading '/' and
+        # then doesn't insert the '/' in the final product.
+        return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
 
 def get_bugs_clause(bugs):
@@ -165,6 +175,8 @@ def main(argv):
     lander = LaunchpadBranchLander.load(DEV_SERVICE_ROOT)
     mp = lander.load_merge_proposal(argv[1])
     print get_lp_commit_message(mp)
+    print 'Source:', lander.get_push_url(mp.source_branch)
+    print 'Target:', lander.get_push_url(mp.target_branch)
     return 0
 
 
