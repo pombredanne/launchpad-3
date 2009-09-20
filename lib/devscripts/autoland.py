@@ -15,16 +15,12 @@ LPNET_SERVICE_ROOT = 'https://api.launchpad.net/beta/'
 # - [DONE] the DB reviewer
 # - the release-critical reviewer
 # - [DONE] the commit message
-# - the branch
-# - the target branch
+# - [DONE] the branch
+# - [DONE] the target branch
 # - whether or not it has been approved
-# - the branch owner
-
-# If the commit message is not given, insist on one from the command line
+# - [DONE] the branch owner
 
 # If the review has not been approved, warn.
-
-# Given all of this, assemble the ec2test command line.
 
 # XXX: How do you do TDD of a launchpadlib program?
 
