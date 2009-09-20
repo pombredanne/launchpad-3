@@ -274,6 +274,7 @@ class cmd_land(EC2Command):
         instance_type_option,
         postmortem_option,
         debug_option,
+        Option('dry_run', help="Just print the equivalent ec2 test command."),
         Option(
             'commit_text', short_name='s', type=str,
             help=(
@@ -283,7 +284,9 @@ class cmd_land(EC2Command):
 
     takes_args = ['merge_proposal']
 
-    def land_branch(self, source_url, target_url, commit_message, emails):
+    def _get_landing_command(self, source_url, target_url, commit_message,
+                             emails):
+        """Return the command that would need to be run to submit with ec2."""
         # XXX: No unit tests.
         # XXX: Maybe call EC2 APIs directly.
         command = ['ec2', 'test', '--headless']
@@ -291,12 +294,11 @@ class cmd_land(EC2Command):
         command.extend(
             ['-b', 'launchpad=%s' % (target_url), '-s', commit_message,
              str(source_url)])
-        print command
-        #return subprocess.call(command)
+        return command
 
     def run(self, merge_proposal, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
-            debug=False, commit_text=None):
+            debug=False, commit_text=None, dry_run=False):
         if debug:
             pdb.set_trace()
         lander = LaunchpadBranchLander.load()
@@ -310,9 +312,10 @@ class cmd_land(EC2Command):
         commit_message = mp.get_commit_message(commit_text)
         # XXX: maybe make a version that just does a pqm-submit w/ no tests
         # XXX: maybe make a version that only tests
-        self.land_branch(
-            mp.source_branch, mp.target_branch, commit_message,
-            mp.get_stakeholder_emails())
+        if dry_run:
+            print self._get_landing_command(
+                mp.source_branch, mp.target_branch, commit_message,
+                mp.get_stakeholder_emails())
 
 
 class cmd_demo(EC2Command):
