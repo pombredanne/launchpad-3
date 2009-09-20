@@ -9,11 +9,6 @@ information the bugs in it. It doesn't display the list of bugs.
     >>> find_tag_by_id(anon_browser.contents, 'buglisting') is None
     True
 
-The page displays whether Launchpad or an external bugtracker is used.
-
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'bugtracker'))
-    Bug tracker: Launchpad
-
 The page has a link to see all open bugs.
 
     >>> anon_browser.getLink('Open bugs').click()
@@ -55,16 +50,14 @@ more explanation of why this link is present, and how it is used.
 
     >>> anon_browser.goBack(1)
     >>> need_forwarding_bugs_link = anon_browser.getLink(
-    ...     'bugs need forwarding upstream')
+    ...     'Bugs need forwarding upstream')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> anon_browser.open('http://bugs.launchpad.dev/alsa-utils')
     >>> need_forwarding_bugs_link = anon_browser.getLink(
-    ...     'bugs need forwarding upstream')
-    >>> need_forwarding_bugs_link.text
-    '0 bugs need forwarding upstream'
+    ...     'Bugs need forwarding upstream')
 
 
 == Bugs Fixed Elsewhere ==

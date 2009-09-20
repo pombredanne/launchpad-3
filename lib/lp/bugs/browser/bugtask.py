@@ -93,6 +93,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, NavigationMenu, redirection, stepthrough)
 from canonical.lazr.utils import smartquote
 from lazr.uri import URI
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from lp.bugs.interfaces.bugactivity import IBugActivity
@@ -2739,6 +2740,15 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         params = BugTaskSearchParams(
             orderby="-date_last_updated", omit_dupes=True, user=self.user)
         return list(self.context.searchTasks(params)[:10])
+
+    @property
+    def addquestion_url(self):
+        """Return the URL for the +addquestion view for the context."""
+        if IQuestionTarget.providedBy(self.context):
+            return canonical_url(
+                self.context, rootsite='answers', view_name='+addquestion')
+        else:
+            return None
 
 
 

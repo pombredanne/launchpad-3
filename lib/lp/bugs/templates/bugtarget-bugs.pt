@@ -25,7 +25,10 @@
             </a>
           </li>
           <li>
-            <a href="+filebug" class="menu-link-filebug sprite answers">
+            <a tal:define="addquestion_url view/addquestion_url"
+               tal:condition="addquestion_url"
+               tal:attributes="href view/addquestion_url"
+               class="menu-link-filebug sprite answers">
               Ask a question
             </a>
           </li>
@@ -84,6 +87,15 @@
               (can expire)
             </td>
           </tr>
+          <tr tal:define="pending_bugwatches view/pending_bugwatches_info"
+              tal:condition="pending_bugwatches">
+            <td class="bugs-count" tal:content="pending_bugwatches/count" />
+            <td class="bugs-link">
+              <a tal:attributes="href pending_bugwatches/url">
+                Bugs need forwarding upstream
+              </a>
+            </td>
+          </tr>
           <tr tal:define="subscribe_link context/menu:bugs/subscribe">
             <td class="bugs-count" style="padding-top: 1em">
               <a tal:attributes="href subscribe_link/url">
@@ -108,7 +120,7 @@
 
       <div class="portlet" style="float: right; border: none">
         <ul>
-          <li>
+          <li id="bugtracker">
             <strong>Bug tracker:</strong>
             <tal:bugtracker replace="structure view/bugtracker" />
           </li>
