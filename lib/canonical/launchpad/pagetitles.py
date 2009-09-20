@@ -708,8 +708,6 @@ registry_index = 'Project and group registration in Launchpad'
 
 remotebug_index = ContextTitle('%s')
 
-root_featuredprojects = 'Manage featured projects in Launchpad'
-
 root_index = 'Launchpad'
 
 rosetta_about = 'About Launchpad Translations'
