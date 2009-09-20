@@ -245,8 +245,6 @@ bugtask_confirm_bugtracker_creation = LaunchbagBugID(
 
 bugtask_edit = BugTaskPageTitle()
 
-bugtask_index = BugTaskPageTitle()
-
 bugtask_requestfix = LaunchbagBugID(
     'Bug #%d - Record as affecting another distribution/package')
 
