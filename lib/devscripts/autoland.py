@@ -125,7 +125,6 @@ class MergeProposal:
     def get_commit_message(self, commit_text, testfix=False):
         """Get the Launchpad-style commit message for a merge proposal."""
         # XXX: Point to docs describing the rules for this.
-        # XXX: Handle testfix mode
         reviews = self.get_reviews()
         bugs = self.get_bugs()
         if testfix:
