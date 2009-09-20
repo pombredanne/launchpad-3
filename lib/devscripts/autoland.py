@@ -11,25 +11,21 @@ DEV_SERVICE_ROOT = 'https://api.launchpad.dev/beta/'
 LPNET_SERVICE_ROOT = 'https://api.launchpad.net/beta/'
 
 # Given the merge proposal URL, get:
-# - the reviewer
-# - the UI reviewer
-# - the DB reviewer
+# - [DONE] the reviewer
+# - [DONE] the UI reviewer
+# - [DONE] the DB reviewer
 # - the release-critical reviewer
-# - the commit message
+# - [DONE] the commit message
 # - the branch
 # - the target branch
 # - whether or not it has been approved
 # - the branch owner
-
-# Given a reviewer, get their IRC nick
 
 # Given the branch owner, get their email
 
 # If the commit message is not given, insist on one from the command line
 
 # If the review has not been approved, warn.
-
-# Given a merge proposal URL, get the object.
 
 # Given all of this, assemble the ec2test command line.
 
