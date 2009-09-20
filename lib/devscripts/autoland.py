@@ -41,7 +41,7 @@ class LaunchpadBranchLander:
         self._launchpad = launchpad
 
     @classmethod
-    def load(cls, service_root):
+    def load(cls, service_root=DEV_SERVICE_ROOT):
         # XXX: No unit tests.
         cache_dir = os.path.expanduser(cls.cache_dir)
         # XXX: If cached data invalid, hard to delete & try again.
@@ -164,7 +164,7 @@ def get_reviewer_clause(reviewers):
         ui_clause)
 
 
-def get_lp_commit_message(mp):
+def get_lp_commit_message(mp, commit_text):
     """Get the Launchpad-style commit message for a merge proposal."""
     # XXX: Point to docs describing the rules for this.
     # XXX: Handle testfix mode
@@ -173,7 +173,7 @@ def get_lp_commit_message(mp):
     return '%s%s %s' % (
         get_reviewer_clause(reviews),
         get_bugs_clause(bugs),
-        mp.commit_message)
+        commit_text)
 
 
 def get_bazaar_host(api_root):
@@ -192,18 +192,6 @@ def get_bazaar_host(api_root):
         raise ValueError(
             'Cannot determine Bazaar host. "%s" not a recognized Launchpad '
             'API root.' % (api_root,))
-
-
-def assemble_command_line(emails, source_url, target_url, commit_message):
-    # XXX: no unit tests
-    # XXX: do shell quoting properly
-    # XXX: maybe not needed for normal operation, maybe call ec2 APIs directly
-    # XXX: maybe make a version that just does a pqm-submit w/ no tests
-    # XXX: maybe make a version that doesn't do headless
-    # XXX: maybe make a version that doesn't commit
-    emails = ' '.join(['--email=%s' % email for email in emails])
-    return 'ec2 test --headless %s -b launchpad=%s -s "%s" %s' % (
-        emails, target_url, commit_message, source_url)
 
 
 def main(argv):

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
+import subprocess
 import pdb
 
 from bzrlib.commands import Command
@@ -14,6 +15,9 @@ from bzrlib.help import help_commands
 from bzrlib.option import ListOption, Option
 
 import socket
+
+from devscripts.autoland import (
+    get_email, get_lp_commit_message, LaunchpadBranchLander)
 
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
@@ -263,6 +267,57 @@ class cmd_test(EC2Command):
         instance.set_up_and_run(postmortem, not headless, runner.run_tests)
 
 
+class cmd_land(EC2Command):
+    """Land a merge proposal on Launchpad."""
+
+    takes_options = [
+        machine_id_option,
+        instance_type_option,
+        postmortem_option,
+        debug_option,
+        Option(
+            'commit_text', short_name='s', type=str,
+            help=(
+                'A description of the landing, not including reviewer '
+                'metadata etc.')),
+        ]
+
+    takes_args = ['merge_proposal']
+
+    def land_branch(self, source_url, target_url, commit_message, emails):
+        # XXX: No unit tests.
+        # XXX: Maybe call EC2 APIs directly.
+        command = ['ec2', 'test', '--headless']
+        command.extend(['--email=%s' % email for email in emails])
+        command.extend(
+            ['-b', 'launchpad=%s' % (target_url), '-s', commit_message,
+             str(source_url)])
+        print command
+        #return subprocess.call(command)
+
+    def run(self, merge_proposal, machine=None,
+            instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
+            debug=False, commit_text=None):
+        if debug:
+            pdb.set_trace()
+        lander = LaunchpadBranchLander.load()
+        mp = lander.load_merge_proposal(merge_proposal)
+        if commit_text is None:
+            commit_text = mp.commit_message
+        if commit_text is None:
+            raise BzrCommandError(
+                "Commit text not specified. Use --commit-text, or specify a "
+                "message on the merge proposal.")
+        commit_message = get_lp_commit_message(mp, commit_text)
+        source_url = lander.get_push_url(mp.source_branch)
+        target_url = lander.get_push_url(mp.target_branch)
+        # XXX: maybe make a version that just does a pqm-submit w/ no tests
+        # XXX: maybe make a version that only tests
+        self.land_branch(
+            source_url, target_url, commit_message,
+            map(get_email, lander.get_stakeholders(mp)))
+
+
 class cmd_demo(EC2Command):
     """Start a demo instance of Launchpad.
 
@@ -333,7 +388,6 @@ class cmd_demo(EC2Command):
             "<https://wiki.canonical.com/Launchpad/EC2Test/ForDemos>."
             "\n*****************************************************"
             "\n\n")
-
 
 
 class cmd_update_image(EC2Command):
