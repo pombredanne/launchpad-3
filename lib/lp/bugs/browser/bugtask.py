@@ -93,6 +93,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, NavigationMenu, redirection, stepthrough)
 from canonical.lazr.utils import smartquote
 from lazr.uri import URI
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from lp.bugs.interfaces.bugactivity import IBugActivity
@@ -2692,6 +2693,63 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         label = self._bugOrBugs(count)
         url = "%s/+expirable-bugs" % canonical_url(self.context)
         return dict(count=count, url=url, label=label)
+
+    @property
+    def new_bugs_info(self):
+        """Return a dict with new bugs info."""
+        return dict(
+            count=self.context.new_bugtasks.count,
+            url=get_buglisting_search_filter_url(
+                status=BugTaskStatus.NEW.title))
+
+    @property
+    def open_bugs_info(self):
+        """Return a dict with open bugs info."""
+        return dict(
+            count=self.context.open_bugtasks.count,
+            url=canonical_url(
+                self.context, rootsite='bugs', view_name='+bugs'))
+
+    @property
+    def critical_bugs_info(self):
+        """Return a dict with critical bugs info."""
+        return dict(
+            count=self.context.critical_bugtasks.count,
+            url=get_buglisting_search_filter_url(
+                status=[status.title for status
+                        in UNRESOLVED_BUGTASK_STATUSES],
+                importance=BugTaskImportance.CRITICAL.title))
+
+    @property
+    def my_bugs_info(self):
+        """Return a dict with info on bugs assigned to the user, or None."""
+        if self.user:
+            return dict(
+                count=self.context.searchTasks(
+                    BugTaskSearchParams(
+                        user=self.user, assignee=self.user,
+                        status=any(*UNRESOLVED_BUGTASK_STATUSES),
+                        omit_dupes=True)).count(),
+                url=get_buglisting_search_filter_url(assignee=self.user.name))
+        else:
+            return None
+
+    @property
+    def hot_bugtasks(self):
+        """Return the 10 most recently updated bugtasks for this target."""
+        params = BugTaskSearchParams(
+            orderby="-date_last_updated", omit_dupes=True, user=self.user)
+        return list(self.context.searchTasks(params)[:10])
+
+    @property
+    def addquestion_url(self):
+        """Return the URL for the +addquestion view for the context."""
+        if IQuestionTarget.providedBy(self.context):
+            return canonical_url(
+                self.context, rootsite='answers', view_name='+addquestion')
+        else:
+            return None
+
 
 
 class BugNominationsView(BugTaskSearchListingView):
