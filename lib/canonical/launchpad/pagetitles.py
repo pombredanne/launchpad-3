@@ -868,8 +868,6 @@ sprint_specs = ContextTitle('Blueprints for %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 
-sprintspecification_decide = 'Consider spec for sprint agenda'
-
 sprintspecification_admin = 'Approve blueprint for sprint agenda'
 
 standardshipitrequests_index = 'Standard ShipIt options'
