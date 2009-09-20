@@ -130,7 +130,6 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import helpers
 from lp.registry.browser.team import TeamEditView
-from lp.soyuz.browser.archive import traverse_named_ppa
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
@@ -382,6 +381,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             ppa_name = self.request.stepstogo.consume()
 
             try:
+                from lp.soyuz.browser.archive import traverse_named_ppa
                 return traverse_named_ppa(self.context.name, ppa_name)
             except NotFoundError:
                 self.request.setTraversalStack(traversal_stack)

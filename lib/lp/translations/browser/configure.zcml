@@ -313,7 +313,8 @@
         <browser:url
             for="canonical.launchpad.interfaces.ILanguage"
             path_expression="code"
-            parent_utility="canonical.launchpad.interfaces.ILanguageSet"/>
+            parent_utility="canonical.launchpad.interfaces.ILanguageSet"
+            rootsite="translations"/>
         <browser:page
             for="canonical.launchpad.interfaces.ILanguage"
             class="lp.translations.browser.language.LanguageView"
