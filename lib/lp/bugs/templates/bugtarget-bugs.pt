@@ -107,6 +107,19 @@
                  tal:content="subscribe_link/escapedtext" />
             </td>
           </tr>
+          <tr tal:define="
+                review_nominations_link context/menu:bugs/nominations|nothing"
+              tal:condition="review_nominations_link">
+            <td class="bugs-count" style="padding-top: 1em">
+              <a tal:attributes="href review_nominations_link/url">
+                <img tal:attributes="src review_nominations_link/icon_url" />
+              </a>
+            </td>
+            <td class="bugs-link">
+              <a tal:attributes="href review_nominations_link/url"
+                 tal:content="review_nominations_link/escapedtext" />
+            </td>
+          </tr>
         </table>
       </div>
       <div tal:replace="structure context/@@+portlet-bugtags" />

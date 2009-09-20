@@ -139,6 +139,7 @@ cannot see any link reporting that bugs can expire.
 There's also portlets for easy searching by tags and filters. Its content is
 loaded using Javascript in a separate request.
 
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> tags_portlet = find_tag_by_id(anon_browser.contents, 'portlet-tags')
     >>> anon_browser.getLink(id='tags-content-link').click()
     >>> print extract_text(anon_browser.contents)
@@ -154,23 +155,8 @@ tag...
     4  Reflow problems with complex page layouts
        Medium New
 
-... and for bugs with a certain status, importance, etc. The content
-of the "Filters" portlet is served in a separate request, issued by
-regular browsers via Javascript.
-
-
-    >>> anon_browser.goBack()
-    >>> anon_browser.goBack()
-    >>> anon_browser.getLink(id='bugtarget-bugfilters-link').click()
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> portlet_content = BeautifulSoup(anon_browser.contents)
-    >>> for filter_link in portlet_content('a'):
-    ...     print filter_link.renderContents()
-    Open
-    Critical
-    ...
-
-    >>> anon_browser.getLink('Critical').click()
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> anon_browser.getLink('Critical bugs').click()
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
       Critical New

@@ -1305,7 +1305,6 @@ class BugTargetBugTagsView(LaunchpadView):
                     tag['factor'] = 1.5 + (tag['count'] / max_count)
             else:
                 tag['factor'] = 1 + (tag['count'] / max_count)
-        print tags
         return tags
 
     @property
