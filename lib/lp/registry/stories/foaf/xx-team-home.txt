@@ -128,9 +128,11 @@ He can also see the contact email address and a link to contact the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-email'))
     Email:
-    Contact this team's email address
     support@ubuntu.com
     Set contact address
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'contact-user'))
+    Contact this team's email address
 
 Member can contact their team even if the team does not have a contact
 address:
@@ -141,8 +143,10 @@ address:
     ...     find_tag_by_id(sample_browser.contents, 'contact-email'))
     Email:
     No contact email
-    Contact this team's members
     Set contact address
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'contact-user'))
+    Contact this team's members
 
 As teams do not have OpenID Logins, there is not link in the Contact
 details section for help.
@@ -200,12 +204,13 @@ No Privileges Person is not a member of the Ubuntu team.
 He can see the contact address, and the link explains the email
 will actually go to the team's administrators.
 
-    >>> content = find_tag_by_id(user_browser.contents, 'contact-email')
-    >>> print extract_text(content)
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'contact-email'))
     Email:
-    Contact this team's owner
     support@ubuntu.com
+    >>> content = find_tag_by_id(user_browser.contents, 'contact-user')
+    >>> print extract_text(content)
+    Contact this team's owner
 
     >>> content.a
-    <a href="+contactuser"
+    <a href="+contactuser"...
       title="Send an email to this team's owner through Launchpad">...

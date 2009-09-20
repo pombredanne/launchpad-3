@@ -68,8 +68,9 @@ are no subscribers so there whould be no emails.
     http://code.launchpad.dev/~name12/gnome-terminal/klingon
 
     >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'branch-details-table').tbody)
-    Project: GNOME Terminal (Unspecified)
+    ...     browser.contents, 'branch-info'))
+    Branch information
+    Project: GNOME Terminal (Unspecified)...
     Status: Experimental
     Location: http://trekkies.example.com/gnome-terminal/klingon
     Last mirrored: ...

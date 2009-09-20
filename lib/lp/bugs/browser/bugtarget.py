@@ -1220,6 +1220,13 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         BugTaskStatus.UNKNOWN: 'purple',
     }
 
+    override_title_breadcrumbs = True
+
+    @property
+    def label(self):
+        """The display label for the view."""
+        return 'Bugs in %s' % self.context.title
+
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
@@ -1230,39 +1237,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         self.bug_count_items = [
             BugCountDataItem(status.title, count, self.status_color[status])
             for status, count in bug_counts]
-
-    def getChartJavascript(self):
-        """Return a snippet of Javascript that draws a pie chart."""
-        # XXX: Bjorn Tillenius 2007-02-13:
-        #      This snippet doesn't work in IE, since (I think) there
-        #      has to be a delay between creating the canvas element and
-        #      using it to draw the chart.
-        js_template = """
-            function drawGraph() {
-                var options = {
-                  "drawBackground": false,
-                  "colorScheme": [%(color_list)s],
-                  "xTicks": [%(label_list)s]};
-                var data = [%(data_list)s];
-                var plotter = PlotKit.EasyPlot(
-                    "pie", options, $("bugs-chart"), [data]);
-            }
-            registerLaunchpadFunction(drawGraph);
-            """
-        # The color list should inlude only colors for slices that will
-        # be drawn in the pie chart, so colors that don't have any bugs
-        # associated with them.
-        color_list = ', '.join(
-            data_item.color for data_item in self.bug_count_items
-            if data_item.count > 0)
-        label_list = ', '.join([
-            '{v:%i, label:"%s"}' % (index, data_item.label)
-            for index, data_item in enumerate(self.bug_count_items)])
-        data_list = ', '.join([
-            '[%i, %i]' % (index, data_item.count)
-            for index, data_item in enumerate(self.bug_count_items)])
-        return js_template % dict(
-            color_list=color_list, label_list=label_list, data_list=data_list)
 
     @property
     def uses_launchpad_bugtracker(self):
@@ -1335,6 +1309,23 @@ class BugTargetBugTagsView(LaunchpadView):
                 if tag['tag'] not in official_tags]
         tags.sort(key=itemgetter('count'), reverse=True)
         return tags[:10]
+
+    @property
+    def tags_cloud_data(self):
+        """The data for rendering a tags cloud"""
+        official_tags = set(self.context.official_bug_tags)
+        tags = self.getUsedBugTagsWithURLs()
+        tags.sort(key=itemgetter('tag'))
+        max_count = float(max([1] + [tag['count'] for tag in tags]))
+        for tag in tags:
+            if tag['tag'] in official_tags:
+                if tag['count'] == 0:
+                    tag['factor'] = 1.5
+                else:
+                    tag['factor'] = 1.5 + (tag['count'] / max_count)
+            else:
+                tag['factor'] = 1 + (tag['count'] / max_count)
+        return tags
 
     @property
     def show_manage_tags_link(self):

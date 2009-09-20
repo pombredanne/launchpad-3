@@ -24,7 +24,7 @@ product series.
 The only field shown is the branch field.
 
     >>> print sample_browser.title
-    +linkbranch : Series trunk : Mozilla Firefox
+    Link an existing branch to...
     >>> sample_browser.getControl('Branch').value = '~name12/firefox/main'
     >>> sample_browser.getControl('Update').click()
 

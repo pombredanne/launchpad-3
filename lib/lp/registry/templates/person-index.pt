@@ -45,13 +45,9 @@
 <div metal:fill-slot="side" tal:define="overview_menu context/menu:overview">
   <tal:menu replace="structure view/@@+global-actions" />
 
-  <div class="portlet"
-    tal:condition="view/can_contact">
-    <a href="+contactuser" class="sprite mail"
-      tal:attributes="title view/contact_link_title"
-      tal:content="view/specific_contact_text">Contact
-        this person</a>
-  </div>
+  <metal:contact use-macro="context/@@+person-macros/contact">
+    Contact this person
+  </metal:contact>
 
   <div id="involvement" class="portlet involvement"
     tal:condition="context/is_valid_person">
@@ -71,7 +67,7 @@
           tal:attributes="href context/fmt:url:translations">Translations</a>
       </li>
       <li>
-        <a class="sprite blueprints"
+        <a class="sprite code"
           tal:attributes="href context/fmt:url:code">Code</a>
       </li>
       <li>

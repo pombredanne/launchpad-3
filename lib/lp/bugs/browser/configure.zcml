@@ -991,6 +991,9 @@
             <browser:page
                 name="+portlet-notified"
                 template="../templates/bug-portlet-notified.pt"/>
+            <browser:page
+                name="+portlet-actions"
+                template="../templates/bug-portlet-actions.pt"/>
         </browser:pages>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
