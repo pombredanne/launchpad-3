@@ -19,7 +19,6 @@
 <div metal:fill-slot="main">
 
   <div class="top-portlet">
-    <h1>Translations settings</h1>
     <p
        class="not-translated-in-launchpad"
        tal:condition="not: context/product/official_rosetta">

@@ -18,17 +18,6 @@
         </li>
       </ul>
       <tal:uses-translations condition="uses_translations">
-        <h1>Translation overview</h1>
-      </tal:uses-translations>
-      <tal:not-uses-translations condition="not: uses_translations">
-        <h1 tal:condition="admin_user">
-          How to start using Launchpad Translations
-        </h1>
-        <h1 tal:condition="not: admin_user">
-          Translation setup needed
-        </h1>
-      </tal:not-uses-translations>
-      <tal:uses-translations condition="uses_translations">
         <tal:translatable define="target context/primary_translatable">
 
           <div class="top-portlet">
