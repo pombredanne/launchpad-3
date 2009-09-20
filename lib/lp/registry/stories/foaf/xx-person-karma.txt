@@ -19,7 +19,7 @@ The total karma points is also a link to the person's karma summary page.
 
     >>> anon_browser.getLink('138').click()
     >>> print anon_browser.title
-    +karma : Sample Person
+    Launchpad Karma for Sample Person...
 
 Any user can see the categories that a user has earned karma in.
 

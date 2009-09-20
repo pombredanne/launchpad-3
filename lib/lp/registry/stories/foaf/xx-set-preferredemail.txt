@@ -19,7 +19,7 @@ address he prefers to login with.
     >>> print browser.url
     http://launchpad.dev/~name12/+editemails
     >>> print browser.title
-    +editemails : Sample Person
+    Change your e-mail settings...
 
 Sample Person has a second browser open to the same page; maybe he is
 absent minded.

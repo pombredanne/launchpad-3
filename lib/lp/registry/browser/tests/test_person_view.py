@@ -38,14 +38,14 @@ class TestPersonView(TestCaseWithFactory):
         for category in categories:
             category_names.append(category.name)
 
-        self.assertEqual(category_names, [u'code', u'bugs', u'answers'], 
+        self.assertEqual(category_names, [u'code', u'bugs', u'answers'],
                          'Categories are not sorted correctly')
 
     def _makeKarmaCache(self, person, product, category, value=10):
         """ Create and return a KarmaCache entry with the given arguments.
 
         In order to create the KarmaCache record we must switch to the DB
-        user 'karma', so tests that need a different user after calling 
+        user 'karma', so tests that need a different user after calling
         this method should do run switchDbUser() themselves.
         """
 

@@ -23,15 +23,6 @@ The breadcrumbs and other navigation include a link to the bug itself.
     * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
     Main heading: Blackhole Trash folder
 
-The bug id in the upper left corner of the main page content is also
-linked to the bug itself.
-
-    >>> bug_link = first_tag_by_class(
-    ...     anon_browser.contents, 'object identifier').a
-    >>> anon_browser.open(bug_link.get('href'))
-    >>> print anon_browser.title
-    Bug #2 in Tomcat:...Blackhole Trash folder...
-
 The page features a table of places where people have asked for the bug
 to be fixed. The row for the current context (and not any other row) is
 highlighted.

@@ -67,7 +67,7 @@ in the workload of that person.
     >>> browser.url
     '.../~name16/+specworkload'
     >>> print browser.title
-    +specworkload : Blueprints involving Foo Bar : Foo Bar
+    Blueprint workload...
 
 For a team, the 'Workload' link first shows the specifications that
 are part of the workload for the team.  It then shows the workloads
@@ -80,7 +80,7 @@ for each member of the team, using batching.
     >>> browser.url
     '.../~admins/+specworkload'
     >>> print browser.title
-    +specworkload : Blueprints involving Launchpad Administrators ...
+    Blueprint workload...
     >>> print extract_text(find_main_content(browser.contents))
     Blueprint workload...
     Team member workload...
@@ -96,7 +96,7 @@ the person was asked to review.
     >>> browser.url
     '.../~name16/+specfeedback'
     >>> print browser.title
-    +specfeedback : Blueprints involving Foo Bar : Foo Bar
+    Feature feedback requests...
     >>> soup = find_main_content(browser.contents)
     >>> soup('p')
     [... 1 specification(s) listed...]

@@ -130,7 +130,6 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import helpers
 from lp.registry.browser.team import TeamEditView
-from lp.soyuz.browser.archive import traverse_named_ppa
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
@@ -382,6 +381,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             ppa_name = self.request.stepstogo.consume()
 
             try:
+                from lp.soyuz.browser.archive import traverse_named_ppa
                 return traverse_named_ppa(self.context.name, ppa_name)
             except NotFoundError:
                 self.request.setTraversalStack(traversal_stack)
@@ -474,6 +474,9 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
+    # This is needed for our breadcrumbs, as there's no <browser:page>
+    # declaration for this view.
+    __name__ = '+self-renewal'
     schema = ITeamMembership
     field_names = []
     template = ViewPageTemplateFile(
@@ -568,6 +571,9 @@ class TeamInvitationView(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
+    # This is needed for our breadcrumbs, as there's no <browser:page>
+    # declaration for this view.
+    __name__ = '+invitation'
     schema = ITeamMembershipInvitationAcknowledgementForm
     field_names = ['acknowledger_comment']
     custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
@@ -2682,7 +2688,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             "This can only be used when the context has no account.")
         emails = getUtility(IEmailAddressSet).getByPerson(self.context)
         for email in emails:
-            if '@lists.' in email.email:
+            if '@lists.' in removeSecurityProxy(email).email:
                 return True
         return False
 
@@ -5771,7 +5777,8 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'add_member', 'add_my_teams', 'leave')
+    links = ('edit', 'join', 'add_member', 'add_my_teams',
+             'leave')
 
 
 class TeamEditMenu(TeamNavigationMenuBase):

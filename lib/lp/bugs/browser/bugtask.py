@@ -91,6 +91,7 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, NavigationMenu, redirection, stepthrough)
+from canonical.lazr.utils import smartquote
 from lazr.uri import URI
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -113,7 +114,8 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IStructuralObjectPresentation)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -491,6 +493,8 @@ class BugTaskTextView(LaunchpadView):
 class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
+    override_title_breadcrumbs = True
+
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
 
@@ -501,6 +505,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
+
+    @property
+    def page_title(self):
+        return smartquote('%s: "%s"') % (
+            IStructuralObjectPresentation(self.context).getMainHeading(),
+            self.context.bug.title)
 
     def initialize(self):
         """Set up the needed widgets."""
