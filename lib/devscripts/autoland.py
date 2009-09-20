@@ -122,13 +122,18 @@ class MergeProposal:
         # then doesn't insert the '/' in the final product.
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
-    def get_commit_message(self, commit_text):
+    def get_commit_message(self, commit_text, testfix=False):
         """Get the Launchpad-style commit message for a merge proposal."""
         # XXX: Point to docs describing the rules for this.
         # XXX: Handle testfix mode
         reviews = self.get_reviews()
         bugs = self.get_bugs()
-        return '%s%s %s' % (
+        if testfix:
+            testfix = '[testfix]'
+        else:
+            testfix = ''
+        return '%s%s%s %s' % (
+            testfix,
             get_reviewer_clause(reviews),
             get_bugs_clause(bugs),
             commit_text)

@@ -274,9 +274,13 @@ class cmd_land(EC2Command):
         instance_type_option,
         postmortem_option,
         debug_option,
-        Option('dry_run', help="Just print the equivalent ec2 test command."),
+        Option('dry-run', help="Just print the equivalent ec2 test command."),
+        Option('print-commit', help="Print the full commit message."),
         Option(
-            'commit_text', short_name='s', type=str,
+            'testfix',
+            help="Include the [testfix] prefix in the commit message?"),
+        Option(
+            'commit-text', short_name='s', type=str,
             help=(
                 'A description of the landing, not including reviewer '
                 'metadata etc.')),
@@ -287,7 +291,6 @@ class cmd_land(EC2Command):
     def _get_landing_command(self, source_url, target_url, commit_message,
                              emails):
         """Return the command that would need to be run to submit with ec2."""
-        # XXX: No unit tests.
         # XXX: Maybe call EC2 APIs directly.
         command = ['ec2', 'test', '--headless']
         command.extend(['--email=%s' % email for email in emails])
@@ -298,9 +301,13 @@ class cmd_land(EC2Command):
 
     def run(self, merge_proposal, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
-            debug=False, commit_text=None, dry_run=False):
+            debug=False, commit_text=None, dry_run=False, testfix=False,
+            print_commit=False):
         if debug:
             pdb.set_trace()
+        if print_commit and dry_run:
+            raise BzrCommandError(
+                "Cannot specify --print-commit and --dry-run.")
         lander = LaunchpadBranchLander.load()
         mp = lander.load_merge_proposal(merge_proposal)
         if commit_text is None:
@@ -309,7 +316,11 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
-        commit_message = mp.get_commit_message(commit_text)
+        commit_message = mp.get_commit_message(commit_text, testfix)
+        if print_commit:
+            print commit_message
+            return
+
         # XXX: maybe make a version that just does a pqm-submit w/ no tests
         # XXX: maybe make a version that only tests
         if dry_run:
