@@ -2,16 +2,8 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
-><!-- context/@@main_template/master
-      view/macro:page/onecolumn
- -->
-
+  metal:use-macro="view/macro:page/main_only"
+>
   <body>
     <div metal:fill-slot="head_epilogue">
       <style type="text/css">
@@ -61,13 +53,6 @@
       </script>
     </div>
     <div metal:fill-slot="main">
-      <h1>
-        Translation templates for
-        <tal:title replace="context/title">
-          evolution in Ubuntu Feisty
-        </tal:title>
-      </h1>
-
       <ul class="helplinks">
         <li>
           <a href="https://help.launchpad.net/Translations"
@@ -77,6 +62,14 @@
         </li>
       </ul>
 
+      <div class="yui-b top-portlet">
+        <p>
+          This is a listing of all the translatable templates
+          in <a tal:replace="structure context/fmt:link">here</a>.
+        </p>
+      </div>
+
+      <div class="yui-b">
       <table class="sortable listing" id="templates_table">
         <thead>
           <tr>
@@ -114,6 +107,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </body>
 </html>

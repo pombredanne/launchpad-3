@@ -200,8 +200,7 @@ link them):
     >>> user_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> user_browser.getLink('link').click()
     >>> user_browser.title
-    '+edit-packaging : Bugs in linux-source-2.6.15
-    : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : 5.04 : Ubuntu'
+    'Define upstream link for...
 
 If you are logged in and can edit the upstream project, you can also set
 a bug tracker and a bug supervisor. Let's first fix Firefox to stop using
@@ -221,12 +220,12 @@ And check out the report:
     >>> admin_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> admin_browser.getLink('fix').click()
     >>> print admin_browser.title
-    +edit : Bugs in firefox : Mozilla Firefox
+    Change Mozilla Firefox's...
 
     >>> admin_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> admin_browser.getLink('change').click()
     >>> print admin_browser.title
-    +bugsupervisor : Bugs in firefox : Mozilla Firefox
+    Edit bug supervisor for...
 
 If you're not allowed to edit the product, no love for you, though:
 

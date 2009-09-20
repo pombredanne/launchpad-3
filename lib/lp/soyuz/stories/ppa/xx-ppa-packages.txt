@@ -10,7 +10,7 @@ The PPA packages page is accessible from the PPA page.
     http://launchpad.dev/~cprov/+archive/ppa/+packages
 
     >>> print anon_browser.title
-    +packages : PPA for Celso Providelo : Celso Providelo
+    Packages in...
 
 
 Page structure
@@ -20,7 +20,7 @@ The PPA packages page uses the 'Overview' application button and displays
 a descriptive main heading.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Celso Providelo > PPA for Celso Providelo > +packages
+    Hierarchy: Celso Providelo > PPA for Celso Providelo > Packages in...
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -35,7 +35,7 @@ the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
     >>> print anon_browser.title
-    +builds : PPA for Celso Providelo : Celso Providelo
+    Builds for...
 
     >>> print anon_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+builds
@@ -273,7 +273,7 @@ result will only contain packages SUPERSEDED or DELETED.
 The 'Any Status' filter is also available, so the user can search over
 any package ever published in the context PPA.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['any']
+    >>> anon_browser.getControl(name='field.status_filter').value = ['']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source             Published    Status     Series      Section  Build

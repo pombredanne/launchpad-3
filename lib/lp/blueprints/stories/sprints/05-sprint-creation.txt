@@ -5,8 +5,8 @@ We should also be able to create a new sprint. We do this off the Sprints
 
   >>> user_browser.open('http://launchpad.dev/sprints/+new')
 
-  >>> user_browser.title
-  'Register a meeting or sprint in Launchpad'
+  >>> print user_browser.title
+  Register a meeting...
 
 First we'll test the name field validator.
 

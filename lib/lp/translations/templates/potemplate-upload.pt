@@ -10,9 +10,6 @@
 <body>
 
 <div metal:fill-slot="main">
-
-  <h1>Upload translations</h1>
-
   <p>
     Here you can upload either a single PO template (<code>.pot</code>) or
     a tar file containing a PO template and a set of PO files

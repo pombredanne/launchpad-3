@@ -41,7 +41,7 @@ team.
     >>> user_browser.open('http://launchpad.dev/~doc')
     >>> user_browser.getLink('Is this a team you run?').click()
     >>> user_browser.title
-    'Claim team'
+    'Claim team...
 
 Now we enter the doc team's email address to continue the process of
 turning that profile into a team.
