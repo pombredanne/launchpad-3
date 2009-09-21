@@ -304,8 +304,7 @@ class Hierarchy(LaunchpadView):
         # to display it as it will simply repeat the context.title.
         # If the view is an IMajorHeadingView then we do not want
         # to display breadcrumbs either.
-        return (
-            len(self.items) > 1 and
+        return (len(self.items) > 1 and
                 not IMajorHeadingView.providedBy(self._context_view))
 
 
