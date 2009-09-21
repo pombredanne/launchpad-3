@@ -682,8 +682,6 @@ projects_request = 'Launchpad Translations: Request a project group'
 
 projects_search = 'Search for project groups in Launchpad'
 
-rdf_index = "Launchpad RDF"
-
 # redirect_up is a redirect
 
 def reference_index(context, view):
@@ -697,8 +695,6 @@ registry_about = 'About the Launchpad Registry'
 registry_index = 'Project and group registration in Launchpad'
 
 remotebug_index = ContextTitle('%s')
-
-root_featuredprojects = 'Manage featured projects in Launchpad'
 
 root_index = 'Launchpad'
 
@@ -828,8 +824,6 @@ specificationbranch_status = 'Edit blueprint branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
-specificationgoal_setgoals = ContextTitle('Set goals for %s')
-
 def specificationsubscription_edit(context, view):
     """Return the page title for subscribing to a specification."""
     return "Subscription of %s" % context.person.displayname
@@ -852,15 +846,9 @@ sprint_index = ContextTitle('%s (sprint or meeting)')
 
 sprint_new = 'Register a meeting or sprint in Launchpad'
 
-sprint_register = 'Register someone to attend this meeting'
-
 sprint_specs = ContextTitle('Blueprints for %s')
 
-sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
-
 sprint_workload = ContextTitle('Workload at %s')
-
-sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve blueprint for sprint agenda'
 
