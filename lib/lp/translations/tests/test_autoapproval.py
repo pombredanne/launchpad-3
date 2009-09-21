@@ -10,6 +10,7 @@ through the possibilities should go here.
 
 from datetime import datetime, timedelta
 from pytz import UTC
+import transaction
 import unittest
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
@@ -33,6 +34,12 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
+
+
+def become_the_gardener(layer):
+    """Switch to the translations import queue gardener database role."""
+    transaction.commit()
+    layer.switchDbUser('translations_import_queue_gardener')
 
 
 class TestCustomLanguageCode(unittest.TestCase):
@@ -171,6 +178,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
         # Of course matching will work without custom language codes.
         tr_file = self._makePOFile('tr')
         entry = self._makeQueueEntry('tr')
+        become_the_gardener(self.layer)
         self.assertEqual(entry.getGuessedPOFile(), tr_file)
 
     def test_CustomLanguageCodeEnablesMatch(self):
@@ -182,6 +190,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('fy_NL', 'fy')
 
+        become_the_gardener(self.layer)
         self.assertEqual(entry.getGuessedPOFile(), fy_file)
 
     def test_CustomLanguageCodeParsesBogusLanguage(self):
@@ -192,6 +201,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('flemish', 'nl')
 
+        become_the_gardener(self.layer)
         nl_file = entry.getGuessedPOFile()
         self.assertEqual(nl_file.language.code, 'nl')
 
@@ -204,6 +214,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('sv', None)
 
+        become_the_gardener(self.layer)
         self.assertEqual(entry.getGuessedPOFile(), None)
         self.assertEqual(entry.status, RosettaImportStatus.DELETED)
 
@@ -216,6 +227,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('elx', 'el')
 
+        become_the_gardener(self.layer)
         el_file = entry.getGuessedPOFile()
         self.failIfEqual(el_file, elx_file)
         self.assertEqual(el_file.language.code, 'el')
@@ -230,6 +242,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('nb', 'nn')
 
+        become_the_gardener(self.layer)
         self.assertEqual(entry.getGuessedPOFile(), nn_file)
 
     def test_CustomLanguageCodeReplacesMatch(self):
@@ -242,6 +255,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
         self._setCustomLanguageCode('pt', None)
         self._setCustomLanguageCode('pt_PT', 'pt')
 
+        become_the_gardener(self.layer)
         self.assertEqual(pt_entry.getGuessedPOFile(), None)
         self.assertEqual(pt_PT_entry.getGuessedPOFile(), pt_file)
 
@@ -255,6 +269,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
         self._setCustomLanguageCode('zh_CN', 'zh_TW')
         self._setCustomLanguageCode('zh_TW', 'zh_CN')
 
+        become_the_gardener(self.layer)
         self.assertEqual(zh_CN_entry.getGuessedPOFile(), zh_TW_file)
         self.assertEqual(zh_TW_entry.getGuessedPOFile(), zh_CN_file)
 
@@ -296,6 +311,7 @@ class TestTemplateGuess(unittest.TestCase):
         # When multiple templates match for a product series,
         # getPOTemplateByPathAndOrigin returns none.
         self._setUpProduct()
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', productseries=self.productseries)
         self.assertEqual(None, guessed_template)
@@ -304,6 +320,7 @@ class TestTemplateGuess(unittest.TestCase):
         # When multiple templates match on sourcepackagename,
         # getPOTemplateByPathAndOrigin returns none.
         self._setUpDistro()
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', sourcepackagename=self.packagename)
         self.assertEqual(None, guessed_template)
@@ -312,6 +329,7 @@ class TestTemplateGuess(unittest.TestCase):
         # When multiple templates match on from_sourcepackagename,
         # getPOTemplateByPathAndOrigin returns none.
         self._setUpDistro()
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', sourcepackagename=self.from_packagename)
         self.assertEqual(None, guessed_template)
@@ -324,6 +342,7 @@ class TestTemplateGuess(unittest.TestCase):
         self.distrotemplate1.sourcepackagename = match_package
         self.distrotemplate2.from_sourcepackagename = match_package
 
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', sourcepackagename=match_package)
         self.assertEqual(self.distrotemplate2, guessed_template)
@@ -334,6 +353,7 @@ class TestTemplateGuess(unittest.TestCase):
         self._setUpProduct()
         self.producttemplate1.iscurrent = False
         self.producttemplate2.iscurrent = True
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', productseries=self.productseries)
         self.assertEqual(guessed_template, self.producttemplate2)
@@ -343,6 +363,7 @@ class TestTemplateGuess(unittest.TestCase):
         self._setUpProduct()
         self.producttemplate1.iscurrent = False
         self.producttemplate2.iscurrent = False
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', productseries=self.productseries)
         self.assertEqual(guessed_template, None)
@@ -356,6 +377,7 @@ class TestTemplateGuess(unittest.TestCase):
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = None
         self.distrotemplate2.from_sourcepackagename = None
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.packagename)
@@ -368,6 +390,7 @@ class TestTemplateGuess(unittest.TestCase):
         self.distrotemplate2.iscurrent = False
         self.distrotemplate1.from_sourcepackagename = None
         self.distrotemplate2.from_sourcepackagename = None
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.packagename)
@@ -382,6 +405,7 @@ class TestTemplateGuess(unittest.TestCase):
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = self.from_packagename
         self.distrotemplate2.from_sourcepackagename = self.from_packagename
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.from_packagename)
@@ -395,6 +419,7 @@ class TestTemplateGuess(unittest.TestCase):
         self.distrotemplate2.iscurrent = False
         self.distrotemplate1.from_sourcepackagename = self.from_packagename
         self.distrotemplate2.from_sourcepackagename = self.from_packagename
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.from_packagename)
@@ -405,6 +430,7 @@ class TestTemplateGuess(unittest.TestCase):
         # translation domain.
         self._setUpDistro()
         subset = POTemplateSubset(distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         potemplate = subset.getPOTemplateByTranslationDomain('test1')
         self.assertEqual(potemplate, self.distrotemplate1)
 
@@ -412,6 +438,7 @@ class TestTemplateGuess(unittest.TestCase):
         # Test getPOTemplateByTranslationDomain for the zero-match case.
         self._setUpDistro()
         subset = POTemplateSubset(distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         potemplate = subset.getPOTemplateByTranslationDomain('notesthere')
         self.assertEqual(potemplate, None)
 
@@ -426,6 +453,7 @@ class TestTemplateGuess(unittest.TestCase):
         clashing_template = other_subset.new(
             'test3', 'test1', 'test3.pot', self.distro.owner)
         distro_subset = POTemplateSubset(distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         potemplate = distro_subset.getPOTemplateByTranslationDomain('test1')
         self.assertEqual(potemplate, None)
 
@@ -455,6 +483,7 @@ class TestTemplateGuess(unittest.TestCase):
             'program/nl.po', 'other contents', False, template.owner,
             productseries=template.productseries, potemplate=template)
 
+        become_the_gardener(self.layer)
         entry1.getGuessedPOFile()
 
         self.assertEqual(entry1.potemplate, None)
@@ -512,6 +541,7 @@ class TestKdePOFileGuess(unittest.TestCase):
             poname, self.pocontents, False, self.distroseries.owner,
             sourcepackagename=self.kde_i18n_ca,
             distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         pofile = entry.getGuessedPOFile()
         self.assertEqual(pofile, self.pofile_ca)
 
@@ -523,6 +553,7 @@ class TestKdePOFileGuess(unittest.TestCase):
             poname, self.pocontents, False, self.distroseries.owner,
             sourcepackagename=self.kde_l10n_nl,
             distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         pofile = entry.getGuessedPOFile()
         self.assertEqual(pofile, self.pofile_nl)
 
@@ -550,6 +581,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory):
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
+        become_the_gardener(self.layer)
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertNotEqual(None, pofile)
 
@@ -567,6 +599,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory):
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
+        become_the_gardener(self.layer)
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertEqual(None, pofile)
 
@@ -630,6 +663,7 @@ class TestCleanup(TestCaseWithFactory):
         self.assertTrue(self._exists(entry_id))
 
         self._setStatus(entry, RosettaImportStatus.NEEDS_REVIEW, one_year_ago)
+        become_the_gardener(self.layer)
         self.queue._cleanUpObsoleteEntries(self.store)
         self.assertTrue(self._exists(entry_id))
 
@@ -647,6 +681,7 @@ class TestCleanup(TestCaseWithFactory):
         entry.date_status_changed -= timedelta(days=7)
         entry.syncUpdate()
 
+        become_the_gardener(self.layer)
         self.queue._cleanUpObsoleteEntries(self.store)
         self.assertFalse(self._exists(entry_id))
 
@@ -662,6 +697,7 @@ class TestCleanup(TestCaseWithFactory):
         entry.productseries.product.active = False
         entry.productseries.product.syncUpdate()
 
+        become_the_gardener(self.layer)
         self.queue._cleanUpInactiveProductEntries(self.store)
         self.assertFalse(self._exists(entry_id))
 
@@ -677,6 +713,7 @@ class TestCleanup(TestCaseWithFactory):
         entry.distroseries.status = DistroSeriesStatus.OBSOLETE
         entry.distroseries.syncUpdate()
 
+        become_the_gardener(self.layer)
         self.queue._cleanUpObsoleteDistroEntries(self.store)
         self.assertFalse(self._exists(entry_id))
 
