@@ -13,9 +13,7 @@ import cgi
 from lp.translations.interfaces.translator import (
     ITranslator, IEditTranslator)
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
-    Navigation)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 
 
