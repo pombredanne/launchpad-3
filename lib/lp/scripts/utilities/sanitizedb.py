@@ -67,6 +67,13 @@ class SanitizeDb(LaunchpadScript):
             'authtoken',
             'commercialsubscription',
             'entitlement',
+            'logintoken',
+            'mailinglistban',
+            'mailinglistsubscription',
+            'oauthaccesstoken',
+            'oauthconsumer',
+            'oauthnonce',
+            'oauthrequesttoken',
             'openidassociation',
             'openidauthorization',
             'openidconsumerassociation',
@@ -74,6 +81,19 @@ class SanitizeDb(LaunchpadScript):
             'openidnonce',
             'openidrpsummary',
             'temporaryblobstorage',
+            'requestedcds',
+            'scriptactivity',
+            'shipitreport',
+            'shipitsurvey',
+            'shipitsurveyanswer',
+            'shipitsurveyquestion',
+            'shipitsurveyresult',
+            'shipment',
+            'shippingrequest',
+            'shippingrun',
+            'usertouseremail',
+            'vote',
+            'votecast',
             ]
         for table in tables_to_empty:
             self.removeTable(table)
@@ -83,6 +103,10 @@ class SanitizeDb(LaunchpadScript):
         self.removePrivateBugs()
         self.removePrivateBranches()
         self.removePrivateHwSubmissions()
+        self.removePrivateSpecifications()
+        self.removePrivateLocations()
+        self.removeInactiveProjects()
+        self.removeInactiveProducts()
 
         # Remove unlinked records. These might contain private data.
         self.removeUnlinkedAccounts()
@@ -103,6 +127,9 @@ class SanitizeDb(LaunchpadScript):
             ('person', 'personal_standing_reason'),
             ('account', 'status_comment'),
             ('distributionmirror', 'whiteboard'),
+            ('product', 'reviewer_whiteboard'),
+            ('revisionauthor', 'email'),
+            ('signedcodeofconduct', 'admincomment'),
             ]
         for table, column in columns_to_scrub:
             self.scrubColumn(table, column)
@@ -149,8 +176,35 @@ class SanitizeDb(LaunchpadScript):
         from canonical.launchpad.database.hwdb import HWSubmission
         count = self.store.find(
             HWSubmission, HWSubmission.private == True).remove()
-        self.logger.info(
-            "Removed %d private hardware submissions.", count)
+        self.logger.info("Removed %d private hardware submissions.", count)
+
+    def removePrivateSpecifications(self):
+        """Remove all private specifications."""
+        from lp.blueprints.model.specification import Specification
+        count = self.store.find(
+            Specification, Specification.private == True).remove()
+        self.logger.info("Removed %d private specifications.", count)
+
+    def removePrivateLocations(self):
+        """Remove private person locations."""
+        from lp.registry.model.personlocation import PersonLocation
+        count = self.store.find(
+            PersonLocation, PersonLocation.visible == False).remove()
+        self.logger.info("Removed %d person locations.", count)
+
+    def removeInactiveProjects(self):
+        """Remove inactive projects."""
+        from lp.registry.model.project import Project
+        count = self.store.find(
+            Project, Project.active == False).remove()
+        self.logger.info("Removed %d inactive product groups.", count)
+
+    def removeInactiveProducts(self):
+        """Remove inactive products."""
+        from lp.registry.model.product import Product
+        count = self.store.find(
+            Product, Product.active == False).remove()
+        self.logger.info("Removed %d inactive products.", count)
 
     def removeTable(self, table):
         """Remove all data from a table."""
