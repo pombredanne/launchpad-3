@@ -160,3 +160,19 @@ tag...
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
       Critical New
+
+
+== Hot Bugs ==
+
+A listing of the 10 'hottest' bugs (currently simply the bugs most recently
+touched) is display to allow a quick overview of the project. For each bug we
+have the number, title, status, importance and the time since the last update.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'hot-bugs'))
+        Summary            Status Importance Last changed
+    #14 Firefox install... New    Critical   on 2006-07-14
+    #13 Reflow problems... New    Medium     on 2006-07-14
+     #2 Firefox does no... New    Low        on 2006-05-19
+
