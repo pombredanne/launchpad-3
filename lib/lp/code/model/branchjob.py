@@ -51,7 +51,8 @@ from lp.registry.model.productseries import ProductSeries
 from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
     IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
@@ -553,7 +554,10 @@ class RevisionsAddedJob(BranchJobDerived):
                 if len(pretty_authors) > 5:
                     outf.write('...\n')
                 outf.write('\n')
-            bmps = list(self.findRelatedBMP(merged_revisions))
+            bmps = [proposal
+                    for proposal in self.findRelatedBMP(merged_revisions)
+                    if proposal.queue_status !=
+                    BranchMergeProposalStatus.SUPERSEDED]
             if len(bmps) > 0:
                 outf.write('Related merge proposals:\n')
             for bmp in bmps:
