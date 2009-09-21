@@ -113,6 +113,8 @@
               (<a href="/+help/soyuz/ppa-sources-list.html"
                   target="help">What is this?</a>)
             </dd>
+            <dt>Fingerprint:</dt>
+            <dd tal:content="signing_key/fingerprint"/>
           </dl>
           <div id="archive-dependencies"
                tal:condition="context/dependencies">

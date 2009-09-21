@@ -152,6 +152,7 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
 class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     """A view used to register someone else's attendance at a sprint."""
 
+    label = 'Register someone else'
     field_names = ['attendee', 'time_starts', 'time_ends']
 
     @property
