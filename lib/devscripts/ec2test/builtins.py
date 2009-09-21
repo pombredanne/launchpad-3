@@ -393,14 +393,12 @@ class cmd_update_image(EC2Command):
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
         user_connection.run_with_ssh_agent(
-            "rsync -avp --partial --delete "
-            "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
-            "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
-            "/var/launchpad/sourcecode/")
-        user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
+        user_connection.run_with_ssh_agent(
+            "/var/launchpad/test/utilities/update-sourcecode "
+            "/var/launchpad/sourcecode")
         user_connection.close()
         root_connection = instance.connect_as_root()
         root_connection.perform(
