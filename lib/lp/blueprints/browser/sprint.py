@@ -10,7 +10,6 @@ __all__ = [
     'SprintBrandingView',
     'SprintEditView',
     'SprintFacets',
-    'SprintIndexHierarchy',
     'SprintMeetingExportView',
     'SprintNavigation',
     'SprintOverviewMenu',
@@ -156,17 +155,6 @@ class SprintSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview', ]
 
 
-class SprintIndexHierarchy(Hierarchy):
-    """We force the breadcrumbs not to display for the sprint index.
-
-    XXX michael.nelson 20090921 bug=433852.
-    Without this breadcrumbs display on the sprint-index page. But
-    a side-effect of this is that sub-pages no-longer include breadcrumbs.
-    """
-
-    display_breadcrumbs = False
-
-
 class SprintView(HasSpecificationsView, LaunchpadView):
 
     __used_for__ = ISprint
@@ -307,7 +295,6 @@ class SprintEditView(LaunchpadEditFormView):
 
     schema = ISprint
     label = "Edit sprint details"
-    page_title = label
 
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
                    'time_zone', 'time_starts', 'time_ends', 'address',
@@ -363,10 +350,6 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     def label(self):
         return smartquote(
             'Review discussion topics for "%s" sprint' % self.context.title)
-
-    @property
-    def page_title(self):
-        return self.label
 
     def initialize(self):
         self.status_message = None
