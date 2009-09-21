@@ -173,7 +173,7 @@ since the last update.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'hot-bugs'))
         Summary            Status Importance Last changed
-    #14 Firefox install... New    Critical   on 2006-07-14
-    #13 Reflow problems... New    Medium     on 2006-07-14
-     #2 Firefox does no... New    Low        on 2006-05-19
+    #5 Firefox install... New    Critical   on 2006-07-14
+    #4 Reflow problems... New    Medium     on 2006-07-14
+    #1 Firefox does no... New    Low        on 2006-05-19
 
