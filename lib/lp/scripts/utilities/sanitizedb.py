@@ -15,7 +15,8 @@ import sys
 import transaction
 from zope.component import getUtility
 
-from canonical.database.postgresql import ConnectionString
+from canonical.database.sqlbase import cursor
+from canonical.database.postgresql import ConnectionString, listReferences
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
@@ -58,21 +59,78 @@ class SanitizeDb(LaunchpadScript):
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     def main(self):
-        self._allForeignKeysCascade()
+        self.allForeignKeysCascade()
+
+        tables_to_empty = [
+            'accountpassword',
+            'archiveauthtoken',
+            'authtoken',
+            'commercialsubscription',
+            'entitlement',
+            'openidassociation',
+            'openidauthorization',
+            'openidconsumerassociation',
+            'openidconsumernonce',
+            'openidnonce',
+            'openidrpsummary',
+            'temporaryblobstorage',
+            ]
+        for table in tables_to_empty:
+            self.removeTable(table)
+
+        self.removeInactivePeople()
+        self.removePrivatePeople()
+        self.removePrivateBugs()
+        self.removePrivateBranches()
+        self.removePrivateHwSubmissions()
+
+        # Remove unlinked records. These might contain private data.
+        self.removeUnlinkedAccounts()
+        self.removeUnlinkedEmailAddresses()
+        self.removeUnlinked('revision', [
+            ('revisioncache', 'revision'),
+            ('revisionparent', 'revision'),
+            ('revisionproperty', 'revision'),
+            ])
+        self.removeUnlinked('libraryfilealias', [
+            ('libraryfiledownloadcount', 'libraryfilealias')])
+        self.removeUnlinked('libraryfilecontent')
+        self.removeUnlinked('message', [('messagechunk', 'message')])
+
+        # Scrub data after removing all the records we are going to.
+        # No point scrubbing data that is going to get removed later.
+        columns_to_scrub = [
+            ('person', 'personal_standing_reason'),
+            ('account', 'status_comment'),
+            ('distributionmirror', 'whiteboard'),
+            ]
+        for table, column in columns_to_scrub:
+            self.scrubColumn(table, column)
+
+        # Not implemented yet. These will fail.
+        self.scrambleHiddenEmailAddresses()
+        self.removePrivateTeams()
+
+        self.resetForeignKeysCascade()
         transaction.commit()
-        try:
-            self.removePrivateBugs()
-            self.removePrivateBranches()
-            self.removeUnlinkedRevisions()
-            self.removePrivateTeams()
-            self.removePrivatePeople()
-            self.removeNonLaunchpadAccounts()
-            self.scrambleHiddenEmailAddresses()
-            transaction.commit()
-        finally:
-            transaction.abort()
-            self._resetForeignKeysCascade()
-            transaction.commit()
+
+    def removeInactivePeople(self):
+        """Remove all suspended and deactivated people."""
+        from lp.registry.model.person import Person
+        from canonical.launchpad.interfaces.account import AccountStatus
+        count = self.store.find(
+            Person, Person.account_status != AccountStatus.ACTIVE).remove()
+        self.logger.info("Removed %d inactive people.", count)
+
+    def removePrivatePeople(self):
+        """Remove all private people."""
+        from lp.registry.interfaces.person import PersonVisibility
+        from lp.registry.model.person import Person
+        count = self.store.find(
+            Person,
+            Person.teamowner == None,
+            Person.visibility != PersonVisibility.PUBLIC).remove()
+        self.logger.info("Removed %d private people.", count)
 
     def removePrivateBugs(self):
         """Remove all private bugs."""
@@ -82,23 +140,48 @@ class SanitizeDb(LaunchpadScript):
 
     def removePrivateBranches(self):
         """Remove all private branches."""
-        raise NotImplementedError
+        from lp.code.model.branch import Branch
+        count = self.store.find(Branch, Branch.private == True).remove()
+        self.logger.info("Removed %d private branches.", count)
+
+    def removePrivateHwSubmissions(self):
+        """Remove all private hardware submissions."""
+        from canonical.launchpad.database.hwdb import HWSubmission
+        count = self.store.find(
+            HWSubmission, HWSubmission.private == True).remove()
+        self.logger.info(
+            "Removed %d private hardware submissions.", count)
+
+    def removeTable(self, table):
+        """Remove all data from a table."""
+        count = self.store.execute("DELETE FROM %s" % table).rowcount
+        self.logger.info("Removed %d %s rows (all).", count, table)
+
+    def removeUnlinked(self, table, ignores=()):
+        """Remove all unlinked entries in the table.
+
+        References from the ignores list are ignored.
+
+        :param table: table name.
+
+        :param ignores: list of (table, column) references to ignore.
+        """
+        references = []
+        for result in listReferences(cursor(), table, 'id'):
+            (from_table, from_column, to_table,
+                to_column, update, delete) = result
+            if (to_table == table and to_column == 'id'
+                and (from_table, from_column) not in ignores):
+                references.append(
+                    "SELECT %s FROM %s" % (from_column, from_table))
+        subquery = " UNION ".join(references)
+        query = "DELETE FROM %s WHERE id NOT IN (%s)" % (table, subquery)
+        self.logger.debug(query)
+        count = self.store.execute(query).rowcount
+        self.logger.info("Removed %d unlinked %s rows.", count, table)
 
     def removePrivateTeams(self):
         """Remove all private teams."""
-        raise NotImplementedError
-
-    def removePrivatePeople(self):
-        """Remove all private people."""
-        raise NotImplementedError
-
-    def removeNonLaunchpadAccounts(self):
-        """Remove Account records not linked to a Person.
-        """
-        raise NotImplementedError
-
-    def removeUnlinkedEmailAddresses(self):
-        """Remove EmailAddress records not linked to a Person."""
         raise NotImplementedError
 
     def scrambleHiddenEmailAddresses(self):
@@ -109,10 +192,41 @@ class SanitizeDb(LaunchpadScript):
         """
         raise NotImplementedError
 
-    def _allForeignKeysCascade(self):
+    def removeUnlinkedAccounts(self):
+        """Remove Accounts not linked to a Person."""
+        count = self.store.execute("""
+            DELETE FROM Account
+            USING EmailAddress
+            WHERE Account.id = EmailAddress.account
+                AND EmailAddress.person IS NULL
+            """).rowcount
+        self.logger.info("Removed %d accounts not linked to a person", count)
+
+    def removeUnlinkedEmailAddresses(self):
+        """Remove EmailAddresses not linked to a Person.
+
+        This needs to be called after all the Person records have been
+        removed.
+        """
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        count =-self.store.find(
+            EmailAddress, EmailAddress.person == None).remove()
+        self.logger.info(
+            "Removed %d email addresses not linked to people.", count)
+
+    def scrubColumn(self, table, column):
+        """Remove production admin related notes."""
+        count = self.store.execute("""
+            UPDATE %s SET %s = NULL
+            WHERE %s IS NOT NULL
+            """ % (table, column, column)).rowcount
+        self.logger.info(
+            "Scrubbed %d %s.%s entries." % (count, table, column))
+
+    def allForeignKeysCascade(self):
         """Set all foreign key constraints to ON DELETE CASCADE.
 
-        The current state is recorded first so _resetForeignKeysCascade
+        The current state is recorded first so resetForeignKeysCascade
         can repair the changes.
 
         Only tables in the public schema are modified.
@@ -175,7 +289,7 @@ class SanitizeDb(LaunchpadScript):
         # Store the recovery SQL.
         self._reset_foreign_key_sql = restore_sql
 
-    def _resetForeignKeysCascade(self):
+    def resetForeignKeysCascade(self):
         """Reset the foreign key constraints' ON DELETE mode."""
         self.logger.info(
             "Resetting %d foreign key constraints to initial state.",
