@@ -403,16 +403,16 @@ class EC2TestRunner:
         # Get trunk.
         user_connection.run_with_ssh_agent(
             'bzr branch %(trunk_branch)s /var/launchpad/test')
-        # get newest sources
-        user_connection.run_with_ssh_agent(
-            "/var/launchpad/test/utilities/update-sourcecode "
-            "/var/launchpad/sourcecode")
         # Merge the branch in.
         if self.vals['branch'] is not None:
             user_connection.run_with_ssh_agent(
                 'cd /var/launchpad/test; bzr merge %(branch)s')
         else:
             self.log('(Testing trunk, so no branch merge.)')
+        # get newest sources
+        user_connection.run_with_ssh_agent(
+            "/var/launchpad/test/utilities/update-sourcecode "
+            "/var/launchpad/sourcecode")
         # Get any new sourcecode branches as requested
         for dest, src in self.branches:
             fulldest = os.path.join('/var/launchpad/test/sourcecode', dest)
