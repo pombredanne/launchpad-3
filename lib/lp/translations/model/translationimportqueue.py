@@ -64,8 +64,8 @@ from canonical.librarian.interfaces import ILibrarianClient
 from lp.registry.interfaces.person import validate_public_person
 
 
-# Number of days when entries with terminal statuses are removed from the
-# queue.
+# Period to wait before entries with terminal statuses are removed from
+# the queue.
 entry_gc_age = {
     RosettaImportStatus.DELETED: datetime.timedelta(days=3),
     RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
@@ -1163,15 +1163,16 @@ class TranslationImportQueue:
         :return: Number of entries deleted.
         """
         now = datetime.datetime.now(pytz.UTC)
-        deletion_criteria = False
+        deletion_clauses = []
         for status, gc_age in entry_gc_age.iteritems():
             cutoff = now - gc_age
-            deletion_criteria = Or(
-                deletion_criteria, And(
-                    TranslationImportQueueEntry.status == status,
-                    TranslationImportQueueEntry.date_status_changed < cutoff))
+            deletion_clauses.append(And(
+                TranslationImportQueueEntry.status == status,
+                TranslationImportQueueEntry.date_status_changed < cutoff))
 
-        entries = store.find(TranslationImportQueueEntry, deletion_criteria)
+        entries = store.find(
+            TranslationImportQueueEntry, Or(*deletion_clauses))
+
         return entries.remove()
 
     def _cleanUpInactiveProductEntries(self, store):

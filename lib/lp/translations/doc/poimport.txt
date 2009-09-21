@@ -16,8 +16,8 @@ Here are some imports we need to get this test running.
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> from lp.translations.scripts.po_import import ImportProcess
-    >>> from lp.translations.scripts.import_approval import (
-    ...     AutoApproveProcess)
+    >>> from lp.translations.scripts.import_queue_gardener import (
+    ...     ImportQueueGardener)
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -674,7 +674,7 @@ composed before, but also sends it.
     <BLANKLINE>
     The Launchpad team
 
-Now the auto-approval script runs. This can happen anytime, since it's
+Now the queue gardener runs. This can happen anytime, since it's
 asynchronous to the po-import script. The script tries to approve any
 entries that have not been approved, but look like they could be,
 without human intervention. This involves a bit of guesswork about what
@@ -685,7 +685,7 @@ two hand-approved Welsh translations that have just been imported.
 
     >>> import logging
     >>> from canonical.launchpad.ftests.logger import MockLogger
-    >>> process = AutoApproveProcess('approver', test_args=[])
+    >>> process = ImportQueueGardener('approver', test_args=[])
     >>> process.logger = MockLogger()
     >>> process.logger.setLevel(logging.INFO)
     >>> process.main()
@@ -766,11 +766,11 @@ It's in the queue now.
     >>> print entry.status.name
     NEEDS_REVIEW
 
-The auto-approval script runs again. This time it sees the two
-submitted translations and approves them for import based on some
-heuristic intelligence.
+The queue gardener runs again. This time it sees the two submitted
+translations and approves them for import based on some heuristic
+intelligence.
 
-    >>> process = AutoApproveProcess('approver', test_args=[])
+    >>> process = ImportQueueGardener('approver', test_args=[])
     >>> process.logger = MockLogger()
     >>> process.logger.setLevel(logging.INFO)
     >>> process.main()

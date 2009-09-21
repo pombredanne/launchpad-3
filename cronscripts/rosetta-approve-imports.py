@@ -9,11 +9,11 @@
 
 import _pythonpath
 
-from canonical.config import config
-from lp.translations.scripts.import_approval import AutoApproveProcess
+from lp.translations.scripts.import_queue_gardener import ImportQueueGardener
 
 
 if __name__ == '__main__':
-    script = AutoApproveProcess(
-        'rosetta-approve-imports', dbuser=config.poimport.dbuser)
+    script = ImportQueueGardener(
+        'translations-import-queue-gardener',
+        dbuser='translations_import_queue_gardener')
     script.lock_and_run()

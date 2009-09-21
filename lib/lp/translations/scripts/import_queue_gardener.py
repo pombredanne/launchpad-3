@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'AutoApproveProcess',
+    'ImportQueueGardener',
     ]
 
 from zope.component import getUtility
@@ -16,7 +16,7 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 
 
-class AutoApproveProcess(LaunchpadCronScript):
+class ImportQueueGardener(LaunchpadCronScript):
     """Automated gardening for the Translations import queue."""
     def main(self):
         """Manage import queue.
@@ -25,7 +25,7 @@ class AutoApproveProcess(LaunchpadCronScript):
         Garbage-collect ones that are no longer needed.  Block
         translations on the queue for templates that are blocked.
         """
-        self.logger.debug("Starting auto-approval of translation imports")
+        self.logger.debug("Starting gardening of translation imports")
 
         translation_import_queue = getUtility(ITranslationImportQueue)
 
@@ -47,4 +47,4 @@ class AutoApproveProcess(LaunchpadCronScript):
             self.logger.info('Blocked %d entries from the queue.' %
                 blocked_entries)
 
-        self.logger.debug("Completed auto-approval of translation imports.")
+        self.logger.debug("Completed gardening of translation imports.")
