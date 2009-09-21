@@ -292,7 +292,7 @@
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+subscribe"
-            class="lp.blueprints.browser.specification.SpecificationView"
+            class="lp.blueprints.browser.specification.SpecificationSubscriptionView"
             permission="launchpad.AnyPerson"
             template="../templates/specification-subscription.pt"/>
         <browser:page

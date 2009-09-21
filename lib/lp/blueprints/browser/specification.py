@@ -29,6 +29,7 @@ __all__ = [
     'SpecificationProductSeriesGoalProposeView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
+    'SpecificationSubscriptionView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
@@ -501,6 +502,15 @@ class SpecificationView(SpecificationSimpleView):
             msg = "You have %d feedback request(s) on this specification."
             msg %= len(self.feedbackrequests)
             self.notices.append(msg)
+
+
+class SpecificationSubscriptionView(SpecificationView):
+
+    @property
+    def label(self):
+        if self.subscription is not None:
+            return "Modify subscription"
+        return "Subscribe to blueprint"
 
 
 class SpecificationEditView(LaunchpadEditFormView):
