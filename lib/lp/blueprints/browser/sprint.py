@@ -157,7 +157,12 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
 
 class SprintIndexHierarchy(Hierarchy):
-    """We force the breadcrumbs not to display for the sprint index."""
+    """We force the breadcrumbs not to display for the sprint index.
+
+    XXX michael.nelson 20090921 bug=433852.
+    Without this breadcrumbs display on the sprint-index page. But
+    a side-effect of this is that sub-pages no-longer include breadcrumbs.
+    """
 
     display_breadcrumbs = False
 
@@ -358,6 +363,10 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     def label(self):
         return smartquote(
             'Review discussion topics for "%s" sprint' % self.context.title)
+
+    @property
+    def page_title(self):
+        return self.label
 
     def initialize(self):
         self.status_message = None
