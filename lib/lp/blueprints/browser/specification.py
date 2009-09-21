@@ -1206,6 +1206,8 @@ class SpecificationLinkBranchView(LaunchpadFormView):
 class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     """View for the Blueprints index page."""
 
+    label = 'Blueprints'
+
     @safe_action
     @action('Find blueprints', name="search")
     def search_action(self, action, data):
