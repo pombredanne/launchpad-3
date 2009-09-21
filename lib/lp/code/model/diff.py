@@ -151,8 +151,14 @@ class Diff(SQLBase):
             diff_content_bytes = diff_content.read(size)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
         diffstat = cls.generateDiffstat(diff_content_bytes)
+        added_lines_count = 0
+        removed_lines_count = 0
+        for path, (added, removed) in diffstat.items():
+            added_lines_count += added
+            removed_lines_count += removed
         return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
-                   diffstat=diffstat)
+                   diffstat=diffstat, added_lines_count=added_lines_count,
+                   removed_lines_count=removed_lines_count)
 
     @staticmethod
     def generateDiffstat(diff_bytes):
