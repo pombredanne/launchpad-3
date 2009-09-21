@@ -95,8 +95,15 @@ def get_branches(sourcecode_directory, new_branches,
     """Get the new branches into sourcecode."""
     for project, (branch_url, optional) in new_branches.iteritems():
         destination = os.path.join(sourcecode_directory, project)
-        remote_branch = Branch.open(
-            branch_url, possible_transports=possible_transports)
+        try:
+            remote_branch = Branch.open(
+                branch_url, possible_transports=possible_transports)
+        except BzrError:
+            if optional:
+                report_exception(sys.exc_info(), sys.stderr)
+                continue
+            else:
+                raise
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
         print 'Getting %s from %s' % (project, branch_url)
@@ -105,16 +112,10 @@ def get_branches(sourcecode_directory, new_branches,
         # we should avoid sharing repositories to avoid format
         # incompatibilities.
         force_new_repo = not optional
-        try:
-            remote_branch.bzrdir.sprout(
-                destination, create_tree_if_local=True,
-                source_branch=remote_branch, force_new_repo=force_new_repo,
-                possible_transports=possible_transports)
-        except BzrError:
-            if optional:
-                report_exception(sys.exc_info(), sys.stderr)
-            else:
-                raise
+        remote_branch.bzrdir.sprout(
+            destination, create_tree_if_local=True,
+            source_branch=remote_branch, force_new_repo=force_new_repo,
+            possible_transports=possible_transports)
 
 
 def update_branches(sourcecode_directory, update_branches,
@@ -128,19 +129,20 @@ def update_branches(sourcecode_directory, update_branches,
         destination = os.path.join(sourcecode_directory, project)
         print 'Updating %s' % (project,)
         local_tree = WorkingTree.open(destination)
-        remote_branch = Branch.open(
-            branch_url, possible_transports=possible_transports)
-        possible_transports.append(
-            remote_branch.bzrdir.root_transport)
         try:
-            local_tree.pull(
-                remote_branch,
-                possible_transports=possible_transports)
+            remote_branch = Branch.open(
+                branch_url, possible_transports=possible_transports)
         except BzrError:
             if optional:
                 report_exception(sys.exc_info(), sys.stderr)
+                continue
             else:
                 raise
+        possible_transports.append(
+            remote_branch.bzrdir.root_transport)
+        local_tree.pull(
+            remote_branch, overwrite=True,
+            possible_transports=possible_transports)
 
 
 def remove_branches(sourcecode_directory, removed_branches):

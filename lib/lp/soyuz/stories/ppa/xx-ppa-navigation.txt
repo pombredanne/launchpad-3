@@ -80,18 +80,22 @@ The PPA breadcrumb follows the PPA displayname.
     Main heading: Default PPA
 
 The user can view all the package details using the 'View package details'
-link.
+link. This link is the first link displayed within
+the packages listing portlet.
 
+    >>> packages_portlet = find_tag_by_id(anon_browser.contents, 'packages')
+    >>> print packages_portlet.find('a').string
+    View package details
     >>> anon_browser.getLink('View package details').click()
     >>> print anon_browser.title
-    +packages : Default PPA : Celso Providelo
+    Packages in...
 
 You can see the build details of the packages in the archive by using
 the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
     >>> print anon_browser.title
-    +builds : Default PPA : Celso Providelo
+    Builds for...
 
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa/+builds'

@@ -733,20 +733,21 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     implements(IArchiveIndexActionsMenu)
 
     def initialize(self):
-        """Setup infrastructure for the PPA index page.
-
-        Setup sources list entries widget and the search result list.
-        """
+        """Redirect if our context is a main archive."""
         if self.context.is_main:
             self.request.response.redirect(
                 canonical_url(self.context.distribution))
             return
         super(ArchiveView, self).initialize()
 
-        self.displayname_edit_widget = TextLineEditorWidget(
+    @property
+    def displayname_edit_widget(self):
+        widget = TextLineEditorWidget(
             self.context, 'displayname',
             canonical_url(self.context, view_name='+edit'),
-            id="displayname", title="Edit this displayname")
+            id="displayname", title="Edit the displayname")
+        return widget
+
 
     @property
     def sources_list_entries(self):
@@ -883,6 +884,10 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     @property
     def page_title(self):
         return smartquote('Packages in "%s"' % self.context.displayname)
+
+    @property
+    def label(self):
+        return self.page_title
 
     @property
     def series_list_string(self):

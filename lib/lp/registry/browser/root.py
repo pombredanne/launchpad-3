@@ -18,11 +18,14 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
+
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
+from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
@@ -52,11 +55,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     # The homepage has two columns to hold featured projects. This
     # determines the number of projects we display in each column.
-    FEATURED_PROJECT_ROWS = 10
-
-    def isRedirectInhibited(self):
-        """Returns True if redirection has been inhibited."""
-        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
+    FEATURED_PROJECT_ROWS = 5
+    MAX_FEATURED_PROJECTS = FEATURED_PROJECT_ROWS * 2 + 1
 
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
@@ -65,19 +65,39 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             self.isBetaUser)
 
     @cachedproperty
+    def apphomes(self):
+        return {
+            'answers': canonical_url(self.context, rootsite='answers'),
+            'blueprints': canonical_url(self.context, rootsite='blueprints'),
+            'bugs': canonical_url(self.context, rootsite='bugs'),
+            'code': canonical_url(self.context, rootsite='code'),
+            'translations': canonical_url(self.context,
+                                          rootsite='translations'),
+            'ubuntu': canonical_url(
+                getUtility(ILaunchpadCelebrities).ubuntu),
+            }
+
+    @cachedproperty
     def featured_projects(self):
         """Return a list of featured projects."""
         return getUtility(IPillarNameSet).featured_projects
 
     @property
+    def featured_projects_top(self):
+        """Return the topmost featured project."""
+        return self.featured_projects[0]
+
+    @property
     def featured_projects_col_a(self):
         """Return a list of featured projects."""
-        return self.featured_projects[:self.FEATURED_PROJECT_ROWS]
+        return self.featured_projects[1:self.FEATURED_PROJECT_ROWS+1]
 
     @property
     def featured_projects_col_b(self):
         """The list of featured projects."""
-        return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
+        index_from = self.FEATURED_PROJECT_ROWS+1
+        index_to = self.MAX_FEATURED_PROJECTS
+        return self.featured_projects[index_from:index_to]
 
     @property
     def branch_count(self):

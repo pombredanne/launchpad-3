@@ -93,6 +93,7 @@ span.invisible {left:-9999em;display:block;}
 .external-link {background:url(icon-sprites) 0 -704px no-repeat;}
 .mail {background:url(icon-sprites) 0 -736px no-repeat;}
 .cve {background:url(icon-sprites) 0 -768px no-repeat;}
+.cves {float: right; text-align: right;}
 .bug {background:url(icon-sprites) 0 -800px no-repeat;}
 .bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
 .bug-high {background:url(icon-sprites) 0 -864px no-repeat;}
@@ -130,7 +131,7 @@ span.invisible {left:-9999em;display:block;}
 .product {background:url(icon-sprites-2) 0 -640px no-repeat;}
 .read-only {background:url(icon-sprites-2) 0 -672px no-repeat;}
 .warning-icon, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
-.private {background:url(icon-sprites-2) 0 -736px no-repeat;}
+.private {background:url(icon-sprites-2) 0 -320px no-repeat;}
 .meeting {background:url(icon-sprites-2) 0 -768px no-repeat;}
 .translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}
 .translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
@@ -674,30 +675,11 @@ hr {
 
 /* === Universal page layout === */
 
-/* All pages begin with a global header or a topline. */
-#globalheader {
-  clear: both;
-  position: relative;
-  width: 100%;
-  height: 21px;
-  overflow: hidden;
-  margin: 0 0 1em 0;
-  padding: 0;
-  background-color: #EEE;
-  background-image:  url(globalheader_bg.gif);
-  background-repeat: repeat-x;
-  background-position: top center;
-}
-#globalheader .sitemessage a {
-  color: #FFF;
-  text-decoration: underline;
-}
-/* Site-specific message. */
-#globalheader .sitemessage {
-  text-align: center;
-  color: #FFF;
-  font-size: 13px;
-  padding-top: 2px;
+/* All pages include the sitemessage in the footer if one is defined
+   in the config. */
+.sitemessage {
+    font-size: 13px;
+    text-align: right;
 }
 
 /* === Login control === */
@@ -1587,64 +1569,125 @@ beside the mugshot. */
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
 /* --- Home --- */
-#home-description {
-  font-size: 1.5em;
-  font-family: "URW Gothic L","MgOpen Moderna","Lucida Sans",sans-serif;
-  text-align: center;
-  margin: auto;
-  margin-top: 1em;
-  margin-bottom: 1em;
-  padding: 0.5em;
-  background-color: #ededed;
-  width: 90%;
+
+/* The following style works around the fact that the locationbar, which is
+only used of the Login/Register links in 3.0 UI, is accessible on
+"locationless" pages. It adds extra space at the top of every page in
+Launchpad but that does actually look quite good ... ;-).*/
+#locationbar {
+    height: 1em;
 }
-#home-description .smaller {
-  font-size: 80%;
+
+#homepage {
+    margin: auto;
+    width: 90%;
+    max-width: 80em;
 }
-#home-stats {
-  margin: auto;
-  text-align: center;
-  color: gray;
-  max-width: 40em;
+
+.homepage-portlet {
+    margin-bottom: 3em;
+    line-height: 140%;
 }
-#home-page h2 {
-  width: 100%;
-  text-align: center;
-  margin-left: -0.8em;
+
+.homepage-portlet h2 {
+    margin-bottom: 0.5em;
+    font-size: 131%;
 }
-#home-page img {
-  vertical-align: middle;
+
+/* Home: search form */
+
+#homepage-searchform {
+    text-align: center;
 }
-#featured-projects ul {
-  list-style-type: none;
-  width: 50%;
-  margin: 0;
-  padding: 0 ;
-  float: left;
+
+#homepage-stats {
+    max-width: 50em;
+    margin: auto;
+    padding-top: 0.5em;
+    color: gray;
+    font-size: 83.3%
 }
-#featured-projects li {
-  padding-bottom: 2px;
+
+/* Home: What's launchpad */
+
+#homepage-whatslaunchpad ul {
+    margin-left: 1em;
+    margin-bottom: 0.5em;
 }
-.home-banners {
-  background-color: #8890ff;
-  width: 220px;
-  padding: 1em 0 1em 1em;
-  margin-top: 1em;
-  overflow: hidden;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
+
+#homepage-whatslaunchpad ul,
+#homepage-whatslaunchpad-tour {
+    font-size: 116%;
+    font-weight: bold;
 }
-.home-banners a {
-  font-weight: bold;
-  color: white;
+
+/* Home: blog posts */
+
+#homepage-blogposts {
+    padding-right: 4em;
 }
-.home-banner-container {
-  width: 100%;
-  background-color: #ededed;
-  padding: 1em;
-  padding-top: 0;
+
+#homepage-blogposts .blogdate {
+    font-size: 85%;
+    color: grey;
 }
+
+#homepage-blogposts-older {
+    text-align: right;
+}
+
+/* Home: Get started */
+
+#homepage-getstarted ul {
+    margin-top: 0.5em;
+}
+
+/* Home: Featured projects */
+
+#homepage-featured {
+    width: 100%;
+}
+
+#homepage-featured ul {
+    width: 48%;
+}
+
+#homepage-featured-left {
+    float: left;
+}
+
+#homepage-featured-right {
+    float: right;
+}
+
+#homepage-featured-top img {
+    float: left;
+}
+#homepage-featured-top-title {
+    height: 64px;
+    display: block;
+    margin-left: 70px;
+}
+
+#homepage-featured-top-title span{
+    font-size: 131%;
+    font-weight: bold;
+    position: relative;
+    top: 20px;
+}
+
+#homepage-featured-top-text {
+    margin-top: 0.5em;
+    margin-bottom: 1em;
+}
+
+#homepage-featured-more {
+    margin-top: 0.5em;
+    text-align: right;
+    clear: both;
+}
+
+/* -- Notices -- */
 
 .important-notice-container {
   text-align: center;
@@ -1959,6 +2002,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 #branch-pending-writes {
   background: #FFF59C;
   width: 40em;
+  margin: 1em auto;
   padding-left: 1em;
   padding-right: 1em;
   padding-top: 0.2em;
@@ -2247,6 +2291,30 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 .questionstatusEXPIRED   {color: #666;} /* dark grey */
 .questionstatusINVALID   {color: #c00;} /* red */
 
+.search-box {
+  text-align: left;
+  float: left;
+  border:1px solid #d6d6d6;
+  margin: 0.5em 0 0.5em 0;
+  color: #717171;
+  padding: 8px;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+.search-box form.primary.search {
+  margin: 0.5em;
+}
+
+.bug-links td.bugs-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.bug-links td.bugs-link {
+  text-align: left;
+}
 
 /* --- Other --- */
 

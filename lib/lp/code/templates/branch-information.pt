@@ -1,0 +1,51 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+
+  <div class="two-column-list">
+
+    <dl id="partof" tal:condition="context/product">
+      <dt>Project:</dt>
+      <dd tal:content="structure context/product/fmt:link" />
+    </dl>
+
+    <dl id="owner">
+      <dt>Owner:</dt>
+      <dd tal:content="structure context/owner/fmt:link" />
+    </dl>
+
+    <dl id="default-reviewer" tal:condition="not:view/owner_is_reviewer">
+      <dt>Review team:</dt>
+      <dd tal:content="structure context/code_reviewer/fmt:link" />
+    </dl>
+
+    <dl id="status">
+      <dt>Status:</dt>
+      <dd
+        id="branch-details-status-value"
+        tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
+        tal:content="structure context/lifecycle_status/title" />
+    </dl>
+
+    <tal:mirror-branch condition="context/branch_type/enumvalue:MIRRORED">
+      <dl id="mirror-location"
+          tal:condition="view/mirror_location">
+        <dt>Location:</dt>
+        <dd tal:content="view/mirror_location" />
+      </dl>
+      <dl tal:replace="structure context/@@+mirror-status" />
+    </tal:mirror-branch>
+
+    <dl id="remote-location"
+        tal:condition="context/branch_type/enumvalue:REMOTE">
+      <dt>Location:</dt>
+      <dd
+        tal:condition="context/url"
+        tal:content="view/mirror_location" />
+      <dd
+        tal:condition="not: context/url">Not specified</dd>
+    </dl>
+  </div>
+
+</div>

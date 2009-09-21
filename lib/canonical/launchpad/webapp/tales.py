@@ -2233,7 +2233,6 @@ class PageTemplateContextsAPI:
         name = name.replace('-', '_')
         titleobj = getattr(canonical.launchpad.pagetitles, name, None)
         if titleobj is None:
-            # sabdfl 25/0805 page titles are now mandatory hence the assert
             raise AssertionError(
                  "No page title in canonical.launchpad.pagetitles "
                  "for %s" % name)
@@ -3100,6 +3099,8 @@ class PageMacroDispatcher:
             return self.pagetype()
         elif name == 'show_actions_menu':
             return self.show_actions_menu()
+        elif name == 'isbetauser':
+            return getattr(self.context, 'isBetaUser', False)
         else:
             raise TraversalError(name)
 

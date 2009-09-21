@@ -804,6 +804,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             id='programminglang', title='Edit programming languages',
             tag='span', public_attribute='programming_language',
             accept_empty=True,
+            width='9em',
             **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
@@ -1425,7 +1426,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
 
     schema = IProductReviewSearch
-    label= 'Review projects'
+    label = 'Review projects'
 
     full_row_field_names = [
         'search_text',
@@ -1568,7 +1569,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    page_title = "Register a project in Launchpad"
+    page_title = ProjectAddStepOne.page_title
 
     product = None
 
@@ -1690,6 +1691,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 class ProductAddView(MultiStepView):
     """The controlling view for product/+new."""
 
+    page_title = ProjectAddStepOne.page_title
     total_steps = 2
 
     @property
