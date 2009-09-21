@@ -59,7 +59,7 @@ class DiffTestCase(TestCaseWithFactory):
         # There's a conflict because the source branch added a line "d", but
         # the target branch added the line "c" in the same place.
         self.assertIn(
-            '+<<<<<<< TREE\n c\n+=======\n+d\n+>>>>>>> MERGE-SOURCE\n',
+            '+<<<''<<<< TREE\n c\n+=======\n+d\n+>>>>>''>> MERGE-SOURCE\n',
             diff_text)
 
 
