@@ -261,7 +261,7 @@ class Hierarchy(LaunchpadView):
         return breadcrumbs
 
     @property
-    def _context_view(self):
+    def _naked_context_view(self):
         """Return the unproxied view for the context of the hierarchy."""
         from zope.security.proxy import removeSecurityProxy
         return removeSecurityProxy(self.request.traversed_objects[-1])
@@ -278,7 +278,7 @@ class Hierarchy(LaunchpadView):
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
         default_view_name = zapi.getDefaultViewName(obj, self.request)
-        view = self._context_view
+        view = self._naked_context_view
         if view.__name__ != default_view_name:
             title = getattr(view, 'page_title', None)
             if title is None:
@@ -304,8 +304,9 @@ class Hierarchy(LaunchpadView):
         # to display it as it will simply repeat the context.title.
         # If the view is an IMajorHeadingView then we do not want
         # to display breadcrumbs either.
-        return (len(self.items) > 1 and
-                not IMajorHeadingView.providedBy(self._context_view))
+        has_major_heading = IMajorHeadingView.providedBy(
+            self._naked_context_view)
+        return len(self.items) > 1 and not has_major_heading
 
 
 class MaintenanceMessage:
