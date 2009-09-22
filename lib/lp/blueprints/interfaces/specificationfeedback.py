@@ -25,7 +25,7 @@ class ISpecificationFeedback(Interface):
 
     reviewer = PublicPersonChoice(
         title=_('Feedback From?'), required=True,
-        vocabulary='ValidPersonOrTeam', readonly=True,
+        vocabulary='ValidPersonOrTeam', readonly=False,
         description=_("Select the person who you would like to give you "
         "some feedback on this specification."))
     requester = PublicPersonChoice(

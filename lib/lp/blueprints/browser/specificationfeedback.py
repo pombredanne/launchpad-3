@@ -5,15 +5,17 @@
 
 __metaclass__ = type
 
-from zope.app.form.interfaces import WidgetsError
-from zope.app.form.browser.add import AddView
+from zope.app.form.browser import TextAreaWidget
 
 from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import action, canonical_url, custom_widget
+from canonical.launchpad.webapp.launchpadform import LaunchpadFormView
+from lp.blueprints.interfaces.specificationfeedback import (
+    ISpecificationFeedback)
 
 
 __all__ = [
@@ -22,38 +24,48 @@ __all__ = [
     ]
 
 
-class SpecificationFeedbackAddView(AddView):
+class SpecificationFeedbackAddView(LaunchpadFormView):
 
-    def __init__(self, context, request):
-        AddView.__init__(self, context, request)
-        self.top_of_page_errors = []
+    schema = ISpecificationFeedback
 
-    def valid_feedback_request(self, spec, reviewer, requester):
-        for request in spec.getFeedbackRequests(reviewer):
+    field_names = [
+        'reviewer', 'queuemsg',
+        ]
+
+    custom_widget('queuemsg', TextAreaWidget, height=5)
+
+    @property
+    def label(self):
+        return "Request feedback on specification"
+
+    @property
+    def page_title(self):
+        return self.label
+
+    def validate(self, data):
+        reviewer = data.get('reviewer')
+        requester = self.user
+        for request in self.context.getFeedbackRequests(reviewer):
             if request.requester == requester:
-                return False
-        return True
-
-    def create(self, reviewer, requester, queuemsg=None):
+                self.addError("You've already requested feedback from %s"
+                    % reviewer.displayname)
         if reviewer == requester:
-            self.top_of_page_errors.append(_(
-                "You can't request feedback from yourself"))
-        elif not self.valid_feedback_request(
-            self.context, reviewer, requester):
-            self.top_of_page_errors.append(_(
-                "You've already requested feedback from %s"
-                % reviewer.displayname))
-        if self.top_of_page_errors:
-            raise WidgetsError(self.top_of_page_errors)
+            self.addError("You can't request feedback from yourself")
+
+    @action(_("Add"), name="create")
+    def create_action(self, action, data):
+        reviewer = data.get('reviewer')
+        requester = self.user
+        queuemsg = data.get('queuemsg')
         return self.context.queue(reviewer, requester, queuemsg)
 
-    def add(self, content):
-        """Skipping 'adding' this content to a container, because
-        this is a placeless system."""
-        return content
-
-    def nextURL(self):
+    @property
+    def next_url(self):
         return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return self.next_url
 
 
 class SpecificationFeedbackClearingView:
