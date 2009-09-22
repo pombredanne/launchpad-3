@@ -810,8 +810,6 @@ specification_goaldecide = 'Approve or decline blueprint goal'
 
 specification_dependency = 'Create a blueprint dependency'
 
-specification_deptree = 'Complete dependency tree'
-
 specification_distroseries = ('Target blueprint to a distribution release')
 
 specification_productseries = 'Target blueprint to a series'
@@ -820,13 +818,9 @@ specification_removedep = 'Remove a dependency'
 
 specification_givefeedback = 'Clear feedback requests'
 
-specification_requestfeedback = 'Request feedback on this blueprint'
-
 specification_edit = 'Edit blueprint details'
 
 specification_linksprint = 'Put blueprint on sprint agenda'
-
-specification_subscription = 'Subscribe to blueprint'
 
 specification_queue = 'Queue blueprint for review'
 
