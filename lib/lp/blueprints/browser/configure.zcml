@@ -56,12 +56,16 @@
             name="+specs"
             template="../templates/hasspecifications-specs.pt"/>
         <browser:page
-            name="+assignments"
-            template="../templates/specificationtarget-assignments.pt"/>
-        <browser:page
             name="+portlet-latestspecs"
             template="../templates/specificationtarget-portlet-latestspecs.pt"/>
     </browser:pages>
+    <browser:page
+        name="+assignments"
+        for="lp.blueprints.interfaces.sprint.ISprint"
+        class="canonical.launchpad.browser.SpecificationAssignmentsView"
+        facet="specifications"
+        permission="zope.Public"
+        template="../templates/specificationtarget-assignments.pt"/>
     <browser:page
         name="+edit"
         for="lp.blueprints.interfaces.sprint.ISprint"
@@ -537,12 +541,15 @@
                 name="+specs"
                 template="../templates/hasspecifications-specs.pt"/>
             <browser:page
-                name="+assignments"
-                template="../templates/specificationtarget-assignments.pt"/>
-            <browser:page
                 name="+portlet-latestspecs"
                 template="../templates/specificationtarget-portlet-latestspecs.pt"/>
         </browser:pages>
+        <browser:page
+            name="+assignments"
+            for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
+            class="lp.blueprints.browser.specificationtarget.SpecificationAssignmentsView"
+            permission="zope.Public"
+            template="../templates/specificationtarget-assignments.pt"/>
         <browser:page
             name="+register-a-blueprint-button"
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationTarget"
@@ -585,12 +592,16 @@
             name="+specs"
             template="../templates/hasspecifications-specs.pt"/>
         <browser:page
-            name="+assignments"
-            template="../templates/specificationtarget-assignments.pt"/>
-        <browser:page
             name="+portlet-latestspecs"
             template="../templates/specificationtarget-portlet-latestspecs.pt"/>
     </browser:pages>
+    <browser:page
+        name="+assignments"
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.blueprints.browser.specificationtarget.SpecificationAssignmentsView"
+        facet="specifications"
+        permission="zope.Public"
+        template="../templates/specificationtarget-assignments.pt"/>
 
     <browser:page
         name="+addspec"
