@@ -2,3 +2,6 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+Test access: admin required to change anything!
+Link to new pages (only for admins; codes are not secret, but not advertised).
+Breadcrumb for removing a code.
