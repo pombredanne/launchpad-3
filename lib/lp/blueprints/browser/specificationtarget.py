@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'HasSpecificationsView',
     'RegisterABlueprintButtonView',
+    'SpecificationAssignmentsView',
     'SpecificationDocumentationView',
     ]
 
@@ -115,7 +116,7 @@ class HasSpecificationsView(LaunchpadView):
         self.batchnav = BatchNavigator(
             self.specs, self.request,
             size=config.launchpad.default_batch_size)
-
+    
     def mdzCsv(self):
         """Quick hack for mdz, to get csv dump of specs."""
         import csv
@@ -311,6 +312,16 @@ class HasSpecificationsView(LaunchpadView):
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
             quantity=quantity, prejoin_people=False)
+
+
+class SpecificationAssignmentsView(HasSpecificationsView):
+    """View for +assignments pages."""
+    page_title = "Assignments"
+
+    @property
+    def label(self):
+        return "Blueprint assignments for %s" % self.context.displayname
+
 
 
 class SpecificationDocumentationView(HasSpecificationsView):
