@@ -323,8 +323,11 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
         Filing a bug on a distribution series is not directly
         permitted; we redirect to the distribution's file
         """
-        distro_url = canonical_url(self.context.distribution)
-        return self.request.response.redirect(distro_url + "/+filebug")
+        distro_url = canonical_url(
+            self.context.distribution, view_name='+filebug')
+        if self.request.form.get('no-redirect') is not None:
+            distro_url += '?no-redirect'
+        return self.request.response.redirect(distro_url)
 
     @property
     def show_arch_selector(self):

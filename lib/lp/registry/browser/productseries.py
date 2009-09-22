@@ -674,6 +674,9 @@ class ProductSeriesSourceListView(LaunchpadView):
     See `ICodeImportSet.getActiveImports` for our definition of running.
     """
 
+    page_title = 'Available code imports'
+    label = page_title
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         self.text = self.request.get('text')
