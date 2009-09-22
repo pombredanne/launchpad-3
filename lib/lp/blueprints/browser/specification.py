@@ -54,8 +54,6 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 
-from canonical.lazr.utils import smartquote
-
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
@@ -1074,7 +1072,7 @@ class SpecificationTreeGraphView(LaunchpadView):
         """Return a SpecGraph object rooted on the spec that is self.context.
         """
         graph = SpecGraph()
-        root = graph.newNode(self.context, root=True)
+        graph.newNode(self.context, root=True)
         graph.addDependencyNodes(self.context)
         graph.addBlockedNodes(self.context)
         return graph
