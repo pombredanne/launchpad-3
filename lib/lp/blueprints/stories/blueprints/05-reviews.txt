@@ -131,13 +131,11 @@ complete. Note that the form posts back to the main spec home page.
 Now we POST this page back to itself. First, we clear a single item.
 
     >>> mark_browser.getControl("Carlos Perelló Marín").selected = True
-    >>> mark_browser.getControl("Continue").click()
+    >>> mark_browser.getControl("Save changes").click()
     >>> print mark_browser.url
     http://blueprints.launchpad.dev/firefox/+spec/canvas/+givefeedback
 
     >>> print extract_text(find_main_content(mark_browser.contents))
-    Give feedback on this blueprint
-    ...
     Cleared requests from: Carlos Perelló Marín
     ...
 
@@ -145,7 +143,7 @@ And now, the remaining two. This time we expect to be redirected.
 
     >>> mark_browser.getControl("Sample Person").selected = True
     >>> mark_browser.getControl("Foo Bar").selected = True
-    >>> mark_browser.getControl("Continue").click()
+    >>> mark_browser.getControl("Save changes").click()
 
     >>> print mark_browser.url
     http://blueprints.launchpad.dev/firefox/+spec/canvas
