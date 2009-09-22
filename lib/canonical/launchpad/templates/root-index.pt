@@ -138,7 +138,7 @@
                 working within Launchpad.<br />
               </tal:logged_out>You can test Launchpad's functionality
               in our sandbox environment.
-              (<a href="https://help.launchpad.net/StagingServer">What's this?</a>)<br />
+              (<a href="+help/home-page-staging-help.html" target="help">What is staging?</a>)<br />
               <tal:logged_in condition="view/user" omit-tag="">
                 If you're ready, you can:
                 <ul tal:define="apphomes view/apphomes">
