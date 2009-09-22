@@ -360,6 +360,11 @@ sudo mkdir /var/launchpad
 
 sudo chown -R ubuntu:ubuntu /var/www /var/launchpad
 
+cat > /home/ubuntu/.ssh/config << EOF
+CheckHostIP no
+StrictHostKeyChecking no
+EOF
+
 bzr launchpad-login %(launchpad-login)s
 bzr init-repo --2a /var/launchpad
 bzr branch lp:~launchpad-pqm/launchpad/devel /var/launchpad/test
@@ -404,7 +409,7 @@ class cmd_update_image(EC2Command):
         instance.check_bundling_prerequisites()
 
         instance.set_up_and_run(
-            dict(postmortem=postmortem, set_up_user=True),
+            dict(postmortem=postmortem, set_up_user=False),
             self.update_image, instance, extra_update_image_command,
             from_scratch, root_login, ami_name, credentials)
 
@@ -416,7 +421,7 @@ class cmd_update_image(EC2Command):
         as_root('echo "ubuntu\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
         as_root('sudo -u ubuntu mkdir /home/ubuntu/.ssh')
         remote_ssh_dir = '/home/ubuntu/.ssh'
-        self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
+        instance.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
         as_root(
             'cp /root/.ssh/authorized_keys '
             '/home/ubuntu/.ssh/authorized_keys')
@@ -468,6 +473,9 @@ class cmd_update_image(EC2Command):
         user_connection.run_with_ssh_agent(
             "/var/launchpad/test/utilities/update-sourcecode "
             "/var/launchpad/sourcecode")
+        user_connection.perform(
+            'rm -rf /home/ubuntu/.ssh/known_hosts /home/ubuntu/.bazaar '
+            '/home/ubuntu/.bzr.log')
         user_connection.close()
         instance.bundle(ami_name, credentials)
 
