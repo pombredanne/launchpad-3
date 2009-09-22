@@ -17,7 +17,8 @@ import socket
 
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
-    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance,
+    get_user_key)
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 
@@ -260,7 +261,9 @@ class cmd_test(EC2Command):
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
 
-        instance.set_up_and_run(postmortem, not headless, runner.run_tests)
+        instance.set_up_and_run(
+            dict(postmortem=postmortem, shutdown=not headless),
+            runner.run_tests)
 
 
 class cmd_demo(EC2Command):
@@ -305,11 +308,9 @@ class cmd_demo(EC2Command):
 
         # Wait until the user exits the postmortem session, then kill the
         # instance.
-        postmortem = True
-        shutdown = True
         instance.set_up_and_run(
-            postmortem, shutdown, self.run_server, runner,
-            demo_network_string)
+            dict(postmortem=True),
+            self.run_server, runner, demo_network_string)
 
     def run_server(self, runner, instance, demo_network_string):
         runner.run_demo_server()
@@ -400,12 +401,29 @@ class cmd_update_image(EC2Command):
         instance.check_bundling_prerequisites()
 
         instance.set_up_and_run(
-            postmortem, True, self.update_image, instance,
-            extra_update_image_command, from_scratch,
-            ami_name, credentials)
+            dict(postmortem=postmortem, set_up_user=True),
+            self.update_image, instance, extra_update_image_command,
+            from_scratch, False, ami_name, credentials)
+
+    def add_ubuntu_user(self, instance):
+        root_connection = instance.connect('root')
+        as_root = root_connection.perform
+        as_root('echo "root\tALL=NOPASSWD: ALL" >> /etc/sudoers')
+        as_root('adduser --gecos "" --disabled-password ubuntu')
+        as_root('echo "ubuntu\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
+        as_root('sudo -u ubuntu mkdir /home/ubuntu/.ssh')
+        remote_ssh_dir = '/home/ubuntu/.ssh'
+        self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
+        as_root(
+            'cp /root/.ssh/authorized_keys '
+            '/home/ubuntu/.ssh/authorized_keys')
+        as_root('chown -R ubuntu:ubuntu /home/ubuntu/')
+        as_root('chmod 644 /home/ubuntu/.ssh/*')
+        root_connection.close()
+        instance.set_up_user(get_user_key())
 
     def update_image(self, instance, extra_update_image_command,
-                     from_scratch, ami_name, credentials):
+                     from_scratch, root_login, ami_name, credentials):
         """Bring the image up to date.
 
         The steps we take are:
@@ -423,8 +441,10 @@ class cmd_update_image(EC2Command):
         :param ami_name: The name to give the created AMI.
         :param credentials: An `EC2Credentials` object.
         """
-        user_connection = instance.connect()
         if from_scratch:
+            if root_login:
+                self.add_ubuntu_user(instance)
+            user_connection = instance.connect()
             user_sftp = user_connection.ssh.open_sftp()
             update_sh = user_sftp.open('/home/ubuntu/update.sh', 'w')
             update_sh.write(update_from_scratch % instance._vals)
@@ -433,6 +453,8 @@ class cmd_update_image(EC2Command):
             user_connection.run_with_ssh_agent(
                 '/bin/sh /home/ubuntu/update.sh')
             user_connection.perform('rm /home/ubuntu/update.sh')
+        else:
+            user_connection = instance.connect()
         user_connection.perform('bzr launchpad-login %(launchpad-login)s')
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)

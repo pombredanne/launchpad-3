@@ -169,12 +169,12 @@ class EC2Instance:
             return None
         return self._boto_instance.public_dns_name
 
-    def connect(self):
+    def connect(self, username='ubuntu'):
         """Connect to the instance as `user`. """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(AcceptAllPolicy())
         connect_args = {
-            'username': 'ubuntu',
+            'username': username,
             'pkey': self.private_key,
             'allow_agent': False,
             'look_for_keys': False,
@@ -191,7 +191,7 @@ class EC2Instance:
                     raise
             else:
                 break
-        return EC2InstanceConnection(self, 'ubuntu', ssh)
+        return EC2InstanceConnection(self, username, ssh)
 
     def set_up_user(self, user_key):
         """Set up an account named after the local user."""
@@ -205,10 +205,13 @@ class EC2Instance:
         # create authorized_keys
         self.log('Setting up /home/ubuntu/.ssh/authorized_keys\n')
         authorized_keys_file = ubuntu_sftp.open(
-            "/home/ubuntu/.ssh/authorized_keys", 'a')
+            "/home/ubuntu/authorized_keys", 'a')
         authorized_keys_file.write(
             "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
         authorized_keys_file.close()
+        ubuntu_connection.perform(
+            'cat /home/ubuntu/authorized_keys >> '
+            '/home/ubuntu/.ssh/authorized_keys')
         ubuntu_sftp.close()
         self.log(
             'You can now use ssh -A ubuntu@%s to log in the instance.\n' %
@@ -217,23 +220,30 @@ class EC2Instance:
         ubuntu_connection.perform('sudo rm -fr /var/tmp/*')
         ubuntu_connection.close()
 
-    def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
+    def set_up_and_run(self, config, func, *args, **kw):
         """Start, set up a user account, run `func` and then maybe shut down.
 
-        :param postmortem: If true, any exceptions will be caught and an
-            interactive session run to allow debugging the problem.
-        :param shutdown: If true, shut down the instance after `func` and
-            postmortem (if any) are completed.
+        :param config: A dictionary specifying details of how the instance
+            should be run:
+             * `postmortem`: If true, any exceptions will be caught and an
+               interactive session run to allow debugging the problem.
+               Defaults to False.
+             * `shutdown`: If true, shut down the instance after `func` and
+               postmortem (if any) are completed.  Defaults to True.
+             * `set_up_user`: If true, call set_up_user on the instance before
+               calling `func`. Defaults to True.
         :param func: A callable that will be called when the instance is
             running and a user account has been set up on it.
         :param args: Passed to `func`.
         :param kw: Passed to `func`.
         """
-        user_key = get_user_key()
+        if config.get('set_up_user'):
+            user_key = get_user_key()
         self.start()
         try:
             try:
-                self.set_up_user(user_key)
+                if config.get('set_up_user'):
+                    self.set_up_user(user_key)
                 return func(*args, **kw)
             except Exception:
                 # When running in postmortem mode, it is really helpful to see if
@@ -242,7 +252,7 @@ class EC2Instance:
                 traceback.print_exc()
         finally:
             try:
-                if postmortem:
+                if config.get('postmortem', False):
                     console = code.InteractiveConsole(locals())
                     console.interact((
                         'Postmortem Console.  EC2 instance is not yet dead.\n'
@@ -257,7 +267,7 @@ class EC2Instance:
                                      {'dns': self.hostname})
                     print 'Postmortem console closed.'
             finally:
-                if shutdown:
+                if config.get('shutdown', True):
                     self.shutdown()
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
