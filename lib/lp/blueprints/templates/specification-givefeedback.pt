@@ -16,15 +16,15 @@
             blueprint, and click "Save changes" to clear those
             feedback requests from your queue.
           </p>
-          <table>
+        </div>
+        <div metal:fill-slot="widgets">
+          <table class="form">
             <tbody>
               <tr tal:repeat="request view/requests">
-                <td>
+                <td colspan="2">
                   <input type="checkbox" name="name"
                          tal:attributes="value request/requester/name;
                                          id string:req_${request/requester/name}" />
-                </td>
-                <td>
                   <label tal:content="request/requester/displayname"
                          tal:attributes="for string:req_${request/requester/name}" />
                   <div tal:condition="request/queuemsg"
