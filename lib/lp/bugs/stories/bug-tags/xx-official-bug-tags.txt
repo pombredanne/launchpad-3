@@ -115,19 +115,19 @@ All official tags are displayed as a 'cloud'.
     >>> print_tags_portlet(browser.contents)
     Tags
     ----
-    unofficial-tag-01
-    unofficial-tag-02
-    unofficial-tag-03
-    unofficial-tag-04
-    unofficial-tag-05
-    unofficial-tag-06
-    unofficial-tag-07
-    unofficial-tag-08
-    unofficial-tag-09
-    unofficial-tag-10
-    unofficial-tag-11
-    unofficial-tag-12
-    <BLANKLINE>
+    official-tag-01
+    official-tag-02
+    official-tag-03
+    official-tag-04
+    official-tag-05
+    official-tag-06
+    official-tag-07
+    official-tag-08
+    official-tag-09
+    official-tag-10
+    official-tag-11
+    official-tag-12
+    ...
 
 == Entering Official Tags ==
 
