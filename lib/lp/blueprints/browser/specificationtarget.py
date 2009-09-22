@@ -323,7 +323,6 @@ class SpecificationAssignmentsView(HasSpecificationsView):
         return "Blueprint assignments for %s" % self.context.displayname
 
 
-
 class SpecificationDocumentationView(HasSpecificationsView):
     """View for blueprints +documentation page."""
 
