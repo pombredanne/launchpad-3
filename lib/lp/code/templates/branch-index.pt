@@ -114,16 +114,6 @@
 
   </div>
 
-  <div id="branch-mirror-details"
-       class="yui-g"
-       tal:condition="context/branch_type/enumvalue:MIRRORED">
-    <div class="portlet">
-      <h2>Mirror details</h2>
-      <tal:branch-pending-merges
-          replace="structure context/@@+mirror-status" />
-    </div>
-  </div>
-
   <div id="branch-import-details"
        class="yui-g"
        tal:condition="context/branch_type/enumvalue:IMPORTED">
