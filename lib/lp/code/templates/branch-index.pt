@@ -74,7 +74,7 @@
 
     <div class="yui-u">
       <div class="portlet" id="branch-merges">
-        <h2>Branch Pending Merges</h2>
+        <h2>Branch merges</h2>
         <tal:branch-pending-merges
             replace="structure context/@@++branch-pending-merges" />
       </div>
