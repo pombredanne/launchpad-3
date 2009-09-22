@@ -248,9 +248,6 @@
             for="lp.blueprints.interfaces.specification.ISpecification"
             permission="zope.Public">
             <browser:page
-                name="+deptree"
-                template="../templates/specification-deptree.pt"/>
-            <browser:page
                 name="+listing-column"
                 template="../templates/specification-listing-column.pt"/>
             <browser:page
@@ -272,6 +269,12 @@
                 name="+portlet-feedbackqueue"
                 template="../templates/specification-portlet-feedbackqueue.pt"/>
         </browser:pages>
+        <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            class="lp.blueprints.browser.specificationdependency.SpecificationDependencyTreeView"
+            permission="zope.Public"
+            name="+deptree"
+            template="../templates/specification-deptree.pt"/>
         <browser:pages
             for="lp.blueprints.interfaces.specification.ISpecification"
             permission="zope.Public"
