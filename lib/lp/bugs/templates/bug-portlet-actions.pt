@@ -30,6 +30,13 @@
       tal:define="duplicateof context/duplicateof"
       tal:condition="duplicateof"
     >
+      <a
+        tal:define="link context_menu/markduplicate"
+        tal:condition="python: link.enabled"
+        id="change_duplicate_bug"
+        title="Edit or remove linked duplicate bug"
+        class="sprite edit"
+        tal:attributes="href link/url"></a>
       <span id="mark-duplicate-text">Duplicate of
       <a
         tal:condition="duplicateof/required:launchpad.View"
@@ -41,13 +48,6 @@
         <span
           tal:condition="not:duplicateof/required:launchpad.View"
           tal:replace="string:bug #${duplicateof/id}" />
-    <a
-      tal:define="link context_menu/markduplicate"
-      tal:condition="python: link.enabled"
-      id="change_duplicate_bug"
-      title="Edit or remove linked duplicate bug"
-      class="sprite edit"
-      tal:attributes="href link/url"></a>
     </span>
     </tal:block>
   </div>
