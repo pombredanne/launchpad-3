@@ -848,8 +848,6 @@ def specificationtarget_specs(context, view):
     """Return the page title for a specificationtarget."""
     return view.title
 
-specificationtarget_assignments = ContextTitle('Blueprint assignments for %s')
-
 specificationtarget_workload = ContextTitle('Blueprint workload in %s')
 
 sprint_attend = ContextTitle('Register your attendance at %s')
