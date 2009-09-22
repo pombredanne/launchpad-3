@@ -53,7 +53,7 @@
     </metal:side>
 
     <tal:registering metal:fill-slot="registering">
-      Reported by
+      Bug #<tal:block content="context/bug/id"/> reported by
       <tal:reporter replace="structure context/bug/owner/fmt:link" />
       <span
         tal:attributes="title context/bug/datecreated/fmt:datetime"
