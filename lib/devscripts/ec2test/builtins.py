@@ -359,6 +359,7 @@ sudo mkdir /var/launchpad
 
 sudo chown -R ubuntu:ubuntu /var/www /var/launchpad
 
+bzr launchpad-login %(launchpad-login)s
 bzr init-repo --2a /var/launchpad
 bzr branch lp:~launchpad-pqm/launchpad/devel /var/launchpad/test
 mkdir /var/launchpad/sourcecode
@@ -426,7 +427,7 @@ class cmd_update_image(EC2Command):
         if from_scratch:
             user_sftp = user_connection.ssh.open_sftp()
             update_sh = user_sftp.open('/home/ubuntu/update.sh', 'w')
-            update_sh.write(update_from_scratch)
+            update_sh.write(update_from_scratch % instance._vals)
             update_sh.close()
             user_sftp.close()
             user_connection.run_with_ssh_agent(
