@@ -1295,15 +1295,15 @@ class BugTargetBugTagsView(LaunchpadView):
         """The data for rendering a tags cloud"""
         official_tags = self.context.official_bug_tags
         tags = self.getUsedBugTagsWithURLs()
+        other_tags = [tag for tag in tags if tag['tag'] not in official_tags]
         popular_tags = [tag['tag'] for tag in sorted(
-            [tag for tag in tags
-             if tag['tag'] not in official_tags],
-            key=itemgetter('count'))[:10]]
+            other_tags, key=itemgetter('count'))[:10]]
         tags = [
             tag for tag in tags
             if tag['tag'] in official_tags + popular_tags]
+        all_tag_dicts = [tag['tag'] for tag in tags]
         for official_tag in official_tags:
-            if official_tag not in [tag['tag'] for tag in tags]:
+            if official_tag not in all_tag_dicts:
                 tags.append({
                     'tag': official_tag,
                     'count': 0,
