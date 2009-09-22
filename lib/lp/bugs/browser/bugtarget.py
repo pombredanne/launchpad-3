@@ -1293,9 +1293,21 @@ class BugTargetBugTagsView(LaunchpadView):
     @property
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
-        official_tags = set(self.context.official_bug_tags)
+        official_tags = self.context.official_bug_tags
         tags = self.getUsedBugTagsWithURLs()
-        tags.sort(key=itemgetter('tag'))
+        popular_tags = [tag['tag'] for tag in sorted(
+            [tag for tag in tags
+             if tag['tag'] not in official_tags],
+            key=itemgetter('count'))[:10]]
+        tags = [
+            tag for tag in tags
+            if tag['tag'] in official_tags + popular_tags]
+        for official_tag in official_tags:
+            if official_tag not in [tag['tag'] for tag in tags]:
+                tags.append({
+                    'tag': official_tag,
+                    'count': 0,
+                    'url': "+bugs?field.tag=%s" % urllib.quote(official_tag)})
         max_count = float(max([1] + [tag['count'] for tag in tags]))
         for tag in tags:
             if tag['tag'] in official_tags:
@@ -1305,7 +1317,7 @@ class BugTargetBugTagsView(LaunchpadView):
                     tag['factor'] = 1.5 + (tag['count'] / max_count)
             else:
                 tag['factor'] = 1 + (tag['count'] / max_count)
-        return tags
+        return sorted(tags, key=itemgetter('tag'))
 
     @property
     def show_manage_tags_link(self):
