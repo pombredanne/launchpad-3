@@ -402,13 +402,6 @@ def hasmentoringoffers_mentoring(context, view):
 
 hasannouncements_index = ContextDisplayName('%s news and announcements')
 
-def hasspecifications_specs(context, view):
-    """Return the secifications title for the context."""
-    if IPerson.providedBy(context):
-        return "Blueprints involving %s" % context.title
-    else:
-        return "Blueprints for %s" % context.title
-
 hassprints_sprints = ContextTitle("Events related to %s")
 
 # launchpad_debug doesn't need a title.
