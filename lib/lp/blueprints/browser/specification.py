@@ -53,8 +53,6 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 
-from canonical.lazr.utils import smartquote
-
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
@@ -1205,6 +1203,8 @@ class SpecificationLinkBranchView(LaunchpadFormView):
 
 class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     """View for the Blueprints index page."""
+
+    label = 'Blueprints'
 
     @safe_action
     @action('Find blueprints', name="search")
