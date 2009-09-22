@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    "BugsVHostBreadcrumb",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
     "BugTargetBugsView",
@@ -413,7 +414,7 @@ class FileBugViewBase(LaunchpadFormView):
                                 packagename, distribution.displayname))
                         self.setFieldError("packagename", packagename_error)
             else:
-                self.setFieldError("packagename", 
+                self.setFieldError("packagename",
                                    "Please enter a package name")
 
         # If we've been called from the frontpage filebug forms we must check
@@ -1369,9 +1370,6 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BugTargetOnBugsVHostBreadcrumb(Breadcrumb):
+class BugsVHostBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
-
-    @property
-    def text(self):
-        return 'Bugs in %s' % self.context.name
+    text = 'Bugs'
