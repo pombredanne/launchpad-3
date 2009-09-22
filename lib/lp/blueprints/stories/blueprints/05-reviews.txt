@@ -220,7 +220,7 @@ Now we POST this page back to itself. First, we clear a single item.
   ... Content-Length: 43
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... feedbackrequest=carlos&FORM_SUBMIT=Continue""")
+  ... name=carlos&field.actions.save=Save%20changes""")
   HTTP/1.1 200 Ok
   ...Cleared requests from: Carlos Perelló Marín...
 
@@ -233,7 +233,7 @@ And now, the remaining two. This time we expect to be redirected.
   ... Content-Length: 66
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... feedbackrequest=name12&feedbackrequest=name16&FORM_SUBMIT=Continue""")
+  ... name=name12&name=name16&field.actions.save=Save%20changes""")
   HTTP/1.1 303 See Other
   ...
   Location: http://.../firefox/+spec/canvas
