@@ -92,7 +92,7 @@ The project maintainer and registrant are now updated.
     Change maintainer
 
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
+    ...     find_tag_by_id(admin_browser.contents, 'registering'))
     Registered ... by David Allouche
 
 The registrant really should only be a person, not a team, but that
@@ -105,5 +105,5 @@ teams as registrants.
     >>> admin_browser.getControl('Change').click()
 
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
+    ...     find_tag_by_id(admin_browser.contents, 'registering'))
     Registered ... by Registry Administrators

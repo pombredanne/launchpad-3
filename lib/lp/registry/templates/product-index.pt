@@ -5,6 +5,13 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
+  <tal:registering metal:fill-slot="registering">
+    Registered
+    <tal:created replace="context/datecreated/fmt:approximatedate" />
+    by
+    <tal:registrant replace="structure context/registrant/fmt:link" />
+  </tal:registering>
+
   <body>
     <tal:main metal:fill-slot="main"
       define="overview_menu context/menu:overview">
@@ -116,13 +123,6 @@
 
             <p>
               <a tal:replace="structure  overview_menu/rdf/fmt:link" />
-            </p>
-
-            <p id="registrant">
-              Registered
-              <tal:created replace="context/datecreated/fmt:approximatedate" />
-              by
-              <tal:registrant replace="structure context/registrant/fmt:link" />
             </p>
 
             <div id="project-admin-whiteboard" class="whiteboard"
