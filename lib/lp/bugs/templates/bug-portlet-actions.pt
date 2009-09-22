@@ -47,8 +47,7 @@
       id="change_duplicate_bug"
       title="Edit or remove linked duplicate bug"
       class="sprite edit"
-      tal:attributes="href link/url">
-    </a>
+      tal:attributes="href link/url"></a>
     </span>
     </tal:block>
   </div>
