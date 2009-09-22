@@ -349,12 +349,16 @@ class cmd_update_image(EC2Command):
             help=('Run this command (with an ssh agent) on the image before '
                   'running the default update steps.  Can be passed more than '
                   'once, the commands will be run in the order specified.')),
+        Option(
+            'extra-update-image-command-file', type=str,
+            help=('XXX')),
         ]
 
     takes_args = ['ami_name']
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
-            debug=False, postmortem=False, extra_update_image_command=[]):
+            debug=False, postmortem=False, extra_update_image_command=[],
+            extra_update_image_command_file=None):
         if debug:
             pdb.set_trace()
 
@@ -367,10 +371,11 @@ class cmd_update_image(EC2Command):
 
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
-            extra_update_image_command, ami_name, credentials)
+            extra_update_image_command, extra_update_image_command_file,
+            ami_name, credentials)
 
-    def update_image(self, instance, extra_update_image_command, ami_name,
-                     credentials):
+    def update_image(self, instance, extra_update_image_command,
+                     extra_update_image_command_file, ami_name, credentials):
         """Bring the image up to date.
 
         The steps we take are:
@@ -390,6 +395,15 @@ class cmd_update_image(EC2Command):
         """
         user_connection = instance.connect_as_user()
         user_connection.perform('bzr launchpad-login %(launchpad-login)s')
+        if extra_update_image_command_file:
+            user_sftp = user_connection.ssh.open_sftp()
+            update_sh = user_sftp.open(
+                '/home/%(USER)s/update.sh' % instance._vals, 'w')
+            update_sh.write(open(extra_update_image_command_file).read())
+            update_sh.close()
+            user_sftp.close()
+            user_connection.run_with_ssh_agent(
+                '/bin/sh /home/%(USER)s/update.sh')
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
         user_connection.run_with_ssh_agent(
