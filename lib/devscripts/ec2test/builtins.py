@@ -335,6 +335,35 @@ class cmd_demo(EC2Command):
             "\n\n")
 
 
+update_from_scratch = """
+set -xe
+
+sudo sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
+
+sudo sh -c 'cat >> /etc/apt/sources.list' << EOF
+deb http://ppa.launchpad.net/launchpad/ubuntu hardy main
+deb http://ppa.launchpad.net/bzr/ubuntu hardy main
+deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu hardy main
+EOF
+
+sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 2af499cb24ac5f65461405572d1ffb6c0a5174af
+sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com ece2800bacf028b31ee3657cd702bf6b8c6c1efd
+sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com cbede690576d1e4e813f6bb3ebaf723d37b19b80
+
+sudo aptitude update
+sudo aptitude -y full-upgrade
+
+sudo apt-get -y install launchpad-developer-dependencies apache2
+
+sudo mkdir /var/launchpad
+
+sudo chown -R ubuntu:ubuntu /var/www /var/launchpad
+
+bzr init-repo --2a /var/launchpad
+bzr branch lp:~launchpad-pqm/launchpad/devel /var/launchpad/test
+mkdir /var/launchpad/sourcecode
+/var/launchpad/test/utilities/update-sourcecode /var/launchpad/sourcecode
+"""
 
 class cmd_update_image(EC2Command):
     """Make a new AMI."""
@@ -350,7 +379,7 @@ class cmd_update_image(EC2Command):
                   'running the default update steps.  Can be passed more than '
                   'once, the commands will be run in the order specified.')),
         Option(
-            'extra-update-image-command-file', type=str,
+            'from-scratch',
             help=('XXX')),
         ]
 
@@ -358,7 +387,7 @@ class cmd_update_image(EC2Command):
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=[],
-            extra_update_image_command_file=None):
+            from_scratch=False):
         if debug:
             pdb.set_trace()
 
@@ -371,11 +400,11 @@ class cmd_update_image(EC2Command):
 
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
-            extra_update_image_command, extra_update_image_command_file,
+            extra_update_image_command, from_scratch,
             ami_name, credentials)
 
     def update_image(self, instance, extra_update_image_command,
-                     extra_update_image_command_file, ami_name, credentials):
+                     from_scratch, ami_name, credentials):
         """Bring the image up to date.
 
         The steps we take are:
@@ -393,17 +422,17 @@ class cmd_update_image(EC2Command):
         :param ami_name: The name to give the created AMI.
         :param credentials: An `EC2Credentials` object.
         """
-        user_connection = instance.connect_as_user()
-        user_connection.perform('bzr launchpad-login %(launchpad-login)s')
-        if extra_update_image_command_file:
+        user_connection = instance.connect()
+        if from_scratch:
             user_sftp = user_connection.ssh.open_sftp()
-            update_sh = user_sftp.open(
-                '/home/%(USER)s/update.sh' % instance._vals, 'w')
-            update_sh.write(open(extra_update_image_command_file).read())
+            update_sh = user_sftp.open('/home/ubuntu/update.sh', 'w')
+            update_sh.write(update_from_scratch)
             update_sh.close()
             user_sftp.close()
             user_connection.run_with_ssh_agent(
-                '/bin/sh /home/%(USER)s/update.sh')
+                '/bin/sh /home/ubuntu/update.sh')
+            user_connection.perform('rm /home/ubuntu/update.sh')
+        user_connection.perform('bzr launchpad-login %(launchpad-login)s')
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
         user_connection.run_with_ssh_agent(
@@ -414,10 +443,6 @@ class cmd_update_image(EC2Command):
             "/var/launchpad/test/utilities/update-sourcecode "
             "/var/launchpad/sourcecode")
         user_connection.close()
-        root_connection = instance.connect_as_root()
-        root_connection.perform(
-            'deluser --remove-home %(USER)s', ignore_failure=True)
-        root_connection.close()
         instance.bundle(ami_name, credentials)
 
 

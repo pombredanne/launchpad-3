@@ -197,16 +197,15 @@ class EC2Instance:
         """Set up an account named after the local user."""
         ubuntu_connection = self.connect()
         # Update the system.
-        ubuntu_connection.perform('sudo aptitude update')
-        ubuntu_connection.perform('sudo aptitude -y full-upgrade')
+        #ubuntu_connection.perform('sudo aptitude update')
+        #ubuntu_connection.perform('sudo aptitude -y full-upgrade')
         # Set up ssh for user
         # Make user's .ssh directory
-        remote_ssh_dir = '/home/ubuntu/.ssh'
         ubuntu_sftp = ubuntu_connection.ssh.open_sftp()
         # create authorized_keys
-        self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
+        self.log('Setting up /home/ubuntu/.ssh/authorized_keys\n')
         authorized_keys_file = ubuntu_sftp.open(
-            "/home/ubuntu/.ssh/authorized_keys" % remote_ssh_dir, 'a')
+            "/home/ubuntu/.ssh/authorized_keys", 'a')
         authorized_keys_file.write(
             "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
         authorized_keys_file.close()
@@ -233,8 +232,8 @@ class EC2Instance:
         user_key = get_user_key()
         self.start()
         try:
-            self.set_up_user(user_key)
             try:
+                self.set_up_user(user_key)
                 return func(*args, **kw)
             except Exception:
                 # When running in postmortem mode, it is really helpful to see if
@@ -441,7 +440,7 @@ class EC2InstanceConnection:
         """
         cmd = cmd % self.instance._vals
         self.instance.log('%s@%s$ %s\n' % (self.username, self.instance._boto_instance.id, cmd))
-        call = ['ssh', '-A', self.instance.hostname,
+        call = ['ssh', '-A', 'ubuntu@' + self.instance.hostname,
                '-o', 'CheckHostIP no',
                '-o', 'StrictHostKeyChecking no',
                '-o', 'UserKnownHostsFile ~/.ec2/known_hosts',
