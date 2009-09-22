@@ -25,6 +25,10 @@
                 tal:define="lp_js string:${icingroot}/build"
                 tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
         </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/comment.js">
+        </script>
       </tal:devmode>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
