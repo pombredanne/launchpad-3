@@ -27,7 +27,7 @@ Carlos.
     >>> browser.open("http://blueprints.launchpad.dev/firefox/+spec/e4x/+subscribe")
     >>> print browser.title
     Subscribe to blueprint : Support E4X in EcmaScript :
-    Blueprints for Mozilla Firefox : Mozilla Firefox
+    Blueprints : Mozilla Firefox
 
 The page links back to the blueprint page, in case we change our minds.
 
@@ -66,7 +66,7 @@ link to modify the subscription. It should currently be checked.
     >>> submod_link.click()
     >>> print browser.title
     Modify subscription : Support E4X in EcmaScript :
-    Blueprints for Mozilla Firefox : Mozilla Firefox
+    Blueprints : Mozilla Firefox
 
     >>> essential = browser.getControl('essential')
     >>> essential.selected
