@@ -10,6 +10,8 @@ __all__ = [
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackageView',
+    'DistributionSourcePackageChangelogView',
+    'DistributionSourcePackagePublishingHistoryView',
     ]
 
 from datetime import datetime
@@ -39,8 +41,9 @@ from lp.answers.browser.questiontarget import (
 from canonical.launchpad.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, Link,
-    Navigation, StandardLaunchpadFacets, action, canonical_url, redirection)
+    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    redirection)
 from canonical.launchpad.webapp.menu import (
     enabled_with_permission, NavigationMenu)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -165,7 +168,32 @@ class DistributionSourcePackageActionMenu(
         return Link('+changelog', text, icon="info")
 
 
-class DistributionSourcePackageView(LaunchpadFormView):
+class DistributionSourcePackageBaseView:
+    """Common features to all `DistributionSourcePackage` views."""
+
+    def releases(self):
+        dspr_pubs = self.context.getReleasesAndPublishingHistory()
+
+        # Return as early as possible to avoid unnecessary processing.
+        if len(dspr_pubs) == 0:
+            return []
+
+        # Collate diffs for relevant SourcePackageReleases
+        sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
+        spr_diffs = {}
+        for spr, diffs in itertools.groupby(pkg_diffs,
+                                            operator.attrgetter('to_source')):
+            spr_diffs[spr] = list(diffs)
+
+        return [
+            DecoratedDistributionSourcePackageRelease(
+                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
+            for (dspr, spphs) in dspr_pubs]
+
+
+class DistributionSourcePackageView(DistributionSourcePackageBaseView,
+                                    LaunchpadFormView):
     """View class for DistributionSourcePackage."""
     implements(IDistributionSourcePackageActionMenu)
 
@@ -448,30 +476,31 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
         return rows
 
-    def releases(self):
-        dspr_pubs = self.context.getReleasesAndPublishingHistory()
-
-        # Return as early as possible to avoid unnecessary processing.
-        if len(dspr_pubs) == 0:
-            return []
-
-        # Collate diffs for relevant SourcePackageReleases
-        sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
-        spr_diffs = {}
-        for spr, diffs in itertools.groupby(pkg_diffs,
-                                            operator.attrgetter('to_source')):
-            spr_diffs[spr] = list(diffs)
-
-        return [
-            DecoratedDistributionSourcePackageRelease(
-                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
-            for (dspr, spphs) in dspr_pubs]
-
     @cachedproperty
     def open_questions(self):
         """Return result set containing open questions for this package."""
         return self.context.searchQuestions(status=QuestionStatus.OPEN)
+
+
+class DistributionSourcePackageChangelogView(
+    DistributionSourcePackageBaseView, LaunchpadView):
+    """View for presenting changelogs for a `DistributionSourcePackage`."""
+
+    page_title = 'Changelog'
+
+    @property
+    def label(self):
+        return 'Changelog for %s' % self.context.title
+
+
+class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
+    """View for presenting `DistributionSourcePackage` publishing history."""
+
+    page_title = 'Publishing history'
+
+    @property
+    def label(self):
+        return 'Publishing history of %s' % self.context.title
 
 
 class DistributionSourcePackageEditView(LaunchpadEditFormView):
