@@ -29,7 +29,7 @@
     </dl>
   </div>
 
-  <div condition="context/branch_type/enumvalue:MIRRORED">
+  <div tal:condition="context/branch_type/enumvalue:MIRRORED">
     <div>
       <dl id="mirror-location"
           tal:condition="view/mirror_location">
