@@ -40,7 +40,7 @@
         use-macro="template/macros/ppa-upload-hint-portlet" />
     </tal:ppa-upload-hint>
 
-    <div class="yui-gc">
+    <div class="yui-gc" tal:omit-tag="context/is_copy">
 
       <div class="yui-u first">
         <tal:ppa-install condition="context/is_ppa">
@@ -57,14 +57,11 @@
         <metal:ppa-statistics-portlet
           use-macro="template/macros/ppa-statistics-portlet" />
       </div>
-
-      <metal:ppa-simplified-packages-portlet
-        use-macro="template/macros/ppa-simplified-packages-portlet" />
-
     </div><!-- yui-gc -->
 
-
-  </tal:main>
+    <metal:ppa-simplified-packages-portlet
+      use-macro="template/macros/ppa-simplified-packages-portlet" />
+ </tal:main>
 
   <tal:side metal:fill-slot="side">
     <tal:menu replace="structure view/@@+global-actions" />
