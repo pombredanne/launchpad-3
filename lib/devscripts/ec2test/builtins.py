@@ -383,13 +383,16 @@ class cmd_update_image(EC2Command):
         Option(
             'from-scratch',
             help=('XXX')),
+        Option(
+            'root-login',
+            help=('XXX')),
         ]
 
     takes_args = ['ami_name']
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=[],
-            from_scratch=False):
+            from_scratch=False, root_login=False):
         if debug:
             pdb.set_trace()
 
@@ -403,7 +406,7 @@ class cmd_update_image(EC2Command):
         instance.set_up_and_run(
             dict(postmortem=postmortem, set_up_user=True),
             self.update_image, instance, extra_update_image_command,
-            from_scratch, False, ami_name, credentials)
+            from_scratch, root_login, ami_name, credentials)
 
     def add_ubuntu_user(self, instance):
         root_connection = instance.connect('root')
