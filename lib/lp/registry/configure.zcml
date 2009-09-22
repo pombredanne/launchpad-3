@@ -351,6 +351,9 @@
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+
+        <allow
             attributes="
                 distribution
                 development_version
@@ -403,9 +406,6 @@
                 addBugSubscription
                 removeBugSubscription
                 createBug"/>
-
-        <allow
-            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
 
         <!-- IQuestionTarget -->
 

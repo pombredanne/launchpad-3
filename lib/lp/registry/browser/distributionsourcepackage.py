@@ -36,6 +36,8 @@ from lp.registry.interfaces.product import IDistributionSourcePackage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.answers.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from lp.translations.browser.customlanguagecode import (
+    HasCustomLanguageCodesTraversalMixin)
 from canonical.launchpad.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
@@ -112,7 +114,8 @@ class DistributionSourcePackageBugsMenu(
 
 
 class DistributionSourcePackageNavigation(Navigation,
-    BugTargetTraversalMixin, QuestionTargetTraversalMixin,
+    BugTargetTraversalMixin, HasCustomLanguageCodesTraversalMixin,
+    QuestionTargetTraversalMixin,
     StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage

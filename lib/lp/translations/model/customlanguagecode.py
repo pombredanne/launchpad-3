@@ -79,7 +79,7 @@ class HasCustomLanguageCodesMixin:
         """
         match = self.composeCustomLanguageCodeMatch()
         store = IStore(CustomLanguageCode)
-        if language_code:
+        if language_code is not None:
             match = And(
                 match, CustomLanguageCode.language_code == language_code)
         return store.find(CustomLanguageCode, match)

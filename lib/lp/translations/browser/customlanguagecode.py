@@ -8,6 +8,7 @@ __all__ = [
     'CustomLanguageCodeIndexView',
     'CustomLanguageCodeRemoveView',
     'HasCustomLanguageCodesNavigation',
+    'HasCustomLanguageCodesTraversalMixin',
 	]
 
 
@@ -135,22 +136,19 @@ class CustomLanguageCodeRemoveView(LaunchpadFormView):
         return self.next_url
 
 
-class HasCustomLanguageCodesNavigation(Navigation):
+class HasCustomLanguageCodesTraversalMixin:
     """Navigate from an `IHasCustomLanguageCodes` to a `CustomLanguageCode`.
     """
-    usedfor = IHasCustomLanguageCodes
-
     @stepthrough('+customcode')
     def traverseCustomCode(self, name):
-        return self._lookUpCode(name)
-
-    def _lookUpCode(self, code):
-        """See `Navigation`."""
-        if not check_code(code):
+        """Traverse +customcode URLs."""
+        if not check_code(name):
             raise UnexpectedFormData("Invalid custom language code.")
 
-        return self.context.getCustomLanguageCode(code)
+        return self.context.getCustomLanguageCode(name)
 
-    @property
-    def text(self):
-        return self.context.code
+
+class HasCustomLanguageCodesNavigation(Navigation,
+                                       HasCustomLanguageCodesTraversalMixin):
+    """Generic navigation for `IHasCustomLanguageCodes`."""
+    usedfor = IHasCustomLanguageCodes

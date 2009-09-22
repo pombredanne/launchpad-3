@@ -979,13 +979,13 @@
             HasCustomLanguageCodesNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
-        name="+index"
+        name="+remove"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:url
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
         path_expression="string:+customcode/${language_code}"
         attribute_to_parent="translation_target"
-        rootsite="translations"/>
+        />
     <browser:page
         name="+remove"
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
