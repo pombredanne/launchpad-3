@@ -30,26 +30,30 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from lp.registry.browser.branding import BrandingChangeView
+from canonical.launchpad import _
+from canonical.launchpad.browser import Hierarchy
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp import (
+    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation, NavigationMenu,
+    StandardLaunchpadFacets, action, canonical_url, custom_widget,
+    enabled_with_permission)
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.lazr.utils import smartquote
+from canonical.widgets.date import DateTimeWidget
+
+from lp.app.interfaces.headings import IMajorHeadingView
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
     SpecificationSort)
 from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
+from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission)
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.helpers import shortlist
-from canonical.widgets.date import DateTimeWidget
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -69,7 +73,8 @@ class SprintNavigation(Navigation):
     usedfor = ISprint
 
 
-class SprintOverviewMenu(ApplicationMenu):
+class SprintOverviewMenu(NavigationMenu):
+    """Defines a menu used for the global actions."""
 
     usedfor = ISprint
     facet = 'overview'
@@ -154,6 +159,8 @@ class SprintView(HasSpecificationsView, LaunchpadView):
 
     __used_for__ = ISprint
 
+    implements(IMajorHeadingView)
+
     def initialize(self):
         self.notices = []
         self.latest_specs_limit = 5
@@ -200,7 +207,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
         dt = dt.astimezone(self.tzinfo)
         return dt.strftime('%Y-%m-%d')
 
-    _local_timeformat = '%H:%M on %A, %Y-%m-%d'
+    _local_timeformat = '%H:%M %Z on %A, %Y-%m-%d'
     @property
     def local_start(self):
         """The sprint start time, in the local time zone, as text."""
@@ -270,6 +277,10 @@ class SprintAddView(LaunchpadFormView):
         assert self.sprint is not None, 'No sprint has been created'
         return canonical_url(self.sprint)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(ISprintSet))
+
 
 class SprintBrandingView(BrandingChangeView):
 
@@ -284,6 +295,7 @@ class SprintEditView(LaunchpadEditFormView):
 
     schema = ISprint
     label = "Edit sprint details"
+
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
                    'time_zone', 'time_starts', 'time_ends', 'address',
                    ]
@@ -321,13 +333,23 @@ class SprintEditView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     """Custom view class to process the results of this unusual page.
 
     It is unusual because we want to display multiple objects with
     checkboxes, then process the selected items, which is not the usual
-    add/edit metaphor."""
+    add/edit metaphor.
+    """
+
+    @property
+    def label(self):
+        return smartquote(
+            'Review discussion topics for "%s" sprint' % self.context.title)
 
     def initialize(self):
         self.status_message = None

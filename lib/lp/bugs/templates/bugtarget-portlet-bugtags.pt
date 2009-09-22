@@ -20,8 +20,13 @@
         function on_success(transactionid, response, arguments) {
           hide_spinner();
           var portlet = Y.get('#portlet-tags');
-          portlet.set('innerHTML',
-                      response.responseText + portlet.get('innerHTML'));
+          if (Y.Lang.trim(response.responseText).length == 0) {
+            portlet.setStyle('display', 'none')
+          }
+          else {
+            portlet.set('innerHTML',
+                        response.responseText + portlet.get('innerHTML'));
+          }
         }
 
         var config = {on: {success: on_success,
@@ -31,11 +36,12 @@
       });
     });
   </script>
-
-  <p tal:condition="view/show_manage_tags_link"
-     style="text-align:right">
-    <a tal:attributes="href context/fmt:url/+manage-official-tags">
-      Edit official tags <span class="sprite edit" />
-    </a>
-  </p>
+  <ul>
+    <li tal:condition="view/show_manage_tags_link">
+      <a class="sprite edit"
+         tal:attributes="href context/fmt:url/+manage-official-tags">
+        Edit official tags
+      </a>
+    </li>
+  </ul>
 </div>

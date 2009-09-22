@@ -423,13 +423,13 @@ class TranslationImportQueueNavigation(GetitemNavigation):
 
 
 class TranslationImportQueueView(HasTranslationImportsView):
-    """View class used for Translation Import Queue management."""
-    label = 'Translation files waiting to be imported.'
+    """The global Translation Import Queue."""
+
+    label = "Translation import queue"
 
     def initialize(self):
         """Useful initialization for this view class."""
-        self._initial_values = {}
-        LaunchpadFormView.initialize(self)
+        super(TranslationImportQueueView, self).initialize()
         target_filter = self.widgets['filter_target']
         if target_filter.hasInput() and not target_filter.hasValidInput():
             raise UnexpectedFormData("Unknown target.")

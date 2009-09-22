@@ -35,6 +35,11 @@
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         factory="lp.blueprints.browser.sprint.SprintSetBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.blueprints.interfaces.specification.ISpecification"
+        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+        permission="zope.Public"/>
 
     <!-- This is a view used to export data needed by the sprint scheduler.
                          As there are no API stability guarantees, the view name starts

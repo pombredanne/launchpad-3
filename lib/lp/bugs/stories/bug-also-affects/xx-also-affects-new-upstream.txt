@@ -30,8 +30,8 @@ for the user to use as the affected upstream.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/tomcat/+bug/2/+affects-new-product')
-    >>> user_browser.title
-    'Bug #2 - Record as affecting another project'
+    >>> print user_browser.title
+    Register project affected by...
     >>> user_browser.getControl('Bug URL').value = (
     ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=421')
     >>> user_browser.getControl('Project name').value = 'The Bar Project'
@@ -39,8 +39,8 @@ for the user to use as the affected upstream.
     >>> user_browser.getControl('Project summary').value = 'The Bar Project'
     >>> user_browser.getControl('Continue').click()
 
-    >>> user_browser.title
-    'Bug #2 - Record as affecting another project'
+    >>> print user_browser.title
+    Register project affected by...
 
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
     There are some projects using the bug tracker you specified. One of
@@ -73,8 +73,8 @@ this bug.
 
     >>> user_browser.goBack()
     >>> user_browser.getControl('Use Existing Project').click()
-    >>> user_browser.title
-    'Bug #2 - Record as affecting another project' 
+    >>> print user_browser.title
+    Register project affected by...
     >>> print get_feedback_messages(user_browser.contents)[-1]
     A fix for this bug has already been requested for The Foo Project
 
@@ -104,8 +104,8 @@ user and ask him to check if it's correct.
     >>> user_browser.getControl('Project ID').value = 'bazfoo'
     >>> user_browser.getControl('Project summary').value = 'The Foo Project'
     >>> user_browser.getControl('Continue').click()
-    >>> user_browser.title
-    'Bug #1 - Record as affecting another project'
+    >>> print user_browser.title
+    Register project affected by...
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
     There is 1 error.
     Launchpad does not recognize the bug tracker at this URL.

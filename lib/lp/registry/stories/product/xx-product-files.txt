@@ -91,8 +91,9 @@ A project owner should not see the delete button when there are no files.
     >>> tbird_owner = setupBrowser(
     ...     auth='Basic foo.bar@canonical.com:test')
     >>> tbird_owner.open('http://launchpad.dev/thunderbird/+download')
-    >>> tbird_owner.title
-    'Mozilla Thunderbird project files'
+    >>> print tbird_owner.title
+    Mozilla Thunderbird project files...
+
     >>> main_content = find_main_content(tbird_owner.contents)
     >>> print extract_text(main_content)
     Download project files
@@ -176,9 +177,8 @@ To add a download file the release version link is used.
 
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> firefox_owner.getLink('1.0.0').click()
-    >>> title = firefox_owner.title.decode('UTF-8')
-    >>> print title.encode('us-ascii', 'backslashreplace')
-    Add a download file to Mozilla Firefox 1.0.0 \u201cFirst Stable Release\u201d
+    >>> print firefox_owner.title
+    Add a download file to Mozilla Firefox...
 
 Ensure a non-owner doesn't see the 'Add download file' link after
 navigating to the product release page.
@@ -484,7 +484,7 @@ to reset it when we're done.
 
     >>> from canonical.config import config
     >>> use_https_true_data = """
-    ...     [vhosts]
+    ...     [librarian]
     ...     use_https: True
     ...     """
     >>> config.push('use_https_true_data', use_https_true_data)

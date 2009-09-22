@@ -12,7 +12,7 @@ First make sure it uses Launchpad for translations.
 
     >>> netapplet_owner_browser.getLink('Change details').click()
     >>> print netapplet_owner_browser.title
-    Change Network Applet's details
+    Change Network Applet's details...
 
     >>> netapplet_owner_browser.getControl(
     ...     'Translations for this project are done in Launchpad'
@@ -30,23 +30,22 @@ can see that from the translations page.
 
     >>> netapplet_owner_browser.getLink('Translations').click()
     >>> print netapplet_owner_browser.title
-    Translations of Network Applet in Launchpad
+    Translations : NetApplet
 
     >>> print extract_text(
     ...     find_tag_by_id(netapplet_owner_browser.contents,
     ...                    'translation-permissions'))
     NetApplet (Unspecified) is translated with Open permissions.
-    You can modify permissions on the Settings page.
 
 Now let's make sure we can see the page to let us change translation
 group and permissions.
 
     >>> translations_page_url = netapplet_owner_browser.url
-    >>> netapplet_owner_browser.getLink('Settings').click()
+    >>> netapplet_owner_browser.getLink('Change permissions').click()
     >>> change_translators_url = netapplet_owner_browser.url
 
     >>> print netapplet_owner_browser.title
-    Set translation permissions for NetApplet
+    Permissions and policies...
 
     >>> print netapplet_owner_browser.getControl(
     ...     'Translation group').displayOptions
@@ -57,11 +56,11 @@ group and permissions.
     ...     'Translation group').displayValue
     ['(no value)']
 
-Ordinary users cannot see the "Settings" link or the page it
+Ordinary users cannot see the "Change permissions" link or the page it
 leads to.
 
     >>> user_browser.open(translations_page_url)
-    >>> user_browser.getLink('Settings').click()
+    >>> user_browser.getLink('Change permissions').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -78,7 +77,7 @@ Now let's post to the form. We should be redirected to the product page.
     ...         'The PolyGlot Translation Group']
     >>> netapplet_owner_browser.getControl('Change').click()
     >>> print netapplet_owner_browser.title
-    Translations of Network Applet in Launchpad
+    Translations : NetApplet
 
 Now these changes show up in the product page. (XXX mpt 20070126:
 Launchpad should be fixed so that you can't set translation

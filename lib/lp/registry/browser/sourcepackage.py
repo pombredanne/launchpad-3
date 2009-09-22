@@ -9,7 +9,9 @@ __all__ = [
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
+    'SourcePackageHelpView',
     'SourcePackageNavigation',
+    'SourcePackagePackaging',
     'SourcePackageView',
     ]
 
@@ -70,7 +72,7 @@ class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     @property
     def text(self):
-        return smartquote('"%s" package') % (self.context.name)
+        return smartquote('"%s" source package') % (self.context.name)
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -155,6 +157,12 @@ class SourcePackageView:
         self.status_message = None
         self.error_message = None
         self.processForm()
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return smartquote('"%s" source package in %s') % (
+            self.context.name, self.context.distroseries.title)
 
     @property
     def cancel_url(self):
@@ -245,3 +253,15 @@ class SourcePackageView:
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
+
+
+class SourcePackagePackaging(SourcePackageView):
+    """A View to show where the package is packged."""
+
+    page_title = 'Upstream links'
+
+
+class SourcePackageHelpView:
+    """A View to show Answers help."""
+
+    page_title = 'Help and support options'

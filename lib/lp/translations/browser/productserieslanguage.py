@@ -5,17 +5,24 @@
 
 __metaclass__ = type
 
-__all__ = ['ProductSeriesLanguageView']
+__all__ = [
+    'ProductSeriesLanguageNavigation',
+    'ProductSeriesLanguageView',
+    ]
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.publisher import Navigation
+from lp.translations.interfaces.productserieslanguage import (
+    IProductSeriesLanguage)
 
 
 class ProductSeriesLanguageView(LaunchpadView):
     """View class to render translation status for an `IProductSeries`."""
 
     pofiles = None
+    label = "Translatable templates"
 
     def initialize(self):
         self.form = self.request.form
@@ -24,8 +31,11 @@ class ProductSeriesLanguageView(LaunchpadView):
             self.context.productseries.getCurrentTranslationTemplates(),
             self.request)
 
+        self.context.recalculateCounts()
+
         self.pofiles = self.context.getPOFilesFor(
             self.batchnav.currentBatch())
+        self.parent = self.context.productseries.product
 
     @cachedproperty
     def translation_group(self):
@@ -40,3 +50,8 @@ class ProductSeriesLanguageView(LaunchpadView):
         else:
             team = None
         return team
+
+
+class ProductSeriesLanguageNavigation(Navigation):
+    """Navigation for `IProductSeriesLanguage`."""
+    usedfor = IProductSeriesLanguage

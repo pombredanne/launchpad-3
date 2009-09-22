@@ -16,7 +16,7 @@ they want to subscribe by clicking on the 'Subscribe' button.
     '.../+question/2/+subscribe'
     >>> link.click()
     >>> print user_browser.title
-    Subscription to question #2
+    Subscription to question...
     >>> user_browser.getControl('Subscribe').click()
 
 A message confirming that he was subscribed is displayed and the user
@@ -97,4 +97,3 @@ doesn't appear on the page:
     Traceback (most recent call last):
       ...
     LookupError: ...
-

@@ -111,6 +111,10 @@ class NewSpecificationView(LaunchpadFormView):
         # Set the default value for the next URL.
         self._next_url = canonical_url(spec)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
     def transform(self, data):
         """Transforms the given form data.
 
@@ -281,7 +285,7 @@ class SpecificationContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit title and summary'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     def givefeedback(self):
@@ -459,6 +463,14 @@ class SpecificationView(SpecificationSimpleView):
 
     __used_for__ = ISpecification
 
+    @property
+    def label(self):
+        return self.context.title
+
+    @property
+    def page_title(self):
+        return self.label
+
     def initialize(self):
         # The review that the user requested on this spec, if any.
         self.notices = []
@@ -568,6 +580,10 @@ class SpecificationGoalProposeView(LaunchpadEditFormView):
             self.context, data['distroseries'], self.user)
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
     label = 'Target to a product series'
@@ -579,6 +595,10 @@ class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
         propose_goal_with_automatic_approval(
             self.context, data['productseries'], self.user)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 def propose_goal_with_automatic_approval(specification, series, user):
@@ -664,6 +684,10 @@ class SpecificationRetargetingView(LaunchpadFormView):
     def next_url(self):
         return self._nextURL
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SupersededByWidget(DropdownWidget):
     """Custom select widget for specification superseding.
@@ -732,6 +756,10 @@ class SpecificationSupersedingView(LaunchpadFormView):
             self.request.response.addNotification(
                 'Specification is now considered "%s".' % newstate.title)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class SpecGraph:
@@ -922,6 +950,10 @@ class SpecificationSprintAddView(LaunchpadFormView):
     def continue_action(self, action, data):
         self.context.linkSprint(data["sprint"], self.user)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class SpecGraphNode:
@@ -1160,17 +1192,19 @@ class SpecificationLinkBranchView(LaunchpadFormView):
         self.context.linkBranch(branch=data['branch'],
                                 registrant=self.user)
 
-    @action(_('Cancel'), name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the blueprint page."""
-
     @property
     def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
         return canonical_url(self.context)
 
 
 class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     """View for the Blueprints index page."""
+
+    label = 'Blueprints'
 
     @safe_action
     @action('Find blueprints', name="search")

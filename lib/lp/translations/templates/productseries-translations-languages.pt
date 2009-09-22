@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-      <table class="sortable listing" style="width:auto;" id="languagestats">
+      <table class="sortable listing" style="width:100%;" id="languagestats">
         <thead>
           <tr>
             <th>Language</th>

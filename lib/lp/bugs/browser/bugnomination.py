@@ -239,6 +239,11 @@ class BugNominationEditView(LaunchpadView):
         """Return the URL of the current bugtask."""
         return canonical_url(getUtility(ILaunchBag).bugtask)
 
+    @property
+    def title(self):
+        return 'Approve or decline nomination for bug #%d in %s' % (
+            self.context.bug.id, self.context.target.bugtargetdisplayname)
+
 
 class BugNominationContextMenu(BugContextMenu):
     usedfor = IBugNomination

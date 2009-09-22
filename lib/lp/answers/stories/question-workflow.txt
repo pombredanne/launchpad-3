@@ -44,7 +44,7 @@ information will be required.
 No Privileges Person visits the question. He see the heading
 'Can you help with this problem?'. The problem is not clear, he
 needs more information. To request for more information from the
-question owner, No Privileges Person enters his question in the 
+question owner, No Privileges Person enters his question in the
 'Message' field and clicks on the 'Add Information Request' button.
 
     >>> support_browser.open(
@@ -276,7 +276,7 @@ has to enter his solution in the 'Message' box and click the
     >>> owner_browser.getControl("Problem Solved").click()
 
 This appends the message to the question and sets its status to
-'Solved', and the answerer as the owner. We do not however mark a 
+'Solved', and the answerer as the owner. We do not however mark a
 message as the "Best answer".
 
     >>> find_request_status(owner_browser.contents)
@@ -293,7 +293,7 @@ the question owner to solve the his problem.
 
     >>> for message in soup.findAll('div', 'informational message'):
     ...     print extract_text(message)
-    Your question is solved. If a particular message helped you solve the 
+    Your question is solved. If a particular message helped you solve the
     problem, use the 'This solved my problem' button.
 
 If the user chooses a best answer, the author of that answer
@@ -317,7 +317,7 @@ The answer's message is also highlighted as the best answer.
     >>> print extract_text(message)
     New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.
-    
+
 
 = History =
 
@@ -327,7 +327,7 @@ The history of the question is available on the 'History' page.
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> anon_browser.getLink('History').click()
     >>> print anon_browser.title
-    History of question #2
+    History of question #2...
 
 It lists all the actions performed through workflow on the question:
 
@@ -364,7 +364,7 @@ not see a notification to choose a 'This solved my problem' button.
 Carlos has an open question that no one has submitted an answer for.
 He is able to solve the problem on his own, and submits the solution
 for other users with similar problems. He does not see a notice about
-choosing an answer that helped him solve his problem. 
+choosing an answer that helped him solve his problem.
 
     >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> carlos_browser.open('http://launchpad.dev/firefox/+question/12')
@@ -400,19 +400,19 @@ the Firefox question. The solution does not work, but he thinks he has
 a similar problem so he asks his own question.
 
     >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
- 
+
     >>> content = find_main_content(user_browser.contents)
     >>> print content.find(id='can-you-help-with-this-problem')
     None
- 
+
     >>> print content.find(id='ask-your-own-question').h2.renderContents()
     Got a question of your own?
-    
+
     >>> user_browser.getLink('ask your own question separately').click()
     >>> print user_browser.title
-    Ask a question about Mozilla Firefox
+    Ask a question about...
 
-The 'Got a question of your own?' section in not relevant to the 
+The 'Got a question of your own?' section in not relevant to the
 question owner, so Sample person does not see it.
 
     >>> owner_browser.open('http://launchpad.dev/firefox/+question/2')

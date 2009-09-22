@@ -37,7 +37,6 @@
     </script>
     </metal:block>
     <div metal:fill-slot="main">
-      <h1>Download translation</h1>
       <div class="main-portlet">
         <p>
           Choose the format you want to export

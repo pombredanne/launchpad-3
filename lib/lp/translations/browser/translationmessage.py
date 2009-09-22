@@ -226,6 +226,15 @@ class BaseTranslationView(LaunchpadView):
     # over just two or three.
     MAX_PLURAL_FORMS = 100
 
+    @property
+    def label(self):
+        """The label will be used as the main page heading."""
+        if self.form_is_writeable:
+            form_label = 'Translating into %s'
+        else:
+            form_label = 'Browsing %s translation'
+        return form_label % self.context.language.englishname
+
     def initialize(self):
         assert self.pofile, "Child class must define self.pofile"
 
