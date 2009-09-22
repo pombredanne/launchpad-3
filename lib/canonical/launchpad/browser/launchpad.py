@@ -36,10 +36,12 @@ import time
 import urllib
 from datetime import timedelta, datetime
 
+from zope import i18n
 from zope.app import zapi
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
+from zope.i18nmessageid import Message
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
@@ -284,6 +286,8 @@ class Hierarchy(LaunchpadView):
                 template_api = PageTemplateContextsAPI(
                     dict(context=obj, template=template, view=view))
                 title = template_api.pagetitle()
+            if isinstance(title, Message):
+                title = i18n.translate(title, context=self.request)
             breadcrumb = Breadcrumb(None)
             breadcrumb._url = url
             breadcrumb.text = title

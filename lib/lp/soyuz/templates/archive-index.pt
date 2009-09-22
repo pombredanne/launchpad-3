@@ -35,13 +35,15 @@
         />
     </div>
 
-    <metal:ppa-install
-      use-macro="template/macros/ppa-upload-hint-portlet" />
+    <tal:ppa-upload-hint condition="context/is_ppa">
+      <metal:ppa-upload-hint
+        use-macro="template/macros/ppa-upload-hint-portlet" />
+    </tal:ppa-upload-hint>
 
     <div class="yui-gc" tal:omit-tag="context/is_copy">
 
       <div class="yui-u first">
-        <tal:ppa-install tal:condition="context/is_ppa">
+        <tal:ppa-install condition="context/is_ppa">
           <metal:ppa-install
             use-macro="template/macros/ppa-install-portlet" />
         </tal:ppa-install>
