@@ -197,8 +197,8 @@ class QuestionSetView(LaunchpadFormView):
     schema = IAnswersFrontPageSearchForm
     custom_widget('scope', ProjectScopeWidget)
 
-    page_title = 'Questions and Answers'
-    label = page_title
+    page_title = 'Launchpad Answers'
+    label = 'Questions and Answers'
 
     @property
     def scope_css_class(self):
