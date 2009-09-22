@@ -347,9 +347,9 @@ deb http://ppa.launchpad.net/bzr/ubuntu hardy main
 deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu hardy main
 EOF
 
-sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 2af499cb24ac5f65461405572d1ffb6c0a5174af
-sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com ece2800bacf028b31ee3657cd702bf6b8c6c1efd
-sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com cbede690576d1e4e813f6bb3ebaf723d37b19b80
+sudo apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
+sudo apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
+sudo apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
 
 sudo aptitude update
 sudo aptitude -y full-upgrade
@@ -391,13 +391,16 @@ class cmd_update_image(EC2Command):
         Option(
             'root-login',
             help=('XXX')),
+        Option(
+            'public',
+            help=('XXX')),
         ]
 
     takes_args = ['ami_name']
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=[],
-            from_scratch=False, root_login=False):
+            from_scratch=False, root_login=False, public=False):
         if debug:
             pdb.set_trace()
 
@@ -411,7 +414,7 @@ class cmd_update_image(EC2Command):
         instance.set_up_and_run(
             dict(postmortem=postmortem, set_up_user=False),
             self.update_image, instance, extra_update_image_command,
-            from_scratch, root_login, ami_name, credentials)
+            from_scratch, root_login, ami_name, credentials, public)
 
     def add_ubuntu_user(self, instance):
         root_connection = instance.connect('root')
@@ -431,7 +434,7 @@ class cmd_update_image(EC2Command):
         instance.set_up_user(get_user_key())
 
     def update_image(self, instance, extra_update_image_command,
-                     from_scratch, root_login, ami_name, credentials):
+                     from_scratch, root_login, ami_name, credentials, public):
         """Bring the image up to date.
 
         The steps we take are:
@@ -467,12 +470,16 @@ class cmd_update_image(EC2Command):
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
         user_connection.run_with_ssh_agent(
-            'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
+            'bzr pull -d /var/launchpad/test lp:~mwhudson/launchpad/no-more-devpad-ssh')
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
         user_connection.run_with_ssh_agent(
             "/var/launchpad/test/utilities/update-sourcecode "
             "/var/launchpad/sourcecode")
+        if public:
+            user_connection.perform(
+                'rm -rf /var/launchpad/sourcecode/shipit '
+                '/var/launchpad/sourcecode/canonical-identity-provider')
         user_connection.perform(
             'rm -rf /home/ubuntu/.ssh/known_hosts /home/ubuntu/.bazaar '
             '/home/ubuntu/.bzr.log')
