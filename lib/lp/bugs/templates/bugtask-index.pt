@@ -27,7 +27,7 @@
         </script>
         <script type="text/javascript"
                 tal:define="lp_js string:${icingroot}/build"
-                tal:attributes="src string:${lp_js}/comment.js">
+                tal:attributes="src string:${lp_js}/lp/comment.js">
         </script>
       </tal:devmode>
       <script type="text/javascript">
