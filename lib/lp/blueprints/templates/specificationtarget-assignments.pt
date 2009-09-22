@@ -3,11 +3,16 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
+
+<tal:side metal:fill-slot="side">
+  <tal:menu replace="structure context/@@+global-actions" />
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
+</tal:side>
 
 <div metal:fill-slot="main">
 
@@ -87,8 +92,6 @@
       </tbody>
     </table>
   </div>
-
-  <div class="portlet" tal:content="structure context/@@+portlet-latestspecs" />
 
 </div>
 </body>

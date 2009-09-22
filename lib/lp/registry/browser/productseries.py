@@ -39,6 +39,8 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationImplementationStatus)
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -247,7 +249,8 @@ class ProductSeriesBugsMenu(ApplicationMenu):
         return Link('+subscribe', 'Subscribe to bug mail')
 
 
-class ProductSeriesSpecificationsMenu(ApplicationMenu):
+class ProductSeriesSpecificationsMenu(NavigationMenu,
+                                      HasSpecificationsMenuMixin):
     """Specs menu for ProductSeries.
 
     This menu needs to keep track of whether we are showing all the
@@ -258,46 +261,7 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
-
-    def listall(self):
-        """Return a link to show all blueprints."""
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def listaccepted(self):
-        """Return a link to show the approved goals."""
-        text = 'List approved blueprints'
-        return Link('+specs?acceptance=accepted', text, icon='info')
-
-    def listproposed(self):
-        """Return a link to show the proposed goals."""
-        text = 'List proposed blueprints'
-        return Link('+specs?acceptance=proposed', text, icon='info')
-
-    def listdeclined(self):
-        """Return a link to show the declined goals."""
-        text = 'List declined blueprints'
-        summary = 'Show the goals which have been declined'
-        return Link('+specs?acceptance=declined', text, summary, icon='info')
-
-    def setgoals(self):
-        """Return a link to set the series goals."""
-        text = 'Set series goals'
-        summary = 'Approve or decline feature goals that have been proposed'
-        return Link('+setgoals', text, summary, icon='edit')
-
-    def table(self):
-        """Return a link to show the people assigned to the blueprint."""
-        text = 'Assignments'
-        summary = 'Show the assignee, drafter and approver of these specs'
-        return Link('+assignments', text, summary, icon='info')
-
-    def new(self):
-        """Return a link to register a blueprint."""
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = ['listall', 'assignments', 'setgoals', 'listdeclined', 'new']
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):
