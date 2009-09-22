@@ -264,7 +264,10 @@ class Hierarchy(LaunchpadView):
     def _naked_context_view(self):
         """Return the unproxied view for the context of the hierarchy."""
         from zope.security.proxy import removeSecurityProxy
-        return removeSecurityProxy(self.request.traversed_objects[-1])
+        if len(self.request.traversed_objects) > 0:
+            return removeSecurityProxy(self.request.traversed_objects[-1])
+        else:
+            return None
 
     def makeBreadcrumbForRequestedPage(self):
         """Return an `IBreadcrumb` for the requested page.
