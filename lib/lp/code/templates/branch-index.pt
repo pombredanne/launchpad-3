@@ -31,7 +31,6 @@
 <body>
 
 <metal:side fill-slot="side">
-  <div tal:replace="structure context/@@+global-actions" />
   <tal:public condition="not: context/private">
     <div id="privacy" class="portlet public">
       This branch is public
@@ -43,6 +42,7 @@
     </div>
   </tal:public>
 
+  <div tal:replace="structure context/@@+global-actions" />
   <tal:subscribers replace="structure context/@@+portlet-subscribers" />
 
 </metal:side>
