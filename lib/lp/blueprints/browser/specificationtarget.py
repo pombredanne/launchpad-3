@@ -116,7 +116,7 @@ class HasSpecificationsView(LaunchpadView):
         self.batchnav = BatchNavigator(
             self.specs, self.request,
             size=config.launchpad.default_batch_size)
-    
+
     def mdzCsv(self):
         """Quick hack for mdz, to get csv dump of specs."""
         import csv
@@ -320,7 +320,8 @@ class SpecificationAssignmentsView(HasSpecificationsView):
 
     @property
     def label(self):
-        return "Blueprint assignments for %s" % self.context.displayname
+        return smartquote(
+            'Blueprint assignments for" %s"' % self.context.displayname)
 
 
 class SpecificationDocumentationView(HasSpecificationsView):
