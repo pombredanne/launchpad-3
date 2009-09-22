@@ -321,7 +321,7 @@ class SpecificationAssignmentsView(HasSpecificationsView):
     @property
     def label(self):
         return smartquote(
-            'Blueprint assignments for" %s"' % self.context.displayname)
+            'Blueprint assignments for "%s"' % self.context.displayname)
 
 
 class SpecificationDocumentationView(HasSpecificationsView):
