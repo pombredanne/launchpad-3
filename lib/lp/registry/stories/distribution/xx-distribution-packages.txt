@@ -23,7 +23,6 @@ This page is used to search packages in a distribution context.
     pmount
     (Matching binaries: pmount.)
 
-
 Follow pmount source package path
 
     >>> browser.getLink('pmount').click()
@@ -61,7 +60,6 @@ Now run a search for mozilla-firefox and check that it is found:
     mozilla-firefox
     The Mozilla Firefox web browser
     (Matching binaries: mozilla-firefox, mozilla-firefox-data.)
-
 
 The search page will also present commercial packages:
 
@@ -377,10 +375,10 @@ the index page.
     >>> browser.getLink("View full change log").click()
 
     >>> print backslashreplace(browser.title)
-    Changelog : \u201cfoobar\u201d package : Ubuntu
+    Change log : \u201cfoobar\u201d package : Ubuntu
 
     >>> print_location(browser.contents)
-    Hierarchy: Ubuntu > ?foobar? package > Changelog
+    Hierarchy: Ubuntu > ?foobar? package > Change log
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/foobar
     * Code - http://code.launchpad.dev/ubuntu/+source/foobar
@@ -388,7 +386,7 @@ the index page.
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/foobar
-    Main heading: Changelog for ?foobar? package in Ubuntu
+    Main heading: Change log for ?foobar? package in Ubuntu
 
 Each version history entry has a header with the version as the title
 and details of the publishing status in each distroseries it's published

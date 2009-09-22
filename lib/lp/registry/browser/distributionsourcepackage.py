@@ -484,13 +484,13 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
 
 class DistributionSourcePackageChangelogView(
     DistributionSourcePackageBaseView, LaunchpadView):
-    """View for presenting changelogs for a `DistributionSourcePackage`."""
+    """View for presenting change logs for a `DistributionSourcePackage`."""
 
-    page_title = 'Changelog'
+    page_title = 'Change log'
 
     @property
     def label(self):
-        return 'Changelog for %s' % self.context.title
+        return 'Change log for %s' % self.context.title
 
 
 class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
