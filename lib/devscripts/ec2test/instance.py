@@ -342,7 +342,7 @@ class EC2Instance:
         ubuntu_connection.perform(' '.join([
             'sudo ec2-bundle-vol',
             '-d %s' % bundle_dir,
-            '-b',   # Set batch-mode, which doesn't use prompts.
+            '--batch',   # Set batch-mode, which doesn't use prompts.
             '-k %s' % remote_pk,
             '-c %s' % remote_cert,
             '-u %s' % self.aws_user,
