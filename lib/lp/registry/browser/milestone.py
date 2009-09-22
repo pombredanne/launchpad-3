@@ -155,6 +155,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         self.processDeleteFiles()
 
     @property
+    def should_show_bugs_and_blueprints(self):
+        """Display the summary of bugs/blueprints for this milestone?"""
+        return (not self.show_series_context) and self.milestone.active
+
+    @property
     def page_title(self):
         """Return the HTML page title."""
         return self.context.title
