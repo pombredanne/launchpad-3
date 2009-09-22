@@ -368,14 +368,14 @@ class EC2TestRunner:
 
 
     def configure_system(self):
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
         as_user = user_connection.perform
         user_sftp = user_connection.ssh.open_sftp()
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            as_user('mkdir /home/%(USER)s/.bazaar')
+            as_user('mkdir /home/ubuntu/.bazaar')
             bazaar_conf_file = user_sftp.open(
-                "/home/%(USER)s/.bazaar/bazaar.conf" % self.vals, 'w')
+                "/home/ubuntu/.bazaar/bazaar.conf" % self.vals, 'w')
             bazaar_conf_file.write(
                 'smtp_server = %(smtp_server)s\n' % self.vals)
             if self.vals['smtp_username']:
@@ -397,7 +397,7 @@ class EC2TestRunner:
         user_connection.close()
 
     def prepare_tests(self):
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
         # Clean up the test branch left in the instance image.
         user_connection.perform('rm -rf /var/launchpad/test')
         # Get trunk.
@@ -466,7 +466,7 @@ class EC2TestRunner:
         p('/var/launchpad/test/utilities/link-external-sourcecode '
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database
-        p('/var/launchpad/test/utilities/launchpad-database-setup %(USER)s')
+        p('/var/launchpad/test/utilities/launchpad-database-setup ubuntu')
         # close ssh connection
         user_connection.close()
 
@@ -474,7 +474,7 @@ class EC2TestRunner:
         """Turn ec2 instance into a demo server."""
         self.configure_system()
         self.prepare_tests()
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
         p = user_connection.perform
         p('make -C /var/launchpad/test schema')
         p('mkdir -p /var/tmp/bazaar.launchpad.dev/static')
@@ -508,7 +508,7 @@ class EC2TestRunner:
     def run_tests(self):
         self.configure_system()
         self.prepare_tests()
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
 
         # Make sure we activate the failsafe --shutdown feature.  This will
         # make the server shut itself down after the test run completes, or

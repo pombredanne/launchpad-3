@@ -169,22 +169,21 @@ class EC2Instance:
             return None
         return self._boto_instance.public_dns_name
 
-    def _connect(self, user, use_agent):
+    def connect(self):
         """Connect to the instance as `user`. """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(AcceptAllPolicy())
-        connect_args = {'username': user}
-        if not use_agent:
-            connect_args.update({
-                'pkey': self.private_key,
-                'allow_agent': False,
-                'look_for_keys': False,
-                })
+        connect_args = {
+            'username': 'ubuntu',
+            'pkey': self.private_key,
+            'allow_agent': False,
+            'look_for_keys': False,
+            }
         for count in range(10):
             try:
                 ssh.connect(self.hostname, **connect_args)
             except (socket.error, paramiko.AuthenticationException), e:
-                self.log('_connect: %r' % (e,))
+                self.log('_connect: %r\n' % (e,))
                 if count < 9:
                     time.sleep(5)
                     self.log('retrying...')
@@ -192,59 +191,32 @@ class EC2Instance:
                     raise
             else:
                 break
-        return EC2InstanceConnection(self, user, ssh)
-
-    def connect_as_root(self):
-        return self._connect('root', False)
-
-    def connect_as_user(self):
-        return self._connect(self._vals['USER'], True)
+        return EC2InstanceConnection(self, 'ubuntu', ssh)
 
     def set_up_user(self, user_key):
         """Set up an account named after the local user."""
-        root_connection = self.connect_as_root()
-        as_root = root_connection.perform
-        if self._vals['USER'] == 'gary':
-            # This helps gary debug problems others are having by removing
-            # much of the initial setup used to work on the original image.
-            as_root('deluser --remove-home gary', ignore_failure=True)
-        # Let root perform sudo without a password.
-        as_root('echo "root\tALL=NOPASSWD: ALL" >> /etc/sudoers')
-        # Add the user.
-        as_root('adduser --gecos "" --disabled-password %(USER)s')
-        # Give user sudo without password.
-        as_root('echo "%(USER)s\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
+        ubuntu_connection = self.connect()
         # Update the system.
-        as_root('aptitude update')
-        as_root('aptitude -y full-upgrade')
+        ubuntu_connection.perform('sudo aptitude update')
+        ubuntu_connection.perform('sudo aptitude -y full-upgrade')
         # Set up ssh for user
         # Make user's .ssh directory
-        as_root('sudo -u %(USER)s mkdir /home/%(USER)s/.ssh')
-        root_sftp = root_connection.ssh.open_sftp()
-        remote_ssh_dir = '/home/%(USER)s/.ssh' % self._vals
+        remote_ssh_dir = '/home/ubuntu/.ssh'
+        ubuntu_sftp = ubuntu_connection.ssh.open_sftp()
         # create authorized_keys
         self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
-        authorized_keys_file = root_sftp.open(
-            "%s/authorized_keys" % remote_ssh_dir, 'w')
+        authorized_keys_file = ubuntu_sftp.open(
+            "/home/ubuntu/.ssh/authorized_keys" % remote_ssh_dir, 'a')
         authorized_keys_file.write(
             "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
         authorized_keys_file.close()
-        root_sftp.close()
-        # Chown and chmod the .ssh directory and contents that we just
-        # created.
-        as_root('chown -R %(USER)s:%(USER)s /home/%(USER)s/')
-        as_root('chmod 644 /home/%(USER)s/.ssh/*')
+        ubuntu_sftp.close()
         self.log(
-            'You can now use ssh -A %s to log in the instance.\n' %
+            'You can now use ssh -A ubuntu@%s to log in the instance.\n' %
             self.hostname)
-        # What follows is somewhat ec2test specfic.
-        # give the user permission to do whatever in /var/www
-        as_root('chown -R %(USER)s:%(USER)s /var/www')
-        # Make /var/launchpad owned by user.
-        as_root('chown -R %(USER)s:%(USER)s /var/launchpad')
         # Clean out left-overs from the instance image.
-        as_root('rm -fr /var/tmp/*')
-        root_connection.close()
+        ubuntu_connection.perform('sudo rm -fr /var/tmp/*')
+        ubuntu_connection.close()
 
     def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
         """Start, set up a user account, run `func` and then maybe shut down.
@@ -311,7 +283,6 @@ class EC2Instance:
         :param sftp: A paramiko SFTP object.
         """
         remote_ec2_dir = '/mnt/ec2'
-        sftp.mkdir(remote_ec2_dir)
         remote_pk = self._copy_single_file(
             sftp, self.local_pk, remote_ec2_dir)
         remote_cert = self._copy_single_file(
@@ -357,8 +328,10 @@ class EC2Instance:
         :param name: The name-to-be of the new AMI.
         :param credentials: An `EC2Credentials` object.
         """
-        root_connection = self.connect_as_root()
-        sftp = root_connection.ssh.open_sftp()
+        ubuntu_connection = self.connect()
+        ubuntu_connection.perform('sudo mkdir /mnt/ec2')
+        ubuntu_connection.perform('sudo chown ubuntu:ubuntu /mnt/ec2')
+        sftp = ubuntu_connection.ssh.open_sftp()
 
         remote_pk, remote_cert =  self.copy_key_and_certificate_to_image(sftp)
 
@@ -366,9 +339,9 @@ class EC2Instance:
 
         bundle_dir = os.path.join('/mnt', name)
 
-        root_connection.perform('mkdir ' + bundle_dir)
-        root_connection.perform(' '.join([
-            'ec2-bundle-vol',
+        ubuntu_connection.perform('sudo mkdir ' + bundle_dir)
+        ubuntu_connection.perform(' '.join([
+            'sudo ec2-bundle-vol',
             '-d %s' % bundle_dir,
             '-b',   # Set batch-mode, which doesn't use prompts.
             '-k %s' % remote_pk,
@@ -382,10 +355,10 @@ class EC2Instance:
 
         # Best check that the manifest actually exists though.
         test = 'test -f %s' % manifest
-        root_connection.perform(test)
+        ubuntu_connection.perform(test)
 
-        root_connection.perform(' '.join([
-            'ec2-upload-bundle',
+        ubuntu_connection.perform(' '.join([
+            'sudo ec2-upload-bundle',
             '-b %s' % name,
             '-m %s' % manifest,
             '-a %s' % credentials.identifier,
@@ -393,7 +366,7 @@ class EC2Instance:
             ]))
 
         sftp.close()
-        root_connection.close()
+        ubuntu_connection.close()
 
         # This is invoked locally.
         mfilename = os.path.basename(manifest)
