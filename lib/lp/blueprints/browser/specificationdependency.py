@@ -86,3 +86,7 @@ class SpecificationDependencyRemoveView(LaunchpadFormView):
 
 class SpecificationDependencyTreeView(LaunchpadView):
     label = "Blueprint dependency tree"
+
+    @property
+    def page_title(self):
+        return self.label
