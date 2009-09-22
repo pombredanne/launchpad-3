@@ -84,6 +84,8 @@ Watermark and breadcrumbs.
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
     <BLANKLINE>
+      <div class="registering">
+      </div>
       <!-- Application Menu -->
       <ul>
     <BLANKLINE>
@@ -93,8 +95,6 @@ Watermark and breadcrumbs.
     ...
               <div class="yui-b" dir="ltr">
                 <div>
-                  <div class="registering">
-                  </div>
                   <h2>Heading</h2>
                   <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
     ...
@@ -191,8 +191,6 @@ Main content.
     <BLANKLINE>
               <div class="yui-b" dir="ltr">
                 <div>
-                  <div class="registering">
-                  </div>
     <BLANKLINE>
                   <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
     <BLANKLINE>
@@ -290,6 +288,8 @@ Watermarks.
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
+            <div class="registering">
+            </div>
     <BLANKLINE>
       <!-- Application Menu -->
       <ul>
@@ -311,8 +311,6 @@ Main content.
     <BLANKLINE>
               <div class="yui-b" dir="ltr">
                 <div>
-                  <div class="registering">
-                  </div>
     <BLANKLINE>
                   <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
     <BLANKLINE>
