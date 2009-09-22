@@ -19,12 +19,7 @@
     <tal:block
       tal:condition="context/duplicates"
       tal:define="number_of_dupes context/duplicates/count"
-    ><span id="number_of_dupes">(This bug has
-    <tal:num-dupes condition="python:number_of_dupes == 1">1
-    duplicate)</tal:num-dupes>
-    <tal:num-dupes condition="python:number_of_dupes > 1"
-    content="string:${number_of_dupes} duplicates)"
-    >2 duplicates</tal:num-dupes></span>
+    >
     </tal:block>
     <tal:block
       tal:define="duplicateof context/duplicateof"
