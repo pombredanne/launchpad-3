@@ -659,13 +659,15 @@ class DistributionArchivesView(LaunchpadView):
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
 
+    page_title = "Personal Package Archives"
+
     def initialize(self):
         self.name_filter = self.request.get('name_filter')
         self.show_inactive = self.request.get('show_inactive')
 
     @property
-    def page_title(self):
-        return '%s Personal Package Archives' % self.context.title
+    def label(self):
+        return 'Personal Package Archives for %s' % self.context.title
 
     @property
     def search_results(self):
