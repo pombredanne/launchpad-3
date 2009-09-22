@@ -710,7 +710,7 @@ ol.breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 1em;
+    margin-bottom: 2em;
     font-size: 80%;
 }
 ol.breadcrumbs li {
@@ -1352,7 +1352,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 
 /* === Public/private status === */
 /* The first portlet on many pages discloses whether the object is private: */
-#privacy {background: #fff;}
 #privacy.private {
   background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
