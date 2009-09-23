@@ -201,6 +201,8 @@ class EC2Instance:
             as_root(
                 'cat /root/.ssh/authorized_keys >>'
                 '/home/ubuntu/.ssh/authorized_keys')
+            as_root('chown -R ubuntu:ubuntu /home/ubuntu/')
+            as_root('chmod 644 /home/ubuntu/.ssh/*')
             root_connection.close()
         ubuntu_connection = self.connect()
         # Update the system.
