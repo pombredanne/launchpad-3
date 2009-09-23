@@ -25,7 +25,6 @@ from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.lazr.utils import smartquote
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
@@ -153,6 +152,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `LaunchpadView`."""
         self.form = self.request.form
         self.processDeleteFiles()
+
+    @property
+    def should_show_bugs_and_blueprints(self):
+        """Display the summary of bugs/blueprints for this milestone?"""
+        return (not self.show_series_context) and self.milestone.active
 
     @property
     def page_title(self):

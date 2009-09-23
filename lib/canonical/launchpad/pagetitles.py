@@ -392,13 +392,6 @@ def hasmentoringoffers_mentoring(context, view):
 
 hasannouncements_index = ContextDisplayName('%s news and announcements')
 
-def hasspecifications_specs(context, view):
-    """Return the secifications title for the context."""
-    if IPerson.providedBy(context):
-        return "Blueprints involving %s" % context.title
-    else:
-        return "Blueprints for %s" % context.title
-
 hassprints_sprints = ContextTitle("Events related to %s")
 
 # launchpad_debug doesn't need a title.
@@ -827,8 +820,6 @@ specificationtarget_index = ContextTitle('Blueprint listing for %s')
 def specificationtarget_specs(context, view):
     """Return the page title for a specificationtarget."""
     return view.title
-
-specificationtarget_assignments = ContextTitle('Blueprint assignments for %s')
 
 specificationtarget_workload = ContextTitle('Blueprint workload in %s')
 
