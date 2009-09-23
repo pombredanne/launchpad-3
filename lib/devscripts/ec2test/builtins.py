@@ -541,7 +541,7 @@ class cmd_update_image(EC2Command):
                 '/var/launchpad/sourcecode/canonical-identity-provider')
         user_connection.perform(
             'rm -rf /home/ubuntu/.ssh/known_hosts /home/ubuntu/.bazaar '
-            '/home/ubuntu/.bzr.log /home/ubuntu/.ssh/authorized_keys')
+            '/home/ubuntu/.bzr.log')
         user_connection.close()
         instance.bundle(ami_name, credentials)
 

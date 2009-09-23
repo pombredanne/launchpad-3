@@ -350,6 +350,7 @@ class EC2Instance:
         :param credentials: An `EC2Credentials` object.
         """
         ubuntu_connection = self.connect()
+        ubuntu_connection.perform('rm -f /home/ubuntu/.ssh/authorized_keys')
         ubuntu_connection.perform('sudo mkdir /mnt/ec2')
         ubuntu_connection.perform('sudo chown ubuntu:ubuntu /mnt/ec2')
         sftp = ubuntu_connection.ssh.open_sftp()
