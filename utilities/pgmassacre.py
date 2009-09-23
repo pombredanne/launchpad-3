@@ -188,7 +188,8 @@ def rebuild(database, template):
         cur = con.cursor()
         try:
             cur.execute(
-                "CREATE DATABASE %s WITH ENCODING='UTF8' TEMPLATE=%s"
+                "CREATE DATABASE %s WITH ENCODING='UTF8' TEMPLATE=%s "
+                "LC_COLLATE='C' LC_CTYPE='C'"
                 % (database, template))
             con.close()
             return 0
