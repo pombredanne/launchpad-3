@@ -155,8 +155,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, TextAreaEditorWidget,
-    TextLineEditorWidget, vocabulary_to_choice_edit_items)
+    TextAreaEditorWidget, TextLineEditorWidget,
+    vocabulary_to_choice_edit_items)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -1961,7 +1961,8 @@ class BugTaskSearchListingMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
-        return Link('+securitycontact', 'Change security contact', icon='edit')
+        return Link(
+            '+securitycontact', 'Change security contact', icon='edit')
 
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
