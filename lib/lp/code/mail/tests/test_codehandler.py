@@ -152,6 +152,19 @@ class TestCodeHandler(TestCaseWithFactory):
         # if the message has not been created, this raises SQLObjectNotFound
         message = MessageSet().get('<my-id>')
 
+    def test_process_packagebranch(self):
+        """Processing an email related to a package branch works.."""
+        mail = self.factory.makeSignedMessage('<my-id>')
+        target_branch = self.factory.makePackageBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch)
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process( mail, email_addr, None)
+        self.assertIn(
+            '<my-id>', [comment.message.rfc822msgid
+                        for comment in bmp.all_comments])
+
     def test_processBadAddress(self):
         """When a bad address is supplied, it returns False."""
         mail = self.factory.makeSignedMessage('<my-id>')
@@ -293,8 +306,9 @@ class TestCodeHandler(TestCaseWithFactory):
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
-        notification = pop_notifications(
-            sort_key=lambda m: m['X-Envelope-To'])[0]
+        notification = [
+            msg for msg in pop_notifications() if
+            msg['X-Launchpad-message-rationale'] == 'Owner'][0]
         self.assertEqual('subject', notification['Subject'])
         expected_body = ('Review: Abstain ebailiwick\n'
                          ' vote Abstain EBAILIWICK\n'
