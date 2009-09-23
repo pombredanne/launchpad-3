@@ -67,14 +67,18 @@ slightly modified implementation.
 
 == Launchpad plugin ==
 
-Some Bugzillas have a Launchpad plugin installed. For these bugtrackers,
-we use the BugzillaLPPlugin ExternalBugTracker class. The Bugzilla
+Some Bugzillas offer the Bugzilla 3.4 XML-RPC API or have a Launchpad
+plugin installed. For these bugtrackers, we use the BugzillaAPI
+ExternalBugTracker or its subclass, BugzillaLPPlugin, depending upon
+which type of Bugzilla we're dealing with. The Bugzilla
 ExternalBugTracker class has a getExternalBugTrackerToUse() method which
-will return a BugzillaLPPlugin instance if the remote Bugzilla has the
-plugin installed or a standard Bugzilla ExternalBugTracker if not.
+will return a BugzillaAPI instance if the remote Bugzilla offers the 3.4
+API or a  BugzillaLPPlugin instance if the remote Bugzilla has the
+plugin installed. If neither of these is offered, a standard Bugzilla
+ExternalBugTracker will be returned.
 
-The Bugzilla ExternalBugTracker has an xmlrpc_proxy property which we
-override for the purpose of this test.
+The Bugzilla ExternalBugTracker has a _test_xmlrpc_proxy property which
+we override for the purpose of this test.
 
     >>> import xmlrpclib
     >>> class FailingXMLRPCTransport(xmlrpclib.Transport):
@@ -102,15 +106,14 @@ When getExternalBugTrackerToUse() receives a Fault of type 'Client' from
 the remote server in response to its check, it will return a standard
 Bugzilla instance.
 
-    >>> from lp.bugs.externalbugtracker import (
-    ...     BugzillaLPPlugin)
+    >>> from lp.bugs.externalbugtracker import BugzillaAPI
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 
 The returned bugtracker will be a Bugzilla instance bug not a
-BugzillaLPPlugin instance.
+BugzillaAPI instance.
 
     >>> (isinstance(bugzilla_to_use, Bugzilla) and
-    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    ...  not isinstance(bugzilla_to_use, BugzillaAPI))
     True
 
 The same is true if getExternalBugTrackerToUse() receives a 404 error
@@ -122,7 +125,7 @@ from the remote server.
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 
     >>> (isinstance(bugzilla_to_use, Bugzilla) and
-    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    ...  not isinstance(bugzilla_to_use, BugzillaAPI))
     True
 
 Some Bugzillas respond to an invalid XML-RPC method call by returning a
@@ -134,7 +137,7 @@ Some Bugzillas respond to an invalid XML-RPC method call by returning a
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 
     >>> (isinstance(bugzilla_to_use, Bugzilla) and
-    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    ...  not isinstance(bugzilla_to_use, BugzillaAPI))
     True
 
 Some other Bugzillas generate an unparsable response, causing
@@ -144,7 +147,7 @@ ResponseError to be raised.
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 
     >>> (isinstance(bugzilla_to_use, Bugzilla) and
-    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    ...  not isinstance(bugzilla_to_use, BugzillaAPI))
     True
 
 
