@@ -1,4 +1,6 @@
-= Blueprints index page =
+=====================
+Blueprints index page
+=====================
 
 The blueprints index page allows users to search for blueprints within
 a single Launchpad project or across all projects.
@@ -7,6 +9,7 @@ Users can see the latest blueprints available for the whole system:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/')
     >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprints
     All projects...
     Recently registered
         The Krunch Desktop Plan

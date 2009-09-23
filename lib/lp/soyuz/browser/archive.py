@@ -886,6 +886,10 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         return smartquote('Packages in "%s"' % self.context.displayname)
 
     @property
+    def label(self):
+        return self.page_title
+
+    @property
     def series_list_string(self):
         """Return an English string of the distroseries."""
         return english_list(

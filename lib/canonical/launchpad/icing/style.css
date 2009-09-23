@@ -93,6 +93,7 @@ span.invisible {left:-9999em;display:block;}
 .external-link {background:url(icon-sprites) 0 -704px no-repeat;}
 .mail {background:url(icon-sprites) 0 -736px no-repeat;}
 .cve {background:url(icon-sprites) 0 -768px no-repeat;}
+.cves {float: right; text-align: right;}
 .bug {background:url(icon-sprites) 0 -800px no-repeat;}
 .bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
 .bug-high {background:url(icon-sprites) 0 -864px no-repeat;}
@@ -709,7 +710,7 @@ ol.breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 1em;
+    margin-bottom: 2em;
     font-size: 80%;
 }
 ol.breadcrumbs li {
@@ -1351,7 +1352,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 
 /* === Public/private status === */
 /* The first portlet on many pages discloses whether the object is private: */
-#privacy {background: #fff;}
 #privacy.private {
   background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
@@ -2290,6 +2290,30 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 .questionstatusEXPIRED   {color: #666;} /* dark grey */
 .questionstatusINVALID   {color: #c00;} /* red */
 
+.search-box {
+  text-align: left;
+  float: left;
+  border:1px solid #d6d6d6;
+  margin: 0.5em 0 0.5em 0;
+  color: #717171;
+  padding: 8px;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+.search-box form.primary.search {
+  margin: 0.5em;
+}
+
+.bug-links td.bugs-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.bug-links td.bugs-link {
+  text-align: left;
+}
 
 /* --- Other --- */
 
