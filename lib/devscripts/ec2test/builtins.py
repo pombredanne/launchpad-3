@@ -510,7 +510,7 @@ class cmd_update_image(EC2Command):
         :param credentials: An `EC2Credentials` object.
         """
         if from_scratch:
-            if no_root_login:
+            if not no_root_login:
                 self.add_ubuntu_user(instance)
             user_connection = instance.connect()
             user_sftp = user_connection.ssh.open_sftp()
