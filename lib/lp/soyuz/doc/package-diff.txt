@@ -674,7 +674,7 @@ FAILED request (empty 'diff_content' and 'date_fullfilled').
 
 == Problematic packages ==
 
-XXX Julian bug=314436
+XXX 2009-11-23 Julian bug=314436
 Because of bug 314436, diffs of udev can generate huge output which fills the
 disk very quickly.  For that reason, diffs of udev are created FAILED by
 default, which will stop the diff script from attempting to create the diff.

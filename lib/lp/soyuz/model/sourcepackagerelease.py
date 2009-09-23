@@ -604,7 +604,7 @@ class SourcePackageRelease(SQLBase):
                 % (candidate.title, candidate.requester.displayname))
 
         if self.sourcepackagename.name == 'udev':
-            # XXX Julian bug=314436
+            # XXX 2009-11-23 Julian bug=314436
             # Currently diff output for udev will fill disks.  It's
             # disabled until diffutils is fixed in that bug.
             status = PackageDiffStatus.FAILED
