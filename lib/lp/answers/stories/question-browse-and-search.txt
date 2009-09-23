@@ -36,7 +36,7 @@ Answers page and goes there to check.
 
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> print browser.title
-    Questions for ${context} : Ubuntu
+    Questions for Ubuntu : Ubuntu
 
 He sees a listing of the current questions posted on Ubuntu:
 
@@ -55,7 +55,7 @@ results. There, he finds only one other question:
 
     >>> browser.getLink('Next').click()
     >>> print browser.title
-    Questions for ${context} : Ubuntu
+    Questions for Ubuntu : Ubuntu
     >>> soup = find_main_content(browser.contents)
     >>> for question in soup.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -186,7 +186,7 @@ enters his search key and hit the 'Search' button.
 Unfortunately, the search doesn't return any similar questions:
 
     >>> print browser.title
-    Questions matching "${search_text}" for ${context} : Ubuntu
+    Questions matching "firefox is slow" for Ubuntu : Ubuntu
     >>> search_summary = find_main_content(browser.contents)
     >>> print search_summary
     <...
@@ -282,7 +282,7 @@ recent questions on Mozilla Firefox.
     >>> browser.open('http://launchpad.dev/firefox/+questions')
     >>> browser.getLink('Open').click()
     >>> print browser.title
-    ${status} questions for ${context} : Mozilla Firefox
+    Open questions for Mozilla Firefox : Mozilla Firefox
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -319,7 +319,7 @@ questions.)
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    ${status} questions for ${context} : Ubuntu
+    Answered questions for Ubuntu : Ubuntu
     >>> statuses = browser.getControl(name='field.status').displayValue
     >>> [strip_label(status) for status in statuses]
     ['Answered', 'Solved']
@@ -366,7 +366,7 @@ He needs to login to access that page:
     ...     '+questions')
     >>> sample_person_browser.getLink('My questions').click()
     >>> print repr(sample_person_browser.title)
-    'Questions you asked about ${context} : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    'Questions you asked about mozilla-firefox in ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
@@ -426,7 +426,7 @@ He needs to login to access that page:
     ...     'http://launchpad.dev/distros/ubuntu/+questions')
     >>> sample_person_browser.getLink('Need attention').click()
     >>> print sample_person_browser.title
-    Questions needing your attention for ${context} : Ubuntu
+    Questions needing your attention for Ubuntu : Ubuntu
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
@@ -440,7 +440,7 @@ Like all other report, this one is searchable:
     ...     name='field.search_text').value = 'evolution'
     >>> sample_person_browser.getControl('Search', index=0).click()
     >>> print sample_person_browser.title
-    Questions matching "${search_text}" needing your attention for ${context} : Ubuntu
+    Questions matching "evolution" needing your attention for Ubuntu : Ubuntu
     >>> search_summary = find_main_content(sample_person_browser.contents)
     >>> print search_summary
     <...
@@ -530,7 +530,7 @@ assigned.
 
     >>> browser.getLink('Assigned').click()
     >>> print browser.title
-    Questions for ${context} : Foo Bar
+    Questions for Foo Bar : Foo Bar
     >>> print find_main_content(browser.contents).first('p').renderContents()
     No questions assigned to Foo Bar found with the requested statuses.
 
@@ -542,7 +542,7 @@ answerer.
 
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    Questions for ${context} : Foo Bar
+    Questions for Foo Bar : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -556,7 +556,7 @@ questions commented on by the person.
 
     >>> browser.getLink('Commented').click()
     >>> print browser.title
-    Questions for ${context} : Foo Bar
+    Questions for Foo Bar : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -574,7 +574,7 @@ asked by the person.
 
     >>> browser.getLink('Asked').click()
     >>> print browser.title
-    Questions for ${context} : Foo Bar
+    Questions for Foo Bar : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -589,7 +589,7 @@ the attention of that person.
 
     >>> browser.getLink('Need attention').click()
     >>> print browser.title
-    Questions for ${context} : Foo Bar
+    Questions for Foo Bar : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -604,7 +604,7 @@ visiting the 'Subscribed' link in the 'Answers' facet.
 
     >>> browser.getLink('Subscribed').click()
     >>> print browser.title
-    Questions for ${context} : Foo Bar
+    Questions for Foo Bar : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
@@ -662,11 +662,11 @@ The same standard reports than on regular QuestionTarget are available:
     >>> user_browser.open('http://launchpad.dev/mozilla/+questions')
     >>> user_browser.getLink('My questions').click()
     >>> print user_browser.title
-    Questions you asked about ${context} : the Mozilla Project
+    Questions you asked about the Mozilla Project : the Mozilla Project
 
     >>> user_browser.getLink('Need attention').click()
     >>> print user_browser.title
-    Questions needing your attention for ${context} : the Mozilla Project
+    Questions needing your attention for the Mozilla Project : the Mozilla Project
 
 
 == Searching All Questions ==

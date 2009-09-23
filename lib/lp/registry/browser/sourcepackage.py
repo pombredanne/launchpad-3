@@ -65,7 +65,11 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
             sourcepackage.name)
 
-        return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
+        redirection_url = canonical_url(
+            distro_sourcepackage, view_name='+filebug')
+        if self.request.form.get('no-redirect') is not None:
+            redirection_url += '?no-redirect'
+        return redirection(redirection_url)
 
 
 class SourcePackageBreadcrumb(Breadcrumb):
@@ -259,6 +263,10 @@ class SourcePackagePackaging(SourcePackageView):
     """A View to show where the package is packged."""
 
     page_title = 'Upstream links'
+
+    @property
+    def label(self):
+        return "Upstream links for %s" % self.context.title
 
 
 class SourcePackageHelpView:
