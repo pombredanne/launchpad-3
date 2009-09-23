@@ -39,12 +39,15 @@ bugs is also shown.
     1 New bugs
     2 Open CVE bugs - CVE reports
 
+The content includes a link to the distribution CVE report.
+
+    >>> print user_browser.getLink('CVE reports').url
+    http://bugs.launchpad.dev/debian/+cve
+
 
 == Project group ==
 
-If the user is not logged-in general stats are shown. Note that the
-"CVE reports" link is not shown; project groups do not have a CVE
-reports page.
+If the user is not logged-in general stats are shown.
 
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev'
@@ -73,6 +76,9 @@ bugs is also shown.
     0 Bugs fixed elsewhere
     4 New bugs
     1 Open CVE bugs
+
+Note that the "CVE reports" link is not shown; project groups do not
+have a CVE reports page.
 
 
 == Project ==
@@ -106,3 +112,9 @@ bugs is also shown.
     0 Bugs fixed elsewhere
     3 New bugs
     1 Open CVE bugs - CVE reports
+
+
+The content includes a link to the distribution CVE report.
+
+    >>> print user_browser.getLink('CVE reports').url
+    http://bugs.launchpad.dev/firefox/+cve
