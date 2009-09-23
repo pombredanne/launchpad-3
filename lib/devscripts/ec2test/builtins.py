@@ -399,7 +399,7 @@ sudo apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4
 sudo aptitude update
 sudo aptitude -y full-upgrade
 
-sudo apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm
+sudo apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
 sudo mkdir /var/launchpad
 
