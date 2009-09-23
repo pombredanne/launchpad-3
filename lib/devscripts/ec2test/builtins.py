@@ -518,7 +518,7 @@ class cmd_update_image(EC2Command):
             update_sh.close()
             user_sftp.close()
             user_connection.run_with_ssh_agent(
-                '/bin/sh /home/ubuntu/update.sh')
+                '/bin/bash /home/ubuntu/update.sh')
             user_connection.close()
             user_connection = instance.connect()
             user_connection.perform('rm /home/ubuntu/update.sh')
