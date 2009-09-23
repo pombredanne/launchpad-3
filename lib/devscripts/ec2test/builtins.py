@@ -102,6 +102,12 @@ postmortem_option = Option(
           'down the instance for postmortem analysis of the EC2 instance '
           'and/or of this script.'))
 
+no_root_login_option = Option(
+    'no-root-login',
+    help=('If passed, we assume that the image is set up so that '
+          'the specified key pair allows logging in as  "ubuntu", '
+          'a user with passwordless sudo. Otherwise, assume that it '
+          'allows logging in as root.')),
 
 class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
@@ -215,6 +221,7 @@ class cmd_test(EC2Command):
             'open-browser',
             help=('Open the results page in your default browser')),
         include_download_cache_changes_option,
+        no_root_login_option,
         ]
 
     takes_args = ['test_branch?']
@@ -225,7 +232,7 @@ class cmd_test(EC2Command):
             submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
             headless=False, debug=False, open_browser=False,
-            include_download_cache_changes=False):
+            include_download_cache_changes=False, no_root_login=False):
         if debug:
             pdb.set_trace()
         branches, test_branch = _get_branches_and_test_branch(
@@ -262,7 +269,9 @@ class cmd_test(EC2Command):
             instance=instance, vals=instance._vals)
 
         instance.set_up_and_run(
-            dict(postmortem=postmortem, shutdown=not headless),
+            dict(postmortem=postmortem,
+                 shutdown=not headless,
+                 no_root_login=no_root_login),
             runner.run_tests)
 
 
@@ -283,13 +292,15 @@ class cmd_demo(EC2Command):
         ListOption(
             'demo', type=str,
             help="Allow this netmask to connect to the instance."),
+        no_root_login_option,
         ]
 
     takes_args = ['test_branch?']
 
     def run(self, test_branch=None, branch=[], trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
-            include_download_cache_changes=False, demo=None):
+            include_download_cache_changes=False, demo=None,
+            no_root_login=False):
         if debug:
             pdb.set_trace()
         branches, test_branch = _get_branches_and_test_branch(
@@ -309,7 +320,7 @@ class cmd_demo(EC2Command):
         # Wait until the user exits the postmortem session, then kill the
         # instance.
         instance.set_up_and_run(
-            dict(postmortem=True),
+            dict(postmortem=True, no_root_login=no_root_login),
             self.run_server, runner, demo_network_string)
 
     def run_server(self, runner, instance, demo_network_string):
@@ -435,18 +446,16 @@ class cmd_update_image(EC2Command):
             'from-scratch',
             help=('XXX')),
         Option(
-            'root-login',
-            help=('XXX')),
-        Option(
             'public',
             help=('XXX')),
+        no_root_login_option,
         ]
 
     takes_args = ['ami_name']
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=[],
-            from_scratch=False, root_login=False, public=False):
+            from_scratch=False, no_root_login=False, public=False):
         if debug:
             pdb.set_trace()
 
@@ -459,9 +468,10 @@ class cmd_update_image(EC2Command):
 
         instance.set_up_and_run(
             dict(postmortem=postmortem,
-                 set_up_user=not (root_login and from_scratch)),
+                 set_up_user=not (not no_root_login and from_scratch),
+                 no_root_login=no_root_login),
             self.update_image, instance, extra_update_image_command,
-            from_scratch, root_login, ami_name, credentials, public)
+            from_scratch, no_root_login, ami_name, credentials, public)
 
     def add_ubuntu_user(self, instance):
         root_connection = instance.connect('root')
@@ -478,10 +488,10 @@ class cmd_update_image(EC2Command):
         as_root('chown -R ubuntu:ubuntu /home/ubuntu/')
         as_root('chmod 644 /home/ubuntu/.ssh/*')
         root_connection.close()
-        instance.set_up_user(get_user_key())
+        instance.set_up_user(get_user_key(), False)
 
     def update_image(self, instance, extra_update_image_command,
-                     from_scratch, root_login, ami_name, credentials, public):
+                     from_scratch, no_root_login, ami_name, credentials, public):
         """Bring the image up to date.
 
         The steps we take are:
@@ -500,7 +510,7 @@ class cmd_update_image(EC2Command):
         :param credentials: An `EC2Credentials` object.
         """
         if from_scratch:
-            if root_login:
+            if no_root_login:
                 self.add_ubuntu_user(instance)
             user_connection = instance.connect()
             user_sftp = user_connection.ssh.open_sftp()

@@ -193,14 +193,15 @@ class EC2Instance:
                 break
         return EC2InstanceConnection(self, username, ssh)
 
-    def set_up_user(self, user_key):
+    def set_up_user(self, user_key, no_root_login):
         """Set up an account named after the local user."""
-        root_connection = self.connect('root')
-        as_root = root_connection.perform
-        as_root(
-            'cat /root/.ssh/authorized_keys >>'
-            '/home/ubuntu/.ssh/authorized_keys')
-        root_connection.close()
+        if not no_root_login:
+            root_connection = self.connect('root')
+            as_root = root_connection.perform
+            as_root(
+                'cat /root/.ssh/authorized_keys >>'
+                '/home/ubuntu/.ssh/authorized_keys')
+            root_connection.close()
         ubuntu_connection = self.connect()
         # Update the system.
         #ubuntu_connection.perform('sudo aptitude update')
@@ -238,6 +239,10 @@ class EC2Instance:
                postmortem (if any) are completed.  Defaults to True.
              * `set_up_user`: If true, call set_up_user on the instance before
                calling `func`. Defaults to True.
+             * `no_root_login`: If true, assume that the instance comes up
+               with the specified ssh key allowing logging in as 'ubuntu'
+               rather than root.  Only matters is set_up_user is true.
+               Defaults to False.
         :param func: A callable that will be called when the instance is
             running and a user account has been set up on it.
         :param args: Passed to `func`.
@@ -249,7 +254,8 @@ class EC2Instance:
         try:
             try:
                 if config.get('set_up_user', True):
-                    self.set_up_user(user_key)
+                    self.set_up_user(
+                        user_key, config.get('no_root_login', False))
                 return func(*args, **kw)
             except Exception:
                 # When running in postmortem mode, it is really helpful to see if
