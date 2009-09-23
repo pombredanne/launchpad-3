@@ -42,6 +42,20 @@ filing view of another context.
     >>> print user_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/pmount/+filebug?no-redirect
 
+Ubuntu's bug supervisor doesn't get automatically redirected either.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> ubuntu.setBugSupervisor(foobar, foobar)
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+filebug')
+    >>> print admin_browser.title
+    Report a bug about Ubuntu...
 
 Filing bugs with Apport also allows us to get to the bug filing interface.
 
