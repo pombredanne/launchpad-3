@@ -242,7 +242,7 @@ class EC2Instance:
         self.start()
         try:
             try:
-                if config.get('set_up_user'):
+                if config.get('set_up_user', True):
                     self.set_up_user(user_key)
                 return func(*args, **kw)
             except Exception:
