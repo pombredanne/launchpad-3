@@ -6,7 +6,7 @@ which support is desired:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu')
     >>> print browser.title
-    Questions for Ubuntu Linux : Ubuntu
+    Questions : Ubuntu
 
 Asking a new question requires logging in:
 
@@ -155,7 +155,7 @@ redirect the user to the question page.
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
     >>> user_browser.title
-    'Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package...
+    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
 
     >>> contents = find_main_content(user_browser.contents)
     >>> contents.findChild('div', id='question-details')
