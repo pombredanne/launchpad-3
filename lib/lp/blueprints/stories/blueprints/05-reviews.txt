@@ -103,9 +103,8 @@ asked to review this page in particular.
     >>> mark_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> mark_browser.open(
     ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas/')
-    >>> print extract_text(find_main_content(mark_browser.contents))
-    Registered by
-    ...
+    >>> for message in get_feedback_messages(mark_browser.contents):
+    ...     print message
     You have 3 feedback request(s)...
 
 We also see our name in the "feedback requests" portlet.
