@@ -29,6 +29,7 @@ __all__ = [
     'SpecificationProductSeriesGoalProposeView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
+    'SpecificationSubscriptionView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
@@ -46,6 +47,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
+from zope.interface import Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -501,6 +503,15 @@ class SpecificationView(SpecificationSimpleView):
             self.notices.append(msg)
 
 
+class SpecificationSubscriptionView(SpecificationView):
+
+    @property
+    def label(self):
+        if self.subscription is not None:
+            return "Modify subscription"
+        return "Subscribe to blueprint"
+
+
 class SpecificationEditView(LaunchpadEditFormView):
 
     schema = ISpecification
@@ -611,27 +622,33 @@ def propose_goal_with_automatic_approval(specification, series, user):
         specification.acceptBy(user)
 
 
-class SpecificationGoalDecideView(LaunchpadView):
+class SpecificationGoalDecideView(LaunchpadFormView):
     """View used to allow the drivers of a series to accept
     or decline the spec as a goal for that series. Typically they would use
     the multi-select goalset view on their series, but it's also
     useful for them to have this one-at-a-time view on the spec itself.
     """
 
-    def initialize(self):
-        accept = self.request.form.get('accept')
-        decline = self.request.form.get('decline')
-        cancel = self.request.form.get('cancel')
-        decided = False
-        if accept is not None:
-            self.context.acceptBy(self.user)
-            decided = True
-        elif decline is not None:
-            self.context.declineBy(self.user)
-            decided = True
-        if decided or cancel is not None:
-            self.request.response.redirect(
-                canonical_url(self.context))
+    schema = Interface
+    field_names = []
+
+    @property
+    def label(self):
+        return _("Accept as %s series goal?") % self.context.goal.name
+
+    @action(_('Accept'), name='accept')
+    def accept_action(self, action, data):
+        self.context.acceptBy(self.user)
+
+    @action(_('Decline'), name='decline')
+    def decline_action(self, action, data):
+        self.context.declineBy(self.user)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class SpecificationRetargetingView(LaunchpadFormView):
@@ -1065,7 +1082,7 @@ class SpecificationTreeGraphView(LaunchpadView):
         """Return a SpecGraph object rooted on the spec that is self.context.
         """
         graph = SpecGraph()
-        root = graph.newNode(self.context, root=True)
+        graph.newNode(self.context, root=True)
         graph.addDependencyNodes(self.context)
         graph.addBlockedNodes(self.context)
         return graph

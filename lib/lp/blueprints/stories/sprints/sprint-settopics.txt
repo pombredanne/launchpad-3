@@ -70,7 +70,7 @@ Guacamole agenda.
 
   >>> print cprov_browser.title
   Review discussion topics for “Ubuntu DevSummit Guacamole” sprint :
-  Blueprints for Ubuntu DevSummit Guacamole :
+  Blueprints :
   Ubuntu DevSummit Guacamole :
   Meetings
 

@@ -348,7 +348,8 @@ li {
     padding-bottom: .3em;
     }
 dt {
-    margin-bottom: .1em;
+    margin-bottom: .3em;
+    margin-top: 0.5em;
     }
 dd {
     margin-bottom: .8em;
@@ -485,7 +486,6 @@ p.search-results {
 /* == Watermark heading styles */
 div.watermark-apps-portlet {
     padding-bottom:1em;
-    border-bottom: 1px solid #d6d6d6;
 }
 div.watermark-apps-portlet img {
     float: left;
@@ -548,7 +548,6 @@ div.watermark-apps-portlet h1 {
 .side {
     padding: 0.5em;
     color: #484848;
-    background: #f3f3f3;
     }
 .side .portlet {
     width: 90%;
