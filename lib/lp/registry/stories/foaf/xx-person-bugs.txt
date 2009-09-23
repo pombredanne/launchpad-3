@@ -60,7 +60,7 @@ person.
 
     >>> anon_browser.getLink('List assigned bugs').click()
     >>> print anon_browser.title
-    Bugs assigned to Sample Person
+    Bugs assigned to Sample Person : Sample Person
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+assignedbugs
 
@@ -77,7 +77,7 @@ person.
 
     >>> anon_browser.getLink('List commented bugs').click()
     >>> print anon_browser.title
-    Bugs commented on by Sample Person
+    Bugs commented on by Sample Person : Sample Person
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+commentedbugs
 
@@ -98,7 +98,7 @@ for us to test for the first instances of each here. This is an instance of Bug
 
     >>> anon_browser.getLink('List reported bugs').click()
     >>> print anon_browser.title
-    Bugs reported by Sample Person
+    Bugs reported by Sample Person : Sample Person
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+reportedbugs
 
@@ -127,7 +127,7 @@ for us to test for the first instances of each here. This is an instance of Bug
 
     >>> anon_browser.getLink('List subscribed bugs').click()
     >>> print anon_browser.title
-    Bugs Sample Person is subscribed to
+    Bugs Sample Person is subscribed to : Sample Person
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+subscribedbugs
 
