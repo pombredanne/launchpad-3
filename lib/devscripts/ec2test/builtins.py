@@ -107,7 +107,7 @@ no_root_login_option = Option(
     help=('If passed, we assume that the image is set up so that '
           'the specified key pair allows logging in as  "ubuntu", '
           'a user with passwordless sudo. Otherwise, assume that it '
-          'allows logging in as root.')),
+          'allows logging in as root.'))
 
 class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
