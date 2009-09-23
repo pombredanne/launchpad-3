@@ -30,6 +30,7 @@ class GoalDecideView(HasSpecificationsView, LaunchpadView):
     """
 
     label = "Set feature goals"
+    page_title = "Feature goals"
 
     @cachedproperty
     def spec_filter(self):
