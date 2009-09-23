@@ -412,7 +412,7 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print_location(browser.contents)
-    Hierarchy: GNOME Terminal > Branches for GNOME Terminal > scanned
+    Hierarchy: GNOME Terminal > Branches > scanned
     Tabs:
     * Overview - http://launchpad.dev/gnome-terminal
     * Code (selected) - http://code.launchpad.dev/gnome-terminal
@@ -424,7 +424,7 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
 
     >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print_location(browser.contents)
-    Hierarchy: Sample Person > Branches for Sample Person > junk.dev
+    Hierarchy: Sample Person > Branches > junk.dev
     Tabs:
     * Overview - http://launchpad.dev/~name12
     * Code (selected) - http://code.launchpad.dev/~name12

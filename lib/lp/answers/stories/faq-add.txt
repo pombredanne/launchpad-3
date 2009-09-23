@@ -29,7 +29,7 @@ from various sources about the subject.
     >>> owner_browser.open('http://answers.launchpad.dev/firefox')
     >>> owner_browser.getLink('All FAQs').click()
     >>> print owner_browser.title
-    FAQs for Mozilla Firefox : Questions for Mozilla Firefox : Mozilla Firefox
+    FAQs for Mozilla Firefox : Questions : Mozilla Firefox
 
     >>> print extract_text(
     ...     find_tag_by_id(owner_browser.contents, 'faqs-listing'))
@@ -67,7 +67,7 @@ The FAQ is created and the browser displays the page for Sample Person.
     >>> owner_browser.url
     'http://answers.launchpad.dev/firefox/+faq/...'
     >>> print owner_browser.title
-    Questions for...
+    Questions : Mozilla Firefox
 
     >>> content = find_main_content(owner_browser.contents)
     >>> extract_text(content.find('div', {'id' : 'faq-keywords'}))
@@ -80,7 +80,7 @@ FAQ is listed first.
 
     >>> owner_browser.getLink('List all FAQs').click()
     >>> print owner_browser.title
-    FAQs for Mozilla Firefox : Questions for Mozilla Firefox : Mozilla Firefox
+    FAQs for Mozilla Firefox : Questions : Mozilla Firefox
 
     >>> print extract_text(
     ...     find_tag_by_id(owner_browser.contents, 'faqs-listing'))
