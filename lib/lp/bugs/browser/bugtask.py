@@ -1691,63 +1691,12 @@ class BugTaskListingView(LaunchpadView):
         return u""
 
 
-class BugListingPortletView(LaunchpadView):
-    """Portlet containing all available bug listings."""
-
-    def getOpenBugsURL(self):
-        """Return the URL for open bugs on this bug target."""
-        return get_buglisting_search_filter_url(
-            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
-
-    def getBugsAssignedToMeURL(self):
-        """Return the URL for bugs assigned to the current user on target."""
-        if self.user:
-            return get_buglisting_search_filter_url(assignee=self.user.name)
-        else:
-            return str(self.request.URL) + "/+login"
-
-    def getBugsAssignedToMeCount(self):
-        """Return the count of bugs assinged to the logged-in user."""
-        assert self.user, (
-            "Counting 'bugs assigned to me' requires a logged-in user")
-
-        search_params = BugTaskSearchParams(
-            user=self.user, assignee=self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.context.searchTasks(search_params).count()
-
-    def getCriticalBugsURL(self):
-        """Return the URL for critical bugs on this bug target."""
-        return get_buglisting_search_filter_url(
-            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
-            importance=BugTaskImportance.CRITICAL.title)
-
-    def getUnassignedBugsURL(self):
-        """Return the URL for critical bugs on this bug target."""
-        unresolved_tasks_query_string = get_buglisting_search_filter_url(
-            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
-
-        return unresolved_tasks_query_string + "&assignee_option=none"
-
-    def getNewBugsURL(self):
-        """Return the URL for new bugs on this bug target."""
-        return get_buglisting_search_filter_url(
-            status=BugTaskStatus.NEW.title)
-
-    def getAllBugsEverReportedURL(self):
-        """Return the URL to list all bugs reported."""
-        all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
-        all_status_query_string = get_buglisting_search_filter_url(
-            status=[status.title for status in all_statuses])
-
-        # Add the bit that simulates the "omit dupes" checkbox
-        # being unchecked.
-        return all_status_query_string + "&field.omit_dupes.used="
+class BugsInfoMixin:
+    """Contains several properties yielding aggregate bug information.
+    """
 
     @property
-    def default_search_params(self):
+    def _default_search_params(self):
         return get_default_search_params(self.user, self.request)
 
     @property
@@ -1759,7 +1708,7 @@ class BugListingPortletView(LaunchpadView):
         * 'url' - The URL of the search.
         * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
-        params = self.default_search_params
+        params = self._default_search_params
         params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
         count = fixed_elsewhere.count()
@@ -1778,7 +1727,7 @@ class BugListingPortletView(LaunchpadView):
         * 'url' - The URL of the search.
         * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
-        params = self.default_search_params
+        params = self._default_search_params
         params.has_cve = True
         open_cve_bugs = self.context.searchTasks(params)
         count = open_cve_bugs.count()
@@ -1805,7 +1754,7 @@ class BugListingPortletView(LaunchpadView):
             return None
         if self.context.official_malone:
             return None
-        params = self.default_search_params
+        params = self._default_search_params
         params.pending_bugwatch_elsewhere = True
         pending_bugwatch_elsewhere = self.context.searchTasks(params)
         count = pending_bugwatch_elsewhere.count()
@@ -1878,6 +1827,62 @@ class BugListingPortletView(LaunchpadView):
                 url=get_buglisting_search_filter_url(assignee=self.user.name))
         else:
             return None
+
+
+class BugListingPortletView(LaunchpadView, BugsInfoMixin):
+    """Portlet containing all available bug listings."""
+
+    def getOpenBugsURL(self):
+        """Return the URL for open bugs on this bug target."""
+        return get_buglisting_search_filter_url(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
+
+    def getBugsAssignedToMeURL(self):
+        """Return the URL for bugs assigned to the current user on target."""
+        if self.user:
+            return get_buglisting_search_filter_url(assignee=self.user.name)
+        else:
+            return str(self.request.URL) + "/+login"
+
+    def getBugsAssignedToMeCount(self):
+        """Return the count of bugs assinged to the logged-in user."""
+        assert self.user, (
+            "Counting 'bugs assigned to me' requires a logged-in user")
+
+        search_params = BugTaskSearchParams(
+            user=self.user, assignee=self.user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
+        return self.context.searchTasks(search_params).count()
+
+    def getCriticalBugsURL(self):
+        """Return the URL for critical bugs on this bug target."""
+        return get_buglisting_search_filter_url(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
+            importance=BugTaskImportance.CRITICAL.title)
+
+    def getUnassignedBugsURL(self):
+        """Return the URL for critical bugs on this bug target."""
+        unresolved_tasks_query_string = get_buglisting_search_filter_url(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
+
+        return unresolved_tasks_query_string + "&assignee_option=none"
+
+    def getNewBugsURL(self):
+        """Return the URL for new bugs on this bug target."""
+        return get_buglisting_search_filter_url(
+            status=BugTaskStatus.NEW.title)
+
+    def getAllBugsEverReportedURL(self):
+        """Return the URL to list all bugs reported."""
+        all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
+        all_status_query_string = get_buglisting_search_filter_url(
+            status=[status.title for status in all_statuses])
+
+        # Add the bit that simulates the "omit dupes" checkbox
+        # being unchecked.
+        return all_status_query_string + "&field.omit_dupes.used="
 
 
 def get_buglisting_search_filter_url(
@@ -2128,7 +2133,7 @@ class BugTaskSearchListingMenu(NavigationMenu):
         return Link('+nominations', 'Review nominations', icon='bug')
 
 
-class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
+class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     """View that renders a list of bugs for a given set of search criteria."""
 
     implements(IBugTaskSearchListingMenu)
