@@ -349,11 +349,7 @@ EOF
 
 
 dev_host() {
-  grep -q '^127.0.0.88.* ${hostname}' /etc/hosts
-  if [ $? -ne 0 ]; then
-    sudo sed -i 's/^127.0.0.88.*$/&\ ${hostname}/' /etc/hosts
-    echo '${hostname} added to /etc/hosts'
-  fi
+  sudo sed -i 's/^127.0.0.88.*$/&\ ${hostname}/' /etc/hosts
   }
 
 echo 'Adding development hosts on local machine'
@@ -361,7 +357,6 @@ echo '
 # Launchpad virtual domains. This should be on one line.
 127.0.0.88      launchpad.dev
 ' | sudo tee -a /etc/hosts > /dev/null
-echo 'launchpad.dev added to /etc/hosts'
 
 declare -a hostnames
 hostnames=$(cat <<EOF
@@ -392,13 +387,9 @@ for hostname in $hostnames; do
   dev_host;
 done
 
-grep -q '^127.0.0.99' /etc/hosts
-if [ $? -ne 0 ]; then
-  echo '
+echo '
 127.0.0.99      bazaar.launchpad.dev
 ' | sudo tee -a /etc/hosts > /dev/null
-  echo 'bazaar.launchpad.dev added to /etc/hosts'
-fi
 
 
 sudo apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
