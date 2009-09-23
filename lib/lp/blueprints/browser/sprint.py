@@ -46,7 +46,7 @@ from canonical.widgets.date import DateTimeWidget
 
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
+    HasSpecificationsMenuMixin, HasSpecificationsView)
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
     SpecificationSort)
@@ -110,32 +110,16 @@ class SprintOverviewMenu(NavigationMenu):
         return Link('+branding', text, summary, icon='edit')
 
 
-class SprintSpecificationsMenu(ApplicationMenu):
-
+class SprintSpecificationsMenu(NavigationMenu,
+                               HasSpecificationsMenuMixin):
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'addspec']
-
-    def assignments(self):
-        text = 'Assignments'
-        summary = 'View the specification assignments'
-        return Link('+assignments', text, summary, icon='info')
-
-    def declined(self):
-        text = 'List declined blueprints'
-        summary = 'Show topics that were not accepted for discussion'
-        return Link('+specs?acceptance=declined', text, summary, icon='info')
+    links = ['assignments', 'listdeclined', 'settopics', 'new']
 
     @enabled_with_permission('launchpad.Driver')
     def settopics(self):
         text = 'Set agenda'
-        summary = 'Approve or defer topics for discussion'
-        return Link('+settopics', text, summary, icon='edit')
-
-    def addspec(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for this meeting'
-        return Link('+addspec', text, summary, icon='info')
+        return Link('+settopics', text, icon='edit')
 
 
 class SprintSetNavigation(GetitemNavigation):
