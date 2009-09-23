@@ -292,11 +292,15 @@ class ProjectBugsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'bugs'
-    links = ['new']
+    links = ['new', 'subscribe']
 
     def new(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
