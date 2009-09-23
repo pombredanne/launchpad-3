@@ -413,7 +413,8 @@ class cmd_update_image(EC2Command):
         instance.check_bundling_prerequisites()
 
         instance.set_up_and_run(
-            dict(postmortem=postmortem, set_up_user=False),
+            dict(postmortem=postmortem,
+                 set_up_user=not (root_login and from_scratch)),
             self.update_image, instance, extra_update_image_command,
             from_scratch, root_login, ami_name, credentials, public)
 
