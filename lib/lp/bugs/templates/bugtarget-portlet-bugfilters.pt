@@ -16,8 +16,7 @@
       </tr>
     </tbody>
     <tbody>
-      <tr tal:define="subscribe_link context/menu:bugs/subscribe"
-          tal:condition="subscribe_link">
+      <tr tal:define="subscribe_link context/menu:bugs/subscribe">
         <td class="bugs-count" style="padding-top: 1em">
           <a tal:attributes="href subscribe_link/url">
             <img tal:attributes="src subscribe_link/icon_url" />
@@ -52,7 +51,7 @@
                         'innerHTML', response.responseText);
                 },
                 failure: function() {
-                    Y.get('#bugfilters-portlet-content').set('innerHTML', 'FRED');
+                    Y.get('#bugfilters-portlet-content').set('innerHTML', '');
                 }
             };
             var request = Y.io(url, {on: handlers});
