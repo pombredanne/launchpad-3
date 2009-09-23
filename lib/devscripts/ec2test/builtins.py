@@ -321,7 +321,7 @@ class cmd_demo(EC2Command):
         # instance.
         instance.set_up_and_run(
             dict(postmortem=True, no_root_login=no_root_login),
-            self.run_server, runner, demo_network_string)
+            self.run_server, runner, instance, demo_network_string)
 
     def run_server(self, runner, instance, demo_network_string):
         runner.run_demo_server()
