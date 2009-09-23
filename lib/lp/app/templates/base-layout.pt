@@ -80,7 +80,7 @@
         <h2 tal:replace="structure view/watermark:heading">
           Celso Providelo
         </h2>
-        <div class="registering">
+        <div id="registration" class="registering">
           <metal:registering define-slot="registering" />
         </div>
         <metal:heading_nav
