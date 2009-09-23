@@ -237,7 +237,7 @@ class EC2Instance:
         :param args: Passed to `func`.
         :param kw: Passed to `func`.
         """
-        if config.get('set_up_user'):
+        if config.get('set_up_user', True):
             user_key = get_user_key()
         self.start()
         try:
