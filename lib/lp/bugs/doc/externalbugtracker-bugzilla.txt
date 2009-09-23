@@ -155,16 +155,50 @@ If the remote Bugzilla offers the Bugzilla 3.4 API, an instance of
 BuzillaAPI will be returned. To test this, we use a specially-crafted
 XML-RPC proxy that behaves like a Bugzilla 3.4 instance.
 
-    >>> from lp.bugs.tests.externalbugtracker import (
-    ...     TestBugzillaAPIXMLRPCTransport)
+    >>> class APIXMLRPCTransport(xmlrpclib.Transport):
+    ...
+    ...     version = '3.4.2'
+    ...
+    ...     def request(self, host, handler, request, verbose=None):
+    ...         args, method_name = xmlrpclib.loads(request)
+    ...
+    ...         if method_name == 'Bugzilla.version':
+    ...             return [{'version': self.version}]
+    ...         else:
+    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...
+    >>> test_transport = APIXMLRPCTransport()
+
     >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
     ...     'http://example.com/xmlrpc.cgi',
-    ...     transport=TestBugzillaAPIXMLRPCTransport(
-    ...         'http://example.com/xmlrpc.cgi'))
+    ...     transport=test_transport)
 
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
     >>> (isinstance(bugzilla_to_use, BugzillaAPI) and
     ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
+If the remote system has the Launchpad plugin installed, an
+getExternalBugTrackerToUse() will return a BugzillaLPPlugin instance.
+
+    >>> class PluginXMLRPCTransport(xmlrpclib.Transport):
+    ...
+    ...     def request(self, host, handler, request, verbose=None):
+    ...         args, method_name = xmlrpclib.loads(request)
+    ...
+    ...         if method_name == 'Launchpad.plugin_version':
+    ...             return [{'version': '0.2'}]
+    ...         else:
+    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...
+    >>> test_transport = PluginXMLRPCTransport()
+
+    >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi',
+    ...     transport=test_transport)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> isinstance(bugzilla_to_use, BugzillaLPPlugin)
     True
 
 
