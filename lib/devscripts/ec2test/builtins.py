@@ -367,6 +367,7 @@ EOF
 
 bzr launchpad-login %(launchpad-login)s
 bzr init-repo --2a /var/launchpad
+bzr branch lp:~mwhudson/launchpad/no-more-devpad-ssh /var/launchpad/test
 bzr branch --standalone lp:lp-source-dependencies /var/launchpad/download-cache
 mkdir /var/launchpad/sourcecode
 /var/launchpad/test/utilities/update-sourcecode /var/launchpad/sourcecode
