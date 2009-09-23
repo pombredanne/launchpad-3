@@ -25,12 +25,16 @@ Carlos.
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open("http://blueprints.launchpad.dev/firefox/+spec/e4x/+subscribe")
+    >>> print browser.title
+    Subscribe to blueprint : Support E4X in EcmaScript :
+    Blueprints for Mozilla Firefox : Mozilla Firefox
 
 The page links back to the blueprint page, in case we change our minds.
 
     >>> back_link = browser.getLink('Support E4X in EcmaScript')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/e4x'
+
 
 There should be a control to set whether or not participation in discussions
 of this feature is essential. We will say we want to be essential to this
@@ -60,6 +64,10 @@ OK. Now, let's say we want to change the essential field. Let's follow the
 link to modify the subscription. It should currently be checked.
 
     >>> submod_link.click()
+    >>> print browser.title
+    Modify subscription : Support E4X in EcmaScript :
+    Blueprints for Mozilla Firefox : Mozilla Firefox
+
     >>> essential = browser.getControl('essential')
     >>> essential.selected
     True
