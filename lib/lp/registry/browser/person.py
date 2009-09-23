@@ -2081,6 +2081,10 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSimpleSearchURL(self):
         return canonical_url(self.context, view_name="+bugs")
 
+    @property
+    def page_title(self):
+        return self.getSearchPageHeading()
+
 
 class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
                                              BugTaskSearchListingView):
@@ -2133,6 +2137,10 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Return a URL that can be usedas an href to the simple search."""
         return canonical_url(self.context, view_name="+assignedbugs")
 
+    @property
+    def page_title(self):
+        return self.getSearchPageHeading()
+
 
 class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
                                               BugTaskSearchListingView):
@@ -2172,6 +2180,10 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+commentedbugs")
+
+    @property
+    def page_title(self):
+        return self.getSearchPageHeading()
 
 
 class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -2224,6 +2236,10 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the tags combinator widget show on the search page?"""
         return False
 
+    @property
+    def page_title(self):
+        return self.getSearchPageHeading()
+
 
 class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
                                                BugTaskSearchListingView):
@@ -2263,6 +2279,10 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+subscribedbugs")
+
+    @property
+    def page_title(self):
+        return self.getSearchPageHeading()
 
 
 class PersonVouchersView(LaunchpadFormView):
