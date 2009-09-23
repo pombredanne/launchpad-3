@@ -289,6 +289,13 @@
                 var button = document.getElementById('field.actions.save');
                 button.style.display = 'none';
               </script>
+              <script type="text/javascript">
+                YUI().use('lp.comment', function(Y) {
+                var comment = Y.Comment();
+                comment.render();
+                alert('bar');
+                })
+              </script>
             </div>
             <tal:attachment-link
                 define="add_attachment_link context_menu/addcomment"
