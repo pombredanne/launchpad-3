@@ -106,7 +106,8 @@ When getExternalBugTrackerToUse() receives a Fault of type 'Client' from
 the remote server in response to its check, it will return a standard
 Bugzilla instance.
 
-    >>> from lp.bugs.externalbugtracker import BugzillaAPI
+    >>> from lp.bugs.externalbugtracker import (
+    ...     BugzillaAPI, BugzillaLPPlugin)
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 
 The returned bugtracker will be a Bugzilla instance bug not a
@@ -148,6 +149,22 @@ ResponseError to be raised.
 
     >>> (isinstance(bugzilla_to_use, Bugzilla) and
     ...  not isinstance(bugzilla_to_use, BugzillaAPI))
+    True
+
+If the remote Bugzilla offers the Bugzilla 3.4 API, an instance of
+BuzillaAPI will be returned. To test this, we use a specially-crafted
+XML-RPC proxy that behaves like a Bugzilla 3.4 instance.
+
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     TestBugzillaAPIXMLRPCTransport)
+    >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi',
+    ...     transport=TestBugzillaAPIXMLRPCTransport(
+    ...         'http://example.com/xmlrpc.cgi'))
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> (isinstance(bugzilla_to_use, BugzillaAPI) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
     True
 
 

@@ -59,6 +59,37 @@ class Bugzilla(ExternalBugTracker):
 
         See `IExternalBugTracker`.
         """
+        api = BugzillaAPI(self.baseurl)
+        try:
+            # We try calling Bugzilla.version() on the remote
+            # server because it's the most lightweight method there is.
+            if self._test_xmlrpc_proxy is not None:
+                proxy = self._test_xmlrpc_proxy
+            else:
+                proxy = api.xmlrpc_proxy
+            version = proxy.Bugzilla.version()
+        except xmlrpclib.Fault, fault:
+            if fault.faultCode == 'Client':
+                return self
+            else:
+                raise
+        except xmlrpclib.ProtocolError, error:
+            # We catch 404s, which occur when xmlrpc.cgi doesn't exist
+            # on the remote server, and 500s, which sometimes occur when
+            # the Launchpad Plugin isn't installed. Everything else we
+            # can consider to be a problem, so we let it travel up the
+            # stack for the error log.
+            if error.errcode in (404, 500):
+                return self
+            else:
+                raise
+        except xmlrpclib.ResponseError:
+            # The server returned an unparsable response.
+            return self
+        else:
+            return api
+
+    def getExternalBugTrackerToUse_(self):
         plugin = BugzillaLPPlugin(self.baseurl)
         try:
             # We try calling Launchpad.plugin_version() on the remote
