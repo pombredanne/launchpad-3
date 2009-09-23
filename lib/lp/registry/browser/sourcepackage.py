@@ -264,6 +264,10 @@ class SourcePackagePackaging(SourcePackageView):
 
     page_title = 'Upstream links'
 
+    @property
+    def label(self):
+        return "Upstream links for %s" % self.context.title
+
 
 class SourcePackageHelpView:
     """A View to show Answers help."""

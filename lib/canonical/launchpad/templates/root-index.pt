@@ -32,42 +32,19 @@
       </tal:comment>
       <!-- Is your project registered yet? -->
 
-      <div id="homepage">
+      <div id="homepage" class="homepage">
 
-        <div class="top-portlet">
+        <div class="top-portlet" style="border-bottom: 1px solid;">
           <img src="/@@/launchpad-logo-and-name.png"
                alt=""
                style="margin: 0 9em 1em 0"/>
-          <form id="homepage-searchform"
-            xml:lang="en" lang="en" dir="ltr"
-            tal:attributes="action string:${rooturl}+search"
-            method="get" accept-charset="UTF-8">
-            <input id="text" type="text" name="field.text" size="45" />
-            <input id="search" type="submit" value="Search Launchpad" />
-          </form>
-          <div id="homepage-stats">
-            <strong class="registry-stat"
-              tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,
-            <strong class="bugs-stat"
-              tal:content="view/bug_count/fmt:intcomma">123</strong>&nbsp;bugs,
-            <strong class="code-stat"
-              tal:content="view/branch_count/fmt:intcomma">123</strong>&nbsp;branches,
-            <strong class="translations-stat"
-              tal:content="view/translation_count/fmt:intcomma">123</strong>&nbsp;translations,
-            <strong class="answers-stat"
-              tal:content="view/answer_count/fmt:intcomma">123</strong>&nbsp;answers,
-            <strong class="blueprints-stat"
-              tal:content="view/blueprint_count/fmt:intcomma">123</strong>&nbsp;blueprints,
-            and&nbsp;counting...
-          </div>
         </div>
 
-        <div class="yui-gc">
-
+        <div class="yui-g">
           <div class="yui-u first">
-            <div id="homepage-whatslaunchpad" class="homepage-portlet"
+            <div class="homepage-whatslaunchpad"
                  tal:condition="not:view/user">
-              <h2>Launchpad is a software collaboration platform that provides:</h2>
+              <h2><span class="launchpad-gold">Launchpad</span> is a software collaboration platform that provides:</h2>
               <ul tal:define="apphomes view/apphomes">
               <li><a tal:attributes="href apphomes/bugs"><img src="/@@/bug" alt="" /></a>
                 <a tal:attributes="href apphomes/bugs">Bug tracking</a></li>
@@ -124,13 +101,35 @@
                   Find out more about Launchpad's privacy features for your commercial projects.
                 </li>
               </ul>
-              <div id="homepage-blogposts-older">
-                <a href="http://blog.launchpad.net">&gt; Read the blog</a>
+              <div class="homepage-blogposts-older">
+                <a href="http://blog.launchpad.net">Read the blog</a>
               </div>
             </div>
           </div>
 
           <div class="yui-u">
+            <form id="homepage-searchform"
+              xml:lang="en" lang="en" dir="ltr"
+              tal:attributes="action string:${rooturl}+search"
+              method="get" accept-charset="UTF-8">
+              <input id="text" type="text" name="field.text" size="25%" />
+              <input id="search" type="submit" value="Search Launchpad" />
+            </form>
+            <div id="homepage-stats">
+              <strong class="registry-stat"
+                tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,
+              <strong class="bugs-stat"
+                tal:content="view/bug_count/fmt:intcomma">123</strong>&nbsp;bugs,
+              <strong class="code-stat"
+                tal:content="view/branch_count/fmt:intcomma">123</strong>&nbsp;branches,
+              <strong class="translations-stat"
+                tal:content="view/translation_count/fmt:intcomma">123</strong>&nbsp;translations,
+              <strong class="answers-stat"
+                tal:content="view/answer_count/fmt:intcomma">123</strong>&nbsp;answers,
+              <strong class="blueprints-stat"
+                tal:content="view/blueprint_count/fmt:intcomma">123</strong>&nbsp;blueprints,
+              and&nbsp;counting...
+            </div>
             <div id="homepage-getstarted" class="homepage-portlet">
               <h2>Get started</h2>
               <tal:logged_out condition="not:view/user" omit-tag="">
@@ -188,8 +187,9 @@
                   <a tal:replace="structure project/fmt:link" />
                 </li>
               </ul>
-              <div id="homepage-featured-more">
-                <a href="/projects">Browse all <strong class="registry-stat"
+              <div class="homepage-featured-more">
+                <a href="/projects">Browse all
+                  <strong class="registry-stat"
                   tal:content="view/project_count">42</strong> projects</a>!
               </div>
               <div tal:condition="context/required:launchpad.Admin"

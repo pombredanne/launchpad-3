@@ -543,11 +543,14 @@
             name="+changes"
             facet="overview"
             template="../templates/distributionsourcepackagerelease-changes.pt"/>
-        <browser:page
-            name="+publishinghistory"
-            facet="overview"
-            template="../templates/distributionsourcepackage-publishinghistory.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
+        class="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleasePublishingHistoryView"
+        permission="zope.Public"
+        name="+publishinghistory"
+        facet="overview"
+        template="../templates/distributionsourcepackage-publishinghistory.pt" />
     <browser:defaultView
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
         name="+index"/>
@@ -698,7 +701,7 @@
             template="../templates/distributionsourcepackage-portlet-pub-details.pt"/>
         <browser:page
             for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-            class="canonical.launchpad.webapp.publisher.LaunchpadView"
+            class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackagePublishingHistoryView"
             permission="zope.Public"
             name="+publishinghistory"
             facet="overview"
