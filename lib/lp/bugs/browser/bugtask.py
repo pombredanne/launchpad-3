@@ -3357,6 +3357,10 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
 
+    @property
+    def page_title(self):
+        return self.getSearchPageHeading()
+
 
 class BugTaskPrivacyAdapter:
     """Provides `IObjectPrivacy` for `IBugTask`."""
