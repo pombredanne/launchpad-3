@@ -3325,6 +3325,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
                        "importance", "status"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
+    page_title = 'Search'
 
     def initialize(self):
         """Initialize the view for the request."""
@@ -3359,7 +3360,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
         return "Search all bug reports"
 
     @property
-    def page_title(self):
+    def label(self):
         return self.getSearchPageHeading()
 
 

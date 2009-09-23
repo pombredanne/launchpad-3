@@ -1820,6 +1820,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug subscriber."""
 
     columns_to_show = ["id", "summary", "importance", "status"]
+    page_title = 'Package bugs'
 
     @property
     def current_package(self):
@@ -2013,6 +2014,10 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def getSimpleSearchURL(self):
         return self.getBugSubscriberPackageSearchURL()
 
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
+
 
 class RelevantMilestonesMixin:
     """Mixin to narrow the milestone list to only relevant milestones."""
@@ -2033,6 +2038,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Related bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2082,7 +2088,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
         return canonical_url(self.context, view_name="+bugs")
 
     @property
-    def page_title(self):
+    def label(self):
         return self.getSearchPageHeading()
 
 
@@ -2092,6 +2098,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Assigned bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2138,7 +2145,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         return canonical_url(self.context, view_name="+assignedbugs")
 
     @property
-    def page_title(self):
+    def label(self):
         return self.getSearchPageHeading()
 
 
@@ -2148,6 +2155,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Commented bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2182,7 +2190,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         return canonical_url(self.context, view_name="+commentedbugs")
 
     @property
-    def page_title(self):
+    def label(self):
         return self.getSearchPageHeading()
 
 
@@ -2192,6 +2200,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Reported bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2237,7 +2246,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         return False
 
     @property
-    def page_title(self):
+    def label(self):
         return self.getSearchPageHeading()
 
 
@@ -2247,6 +2256,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Subscribed bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2281,7 +2291,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         return canonical_url(self.context, view_name="+subscribedbugs")
 
     @property
-    def page_title(self):
+    def label(self):
         return self.getSearchPageHeading()
 
 

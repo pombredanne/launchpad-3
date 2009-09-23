@@ -7,8 +7,6 @@
   i18n:domain="launchpad">
 
 <body>
-  <h1 metal:fill-slot="heading" tal:content="view/page_title" />
-
   <div metal:fill-slot="side">
     <tal:menu replace="structure context/@@+global-actions" />
     <div tal:condition="view/shouldShowAssignedToTeamPortlet|nothing"
