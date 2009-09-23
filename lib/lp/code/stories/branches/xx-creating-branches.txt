@@ -39,7 +39,6 @@ Branch URLs are not valid for hosted branches.
     >>> print_branch_info(browser)
     Branch information
     Project: Redfish (Unspecified)
-    Owner: Sample Person
     Status: Development
 
 
@@ -73,7 +72,6 @@ Branch URLs are required for mirrored branches.
     >>> print_branch_info(browser)
     Branch information
     Project: Redfish (Unspecified)
-    Owner: Sample Person
     Status: Development
     Location: http://example.com/mirrored-branch
     Last mirrored: Not mirrored yet
@@ -98,7 +96,6 @@ A remote branch may have a URL, but doesn't have to.
     >>> print_branch_info(browser)
     Branch information
     Project: Redfish (Unspecified)
-    Owner: Sample Person
     Status: Development
     Location: http://example.com/remote-branch
 
@@ -318,7 +315,7 @@ Trailing slashes on URLs are removed.
     >>> user_browser.getControl('Register Branch').click()
     >>> print_tag_with_id(user_browser.contents, 'branch-info')
     Branch information
-    Project: ...
+    Owner: ...
     ...
     Location: sftp://example.com/~lifeless/pyresources
     ...
