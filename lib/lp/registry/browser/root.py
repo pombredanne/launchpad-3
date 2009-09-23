@@ -56,7 +56,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     # The homepage has two columns to hold featured projects. This
     # determines the number of projects we display in each column.
-    FEATURED_PROJECT_ROWS = 10
+    FEATURED_PROJECT_ROWS = 11
     FEATURED_PROJECT_COLS = 2
 
     featured_projects = []

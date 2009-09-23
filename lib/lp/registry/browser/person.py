@@ -775,7 +775,7 @@ class PersonBugsMenu(NavigationMenu):
         return Link('+commentedbugs', text, summary=summary)
 
 
-class PersonSpecsMenu(ApplicationMenu):
+class PersonSpecsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'specifications'
@@ -786,28 +786,28 @@ class PersonSpecsMenu(ApplicationMenu):
     def registrant(self):
         text = 'Registrant'
         summary = 'List specs registered by %s' % self.context.displayname
-        return Link('+specs?role=registrant', text, summary, icon='spec')
+        return Link('+specs?role=registrant', text, summary, icon='blueprint')
 
     def approver(self):
         text = 'Approver'
         summary = 'List specs with %s is supposed to approve' % (
             self.context.displayname)
-        return Link('+specs?role=approver', text, summary, icon='spec')
+        return Link('+specs?role=approver', text, summary, icon='blueprint')
 
     def assignee(self):
         text = 'Assignee'
         summary = 'List specs for which %s is the assignee' % (
             self.context.displayname)
-        return Link('+specs?role=assignee', text, summary, icon='spec')
+        return Link('+specs?role=assignee', text, summary, icon='blueprint')
 
     def drafter(self):
         text = 'Drafter'
         summary = 'List specs drafted by %s' % self.context.displayname
-        return Link('+specs?role=drafter', text, summary, icon='spec')
+        return Link('+specs?role=drafter', text, summary, icon='blueprint')
 
     def subscriber(self):
         text = 'Subscriber'
-        return Link('+specs?role=subscriber', text, icon='spec')
+        return Link('+specs?role=subscriber', text, icon='blueprint')
 
     def feedback(self):
         text = 'Feedback requests'
