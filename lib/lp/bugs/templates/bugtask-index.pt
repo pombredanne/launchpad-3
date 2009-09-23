@@ -290,7 +290,7 @@
                 button.style.display = 'none';
               </script>
               <script type="text/javascript">
-                YUI().use('lp.comment', function(Y) {
+                YUI().use('oop', 'lp.comment', function(Y) {
                 var comment = Y.Comment();
                 comment.render();
                 alert('bar');
