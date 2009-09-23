@@ -545,12 +545,12 @@ request.
     >>> response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources', version='1.0')
     >>> print response.getheader('status')
-    400 Bad request
+    400 Bad Request
     >>> response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedBinaries',
     ...     version='1.0')
     >>> print response.getheader('status')
-    400 Bad request
+    400 Bad Request
 
 
 == Package copying/synchronisation ==
