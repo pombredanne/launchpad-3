@@ -15,7 +15,7 @@ the main heading repeats the bug number for clarity:
         Bugs in mozilla-firefox > Bug #3...
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
-    * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
+    * Branches - http://code.launchpad.dev/debian/+source/mozilla-firefox
     * Bugs (selected) - http://bugs.launchpad.dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
     * Translations - not linked

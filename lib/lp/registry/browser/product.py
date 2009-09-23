@@ -269,7 +269,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         summary = 'Branches for %s' % self.context.displayname
         return Link('', text, summary)
 

@@ -111,7 +111,7 @@ class UsesLaunchpadMixin:
         if IProduct.providedBy(self.context):
             if self.context.official_codehosting:
                 url = canonical_url(self.context, rootsite='code')
-                uses.append(href_template % (url, 'Code'))
+                uses.append(href_template % (url, 'Branches'))
         if self.context.official_rosetta:
             url = canonical_url(self.context, rootsite='translations')
             uses.append(href_template % (url, 'Translations'))

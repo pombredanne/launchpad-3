@@ -8,7 +8,7 @@
 Projects link their branch listing page.
 
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> browser.getLink('Code').click()
+    >>> browser.getLink('Branches').click()
     >>> print browser.title
     Branches for the Mozilla Project : the Mozilla Project
 
