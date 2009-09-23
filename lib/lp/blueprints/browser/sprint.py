@@ -145,6 +145,12 @@ class SprintView(HasSpecificationsView, LaunchpadView):
 
     implements(IMajorHeadingView)
 
+    # XXX Michael Nelson 20090923 bug=435255
+    # This class inherits a label from HasSpecificationsView, which causes
+    # a second h1 to display. But as this view implements IMajorHeadingView
+    # it should not include an h1 below the app buttons.
+    label = None
+
     def initialize(self):
         self.notices = []
         self.latest_specs_limit = 5
