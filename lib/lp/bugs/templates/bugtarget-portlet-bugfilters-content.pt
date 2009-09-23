@@ -38,10 +38,9 @@
     <td class="bugs-count" tal:content="cve_bugs_info/count" />
     <td class="bugs-link">
       <a tal:attributes="href cve_bugs_info/url">Open CVE bugs</a>
-      <tal:has-report condition="cve_bugs_info/has_report">
-        -
-        <a tal:attributes="href context/fmt:url/+cve">CVE reports</a>
-      </tal:has-report>
+      <span tal:condition="cve_bugs_info/has_report">
+        - <a tal:attributes="href context/fmt:url/+cve">CVE reports</a>
+      </span>
     </td>
   </tr>
   <tr tal:define="expirable_bugs_info view/expirable_bugs_info"

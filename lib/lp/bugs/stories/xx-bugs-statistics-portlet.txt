@@ -1,0 +1,108 @@
+= Bug statistics portlet =
+
+The distribution, project group and project bug listings contain a
+portlet that shows bug statistics for the target. Each statistic is a
+link to filter the listing to show just those bugs. This portlet is
+served in a separate request; the request is issued via Javascript and
+inserted into the page later.
+
+
+== Distribution ==
+
+If the user is not logged-in general stats are shown.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/debian/+bugtarget-portlet-bugfilters-content')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> table = BeautifulSoup('<table>%s</table>' % anon_browser.contents)
+    >>> print_table(table)
+    3 Open bugs
+    0 Critical bugs
+    0 Bugs fixed elsewhere
+    1 New bugs
+    2 Open CVE bugs - CVE reports
+
+One the user has identified him or herself, information on assigned
+bugs is also shown.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/debian/+bugtarget-portlet-bugfilters-content')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> table = BeautifulSoup('<table>%s</table>' % user_browser.contents)
+    >>> print_table(table)
+    3 Open bugs
+    0 Bugs assigned to me
+    0 Critical bugs
+    0 Bugs fixed elsewhere
+    1 New bugs
+    2 Open CVE bugs - CVE reports
+
+
+== Project group ==
+
+If the user is not logged-in general stats are shown. Note that the
+"CVE reports" link is not shown; project groups do not have a CVE
+reports page.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/mozilla/+bugtarget-portlet-bugfilters-content')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> table = BeautifulSoup('<table>%s</table>' % anon_browser.contents)
+    >>> print_table(table)
+    4 Open bugs
+    1 Critical bugs
+    0 Bugs fixed elsewhere
+    4 New bugs
+    1 Open CVE bugs
+
+One the user has identified him or herself, information on assigned
+bugs is also shown.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/mozilla/+bugtarget-portlet-bugfilters-content')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> table = BeautifulSoup('<table>%s</table>' % user_browser.contents)
+    >>> print_table(table)
+    4 Open bugs
+    0 Bugs assigned to me
+    1 Critical bugs
+    0 Bugs fixed elsewhere
+    4 New bugs
+    1 Open CVE bugs
+
+
+== Project ==
+
+If the user is not logged-in general stats are shown.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/firefox/+bugtarget-portlet-bugfilters-content')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> table = BeautifulSoup('<table>%s</table>' % anon_browser.contents)
+    >>> print_table(table)
+    3 Open bugs
+    1 Critical bugs
+    0 Bugs fixed elsewhere
+    3 New bugs
+    1 Open CVE bugs - CVE reports
+
+One the user has identified him or herself, information on assigned
+bugs is also shown.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/firefox/+bugtarget-portlet-bugfilters-content')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> table = BeautifulSoup('<table>%s</table>' % user_browser.contents)
+    >>> print_table(table)
+    3 Open bugs
+    0 Bugs assigned to me
+    1 Critical bugs
+    0 Bugs fixed elsewhere
+    3 New bugs
+    1 Open CVE bugs - CVE reports
