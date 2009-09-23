@@ -291,7 +291,7 @@
               </script>
               <script type="text/javascript">
                 YUI().use('oop', 'lp.comment', function(Y) {
-                var comment = Y.Comment();
+                var comment = new Y.Comment();
                 comment.render();
                 alert('bar');
                 })
