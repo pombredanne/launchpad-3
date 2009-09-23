@@ -56,7 +56,8 @@ from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
 from zope.component import (
-    ComponentLookupError, getAdapter, getUtility, getMultiAdapter)
+    ComponentLookupError, getAdapter, getMultiAdapter, getUtility,
+    queryMultiAdapter)
 from zope.event import notify
 from zope import formlib
 from zope.interface import implementer, implements, Interface, providedBy
@@ -1784,7 +1785,10 @@ class BugListingPortletView(LaunchpadView):
         label = bug_or_bugs(count)
         search_url = (
             "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
-        return dict(count=count, url=search_url, label=label)
+        report_view = queryMultiAdapter(
+            (self.context, self.request), name='+cve')
+        return dict(count=count, url=search_url, label=label,
+                    has_report=(report_view is not None))
 
     @property
     def pending_bugwatches_info(self):
