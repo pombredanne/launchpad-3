@@ -195,6 +195,12 @@ class EC2Instance:
 
     def set_up_user(self, user_key):
         """Set up an account named after the local user."""
+        root_connection = self.connect('root')
+        as_root = root_connection.perform
+        as_root(
+            'cat /root/.ssh/authorized_keys >>'
+            '/home/ubuntu/.ssh/authorized_keys')
+        root_connection.close()
         ubuntu_connection = self.connect()
         # Update the system.
         #ubuntu_connection.perform('sudo aptitude update')
