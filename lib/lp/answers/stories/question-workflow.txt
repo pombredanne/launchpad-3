@@ -82,6 +82,25 @@ you an error.
     Please enter a message.
 
 
+== Adding a Comment ==
+
+A comment can be added at any point without altering the status. The
+user simply enters the comment in the 'Message' box and clicks the
+'Add Comment' button.
+
+    >>> support_browser.getControl('Message').value = (
+    ...     "I forgot to mention, in the meantime here is a workaround...")
+    >>> support_browser.getControl('Add Comment').click()
+
+This appends the comment to the question and it doesn't change its
+status:
+
+    >>> print find_request_status(support_browser.contents)
+    Needs information...
+    >>> print find_last_comment(support_browser.contents).renderContents()
+    <p>I forgot to mention, in the meantime here is a workaround...</p>
+
+
 == Answering with More Information ==
 
 When the question is in the 'Needs information' state, it means that
@@ -199,7 +218,7 @@ The History link should now show up.
     Link to a FAQ
 
 
-== Adding a Comment ==
+== Adding another Comment ==
 
 When the question is Solved, it is still possible to add comments to it.
 The user simply enters the comment in the 'Message' box and clicks the
@@ -346,6 +365,7 @@ It lists all the actions performed through workflow on the question:
     ...     new_status = cells[3].renderContents()
     ...     print who.lstrip('&nbsp;'), action, new_status
     No Privileges Person Request for more information Needs information
+    No Privileges Person Comment Needs information
     Sample Person        Give more information        Open
     No Privileges Person Answer                       Answered
     Sample Person        Confirm                      Solved

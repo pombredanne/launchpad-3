@@ -810,12 +810,10 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     def canAddComment(self, action):
         """Return whether the comment action should be displayed.
 
-        Comments (message without a status change) can be added when the
-        question is solved or invalid
+        Comments (message without a status change) can be added at any
+        time by any logged-in user.
         """
-        return (self.user is not None and
-                self.context.status in [
-                    QuestionStatus.SOLVED, QuestionStatus.INVALID])
+        return (self.user is not None)
 
     @action(_('Add Comment'), name='comment', condition=canAddComment)
     def comment_action(self, action, data):
