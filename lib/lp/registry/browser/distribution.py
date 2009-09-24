@@ -47,6 +47,8 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
@@ -454,30 +456,11 @@ class DistributionBugsMenu(ApplicationMenu):
         return Link('+subscribe', text, icon='edit')
 
 
-class DistributionSpecificationsMenu(ApplicationMenu):
-
+class DistributionSpecificationsMenu(NavigationMenu,
+                                     HasSpecificationsMenuMixin):
     usedfor = IDistribution
     facet = 'specifications'
     links = ['listall', 'doc', 'assignments', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def assignments(self):
-        text = 'Assignments'
-        return Link('+assignments', text, icon='info')
-
-    def doc(self):
-        text = 'Documentation'
-        summary = 'List all complete informational specifications'
-        return Link('+documentation', text, summary,
-            icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
 
 
 class DistributionPackageSearchView(PackageSearchViewBase):
@@ -659,13 +642,15 @@ class DistributionArchivesView(LaunchpadView):
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
 
+    page_title = "Personal Package Archives"
+
     def initialize(self):
         self.name_filter = self.request.get('name_filter')
         self.show_inactive = self.request.get('show_inactive')
 
     @property
-    def page_title(self):
-        return '%s Personal Package Archives' % self.context.title
+    def label(self):
+        return 'Personal Package Archives for %s' % self.context.title
 
     @property
     def search_results(self):
