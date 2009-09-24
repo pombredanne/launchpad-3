@@ -302,14 +302,12 @@ class EC2Instance:
         """
         if self._from_scratch:
             root_connection = self._connect('root')
-            sftp = root_connection.ssh.open_sftp()
-            self._upload_local_key(sftp, 'local_key')
+            self._upload_local_key(root_connection.sftp, 'local_key')
             root_connection.perform('cat local_key >> ~/.ssh/authorized_keys')
             root_connection.perform('rm local_key')
-            update_sh = sftp.open('update.sh', 'w')
+            update_sh = root_connection.sftp.open('update.sh', 'w')
             update_sh.write(update_from_scratch % self._vals)
             update_sh.close()
-            sftp.close()
             root_connection.run_with_ssh_agent('/bin/bash update.sh')
             # At least for mwhudson, the paramiko connection often drops while
             # the update.sh script is running.  Reconnect just in case.
@@ -320,9 +318,7 @@ class EC2Instance:
             self._from_scratch = False
         if not self._ec2test_user_has_keys:
             root_connection = self._connect('root')
-            sftp = root_connection.ssh.open_sftp()
-            self._upload_local_key(sftp, 'local_key')
-            sftp.close()
+            self._upload_local_key(root_connection.sftp, 'local_key')
             root_connection.perform(
                 'cat /root/.ssh/authorized_keys local_key '
                 '> /home/ec2test/.ssh/authorized_keys')
@@ -451,11 +447,9 @@ class EC2Instance:
         connection.perform('rm -f .ssh/authorized_keys')
         connection.perform('sudo mkdir /mnt/ec2')
         connection.perform('sudo chown $USER:$USER /mnt/ec2')
-        sftp = connection.ssh.open_sftp()
 
-        remote_pk, remote_cert =  self.copy_key_and_certificate_to_image(sftp)
-
-        sftp.close()
+        remote_pk, remote_cert =  self.copy_key_and_certificate_to_image(
+            connection.sftp)
 
         bundle_dir = os.path.join('/mnt', name)
 
@@ -485,7 +479,6 @@ class EC2Instance:
             '-s %s' % credentials.secret,
             ]))
 
-        sftp.close()
         connection.close()
 
         # This is invoked locally.
@@ -509,9 +502,16 @@ class EC2InstanceConnection:
     """An ssh connection to an `EC2Instance`."""
 
     def __init__(self, instance, username, ssh):
-        self.instance = instance
-        self.username = username
-        self.ssh = ssh
+        self._instance = instance
+        self._username = username
+        self._ssh = ssh
+        self._sftp = None
+
+    @property
+    def sftp(self):
+        if self._sftp is None:
+            self._sftp = self._ssh.open_sftp()
+        return self._sftp
 
     def perform(self, cmd, ignore_failure=False, out=None):
         """Perform 'cmd' on server.
@@ -520,10 +520,11 @@ class EC2InstanceConnection:
             statuses.
         :param out: A stream to write the output of the remote command to.
         """
-        cmd = cmd % self.instance._vals
-        self.instance.log(
-            '%s@%s$ %s\n' % (self.username, self.instance._boto_instance.id, cmd))
-        session = self.ssh.get_transport().open_session()
+        cmd = cmd % self._instance._vals
+        self._instance.log(
+            '%s@%s$ %s\n'
+            % (self._username, self._instance._boto_instance.id, cmd))
+        session = self._ssh.get_transport().open_session()
         session.exec_command(cmd)
         session.shutdown_write()
         while 1:
@@ -559,11 +560,11 @@ class EC2InstanceConnection:
         Use this to run commands that require local SSH credentials. For
         example, getting private branches from Launchpad.
         """
-        cmd = cmd % self.instance._vals
-        self.instance.log(
+        cmd = cmd % self._instance._vals
+        self._instance.log(
             '%s@%s$ %s\n'
-            % (self.username, self.instance._boto_instance.id, cmd))
-        call = ['ssh', '-A', self.username + '@' + self.instance.hostname,
+            % (self._username, self._instance._boto_instance.id, cmd))
+        call = ['ssh', '-A', self._username + '@' + self._instance.hostname,
                '-o', 'CheckHostIP no',
                '-o', 'StrictHostKeyChecking no',
                '-o', 'UserKnownHostsFile ~/.ec2/known_hosts',
@@ -574,5 +575,8 @@ class EC2InstanceConnection:
         return res
 
     def close(self):
-        self.ssh.close()
-        self.ssh = None
+        if self._sftp is not None:
+            self._sftp.close()
+            self._sftp = None
+        self._ssh.close()
+        self._ssh = None

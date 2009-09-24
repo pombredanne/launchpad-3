@@ -370,11 +370,10 @@ class EC2TestRunner:
     def configure_system(self):
         user_connection = self._instance.connect()
         as_user = user_connection.perform
-        user_sftp = user_connection.ssh.open_sftp()
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
             as_user('mkdir .bazaar')
-            bazaar_conf_file = user_sftp.open(
+            bazaar_conf_file = user_connection.sftp.open(
                 ".bazaar/bazaar.conf" % self.vals, 'w')
             bazaar_conf_file.write(
                 'smtp_server = %(smtp_server)s\n' % self.vals)
@@ -387,11 +386,10 @@ class EC2TestRunner:
             bazaar_conf_file.close()
         # Copy remote ec2-remote over
         self.log('Copying ec2test-remote.py to remote machine.\n')
-        user_sftp.put(
+        user_connection.sftp.put(
             os.path.join(os.path.dirname(os.path.realpath(__file__)),
                          'ec2test-remote.py'),
             '/var/launchpad/ec2test-remote.py')
-        user_sftp.close()
         # Set up launchpad login and email
         as_user('bzr launchpad-login %(launchpad-login)s')
         user_connection.close()
@@ -453,16 +451,14 @@ class EC2TestRunner:
         p('mv /var/launchpad/download-cache /var/launchpad/tmp/download-cache')
         if (self.include_download_cache_changes and
             self.download_cache_additions):
-            sftp = user_connection.ssh.open_sftp()
             root = os.path.realpath(
                 os.path.join(self.original_branch, 'download-cache'))
             for info in self.download_cache_additions:
                 src = os.path.join(root, info[0])
                 self.log('Copying %s to remote machine.\n' % (src,))
-                sftp.put(
+                user_connection.sftp.put(
                     src,
                     os.path.join('/var/launchpad/tmp/download-cache', info[0]))
-            sftp.close()
         p('/var/launchpad/test/utilities/link-external-sourcecode '
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database
@@ -578,11 +574,9 @@ class EC2TestRunner:
 
             # deliver results as requested
             if self.file:
-                sftp = user_connection.ssh.open_sftp()
                 self.log(
                     'Writing abridged test results to %s.\n' % self.file)
-                sftp.get('/var/www/summary.log', self.file)
-                sftp.close()
+                user_connection.sftp.get('/var/www/summary.log', self.file)
         user_connection.close()
 
     def get_remote_test_options(self):
