@@ -349,11 +349,17 @@ class FileBugViewBase(LaunchpadFormView):
 
     @property
     def no_ubuntu_redirect(self):
-        return (
-            self.request.form.get('no-redirect') is not None or
-            [key for key in self.request.form.keys()
-             if 'field.actions' in key] != [] or
-             self.user.inTeam(self.context.bug_supervisor))
+        if IDistribution.providedBy(self.context):
+            return (
+                self.request.form.get('no-redirect') is not None or
+                [key for key in self.request.form.keys()
+                 if 'field.actions' in key] != [] or
+                 self.user.inTeam(self.context.bug_supervisor))
+        else:
+            return (
+                self.request.form.get('no-redirect') is not None or
+                [key for key in self.request.form.keys()
+                 if 'field.actions' in key] != [])
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
