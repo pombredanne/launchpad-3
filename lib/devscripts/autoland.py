@@ -13,7 +13,6 @@ DEV_SERVICE_ROOT = 'https://api.launchpad.dev/beta/'
 LPNET_SERVICE_ROOT = 'https://api.launchpad.net/beta/'
 
 # Given the merge proposal URL, get:
-# - the release-critical reviewer
 # - whether or not it has been approved
 # If the review has not been approved, warn.
 
@@ -168,6 +167,11 @@ def get_reviewer_handle(reviewer):
     return reviewer.name
 
 
+def _comma_separated_names(things):
+    """Return a string of comma-separated names of 'things'."""
+    return ','.join(thing.name for thing in things)
+
+
 def get_reviewer_clause(reviewers):
     """Get the reviewer section of a commit message, given the reviewers.
 
@@ -180,12 +184,17 @@ def get_reviewer_clause(reviewers):
     code_reviewers.extend(reviewers.get('db', []))
     ui_reviewers = reviewers.get('ui', [])
     if ui_reviewers:
-        ui_clause = ','.join(reviewer.name for reviewer in ui_reviewers)
+        ui_clause = _comma_separated_names(ui_reviewers)
     else:
         ui_clause = 'none'
-    return '[r=%s][ui=%s]' % (
-        ','.join(reviewer.name for reviewer in code_reviewers),
-        ui_clause)
+    rc_reviewers = reviewers.get('release-critical', [])
+    if rc_reviewers:
+        rc_clause = (
+            '[release-critical=%s]' % _comma_separated_names(rc_reviewers))
+    else:
+        rc_clause = ''
+    return '%s[r=%s][ui=%s]' % (
+        rc_clause, _comma_separated_names(code_reviewers), ui_clause)
 
 
 def get_bazaar_host(api_root):

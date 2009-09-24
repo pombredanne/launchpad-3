@@ -123,6 +123,14 @@ class TestGetReviewerClause(unittest.TestCase):
         clause = self.get_reviewer_clause({'code': [self.makePerson('foo')]})
         self.assertEqual('[r=foo][ui=none]', clause)
 
+    def test_release_critical(self):
+        # Reviews that are marked as release-critical are included in a
+        # separate clause.
+        clause = self.get_reviewer_clause(
+            {'code': [self.makePerson('foo')],
+             'release-critical': [self.makePerson('bar')]})
+        self.assertEqual('[release-critical=bar][r=foo][ui=none]', clause)
+
     def test_db_reviewer_counts(self):
         # There's no special way of annotating database reviews in Launchpad
         # commit messages, so they are included with the code reviews.
