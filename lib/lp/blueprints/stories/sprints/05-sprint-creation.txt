@@ -85,7 +85,7 @@ are not displayed.
   Hierarchy: None displayed
   Tabs:
   * Overview (selected) - not linked
-  * Code - not linked
+  ...
   * Bugs - not linked
   * Blueprints - http://blueprints.launchpad.dev/sprints/ltsponsteroids
   * Translations - not linked
