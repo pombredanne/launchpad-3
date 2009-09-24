@@ -26,7 +26,7 @@ class LaunchpadBranchLander:
         self._launchpad = launchpad
 
     @classmethod
-    def load(cls, service_root=DEV_SERVICE_ROOT):
+    def load(cls, service_root=EDGE_SERVICE_ROOT):
         # XXX: JonathanLange 2009-09-24: No unit tests.
         cache_dir = os.path.expanduser(cls.cache_dir)
         # XXX: JonathanLange 2009-09-24 bug=435813: If cached data invalid,
@@ -63,6 +63,11 @@ class MergeProposal:
     def target_branch(self):
         """The push URL of the target branch."""
         return str(self._get_push_url(self._mp.target_branch))
+
+    @property
+    def commit_message(self):
+        """The commit message specified on the merge proposal."""
+        return self._mp.commit_message
 
     def get_stakeholder_emails(self):
         """Return a collection of people who should know about branch landing.
