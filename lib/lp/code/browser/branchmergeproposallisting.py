@@ -271,7 +271,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             if proposal.preview_diff is not None:
                 self.show_diffs = True
         # Sort each collection...
-        for group in self.review_groups:
+        for group in self.review_groups.values():
             group.sort(key=attrgetter('date_review_requested'))
         self.proposal_count = len(proposals)
 
