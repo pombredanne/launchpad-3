@@ -1,4 +1,6 @@
-= Mailing list subscriptions =
+==========================
+Mailing list subscriptions
+==========================
 
 Both direct and indirect members of a team may subscribe to a team's mailing
 list.  First, create the mailing list, which will send a notification messages
@@ -97,7 +99,8 @@ Bart now leaves the team.  His subscription is removed.
     >>> helpers.ensure_nonmembership('itest-one', bart)
 
 
-== Alternative addresses ==
+Alternative addresses
+=====================
 
 Now Anne decides to register another email address with Launchpad, however
 before she can validate this address, subscriptions for the list are
@@ -145,7 +148,8 @@ Once Anne validates her address though, she may post from it.
     No Privileges Person    <no-priv@canonical.com>     DISABLED
 
 
-== Case-preservation ==
+Case-preservation
+=================
 
 Mailing lists preserve the case of the subscribed email address,
 although for subscription purposes, two email addresses that differs
