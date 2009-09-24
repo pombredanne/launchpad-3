@@ -218,8 +218,8 @@ class TestJobRunner(TestCaseWithFactory):
         job = RaisingJob('boom')
         runner = JobRunner([job])
         self.assertRaises(RaisingJobException, runner.runJob, job)
-        # Abort the transaction to confirm that the job status has been
-        # updated.
+        # Abort the transaction to confirm that the update of the job status
+        # has been committed.
         transaction.abort()
         self.assertEqual(JobStatus.FAILED, job.job.status)
 
