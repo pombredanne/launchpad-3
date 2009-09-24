@@ -382,10 +382,9 @@ class cmd_update_image(EC2Command):
         The steps we take are:
 
          * run any commands specified with --extra-update-image-command
-         * update sourcecode via rsync.
+         * update sourcecode
          * update the launchpad branch to the tip of the trunk branch.
          * update the copy of the download-cache.
-         * remove the user account.
          * bundle the image
 
         :param instance: `EC2Instance` to operate on.
@@ -393,6 +392,8 @@ class cmd_update_image(EC2Command):
             instance in addition to the usual ones.
         :param ami_name: The name to give the created AMI.
         :param credentials: An `EC2Credentials` object.
+        :param public: If true, remove proprietary code from sourecode before
+            bundling.
         """
         user_connection = instance.connect()
         user_connection.perform('bzr launchpad-login %(launchpad-login)s')
