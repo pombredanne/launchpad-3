@@ -639,7 +639,12 @@ class QuestionChangeStatusView(LaunchpadFormView):
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
             _('Question status updated.'))
-        self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
@@ -678,11 +683,16 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
                 editable_fields.append(field.__name__)
         self.form_fields = self.form_fields.select(*editable_fields)
 
-    @action(u"Continue", name="change")
+    @action(u"Save changes", name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
         self.updateContextFromData(data)
-        self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class QuestionRejectView(LaunchpadFormView):
@@ -701,15 +711,12 @@ class QuestionRejectView(LaunchpadFormView):
             self.setFieldError(
                 'message', _('You must provide an explanation message.'))
 
-    @action(_('Reject'))
+    @action(_('Reject question'), name="reject")
     def reject_action(self, action, data):
         """Reject the Question."""
         self.context.reject(self.user, data['message'])
         self.request.response.addNotification(
             _('You have rejected this question.'))
-        self.request.response.redirect(canonical_url(self.context))
-        return ''
-
 
     def initialize(self):
         """See `LaunchpadFormView`.
@@ -723,6 +730,12 @@ class QuestionRejectView(LaunchpadFormView):
             return
 
         LaunchpadFormView.initialize(self)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class LinkFAQMixin:
@@ -1297,10 +1310,15 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
         if self.context.faq == data.get('faq'):
             self.setFieldError('faq', _("You didn't modify the linked FAQ."))
 
-    @action(_('Link FAQ'), name="link")
+    @action(_('Link to FAQ'), name="link")
     def link_action(self, action, data):
         """Link the selected FAQ to the question."""
         if data['faq'] is not None:
             data['message'] += '\n' + self.getFAQMessageReference(data['faq'])
         self.context.linkFAQ(self.user, data['faq'], data['message'])
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
