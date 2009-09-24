@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    "BugsVHostBreadcrumb",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
     "BugTargetBugsView",
@@ -351,7 +352,8 @@ class FileBugViewBase(LaunchpadFormView):
         return (
             self.request.form.get('no-redirect') is not None or
             [key for key in self.request.form.keys()
-             if 'field.actions' in key] != [])
+             if 'field.actions' in key] != [] or
+             self.user.inTeam(self.context.bug_supervisor))
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -413,7 +415,7 @@ class FileBugViewBase(LaunchpadFormView):
                                 packagename, distribution.displayname))
                         self.setFieldError("packagename", packagename_error)
             else:
-                self.setFieldError("packagename", 
+                self.setFieldError("packagename",
                                    "Please enter a package name")
 
         # If we've been called from the frontpage filebug forms we must check
@@ -1293,9 +1295,21 @@ class BugTargetBugTagsView(LaunchpadView):
     @property
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
-        official_tags = set(self.context.official_bug_tags)
+        official_tags = self.context.official_bug_tags
         tags = self.getUsedBugTagsWithURLs()
-        tags.sort(key=itemgetter('tag'))
+        other_tags = [tag for tag in tags if tag['tag'] not in official_tags]
+        popular_tags = [tag['tag'] for tag in sorted(
+            other_tags, key=itemgetter('count'))[:10]]
+        tags = [
+            tag for tag in tags
+            if tag['tag'] in official_tags + popular_tags]
+        all_tag_dicts = [tag['tag'] for tag in tags]
+        for official_tag in official_tags:
+            if official_tag not in all_tag_dicts:
+                tags.append({
+                    'tag': official_tag,
+                    'count': 0,
+                    'url': "+bugs?field.tag=%s" % urllib.quote(official_tag)})
         max_count = float(max([1] + [tag['count'] for tag in tags]))
         for tag in tags:
             if tag['tag'] in official_tags:
@@ -1305,7 +1319,7 @@ class BugTargetBugTagsView(LaunchpadView):
                     tag['factor'] = 1.5 + (tag['count'] / max_count)
             else:
                 tag['factor'] = 1 + (tag['count'] / max_count)
-        return tags
+        return sorted(tags, key=itemgetter('tag'))
 
     @property
     def show_manage_tags_link(self):
@@ -1357,9 +1371,6 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BugTargetOnBugsVHostBreadcrumb(Breadcrumb):
+class BugsVHostBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
-
-    @property
-    def text(self):
-        return 'Bugs in %s' % self.context.name
+    text = 'Bugs'

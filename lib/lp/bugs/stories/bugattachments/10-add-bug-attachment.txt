@@ -35,7 +35,7 @@ After we added the attachment, we get redirected to the bug page.
 We can check that the attachment is there
 
   >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
-  >>> for li_tag in attachments.findAll('li', 'download'):
+  >>> for li_tag in attachments.findAll('li', 'download-attachment'):
   ...   print li_tag.a.renderContents()
   Some information
 
@@ -66,7 +66,7 @@ also not necessary to enter a comment in order to add an attachment.
   'http://bugs.launchpad.dev/firefox/+bug/1'
 
   >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
-  >>> for li_tag in attachments.findAll('li', 'download'):
+  >>> for li_tag in attachments.findAll('li', 'download-attachment'):
   ...   print li_tag.a.renderContents()
   Some information
   bar.txt

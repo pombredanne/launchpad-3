@@ -5,15 +5,18 @@
 
 __metaclass__ = type
 
-from zope.app.form.interfaces import WidgetsError
-from zope.app.form.browser.add import AddView
+from zope.app.form.browser import TextAreaWidget
 
 from zope.component import getUtility
+from zope.interface import Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.helpers import english_list
+from canonical.launchpad.webapp import (
+    LaunchpadFormView, action, canonical_url, custom_widget)
+from lp.blueprints.interfaces.specificationfeedback import (
+    ISpecificationFeedback)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.webapp import canonical_url
 
 
 __all__ = [
@@ -22,113 +25,88 @@ __all__ = [
     ]
 
 
-class SpecificationFeedbackAddView(AddView):
+class SpecificationFeedbackAddView(LaunchpadFormView):
 
-    def __init__(self, context, request):
-        AddView.__init__(self, context, request)
-        self.top_of_page_errors = []
+    schema = ISpecificationFeedback
 
-    def valid_feedback_request(self, spec, reviewer, requester):
-        for request in spec.getFeedbackRequests(reviewer):
-            if request.requester == requester:
-                return False
-        return True
+    field_names = [
+        'reviewer', 'queuemsg',
+        ]
 
-    def create(self, reviewer, requester, queuemsg=None):
-        if reviewer == requester:
-            self.top_of_page_errors.append(_(
-                "You can't request feedback from yourself"))
-        elif not self.valid_feedback_request(
-            self.context, reviewer, requester):
-            self.top_of_page_errors.append(_(
-                "You've already requested feedback from %s"
-                % reviewer.displayname))
-        if self.top_of_page_errors:
-            raise WidgetsError(self.top_of_page_errors)
-        return self.context.queue(reviewer, requester, queuemsg)
-
-    def add(self, content):
-        """Skipping 'adding' this content to a container, because
-        this is a placeless system."""
-        return content
-
-    def nextURL(self):
-        return canonical_url(self.context)
-
-
-class SpecificationFeedbackClearingView:
-
-    def __init__(self, context, request):
-        """A custom little view class to process the results of this unusual
-        page. It is unusual because we want to display multiple objects with
-        checkboxes, then process the selected items, which is not the usual
-        add/edit metaphor."""
-        self.context = context
-        self.request = request
-        self.process_status = None
+    custom_widget('queuemsg', TextAreaWidget, height=5)
 
     @property
-    def feedbackrequests(self):
-        """Return the feedback requests on this spec which have been made of
-        this user."""
+    def label(self):
+        return "Request feedback on specification"
+
+    @property
+    def page_title(self):
+        return self.label
+
+    def validate(self, data):
+        reviewer = data.get('reviewer')
+        requester = self.user
+        for request in self.context.getFeedbackRequests(reviewer):
+            if request.requester == requester:
+                self.addError("You've already requested feedback from %s"
+                    % reviewer.displayname)
+        if reviewer == requester:
+            self.addError("You can't request feedback from yourself")
+
+    @action(_("Add"), name="create")
+    def create_action(self, action, data):
+        reviewer = data.get('reviewer')
+        requester = self.user
+        queuemsg = data.get('queuemsg')
+        return self.context.queue(reviewer, requester, queuemsg)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return self.next_url
+
+
+class SpecificationFeedbackClearingView(LaunchpadFormView):
+
+    schema = Interface
+    field_names = []
+
+    @property
+    def label(self):
+        return _('Give feedback on this blueprint')
+
+    @property
+    def requests(self):
+        """Return the feedback requests made of this user."""
         if self.user is None:
             return None
         return self.context.getFeedbackRequests(self.user)
 
+    @action(_('Save changes'), name='save')
+    def save_action(self, action, data):
+        names = self.request.form_ng.getAll('name')
+        if len(names) == 0:
+            self.request.response.addNotification(
+                'Please select feedback queue items to clear.')
+        else:
+            cleared_from = []
+            for name in names:
+                requester = getUtility(IPersonSet).getByName(name)
+                if requester is not None:
+                    self.context.unqueue(self.user, requester)
+                    cleared_from.append(requester.displayname)
+            self.request.response.addNotification(
+                'Cleared requests from: %s' % english_list(cleared_from))
+
     @property
-    def user(self):
-        """Return the Launchpad person who is logged in."""
-        return getUtility(ILaunchBag).user
+    def next_url(self):
+        if self.context.getFeedbackRequests(self.user).count() == 0:
+            # No more queue items to process; return to the spec.
+            return canonical_url(self.context)
 
-    def process_form(self):
-        """Largely copied from webapp/generalform.py, without the
-        schema processing bits because we are not rendering the form in the
-        usual way. Instead, we are creating our own form in the page
-        template and interpreting it here."""
-
-        if self.process_status is not None:
-            # We've been called before. Just return the status we previously
-            # computed.
-            return self.process_status
-
-        if 'cancel' in self.request:
-            self.process_status = 'Cancelled'
-            self.request.response.redirect(canonical_url(self.context))
-            return self.process_status
-
-        if "FORM_SUBMIT" not in self.request:
-            self.process_status = ''
-            return self.process_status
-
-        if self.request.method == 'POST':
-            if 'feedbackrequest' not in self.request:
-                self.process_status = ('Please select feedback queue items '
-                                       'to clear.')
-                return self.process_status
-
-        clearedreqs = self.request['feedbackrequest']
-        if isinstance(clearedreqs, unicode):
-            # only a single item was selected, but we want to deal with a
-            # list for the general case, so convert it to a list
-            clearedreqs = [clearedreqs,]
-
-        queue_length = self.context.getFeedbackRequests(self.user).count()
-        number_cleared = 0
-        msg = 'Cleared requests from: '
-        for clearedreq in clearedreqs:
-            requester = getUtility(IPersonSet).getByName(clearedreq)
-            if requester is not None:
-                self.context.unqueue(self.user, requester)
-                if number_cleared > 0:
-                    msg += ', '
-                msg += requester.displayname
-                number_cleared += 1
-
-        self.process_status = msg
-
-        if number_cleared == queue_length:
-            # they are all done, so redirect back to the spec
-            self.request.response.redirect(canonical_url(self.context))
-
-        return self.process_status
-
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)

@@ -150,7 +150,7 @@ traffic to a manageable volume.
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/')
     >>> print browser.title
-    Questions for Ubuntu Linux : Ubuntu
+    Questions : Ubuntu
 
     >>> browser.getLink('Set answer contact').click()
     >>> browser.getControl("Landscape Developers").selected = True
@@ -189,11 +189,11 @@ subscribed to Spanish questions.
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/')
     >>> print browser.title
-    Questions for Ubuntu Linux : Ubuntu
+    Questions : Ubuntu
 
     >>> browser.getLink('Play DVDs in Totem').click()
     >>> print extract_text(browser.title)
-    Questions for...
+    Questions : Ubuntu
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
     Language: English
@@ -210,7 +210,7 @@ Question:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/12')
     >>> print browser.title
-    Questions for...
+    Questions : Ubuntu
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
     Language: Spanish

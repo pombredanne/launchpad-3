@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AnswersVHostBreadcrumb',
     'AskAQuestionButtonView',
     'ManageAnswerContactView',
     'SearchQuestionsView',
@@ -843,17 +844,6 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         return Link('+answer-contact', text, icon='edit')
 
 
-class QuestionTargetOnAnswersVHostBreadcrumb(Breadcrumb):
+class AnswersVHostBreadcrumb(Breadcrumb):
     rootsite = 'answers'
-
-    @property
-    def text(self):
-        return 'Questions for %s' % self.context.title
-
-
-class PersonOnAnswersVHostBreadcrumb(Breadcrumb):
-    rootsite = 'answers'
-
-    @property
-    def text(self):
-        return 'Questions involving %s' % self.context.displayname
+    text = 'Questions'
