@@ -48,12 +48,6 @@ Users who are not logged on do not see the link to register.
     ...
     LinkNotFoundError
 
-Initially the branch is shown as not being proposed to be merged.
-
-    >>> print_tag_with_id(anon_browser.contents, 'merge-summary')
-    &laquo; No branches proposed for merging into this one.
-    &raquo; This branch is not proposed for merging into any others.
-
 Logged in users can.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
@@ -323,9 +317,6 @@ branches but with the state set to work-in-progress.
     >>> eric_browser.getLink('Resubmit proposal').click()
 
 This takes the user to the resubmission page.
-
-    >>> print eric_browser.title
-    +resubmit : Fooix
 
     >>> eric_browser.getControl('Resubmit').click()
 
@@ -611,7 +602,7 @@ Create merge proposal with a review diff, and go to its index page.
 
 The text of the review diff is in the page.
     >>> print repr(extract_text(get_review_diff()))
-    u'Review Diff\nDownload diff\n1\n...Fake Diff\u1010'
+    u'Preview Diff\nDownload diff\n1\n...Fake Diff\u1010'
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')
@@ -626,5 +617,5 @@ If the review diff is empty, then we say it is empty.
     >>> bmp.review_diff = StaticDiff.acquireFromText('c', 'd', '')
     >>> logout()
     >>> print extract_text(get_review_diff())
-    Review Diff
+    Preview Diff
     Empty

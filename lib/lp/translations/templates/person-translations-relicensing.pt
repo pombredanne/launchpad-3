@@ -9,7 +9,6 @@
   <body>
     <div metal:fill-slot="main">
       <div>
-        <h1>Sorry to interrupt&#8230;</h1>
         <p>
           When you make a translation in Launchpad, it's available for use
           by all projects that use Launchpad.

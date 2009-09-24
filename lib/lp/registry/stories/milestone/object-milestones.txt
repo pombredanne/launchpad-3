@@ -122,13 +122,13 @@ associated with that milestone for products of this project:
 
     >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
     >>> print extract_text(specs)
-    Blueprint Product Priority Assignee Delivery
+    Blueprint Project Priority Assignee Delivery
     Title evolution specification   Evolution  High  Unknown
     Title gnomebaker specification  gnomebaker High  Unknown
 
     >>> bugtasks = find_tag_by_id(anon_browser.contents, 'milestone_bugtasks')
     >>> print extract_text(bugtasks)
-    Bug report Product Importance Assignee Status ...
+    Bug report Project Importance Assignee Status ...
     Milestone test bug for evolution  Evolution  Undecided Confirmed ...
     Milestone test bug for gnomebaker gnomebaker Undecided Confirmed ...
     Milestone test bug for evolution series trunk Undecided Confirmed
@@ -256,8 +256,8 @@ Now we'll mark the second bug as a duplicate of the first:
     >>> browser.getLink('Mark as duplicate').click()
     >>> browser.getControl('Duplicate').value = bug_1_nickname
     >>> browser.getControl('Change').click()
-    >>> print extract_text(find_main_content(browser.contents))
-    Bug #20 reported...
+    >>> print extract_text(browser.contents)
+    Bug #20 in Mozilla Firefox...
     Duplicate of bug #19...
 
 Since duplicate bugs are not listed in milestone listings, only our first bug
@@ -307,7 +307,7 @@ Mozilla Firefox product, to complement the existing series "1.0":
     >>> browser.open('http://launchpad.dev/firefox')
     >>> browser.getLink('Register a series').click()
     >>> print browser.title
-    +addseries : Mozilla Firefox
+    Register a new Mozilla Firefox release series...
 
     >>> browser.getControl('Name').value = '2.0'
     >>> browser.getControl('Summary').value = 'The Firefox 2.0 Series'
@@ -323,7 +323,7 @@ We'll also create a new test milestone within the "trunk" series:
 
     >>> browser.getLink('Create milestone').click()
     >>> print browser.title
-    +addmilestone : Series trunk : Mozilla Firefox
+    Register a new milestone...
 
     >>> milestone = 'test-milestone'
     >>> browser.getControl('Name').value = milestone
@@ -352,7 +352,7 @@ Let's target an existing bug to both series "1.0" and series "2.0":
 
     >>> browser.getLink('Target to release').click()
     >>> print browser.title
-    +nominate : Bug #19 (test-bug-1) : Bugs in firefox : Mozilla Firefox
+    Target bug #19 to series...
 
     >>> browser.getControl('1.0').selected = True
     >>> browser.getControl('2.0').selected = True

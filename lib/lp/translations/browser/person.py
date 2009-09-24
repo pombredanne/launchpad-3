@@ -406,6 +406,15 @@ class PersonTranslationView(LaunchpadView):
         return overall
 
 
+class PersonTranslationReviewView(PersonTranslationView):
+    """View for translation-related Person pages."""
+
+    page_title = "for review"
+
+    def label(self):
+        return "Translations for review by %s" % self.context.displayname
+
+
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
     schema = ITranslationRelicensingAgreementEdit
@@ -414,8 +423,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
     custom_widget('back_to', TextWidget, visible=False)
 
+    page_title = "Licensing"
+
     @property
-    def page_title(self):
+    def label(self):
         return "Translations licensing by %s" % self.context.displayname
 
     @property
@@ -481,8 +492,10 @@ class TranslationActivityView(LaunchpadView):
 
     _pofiletranslator_cache = None
 
+    page_title = "Activity"
+
     @property
-    def page_title(self):
+    def label(self):
         return "Translation activity by %s" % self.context.displayname
 
     @cachedproperty

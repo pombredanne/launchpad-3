@@ -132,7 +132,7 @@ On the team's +members page we can now see Karl as an approved member,
 James Blackwell as a proposed one and Jeff Waugh won't be there at all.
 
     >>> anon_browser.open('http://launchpad.dev/~myemail')
-    >>> anon_browser.getLink('Show all members').click()
+    >>> anon_browser.getLink('All members').click()
     >>> anon_browser.url
     'http://launchpad.dev/~myemail/+members'
 

@@ -7,12 +7,9 @@ The maintainer of a project can edit its details.
     >>> browser.open('http://launchpad.dev/gnome')
     >>> browser.getLink('Change details').click()
     >>> print browser.title
-    +edit : GNOME
+    Change project group details...
 
     >>> soup = find_main_content(browser.contents)
-    >>> print browser.title
-    +edit : GNOME
-
     >>> browser.getControl(name='field.name').value = 'new-name'
     >>> browser.getControl('Display Name').value = 'New Name'
     >>> browser.getControl('Title').value = 'New Title'
@@ -41,7 +38,7 @@ But administrators can access the page:
     'http://launchpad.dev/new-name/+review'
 
     >>> print admin_browser.title
-    +review : New Name
+    Review upstream project group...
 
 Mark the project as reviewed.
 

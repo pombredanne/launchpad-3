@@ -15,7 +15,7 @@ summary and description:
     Mozilla Firefox Web Browser
     Mozilla Firefox Web Browser is .....
     Source package
-    iceweasel 1.0 (source) in ubuntu warty
+    "iceweasel" 1.0 source package in The Warty Warthog Release
     Published versions
     mozilla-firefox 0.9 in hppa (Release)
     mozilla-firefox 0.9 in i386 (Release)
@@ -36,7 +36,7 @@ release:
 
     >>> browser.getLink(id="source_package").click()
     >>> browser.title
-    '\xe2\x80\x9ciceweasel\xe2\x80\x9d package : 4.10 : Ubuntu'
+    '\xe2\x80\x9ciceweasel\xe2\x80\x9d source package : 4.10 : Ubuntu'
 
 Some DistroSeriesBinaryPackages are unpublished, in this case there is
 no link to any source package:

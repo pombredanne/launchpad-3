@@ -14,9 +14,6 @@ import pickle
 import re
 import sys
 
-
-from bzrlib.plugin import load_plugins
-load_plugins()
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.config import GlobalConfig
@@ -169,12 +166,6 @@ class EC2TestRunner:
         self.headless = headless
         self.include_download_cache_changes = include_download_cache_changes
         self.open_browser = open_browser
-        if headless and file:
-            raise ValueError(
-                'currently do not support files with headless mode.')
-        if headless and not (email or pqm_message):
-            raise ValueError('You have specified no way to get the results '
-                             'of your headless test run.')
 
         if test_options != '-vv' and pqm_message is not None:
             raise ValueError(
@@ -375,12 +366,6 @@ class EC2TestRunner:
         sys.stdout.write(msg)
         sys.stdout.flush()
 
-    def shutdown(self):
-        if self.headless and self._running:
-            self.log('letting instance run, to shut down headlessly '
-                     'at completion of tests.\n')
-            return
-        return self._instance.shutdown()
 
     def configure_system(self):
         user_connection = self._instance.connect_as_user()
@@ -487,10 +472,13 @@ class EC2TestRunner:
         # close ssh connection
         user_connection.close()
 
-    def start_demo_webserver(self):
+    def run_demo_server(self):
         """Turn ec2 instance into a demo server."""
+        self.configure_system()
+        self.prepare_tests()
         user_connection = self._instance.connect_as_user()
         p = user_connection.perform
+        p('make -C /var/launchpad/test schema')
         p('mkdir -p /var/tmp/bazaar.launchpad.dev/static')
         p('mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors')
         p('sudo a2enmod proxy > /dev/null')
@@ -520,6 +508,8 @@ class EC2TestRunner:
         user_connection.close()
 
     def run_tests(self):
+        self.configure_system()
+        self.prepare_tests()
         user_connection = self._instance.connect_as_user()
 
         # Make sure we activate the failsafe --shutdown feature.  This will

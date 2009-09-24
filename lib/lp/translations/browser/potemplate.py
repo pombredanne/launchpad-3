@@ -204,6 +204,8 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 
     SHOW_RELATED_TEMPLATES = 4
 
+    label = "Translation status"
+
     def initialize(self):
         """Get the requested languages and submit the form."""
         self.description = self.context.description
@@ -314,14 +316,12 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 class POTemplateUploadView(LaunchpadView, TranslationsMixin):
     """Upload translations and updated template."""
 
+    label = "Upload translations"
+    page_title = "Upload translations"
+
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-    @property
-    def page_title(self):
-        return "Upload translation files to %s" % (
-            self.context.displayname)
 
     def initialize(self):
         """Get the requested languages and submit the form."""
@@ -490,6 +490,7 @@ class POTemplateEditView(LaunchpadEditFormView):
     schema = IPOTemplate
     field_names = ['description', 'priority', 'owner']
     label = 'Edit translation template details'
+    page_title = 'Edit details'
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -517,10 +518,6 @@ class POTemplateEditView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
-    @property
-    def page_title(self):
-        return 'Edit template "%s" details' % (self.context.name)
-
 
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""
@@ -530,14 +527,15 @@ class POTemplateAdminView(POTemplateEditView):
         'from_sourcepackagename', 'sourcepackageversion', 'binarypackagename',
         'languagepack', 'path', 'source_file_format', 'priority',
         'date_last_updated']
+    label = 'Administer translation template'
+    page_title = "Administer"
 
 
 class POTemplateExportView(BaseExportView):
     """Request downloads of a `POTemplate` and its translations."""
 
-    @property
-    def page_title(self):
-        return "Download translations of %s" % (self.context.displayname)
+    label = "Download translations"
+    page_title = "Download translations"
 
     @property
     def cancel_url(self):

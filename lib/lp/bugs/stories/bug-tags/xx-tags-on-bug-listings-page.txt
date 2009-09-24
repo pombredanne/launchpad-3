@@ -7,14 +7,11 @@ using Javascript after page load.
     >>> print anon_browser.url
     http://launchpad.dev/ubuntu/+bugtarget-portlet-tags-content
     >>> tags_portlet = find_tags_by_class(anon_browser.contents, 'section')[0]
-    >>> for td_tag in tags_portlet('td'):
-    ...     print td_tag.renderContents()
-    <a ...>crash</a>
-    2
-    <a ...>dataloss</a>
-    1
-    <a ...>pebcak</a>
-    1
+    >>> for a_tag in tags_portlet('a'):
+    ...     print a_tag.renderContents()
+    crash
+    dataloss
+    pebcak
 
 If we click on a tag, only bugs with that tag are displayed:
 
