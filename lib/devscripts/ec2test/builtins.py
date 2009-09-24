@@ -261,8 +261,7 @@ class cmd_test(EC2Command):
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, vals=instance._vals)
 
-        instance.set_up_and_run(
-            postmortem, not headless, runner.run_tests)
+        instance.set_up_and_run(postmortem, not headless, runner.run_tests)
 
 
 class cmd_demo(EC2Command):
