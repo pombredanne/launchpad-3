@@ -373,9 +373,9 @@ class EC2TestRunner:
         user_sftp = user_connection.ssh.open_sftp()
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            as_user('mkdir /home/ubuntu/.bazaar')
+            as_user('mkdir .bazaar')
             bazaar_conf_file = user_sftp.open(
-                "/home/ubuntu/.bazaar/bazaar.conf" % self.vals, 'w')
+                ".bazaar/bazaar.conf" % self.vals, 'w')
             bazaar_conf_file.write(
                 'smtp_server = %(smtp_server)s\n' % self.vals)
             if self.vals['smtp_username']:
@@ -466,7 +466,7 @@ class EC2TestRunner:
         p('/var/launchpad/test/utilities/link-external-sourcecode '
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database
-        p('/var/launchpad/test/utilities/launchpad-database-setup ubuntu')
+        p('/var/launchpad/test/utilities/launchpad-database-setup $USER')
         # close ssh connection
         user_connection.close()
 

@@ -350,24 +350,25 @@ class cmd_demo(EC2Command):
 update_from_scratch = """
 set -xe
 
-sudo sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
+sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
 
-sudo sh -c 'cat >> /etc/apt/sources.list' << EOF
-deb http://ppa.launchpad.net/launchpad/ubuntu hardy main
-deb http://ppa.launchpad.net/bzr/ubuntu hardy main
-deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu hardy main
+. /etc/lsb-release
+
+cat >> /etc/apt/sources.list << EOF
+deb http://ppa.launchpad.net/launchpad/ubuntu $DISTRIB_CODENAME main
+deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
+deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu $DISTRIB_CODENAME main
 EOF
 
-
 dev_host() {
-  sudo sed -i 's/^127.0.0.88.*$/&\ ${hostname}/' /etc/hosts
-  }
+  sed -i 's/^127.0.0.88.*$/&\ ${hostname}/' /etc/hosts
+}
 
 echo 'Adding development hosts on local machine'
 echo '
 # Launchpad virtual domains. This should be on one line.
 127.0.0.88      launchpad.dev
-' | sudo tee -a /etc/hosts > /dev/null
+' >> /etc/hosts
 
 declare -a hostnames
 hostnames=$(cat <<EOF
@@ -400,23 +401,25 @@ done
 
 echo '
 127.0.0.99      bazaar.launchpad.dev
-' | sudo tee -a /etc/hosts > /dev/null
+' >> /etc/hosts
 
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
 
-sudo apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
-sudo apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
-sudo apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
+aptitude update
+aptitude -y full-upgrade
 
-sudo aptitude update
-sudo aptitude -y full-upgrade
+apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
-sudo apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
+adduser --gecos "" --disabled-password ec2test
+echo 'ec2test\tALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
-sudo mkdir /var/launchpad
+mkdir /var/launchpad
 
-sudo chown -R ubuntu:ubuntu /var/www /var/launchpad
+chown -R ec2test:ec2test /var/www /var/launchpad
 
-cat > /home/ubuntu/.ssh/config << EOF
+cat > /home/ec2test/.ssh/config << EOF
 CheckHostIP no
 StrictHostKeyChecking no
 EOF
@@ -428,6 +431,7 @@ bzr branch --standalone lp:lp-source-dependencies /var/launchpad/download-cache
 mkdir /var/launchpad/sourcecode
 /var/launchpad/test/utilities/update-sourcecode /var/launchpad/sourcecode
 """
+
 
 class cmd_update_image(EC2Command):
     """Make a new AMI."""
@@ -442,9 +446,6 @@ class cmd_update_image(EC2Command):
             help=('Run this command (with an ssh agent) on the image before '
                   'running the default update steps.  Can be passed more than '
                   'once, the commands will be run in the order specified.')),
-        Option(
-            'from-scratch',
-            help=('XXX')),
         Option(
             'public',
             help=('XXX')),
@@ -473,23 +474,6 @@ class cmd_update_image(EC2Command):
             self.update_image, instance, extra_update_image_command,
             from_scratch, no_root_login, ami_name, credentials, public)
 
-    def add_ubuntu_user(self, instance):
-        root_connection = instance.connect('root')
-        as_root = root_connection.perform
-        as_root('echo "root\tALL=NOPASSWD: ALL" >> /etc/sudoers')
-        as_root('adduser --gecos "" --disabled-password ubuntu')
-        as_root('echo "ubuntu\tALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers')
-        as_root('sudo -u ubuntu mkdir /home/ubuntu/.ssh')
-        remote_ssh_dir = '/home/ubuntu/.ssh'
-        instance.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
-        as_root(
-            'cp /root/.ssh/authorized_keys '
-            '/home/ubuntu/.ssh/authorized_keys')
-        as_root('chown -R ubuntu:ubuntu /home/ubuntu/')
-        as_root('chmod 644 /home/ubuntu/.ssh/*')
-        root_connection.close()
-        instance.set_up_user(get_user_key(), False)
-
     def update_image(self, instance, extra_update_image_command,
                      from_scratch, no_root_login, ami_name, credentials, public):
         """Bring the image up to date.
@@ -510,8 +494,6 @@ class cmd_update_image(EC2Command):
         :param credentials: An `EC2Credentials` object.
         """
         if from_scratch:
-            if not no_root_login:
-                self.add_ubuntu_user(instance)
             user_connection = instance.connect()
             user_sftp = user_connection.ssh.open_sftp()
             update_sh = user_sftp.open('/home/ubuntu/update.sh', 'w')
@@ -519,7 +501,7 @@ class cmd_update_image(EC2Command):
             update_sh.close()
             user_sftp.close()
             user_connection.run_with_ssh_agent(
-                '/bin/bash /home/ubuntu/update.sh')
+                'sudo /bin/bash /home/ubuntu/update.sh')
             user_connection.close()
             user_connection = instance.connect()
             user_connection.perform('rm /home/ubuntu/update.sh')

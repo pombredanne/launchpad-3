@@ -59,8 +59,8 @@ class EC2Instance:
     """A single EC2 instance."""
 
     @classmethod
-    def make(cls, name, instance_type, machine_id,
-             demo_networks=None, credentials=None):
+    def make(cls, name, instance_type, machine_id, demo_networks=None,
+             credentials=None):
         """Construct an `EC2Instance`.
 
         :param name: The name to use for the key pair and security group for
@@ -102,8 +102,6 @@ class EC2Instance:
 
         return EC2Instance(
             name, image, instance_type, demo_networks, account, vals)
-
-    # XXX: JonathanLange 2009-05-31: Separate out demo server
 
     def __init__(self, name, image, instance_type, demo_networks, account,
                  vals):
@@ -147,6 +145,7 @@ class EC2Instance:
                      (elapsed // 60, elapsed % 60))
             self._output = self._boto_instance.get_console_output()
             self.log(self._output.output)
+            self._ec2test_user_has_keys = False
         else:
             raise BzrCommandError(
                 'failed to start: %s\n' % self._boto_instance.state)
@@ -169,7 +168,7 @@ class EC2Instance:
             return None
         return self._boto_instance.public_dns_name
 
-    def connect(self, username='ubuntu'):
+    def _connect(self, username):
         """Connect to the instance as `user`. """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(AcceptAllPolicy())
@@ -193,44 +192,36 @@ class EC2Instance:
                 break
         return EC2InstanceConnection(self, username, ssh)
 
-    def set_up_user(self, user_key, no_root_login):
-        """Set up an account named after the local user."""
-        if not no_root_login:
-            root_connection = self.connect('root')
-            as_root = root_connection.perform
-            as_root(
-                'cat /root/.ssh/authorized_keys >>'
-                '/home/ubuntu/.ssh/authorized_keys')
-            as_root('chown -R ubuntu:ubuntu /home/ubuntu/')
-            as_root('chmod 644 /home/ubuntu/.ssh/*')
+    def connect(self):
+        """Connect to the instance as a user with passwordless sudo.
+
+        This may involve first connecting as root and adding SSH keys to the
+        user's account.
+        """
+        if not self._ec2test_user_has_keys:
+            root_connection = self._connect('root')
+            user_key = get_user_key()
+            sftp = root_connection.ssh.open_sftp()
+            authorized_keys_file = sftp.open("local_key", 'w')
+            authorized_keys_file.write(
+                "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
+            authorized_keys_file.close()
+            sftp.close()
+            root_connection.perform(
+                'cat /root/.ssh/authorized_keys local_key '
+                '> /home/ec2test/.ssh/authorized_keys')
+            root_connection.perform('rm local_key')
+            root_connection.perform('chown -R ec2test:ec2test /home/ubuntu/')
+            root_connection.perform('chmod 644 /home/ec2test/.ssh/*')
             root_connection.close()
-        ubuntu_connection = self.connect()
-        # Update the system.
-        #ubuntu_connection.perform('sudo aptitude update')
-        #ubuntu_connection.perform('sudo aptitude -y full-upgrade')
-        # Set up ssh for user
-        # Make user's .ssh directory
-        ubuntu_sftp = ubuntu_connection.ssh.open_sftp()
-        # create authorized_keys
-        self.log('Setting up /home/ubuntu/.ssh/authorized_keys\n')
-        authorized_keys_file = ubuntu_sftp.open(
-            "/home/ubuntu/authorized_keys", 'a')
-        authorized_keys_file.write(
-            "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
-        authorized_keys_file.close()
-        ubuntu_connection.perform(
-            'cat /home/ubuntu/authorized_keys >> '
-            '/home/ubuntu/.ssh/authorized_keys')
-        ubuntu_sftp.close()
-        self.log(
-            'You can now use ssh -A ubuntu@%s to log in the instance.\n' %
-            self.hostname)
-        # Clean out left-overs from the instance image.
-        ubuntu_connection.perform('sudo rm -fr /var/tmp/*')
-        ubuntu_connection.close()
+            self.log(
+                'You can now use ssh -A ec2test@%s to log in the instance.\n' %
+                self.hostname)
+            self._ec2test_user_has_keys = True
+        return self._connect('ec2test')
 
     def set_up_and_run(self, config, func, *args, **kw):
-        """Start, set up a user account, run `func` and then maybe shut down.
+        """Start, run `func` and then maybe shut down.
 
         :param config: A dictionary specifying details of how the instance
             should be run:
@@ -239,25 +230,14 @@ class EC2Instance:
                Defaults to False.
              * `shutdown`: If true, shut down the instance after `func` and
                postmortem (if any) are completed.  Defaults to True.
-             * `set_up_user`: If true, call set_up_user on the instance before
-               calling `func`. Defaults to True.
-             * `no_root_login`: If true, assume that the instance comes up
-               with the specified ssh key allowing logging in as 'ubuntu'
-               rather than root.  Only matters is set_up_user is true.
-               Defaults to False.
         :param func: A callable that will be called when the instance is
             running and a user account has been set up on it.
         :param args: Passed to `func`.
         :param kw: Passed to `func`.
         """
-        if config.get('set_up_user', True):
-            user_key = get_user_key()
         self.start()
         try:
             try:
-                if config.get('set_up_user', True):
-                    self.set_up_user(
-                        user_key, config.get('no_root_login', False))
                 return func(*args, **kw)
             except Exception:
                 # When running in postmortem mode, it is really helpful to see if
@@ -351,11 +331,11 @@ class EC2Instance:
         :param name: The name-to-be of the new AMI.
         :param credentials: An `EC2Credentials` object.
         """
-        ubuntu_connection = self.connect()
-        ubuntu_connection.perform('rm -f /home/ubuntu/.ssh/authorized_keys')
-        ubuntu_connection.perform('sudo mkdir /mnt/ec2')
-        ubuntu_connection.perform('sudo chown ubuntu:ubuntu /mnt/ec2')
-        sftp = ubuntu_connection.ssh.open_sftp()
+        connection = self.connect()
+        connection.perform('rm -f .ssh/authorized_keys')
+        connection.perform('sudo mkdir /mnt/ec2')
+        connection.perform('sudo chown $USER:$USER /mnt/ec2')
+        sftp = connection.ssh.open_sftp()
 
         remote_pk, remote_cert =  self.copy_key_and_certificate_to_image(sftp)
 
@@ -363,8 +343,8 @@ class EC2Instance:
 
         bundle_dir = os.path.join('/mnt', name)
 
-        ubuntu_connection.perform('sudo mkdir ' + bundle_dir)
-        ubuntu_connection.perform(' '.join([
+        connection.perform('sudo mkdir ' + bundle_dir)
+        connection.perform(' '.join([
             'sudo ec2-bundle-vol',
             '-d %s' % bundle_dir,
             '--batch',   # Set batch-mode, which doesn't use prompts.
@@ -379,9 +359,9 @@ class EC2Instance:
 
         # Best check that the manifest actually exists though.
         test = 'test -f %s' % manifest
-        ubuntu_connection.perform(test)
+        connection.perform(test)
 
-        ubuntu_connection.perform(' '.join([
+        connection.perform(' '.join([
             'sudo ec2-upload-bundle',
             '-b %s' % name,
             '-m %s' % manifest,
@@ -390,7 +370,7 @@ class EC2Instance:
             ]))
 
         sftp.close()
-        ubuntu_connection.close()
+        connection.close()
 
         # This is invoked locally.
         mfilename = os.path.basename(manifest)
@@ -464,8 +444,10 @@ class EC2InstanceConnection:
         example, getting private branches from Launchpad.
         """
         cmd = cmd % self.instance._vals
-        self.instance.log('%s@%s$ %s\n' % (self.username, self.instance._boto_instance.id, cmd))
-        call = ['ssh', '-A', 'ubuntu@' + self.instance.hostname,
+        self.instance.log(
+            '%s@%s$ %s\n'
+            % (self.username, self.instance._boto_instance.id, cmd))
+        call = ['ssh', '-A', self.username + '@' + self.instance.hostname,
                '-o', 'CheckHostIP no',
                '-o', 'StrictHostKeyChecking no',
                '-o', 'UserKnownHostsFile ~/.ec2/known_hosts',
