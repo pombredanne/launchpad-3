@@ -348,23 +348,22 @@ class EC2Instance:
             self._from_scratch = False
         return conn
 
-    def set_up_and_run(self, config, func, *args, **kw):
+    def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
         """Start, run `func` and then maybe shut down.
 
         :param config: A dictionary specifying details of how the instance
             should be run:
-             * `postmortem`: If true, any exceptions will be caught and an
-               interactive session run to allow debugging the problem.
-               Defaults to False.
-             * `shutdown`: If true, shut down the instance after `func` and
-               postmortem (if any) are completed.  Defaults to True.
+        :param postmortem: If true, any exceptions will be caught and an
+            interactive session run to allow debugging the problem.
+        :param shutdown: If true, shut down the instance after `func` and
+            postmortem (if any) are completed.
         :param func: A callable that will be called when the instance is
             running and a user account has been set up on it.
         :param args: Passed to `func`.
         :param kw: Passed to `func`.
         """
-        self.start()
         try:
+            self.start()
             try:
                 return func(*args, **kw)
             except Exception:
@@ -374,7 +373,7 @@ class EC2Instance:
                 traceback.print_exc()
         finally:
             try:
-                if config.get('postmortem', False):
+                if postmortem:
                     console = code.InteractiveConsole(locals())
                     console.interact((
                         'Postmortem Console.  EC2 instance is not yet dead.\n'
@@ -389,7 +388,7 @@ class EC2Instance:
                                      {'dns': self.hostname})
                     print 'Postmortem console closed.'
             finally:
-                if config.get('shutdown', True):
+                if shutdown:
                     self.shutdown()
 
     def _copy_single_file(self, sftp, local_path, remote_dir):

@@ -262,9 +262,7 @@ class cmd_test(EC2Command):
             instance=instance, vals=instance._vals)
 
         instance.set_up_and_run(
-            dict(postmortem=postmortem,
-                 shutdown=not headless),
-            runner.run_tests)
+            postmortem, not headless, runner.run_tests)
 
 
 class cmd_demo(EC2Command):
@@ -309,9 +307,11 @@ class cmd_demo(EC2Command):
 
         # Wait until the user exits the postmortem session, then kill the
         # instance.
+        postmortem = True
+        shutdown = True
         instance.set_up_and_run(
-            dict(postmortem=True),
-            self.run_server, runner, instance, demo_network_string)
+            postmortem, shutdown, self.run_server, runner, instance,
+            demo_network_string)
 
     def run_server(self, runner, instance, demo_network_string):
         runner.run_demo_server()
@@ -372,9 +372,8 @@ class cmd_update_image(EC2Command):
         instance.check_bundling_prerequisites()
 
         instance.set_up_and_run(
-            dict(postmortem=postmortem),
-            self.update_image, instance, extra_update_image_command,
-            ami_name, credentials, public)
+            postmortem, True, self.update_image, instance,
+            extra_update_image_command, ami_name, credentials, public)
 
     def update_image(self, instance, extra_update_image_command, ami_name,
                      credentials, public):
