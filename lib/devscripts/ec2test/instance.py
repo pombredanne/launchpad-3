@@ -74,7 +74,7 @@ EOF
 
 # This next part is cribbed from rocketfuel-setup
 dev_host() {
-  sed -i 's/^127.0.0.88.*$/&\ ${hostname}/' /etc/hosts
+  sed -i \"s/^127.0.0.88.*$/&\ ${hostname}/\" /etc/hosts
 }
 
 echo 'Adding development hosts on local machine'
