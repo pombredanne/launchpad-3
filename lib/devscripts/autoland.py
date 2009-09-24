@@ -62,7 +62,7 @@ class MergeProposal:
     @property
     def target_branch(self):
         """The push URL of the target branch."""
-        return str(self._get_push_url(self._mp.target_branch))
+        return self._mp.target_branch.unique_name.split('/')[-1]
 
     @property
     def commit_message(self):
