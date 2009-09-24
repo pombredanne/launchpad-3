@@ -24,7 +24,9 @@ Checks that the '+pots' page redirects always to the '+translations' one.
   ...
 
 Checks that the '+sources/.../+translate' page redirects always to the
-'+source/.../+translations' one.
+'+source/.../+translations' one. This redirect is used by the
+Ubuntu Launchpad Integration in old stable releases. The URLs changed in
+Karmic but we need to support old releases, too.
 
   >>> print http(r"""
   ... GET /ubuntu/hoary/+sources/evolution/+translate HTTP/1.1
