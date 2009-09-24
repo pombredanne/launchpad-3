@@ -6,8 +6,9 @@
 __metaclass__ = type
 __all__ = []
 
-import subprocess
+import os
 import pdb
+import subprocess
 
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
@@ -16,6 +17,7 @@ from bzrlib.option import ListOption, Option
 
 import socket
 
+from devscripts import get_launchpad_root
 from devscripts.autoland import LaunchpadBranchLander, MissingReviewError
 
 from devscripts.ec2test.credentials import EC2Credentials
@@ -295,7 +297,8 @@ class cmd_land(EC2Command):
                              emails):
         """Return the command that would need to be run to submit with ec2."""
         # XXX: JonathanLange 2009-09-24: Maybe call EC2 APIs directly.
-        command = ['ec2', 'test', '--headless']
+        ec2_path = os.path.join(get_launchpad_root(), 'utilities', 'ec2')
+        command = [ec2_path, 'test', '--headless']
         command.extend(['--email=%s' % email for email in emails])
         command.extend(
             ['-b', 'launchpad=%s' % (target_url), '-s', commit_message,
