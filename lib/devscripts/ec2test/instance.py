@@ -132,12 +132,12 @@ EOF
 mkdir /var/launchpad
 chown -R ec2test:ec2test /var/www /var/launchpad /home/ec2test/
 
-bzr launchpad-login %(launchpad-login)s
-bzr init-repo --2a /var/launchpad
-bzr branch lp:~mwhudson/launchpad/no-more-devpad-ssh /var/launchpad/test
-bzr branch --standalone lp:lp-source-dependencies /var/launchpad/download-cache
-mkdir /var/launchpad/sourcecode
-/var/launchpad/test/utilities/update-sourcecode /var/launchpad/sourcecode
+sudo -H -u ec2test bzr launchpad-login %(launchpad-login)s
+sudo -H -u ec2test bzr init-repo --2a /var/launchpad
+sudo -H -u ec2test bzr branch lp:~mwhudson/launchpad/no-more-devpad-ssh /var/launchpad/test
+sudo -H -u ec2test bzr branch --standalone lp:lp-source-dependencies /var/launchpad/download-cache
+sudo -H -u ec2test mkdir /var/launchpad/sourcecode
+sudo -H -u ec2test /var/launchpad/test/utilities/update-sourcecode /var/launchpad/sourcecode
 """
 
 
