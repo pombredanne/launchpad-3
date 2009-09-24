@@ -13,6 +13,12 @@
               tal:content="context/queue_status/title">
                     >
         Work in progress</span>
+        <a tal:define="link context/menu:context/edit_status"
+           tal:condition="link/enabled"
+           tal:attributes="href link/url">
+           <img src="/@@/edit" alt="Edit status" />
+        </a>
+
       </td>
     </tr>
     <tr>
