@@ -16,7 +16,7 @@ somebody had a similar problem.
 He discovers that there are no questions on the Kubuntu Answers page:
 
     >>> print browser.title
-    Questions for Kubuntu - Free KDE-based Linux : Kubuntu
+    Questions : Kubuntu
 
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
@@ -116,7 +116,7 @@ details of the question are available.
 
     >>> browser.getLink('Slow system').click()
     >>> print browser.title
-    Questions for Ubuntu...
+    Questions : Ubuntu
     >>> soup = find_main_content(browser.contents)
     >>> soup('div', 'report')
     [<div class="report"><p>I get really poor hard drive performance.</p></div>]
@@ -139,7 +139,7 @@ to jump to the question.
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> locators = find_tags_by_class(browser.contents, 'main')
     >>> print backslashreplace(browser.title)
-    Questions for \u201cmozilla-firefox\u201d package...
+    Questions : \u201cmozilla-firefox\u201d package : Ubuntu
 
 While reading the Ubuntu forums for a solution to his problem,
 Average Joe finds some unlinked text that refers to how to
@@ -151,7 +151,7 @@ the answer.
     >>> browser.getControl(name='field.search_text').value = ' #6 '
     >>> browser.getControl('Find Answers').click()
     >>> print backslashreplace(browser.title)
-    Questions for Mozilla...
+    Questions : Mozilla Firefox
 
 The Answer Tracker cannot identify Question ids within text. Average
 Joe finds a reference to question 8 in a blog. He copies 'question 8'
@@ -217,7 +217,7 @@ He clicks on the link to read the question description.
 
     >>> browser.getLink('Firefox is slow').click()
     >>> browser.title
-    'Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d...
+    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
 
 The user must choose at least one status when searching questions. An
 error is displayed when the user forgets to select a status.
@@ -244,7 +244,7 @@ source package's question listing.
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('mozilla-firefox').click()
     >>> browser.title
-    'Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
     >>> soup = find_main_content(browser.contents)
     >>> soup('table', 'listing')
     [<table...
@@ -471,7 +471,7 @@ commented on.
     >>> browser.open('http://launchpad.dev/~name16')
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions involving Foo Bar : Foo Bar
+    Questions : Foo Bar
 
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
@@ -502,7 +502,7 @@ These contexts are links to the context question listing.
 
     >>> browser.getLink('mozilla-firefox in ubuntu').click()
     >>> print repr(browser.title)
-    'Questions for \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
 
 The listing is searchable and can restrict also the list of displayed
 questions to a particular status:
@@ -619,7 +619,7 @@ questions filed against any of the project's products is displayed.
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions for The Mozilla Project : the Mozilla Project
+    Questions : the Mozilla Project
 
 The results are displayed in a format similar to the Person reports:
 there is an 'In' column displaying where the questions were filed.
@@ -652,11 +652,11 @@ The same standard reports than on regular QuestionTarget are available:
 
     >>> browser.getLink('Open').click()
     >>> print browser.title
-    Questions for The Mozilla Project : the Mozilla Project
+    Questions : the Mozilla Project
 
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    Questions for The Mozilla Project : the Mozilla Project
+    Questions : the Mozilla Project
 
     # The next two reports are only available to a logged-in user.
     >>> user_browser.open('http://launchpad.dev/mozilla/+questions')
@@ -766,7 +766,7 @@ The form field can be filled manually without using the ajax widget.
     >>> anon_browser.getControl(name='field.scope.target').value = 'mozilla'
     >>> anon_browser.getControl('Find Answers').click()
     >>> print anon_browser.title
-    Questions for The Mozilla Project : the Mozilla Project
+    Questions : the Mozilla Project
 
 This works also with distributions:
 
@@ -776,7 +776,7 @@ This works also with distributions:
     >>> anon_browser.getControl(name='field.scope.target').value = 'ubuntu'
     >>> anon_browser.getControl('Find Answers').click()
     >>> print anon_browser.title
-    Questions for Ubuntu Linux : Ubuntu
+    Questions : Ubuntu
 
 And also with products:
 
@@ -786,5 +786,5 @@ And also with products:
     >>> anon_browser.getControl(name='field.scope.target').value = 'firefox'
     >>> anon_browser.getControl('Find Answers').click()
     >>> print anon_browser.title
-    Questions for Mozilla Firefox : Mozilla Firefox
+    Questions : Mozilla Firefox
 
