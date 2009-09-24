@@ -123,14 +123,14 @@ apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 adduser --gecos "" --disabled-password ec2test
 echo 'ec2test\tALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
-mkdir /var/launchpad
-
-chown -R ec2test:ec2test /var/www /var/launchpad
-
+mkdir /home/ec2test/.ssh
 cat > /home/ec2test/.ssh/config << EOF
 CheckHostIP no
 StrictHostKeyChecking no
 EOF
+
+mkdir /var/launchpad
+chown -R ec2test:ec2test /var/www /var/launchpad /home/ec2test/
 
 bzr launchpad-login %(launchpad-login)s
 bzr init-repo --2a /var/launchpad
