@@ -308,25 +308,16 @@ class EC2Instance:
         if self._from_scratch:
             root_connection = self._connect('root')
             self._upload_local_key(root_connection.sftp, 'local_key')
-            root_connection.perform('cat local_key >> ~/.ssh/authorized_keys')
-            root_connection.perform('rm local_key')
-            update_sh = root_connection.sftp.open('update.sh', 'w')
-            update_sh.write(update_from_scratch_root % self._vals)
-            update_sh.close()
-            root_connection.run_with_ssh_agent('/bin/bash update.sh')
-            # At least for mwhudson, the paramiko connection often drops while
-            # the update.sh script is running.  Reconnect just in case.
-            root_connection.close()
-            root_connection = self._connect('root')
-            root_connection.perform('rm update.sh')
+            root_connection.perform(
+                'cat local_key >> ~/.ssh/authorized_keys && rm local_key')
+            root_connection.run_script(update_from_scratch_root % self._vals)
             root_connection.close()
         if not self._ec2test_user_has_keys:
             root_connection = self._connect('root')
             self._upload_local_key(root_connection.sftp, 'local_key')
             root_connection.perform(
                 'cat /root/.ssh/authorized_keys local_key '
-                '> /home/ec2test/.ssh/authorized_keys')
-            root_connection.perform('rm local_key')
+                '> /home/ec2test/.ssh/authorized_keys && rm local_key')
             root_connection.perform('chown -R ec2test:ec2test /home/ec2test/')
             root_connection.perform('chmod 644 /home/ec2test/.ssh/*')
             root_connection.close()
@@ -336,16 +327,7 @@ class EC2Instance:
             self._ec2test_user_has_keys = True
         conn = self._connect('ec2test')
         if self._from_scratch:
-            update_sh = conn.sftp.open('update.sh', 'w')
-            update_sh.write(update_from_scratch_ec2test % self._vals)
-            update_sh.close()
-            conn.run_with_ssh_agent('/bin/bash update.sh')
-            # At least for mwhudson, the paramiko connection often drops while
-            # the update.sh script is running.  Reconnect just in case.
-            conn.close()
-            conn = self._connect('root')
-            conn.perform('rm update.sh')
-            conn.close()
+            conn.run_script(update_from_scratch_ec2test % self._vals)
             self._from_scratch = False
         return conn
 
@@ -590,6 +572,17 @@ class EC2InstanceConnection:
         if res and not ignore_failure:
             raise RuntimeError('Command failed: %s' % (cmd,))
         return res
+
+    def run_script(self, script_text):
+        script = self.sftp.open('script.sh', 'w')
+        script.write(script_text)
+        script.close()
+        self.run_with_ssh_agent('/bin/bash script.sh')
+        # At least for mwhudson, the paramiko connection often drops while the
+        # script is running.  Reconnect just in case.
+        self.close()
+        self._ssh = self._instance._connect(self._username)._ssh
+        self.perform('rm script.sh')
 
     def close(self):
         if self._sftp is not None:
