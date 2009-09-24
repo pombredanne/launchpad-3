@@ -55,7 +55,7 @@ def get_user_key():
     return user_key
 
 
-update_from_scratch = """
+update_from_scratch_root = """
 set -xe
 
 sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
@@ -131,13 +131,16 @@ EOF
 
 mkdir /var/launchpad
 chown -R ec2test:ec2test /var/www /var/launchpad /home/ec2test/
+"""
 
-sudo -H -u ec2test bzr launchpad-login %(launchpad-login)s
-sudo -H -u ec2test bzr init-repo --2a /var/launchpad
-sudo -H -u ec2test bzr branch lp:~mwhudson/launchpad/no-more-devpad-ssh /var/launchpad/test
-sudo -H -u ec2test bzr branch --standalone lp:lp-source-dependencies /var/launchpad/download-cache
-sudo -H -u ec2test mkdir /var/launchpad/sourcecode
-sudo -H -u ec2test /var/launchpad/test/utilities/update-sourcecode /var/launchpad/sourcecode
+
+update_from_scratch_ec2test = """
+bzr launchpad-login %(launchpad-login)s
+bzr init-repo --2a /var/launchpad
+bzr branch lp:~mwhudson/launchpad/no-more-devpad-ssh /var/launchpad/test
+bzr branch --standalone lp:lp-source-dependencies /var/launchpad/download-cache
+mkdir /var/launchpad/sourcecode
+/var/launchpad/test/utilities/update-sourcecode /var/launchpad/sourcecode
 """
 
 
@@ -306,7 +309,7 @@ class EC2Instance:
             root_connection.perform('cat local_key >> ~/.ssh/authorized_keys')
             root_connection.perform('rm local_key')
             update_sh = root_connection.sftp.open('update.sh', 'w')
-            update_sh.write(update_from_scratch % self._vals)
+            update_sh.write(update_from_scratch_root % self._vals)
             update_sh.close()
             root_connection.run_with_ssh_agent('/bin/bash update.sh')
             # At least for mwhudson, the paramiko connection often drops while
@@ -315,7 +318,6 @@ class EC2Instance:
             root_connection = self._connect('root')
             root_connection.perform('rm update.sh')
             root_connection.close()
-            self._from_scratch = False
         if not self._ec2test_user_has_keys:
             root_connection = self._connect('root')
             self._upload_local_key(root_connection.sftp, 'local_key')
@@ -330,7 +332,20 @@ class EC2Instance:
                 'You can now use ssh -A ec2test@%s to log in the instance.\n' %
                 self.hostname)
             self._ec2test_user_has_keys = True
-        return self._connect('ec2test')
+        conn = self._connect('ec2test')
+        if self._from_scratch:
+            update_sh = conn.sftp.open('update.sh', 'w')
+            update_sh.write(update_from_scratch_ec2test % self._vals)
+            update_sh.close()
+            conn.run_with_ssh_agent('/bin/bash update.sh')
+            # At least for mwhudson, the paramiko connection often drops while
+            # the update.sh script is running.  Reconnect just in case.
+            conn.close()
+            conn = self._connect('root')
+            conn.perform('rm update.sh')
+            conn.close()
+            self._from_scratch = False
+        return conn
 
     def set_up_and_run(self, config, func, *args, **kw):
         """Start, run `func` and then maybe shut down.
