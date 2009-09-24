@@ -9,8 +9,6 @@ import transaction
 
 from textwrap import dedent
 
-from bzrlib.branch import Branch as BzrBranch
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.tests import run_script
