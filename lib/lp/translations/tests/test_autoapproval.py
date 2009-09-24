@@ -335,6 +335,9 @@ class TestTemplateGuess(unittest.TestCase):
         # getPOTemplateByPathAndOrigin prefers from_sourcepackagename
         # matches over sourcepackagename matches.
         self._setUpDistro()
+        # Use unique name for this package, since the search does not
+        # pass a distroseries and so might pick one of the same name up
+        # from elsewhere.
         match_package = SourcePackageNameSet().new(
             self.factory.getUniqueString())
         self.distrotemplate1.sourcepackagename = match_package
