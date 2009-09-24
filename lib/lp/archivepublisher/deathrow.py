@@ -298,7 +298,7 @@ class DeathRow:
                 # the file is already gone.
                 self.logger.debug(str(info))
             except MissingSymlinkInPool, info:
-                # This one is a little more worrying, becayse an expected
+                # This one is a little more worrying, because an expected
                 # symlink has vanished from the pool/ (could be a code
                 # mistake) but there is nothing we can do about it at this
                 # point.

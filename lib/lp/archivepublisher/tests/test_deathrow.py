@@ -90,8 +90,8 @@ class TestDeathRow(TestCase):
         # the symbolic links expected in 'universe' are not present,
         # a `MissingSymlinkInPool` error is generated and immediately
         # ignored by the `DeathRow` processor. Even in this adverse
-        # circumstances the database record is updated (removal candidates)
-        # are materialized to match the disk status.
+        # circumstances the database record (removal candidate) is
+        # updated to match the disk status.
 
         # Setup an `SoyuzTestPublisher` and a `DeathRow` instance.
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

@@ -71,7 +71,6 @@ class MissingSymlinkInPool(Exception):
     continues.
     """
 
-
 class PackagePublishingStatus(DBEnumeratedType):
     """Package Publishing Status
 
