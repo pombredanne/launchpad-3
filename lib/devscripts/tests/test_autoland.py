@@ -11,7 +11,7 @@ from launchpadlib.launchpad import EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT
 
 from devscripts.autoland import (
     get_bazaar_host, get_bugs_clause, get_reviewer_clause,
-    get_reviewer_handle)
+    get_reviewer_handle, MissingReviewError)
 
 
 class FakeBug:
@@ -145,6 +145,11 @@ class TestGetReviewerClause(unittest.TestCase):
              'ui': [self.makePerson('bar')],
              })
         self.assertEqual('[r=foo][ui=bar]', clause)
+
+    def test_no_reviewers(self):
+        # If the merge proposal hasn't been approved by anyone, we cannot
+        # generate a valid clause.
+        self.assertRaises(MissingReviewError, self.get_reviewer_clause, {})
 
 
 class TestGetBazaarHost(unittest.TestCase):

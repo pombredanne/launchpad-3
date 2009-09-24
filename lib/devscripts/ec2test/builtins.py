@@ -16,7 +16,7 @@ from bzrlib.option import ListOption, Option
 
 import socket
 
-from devscripts.autoland import LaunchpadBranchLander
+from devscripts.autoland import LaunchpadBranchLander, MissingReviewError
 
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
@@ -326,7 +326,13 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
-        commit_message = mp.get_commit_message(commit_text, testfix)
+        try:
+            commit_message = mp.get_commit_message(commit_text, testfix)
+        except MissingReviewError:
+            raise BzrCommandError(
+                "Cannot land branches that haven't got approved code "
+                "reviews. Get an 'Approved' vote so we can fill in the "
+                "[r=REVIEWER] section.")
         if print_commit:
             print commit_message
             return

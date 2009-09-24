@@ -12,9 +12,9 @@ from lazr.uri import URI
 DEV_SERVICE_ROOT = 'https://api.launchpad.dev/beta/'
 LPNET_SERVICE_ROOT = 'https://api.launchpad.net/beta/'
 
-# Given the merge proposal URL, get:
-# - whether or not it has been approved
-# If the review has not been approved, warn.
+
+class MissingReviewError(Exception):
+    """Raised when we try to get a review message without enough reviewers."""
 
 
 class LaunchpadBranchLander:
@@ -192,6 +192,8 @@ def get_reviewer_clause(reviewers):
     code_reviewers = reviewers.get(None, [])
     code_reviewers.extend(reviewers.get('code', []))
     code_reviewers.extend(reviewers.get('db', []))
+    if not code_reviewers:
+        raise MissingReviewError("Need approved votes in order to land.")
     ui_reviewers = reviewers.get('ui', [])
     if ui_reviewers:
         ui_clause = _comma_separated_names(ui_reviewers)
