@@ -600,6 +600,11 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
+    <browser:page
+        name="+translate"
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
+        permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
