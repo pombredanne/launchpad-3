@@ -374,7 +374,7 @@ class EC2TestRunner:
         if self.email or self.message:
             as_user('mkdir .bazaar')
             bazaar_conf_file = user_connection.sftp.open(
-                ".bazaar/bazaar.conf" % self.vals, 'w')
+                ".bazaar/bazaar.conf", 'w')
             bazaar_conf_file.write(
                 'smtp_server = %(smtp_server)s\n' % self.vals)
             if self.vals['smtp_username']:

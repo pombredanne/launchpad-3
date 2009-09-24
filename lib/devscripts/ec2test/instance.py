@@ -55,7 +55,11 @@ def get_user_key():
     return user_key
 
 
-update_from_scratch_root = """
+# Commands to run to turn a blank image into one usable for the rest of the
+# ec2 functionality.  They come in two parts, one set that need to be run as
+# root and another that should be run as the 'ec2test' user.
+
+from_scratch_root = """
 set -xe
 
 sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
@@ -68,6 +72,7 @@ deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
 deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu $DISTRIB_CODENAME main
 EOF
 
+# This next part is cribbed from rocketfuel-setup
 dev_host() {
   sed -i 's/^127.0.0.88.*$/&\ ${hostname}/' /etc/hosts
 }
@@ -111,6 +116,7 @@ echo '
 127.0.0.99      bazaar.launchpad.dev
 ' >> /etc/hosts
 
+# Add the keys for the three PPAs added to sources.list above.
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
@@ -120,6 +126,7 @@ aptitude -y full-upgrade
 
 apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
+# Creat the ec2test user, give them passwordless sudo.
 adduser --gecos "" --disabled-password ec2test
 echo 'ec2test\tALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
@@ -134,7 +141,7 @@ chown -R ec2test:ec2test /var/www /var/launchpad /home/ec2test/
 """
 
 
-update_from_scratch_ec2test = """
+from_scratch_ec2test = """
 set -xe
 
 bzr launchpad-login %(launchpad-login)s
@@ -158,13 +165,20 @@ class EC2Instance:
             the instance.
         :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
         :param machine_id: The AMI to use, or None to do the usual regexp
-            matching.
+            matching.  If you put 'based-on:' before the AMI id, it is assumed
+            that the id specifies a blank image that should be made into one
+            suitable for the other ec2 functions (see `from_scratch_root` and
+            `from_scratch_ec2test` above).
         :param demo_networks: A list of networks to add to the security group
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
+
+        # We call this here so that it has a chance to complain before the
+        # instance is started (which can take some time).
+        get_user_key()
 
         if credentials is None:
             credentials = EC2Credentials.load_from_file()
@@ -291,9 +305,10 @@ class EC2Instance:
                 break
         return EC2InstanceConnection(self, username, ssh)
 
-    def _upload_local_key(self, sftp, remote_filename):
+    def _upload_local_key(self, conn, remote_filename):
+        """ """
         user_key = get_user_key()
-        authorized_keys_file = sftp.open(remote_filename, 'w')
+        authorized_keys_file = conn.sftp.open(remote_filename, 'w')
         authorized_keys_file.write(
             "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
         authorized_keys_file.close()
@@ -307,14 +322,16 @@ class EC2Instance:
         """
         if self._from_scratch:
             root_connection = self._connect('root')
-            self._upload_local_key(root_connection.sftp, 'local_key')
+            self._upload_local_key(root_connection, 'local_key')
             root_connection.perform(
                 'cat local_key >> ~/.ssh/authorized_keys && rm local_key')
-            root_connection.run_script(update_from_scratch_root % self._vals)
+            root_connection.run_script(from_scratch_root % self._vals)
             root_connection.close()
+            # Don't set self._from_scratch to True yet, we haven't run
+            # from_scratch_ec2test yet!
         if not self._ec2test_user_has_keys:
             root_connection = self._connect('root')
-            self._upload_local_key(root_connection.sftp, 'local_key')
+            self._upload_local_key(root_connection, 'local_key')
             root_connection.perform(
                 'cat /root/.ssh/authorized_keys local_key '
                 '> /home/ec2test/.ssh/authorized_keys && rm local_key')
@@ -327,7 +344,7 @@ class EC2Instance:
             self._ec2test_user_has_keys = True
         conn = self._connect('ec2test')
         if self._from_scratch:
-            conn.run_script(update_from_scratch_ec2test % self._vals)
+            conn.run_script(from_scratch_ec2test % self._vals)
             self._from_scratch = False
         return conn
 

@@ -352,7 +352,8 @@ class cmd_update_image(EC2Command):
                   'once, the commands will be run in the order specified.')),
         Option(
             'public',
-            help=('XXX')),
+            help=('Remove proprietary code from the sourcecode directory '
+                  'before bundling.')),
         ]
 
     takes_args = ['ami_name']
@@ -392,13 +393,16 @@ class cmd_update_image(EC2Command):
             instance in addition to the usual ones.
         :param ami_name: The name to give the created AMI.
         :param credentials: An `EC2Credentials` object.
-        :param public: If true, remove proprietary code from sourecode before
-            bundling.
+        :param public: If true, remove proprietary code from the sourcecode
+            directory before bundling.
         """
         user_connection = instance.connect()
         user_connection.perform('bzr launchpad-login %(launchpad-login)s')
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
+        # XXX This should change to pull TRUNK_BRANCH of course, but until
+        # trunk contains a update-sourcecode script that works in a non-built
+        # tree, do this.  This should be changed before landing.
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/test lp:~mwhudson/launchpad/no-more-devpad-ssh')
         user_connection.run_with_ssh_agent(
