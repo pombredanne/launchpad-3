@@ -14,8 +14,7 @@ link to enable to change his preferred languages:
 
     >>> user_browser.getLink('Change your preferred languages').click()
     >>> print user_browser.title
-    +editlanguages : Questions involving No Privileges Person
-    : No Privileges Person
+    Language preferences...
     >>> user_browser.url
     '.../~no-priv/+editlanguages'
 
@@ -79,7 +78,7 @@ from asking a question in the language of his choice.
     >>> browser.url
     '.../ubuntu/+question/...'
     >>> print browser.title
-    +index : Questions for Ubuntu Linux : Ubuntu
+    Questions for...
 
 The page reports the question language both in the content and in the
 markup. Search engine robots and browsers will use the lang and dir
@@ -156,5 +155,5 @@ new question.
     >>> browser.url
     '.../ubuntu/+question/...'
     >>> print browser.title.decode('utf-8')
-    +index : Questions for Ubuntu Linux : Ubuntu
+    Questions for...
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-details')

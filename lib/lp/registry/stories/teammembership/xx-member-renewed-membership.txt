@@ -40,6 +40,7 @@ membership can't be renewed and explain why.
     LookupError: label 'Renew'
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Renew membership of Karl Tilbury in Mirror Administrators
+    ...
     This membership cannot be renewed because Mirror Administrators
     (ubuntu-mirror-admins) is not a team that allows its members to renew
     their own memberships.
@@ -71,6 +72,7 @@ the user to renew that membership because it's not about to expire.
     LookupError: label 'Renew'
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Renew membership of Karl Tilbury in Mirror Administrators
+    ...
     This membership cannot be renewed because it is not set to expire in
     7 days or less. You or one of the team administrators has already
     renewed it.
@@ -102,6 +104,7 @@ mech_control TestBrowser voodoo.
     ...              'ubuntu-mirror-admins')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Renew membership of Karl Tilbury in Mirror Administrators
+    ...
     This membership is going to expire in ... from now; if you want to
     remain a member of Mirror Administrators, you must renew it.
     or Cancel
@@ -126,6 +129,7 @@ Karl can't renew it again, since it's now not set to expire soon.
     LookupError: label 'Renew'
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Renew membership of Karl Tilbury in Mirror Administrators
+    ...
     This membership cannot be renewed because it is not set to expire in
     7 days or less. You or one of the team administrators has already
     renewed it.
@@ -155,6 +159,7 @@ now renew the membership.
     ...              '/+expiringmembership/ubuntu-mirror-admins')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Renew membership of Landscape Developers in Mirror Administrators
+    ...
     This membership is going to expire in ... from now; if you want this team
     to remain a member of Mirror Administrators, you must renew it.
     or Cancel
@@ -171,6 +176,7 @@ now renew the membership.
     ...              '/+expiringmembership/ubuntu-mirror-admins')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Renew membership of Landscape Developers in Mirror Administrators
+    ...
     This membership cannot be renewed because it is not set to expire in
     7 days or less. Somebody else has already renewed it.
 

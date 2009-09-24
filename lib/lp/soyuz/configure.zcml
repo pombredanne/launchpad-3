@@ -394,6 +394,7 @@
             interface="lp.soyuz.interfaces.archive.IArchiveAppend"/>
         <require
             permission="launchpad.Edit"
+            interface="lp.soyuz.interfaces.archive.IArchiveEdit"
             set_attributes="description displayname"/>
         <require
             permission="launchpad.Commercial"
@@ -465,16 +466,16 @@
                 packagesetsForUploader
                 packagesetsForSource
                 packagesetsForSourceUploader
-                isSourceUploadAllowed"/>
-        <require
-            permission="launchpad.Edit"
-            attributes="
+                isSourceUploadAllowed
                 newPackageUploader
                 newComponentUploader
                 newQueueAdmin
                 deletePackageUploader
                 deleteComponentUploader
-                deleteQueueAdmin
+                deleteQueueAdmin"/>
+        <require
+            permission="launchpad.Edit"
+            attributes="
                 newPackagesetUploader
                 deletePackagesetUploader"/>
     </securedutility>

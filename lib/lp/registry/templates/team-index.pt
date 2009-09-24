@@ -30,16 +30,9 @@
     <span tal:content="view/visibility_info">Viewable by team members.</span>
   </div>
 
-  <ul id="join-team"
-      class="super-add-action"
-      tal:define="link context/menu:overview/join"
-      tal:condition="link/enabled"
-      >
-    <li>
-      <a tal:attributes="href link/fmt:url"
-         tal:content="link/text" />
-    </li>
-  </ul>
+  <metal:contact use-macro="context/@@+person-macros/contact">
+    Contact this team
+  </metal:contact>
 
   <tal:menu replace="structure view/@@+global-actions" />
   <tal:polls replace="structure context/@@+portlet-polls" />
