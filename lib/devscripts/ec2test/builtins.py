@@ -96,18 +96,13 @@ include_download_cache_changes_option = Option(
           'changes in your download cache, you must explicitly choose to '
           'include or ignore the changes.'))
 
+
 postmortem_option = Option(
     'postmortem', short_name='p',
     help=('Drop to interactive prompt after the test and before shutting '
           'down the instance for postmortem analysis of the EC2 instance '
           'and/or of this script.'))
 
-no_root_login_option = Option(
-    'no-root-login',
-    help=('If passed, we assume that the image is set up so that '
-          'the specified key pair allows logging in as  "ubuntu", '
-          'a user with passwordless sudo. Otherwise, assume that it '
-          'allows logging in as root.'))
 
 class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
@@ -221,7 +216,6 @@ class cmd_test(EC2Command):
             'open-browser',
             help=('Open the results page in your default browser')),
         include_download_cache_changes_option,
-        no_root_login_option,
         ]
 
     takes_args = ['test_branch?']
@@ -232,7 +226,7 @@ class cmd_test(EC2Command):
             submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
             headless=False, debug=False, open_browser=False,
-            include_download_cache_changes=False, no_root_login=False):
+            include_download_cache_changes=False):
         if debug:
             pdb.set_trace()
         branches, test_branch = _get_branches_and_test_branch(
@@ -270,8 +264,7 @@ class cmd_test(EC2Command):
 
         instance.set_up_and_run(
             dict(postmortem=postmortem,
-                 shutdown=not headless,
-                 no_root_login=no_root_login),
+                 shutdown=not headless),
             runner.run_tests)
 
 
@@ -292,15 +285,13 @@ class cmd_demo(EC2Command):
         ListOption(
             'demo', type=str,
             help="Allow this netmask to connect to the instance."),
-        no_root_login_option,
         ]
 
     takes_args = ['test_branch?']
 
     def run(self, test_branch=None, branch=[], trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
-            include_download_cache_changes=False, demo=None,
-            no_root_login=False):
+            include_download_cache_changes=False, demo=None):
         if debug:
             pdb.set_trace()
         branches, test_branch = _get_branches_and_test_branch(
@@ -320,7 +311,7 @@ class cmd_demo(EC2Command):
         # Wait until the user exits the postmortem session, then kill the
         # instance.
         instance.set_up_and_run(
-            dict(postmortem=True, no_root_login=no_root_login),
+            dict(postmortem=True),
             self.run_server, runner, instance, demo_network_string)
 
     def run_server(self, runner, instance, demo_network_string):
@@ -347,92 +338,6 @@ class cmd_demo(EC2Command):
             "\n\n")
 
 
-update_from_scratch = """
-set -xe
-
-sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
-
-. /etc/lsb-release
-
-cat >> /etc/apt/sources.list << EOF
-deb http://ppa.launchpad.net/launchpad/ubuntu $DISTRIB_CODENAME main
-deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
-deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu $DISTRIB_CODENAME main
-EOF
-
-dev_host() {
-  sed -i 's/^127.0.0.88.*$/&\ ${hostname}/' /etc/hosts
-}
-
-echo 'Adding development hosts on local machine'
-echo '
-# Launchpad virtual domains. This should be on one line.
-127.0.0.88      launchpad.dev
-' >> /etc/hosts
-
-declare -a hostnames
-hostnames=$(cat <<EOF
-    answers.launchpad.dev
-    api.launchpad.dev
-    bazaar-internal.launchpad.dev
-    beta.launchpad.dev
-    blueprints.launchpad.dev
-    bugs.launchpad.dev
-    code.launchpad.dev
-    feeds.launchpad.dev
-    id.launchpad.dev
-    keyserver.launchpad.dev
-    lists.launchpad.dev
-    openid.launchpad.dev
-    ppa.launchpad.dev
-    private-ppa.launchpad.dev
-    shipit.edubuntu.dev
-    shipit.kubuntu.dev
-    shipit.ubuntu.dev
-    translations.launchpad.dev
-    xmlrpc-private.launchpad.dev
-    xmlrpc.launchpad.dev
-EOF
-    )
-
-for hostname in $hostnames; do
-  dev_host;
-done
-
-echo '
-127.0.0.99      bazaar.launchpad.dev
-' >> /etc/hosts
-
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
-
-aptitude update
-aptitude -y full-upgrade
-
-apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
-
-adduser --gecos "" --disabled-password ec2test
-echo 'ec2test\tALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-
-mkdir /var/launchpad
-
-chown -R ec2test:ec2test /var/www /var/launchpad
-
-cat > /home/ec2test/.ssh/config << EOF
-CheckHostIP no
-StrictHostKeyChecking no
-EOF
-
-bzr launchpad-login %(launchpad-login)s
-bzr init-repo --2a /var/launchpad
-bzr branch lp:~mwhudson/launchpad/no-more-devpad-ssh /var/launchpad/test
-bzr branch --standalone lp:lp-source-dependencies /var/launchpad/download-cache
-mkdir /var/launchpad/sourcecode
-/var/launchpad/test/utilities/update-sourcecode /var/launchpad/sourcecode
-"""
-
-
 class cmd_update_image(EC2Command):
     """Make a new AMI."""
 
@@ -449,14 +354,13 @@ class cmd_update_image(EC2Command):
         Option(
             'public',
             help=('XXX')),
-        no_root_login_option,
         ]
 
     takes_args = ['ami_name']
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=[],
-            from_scratch=False, no_root_login=False, public=False):
+            public=False):
         if debug:
             pdb.set_trace()
 
@@ -468,14 +372,12 @@ class cmd_update_image(EC2Command):
         instance.check_bundling_prerequisites()
 
         instance.set_up_and_run(
-            dict(postmortem=postmortem,
-                 set_up_user=not (not no_root_login and from_scratch),
-                 no_root_login=no_root_login),
+            dict(postmortem=postmortem),
             self.update_image, instance, extra_update_image_command,
-            from_scratch, no_root_login, ami_name, credentials, public)
+            ami_name, credentials, public)
 
-    def update_image(self, instance, extra_update_image_command,
-                     from_scratch, no_root_login, ami_name, credentials, public):
+    def update_image(self, instance, extra_update_image_command, ami_name,
+                     credentials, public):
         """Bring the image up to date.
 
         The steps we take are:
@@ -493,20 +395,7 @@ class cmd_update_image(EC2Command):
         :param ami_name: The name to give the created AMI.
         :param credentials: An `EC2Credentials` object.
         """
-        if from_scratch:
-            user_connection = instance.connect()
-            user_sftp = user_connection.ssh.open_sftp()
-            update_sh = user_sftp.open('/home/ubuntu/update.sh', 'w')
-            update_sh.write(update_from_scratch % instance._vals)
-            update_sh.close()
-            user_sftp.close()
-            user_connection.run_with_ssh_agent(
-                'sudo /bin/bash /home/ubuntu/update.sh')
-            user_connection.close()
-            user_connection = instance.connect()
-            user_connection.perform('rm /home/ubuntu/update.sh')
-        else:
-            user_connection = instance.connect()
+        user_connection = instance.connect()
         user_connection.perform('bzr launchpad-login %(launchpad-login)s')
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
@@ -522,8 +411,7 @@ class cmd_update_image(EC2Command):
                 'rm -rf /var/launchpad/sourcecode/shipit '
                 '/var/launchpad/sourcecode/canonical-identity-provider')
         user_connection.perform(
-            'rm -rf /home/ubuntu/.ssh/known_hosts /home/ubuntu/.bazaar '
-            '/home/ubuntu/.bzr.log')
+            'rm -rf .ssh/known_hosts .bazaar .bzr.log')
         user_connection.close()
         instance.bundle(ami_name, credentials)
 

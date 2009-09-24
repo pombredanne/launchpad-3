@@ -55,6 +55,92 @@ def get_user_key():
     return user_key
 
 
+update_from_scratch = """
+set -xe
+
+sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
+
+. /etc/lsb-release
+
+cat >> /etc/apt/sources.list << EOF
+deb http://ppa.launchpad.net/launchpad/ubuntu $DISTRIB_CODENAME main
+deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
+deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu $DISTRIB_CODENAME main
+EOF
+
+dev_host() {
+  sed -i 's/^127.0.0.88.*$/&\ ${hostname}/' /etc/hosts
+}
+
+echo 'Adding development hosts on local machine'
+echo '
+# Launchpad virtual domains. This should be on one line.
+127.0.0.88      launchpad.dev
+' >> /etc/hosts
+
+declare -a hostnames
+hostnames=$(cat <<EOF
+    answers.launchpad.dev
+    api.launchpad.dev
+    bazaar-internal.launchpad.dev
+    beta.launchpad.dev
+    blueprints.launchpad.dev
+    bugs.launchpad.dev
+    code.launchpad.dev
+    feeds.launchpad.dev
+    id.launchpad.dev
+    keyserver.launchpad.dev
+    lists.launchpad.dev
+    openid.launchpad.dev
+    ppa.launchpad.dev
+    private-ppa.launchpad.dev
+    shipit.edubuntu.dev
+    shipit.kubuntu.dev
+    shipit.ubuntu.dev
+    translations.launchpad.dev
+    xmlrpc-private.launchpad.dev
+    xmlrpc.launchpad.dev
+EOF
+    )
+
+for hostname in $hostnames; do
+  dev_host;
+done
+
+echo '
+127.0.0.99      bazaar.launchpad.dev
+' >> /etc/hosts
+
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
+
+aptitude update
+aptitude -y full-upgrade
+
+apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
+
+adduser --gecos "" --disabled-password ec2test
+echo 'ec2test\tALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+mkdir /var/launchpad
+
+chown -R ec2test:ec2test /var/www /var/launchpad
+
+cat > /home/ec2test/.ssh/config << EOF
+CheckHostIP no
+StrictHostKeyChecking no
+EOF
+
+bzr launchpad-login %(launchpad-login)s
+bzr init-repo --2a /var/launchpad
+bzr branch lp:~mwhudson/launchpad/no-more-devpad-ssh /var/launchpad/test
+bzr branch --standalone lp:lp-source-dependencies /var/launchpad/download-cache
+mkdir /var/launchpad/sourcecode
+/var/launchpad/test/utilities/update-sourcecode /var/launchpad/sourcecode
+"""
+
+
 class EC2Instance:
     """A single EC2 instance."""
 
@@ -90,6 +176,12 @@ class EC2Instance:
         # generate it.
         account.delete_previous_key_pair()
 
+        if machine_id.startswith('based-on:'):
+            from_scratch = True
+            machine_id = machine_id[len('based-on:'):]
+        else:
+            from_scratch = False
+
         # get the image
         image = account.acquire_image(machine_id)
 
@@ -101,10 +193,11 @@ class EC2Instance:
         vals['launchpad-login'] = login
 
         return EC2Instance(
-            name, image, instance_type, demo_networks, account, vals)
+            name, image, instance_type, demo_networks, account, vals,
+            from_scratch)
 
     def __init__(self, name, image, instance_type, demo_networks, account,
-                 vals):
+                 vals, from_scratch):
         self._name = name
         self._image = image
         self._account = account
@@ -112,6 +205,7 @@ class EC2Instance:
         self._demo_networks = demo_networks
         self._boto_instance = None
         self._vals = vals
+        self._from_scratch = from_scratch
 
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
@@ -196,8 +290,24 @@ class EC2Instance:
         """Connect to the instance as a user with passwordless sudo.
 
         This may involve first connecting as root and adding SSH keys to the
-        user's account.
+        user's account, and in the case of a from scratch image, it will do a
+        lot of set up.
         """
+        if self._from_scratch:
+            root_connection = self._connect('root')
+            sftp = root_connection.ssh.open_sftp()
+            update_sh = sftp.open('update.sh', 'w')
+            update_sh.write(update_from_scratch % self._vals)
+            update_sh.close()
+            sftp.close()
+            root_connection.run_with_ssh_agent('/bin/bash update.sh')
+            # At least for mwhudson, the paramiko connection often drops while
+            # the update.sh script is running.  Reconnect just in case.
+            root_connection.close()
+            root_connection = self._connect('root')
+            root_connection.perform('rm update.sh')
+            root_connection.close()
+            self._from_scratch = False
         if not self._ec2test_user_has_keys:
             root_connection = self._connect('root')
             user_key = get_user_key()
