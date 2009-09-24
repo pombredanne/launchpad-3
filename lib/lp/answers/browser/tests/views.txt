@@ -403,7 +403,7 @@ QuestionChangeStatusView is used by administrator to change the status
 outside of the comment workflow.
 
     >>> request = LaunchpadTestRequest(
-    ...     form={'field.actions.change-status': 'Change Status',
+    ...     form={'field.actions.change-status': 'Change status',
     ...           'field.status': 'SOLVED',
     ...           'field.message': 'Previous rejection was an error.'})
     >>> request.method = 'POST'

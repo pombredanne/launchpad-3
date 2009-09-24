@@ -28,7 +28,7 @@ quoted passage, and a signature with an email address in it.
     ...     "______________________\n"
     ...     "human@somewhere.org\n"
     ...     "Witty signatures rock!\n")
-    >>> user_browser.getControl('Add Information Request').click()
+    >>> user_browser.getControl('Add information request').click()
 
 
 == Email addresses are only shown to authenticated users ==

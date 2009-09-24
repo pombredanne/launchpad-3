@@ -36,7 +36,7 @@
       <input type="hidden" name="field.message" value="" />
       <input type="submit"
               name="field.actions.confirm"
-              value="This Solved My Problem" />
+              value="This solved my problem" />
     </form>
   </div>
 </div>

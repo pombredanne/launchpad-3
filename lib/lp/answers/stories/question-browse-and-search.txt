@@ -135,7 +135,7 @@ to jump to the question.
 
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = '9'
-    >>> browser.getControl('Find Answers').click()
+    >>> browser.getControl('Find answers').click()
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> locators = find_tags_by_class(browser.contents, 'main')
     >>> print backslashreplace(browser.title)
@@ -149,7 +149,7 @@ the answer.
 
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = ' #6 '
-    >>> browser.getControl('Find Answers').click()
+    >>> browser.getControl('Find answers').click()
     >>> print backslashreplace(browser.title)
     Questions for Mozilla...
 
@@ -160,7 +160,7 @@ is shown search results instead of the question.
 
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = 'question 8'
-    >>> browser.getControl('Find Answers').click()
+    >>> browser.getControl('Find answers').click()
     >>> print browser.title
     Questions matching "question 8"
 
@@ -676,7 +676,7 @@ questions ever filed on Launchpad.
 
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = 'firefox'
-    >>> browser.getControl('Find Answers').click()
+    >>> browser.getControl('Find answers').click()
 
     >>> print browser.title
     Questions matching "firefox"
@@ -734,7 +734,7 @@ He must enter the project's name in the text field:
 
     >>> anon_browser.open('http://answers.launchpad.dev')
     >>> anon_browser.getControl('One project').selected = True
-    >>> anon_browser.getControl('Find Answers').click()
+    >>> anon_browser.getControl('Find answers').click()
 
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
@@ -743,7 +743,7 @@ He must enter the project's name in the text field:
 Entering an invalid project also displays an error message:
 
     >>> anon_browser.getControl(name='field.scope.target').value = 'invalid'
-    >>> anon_browser.getControl('Find Answers').click()
+    >>> anon_browser.getControl('Find answers').click()
 
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
@@ -764,7 +764,7 @@ The form field can be filled manually without using the ajax widget.
     >>> anon_browser.getControl(name='field.search_text').value = 'plugins'
     >>> anon_browser.getControl('One project').selected = True
     >>> anon_browser.getControl(name='field.scope.target').value = 'mozilla'
-    >>> anon_browser.getControl('Find Answers').click()
+    >>> anon_browser.getControl('Find answers').click()
     >>> print anon_browser.title
     Questions matching "plugins" for the Mozilla Project
 
@@ -774,7 +774,7 @@ This works also with distributions:
     >>> anon_browser.getControl(name='field.search_text').value = 'firefox'
     >>> anon_browser.getControl('One project').selected = True
     >>> anon_browser.getControl(name='field.scope.target').value = 'ubuntu'
-    >>> anon_browser.getControl('Find Answers').click()
+    >>> anon_browser.getControl('Find answers').click()
     >>> print anon_browser.title
     Questions matching "firefox" for Ubuntu
 
@@ -784,7 +784,7 @@ And also with products:
     >>> anon_browser.getControl(name='field.search_text').value = 'plugins'
     >>> anon_browser.getControl('One project').selected = True
     >>> anon_browser.getControl(name='field.scope.target').value = 'firefox'
-    >>> anon_browser.getControl('Find Answers').click()
+    >>> anon_browser.getControl('Find answers').click()
     >>> print anon_browser.title
     Questions matching "plugins" for Mozilla Firefox
 

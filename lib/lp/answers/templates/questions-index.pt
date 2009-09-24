@@ -45,7 +45,7 @@
                   <input
                     tal:replace="structure view/search_action/render"
                     type="submit"
-                    value="Find Answers"
+                    value="Find answers"
                   />
                 </td>
               </tr>

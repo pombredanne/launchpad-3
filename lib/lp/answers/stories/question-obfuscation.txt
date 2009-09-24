@@ -24,7 +24,7 @@ project's questions. When he views the question, he can see the address
 in the question's description.
 
     >>> user_browser.getControl(name='field.search_text').value = 'mailto'
-    >>> user_browser.getControl('Find Answers').click()
+    >>> user_browser.getControl('Find answers').click()
     >>> user_browser.title
     'Questions matching "mailto"'
 
@@ -114,7 +114,7 @@ Nor can he see it in the question listings for the project.
 He cannot see the address reading the question either.
 
     >>> anon_browser.getControl(name='field.search_text').value = 'mailto'
-    >>> anon_browser.getControl('Find Answers').click()
+    >>> anon_browser.getControl('Find answers').click()
     >>> anon_browser.title
     'Questions matching "mailto"'
 

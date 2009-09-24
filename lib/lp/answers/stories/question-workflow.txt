@@ -45,7 +45,7 @@ No Privileges Person visits the question. He see the heading
 'Can you help with this problem?'. The problem is not clear, he
 needs more information. To request for more information from the
 question owner, No Privileges Person enters his question in the
-'Message' field and clicks on the 'Add Information Request' button.
+'Message' field and clicks on the 'Add information request' button.
 
     >>> support_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
@@ -62,7 +62,7 @@ question owner, No Privileges Person enters his question in the
 
     >>> support_browser.getControl('Message').value = (
     ...     "Can you provide an example of an URL displaying the problem?")
-    >>> support_browser.getControl('Add Information Request').click()
+    >>> support_browser.getControl('Add information request').click()
 
 The message was added to the question and its status was changed to
 'Needs information':
@@ -76,7 +76,7 @@ The message was added to the question and its status was changed to
 Of course, if you don't add a message, clicking on the button will give
 you an error.
 
-    >>> support_browser.getControl('Add Information Request').click()
+    >>> support_browser.getControl('Add information request').click()
     >>> soup = find_main_content(support_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     Please enter a message.
@@ -86,11 +86,11 @@ you an error.
 
 A comment can be added at any point without altering the status. The
 user simply enters the comment in the 'Message' box and clicks the
-'Add Comment' button.
+'Add comment' button.
 
     >>> support_browser.getControl('Message').value = (
     ...     "I forgot to mention, in the meantime here is a workaround...")
-    >>> support_browser.getControl('Add Comment').click()
+    >>> support_browser.getControl('Add comment').click()
 
 This appends the comment to the question and it doesn't change its
 status:
@@ -106,7 +106,7 @@ status:
 When the question is in the 'Needs information' state, it means that
 the question owner should come back and provide more information. He
 can do so by entering the reply in the 'Message' box and clicking on
-the "I'm Providing More Information" button. Note that the question
+the "I'm providing more information" button. Note that the question
 owner cannot see the 'Can you help with this problem?' heading because
 it is not relevant to his tasks.
 
@@ -120,7 +120,7 @@ it is not relevant to his tasks.
     >>> owner_browser.getControl('Message').value = (
     ...     "The following SVG doesn't display properly:\n"
     ...     "http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg")
-    >>> owner_browser.getControl("I'm Providing More Information").click()
+    >>> owner_browser.getControl("I'm providing more information").click()
 
 Once the owner replied with the, hopefully, requested information, the
 status is changed to Open and his answer appended to the question
@@ -137,14 +137,14 @@ discussion.
 
 Once the question is clarified, it is easier for a user to give an
 answer. This is done by entering the answer in the 'Message' box
-and clicking the 'Add Answer' button.
+and clicking the 'Add answer' button.
 
     >>> support_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> support_browser.getControl('Message').value = (
     ...     "New version of the firefox package are available with SVG "
     ...     "support enabled. You can use apt-get or adept to upgrade.")
-    >>> support_browser.getControl('Add Answer').click()
+    >>> support_browser.getControl('Add answer').click()
 
 This moves the the question to the Answered state and adds the
 answer to the end of the discussion:
@@ -160,30 +160,30 @@ answer to the end of the discussion:
 == Confirming an Answer ==
 
 When the owner comes back on the question page, he will now see a new
-'This Solved My Problem' button near the answer.
+'This solved my problem' button near the answer.
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> soup = find_main_content(owner_browser.contents)
     >>> soup.fetch('div', 'boardComment')[-1].first('input', type='submit')
     <input type="submit" name="field.actions.confirm"
-     value="This Solved My Problem" />
+     value="This solved my problem" />
 
 (Note although we have three comments on the question, that's the only
 one that has this button. Only answers have this button.)
 
 There is also a hint below the form to the question owner about using
-the 'This Solved My Problem' button.
+the 'This solved my problem' button.
 
     >>> answer_button_paragraph = find_tag_by_id(
     ...     owner_browser.contents, 'answer-button-hint')
     >>> print extract_text(answer_button_paragraph)
-    To confirm an answer, use the 'This Solved My Problem' button located at
+    To confirm an answer, use the 'This solved my problem' button located at
     the bottom of the answer.
 
 Clicking that button will confirm that the answer solved the problem.
 
-    >>> owner_browser.getControl('This Solved My Problem').click()
+    >>> owner_browser.getControl('This solved my problem').click()
 
 This changes the status of the question to 'Solved' and mark
 'No Privileges Person' as the solver.
@@ -222,11 +222,11 @@ The History link should now show up.
 
 When the question is Solved, it is still possible to add comments to it.
 The user simply enters the comment in the 'Message' box and clicks the
-'Add Comment' button.
+'Add comment' button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "The example now displays correctly. Thanks.")
-    >>> owner_browser.getControl('Add Comment').click()
+    >>> owner_browser.getControl('Add comment').click()
 
 This appends the comment to the question and it doesn't change its
 status:
@@ -242,14 +242,14 @@ status:
 It can happen that, altough the owner confirmed the question was
 solved, the original problem reappears. In this case, he can reopen
 the question by entering a new message and clicking the
-"I Still Need an Answer" button.
+"I still need an answer" button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "Actually, there are still SVGs that do not display correctly. "
     ...     "For example, the following\n"
     ...     "http://people.w3.org/maxf/ChessGML/immortal.svg doesn't display "
     ...     "correctly.")
-    >>> owner_browser.getControl("I Still Need an Answer").click()
+    >>> owner_browser.getControl("I still need an answer").click()
 
 This appends the new information to the question discussion and changes
 its status back to 'Open'.
@@ -287,12 +287,12 @@ reopening portlet.
 
 The owner can also gives the solution to his own question. He simply
 has to enter his solution in the 'Message' box and click the
-'Problem Solved' button.
+'Problem solved' button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "OK, this example requires some SVG features that will only be "
     ...     "available in Firefox 2.0.")
-    >>> owner_browser.getControl("Problem Solved").click()
+    >>> owner_browser.getControl("Problem solved").click()
 
 This appends the message to the question and sets its status to
 'Solved', and the answerer as the owner. We do not however mark a
@@ -318,7 +318,7 @@ the question owner to solve the his problem.
 If the user chooses a best answer, the author of that answer
 is attributed as the answerer.
 
-    >>> owner_browser.getControl('This Solved My Problem').click()
+    >>> owner_browser.getControl('This solved my problem').click()
     >>> find_request_status(owner_browser.contents)
     Solved Question #2, solved on ... by No Privileges Person...
 
@@ -398,7 +398,7 @@ choosing an answer that helped him solve his problem.
 
     >>> carlos_browser.getControl('Message').value = (
     ...     "There is a bug in that version. SMP is fine after upgrading.")
-    >>> carlos_browser.getControl("Problem Solved").click()
+    >>> carlos_browser.getControl("Problem solved").click()
     >>> print find_request_status(carlos_browser.contents)
     Solved...
 
