@@ -181,7 +181,7 @@ class EC2Instance:
         # generate it.
         account.delete_previous_key_pair()
 
-        if machine_id.startswith('based-on:'):
+        if machine_id and machine_id.startswith('based-on:'):
             from_scratch = True
             machine_id = machine_id[len('based-on:'):]
         else:
