@@ -2491,26 +2491,40 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        # Start by looking to see if there is an IEmailAddress for the given
+        # Start by checking if there is an `EmailAddress` for the given
         # text address.  There are many cases where an email address can be
-        # created without an associated IPerson.  For example we created an
-        # account linked to the address through an external system such SSO
-        # or ShipIt.
+        # created without an associated `Person`. For instance, we created
+        # an account linked to the address through an external system such
+        # SSO or ShipIt.
         email_address = getUtility(IEmailAddressSet).getByEmail(email)
 
-        # There is no IEmailAddress for this text address, so we need to
-        # create both the IPerson and IEmailAddress here, now.
+        # There is no `EmailAddress` for this text address, so we need to
+        # create both the `Person` and `EmailAddress` here and we are done.
         if email_address is None:
             person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
                 registrant=registrant, hide_email_addresses=True)
             return person
 
-        # There is an IEmailAddress for this text address, but there is no
-        # associated IPerson record.  This is likely because the account
-        # was created externally to Launchpad.  Create just the IPerson
-        # now and associate it with the IEmailAddress.
+        # There is an `EmailAddress` for this text address, but no
+        # associated `Person`.
         if email_address.personID is None:
+            assert email_address.accountID is not None, (
+                '%s is not associated to a person or account'
+                % email_address.email)
+            account = IMasterStore(Account).get(
+                Account, email_address.accountID)
+            account_person = self.getByAccount(account)
+            # There is a `Person` linked to the `Account`, link the
+            # `EmailAddress` to this `Person` and return it.
+            if account_person is not None:
+                removeSecurityProxy(
+                    email_address).personID = account_person.id
+                return account_person
+            # There is no associated `Person` to the email `Account`.
+            # This is probably because the account was created externally
+            # to Launchpad. Create just the `Person`, associate it with
+            # the `EmailAddress` and return it.
             name = generate_nick(email)
             person = self._newPerson(
                 name, displayname, hide_email_addresses=True,
@@ -2518,6 +2532,8 @@ class PersonSet:
                 account=email_address.account)
             return person
 
+        # Easy, return the `Person` associated with the existing
+        # `EmailAddress`.
         return IMasterStore(Person).get(Person, email_address.personID)
 
     def getByName(self, name, ignore_merged=True):
