@@ -82,9 +82,8 @@ class MergeProposal:
         :return: A set of `IPerson`s.
         """
         # XXX: JonathanLange 2009-09-24: No unit tests.
-        return map(
-            get_email,
-            set([self._mp.source_branch.owner, self._launchpad.me]))
+        return set(
+            map(get_email, [self._mp.source_branch.owner, self._launchpad.me]))
 
     def get_reviews(self):
         """Return a dictionary of all Approved reviews.
