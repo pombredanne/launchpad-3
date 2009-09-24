@@ -37,7 +37,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad import _
 from lp.services.job.model.job import Job
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -73,6 +72,8 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
+from lp.services.mail.notificationrecipientset import (
+    NotificationRecipientSet)
 
 
 class Branch(SQLBase):
