@@ -15,9 +15,9 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCase
 from bzrlib.transport import get_transport
 
+from devscripts import get_launchpad_root
 from devscripts.sourcecode import (
-    find_branches, get_launchpad_root, interpret_config, parse_config_file,
-    plan_update)
+    find_branches, interpret_config, parse_config_file, plan_update)
 
 
 class TestParseConfigFile(unittest.TestCase):
