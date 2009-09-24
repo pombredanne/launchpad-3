@@ -9,6 +9,8 @@ import transaction
 
 from textwrap import dedent
 
+from bzrlib.branch import Branch as BzrBranch
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.tests import run_script
@@ -111,8 +113,11 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # anything because it sees that the POFile has not been changed
         # since the last export.
         retcode, stdout, stderr = run_script(
-            'cronscripts/translations-export-to-branch.py', ['-vvv'])
+            'cronscripts/translations-export-to-branch.py',
+            ['-vvv', '--no-fudge'])
+        self.assertEqual(0, retcode)
         self.assertIn('Last commit was at', stderr)
+        self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
 
 
 def test_suite():
