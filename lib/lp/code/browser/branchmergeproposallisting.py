@@ -336,8 +336,7 @@ class PersonActiveReviewsView(ActiveReviewsView):
         proposals = collection.getMergeProposalsForPerson(
             self._getReviewer(),
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW,
-             BranchMergeProposalStatus.WORK_IN_PROGRESS])
+             BranchMergeProposalStatus.NEEDS_REVIEW])
 
         return proposals
 
