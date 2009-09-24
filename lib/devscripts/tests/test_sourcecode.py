@@ -71,14 +71,28 @@ class TestInterpretConfiguration(unittest.TestCase):
         # A (key, value) pair without a third optional value is returned in
         # the configuration as a dictionary entry under 'key' with '(value,
         # False)' as its value.
-        config = interpret_config([['key', 'value']])
+        config = interpret_config([['key', 'value']], False)
+        self.assertEqual({'key': ('value', False)}, config)
+
+    def test_key_value_public_only(self):
+        # A (key, value) pair without a third optional value is returned in
+        # the configuration as a dictionary entry under 'key' with '(value,
+        # False)' as its value when public_only is true.
+        config = interpret_config([['key', 'value']], True)
         self.assertEqual({'key': ('value', False)}, config)
 
     def test_key_value_optional(self):
         # A (key, value, optional) entry is returned in the configuration as a
         # dictionary entry under 'key' with '(value, True)' as its value.
-        config = interpret_config([['key', 'value', 'optional']])
+        config = interpret_config([['key', 'value', 'optional']], True)
         self.assertEqual({'key': ('value', True)}, config)
+
+    def test_key_value_optional_public_only(self):
+        # A (key, value, optional) entry is not returned in the configuration
+        # when public_only is true.
+        config = interpret_config([['key', 'value', 'optional']], True)
+        self.assertEqual({'key': ('value', True)}, config)
+
 
 
 class TestPlanUpdate(unittest.TestCase):
