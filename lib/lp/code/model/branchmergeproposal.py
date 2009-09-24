@@ -329,13 +329,19 @@ class BranchMergeProposal(SQLBase):
         self.date_reviewed = None
         self.reviewed_revision_id = None
 
-    def requestReview(self):
-        """See `IBranchMergeProposal`."""
+    def requestReview(self, _date_requested=None):
+        """See `IBranchMergeProposal`.
+
+        :param _date_requested: used only for testing purposes to override
+            the normal UTC_NOW for when the review was requested.
+        """
         # Don't reset the date_review_requested if we are already in the
         # review state.
+        if _date_requested is None:
+            _date_requested = UTC_NOW
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
-            self.date_review_requested = UTC_NOW
+            self.date_review_requested = _date_requested
 
     def isMergable(self):
         """See `IBranchMergeProposal`."""
