@@ -173,8 +173,6 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     template.clearPOFileCache()
 
             if change_count > 0:
-                self.logger.debug(
-                    "Committing %d updated file(s)." % change_count)
                 self._commit(source, committer)
         finally:
             committer.unlock()
