@@ -66,7 +66,8 @@ def monkey_patch(mailman_path, config):
                 =config.mailman.subscription_batch_size,
             site_list_owner=owner_address,
             list_help_header=config.mailman.list_help_header,
-            list_subscription_headers=config.mailman.list_subscription_headers,
+            list_subscription_headers
+                =config.mailman.list_subscription_headers,
             archive_url_template=config.mailman.archive_url_template,
             list_owner_header_template
                 =config.mailman.list_owner_header_template,

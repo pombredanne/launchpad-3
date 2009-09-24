@@ -21,7 +21,6 @@ informing them of their new list.  We can ignore these.
     >>> from canonical.launchpad.ftests import login, logout
 
     >>> login('admin@canonical.com')
-    >>> from zope.component import getUtility
 
     >>> owner = factory.makePerson()
     >>> team_one = factory.makeTeam(owner=owner, name='staging-one')

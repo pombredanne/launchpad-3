@@ -63,7 +63,6 @@ drops the resulting message in Mailman's incoming queue.
     >>> binary = os.path.join(launchpad_top,
     ...     'lib/mailman/mail/mailman')
 
-    >>> import subprocess
     >>> mailman = subprocess.Popen(
     ...     (binary, 'post', 'alpha'),
     ...     stdin=subprocess.PIPE,
