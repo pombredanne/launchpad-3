@@ -13,6 +13,8 @@ __all__ = [
     'PersonProductActiveReviewsView',
     ]
 
+from operator import attrgetter
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -269,6 +271,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             if proposal.preview_diff is not None:
                 self.show_diffs = True
         # Sort each collection...
+        for group in self.review_groups:
+            group.sort(key=attrgetter('date_review_requested'))
         self.proposal_count = len(proposals)
 
     @cachedproperty
