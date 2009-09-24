@@ -28,15 +28,16 @@ class LaunchpadBranchLander:
 
     @classmethod
     def load(cls, service_root=DEV_SERVICE_ROOT):
-        # XXX: No unit tests.
+        # XXX: JonathanLange 2009-09-24: No unit tests.
         cache_dir = os.path.expanduser(cls.cache_dir)
-        # XXX: If cached data invalid, hard to delete & try again.
+        # XXX: JonathanLange 2009-09-24 bug=435813: If cached data invalid,
+        # there's no easy way to delete it and try again.
         launchpad = Launchpad.login_with(cls.name, service_root, cache_dir)
         return cls(launchpad)
 
     def load_merge_proposal(self, mp_url):
         """Get the merge proposal object for the 'mp_url'."""
-        # XXX: No unit tests.
+        # XXX: JonathanLange 2009-09-24: No unit tests.
         web_mp_uri = URI(mp_url)
         api_mp_uri = self._launchpad._root_uri.append(
             web_mp_uri.path.lstrip('/'))
@@ -71,7 +72,7 @@ class MergeProposal:
 
         :return: A set of `IPerson`s.
         """
-        # XXX: No unit tests.
+        # XXX: JonathanLange 2009-09-24: No unit tests.
         return map(
             get_email,
             set([self._mp.source_branch.owner, self._launchpad.me]))
@@ -106,7 +107,7 @@ class MergeProposal:
 
         :param branch: A launchpadlib `IBranch`.
         """
-        # XXX: No unit tests.
+        # XXX: JonathanLange 2009-09-24: No unit tests.
         host = get_bazaar_host(str(self._launchpad._root_uri))
         # XXX: JonathanLange 2009-09-24 bug=435790: lazr.uri allows a path
         # without a leading '/' and then doesn't insert a '/' in the final
