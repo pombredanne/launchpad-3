@@ -229,7 +229,7 @@ class BranchMergeProposalEditMenu(NavigationMenu,
     title = 'Edit Proposal'
     facet = 'branches'
     links = [
-        'edit_commit_message', 'delete', 'resubmit']
+        'delete', 'resubmit']
 
     @property
     def branch_merge_proposal(self):
@@ -245,6 +245,7 @@ class BranchMergeProposalContextMenu(ContextMenu,
         'edit_status',
         'request_review',
         'add_comment',
+        'edit_commit_message',
         'merge',
         'enqueue',
         'dequeue',

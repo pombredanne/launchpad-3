@@ -18,7 +18,6 @@
            tal:attributes="href link/url">
            <img src="/@@/edit" alt="Edit status" />
         </a>
-
       </td>
     </tr>
     <tr>
@@ -121,6 +120,11 @@
           replace="structure context/commit_message" />
         <tal:no-commit-message
           condition="not: context/commit_message">None</tal:no-commit-message>
+        <a tal:define="link context/menu:context/edit_commit_message"
+           tal:condition="link/enabled"
+           tal:attributes="href link/url">
+           <img src="/@@/edit" alt="Edit commit message" />
+        </a>
       </td>
     </tr>
     <tr tal:condition="context/preview_diff">
