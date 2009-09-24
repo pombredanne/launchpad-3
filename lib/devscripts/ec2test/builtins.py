@@ -291,7 +291,7 @@ class cmd_land(EC2Command):
     def _get_landing_command(self, source_url, target_url, commit_message,
                              emails):
         """Return the command that would need to be run to submit with ec2."""
-        # XXX: Maybe call EC2 APIs directly.
+        # XXX: JonathanLange 2009-09-24: Maybe call EC2 APIs directly.
         command = ['ec2', 'test', '--headless']
         command.extend(['--email=%s' % email for email in emails])
         command.extend(
@@ -321,12 +321,13 @@ class cmd_land(EC2Command):
             print commit_message
             return
 
-        # XXX: maybe make a version that just does a pqm-submit w/ no tests
-        # XXX: maybe make a version that only tests
+        landing_command = self._get_landing_command(
+            mp.source_branch, mp.target_branch, commit_message,
+            mp.get_stakeholder_emails())
         if dry_run:
-            print self._get_landing_command(
-                mp.source_branch, mp.target_branch, commit_message,
-                mp.get_stakeholder_emails())
+            print landing_command
+        else:
+            return subprocess.call(landing_command)
 
 
 class cmd_demo(EC2Command):

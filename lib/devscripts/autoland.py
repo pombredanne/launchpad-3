@@ -6,25 +6,16 @@ from launchpadlib.launchpad import (
     Launchpad, EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT)
 from lazr.uri import URI
 
+# XXX: JonathanLange 2009-09-24: Both of these are available in more recent
+# versions of launchpadlib. When we start using such versions, we should
+# instead import these from launchpadlib.
 DEV_SERVICE_ROOT = 'https://api.launchpad.dev/beta/'
 LPNET_SERVICE_ROOT = 'https://api.launchpad.net/beta/'
 
 # Given the merge proposal URL, get:
-# - [DONE] the reviewer
-# - [DONE] the UI reviewer
-# - [DONE] the DB reviewer
 # - the release-critical reviewer
-# - [DONE] the commit message
-# - [DONE] the branch
-# - [DONE] the target branch
 # - whether or not it has been approved
-# - [DONE] the branch owner
-
 # If the review has not been approved, warn.
-
-# XXX: How do you do TDD of a launchpadlib program?
-
-# XXX: What's the right way to write docstrings for launchpadlib programs?
 
 
 class LaunchpadBranchLander:
@@ -71,7 +62,7 @@ class MergeProposal:
     @property
     def target_branch(self):
         """The push URL of the target branch."""
-        return str(self._get_push_url(self._mp.source_branch))
+        return str(self._get_push_url(self._mp.target_branch))
 
     def get_stakeholder_emails(self):
         """Return a collection of people who should know about branch landing.
@@ -80,8 +71,7 @@ class MergeProposal:
 
         :return: A set of `IPerson`s.
         """
-        # XXX: Should this also include the registrant?
-        # XXX: Untested.
+        # XXX: No unit tests.
         return map(
             get_email,
             set([self._mp.source_branch.owner, self._launchpad.me]))
@@ -118,13 +108,13 @@ class MergeProposal:
         """
         # XXX: No unit tests.
         host = get_bazaar_host(str(self._launchpad._root_uri))
-        # XXX: Bug in lazr.uri -- it allows a path without a leading '/' and
-        # then doesn't insert the '/' in the final product.
+        # XXX: JonathanLange 2009-09-24 bug=435790: lazr.uri allows a path
+        # without a leading '/' and then doesn't insert a '/' in the final
+        # URL. Do it ourselves.
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
     def get_commit_message(self, commit_text, testfix=False):
         """Get the Launchpad-style commit message for a merge proposal."""
-        # XXX: Point to docs describing the rules for this.
         reviews = self.get_reviews()
         bugs = self.get_bugs()
         if testfix:
@@ -141,10 +131,10 @@ class MergeProposal:
 def get_email(person):
     """Get the preferred email address for 'person'."""
     email_object = person.preferred_email_address
-    # XXX: This raises a very obscure error when the email address isn't set.
-    # e.g. with name12 in the sample data. Not sure why this is -- file a bug.
-    # httplib2.RelativeURIError:
-    # Only absolute URIs are allowed. uri = tag:launchpad.net:2008:redacted
+    # XXX: JonathanLange 2009-09-24 bug=319432: This raises a very obscure
+    # error when the email address isn't set. e.g. with name12 in the sample
+    # data. e.g. "httplib2.RelativeURIError: Only absolute URIs are allowed.
+    # uri = tag:launchpad.net:2008:redacted".
     return email_object.email
 
 
@@ -199,8 +189,8 @@ def get_reviewer_clause(reviewers):
 
 def get_bazaar_host(api_root):
     """Get the Bazaar service for the given API root."""
-    # XXX: This is only needed because Launchpad doesn't expose the push URL
-    # for branches.
+    # XXX: JonathanLange 2009-09-24 bug=435803: This is only needed because
+    # Launchpad doesn't expose the push URL for branches.
     if api_root == EDGE_SERVICE_ROOT:
         return 'bazaar.launchpad.net'
     elif api_root == DEV_SERVICE_ROOT:
