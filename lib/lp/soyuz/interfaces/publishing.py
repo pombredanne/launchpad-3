@@ -18,6 +18,7 @@ __all__ = [
     'ISecureSourcePackagePublishingHistory',
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
+    'MissingSymlinkInPool',
     'NotInPool',
     'PackagePublishingPriority',
     'PackagePublishingStatus',
@@ -58,6 +59,16 @@ class PoolFileOverwriteError(Exception):
     This exception is unexpected and when it happens we keep the original
     file in pool and print a warning in the publisher log. It probably
     requires manual intervention in the archive.
+    """
+
+class MissingSymlinkInPool(Exception):
+    """Raised when there is a missing symlink in pool.
+
+    This condition is ignored, similarly to what we do for `NotInPool`,
+    since the pool entry requested to be removed is not there anymore.
+
+    The corresponding record is marked as removed and the process
+    continues.
     """
 
 
