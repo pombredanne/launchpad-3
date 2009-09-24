@@ -69,6 +69,11 @@ class MergeProposal:
         """The commit message specified on the merge proposal."""
         return self._mp.commit_message
 
+    @property
+    def is_approved(self):
+        """Is this merge proposal approved for landing."""
+        return self._mp.queue_status == 'Approved'
+
     def get_stakeholder_emails(self):
         """Return a collection of people who should know about branch landing.
 

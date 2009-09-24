@@ -284,6 +284,9 @@ class cmd_land(EC2Command):
             help=(
                 'A description of the landing, not including reviewer '
                 'metadata etc.')),
+        Option(
+            'force',
+            help="Land the branch even if the proposal is not approved."),
         ]
 
     takes_args = ['merge_proposal']
@@ -302,7 +305,7 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            print_commit=False):
+            print_commit=False, force=False):
         if debug:
             pdb.set_trace()
         if print_commit and dry_run:
@@ -310,6 +313,13 @@ class cmd_land(EC2Command):
                 "Cannot specify --print-commit and --dry-run.")
         lander = LaunchpadBranchLander.load()
         mp = lander.load_merge_proposal(merge_proposal)
+        if not mp.is_approved:
+            if force:
+                print "Merge proposal is not approved, landing anyway."
+            else:
+                raise BzrCommandError(
+                    "Merge proposal is not approved. Get it approved, or use "
+                    "--force to land it without approval.")
         if commit_text is None:
             commit_text = mp.commit_message
         if commit_text is None:
