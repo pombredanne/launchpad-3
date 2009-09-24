@@ -116,6 +116,8 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertEqual(0, retcode)
         self.assertIn('Last commit was at', stderr)
         self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
+        self.assertEqual(
+            None, re.search("INFO\s+Committed [0-9]+ file", stderr))
 
 
 def test_suite():
