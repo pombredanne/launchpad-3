@@ -82,6 +82,26 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
         self.assertEquals(test_account.id, ensured_person.account.id)
         self.assertTrue(ensured_person.hide_email_addresses)
 
+    def test_ensurePerson_for_existing_account_with_person(self):
+        # IPerson.ensurePerson return existing Person for existing
+        # Accounts.
+
+        # Create a testing `Account` and a testing `Person` directly,
+        # linked. However the `Account` email is not linked to the
+        # `Person`. (XXX ?!?!)
+        testing_account = self.factory.makeAccount(
+            self.displayname, email=self.email_address)
+        testing_person = self.factory.makePerson(displayname=self.displayname)
+        testing_person.account = testing_account.id
+        self.assertIs(
+            testing_account.id, testing_account.preferredemail.account.id)
+        self.assertIs(None, testing_account.preferredemail.person)
+
+        ensured_person = getUtility(IPersonSet).ensurePerson(
+            self.email_address, self.displayname, self.rationale)
+        self.assertEquals(testing_person.id, ensured_person.id)
+
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
