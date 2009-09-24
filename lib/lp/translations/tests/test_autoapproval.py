@@ -272,6 +272,12 @@ class TestTemplateGuess(unittest.TestCase):
         self.producttemplate2 = product_subset.new(
             'test2', 'test2', 'test.pot', self.product.owner)
 
+    def _makeTemplateForDistroSeries(self, distroseries, name):
+        """Create a template in the given `DistroSeries`."""
+        distro_subset = POTemplateSubset(
+            distroseries=distroseries, sourcepackagename=self.packagename)
+        return distro_subset.new(name, name, 'test.pot', self.distro.owner)
+
     def _setUpDistro(self):
         """Set up a `Distribution` with two templates."""
         self.distro = self.factory.makeDistribution()
@@ -279,13 +285,10 @@ class TestTemplateGuess(unittest.TestCase):
             distribution=self.distro)
         self.packagename = SourcePackageNameSet().new('package')
         self.from_packagename = SourcePackageNameSet().new('from')
-        distro_subset = POTemplateSubset(
-            distroseries=self.distroseries,
-            sourcepackagename=self.packagename)
-        self.distrotemplate1 = distro_subset.new(
-            'test1', 'test1', 'test.pot', self.distro.owner)
-        self.distrotemplate2 = distro_subset.new(
-            'test2', 'test2', 'test.pot', self.distro.owner)
+        self.distrotemplate1 = self._makeTemplateForDistroSeries(
+            self.distroseries, 'test1')
+        self.distrotemplate2 = self._makeTemplateForDistroSeries(
+            self.distroseries, 'test2')
 
     def test_ByPathAndOrigin_product_duplicate(self):
         # When multiple templates match for a product series,
@@ -310,6 +313,23 @@ class TestTemplateGuess(unittest.TestCase):
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', sourcepackagename=self.from_packagename)
         self.assertEqual(None, guessed_template)
+
+    def test_ByPathAndOrigin_similar_between_distroseries(self):
+        # getPOTemplateByPathAndOrigin disregards templates from other
+        # distroseries.
+        self._setUpDistro()
+        other_series = self.factory.makeDistroRelease(
+            distribution=self.distro)
+        other_template = self._makeTemplateForDistroSeries(
+            other_series, 'test1')
+        self.distrotemplate1.iscurrent = False
+        self.distrotemplate2.iscurrent = True
+        self.distrotemplate1.from_sourcepackagename = None
+        self.distrotemplate2.from_sourcepackagename = None
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', distroseries=self.distroseries,
+            sourcepackagename=self.packagename)
+        self.assertEqual(self.distrotemplate2, guessed_template)
 
     def test_ByPathAndOrigin_preferred_match(self):
         # getPOTemplateByPathAndOrigin prefers from_sourcepackagename
