@@ -17,8 +17,7 @@ import socket
 
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
-    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance,
-    get_user_key)
+    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 

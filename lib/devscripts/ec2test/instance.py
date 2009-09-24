@@ -286,6 +286,13 @@ class EC2Instance:
                 break
         return EC2InstanceConnection(self, username, ssh)
 
+    def _upload_local_key(self, sftp, remote_filename):
+        user_key = get_user_key()
+        authorized_keys_file = sftp.open(remote_filename, 'w')
+        authorized_keys_file.write(
+            "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
+        authorized_keys_file.close()
+
     def connect(self):
         """Connect to the instance as a user with passwordless sudo.
 
@@ -296,6 +303,9 @@ class EC2Instance:
         if self._from_scratch:
             root_connection = self._connect('root')
             sftp = root_connection.ssh.open_sftp()
+            self._upload_local_key(sftp, 'local_key')
+            root_connection.perform('cat local_key >> ~/.ssh/authorized_keys')
+            root_connection.perform('rm local_key')
             update_sh = sftp.open('update.sh', 'w')
             update_sh.write(update_from_scratch % self._vals)
             update_sh.close()
@@ -310,18 +320,14 @@ class EC2Instance:
             self._from_scratch = False
         if not self._ec2test_user_has_keys:
             root_connection = self._connect('root')
-            user_key = get_user_key()
             sftp = root_connection.ssh.open_sftp()
-            authorized_keys_file = sftp.open("local_key", 'w')
-            authorized_keys_file.write(
-                "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
-            authorized_keys_file.close()
+            self._upload_local_key(sftp, 'local_key')
             sftp.close()
             root_connection.perform(
                 'cat /root/.ssh/authorized_keys local_key '
                 '> /home/ec2test/.ssh/authorized_keys')
             root_connection.perform('rm local_key')
-            root_connection.perform('chown -R ec2test:ec2test /home/ubuntu/')
+            root_connection.perform('chown -R ec2test:ec2test /home/ec2test/')
             root_connection.perform('chmod 644 /home/ec2test/.ssh/*')
             root_connection.close()
             self.log(
