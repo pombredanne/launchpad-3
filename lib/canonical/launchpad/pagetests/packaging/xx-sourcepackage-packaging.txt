@@ -10,7 +10,7 @@ package's +packaging page:
   Hierarchy: Ubuntu > 4.10 > ...mozilla... source package > Upstream links
   Tabs:
   * Overview (selected) - http://launchpad.dev/ubuntu/warty/+source/mozilla
-  * Code - http://code.launchpad.dev/ubuntu/warty/+source/mozilla
+  * Branches - http://code.launchpad.dev/ubuntu/warty/+source/mozilla
   * Bugs - http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla
   * Blueprints - not linked
   * Translations - http://translations.launchpad.dev/ubuntu/warty/+source/mozilla
