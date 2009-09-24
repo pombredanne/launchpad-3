@@ -28,7 +28,7 @@ feature is exposed.
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> list_set = getUtility(IMailingListSet)
     >>> list_one = list_set.get('itest-one')
     >>> list_one.welcome_message = 'Greetings team members!'

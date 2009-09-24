@@ -40,7 +40,7 @@ state.
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingListSet, MailingListStatus)
     >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> mailing_list_set = getUtility(IMailingListSet)
     >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
     >>> itest_one.status = MailingListStatus.CONSTRUCTING

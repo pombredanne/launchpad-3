@@ -20,7 +20,7 @@ informing them of their new list.  We can ignore these.
 
     >>> from canonical.launchpad.ftests import login, logout
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> from zope.component import getUtility
 
     >>> owner = factory.makePerson()
@@ -127,7 +127,7 @@ sync script has to deal with.
     >>> from canonical.launchpad.interfaces import (
     ...     EmailAddressStatus, IEmailAddressSet, IPersonSet)
     >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> team = getUtility(IPersonSet).getByName('staging-two')
     >>> email = getUtility(IEmailAddressSet).new(
     ...     'contact@example.com', team, EmailAddressStatus.VALIDATED)

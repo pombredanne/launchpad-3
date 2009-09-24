@@ -49,7 +49,7 @@ validate her alternative address.
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> anne = factory.makePersonByName('Anne')
     >>> alternative_email = get_alternative_email(anne)
 
@@ -357,7 +357,7 @@ the mailing list, she will not get a copy of the message.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
     >>> transaction.commit()
@@ -504,7 +504,7 @@ validated yet.
 
 However, once she validates this address, she can post from it.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> alternative_email.status = EmailAddressStatus.VALIDATED
     >>> logout()
     >>> transaction.commit()
@@ -575,7 +575,7 @@ Leaving and re-joining the team
 
 Anne now leaves the team, but she does not unsubscribe from the mailing list.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.leave(team_one)
     >>> logout()
@@ -620,7 +620,7 @@ The team administrator discards the message.
 Anne re-joins the team and once again can post to the mailing list.  She does
 not need to re-subscribe to the mailing list.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> anne.join(team_one)
     >>> logout()
     >>> transaction.commit()
@@ -660,7 +660,7 @@ First post moderation
 Normally, Launchpad members who are not subscribed to the mailing list will
 have their posts held for moderation.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> bart = factory.makePersonByName('Bart')
     >>> transaction.commit()
     >>> bart.personal_standing
@@ -695,7 +695,7 @@ However, a Launchpad member in good standing is allowed to post to any mailing
 list.
 
     >>> from canonical.launchpad.interfaces import PersonalStanding
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> bart.personal_standing = PersonalStanding.GOOD
     >>> transaction.commit()
 
