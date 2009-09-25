@@ -1097,9 +1097,7 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
     """View to create a new FAQ."""
 
     schema = IFAQ
-
-    page_title = _('Create a new FAQ')
-    label = page_title
+    label = _('Create a new FAQ')
 
     @property
     def page_title(self):
