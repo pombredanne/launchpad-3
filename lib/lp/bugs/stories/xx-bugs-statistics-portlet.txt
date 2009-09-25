@@ -8,6 +8,15 @@ inserted into the page later.
 
     >>> from BeautifulSoup import BeautifulSoup
 
+    >>> def print_portlet(browser, path):
+    ...     browser.open(
+    ...         'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % path)
+    ...     table = BeautifulSoup(browser.contents).find('table', 'bug-links')
+    ...     for link in table.findAll('a'):
+    ...         text = extract_text(link)
+    ...         if len(text) > 0:
+    ...             print "%s\n  --> %s" % (text, link['href'])
+
     >>> def print_portlet_contents(browser, path):
     ...     browser.open(
     ...         'http://bugs.launchpad.dev'
@@ -20,7 +29,12 @@ inserted into the page later.
 
     >>> path = 'debian'
 
-If the user is not logged-in general stats are shown.
+If the user is not logged-in a subscribe link is shown along with some
+general stats.
+
+    >>> print_portlet(anon_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/debian/+subscribe
 
     >>> print_portlet_contents(anon_browser, path)
     3 Open bugs
@@ -31,6 +45,10 @@ If the user is not logged-in general stats are shown.
 
 One the user has identified him or herself, information on assigned
 bugs is also shown.
+
+    >>> print_portlet(user_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/debian/+subscribe
 
     >>> print_portlet_contents(user_browser, path)
     3 Open bugs
@@ -50,7 +68,14 @@ The content includes a link to the distribution CVE report.
 
     >>> path = 'debian/woody'
 
-If the user is not logged-in general stats are shown.
+If the user is not logged-in general stats are shown. There is also a
+link to review nominations.
+
+    >>> print_portlet(anon_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/debian/woody/+subscribe
+    Review nominations
+      --> http://bugs.launchpad.dev/debian/woody/+nominations
 
     >>> print_portlet_contents(anon_browser, path)
     2 Open bugs
@@ -61,6 +86,12 @@ If the user is not logged-in general stats are shown.
 
 One the user has identified him or herself, information on assigned
 bugs is also shown.
+
+    >>> print_portlet(user_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/debian/woody/+subscribe
+    Review nominations
+      --> http://bugs.launchpad.dev/debian/woody/+nominations
 
     >>> print_portlet_contents(user_browser, path)
     2 Open bugs
@@ -82,6 +113,10 @@ The content includes a link to the distribution CVE report.
 
 If the user is not logged-in general stats are shown.
 
+    >>> print_portlet(anon_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
+
     >>> print_portlet_contents(anon_browser, path)
     3 Open bugs
     0 Critical bugs
@@ -91,6 +126,10 @@ If the user is not logged-in general stats are shown.
 
 One the user has identified him or herself, information on assigned
 bugs is also shown.
+
+    >>> print_portlet(user_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
 
     >>> print_portlet_contents(user_browser, path)
     3 Open bugs
@@ -113,7 +152,10 @@ source packages do not have a CVE reports page.
 
     >>> path = 'debian/woody/+source/mozilla-firefox'
 
-If the user is not logged-in general stats are shown.
+If the user is not logged-in general stats are shown. There is no
+option to subscribe to bug mail.
+
+    >>> print_portlet(anon_browser, path)
 
     >>> print_portlet_contents(anon_browser, path)
     2 Open bugs
@@ -124,6 +166,8 @@ If the user is not logged-in general stats are shown.
 
 One the user has identified him or herself, information on assigned
 bugs is also shown.
+
+    >>> print_portlet(user_browser, path)
 
     >>> print_portlet_contents(user_browser, path)
     2 Open bugs
@@ -148,6 +192,10 @@ do not have a CVE reports page.
 
 If the user is not logged-in general stats are shown.
 
+    >>> print_portlet(anon_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/mozilla/+subscribe
+
     >>> print_portlet_contents(anon_browser, path)
     4 Open bugs
     1 Critical bugs
@@ -157,6 +205,10 @@ If the user is not logged-in general stats are shown.
 
 One the user has identified him or herself, information on assigned
 bugs is also shown.
+
+    >>> print_portlet(user_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/mozilla/+subscribe
 
     >>> print_portlet_contents(user_browser, path)
     4 Open bugs
@@ -181,6 +233,10 @@ not have a CVE reports page.
 
 If the user is not logged-in general stats are shown.
 
+    >>> print_portlet(anon_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/firefox/+subscribe
+
     >>> print_portlet_contents(anon_browser, path)
     3 Open bugs
     1 Critical bugs
@@ -190,6 +246,10 @@ If the user is not logged-in general stats are shown.
 
 One the user has identified him or herself, information on assigned
 bugs is also shown.
+
+    >>> print_portlet(user_browser, path)
+    Subscribe to bug mail
+      --> http://bugs.launchpad.dev/firefox/+subscribe
 
     >>> print_portlet_contents(user_browser, path)
     3 Open bugs
