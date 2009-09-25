@@ -32,6 +32,9 @@ class SanitizeDb(LaunchpadScript):
         self.parser.add_option(
             "-f", "--force", action="store_true", default=False,
             help="Force running against a possible production database.")
+        self.parser.add_option(
+            "-n", "--dry-run", action="store_true", default=False,
+            help="Don't commit changes.")
 
     def _init_db(self, implicit_begin, isolation):
         if len(self.args) == 0:
@@ -105,6 +108,7 @@ class SanitizeDb(LaunchpadScript):
         self.removePrivateHwSubmissions()
         self.removePrivateSpecifications()
         self.removePrivateLocations()
+        self.removePrivateArchives()
         self.removeInactiveProjects()
         self.removeInactiveProducts()
 
@@ -139,7 +143,12 @@ class SanitizeDb(LaunchpadScript):
         self.removePrivateTeams()
 
         self.resetForeignKeysCascade()
-        transaction.commit()
+        if self.options.dry_run:
+            self.logger.debug("Dry run - rolling back.")
+            transaction.abort()
+        else:
+            self.logger.debug("Committing.")
+            transaction.commit()
 
     def removeInactivePeople(self):
         """Remove all suspended and deactivated people."""
@@ -191,6 +200,16 @@ class SanitizeDb(LaunchpadScript):
         count = self.store.find(
             PersonLocation, PersonLocation.visible == False).remove()
         self.logger.info("Removed %d person locations.", count)
+
+    def removePrivateArchives(self):
+        """Remove private archives.
+
+        This might over delete, but lets be conservative for now.
+        """
+        from lp.soyuz.model.archive import Archive
+        count = self.store.find(Archive, Archive.private == True).remove()
+        self.logger.info(
+            "Removed %d private archives.", count)
 
     def removeInactiveProjects(self):
         """Remove inactive projects."""
