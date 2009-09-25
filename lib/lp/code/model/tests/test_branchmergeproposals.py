@@ -837,6 +837,37 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             CodeReviewNotificationLevel.STATUS)
         self.assertFalse(owner in recipients)
 
+    def test_getNotificationRecipients_privacy(self):
+        # If a user can see only one of the source and target branches, then
+        # they do not get email about the proposal.
+        bmp = self.factory.makeBranchMergeProposal()
+        # Subscribe eric to the source branch only.
+        eric = self.factory.makePerson()
+        bmp.source_branch.subscribe(
+            eric, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        # Subscribe bob to the target branch only.
+        bob = self.factory.makePerson()
+        bmp.target_branch.subscribe(
+            bob, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        # Subscribe charlie to both.
+        charlie = self.factory.makePerson()
+        bmp.source_branch.subscribe(
+            charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        bmp.target_branch.subscribe(
+            charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        # Make both branches private.
+        removeSecurityProxy(bmp.source_branch).private = True
+        removeSecurityProxy(bmp.target_branch).private = True
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.FULL)
+        self.assertFalse(bob in recipients)
+        self.assertFalse(eric in recipients)
+        self.assertTrue(charlie in recipients)
+
 
 class TestGetAddress(TestCaseWithFactory):
     """Test that the address property gives expected results."""
