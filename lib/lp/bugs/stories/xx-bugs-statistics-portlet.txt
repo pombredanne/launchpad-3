@@ -109,6 +109,39 @@ source packages do not have a CVE reports page.
     LinkNotFoundError
 
 
+== Source Package in Distribution Series ==
+
+    >>> path = 'debian/woody/+source/mozilla-firefox'
+
+If the user is not logged-in general stats are shown.
+
+    >>> print_portlet_contents(anon_browser, path)
+    2 Open bugs
+    0 Critical bugs
+    0 Bugs fixed elsewhere
+    2 New bugs
+    1 Open CVE bugs
+
+One the user has identified him or herself, information on assigned
+bugs is also shown.
+
+    >>> print_portlet_contents(user_browser, path)
+    2 Open bugs
+    0 Bugs assigned to me
+    0 Critical bugs
+    0 Bugs fixed elsewhere
+    2 New bugs
+    1 Open CVE bugs
+
+Note that the "CVE reports" link is not shown above; source packages
+do not have a CVE reports page.
+
+    >>> print user_browser.getLink('CVE reports').url
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
 == Project group ==
 
     >>> path = 'mozilla'
