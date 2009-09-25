@@ -20,6 +20,14 @@
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/codereview.js">
   </script>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/lp/comment.js">
+  </script>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/lp/errors.js">
+  </script>
 </metal:block>
 
 
@@ -68,7 +76,22 @@
     <tal:comments condition="view/conversation"
                   replace="structure view/conversation/@@+render"/>
   </div>
+  <tal:comment replace="structure context/@@+comment/++form++" />
+      <div class="actions" id="launchpad-form-actions">
+        <input type="submit" id="field.actions.add" name="field.actions.add" value="Save Comment" class="button" />
+        
+          or&nbsp;
 
+          <a href="https://code.launchpad.dev/~mark/firefox/release-0.8/+merge/1">Cancel</a>
+        
+      </div>
+
+  <script type="text/javascript">
+    YUI().use('lp.comment', function(Y) {
+    var comment = new Y.Comment();
+    comment.render();
+    })
+  </script>
   <div class="yui-g">
     <div class="yui-u first">
       <div id="source-revisions"
