@@ -6,17 +6,23 @@ link to filter the listing to show just those bugs. This portlet is
 served in a separate request; the request is issued via Javascript and
 inserted into the page later.
 
+    >>> from BeautifulSoup import BeautifulSoup
+
+    >>> def print_portlet_contents(browser, path):
+    ...     browser.open(
+    ...         'http://bugs.launchpad.dev'
+    ...         '/%s/+bugtarget-portlet-bugfilters-content' % path)
+    ...     table = BeautifulSoup('<table>%s</table>' % browser.contents)
+    ...     print_table(table)
+
 
 == Distribution ==
 
+    >>> path = 'debian'
+
 If the user is not logged-in general stats are shown.
 
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev'
-    ...     '/debian/+bugtarget-portlet-bugfilters-content')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> table = BeautifulSoup('<table>%s</table>' % anon_browser.contents)
-    >>> print_table(table)
+    >>> print_portlet_contents(anon_browser, path)
     3 Open bugs
     0 Critical bugs
     0 Bugs fixed elsewhere
@@ -26,12 +32,7 @@ If the user is not logged-in general stats are shown.
 One the user has identified him or herself, information on assigned
 bugs is also shown.
 
-    >>> user_browser.open(
-    ...     'http://bugs.launchpad.dev'
-    ...     '/debian/+bugtarget-portlet-bugfilters-content')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> table = BeautifulSoup('<table>%s</table>' % user_browser.contents)
-    >>> print_table(table)
+    >>> print_portlet_contents(user_browser, path)
     3 Open bugs
     0 Bugs assigned to me
     0 Critical bugs
@@ -45,16 +46,76 @@ The content includes a link to the distribution CVE report.
     http://bugs.launchpad.dev/debian/+cve
 
 
-== Project group ==
+== Distribution Series ==
+
+    >>> path = 'debian/woody'
 
 If the user is not logged-in general stats are shown.
 
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev'
-    ...     '/mozilla/+bugtarget-portlet-bugfilters-content')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> table = BeautifulSoup('<table>%s</table>' % anon_browser.contents)
-    >>> print_table(table)
+    >>> print_portlet_contents(anon_browser, path)
+    2 Open bugs
+    0 Critical bugs
+    0 Bugs fixed elsewhere
+    2 New bugs
+    1 Open CVE bugs - CVE reports
+
+One the user has identified him or herself, information on assigned
+bugs is also shown.
+
+    >>> print_portlet_contents(user_browser, path)
+    2 Open bugs
+    0 Bugs assigned to me
+    0 Critical bugs
+    0 Bugs fixed elsewhere
+    2 New bugs
+    1 Open CVE bugs - CVE reports
+
+The content includes a link to the distribution CVE report.
+
+    >>> print user_browser.getLink('CVE reports').url
+    http://bugs.launchpad.dev/debian/woody/+cve
+
+
+== Distribution Source Package ==
+
+    >>> path = 'debian/+source/mozilla-firefox'
+
+If the user is not logged-in general stats are shown.
+
+    >>> print_portlet_contents(anon_browser, path)
+    3 Open bugs
+    0 Critical bugs
+    0 Bugs fixed elsewhere
+    1 New bugs
+    2 Open CVE bugs
+
+One the user has identified him or herself, information on assigned
+bugs is also shown.
+
+    >>> print_portlet_contents(user_browser, path)
+    3 Open bugs
+    0 Bugs assigned to me
+    0 Critical bugs
+    0 Bugs fixed elsewhere
+    1 New bugs
+    2 Open CVE bugs
+
+Note that the "CVE reports" link is not shown above; distribution
+source packages do not have a CVE reports page.
+
+    >>> print user_browser.getLink('CVE reports').url
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
+== Project group ==
+
+    >>> path = 'mozilla'
+
+If the user is not logged-in general stats are shown.
+
+    >>> print_portlet_contents(anon_browser, path)
     4 Open bugs
     1 Critical bugs
     0 Bugs fixed elsewhere
@@ -64,12 +125,7 @@ If the user is not logged-in general stats are shown.
 One the user has identified him or herself, information on assigned
 bugs is also shown.
 
-    >>> user_browser.open(
-    ...     'http://bugs.launchpad.dev'
-    ...     '/mozilla/+bugtarget-portlet-bugfilters-content')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> table = BeautifulSoup('<table>%s</table>' % user_browser.contents)
-    >>> print_table(table)
+    >>> print_portlet_contents(user_browser, path)
     4 Open bugs
     0 Bugs assigned to me
     1 Critical bugs
@@ -77,20 +133,22 @@ bugs is also shown.
     4 New bugs
     1 Open CVE bugs
 
-Note that the "CVE reports" link is not shown; project groups do not
-have a CVE reports page.
+Note that the "CVE reports" link is not shown above; project groups do
+not have a CVE reports page.
+
+    >>> print user_browser.getLink('CVE reports').url
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
 
 == Project ==
 
+    >>> path = 'firefox'
+
 If the user is not logged-in general stats are shown.
 
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev'
-    ...     '/firefox/+bugtarget-portlet-bugfilters-content')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> table = BeautifulSoup('<table>%s</table>' % anon_browser.contents)
-    >>> print_table(table)
+    >>> print_portlet_contents(anon_browser, path)
     3 Open bugs
     1 Critical bugs
     0 Bugs fixed elsewhere
@@ -100,12 +158,7 @@ If the user is not logged-in general stats are shown.
 One the user has identified him or herself, information on assigned
 bugs is also shown.
 
-    >>> user_browser.open(
-    ...     'http://bugs.launchpad.dev'
-    ...     '/firefox/+bugtarget-portlet-bugfilters-content')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> table = BeautifulSoup('<table>%s</table>' % user_browser.contents)
-    >>> print_table(table)
+    >>> print_portlet_contents(user_browser, path)
     3 Open bugs
     0 Bugs assigned to me
     1 Critical bugs

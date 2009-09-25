@@ -15,8 +15,9 @@
         </td>
       </tr>
     </tbody>
-    <tbody>
-      <tr tal:define="subscribe_link context/menu:bugs/subscribe">
+    <tbody tal:define="menu context/menu:bugs">
+      <tr tal:define="subscribe_link menu/subscribe|nothing"
+          tal:condition="subscribe_link">
         <td class="bugs-count" style="padding-top: 1em">
           <a tal:attributes="href subscribe_link/url">
             <img tal:attributes="src subscribe_link/icon_url" />
