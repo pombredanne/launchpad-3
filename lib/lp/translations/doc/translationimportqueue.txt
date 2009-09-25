@@ -129,6 +129,7 @@ we need to be logged in as an admin.
 
     >>> login('carlos@canonical.com')
     >>> entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> transaction.commit()
 
 Need to update our saved date_status_changed to detect if it changes now.
 
