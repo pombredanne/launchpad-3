@@ -58,7 +58,6 @@ to the build context, source package, archive, series, pocket and
 component.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    created ... ago
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     Build status
