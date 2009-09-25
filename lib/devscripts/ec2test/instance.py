@@ -613,15 +613,20 @@ class EC2InstanceConnection:
         return res
 
     def run_script(self, script_text):
+        """Upload `script_text` to the instance and run it with bash."""
         script = self.sftp.open('script.sh', 'w')
         script.write(script_text)
         script.close()
         self.run_with_ssh_agent('/bin/bash script.sh')
         # At least for mwhudson, the paramiko connection often drops while the
         # script is running.  Reconnect just in case.
+        self.reconnect()
+        self.perform('rm script.sh')
+
+    def reconnect(self):
+        """Close the connection and reopen it."""
         self.close()
         self._ssh = self._instance._connect(self._username)._ssh
-        self.perform('rm script.sh')
 
     def close(self):
         if self._sftp is not None:
