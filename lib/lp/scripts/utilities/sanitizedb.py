@@ -12,10 +12,12 @@ import re
 import subprocess
 import sys
 
+from storm.locals import Or
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import cursor
+from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.database.postgresql import ConnectionString, listReferences
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
@@ -68,8 +70,10 @@ class SanitizeDb(LaunchpadScript):
             'accountpassword',
             'archiveauthtoken',
             'authtoken',
+            'buildqueue',
             'commercialsubscription',
             'entitlement',
+            'job',
             'logintoken',
             'mailinglistban',
             'mailinglistsubscription',
@@ -83,7 +87,6 @@ class SanitizeDb(LaunchpadScript):
             'openidconsumernonce',
             'openidnonce',
             'openidrpsummary',
-            'temporaryblobstorage',
             'requestedcds',
             'scriptactivity',
             'shipitreport',
@@ -94,23 +97,36 @@ class SanitizeDb(LaunchpadScript):
             'shipment',
             'shippingrequest',
             'shippingrun',
+            'sprintattendance', # Is this private?
+            'standardshipitrequest',
+            'temporaryblobstorage',
             'usertouseremail',
             'vote',
             'votecast',
+            'webserviceban',
             ]
         for table in tables_to_empty:
             self.removeTable(table)
 
-        self.removeInactivePeople()
+        self.removeDeactivatedPeople()
+        self.removeDeactivatedAccounts()
+
         self.removePrivatePeople()
+        self.removePrivateTeams()
         self.removePrivateBugs()
+        self.removePrivateBugMessages()
         self.removePrivateBranches()
         self.removePrivateHwSubmissions()
         self.removePrivateSpecifications()
         self.removePrivateLocations()
         self.removePrivateArchives()
+        self.removePrivateAnnouncements()
+        self.removePrivateLibrarianFiles()
         self.removeInactiveProjects()
         self.removeInactiveProducts()
+        self.removeInvalidEmailAddresses()
+        self.scrambleHiddenEmailAddresses()
+        self.scrambleOpenIDIdentifiers()
 
         # Remove unlinked records. These might contain private data.
         self.removeUnlinkedAccounts()
@@ -124,23 +140,35 @@ class SanitizeDb(LaunchpadScript):
             ('libraryfiledownloadcount', 'libraryfilealias')])
         self.removeUnlinked('libraryfilecontent')
         self.removeUnlinked('message', [('messagechunk', 'message')])
+        self.removeUnlinked('staticdiff')
+        self.removeUnlinked('previewdiff')
+        self.removeUnlinked('diff')
 
         # Scrub data after removing all the records we are going to.
         # No point scrubbing data that is going to get removed later.
         columns_to_scrub = [
-            ('person', 'personal_standing_reason'),
             ('account', 'status_comment'),
+            ('distribution', 'reviewer_whiteboard'),
             ('distributionmirror', 'whiteboard'),
+            ('hwsubmission', 'raw_emailaddress'),
+            ('nameblacklist', 'comment'),
+            ('person', 'personal_standing_reason'),
+            ('person', 'addressline1'),
+            ('person', 'addressline2'),
+            ('person', 'organization'),
+            ('person', 'city'),
+            ('person', 'province'),
+            ('person', 'country'),
+            ('person', 'postcode'),
+            ('person', 'phone'),
+            ('person', 'mail_resumption_date'),
             ('product', 'reviewer_whiteboard'),
+            ('project', 'reviewer_whiteboard'),
             ('revisionauthor', 'email'),
             ('signedcodeofconduct', 'admincomment'),
             ]
         for table, column in columns_to_scrub:
             self.scrubColumn(table, column)
-
-        # Not implemented yet. These will fail.
-        self.scrambleHiddenEmailAddresses()
-        self.removePrivateTeams()
 
         self.resetForeignKeysCascade()
         if self.options.dry_run:
@@ -150,13 +178,28 @@ class SanitizeDb(LaunchpadScript):
             self.logger.debug("Committing.")
             transaction.commit()
 
-    def removeInactivePeople(self):
+    def removeDeactivatedPeople(self):
         """Remove all suspended and deactivated people."""
-        from lp.registry.model.person import Person
         from canonical.launchpad.interfaces.account import AccountStatus
-        count = self.store.find(
-            Person, Person.account_status != AccountStatus.ACTIVE).remove()
-        self.logger.info("Removed %d inactive people.", count)
+        count = self.store.execute("""
+            DELETE FROM Person
+            USING Account
+            WHERE Account.id = Person.account AND Account.status != %s
+            """ % sqlvalues(AccountStatus.ACTIVE)).rowcount
+        self.logger.info(
+            "Removed %d suspended or deactivated people", count)
+
+    def removeDeactivatedAccounts(self):
+        """Remove all suspended or deactivated accounts.
+
+        This needs to be called after removeInactivePeople.
+        """
+        from canonical.launchpad.interfaces.account import AccountStatus
+        count = self.store.execute("""
+            DELETE FROM Account WHERE Account.status != %s
+            """ % sqlvalues(AccountStatus.ACTIVE)).rowcount
+        self.logger.info(
+            "Removed %d suspended or deactivated accounts", count)
 
     def removePrivatePeople(self):
         """Remove all private people."""
@@ -168,11 +211,28 @@ class SanitizeDb(LaunchpadScript):
             Person.visibility != PersonVisibility.PUBLIC).remove()
         self.logger.info("Removed %d private people.", count)
 
+    def removePrivateTeams(self):
+        """Remove all private people."""
+        from lp.registry.interfaces.person import PersonVisibility
+        from lp.registry.model.person import Person
+        count = self.store.find(
+            Person,
+            Person.teamowner != None,
+            Person.visibility != PersonVisibility.PUBLIC).remove()
+        self.logger.info("Removed %d private teams.", count)
+
     def removePrivateBugs(self):
         """Remove all private bugs."""
         from lp.bugs.model.bug import Bug
         count = self.store.find(Bug, Bug.private == True).remove()
         self.logger.info("Removed %d private bugs.", count)
+
+    def removePrivateBugMessages(self):
+        """Remove all hidden bug messages."""
+        from lp.bugs.model.bugmessage import BugMessage
+        count = self.store.find(
+            BugMessage, BugMessage.visible == False).remove()
+        self.logger.info("Removed %d private bug messages.", count)
 
     def removePrivateBranches(self):
         """Remove all private branches."""
@@ -210,6 +270,25 @@ class SanitizeDb(LaunchpadScript):
         count = self.store.find(Archive, Archive.private == True).remove()
         self.logger.info(
             "Removed %d private archives.", count)
+
+    def removePrivateAnnouncements(self):
+        """Remove announcements that have not yet been published."""
+        from lp.registry.model.announcement import Announcement
+        count = self.store.find(
+            Announcement, Or(
+                Announcement.date_announced == None,
+                Announcement.date_announced > UTC_NOW,
+                Announcement.active == False)).remove()
+        self.logger.info(
+            "Removed %d unpublished announcements.", count)
+
+    def removePrivateLibrarianFiles(self):
+        """Remove librarian files only available via the restricted librarian.
+        """
+        from canonical.launchpad.database.librarian import LibraryFileAlias
+        count = self.store.find(
+            LibraryFileAlias, LibraryFileAlias.restricted == True).remove()
+        self.logger.info("Removed %d restricted librarian files.", count)
 
     def removeInactiveProjects(self):
         """Remove inactive projects."""
@@ -253,17 +332,51 @@ class SanitizeDb(LaunchpadScript):
         count = self.store.execute(query).rowcount
         self.logger.info("Removed %d unlinked %s rows.", count, table)
 
-    def removePrivateTeams(self):
-        """Remove all private teams."""
-        raise NotImplementedError
+    def removeInvalidEmailAddresses(self):
+        """Remove all invalid and old email addresses."""
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        from canonical.launchpad.interfaces.emailaddress import (
+            EmailAddressStatus)
+        count = self.store.find(
+            EmailAddress, Or(
+                EmailAddress.status == EmailAddressStatus.NEW,
+                EmailAddress.status == EmailAddressStatus.OLD,
+                EmailAddress.email.lower().like(
+                    '%@example.com', case_sensitive=True))).remove()
+        self.logger.info(
+            "Removed %d invalid, unvalidated and old email addresses.", count)
 
     def scrambleHiddenEmailAddresses(self):
         """Hide email addresses users have requested to not be public.
 
+        Call after removeInvalidEmailAddresses to avoid any possible
+        name clashes.
+
         This replaces the email addresses of all people with
         hide_email_addresses set with an @example.com email address.
         """
-        raise NotImplementedError
+        # One day there might be Storm documentation telling me how to
+        # do this via the ORM.
+        count = self.store.execute("""
+            UPDATE EmailAddress
+            SET email='e' || text(EmailAddress.id) || '@example.com'
+            FROM Person
+            WHERE EmailAddress.person = Person.id
+                AND Person.hide_email_addresses IS TRUE
+            """).rowcount
+        self.logger.info(
+            "Replaced %d hidden email addresses with @example.com", count)
+
+    def scrambleOpenIDIdentifiers(self):
+        """Replace OpenIDIdentifiers with random strings"""
+        count = self.store.execute("""
+            UPDATE Account SET
+                openid_identifier =
+                    'rnd' || text(id) || text(round(random()*10000)),
+                old_openid_identifier =
+                    'rnd' || text(id) || text(round(random()*10000))
+            """).rowcount
+        self.logger.info("Randomized %d openid identifiers.", count)
 
     def removeUnlinkedAccounts(self):
         """Remove Accounts not linked to a Person."""
