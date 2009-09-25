@@ -53,8 +53,8 @@ def interpret_config(config_entries, public_only):
     """
     config = {}
     for entry in config_entries:
-        branch_name, branch_url, optional = interpret_config(entry)
-        if not optional or public_only:
+        branch_name, branch_url, optional = interpret_config_entry(entry)
+        if not optional or not public_only:
             config[branch_name] = (branch_url, optional)
     return config
 
@@ -163,7 +163,8 @@ def remove_branches(sourcecode_directory, removed_branches):
             os.unlink(destination)
 
 
-def update_sourcecode(sourcecode_directory, config_filename, public_only):
+def update_sourcecode(sourcecode_directory, config_filename, public_only,
+                      dry_run):
     """Update the sourcecode."""
     config_file = open(config_filename)
     config = interpret_config(parse_config_file(config_file), public_only)
@@ -171,9 +172,14 @@ def update_sourcecode(sourcecode_directory, config_filename, public_only):
     branches = find_branches(sourcecode_directory)
     new, updated, removed = plan_update(branches, config)
     possible_transports = []
-    get_branches(sourcecode_directory, new, possible_transports)
-    update_branches(sourcecode_directory, updated, possible_transports)
-    remove_branches(sourcecode_directory, removed)
+    if dry_run:
+        print 'Branches to fetch:', new.keys()
+        print 'Branches to update:', updated.keys()
+        print 'Branches to remove:', list(removed)
+    else:
+        get_branches(sourcecode_directory, new, possible_transports)
+        update_branches(sourcecode_directory, updated, possible_transports)
+        remove_branches(sourcecode_directory, removed)
 
 
 def get_launchpad_root():
@@ -196,6 +202,9 @@ def main(args):
     parser.add_option(
         '--public-only', action='store_true',
         help='Only fetch/update the public sourcecode branches.')
+    parser.add_option(
+        '--dry-run', action='store_true',
+        help='Only fetch/update the public sourcecode branches.')
     options, args = parser.parse_args(args)
     root = get_launchpad_root()
     if len(args) > 1:
@@ -212,5 +221,6 @@ def main(args):
     print 'Config: %s' % (config_filename,)
     load_plugins()
     update_sourcecode(
-        sourcecode_directory, config_filename, options.public_early)
+        sourcecode_directory, config_filename,
+        options.public_only, options.dry_run)
     return 0
