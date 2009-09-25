@@ -151,7 +151,8 @@ class TestDiff(DiffTestCase):
                          diff.diffstat)
 
     def test_fromFile_withError(self):
-        # If the diffstat isn't real, we want to record an oops but continue.
+        # If the diff is formatted such that generating the diffstat fails, we
+        # want to record an oops but continue.
         last_oops_id = errorlog.globalErrorUtility.lastid
         diff_bytes = "not a real diff"
         diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))

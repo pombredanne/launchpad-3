@@ -161,8 +161,7 @@ class Diff(SQLBase):
         try:
             diffstat = cls.generateDiffstat(diff_content_bytes)
         except Exception:
-            info = sys.exc_info()
-            getUtility(IErrorReportingUtility).raising(info)
+            getUtility(IErrorReportingUtility).raising(sys.exc_info())
             # Set the diffstat to be empty.
             diffstat = {}
         return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
