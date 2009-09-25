@@ -27,7 +27,7 @@ When we post the form, we should be redirected back to the question page.
     >>> user_browser.getControl('Description').value = description
     >>> summary = "Problem showing the SVG demo on W3C web site"
     >>> user_browser.getControl('Summary').value = summary
-    >>> user_browser.getControl('Save changes').click()
+    >>> user_browser.getControl('Save Changes').click()
 
     >>> user_browser.url
     '.../firefox/+question/2'
@@ -66,7 +66,7 @@ Any logged in user can change the question source package on the
     >>> user_browser.getLink('Edit question').click()
     >>> user_browser.getControl(
     ...     name='field.target.package').value = 'linux-source-2.6.15'
-    >>> user_browser.getControl('Save changes').click()
+    >>> user_browser.getControl('Save Changes').click()
 
 Product questions ignore sourcepackage information if it is submitted:
 
@@ -74,7 +74,7 @@ Product questions ignore sourcepackage information if it is submitted:
     >>> user_browser.getLink('Edit question').click()
     >>> user_browser.getControl(
     ...     name='field.target.package').value = 'linux-source-2.6.15'
-    >>> user_browser.getControl('Save changes').click()
+    >>> user_browser.getControl('Save Changes').click()
 
 
 == Changing Other Metadata ==
@@ -90,7 +90,7 @@ edit the Status Whiteboard using the 'Edit Question' page.
 
     >>> browser.getControl('Assignee').value = 'name16'
     >>> browser.getControl('Status Whiteboard').value = 'Some note'
-    >>> browser.getControl('Save changes').click()
+    >>> browser.getControl('Save Changes').click()
 
     >>> soup = find_main_content(browser.contents)
     >>> print soup.first('b', text='Whiteboard:').findNext('td').renderContents()

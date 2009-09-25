@@ -683,7 +683,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
                 editable_fields.append(field.__name__)
         self.form_fields = self.form_fields.select(*editable_fields)
 
-    @action(u"Save changes", name="change")
+    @action(u"Save Changes", name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
         self.updateContextFromData(data)
@@ -711,7 +711,7 @@ class QuestionRejectView(LaunchpadFormView):
             self.setFieldError(
                 'message', _('You must provide an explanation message.'))
 
-    @action(_('Reject question'), name="reject")
+    @action(_('Reject Question'), name="reject")
     def reject_action(self, action, data):
         """Reject the Question."""
         self.context.reject(self.user, data['message'])
