@@ -453,6 +453,7 @@ class IBranchMergeProposal(IPrivacy):
         subject=Text(), content=Text(),
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface))
+    @operation_returns_entry(Interface) # ICodeReviewComment
     @call_with(owner=REQUEST_USER)
     @export_write_operation()
     def createComment(owner, subject, content=None, vote=None,
