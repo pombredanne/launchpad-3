@@ -13,7 +13,7 @@ from unittest import TestLoader
 from bzrlib.branch import Branch
 import transaction
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
@@ -149,6 +149,14 @@ class TestDiff(DiffTestCase):
         diff = Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
         self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
                          diff.diffstat)
+
+    def test_fromFile_withError(self):
+        # If the diffstat isn't real, we want to record an oops but continue.
+        last_oops_id = errorlog.globalErrorUtility.lastid
+        diff_bytes = "not a real diff"
+        diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
+        self.assertNotEqual(last_oops_id, errorlog.globalErrorUtility.lastid)
+        self.assertEqual({}, diff.diffstat)
 
 
 class TestStaticDiff(TestCaseWithFactory):
