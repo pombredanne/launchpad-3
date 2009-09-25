@@ -10,4 +10,4 @@ ALTER TABLE SprintAttendance
   ADD COLUMN is_physical BOOLEAN NOT NULL DEFAULT FALSE;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 97, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 04, 0);
