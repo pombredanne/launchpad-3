@@ -402,7 +402,7 @@ class cmd_update_image(EC2Command):
         # trunk contains a update-sourcecode script that works in a non-built
         # tree, do this.  This should be changed before landing.
         user_connection.run_with_ssh_agent(
-            'bzr pull -d /var/launchpad/test lp:~mwhudson/launchpad/no-more-devpad-ssh')
+            'bzr pull -d /var/launchpad/test lp:~mwhudson/launchpad/ami-from-scratch')
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
         if public:
