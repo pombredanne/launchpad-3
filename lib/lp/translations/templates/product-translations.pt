@@ -25,7 +25,7 @@
                 <h3>Translation details</h3>
                 <p>
                   Launchpad currently recommends translating
-                  <tal:target replace="structure target/fmt:link/+translations"
+                  <tal:target replace="structure target/fmt:link"
                               >trunk</tal:target>.
                   <tal:admins condition="context/required:launchpad.AnyPerson">
                     You can also
