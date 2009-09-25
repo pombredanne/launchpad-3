@@ -159,7 +159,7 @@
               <p id="answer-button-hint"
                 tal:condition="view/confirm_action/available">
                 To confirm an answer, use the
-                <strong>'This solved my problem'</strong> button located at
+                <strong>'This Solved My Problem'</strong> button located at
                 the bottom of the answer.
               </p>
             </div>

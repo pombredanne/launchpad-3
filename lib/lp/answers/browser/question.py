@@ -214,7 +214,7 @@ class QuestionSetView(LaunchpadFormView):
         return self.getFieldError('scope')
 
     @safe_action
-    @action('Find answers', name="search")
+    @action('Find Answers', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
         # For the scope to be absent from the form, the user must
@@ -633,7 +633,7 @@ class QuestionChangeStatusView(LaunchpadFormView):
         """Return the initial view values."""
         return {'status': self.context.status}
 
-    @action(_('Change status'), name='change-status')
+    @action(_('Change Status'), name='change-status')
     def change_status_action(self, action, data):
         """Change the Question status."""
         self.context.setStatus(self.user, data['status'], data['message'])
@@ -828,7 +828,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         """
         return (self.user is not None)
 
-    @action(_('Add comment'), name='comment', condition=canAddComment)
+    @action(_('Add Comment'), name='comment', condition=canAddComment)
     def comment_action(self, action, data):
         """Add a comment to a resolved question."""
         self.context.addComment(self.user, data['message'])
@@ -847,7 +847,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
                 self.user != self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('Add answer'), name='answer', condition=canAddAnswer)
+    @action(_('Add Answer'), name='answer', condition=canAddAnswer)
     def answer_action(self, action, data):
         """Add an answer to the question."""
         self.context.giveAnswer(self.user, data['message'])
@@ -859,7 +859,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         return (self.user == self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('Problem solved'), name="selfanswer",
+    @action(_('Problem Solved'), name="selfanswer",
             condition=canSelfAnswer)
     def selfanswer_action(self, action, data):
         """Action called when the owner provides the solution."""
@@ -881,7 +881,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
                 self.user != self.context.owner and
                 self.context.can_request_info)
 
-    @action(_('Add information request'), name='requestinfo',
+    @action(_('Add Information Request'), name='requestinfo',
             condition=canRequestInfo)
     def requestinfo_action(self, action, data):
         """Add a request for more information to the question."""
@@ -894,7 +894,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         return (self.user == self.context.owner and
                 self.context.can_give_info)
 
-    @action(_("I'm providing more information"), name='giveinfo',
+    @action(_("I'm Providing More Information"), name='giveinfo',
             condition=canGiveInfo)
     def giveinfo_action(self, action, data):
         """Give additional informatin on the request."""
@@ -923,12 +923,12 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         return (self.user == self.context.owner and
                 self.context.can_confirm_answer)
 
-    @action(_("This solved my problem"), name='confirm',
+    @action(_("This Solved My Problem"), name='confirm',
             condition=canConfirm)
     def confirm_action(self, action, data):
         """Confirm that an answer solved the request."""
         # The confirmation message is not given by the user when the
-        # 'This solved my problem' button on the main question view.
+        # 'This Solved My Problem' button on the main question view.
         if not data['message']:
             data['message'] = 'Thanks %s, that solved my question.' % (
                 data['answer'].owner.displayname)
@@ -941,7 +941,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         return (self.user == self.context.owner and
                 self.context.can_reopen)
 
-    @action(_("I still need an answer"), name='reopen',
+    @action(_("I Still Need an Answer"), name='reopen',
             condition=canReopen)
     def reopen_action(self, action, data):
         """State that the problem is still occuring and provide new
@@ -1077,7 +1077,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
     @safe_action
     @action(_('Search'), name='search')
     def search_action(self, action, data):
-        """Action executed when the user clicked the 'Find answers' button.
+        """Action executed when the user clicked the 'Find Answers' button.
 
         Saves the user submitted search parameters in an instance
         attribute and redirects to questions when the term is a question id.
@@ -1128,7 +1128,7 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
         self.form_fields['message'].custom_widget = (
             self.custom_widgets['message'])
 
-    @action(_('Create and link'), name='create_and_link')
+    @action(_('Create and Link'), name='create_and_link')
     def create_and_link_action(self, action, data):
         """Creates the FAQ and link it to the question."""
 

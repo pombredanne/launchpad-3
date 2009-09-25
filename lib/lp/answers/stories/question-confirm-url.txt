@@ -39,7 +39,7 @@ containing a link to confirm that answer.
     >>> support_browser.getControl('Message').value = (
     ...     'SVG is supported out of the box in recent versions of Firefox. '
     ...     'I suggest you upgrade your browser.')
-    >>> support_browser.getControl('Add answer').click()
+    >>> support_browser.getControl('Add Answer').click()
 
     # ... and get the confirmation URL from the notification
     >>> import email
@@ -86,12 +86,12 @@ confirming.
     <p>SVG is supported out of the box in recent versions of Firefox. I
     suggest you upgrade your browser.</p>
 
-To confirm the answer, he needs to click the 'This solved my problem'
+To confirm the answer, he needs to click the 'This Solved My Problem'
 button. He can enter an optional message along his confirmation.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "Thanks! This indeed solved the problem.")
-    >>> owner_browser.getControl('This solved my problem').click()
+    >>> owner_browser.getControl('This Solved My Problem').click()
 
 This adds his comment to the question and mark it as 'Solved.'
 
