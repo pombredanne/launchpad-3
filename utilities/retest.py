@@ -18,6 +18,7 @@ import sys
 import re
 from pprint import pprint
 
+
 # Regular expression to match numbered stories.
 STORY_RE = re.compile("(.*)/\d{2}-.*")
 
@@ -35,17 +36,15 @@ def getTestName(test):
     return test
 
 
-def extractTests(fd):
+def extractTests(input_file):
     """Get the set of tests to be run.
 
-    Given an open file descriptor pointing to a test summary report, find all
-    of the tests to be run.
+    Given a file object for a test summary report, find all of the tests to be
+    run.
     """
     failed_tests = set()
     reading_tests = False
-    line = True
-    while (line):
-        line = fd.readline()
+    for line in input_file:
         if line.startswith('Tests with failures:'):
             reading_tests = True
             continue
