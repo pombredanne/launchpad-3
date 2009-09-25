@@ -60,6 +60,9 @@ def get_user_key():
 # root and another that should be run as the 'ec2test' user.
 
 from_scratch_root = """
+# From 'help set':
+# -x  Print commands and their arguments as they are executed.
+# -e  Exit immediately if a command exits with a non-zero status.
 set -xe
 
 sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
@@ -142,6 +145,9 @@ chown -R ec2test:ec2test /var/www /var/launchpad /home/ec2test/
 
 
 from_scratch_ec2test = """
+# From 'help set':
+# -x  Print commands and their arguments as they are executed.
+# -e  Exit immediately if a command exits with a non-zero status.
 set -xe
 
 bzr launchpad-login %(launchpad-login)s
@@ -178,7 +184,7 @@ class EC2Instance:
 
         # We call this here so that it has a chance to complain before the
         # instance is started (which can take some time).
-        get_user_key()
+        user_key = get_user_key()
 
         if credentials is None:
             credentials = EC2Credentials.load_from_file()
@@ -213,10 +219,10 @@ class EC2Instance:
 
         return EC2Instance(
             name, image, instance_type, demo_networks, account, vals,
-            from_scratch)
+            from_scratch, user_key)
 
     def __init__(self, name, image, instance_type, demo_networks, account,
-                 vals, from_scratch):
+                 vals, from_scratch, user_key):
         self._name = name
         self._image = image
         self._account = account
@@ -225,6 +231,7 @@ class EC2Instance:
         self._boto_instance = None
         self._vals = vals
         self._from_scratch = from_scratch
+        self._user_key = user_key
 
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
@@ -306,12 +313,41 @@ class EC2Instance:
         return EC2InstanceConnection(self, username, ssh)
 
     def _upload_local_key(self, conn, remote_filename):
-        """ """
-        user_key = get_user_key()
+        """Upload a key from the local user's agent to `remote_filename`.
+
+        The key will be uploaded in a format suitable for
+        ~/.ssh/authorized_keys.
+        """
         authorized_keys_file = conn.sftp.open(remote_filename, 'w')
         authorized_keys_file.write(
-            "%s %s\n" % (user_key.get_name(), user_key.get_base64()))
+            "%s %s\n" % (self._user_key.get_name(), self._user_key.get_base64()))
         authorized_keys_file.close()
+
+    def _ensure_ec2test_user_has_keys(self, connection=None):
+        """Make sure that we can connect over ssh as the 'ec2test' user.
+
+        We add both the key that was used to start the instance (so
+        _connect('ec2test') works and a key from the locally running ssh agent
+        (so EC2InstanceConnection.run_with_ssh_agent works).
+        """
+        if not self._ec2test_user_has_keys:
+            if connection is None:
+                connection = self._connect('root')
+                our_connection = True
+            else:
+                our_connection = False
+            self._upload_local_key(connection, 'local_key')
+            connection.perform(
+                'cat /root/.ssh/authorized_keys local_key '
+                '> /home/ec2test/.ssh/authorized_keys && rm local_key')
+            connection.perform('chown -R ec2test:ec2test /home/ec2test/')
+            connection.perform('chmod 644 /home/ec2test/.ssh/*')
+            if our_connection:
+                connection.close()
+            self.log(
+                'You can now use ssh -A ec2test@%s to log in the instance.\n' %
+                self.hostname)
+            self._ec2test_user_has_keys = True
 
     def connect(self):
         """Connect to the instance as a user with passwordless sudo.
@@ -326,27 +362,14 @@ class EC2Instance:
             root_connection.perform(
                 'cat local_key >> ~/.ssh/authorized_keys && rm local_key')
             root_connection.run_script(from_scratch_root % self._vals)
+            self._ensure_ec2test_user_has_keys(root_connection)
             root_connection.close()
-            # Don't set self._from_scratch to True yet, we haven't run
-            # from_scratch_ec2test yet!
-        if not self._ec2test_user_has_keys:
-            root_connection = self._connect('root')
-            self._upload_local_key(root_connection, 'local_key')
-            root_connection.perform(
-                'cat /root/.ssh/authorized_keys local_key '
-                '> /home/ec2test/.ssh/authorized_keys && rm local_key')
-            root_connection.perform('chown -R ec2test:ec2test /home/ec2test/')
-            root_connection.perform('chmod 644 /home/ec2test/.ssh/*')
-            root_connection.close()
-            self.log(
-                'You can now use ssh -A ec2test@%s to log in the instance.\n' %
-                self.hostname)
-            self._ec2test_user_has_keys = True
-        conn = self._connect('ec2test')
-        if self._from_scratch:
+            conn = self._connect('ec2test')
             conn.run_script(from_scratch_ec2test % self._vals)
             self._from_scratch = False
-        return conn
+            return conn
+        self._ensure_ec2test_user_has_keys()
+        return self._connect('ec2test')
 
     def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
         """Start, run `func` and then maybe shut down.
