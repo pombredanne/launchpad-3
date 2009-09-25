@@ -405,13 +405,13 @@ class cmd_update_image(EC2Command):
             'bzr pull -d /var/launchpad/test lp:~mwhudson/launchpad/no-more-devpad-ssh')
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
+        if public:
+            update_sourcecode_options = '--public-only'
+        else:
+            update_sourcecode_options = ''
         user_connection.run_with_ssh_agent(
             "/var/launchpad/test/utilities/update-sourcecode "
-            "/var/launchpad/sourcecode")
-        if public:
-            user_connection.perform(
-                'rm -rf /var/launchpad/sourcecode/shipit '
-                '/var/launchpad/sourcecode/canonical-identity-provider')
+            "/var/launchpad/sourcecode" + update_sourcecode_options)
         user_connection.perform(
             'rm -rf .ssh/known_hosts .bazaar .bzr.log')
         user_connection.close()
