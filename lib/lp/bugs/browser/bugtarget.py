@@ -67,6 +67,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct, IProject
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action)
@@ -350,11 +351,17 @@ class FileBugViewBase(LaunchpadFormView):
 
     @property
     def no_ubuntu_redirect(self):
+        if IDistribution.providedBy(self.context):
+            bug_supervisor = self.context.bug_supervisor
+        elif (IDistributionSourcePackage.providedBy(self.context) or
+              ISourcePackage.providedBy(self.context)):
+            bug_supervisor = self.context.distribution.bug_supervisor
+
         return (
             self.request.form.get('no-redirect') is not None or
             [key for key in self.request.form.keys()
-             if 'field.actions' in key] != [] or
-             self.user.inTeam(self.context.bug_supervisor))
+            if 'field.actions' in key] != [] or
+            self.user.inTeam(bug_supervisor))
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""

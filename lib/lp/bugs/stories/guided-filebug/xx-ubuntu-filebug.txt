@@ -57,6 +57,13 @@ Ubuntu's bug supervisor doesn't get automatically redirected either.
     >>> print admin_browser.title
     Report a bug about Ubuntu...
 
+Source packages are also not redirected for Ubuntu's bug supervisor.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug')
+    >>> print admin_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug
+
 Filing bugs with Apport also allows us to get to the bug filing interface.
 
     >>> import os.path
