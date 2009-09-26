@@ -979,13 +979,21 @@
             HasCustomLanguageCodesNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
-        name="+remove"
+        name="+index"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:url
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
         path_expression="string:+customcode/${language_code}"
         attribute_to_parent="translation_target"
         />
+    <browser:page
+        name="+index"
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        permission="zope.Public"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodesIndexView"
+        template="../templates/customlanguagecode-index.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+
     <browser:page
         name="+remove"
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
@@ -1000,7 +1008,7 @@
         name="+custom-language-codes"
         for="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"
         layer="canonical.launchpad.layers.TranslationsLayer"
-        class="lp.translations.browser.customlanguagecode.CustomLanguageCodeIndexView"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodesIndexView"
         template="../templates/customlanguagecode-index.pt"
         permission="zope.Public"/>
     <browser:page

@@ -5,7 +5,8 @@ __metaclass__ = type
 
 __all__ = [
     'CustomLanguageCodeAddView',
-    'CustomLanguageCodeIndexView',
+    'CustomLanguageCodeBreadcrumb',
+    'CustomLanguageCodeIndexsView',
     'CustomLanguageCodeRemoveView',
     'HasCustomLanguageCodesNavigation',
     'HasCustomLanguageCodesTraversalMixin',
@@ -14,12 +15,15 @@ __all__ = [
 
 import re
 
+from canonical.lazr.utils import smartquote
+
 from lp.translations.interfaces.customlanguagecode import (
     ICustomLanguageCode, IHasCustomLanguageCodes)
 
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView, Navigation,
     stepthrough)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.menu import structured
 
@@ -33,7 +37,15 @@ def check_code(custom_code):
     return re.match(CODE_PATTERN, custom_code) is not None
 
 
-class CustomLanguageCodeIndexView(LaunchpadView):
+class CustomLanguageCodeBreadcrumb(Breadcrumb):
+    """Breadcrumb for a `CustomLanguageCode`."""
+    @property
+    def text(self):
+        return smartquote(
+            'Custom language code "%s"' % self.context.language_code)
+
+
+class CustomLanguageCodesIndexView(LaunchpadView):
     """Listing of `CustomLanguageCode`s for a given context."""
 
     page_title = "Custom language codes"
@@ -47,7 +59,7 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
     """Create a new custom language code."""
     schema = ICustomLanguageCode
     field_names = ['language_code', 'language']
-    page_title = "Add custom language code"
+    page_title = "Add new code"
 
     create = False
 

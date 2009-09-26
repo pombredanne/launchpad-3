@@ -4,4 +4,4 @@
 # be converted to bugs so they can be scheduled.
 Test access: admin required to change anything!
 Link to new pages (only for admins; codes are not secret, but not advertised).
-Breadcrumb for removing a code.
+Move +customcode pages under +custom-language-codes.
