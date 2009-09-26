@@ -23,7 +23,6 @@ from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
-from devscripts.ec2test.sshconfig import SSHConfig
 from devscripts.ec2test.credentials import EC2Credentials
 
 
@@ -223,26 +222,6 @@ class EC2Instance:
         as_root('sudo -u %(USER)s mkdir /home/%(USER)s/.ssh')
         root_sftp = root_connection.ssh.open_sftp()
         remote_ssh_dir = '/home/%(USER)s/.ssh' % self._vals
-        # Create config file
-        self.log('Creating %s/config\n' % (remote_ssh_dir,))
-        ssh_config_file_name = os.path.join(
-            self._vals['HOME'], '.ssh', 'config')
-        ssh_config_source = open(ssh_config_file_name)
-        config = SSHConfig()
-        config.parse(ssh_config_source)
-        ssh_config_source.close()
-        ssh_config_dest = root_sftp.open("%s/config" % remote_ssh_dir, 'w')
-        ssh_config_dest.write('CheckHostIP no\n')
-        ssh_config_dest.write('StrictHostKeyChecking no\n')
-        for hostname in ('devpad.canonical.com', 'chinstrap.canonical.com'):
-            ssh_config_dest.write('Host %s\n' % (hostname,))
-            data = config.lookup(hostname)
-            for key in ('hostname', 'gssapiauthentication', 'proxycommand',
-                        'user', 'forwardagent'):
-                value = data.get(key)
-                if value is not None:
-                    ssh_config_dest.write('    %s %s\n' % (key, value))
-        ssh_config_dest.close()
         # create authorized_keys
         self.log('Setting up %s/authorized_keys\n' % remote_ssh_dir)
         authorized_keys_file = root_sftp.open(
@@ -309,7 +288,6 @@ class EC2Instance:
             finally:
                 if shutdown:
                     self.shutdown()
-        
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
         """Copy `local_path` to `remote_dir` on this instance.
