@@ -59,7 +59,6 @@ component.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
-    Created ... ago
     ...
     Build status
     Needs building

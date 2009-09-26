@@ -69,7 +69,7 @@ The 'active reviews or unmerged proposals' text links to the active reviews page
 
     >>> browser.getLink('active reviews or unmerged proposals').click()
     >>> print browser.title
-    +activereviews : Fooix
+    Active code reviews for Fooix...
 
 The proposals are listed in a table that shows the source and target branches,
 who requested the merge, the date the review was requested, and the vote

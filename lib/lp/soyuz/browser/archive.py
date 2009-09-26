@@ -33,6 +33,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements, Interface
+from zope.security.proxy import removeSecurityProxy
 from zope.schema import Choice, List, TextLine
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -732,20 +733,21 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     implements(IArchiveIndexActionsMenu)
 
     def initialize(self):
-        """Setup infrastructure for the PPA index page.
-
-        Setup sources list entries widget and the search result list.
-        """
+        """Redirect if our context is a main archive."""
         if self.context.is_main:
             self.request.response.redirect(
                 canonical_url(self.context.distribution))
             return
         super(ArchiveView, self).initialize()
 
-        self.displayname_edit_widget = TextLineEditorWidget(
+    @property
+    def displayname_edit_widget(self):
+        widget = TextLineEditorWidget(
             self.context, 'displayname',
             canonical_url(self.context, view_name='+edit'),
-            id="displayname", title="Edit this displayname")
+            id="displayname", title="Edit the displayname")
+        return widget
+
 
     @property
     def sources_list_entries(self):
@@ -848,23 +850,24 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     def num_pkgs_building(self):
         """Return the number of building/waiting to build packages."""
 
-        building = getUtility(IBuildSet).getBuildsForArchive(
-            self.context, status=BuildStatus.BUILDING)
-        needs_build = getUtility(IBuildSet).getBuildsForArchive(
-            self.context, status=BuildStatus.NEEDSBUILD)
+        sprs_building = self.context.getSourcePackageReleases(
+            build_status = BuildStatus.BUILDING)
+        sprs_waiting = self.context.getSourcePackageReleases(
+            build_status = BuildStatus.NEEDSBUILD)
 
-        # Create a set of all source package releases that have builds
-        # waiting to build, as well as a set of those with building builds.
-        needs_build_set = set(
-            build.sourcepackagerelease for build in needs_build)
-
-        building_set = set(
-            build.sourcepackagerelease for build in building)
+        pkgs_building_count = sprs_building.count()
 
         # A package is not counted as waiting if it already has at least
         # one build building.
-        pkgs_building_count = len(building_set)
-        pkgs_waiting_count = len(needs_build_set.difference(building_set))
+        # XXX Michael Nelson 20090917 bug 431203. Because neither the
+        # 'difference' method or the '_find_spec' property are exposed via
+        # storm.zope.interfaces.IResultSet, we need to remove the proxy for
+        # both results to use the difference method.
+        naked_sprs_waiting = removeSecurityProxy(sprs_waiting)
+        naked_sprs_building = removeSecurityProxy(sprs_building)
+
+        pkgs_waiting_count = naked_sprs_waiting.difference(
+            naked_sprs_building).count()
 
         # The total is just used for conditionals in the template.
         return {
@@ -881,6 +884,10 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     @property
     def page_title(self):
         return smartquote('Packages in "%s"' % self.context.displayname)
+
+    @property
+    def label(self):
+        return self.page_title
 
     @property
     def series_list_string(self):

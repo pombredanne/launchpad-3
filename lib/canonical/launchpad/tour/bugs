@@ -61,7 +61,7 @@ You can even share a comment history across project boundaries and tools, and us
                         <h3>Share bug reports across projects and tools</h3>
                         <h4>Bug reports used to exist in isolation. With Launchpad they can join together across project and tool boundaries.</h4>
                         <p class="screen-holder">
-                            <img src="images/bugs/1.png" alt="Shared bug reports, independent statuses" width="428" height="198" />                        </p>
+                            <img src="images/bugs/1.png" alt="Shared bug reports, independent statuses" />                        </p>
                         <p>
                         In Launchpad, you can share a bug report and its comment history with other communities interested in finding a fix.
                         Each project &mdash; or even different releases within a project &mdash; can track its own status, importance and assignee for that same bug report.
@@ -75,7 +75,7 @@ And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&
                         <h3>Found a fix? Publish a branch!</h3>
                         <h4>Don't swap static patches in bug comments. Instead, share evolving fixes by linking bug reports directly to Bazaar branches.</h4>
                         <p class="screen-holder">
-                            <img src="images/bugs/5.png" alt="Found a fix? Publish a branch!" width="428" height="220" />                        </p>
+                            <img src="images/bugs/5.png" alt="Found a fix? Publish a branch!" />                        </p>
                         <p>
                         Other community members can use Bazaar to download your fix, make their own changes and then upload them back to Launchpad for everyone to see.<br /><br />
                         Thanks to Bazaar, it&rsquo;s easy to merge the branch containing your bug fix into your project&rsquo;s trunk. Bazaar branches are like "living patches" &mdash; a single URL points to the latest version of the fix and a single command merges it into your trunk branch.
@@ -92,7 +92,7 @@ And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&
                         <h3>Bugs by email</h3>
                         <h4>File and manage bug reports by email.</h4>
                         <p class="screen-holder">
-                            <img src="images/bugs/3.png" alt="Bug tracker email interface" width="428" height="311" />                        </p>
+                            <img src="images/bugs/3.png" alt="Bug tracker email interface"  />                        </p>
                         <p>
                         Manage bug reports entirely through your mail client, using the Launchpad Bugs email interface.
 <br /><br />

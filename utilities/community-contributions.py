@@ -47,11 +47,11 @@ try:
     from editmoin import editshortcut
 except:
     sys.stderr.write("""ERROR: Unable to import from 'editmoin'.  How to solve:
-As of 2009-09-01, you can get editmoin.py from
+Get editmoin.py from launchpadlib's "contrib/" directory:
 
-  https://bazaar.launchpad.net/~kfogel/lp-dev-utils/lp-user-tools/files
+  http://bazaar.launchpad.net/~lazr-developers/launchpadlib/trunk/annotate/head%3A/contrib/editmoin.py
 
-(This is a transitional location; it may move to a more public place.)
+(Put it in the same directory as this script and everything should work.)
 """)
     sys.exit(1)
 
@@ -78,6 +78,8 @@ known_canonical_devs = (
     u'Dafydd Harries',
     u'Daniel Silverstone',
     u'Danilo Šegan',
+    u'Данило Шеган',
+    u'данило шеган',
     u'David Allouche',
     u'Deryck Hodge',
     u'Diogo Matsubara',

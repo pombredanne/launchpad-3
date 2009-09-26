@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'LanguageAddView',
     'LanguageAdminView',
+    'LanguageNavigation',
+    'LanguageSetBreadcrumb',
     'LanguageSetContextMenu',
     'LanguageSetNavigation',
     'LanguageSetView',
@@ -18,20 +20,51 @@ from zope.component import getUtility
 from zope.event import notify
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
-    LaunchpadEditFormView, action, canonical_url, ContextMenu, NavigationMenu,
-    enabled_with_permission, Link, custom_widget)
+    LaunchpadEditFormView, action, canonical_url, ContextMenu, Navigation,
+    NavigationMenu, enabled_with_permission, Link, custom_widget)
 from lp.translations.utilities.pluralforms import make_friendly_plural_forms
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
+
+def describe_language(language):
+    """Return full name for `language`."""
+    englishname = language.englishname
+    if language.nativename:
+        return "%s (%s)" % (englishname, language.nativename)
+    else:
+        return englishname
+
+
+class LanguageNavigation(Navigation):
+    """Make breadcrumb appear for language."""
+    # XXX: JeroenVermeulen 2009-09-18, bug=423898: Salgado is working to
+    # make this Navigation class obsolete.  Once 423898 is solved, this
+    # class and the ZCML referring to it can go.
+    usedfor = ILanguage
+
+
+class LanguageBreadcrumb(Breadcrumb):
+    """`Breadcrumb` for `ILanguage`."""
+    @property
+    def text(self):
+        return self.context.englishname
+
+
 class LanguageSetNavigation(GetitemNavigation):
     usedfor = ILanguageSet
+
+
+class LanguageSetBreadcrumb(Breadcrumb):
+    """`Breadcrumb` for `ILanguageSet`."""
+    text = u"Languages"
 
 
 class LanguageSetContextMenu(ContextMenu):
@@ -54,8 +87,11 @@ class LanguageNavigationMenu(NavigationMenu):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+
 class LanguageSetView:
     """View class to render main ILanguageSet page."""
+    label = "Languages in Launchpad"
+    page_title = "Languages"
 
     def __init__(self, context, request):
         self.context = context
@@ -89,6 +125,9 @@ class LanguageAddView(LaunchpadFormView):
                    'pluralexpression', 'visible', 'direction']
     language = None
 
+    page_title = "Register a language"
+    label = "Register a language in Launchpad"
+
     @action('Add', name='add')
     def add_action(self, action, data):
         """Create the new Language from the form details."""
@@ -101,16 +140,6 @@ class LanguageAddView(LaunchpadFormView):
             visible=data['visible'],
             direction=data['direction'])
         notify(ObjectCreatedEvent(self.language))
-
-    @property
-    def page_title(self):
-        """Sets the page title."""
-        return 'Add a new language to Launchpad'
-
-    @property
-    def label(self):
-        """The form label."""
-        return 'Register a language in Launchpad'
 
     @property
     def cancel_url(self):
@@ -135,12 +164,17 @@ class LanguageAddView(LaunchpadFormView):
 class LanguageView(TranslationsMixin, LaunchpadView):
     """View class to render main ILanguage page."""
 
+    @property
+    def page_title(self):
+        return self.context.englishname
+
+    @property
+    def label(self):
+        return "%s in Launchpad" % self.language_name
+
     @cachedproperty
     def language_name(self):
-        if self.context.nativename is None:
-            return self.context.englishname
-        else:
-            return self.context.nativename
+        return describe_language(self.context)
 
     @cachedproperty
     def translation_teams(self):
@@ -191,18 +225,12 @@ class LanguageAdminView(LaunchpadEditFormView):
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction', 'countries']
 
-    @property
-    def page_title(self):
-        return "Edit %s" % self.context.displayname
+    page_title = "Change details"
 
     @property
     def label(self):
         """The form label"""
-        if self.context.nativename is None:
-            name = self.context.englishname
-        else:
-            name = self.context.nativename
-        return "Edit %s in Launchpad" % name
+        return "Edit %s in Launchpad" % describe_language(self.context)
 
     @property
     def cancel_url(self):
