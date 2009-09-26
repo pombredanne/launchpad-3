@@ -3,18 +3,16 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
 
-    <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-latestspecs" />
-    </metal:portlets>
+<tal:side metal:fill-slot="side">
+  <tal:menu replace="structure context/@@+global-actions" />
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
+</tal:side>
 
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
@@ -32,11 +30,6 @@
       </p>
     </tal:block>
   </tal:block>
-
-  <h1 tal:condition="view/is_person"
-     >Blueprints involving <tal:person replace="context/title" /></h1>
-  <h1 tal:condition="not:view/is_person"
-     >Blueprints for <tal:software replace="context/displayname" /></h1>
 
   <div style="float: right;"
        tal:content="structure context/@@+register-a-blueprint-button|nothing" />
