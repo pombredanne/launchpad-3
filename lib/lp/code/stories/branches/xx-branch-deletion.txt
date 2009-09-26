@@ -10,8 +10,8 @@ branches that have been created in error.
     >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
-    >>> browser.title
-    '...~name12/firefox/to-delete... branch in Launchpad'
+    >>> print browser.title
+    to-delete : Branches : Mozilla Firefox
 
 The newly created branch has an action 'Delete branch'.
 

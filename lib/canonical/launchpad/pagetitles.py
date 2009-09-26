@@ -134,7 +134,7 @@ archive_subscribers = ContextDisplayName('Manage access to %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
-bazaar_index = 'Launchpad Code'
+bazaar_index = 'Launchpad Branches'
 
 bazaar_sync_review = (
     'Review upstream repositories for Launchpad Bazaar syncing')
@@ -245,8 +245,6 @@ bugtask_confirm_bugtracker_creation = LaunchbagBugID(
 
 bugtask_edit = BugTaskPageTitle()
 
-bugtask_index = BugTaskPageTitle()
-
 bugtask_requestfix = LaunchbagBugID(
     'Bug #%d - Record as affecting another distribution/package')
 
@@ -256,18 +254,6 @@ bugtask_view = BugTaskPageTitle()
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
-
-build_buildlog = ContextTitle('Build log for %s')
-
-build_changes = ContextTitle('Changes in %s')
-
-build_index = ContextTitle('%s')
-
-build_retry = ContextTitle('Retry %s')
-
-build_rescore = ContextTitle('Rescore %s')
-
-builders_index = 'Launchpad build farm'
 
 calendar_index = ContextTitle('%s')
 
@@ -329,8 +315,6 @@ cve_unlinkbugs = ContextDisplayName('Remove links between %s and bug reports')
 
 debug_root_index = 'Launchpad Debug Home Page'
 
-default_editform = 'Default "Edit" Page'
-
 distributionmirror_index = ContextTitle('Mirror %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
@@ -360,9 +344,6 @@ distributionsourcepackage_index = ContextTitle('%s')
 
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
-
-structural_subscriptions_manage = ContextTitle(
-    'Bug subscriptions for %s')
 
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
@@ -398,16 +379,6 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-def faq_index(context, view):
-    """Return the FAQ index page title."""
-    return (
-        smartquote('%s FAQ #%d: "%s"') %
-        (context.target.displayname, context.id, context.title))
-
-def faq_listing(context, view):
-    """Return the FAQ lising page title."""
-    return view.heading
-
 def hasmentoringoffers_mentoring(context, view):
     """Return the mentoring title for the context."""
     if IPerson.providedBy(context):
@@ -421,43 +392,15 @@ def hasmentoringoffers_mentoring(context, view):
 
 hasannouncements_index = ContextDisplayName('%s news and announcements')
 
-def hasspecifications_specs(context, view):
-    """Return the secifications title for the context."""
-    if IPerson.providedBy(context):
-        return "Blueprints involving %s" % context.title
-    else:
-        return "Blueprints for %s" % context.title
-
 hassprints_sprints = ContextTitle("Events related to %s")
 
-hwdb_fingerprint_submissions = (
-    "Hardware Database submissions for a fingerprint")
-
-hwdb_submit_hardware_data = (
-    'Submit New Data to the Launchpad Hardware Database')
-
-language_index = ContextDisplayName("%s in Launchpad")
-
-languageset_index = 'Languages in Launchpad'
-
 # launchpad_debug doesn't need a title.
-
-def launchpad_addform(context, view):
-    """Return the page_title of the view, or None."""
-    # Returning None results in the default Launchpad page title being used.
-    return getattr(view, 'page_title', None)
-
-launchpad_editform = launchpad_addform
 
 launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Need a new Launchpad password?'
-
-launchpad_graphics = 'Overview of Launchpad graphics and icons'
-
-template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_css is a css file
 
@@ -479,8 +422,6 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
-launchpadstatisticset_index = 'Launchpad statistics'
-
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
 def loginservice_authorize(context, view):
@@ -494,30 +435,7 @@ def loginservice_authorize(context, view):
 
 loginservice_login = 'Launchpad Login Service'
 
-logintoken_claimprofile = 'Claim Launchpad profile'
-
-logintoken_claimteam = 'Claim Launchpad team'
-
-# This page will always redirect the user to another page specific to the
-# login token in question, except when the token has been consumed already, in
-# which case the user will see the title.
-logintoken_index = 'You have already done this'
-
-logintoken_mergepeople = 'Merge Launchpad accounts'
-
-logintoken_newaccount = 'Create a new Launchpad account'
-
-logintoken_resetpassword = 'Forgotten your password?'
-
 loginservice_standalone_login = loginservice_login
-
-logintoken_validateemail = 'Confirm e-mail address'
-
-logintoken_validategpg = 'Confirm OpenPGP key'
-
-logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
-
-logintoken_validateteamemail = 'Confirm e-mail address'
 
 # main_template has the code to insert one of these titles.
 
@@ -567,8 +485,6 @@ mentoringofferset_success = "Successful mentorships over the past year."
 
 # messages_index is a redirect
 
-message_add = ContextBugId('Bug #%d - Add a comment')
-
 milestone_add = ContextTitle('Add new milestone for %s')
 
 milestone_edit = ContextTitle('Edit %s')
@@ -591,8 +507,6 @@ announcement_retarget = 'Move this announcement to a different project'
 announcement_retract = 'Retract this announcement'
 
 announcements_all = 'Announcements from all projects hosted in Launchpad'
-
-notification_test = 'Notification test'
 
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
@@ -655,12 +569,7 @@ person_archive_subscriptions = 'Private PPA access'
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
-person_edit = ContextDisplayName(smartquote("%s's details"))
-
 # person_foaf is an rdf file
-
-person_hwdb_submissions = ContextDisplayName(
-    "Hardware Database submissions by %s")
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
@@ -766,8 +675,6 @@ projects_request = 'Launchpad Translations: Request a project group'
 
 projects_search = 'Search for project groups in Launchpad'
 
-rdf_index = "Launchpad RDF"
-
 # redirect_up is a redirect
 
 def reference_index(context, view):
@@ -782,8 +689,6 @@ registry_index = 'Project and group registration in Launchpad'
 
 remotebug_index = ContextTitle('%s')
 
-root_featuredprojects = 'Manage featured projects in Launchpad'
-
 root_index = 'Launchpad'
 
 rosetta_about = 'About Launchpad Translations'
@@ -793,10 +698,6 @@ rosetta_index = 'Launchpad Translations'
 rosetta_products = 'Projects with Translations in Launchpad'
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
-
-def question_listing(context, view):
-    """Return the page title list questions."""
-    return view.pagetitle
 
 questions_index = 'Launchpad Answers'
 
@@ -850,13 +751,9 @@ sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
 sourcepackage_builds = ContextTitle('Builds for %s')
 
-sourcepackage_translate = ContextTitle('Help translate %s')
-
 sourcepackage_changelog = 'Source package changelog'
 
 sourcepackage_filebug = ContextTitle("Report a bug about %s")
-
-sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackagenames_index = 'Source package name set'
 
@@ -892,8 +789,6 @@ specification_goaldecide = 'Approve or decline blueprint goal'
 
 specification_dependency = 'Create a blueprint dependency'
 
-specification_deptree = 'Complete dependency tree'
-
 specification_distroseries = ('Target blueprint to a distribution release')
 
 specification_productseries = 'Target blueprint to a series'
@@ -902,15 +797,9 @@ specification_removedep = 'Remove a dependency'
 
 specification_givefeedback = 'Clear feedback requests'
 
-specification_requestfeedback = 'Request feedback on this blueprint'
-
 specification_edit = 'Edit blueprint details'
 
 specification_linksprint = 'Put blueprint on sprint agenda'
-
-specification_index = ContextTitle(smartquote('Blueprint: "%s"'))
-
-specification_subscription = 'Subscribe to blueprint'
 
 specification_queue = 'Queue blueprint for review'
 
@@ -922,21 +811,15 @@ specificationbranch_status = 'Edit blueprint branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
-specificationgoal_setgoals = ContextTitle('Set goals for %s')
-
 def specificationsubscription_edit(context, view):
     """Return the page title for subscribing to a specification."""
     return "Subscription of %s" % context.person.displayname
-
-specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Blueprint listing for %s')
 
 def specificationtarget_specs(context, view):
     """Return the page title for a specificationtarget."""
     return view.title
-
-specificationtarget_assignments = ContextTitle('Blueprint assignments for %s')
 
 specificationtarget_workload = ContextTitle('Blueprint workload in %s')
 
@@ -948,15 +831,9 @@ sprint_index = ContextTitle('%s (sprint or meeting)')
 
 sprint_new = 'Register a meeting or sprint in Launchpad'
 
-sprint_register = 'Register someone to attend this meeting'
-
 sprint_specs = ContextTitle('Blueprints for %s')
 
-sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
-
 sprint_workload = ContextTitle('Workload at %s')
-
-sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve blueprint for sprint agenda'
 
@@ -983,8 +860,6 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
-
-temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 token_authorized = 'Almost finished ...'
 

@@ -3,25 +3,11 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>Set topics for discussion</h1>
-</metal:heading>
 
 <div metal:fill-slot="main"
      tal:define="speclinks view/spec_links">
@@ -56,7 +42,7 @@
                      value speclink/id;
                      id string:speclink_${speclink/id}" /><br />
               <span tal:attributes="
-                    class string:specpriority${spec/priority/name}" 
+                    class string:specpriority${spec/priority/name}"
                     tal:content="spec/priority/title">High</span><br />
               <span tal:attributes="
                     class string:specstatus${spec/definition_status/name}"

@@ -12,6 +12,7 @@ __all__ = [
     'DistributionSourcePackageBranchesView',
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
+    'CodeVHostBreadcrumb',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -63,6 +64,7 @@ from canonical.launchpad.webapp.authorization import (
     check_permission, precache_permission_for_objects)
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -86,9 +88,9 @@ from lp.registry.browser.product import (
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
+
 
 def get_plural_text(count, singular, plural):
     """Return 'singular' if 'count' is 1, 'plural' otherwise."""
@@ -96,6 +98,11 @@ def get_plural_text(count, singular, plural):
         return singular
     else:
         return plural
+
+
+class CodeVHostBreadcrumb(Breadcrumb):
+    rootsite = 'code'
+    text = 'Branches'
 
 
 class BranchBadges(HasBadgeBase):
@@ -494,7 +501,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     # shown in the branch listings.
     show_series_links = False
     extra_columns = []
-    heading_template = 'Bazaar branches for %(displayname)s'
+    label_template = 'Bazaar branches for %(displayname)s'
     # no_sort_by is a sequence of items from the BranchListingSort
     # enumeration to not offer in the sort_by widget.
     no_sort_by = ()
@@ -512,15 +519,14 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         )
 
     @property
-    def heading(self):
-        return self.heading_template % {
+    def label(self):
+        return self.label_template % {
             'displayname': self.context.displayname,
             'title': getattr(self.context, 'title', 'no-title')}
 
-    @property
-    def page_title(self):
-        # The page title uses the view heading.
-        return self.heading
+    # Provide a default page_title for distros and other things without
+    # breadcrumbs..
+    page_title = label
 
     @property
     def initial_values(self):
@@ -948,7 +954,8 @@ class PersonBaseBranchListingView(BranchListingView):
 class PersonRegisteredBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's registered branches."""
 
-    heading_template = 'Bazaar branches registered by %(displayname)s'
+    page_title = _('Registered')
+    label_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
@@ -958,7 +965,8 @@ class PersonRegisteredBranchesView(PersonBaseBranchListingView):
 class PersonOwnedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's owned branches."""
 
-    heading_template = 'Bazaar branches owned by %(displayname)s'
+    page_title = _('Owned')
+    label_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
@@ -968,7 +976,8 @@ class PersonOwnedBranchesView(PersonBaseBranchListingView):
 class PersonSubscribedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
-    heading_template = 'Bazaar branches subscribed to by %(displayname)s'
+    page_title = _('Subscribed')
+    label_template = 'Bazaar branches subscribed to by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT,)
 
     def _getCollection(self):
@@ -1092,7 +1101,7 @@ class ProductBranchListingView(BranchListingView):
 
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
-    heading_template = 'Bazaar branches of %(displayname)s'
+    label_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context)
@@ -1306,7 +1315,7 @@ class ProjectBranchesView(BranchListingView):
 
     no_sort_by = (BranchListingSort.DEFAULT,)
     extra_columns = ('author', 'product')
-    heading_template = 'Bazaar branches of %(displayname)s'
+    label_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProject(self.context)
@@ -1345,7 +1354,7 @@ class BaseSourcePackageBranchesView(BranchListingView):
 class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
 
-    heading_template = 'Bazaar branches for %(title)s'
+    label_template = 'Bazaar branches for %(title)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
@@ -1371,10 +1380,10 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
     """A view that groups branches into distro series."""
 
     @property
-    def heading(self):
+    def label(self):
         return 'Bazaar branches for %s' % self.context.title
 
-    page_title = heading
+    page_title = label
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -1529,7 +1538,7 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
 
 class SourcePackageBranchesView(BranchListingView):
 
-    heading_template = 'Bazaar branches of %(displayname)s'
+    label_template = 'Bazaar branches of %(displayname)s'
 
     # XXX: JonathanLange 2009-03-03 spec=package-branches: This page has no
     # menu yet -- do we need one?
@@ -1594,8 +1603,8 @@ class PersonProductBaseBranchesView(PersonBaseBranchListingView):
         return self.context.person
 
     @property
-    def heading(self):
-        return self.heading_template % {
+    def label(self):
+        return self.label_template % {
             'person': self.context.person.displayname,
             'product': self.context.product.displayname}
 
@@ -1622,7 +1631,7 @@ class PersonProductOwnedBranchesView(PersonProductBaseBranchesView):
                   BranchListingSort.OWNER,
                   BranchListingSort.PRODUCT)
 
-    heading_template = 'Bazaar Branches of %(product)s owned by %(person)s'
+    label_template = 'Bazaar Branches of %(product)s owned by %(person)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).ownedBy(
@@ -1632,7 +1641,7 @@ class PersonProductOwnedBranchesView(PersonProductBaseBranchesView):
 class PersonProductRegisteredBranchesView(PersonProductBaseBranchesView):
     """Branch listing for a person's registered branches of a product."""
 
-    heading_template = (
+    label_template = (
         'Bazaar Branches of %(product)s registered by %(person)s')
 
     def _getCollection(self):
@@ -1643,7 +1652,7 @@ class PersonProductRegisteredBranchesView(PersonProductBaseBranchesView):
 class PersonProductSubscribedBranchesView(PersonProductBaseBranchesView):
     """Branch listing for a person's subscribed branches of a product."""
 
-    heading_template = (
+    label_template = (
         'Bazaar Branches of %(product)s subscribed to by %(person)s')
 
     def _getCollection(self):

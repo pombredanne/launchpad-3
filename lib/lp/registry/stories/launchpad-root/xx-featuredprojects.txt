@@ -9,27 +9,36 @@ page and managed via a special admin-only page.
 
 == The home page listing ==
 
-Featured projects are visible to everyone on the home page:
+Featured projects are visible to everyone on the home page. One poject is
+featured as "project of the day" depending on the current day. As we do not
+know the current day, we replace that selection method in the view with a
+constant value.
 
+    >>> def fake_get_day_of_year():
+    ...     return 4
+    >>> from lp.registry.browser.root import LaunchpadRootIndexView
+    >>> LaunchpadRootIndexView._get_day_of_year = staticmethod(
+    ...                                                 fake_get_day_of_year)
     >>> anon_browser.open('http://launchpad.dev/')
-    >>> featured = find_tag_by_id(anon_browser.contents, 'featured-projects')
+    >>> featured = find_tag_by_id(anon_browser.contents, 'homepage-featured')
     >>> print extract_text(featured.h2)
     Featured projects
 
-We show the featured projects in our sample data:
+We show the featured projects in our sample data, the "project of the day" is
+"GNOME" and it is listed first:
 
     >>> for link in featured.findAll('a'):
     ...     print extract_text(link)
+    GNOME
     Gnome Applets
     Bazaar
     Mozilla Firefox
     Gentoo
-    GNOME
     GNOME Terminal
     the Mozilla Project
     Mozilla Thunderbird
     Ubuntu
-
+    Browse all ... projects
 
 == Adding a featured project ==
 
@@ -69,27 +78,29 @@ project:
     >>> admin_browser.getControl('Update').click()
     >>> admin_browser.url
     'http://launchpad.dev/'
-    >>> featured = find_tag_by_id(admin_browser.contents, 'featured-projects')
+    >>> featured = find_tag_by_id(admin_browser.contents, 'homepage-featured')
     >>> 'Apache' in extract_text(featured)
     True
 
 Just to be certain, we will iterate the list as we did before and see
-that Apache has been added:
+that Apache has been added. Because the list has changed, a different project
+is now at index '4' and is therefore displayed as the top project:
 
     >>> anon_browser.open('http://launchpad.dev/')
-    >>> featured = find_tag_by_id(anon_browser.contents, 'featured-projects')
+    >>> featured = find_tag_by_id(anon_browser.contents, 'homepage-featured')
     >>> for link in featured.findAll('a'):
     ...     print extract_text(link)
+    Gentoo
     Apache
     Gnome Applets
     Bazaar
     Mozilla Firefox
-    Gentoo
     GNOME
     GNOME Terminal
     the Mozilla Project
     Mozilla Thunderbird
     Ubuntu
+    Browse all ... projects
 
 
 == Removing a project ==
@@ -99,7 +110,7 @@ that Apache has been added:
     >>> admin_browser.getControl('Update').click()
     >>> admin_browser.url
     'http://launchpad.dev/'
-    >>> featured = find_tag_by_id(admin_browser.contents, 'featured-projects')
+    >>> featured = find_tag_by_id(admin_browser.contents, 'homepage-featured')
     >>> 'Apache' in extract_text(featured)
     False
 
@@ -107,17 +118,18 @@ Just to be certain, we will iterate the list as we did before and see
 that Apache has been removed:
 
     >>> anon_browser.open('http://launchpad.dev/')
-    >>> featured = find_tag_by_id(anon_browser.contents, 'featured-projects')
+    >>> featured = find_tag_by_id(anon_browser.contents, 'homepage-featured')
     >>> for link in featured.findAll('a'):
     ...     print extract_text(link)
+    GNOME
     Gnome Applets
     Bazaar
     Mozilla Firefox
     Gentoo
-    GNOME
     GNOME Terminal
     the Mozilla Project
     Mozilla Thunderbird
     Ubuntu
+    Browse all ... projects
 
 

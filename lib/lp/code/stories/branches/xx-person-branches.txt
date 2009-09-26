@@ -9,7 +9,7 @@ First, check that the condensed branch listing page works:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> print browser.title
-    Bazaar branches owned by Sample Person
+    Branches : Sample Person
 
 The heading in the main content is the same as the page title text.
 
@@ -39,8 +39,6 @@ Owned Branches
 A person's owned branches are shown on their code application overview page.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> print browser.title
-    Bazaar branches owned by Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -56,7 +54,7 @@ There is also a link which points to the registered branches page.
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getLink('registered').click()
     >>> print browser.title
-    +registeredbranches : Sample Person
+    Registered : Branches : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -73,7 +71,7 @@ branches.
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getLink('subscribed').click()
     >>> print browser.title
-    +subscribedbranches : Sample Person
+    Subscribed : Branches : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)

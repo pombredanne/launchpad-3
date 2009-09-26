@@ -27,8 +27,6 @@ browsing to it.
 This takes us to the branch listing for that source package
 
     >>> browser.open(source_package_url)
-    >>> browser.title
-    '\xe2\x80\x9cfoo\xe2\x80\x9d package : 9.0 : distro'
 
 Both of the branches we made appear in the listing.
 
