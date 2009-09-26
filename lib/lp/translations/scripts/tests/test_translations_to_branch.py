@@ -111,8 +111,13 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # anything because it sees that the POFile has not been changed
         # since the last export.
         retcode, stdout, stderr = run_script(
-            'cronscripts/translations-export-to-branch.py', ['-vvv'])
+            'cronscripts/translations-export-to-branch.py',
+            ['-vvv', '--no-fudge'])
+        self.assertEqual(0, retcode)
         self.assertIn('Last commit was at', stderr)
+        self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
+        self.assertEqual(
+            None, re.search("INFO\s+Committed [0-9]+ file", stderr))
 
 
 def test_suite():
