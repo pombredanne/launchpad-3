@@ -9,6 +9,7 @@ __all__ = [
     'BranchAddView',
     'BranchContextMenu',
     'BranchDeletionView',
+    'BranchEditStatusView',
     'BranchEditView',
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
@@ -222,7 +223,13 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = [
         'associations', 'add_subscriber', 'browse_revisions', 'link_bug',
-        'link_blueprint', 'register_merge', 'source', 'subscription']
+        'link_blueprint', 'register_merge', 'source', 'subscription',
+        'edit_status']
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit_status(self):
+        text = 'Change branch status'
+        return Link('+edit-status', text, icon='edit')
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
@@ -696,6 +703,12 @@ class BranchEditWhiteboardView(BranchEditFormView):
     """A view for editing the whiteboard only."""
 
     field_names = ['whiteboard']
+
+
+class BranchEditStatusView(BranchEditFormView):
+    """A view for editing the lifecycle status only."""
+
+    field_names = ['lifecycle_status']
 
 
 class BranchMirrorStatusView(LaunchpadFormView):

@@ -22,10 +22,12 @@
 
     <dl id="status">
       <dt>Status:</dt>
-      <dd
-        id="branch-details-status-value"
-        tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
-        tal:content="structure context/lifecycle_status/title" />
+      <dd>
+        <span id="branch-details-status-value"
+              tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
+              tal:content="structure context/lifecycle_status/title" />&nbsp;
+        <a tal:replace="structure context/menu:context/edit_status/fmt:icon" />
+      </dd>
     </dl>
 
     <tal:mirror-branch condition="context/branch_type/enumvalue:MIRRORED">
