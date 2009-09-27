@@ -398,11 +398,8 @@ class cmd_update_image(EC2Command):
         user_connection.perform('bzr launchpad-login %(launchpad-login)s')
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
-        # XXX This should change to pull TRUNK_BRANCH of course, but until
-        # trunk contains a update-sourcecode script that works in a non-built
-        # tree, do this.  This should be changed before landing.
         user_connection.run_with_ssh_agent(
-            'bzr pull -d /var/launchpad/test lp:~mwhudson/launchpad/ami-from-scratch')
+            'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
         if public:
