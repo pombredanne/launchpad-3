@@ -400,6 +400,12 @@ class EC2TestRunner:
         user_connection = self._instance.connect_as_user()
         # Clean up the test branch left in the instance image.
         user_connection.perform('rm -rf /var/launchpad/test')
+        # get newest sources
+        user_connection.run_with_ssh_agent(
+            "rsync -avp --partial --delete "
+            "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
+            "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
+            "/var/launchpad/sourcecode/")
         # Get trunk.
         user_connection.run_with_ssh_agent(
             'bzr branch %(trunk_branch)s /var/launchpad/test')
@@ -409,10 +415,6 @@ class EC2TestRunner:
                 'cd /var/launchpad/test; bzr merge %(branch)s')
         else:
             self.log('(Testing trunk, so no branch merge.)')
-        # get newest sources
-        user_connection.run_with_ssh_agent(
-            "/var/launchpad/test/utilities/update-sourcecode "
-            "/var/launchpad/sourcecode")
         # Get any new sourcecode branches as requested
         for dest, src in self.branches:
             fulldest = os.path.join('/var/launchpad/test/sourcecode', dest)

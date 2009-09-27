@@ -5,11 +5,9 @@
 
 """Update the sourcecode managed in sourcecode/."""
 
-import os
-import sys
+import _pythonpath
 
-sys.path.append(
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib'))
+import sys
 
 from devscripts import sourcecode
 
