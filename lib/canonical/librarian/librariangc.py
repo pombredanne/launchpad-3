@@ -542,6 +542,7 @@ def delete_unwanted_files(con):
                 dirnames.remove(dirname)
                 log.error(
                     "Ignoring directory %s that shouldn't be here" % dirname)
+                continue
             try:
                 int(dirname, 16)
             except ValueError:
