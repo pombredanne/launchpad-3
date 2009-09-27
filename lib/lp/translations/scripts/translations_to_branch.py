@@ -43,6 +43,13 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
     # factor.
     fudge_factor = timedelta(hours=6)
 
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option(
+            '-n', '--no-fudge', action='store_true', dest='no_fudge',
+            default=False,
+            help="For testing: no fudge period for POFile changes.")
+
     def _checkForObjections(self, source):
         """Check for reasons why we can't commit to this branch.
 
@@ -81,6 +88,13 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         """Is `revision` an automatic translations commit?"""
         return revision.message == self.commit_message
 
+    def _getRevisionTime(self, revision):
+        """Get timestamp of `revision`."""
+        # The bzr timestamp is a float representing UTC-based seconds
+        # since the epoch.  It stores the timezone as well, but we can
+        # ignore it here.
+        return datetime.fromtimestamp(revision.timestamp, UTC)
+
     def _getLatestTranslationsCommit(self, branch):
         """Get date of last translations commit to `branch`, if any."""
         cutoff_date = datetime.now(UTC) - self.previous_commit_cutoff_age
@@ -89,7 +103,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         repository = branch.repository
         for rev_id in repository.iter_reverse_revision_history(current_rev):
             revision = repository.get_revision(rev_id)
-            revision_date = revision.timestamp
+            revision_date = self._getRevisionTime(revision)
             if self._isTranslationsCommit(revision):
                 return revision_date
 
@@ -125,6 +139,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
             self.logger.debug("Last commit was at %s." % last_commit_date)
             changed_since = last_commit_date - self.fudge_factor
 
+        change_count = 0
+
         try:
             subset = getUtility(IPOTemplateSet).getSubset(
                 productseries=source, iscurrent=True)
@@ -144,6 +160,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     pofile_contents = pofile.export()
 
                     committer.writeFile(pofile_path, pofile_contents)
+                    change_count += 1
 
                     # We're not actually writing any changes to the
                     # database, but it's not polite to stay in one
@@ -155,7 +172,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     # anything about it any longer.
                     template.clearPOFileCache()
 
-            self._commit(source, committer)
+            if change_count > 0:
+                self._commit(source, committer)
         finally:
             committer.unlock()
 
@@ -192,6 +210,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # Avoid circular imports.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
+
+        if self.options.no_fudge:
+            self.fudge_factor = timedelta(0)
 
         self.logger.info("Exporting to translations branches.")
 
