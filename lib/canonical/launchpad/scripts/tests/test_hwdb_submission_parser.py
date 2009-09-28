@@ -635,7 +635,7 @@ W:2
             'Invalid parsing result for <dmi>.')
 
     def testDmiInvalidData(self):
-        """<dmi> ndes with lines not in key:value format are rejected."""
+        """<dmi> nodes with lines not in key:value format are rejected."""
         parser = SubmissionParser(self.log)
         parser.submission_key = 'Invalid DMI data'
         node = etree.fromstring("""<dmi>/sys/class/dmi/id/bios_vendor:LENOVO
