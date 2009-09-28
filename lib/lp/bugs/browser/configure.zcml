@@ -829,6 +829,15 @@
         facet="branches"
         permission="launchpad.Edit"
         template="../templates/bugbranch-delete.pt"/>
+    <browser:page
+        name="+bug-branch"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch"
+        permission="launchpad.View"
+        template="../templates/bug-branch.pt"/>
+    <adapter
+         factory="lp.bugs.browser.bugbranch.BugBranchXHTMLRepresentation"
+         name="lazr.restful.EntryResource"
+        />
     <facet
         facet="bugs">
         <browser:menus
