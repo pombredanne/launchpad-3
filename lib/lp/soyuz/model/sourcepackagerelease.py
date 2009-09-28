@@ -341,7 +341,9 @@ class SourcePackageRelease(SQLBase):
         if archive.purpose != ArchivePurpose.PRIMARY:
             archives.append(distroarchseries.main_archive.id)
 
-        # Get the (successfully built) build records for this package.
+        # Look for all sourcepackagerelease instances that match the name
+        # and get the (successfully built) build records for this
+        # package.
         completed_builds = Build.select("""
             Build.sourcepackagerelease = SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
