@@ -53,6 +53,8 @@ from canonical.launchpad.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.queue import (
+    IPackageUploadSet, PackageUploadCustomFormat)
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -655,3 +657,43 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             self.distribution.name,
             self.distroseries.getSuite(pocket),
             self.name)
+
+    def getLatestTranslationsUploads(self):
+        """See `ISourcePackage`."""
+        our_format = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
+
+        packagename = self.sourcepackagename.name
+        displayname = self.displayname
+        distro = self.distroseries.distribution
+
+        histories = distro.main_archive.getPublishedSources(
+            name=packagename, distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED, exact_match=True)
+        histories = list(histories)
+        assert len(histories) <= 1, "Found multiple published histories."
+        if len(histories) == 0:
+            return []
+
+        history = histories[0]
+        release = history.sourcepackagerelease
+
+        uploadset = getUtility(IPackageUploadSet)
+        uploadsources = list(uploadset.getSourceBySourcePackageReleaseIDs(
+            [release.id]))
+        assert len(uploadsources) <= 1, "Found multiple upload sources."
+        if len(uploadsources) == 0:
+            return []
+
+        upload = uploadsources[0].packageupload
+        custom_files = [
+            custom
+            for custom in upload.customfiles if
+            custom.format == our_format
+            ]
+
+        if len(custom_files) == 0:
+            return []
+
+        custom_files.sort(key=attrgetter('date_created'))
+
+        return [custom.libraryfilealias for custom in custom_files]

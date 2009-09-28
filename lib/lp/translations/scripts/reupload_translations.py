@@ -4,19 +4,12 @@ __all__ = [
 	'ReuploadPackageTranslations',
 	]
 
-import logging
-import operator
-import re
-import sys
-
 from zope.component import getUtility
 
 from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet, PackageUploadCustomFormat)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 
@@ -87,57 +80,10 @@ class ReuploadPackageTranslations(LaunchpadScript):
 
         return factory.new(sourcepackagename, self.distroseries)
 
-    def _getUploadAliases(self, package):
-        """Get `LibraryFileAlias`es for package's translation upload(s)."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-
-        our_format = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
-        uploadset = getUtility(IPackageUploadSet)
-
-        packagename = package.sourcepackagename.name
-        displayname = package.displayname
-
-        histories = self.distro.main_archive.getPublishedSources(
-            name=packagename, distroseries=self.distroseries,
-            status=PackagePublishingStatus.PUBLISHED, exact_match=True)
-        histories = list(histories)
-        assert len(histories) <= 1, "Found multiple published histories."
-        if len(histories) == 0:
-            self.logger.info(
-                "No published history entry for %s." % displayname)
-            return []
-
-        history = histories[0]
-        release = history.sourcepackagerelease
-        uploadsources = list(uploadset.getSourceBySourcePackageReleaseIDs(
-            [release.id]))
-        assert len(uploadsources) <= 1, "Found multiple upload sources."
-        if len(uploadsources) == 0:
-            self.logger.info("No upload source for %s." % displayname)
-            return []
-
-        upload = uploadsources[0].packageupload
-        custom_files = [
-            custom
-            for custom in upload.customfiles if
-            custom.format == our_format
-            ]
-
-        if len(custom_files) == 0:
-            self.logger.info("No translations upload for %s." % displayname)
-        elif len(custom_files) > 1:
-            self.logger.info("Found %d uploads for %s" % (
-                len(custom_files), displayname))
-
-        custom_files.sort(key=operator.attrgetter('date_created'))
-
-        return [custom.libraryfilealias for custom in custom_files]
-
     def _processPackage(self, package):
         """Get translations for `package` re-uploaded."""
         self.logger.info("Processing %s" % package.displayname)
-        tarball_aliases = self._getUploadAliases(package)
+        tarball_aliases = package.getLatestTranslationsUploads()
         queue = getUtility(ITranslationImportQueue)
         rosetta_team = getUtility(ILaunchpadCelebrities).rosetta_experts
 
