@@ -63,28 +63,8 @@
     <tal:branch-errors tal:replace="structure context/@@+messages" />
   </div>
 
-  <div class="yui-g">
-    <div class="yui-u first">
-      <div id="related-bugs-and-blueprints" class="portlet">
-        <h2>Related bugs and blueprints</h2>
-        <tal:related-bugs-specs
-            replace="structure context/@@++branch-related-bugs-specs" />
-      </div>
-    </div>
-
-    <div class="yui-u">
-      <div class="portlet" id="branch-merges">
-        <h2>Branch merges</h2>
-        <tal:branch-pending-merges
-            replace="structure context/@@++branch-pending-merges" />
-      </div>
-    </div>
-  </div>
-
-
   <div class="yui-g" tal:condition="context/description">
     <div id="branch-description">
-      <h2>Description</h2>
       <div tal:content="structure context/description/fmt:text-to-html">
         The description of the branch usually goes here, but will be used so
         rarely that it only shows if there is a description set.  To set a
@@ -94,25 +74,43 @@
     </div>
   </div>
 
+  <div class="yui-g">
+
+    <div id="branch-management" class="portlet">
+      <h2>Branch management</h2>
+      <tal:branch-management
+          replace="structure context/@@++branch-management" />
+    </div>
+
+  </div>
 
   <div class="yui-g">
 
     <div class="yui-u first">
+      <div class="portlet" id="branch-merges">
+        <h2>Branch merges</h2>
+        <tal:branch-pending-merges
+            replace="structure context/@@++branch-pending-merges" />
+      </div>
+    </div>
+
+    <div class="yui-u">
       <div id="branch-info" class="portlet">
         <h2>Branch information</h2>
         <tal:branch-info replace="structure context/@@++branch-information" />
       </div>
     </div>
 
-    <div class="yui-u">
-      <div id="branch-management" class="portlet">
-        <h2>Branch management</h2>
-        <tal:branch-management
-            replace="structure context/@@++branch-management" />
-      </div>
-    </div>
-
   </div>
+
+  <div class="yui-g">
+    <div id="related-bugs-and-blueprints" class="portlet">
+      <h2>Related bugs and blueprints</h2>
+      <tal:related-bugs-specs
+          replace="structure context/@@++branch-related-bugs-specs" />
+    </div>
+  </div>
+
 
   <div id="branch-import-details"
        class="yui-g"
