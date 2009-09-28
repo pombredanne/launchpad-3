@@ -683,7 +683,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
                 editable_fields.append(field.__name__)
         self.form_fields = self.form_fields.select(*editable_fields)
 
-    @action(u"Save Changes", name="change")
+    @action(_("Save Changes"), name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
         self.updateContextFromData(data)
@@ -826,7 +826,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         Comments (message without a status change) can be added at any
         time by any logged-in user.
         """
-        return (self.user is not None)
+        return self.user is not None
 
     @action(_('Add Comment'), name='comment', condition=canAddComment)
     def comment_action(self, action, data):
