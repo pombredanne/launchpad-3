@@ -95,6 +95,7 @@ include_download_cache_changes_option = Option(
           'changes in your download cache, you must explicitly choose to '
           'include or ignore the changes.'))
 
+
 postmortem_option = Option(
     'postmortem', short_name='p',
     help=('Drop to interactive prompt after the test and before shutting '
@@ -308,7 +309,7 @@ class cmd_demo(EC2Command):
         postmortem = True
         shutdown = True
         instance.set_up_and_run(
-            postmortem, shutdown, self.run_server, runner,
+            postmortem, shutdown, self.run_server, runner, instance,
             demo_network_string)
 
     def run_server(self, runner, instance, demo_network_string):
@@ -335,7 +336,6 @@ class cmd_demo(EC2Command):
             "\n\n")
 
 
-
 class cmd_update_image(EC2Command):
     """Make a new AMI."""
 
@@ -349,12 +349,17 @@ class cmd_update_image(EC2Command):
             help=('Run this command (with an ssh agent) on the image before '
                   'running the default update steps.  Can be passed more than '
                   'once, the commands will be run in the order specified.')),
+        Option(
+            'public',
+            help=('Remove proprietary code from the sourcecode directory '
+                  'before bundling.')),
         ]
 
     takes_args = ['ami_name']
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
-            debug=False, postmortem=False, extra_update_image_command=[]):
+            debug=False, postmortem=False, extra_update_image_command=[],
+            public=False):
         if debug:
             pdb.set_trace()
 
@@ -367,19 +372,18 @@ class cmd_update_image(EC2Command):
 
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
-            extra_update_image_command, ami_name, credentials)
+            extra_update_image_command, ami_name, credentials, public)
 
     def update_image(self, instance, extra_update_image_command, ami_name,
-                     credentials):
+                     credentials, public):
         """Bring the image up to date.
 
         The steps we take are:
 
          * run any commands specified with --extra-update-image-command
-         * update sourcecode via rsync.
+         * update sourcecode
          * update the launchpad branch to the tip of the trunk branch.
          * update the copy of the download-cache.
-         * remove the user account.
          * bundle the image
 
         :param instance: `EC2Instance` to operate on.
@@ -387,25 +391,27 @@ class cmd_update_image(EC2Command):
             instance in addition to the usual ones.
         :param ami_name: The name to give the created AMI.
         :param credentials: An `EC2Credentials` object.
+        :param public: If true, remove proprietary code from the sourcecode
+            directory before bundling.
         """
-        user_connection = instance.connect_as_user()
+        user_connection = instance.connect()
         user_connection.perform('bzr launchpad-login %(launchpad-login)s')
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
         user_connection.run_with_ssh_agent(
-            "rsync -avp --partial --delete "
-            "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
-            "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
-            "/var/launchpad/sourcecode/")
-        user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
+        if public:
+            update_sourcecode_options = '--public-only'
+        else:
+            update_sourcecode_options = ''
+        user_connection.run_with_ssh_agent(
+            "/var/launchpad/test/utilities/update-sourcecode "
+            "/var/launchpad/sourcecode" + update_sourcecode_options)
+        user_connection.perform(
+            'rm -rf .ssh/known_hosts .bazaar .bzr.log')
         user_connection.close()
-        root_connection = instance.connect_as_root()
-        root_connection.perform(
-            'deluser --remove-home %(USER)s', ignore_failure=True)
-        root_connection.close()
         instance.bundle(ami_name, credentials)
 
 
