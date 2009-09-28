@@ -615,6 +615,40 @@ W:2
             parser.submission_key,
             "Line 2 in <udev>: Duplicate attribute key: 'W:2'")
 
+    def testDmi(self):
+        """The content of the <udev> node is converted into a dictionary."""
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring("""<dmi>/sys/class/dmi/id/bios_vendor:LENOVO
+/sys/class/dmi/id/bios_version:7LETB9WW (2.19 )
+/sys/class/dmi/id/sys_vendor:LENOVO
+/sys/class/dmi/id/modalias:dmi:bvnLENOVO:bvr7LETB9WW
+</dmi>""")
+        result = parser._parseDmi(node)
+        self.assertEqual(
+            {
+                '/sys/class/dmi/id/bios_vendor': 'LENOVO',
+                '/sys/class/dmi/id/bios_version': '7LETB9WW (2.19 )',
+                '/sys/class/dmi/id/sys_vendor': 'LENOVO',
+                '/sys/class/dmi/id/modalias': 'dmi:bvnLENOVO:bvr7LETB9WW',
+                },
+            result,
+            'Invalid parsing result for <dmi>.')
+
+    def testDmiInvalidData(self):
+        """<dmi> ndes with lines not in key:value format are rejected."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Invalid DMI data'
+        node = etree.fromstring("""<dmi>/sys/class/dmi/id/bios_vendor:LENOVO
+invalid line
+</dmi>""")
+        result = parser._parseDmi(node)
+        self.assertEqual(
+            None, result,
+            '<dmi> node with invalid data not deteced.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <dmi>: No valid key:value data: 'invalid line'")
+
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
         test = self
