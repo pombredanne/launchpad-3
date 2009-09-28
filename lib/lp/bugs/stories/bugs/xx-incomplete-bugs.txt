@@ -144,6 +144,10 @@ bugs that can expire.
     >>> user_browser.title
     'Bugs in Jokosher Audio Editor'
 
+    >>> # Bug statistics are loaded asynchronously, but the link to
+    >>> # the content is embedded in the page for us to follow.
+    >>> user_browser.getLink(
+    ...     url="+bugtarget-portlet-bugfilters-content").click()
     >>> expirable_bugs_link = user_browser.getLink('Incomplete bugs')
 
 The link is to the expirable bugs page. No Privileges Person can see
@@ -187,6 +191,10 @@ pushed to the bottom of the list.
     >>> user_browser.getControl(name='field.comment').value = "bump"
     >>> user_browser.getControl('Post Comment').click()
     >>> user_browser.getLink('Bugs').click()
+    >>> # Bug statistics are loaded asynchronously, but the link to
+    >>> # the content is embedded in the page for us to follow.
+    >>> user_browser.getLink(
+    ...     url="+bugtarget-portlet-bugfilters-content").click()
     >>> user_browser.getLink('Incomplete bugs').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> buglisting = contents.find('table', id='buglisting')
@@ -209,6 +217,10 @@ Jokosher's bug page.
     None
 
     >>> user_browser.getLink('Bugs').click()
+    >>> # Bug statistics are loaded asynchronously, but the link to
+    >>> # the content is embedded in the page for us to follow.
+    >>> user_browser.getLink(
+    ...     url="+bugtarget-portlet-bugfilters-content").click()
     >>> expirable_bugs_link = user_browser.getLink('Incomplete bugs')
     >>> expirable_bugs_link.click()
     >>> contents = find_main_content(user_browser.contents)

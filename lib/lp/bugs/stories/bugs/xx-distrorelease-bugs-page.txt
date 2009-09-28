@@ -13,11 +13,18 @@ bugs.
 
 The page has a link to see all open bugs.
 
+    >>> # Bug statistics are loaded asynchronously, but the link to
+    >>> # the content is embedded in the page for us to follow.
+    >>> anon_browser.getLink(
+    ...     url="+bugtarget-portlet-bugfilters-content").click()
     >>> anon_browser.getLink('Open bugs').click()
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/warty/+bugs'
     >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
     True
+
+    >>> # Go back after loading the statistics portlet content.
+    >>> anon_browser.goBack()
 
 It also has a link to subscribe to bug mail.
 
@@ -33,6 +40,10 @@ The Bugs frontpage includes the number of bugs that are fixed in some
 other context.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty')
+    >>> # Bug statistics are loaded asynchronously, but the link to
+    >>> # the content is embedded in the page for us to follow.
+    >>> anon_browser.getLink(
+    ...     url="+bugtarget-portlet-bugfilters-content").click()
     >>> fixed_elsewhere_link = anon_browser.getLink('Bugs fixed elsewhere')
 
 The link takes you to the list of the bugs fixed elsewhere.
@@ -53,6 +64,10 @@ The bugs page displays the number of Incomplete, unattended bugs that
 can expire when the project has enabled bug expiration.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty')
+    >>> # Bug statistics are loaded asynchronously, but the link to
+    >>> # the content is embedded in the page for us to follow.
+    >>> anon_browser.getLink(
+    ...     url="+bugtarget-portlet-bugfilters-content").click()
     >>> expirable_bugs_link = anon_browser.getLink('Incomplete bugs')
 
 The link goes to the expirable bugs page, where the anonymous user can
