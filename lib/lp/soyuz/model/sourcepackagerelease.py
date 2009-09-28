@@ -357,7 +357,7 @@ class SourcePackageRelease(SQLBase):
             orderBy=['-datebuilt', '-id'],
             clauseTables=['SourcePackageName', 'SourcePackageRelease'])
 
-        if completed_builds:
+        if completed_builds.count() > 0:
             # Historic build data exists, use the most recent value.
             most_recent_build = completed_builds[0]
             estimated_build_duration = most_recent_build.buildduration
