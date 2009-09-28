@@ -17,6 +17,7 @@ from zope.traversing.interfaces import (
     IPathAdapter, ITraversable, TraversalError)
 
 from canonical.lazr.canonicalurl import nearest_provides_or_adapted
+from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.app.interfaces.headings import (
     IEditableContextTitle, IMajorHeadingView, IRootContext)
@@ -68,7 +69,13 @@ class WatermarkTalesAdapter:
     def logo(self):
         """Return the logo image for the root context."""
         adapter = queryAdapter(self.root_context, IPathAdapter, 'image')
-        return adapter.logo()
+        if (self.root_context != self._context
+            and self.root_context is not None):
+            return '<a href="%s">%s</a>' % (
+                canonical_url(self.root_context, rootsite='mainsite'),
+                adapter.logo())
+        else:
+            return adapter.logo()
 
     def traverse(self, name, furtherPath):
         if name == "heading":

@@ -29,7 +29,7 @@ overview page.
 
     >>> browser.open('http://code.launchpad.dev/applets')
     >>> print browser.title
-    Branches for Gnome Applets : Gnome Applets
+    Branches : Gnome Applets
 
 If there are not any branches, a helpful message is shown.
 

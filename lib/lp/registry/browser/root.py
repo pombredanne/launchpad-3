@@ -12,6 +12,7 @@ __all__ = [
 
 import re
 import sys
+import time
 
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
@@ -55,8 +56,34 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     # The homepage has two columns to hold featured projects. This
     # determines the number of projects we display in each column.
-    FEATURED_PROJECT_ROWS = 5
-    MAX_FEATURED_PROJECTS = FEATURED_PROJECT_ROWS * 2 + 1
+    FEATURED_PROJECT_ROWS = 11
+    FEATURED_PROJECT_COLS = 2
+
+    featured_projects = []
+    featured_projects_top = None
+
+    @staticmethod
+    def _get_day_of_year():
+        """Calculate the number of the current day.
+
+        This method gets overridden in tests to make the selection of the
+        top featured project deterministic.
+        """
+        return time.gmtime()[7]
+
+    def initialize(self):
+        """Set up featured projects list and the top featured project."""
+        super(LaunchpadRootIndexView, self).initialize()
+        # The maximum number of projects to be displayed as defined by the
+        # number and size of the columns plus one top featured project.
+        max_projects = (
+            self.FEATURED_PROJECT_ROWS * self.FEATURED_PROJECT_COLS + 1)
+        self.featured_projects = list(
+            getUtility(IPillarNameSet).featured_projects)[:max_projects]
+        # Select and get the top featured project (project of the day) and
+        # remove it from the list.
+        top_project = self._get_day_of_year() % len(self.featured_projects)
+        self.featured_projects_top = self.featured_projects.pop(top_project)
 
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
@@ -77,26 +104,16 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
                 getUtility(ILaunchpadCelebrities).ubuntu),
             }
 
-    @cachedproperty
-    def featured_projects(self):
-        """Return a list of featured projects."""
-        return getUtility(IPillarNameSet).featured_projects
-
-    @property
-    def featured_projects_top(self):
-        """Return the topmost featured project."""
-        return self.featured_projects[0]
-
     @property
     def featured_projects_col_a(self):
         """Return a list of featured projects."""
-        return self.featured_projects[1:self.FEATURED_PROJECT_ROWS+1]
+        return self.featured_projects[:self.FEATURED_PROJECT_ROWS]
 
     @property
     def featured_projects_col_b(self):
         """The list of featured projects."""
-        index_from = self.FEATURED_PROJECT_ROWS+1
-        index_to = self.MAX_FEATURED_PROJECTS
+        index_from = self.FEATURED_PROJECT_ROWS
+        index_to = self.FEATURED_PROJECT_ROWS * 2
         return self.featured_projects[index_from:index_to]
 
     @property

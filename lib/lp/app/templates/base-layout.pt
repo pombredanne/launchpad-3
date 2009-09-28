@@ -45,15 +45,6 @@
     </style>
 
     <tal:comment condition="nothing">
-      Internet Explorer apparently doubles the horizontal margins of the
-      application tabs, which causes the 'Answers' tab to wrap onto a second
-      row. To work around this, we give IE some speshul CSS:
-    </tal:comment>
-    <!--[if lte IE 7]>
-      <style type="text/css">#lp-apps span {margin: 0 0.125%;}</style>
-    <![endif]-->
-
-    <tal:comment condition="nothing">
       This CSS collapses the contents of collapsible fieldsets,
       without the flashing that would result from doing it in JavaScript.
       activateCollapsibles() removes the class="collapsed" from fieldsets, to
@@ -89,6 +80,9 @@
         <h2 tal:replace="structure view/watermark:heading">
           Celso Providelo
         </h2>
+        <div id="registration" class="registering">
+          <metal:registering define-slot="registering" />
+        </div>
         <metal:heading_nav
           use-macro="context/@@+base-layout-macros/application-buttons"/>
       </div>
@@ -112,9 +106,6 @@
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
             <div tal:condition="view/macro:pagehas/applicationtabs">
-              <div class="registering">
-                <metal:registering define-slot="registering" />
-              </div>
               <h1
                 tal:condition="view/label|nothing"
                 tal:content="view/label"
