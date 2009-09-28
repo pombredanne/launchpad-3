@@ -72,10 +72,12 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 
 from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
-from lp.code.enums import BranchType, UICreatableBranchType
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchType, UICreatableBranchType)
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch)
 from lp.code.interfaces.branchmergeproposal import (
@@ -561,6 +563,18 @@ class BranchView(LaunchpadView, FeedsMixin):
         """
         # Actually only ProductSeries currently do that.
         return list(self.context.getProductSeriesPushingTranslations())
+
+    @property
+    def status_config(self):
+        """The config to configure the ChoiceSource JS widget."""
+        return simplejson.dumps({
+            'status_widget_items': vocabulary_to_choice_edit_items(
+                BranchLifecycleStatus,
+                css_class_prefix='branchstatus'),
+            'status_value': self.context.lifecycle_status.title,
+            'user_can_edit_status': check_permission('launchpad.Edit', self.context),
+            'branch_path': '/' + self.context.unique_name,
+            })
 
 
 class DecoratedMergeProposal:
