@@ -21,6 +21,7 @@ from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
+from canonical.lazr.utils import smartquote
 from lp.code.model.branch import Branch
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
@@ -287,10 +288,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def title(self):
-        titlestr = self.sourcepackagename.name
-        titlestr += ' in ' + self.distribution.displayname
-        titlestr += ' ' + self.distroseries.displayname
-        return titlestr
+        """See `ISourcePackage`."""
+        return smartquote('"%s" source package in %s') % (
+            self.sourcepackagename.name, self.distroseries.displayname)
 
     @property
     def distribution(self):
