@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 
+from copy import copy
 from datetime import datetime, timedelta
 import socket
 import sys
@@ -24,7 +25,7 @@ from lp.bugs.externalbugtracker import (
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 from lp.bugs.externalbugtracker.bugzilla import (
-    BugzillaLPPlugin)
+    BugzillaAPI)
 from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
@@ -292,10 +293,10 @@ class BugWatchUpdater(object):
         # We special-case the Gnome Bugzilla.
         gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
         if (bug_tracker == gnome_bugzilla and
-            isinstance(remotesystem_to_use, BugzillaLPPlugin)):
+            isinstance(remotesystem_to_use, BugzillaAPI)):
 
-            lp_plugin_watches = []
-            normal_watches = []
+            syncable_watches = []
+            other_watches = []
 
             bug_ids = [bug_watch.remotebug for bug_watch in bug_watches]
             remote_products = remotesystem_to_use.getProductsForRemoteBugs(
@@ -303,18 +304,23 @@ class BugWatchUpdater(object):
 
             # For bug watches on remote bugs that are against products
             # in the _syncable_gnome_products list - i.e. ones with which
-            # we want to sync comments - we return a BugzillaLPPlugin
-            # instance. Otherwise we return a normal Bugzilla instance.
+            # we want to sync comments - we return a BugzillaAPI
+            # instance with sync_comments=True, otherwise we return a
+            # similar BugzillaAPI instance, but with sync_comments=False.
+            remotesystem_for_syncables = remotesystem_to_use
+            remotesystem_for_others = copy(remotesystem_to_use)
+            remotesystem_for_others.sync_comments = False
+
             for bug_watch in bug_watches:
                 if (remote_products[bug_watch.remotebug] in
                     self._syncable_gnome_products):
-                    lp_plugin_watches.append(bug_watch)
+                    syncable_watches.append(bug_watch)
                 else:
-                    normal_watches.append(bug_watch)
+                    other_watches.append(bug_watch)
 
             trackers_and_watches = [
-                (remotesystem_to_use, lp_plugin_watches),
-                (remotesystem, normal_watches),
+                (remotesystem_for_syncables, syncable_watches),
+                (remotesystem_for_others, other_watches),
                 ]
         else:
             trackers_and_watches = [(remotesystem_to_use, bug_watches)]

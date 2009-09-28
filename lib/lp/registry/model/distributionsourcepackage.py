@@ -19,14 +19,13 @@ from storm.expr import And, Desc, In
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.archive import Archive
@@ -47,7 +46,8 @@ from canonical.lazr.utils import smartquote
 
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
-                                StructuralSubscriptionTargetMixin):
+                                StructuralSubscriptionTargetMixin,
+                                HasBranchesMixin, HasMergeProposalsMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -55,9 +55,7 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(
-        IDistributionSourcePackage, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+    implements(IDistributionSourcePackage, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -270,7 +268,8 @@ class DistributionSourcePackage(BugTargetBase,
         # such as IArchive.rank, we will then be able to return distinct
         # results. As it is, we cannot return distinct results while ordering
         # by a non-selected column.
-        results.order_by(Desc(KarmaTotalCache.karma_total))
+        results.order_by(
+            Desc(KarmaTotalCache.karma_total), Archive.id)
 
         return results
 

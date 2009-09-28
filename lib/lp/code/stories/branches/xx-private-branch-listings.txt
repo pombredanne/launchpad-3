@@ -51,7 +51,7 @@ registered branches.
 When there is no logged in user, only public branches should be visible.
 
     >>> print_recently_registered_branches(anon_browser)
-    '...~sabdfl/+junk/testdoc...'
+    '...~mark/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
     '...~name12/gnome-terminal/pushed...'
@@ -63,7 +63,7 @@ branches that they are subscribed to or are the owner of.
     >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> print_recently_registered_branches(no_priv_browser)
     '...~no-priv/landscape/testing-branch...<span...class="sprite private"...'
-    '...~sabdfl/+junk/testdoc...'
+    '...~mark/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
     '...~name12/gnome-terminal/pushed...'
@@ -77,7 +77,7 @@ developer.
     >>> print_recently_registered_branches(landscape_dev_browser)
     '...~name12/landscape/feature-x...<span...class="sprite private"...'
     '...~landscape-developers/landscape/trunk...<span...class="sprite private"...'
-    '...~sabdfl/+junk/testdoc...'
+    '...~mark/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
 
@@ -87,7 +87,7 @@ Launchpad administrators are able to see all private branches.
     '...~no-priv/landscape/testing-branch...<span...class="sprite private"...'
     '...~name12/landscape/feature-x...<span...class="sprite private"...'
     '...~landscape-developers/landscape/trunk...<span...class="sprite private"...'
-    '...~sabdfl/+junk/testdoc...'
+    '...~mark/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
 
 
@@ -244,14 +244,14 @@ are shown.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
-    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers
+    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers ...
 
 Landscape developers can see it.
 
     >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     landscape_dev_browser.contents, 'branch-details'))
-    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers
+    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers ...
 
 But normal people can't.
 

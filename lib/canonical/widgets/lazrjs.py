@@ -34,7 +34,6 @@ class TextLineEditorWidget:
     # in case it's not provided.
     last_id = 0
 
-
     # The HTML template used to render the widget.
     # Replacements:
     #   activation_script: the JS script to active the widget
@@ -66,6 +65,7 @@ class TextLineEditorWidget:
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
                 accept_empty: %(accept_empty)s,
+                width: '%(width)s',
                 initial_value_override: %(initial_value_override)s
             });
             widget.editor.plug({
@@ -77,10 +77,9 @@ class TextLineEditorWidget:
         </script>
         """)
 
-
     def __init__(self, context, attribute, edit_url, id=None, title="Edit",
                  tag='h1', public_attribute=None, accept_empty=False,
-                 default_text=None, initial_value_override=None):
+                 default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -98,6 +97,7 @@ class TextLineEditorWidget:
             parameter value is missing or None.
         :param initial_value_override: Use this text for the initial edited
             field value instead of the attribute's current value.
+        :param width: Initial widget width.
         """
         self.context = context
         self.attribute = attribute
@@ -118,6 +118,7 @@ class TextLineEditorWidget:
         self.title = title
         self.default_text = default_text
         self.initial_value_override = initial_value_override
+        self.width = width
 
     @classmethod
     def _generate_id(cls):
@@ -147,6 +148,7 @@ class TextLineEditorWidget:
             'accept_empty': self.accept_empty,
             'initial_value_override': simplejson.dumps(
                 self.initial_value_override),
+            'width': self.width,
             }
         # Only display the trigger link and the activation script if
         # the user can write the attribute.
@@ -229,7 +231,9 @@ class TextAreaEditorWidget(TextLineEditorWidget):
                       }
                   }
             }});
-            widget.render();
+            if (!Y.UA.opera) {
+                widget.render();
+            }
         });
         </script>
         """)
@@ -348,10 +352,10 @@ class InlineEditPickerWidget:
 
 
 def vocabulary_to_choice_edit_items(
-    vocab, css_class_prefix=None, disabled_items=[], as_json=False,
+    vocab, css_class_prefix=None, disabled_items=None, as_json=False,
     name_fn=None, value_fn=None):
     """Convert an enumerable to JSON for a ChoiceEdit.
-    
+
     :vocab: The enumeration to iterate over.
     :css_class_prefix: If present, append this to an item's value to create
         the css_class property for it.
@@ -359,6 +363,8 @@ def vocabulary_to_choice_edit_items(
     :name_fn: A function receiving an item and returning its name.
     :value_fn: A function receiving an item and returning its value.
     """
+    if disabled_items is None:
+        disabled_items = []
     items = []
     for item in vocab:
         if name_fn is not None:

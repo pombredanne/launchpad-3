@@ -37,7 +37,7 @@
 #subscribers-direct a, #portlet-subscribers a, #subscribers-indirect a, .bug-branch-summary {
    line-height: 1.4em;
 }
-#lp-hierarchy a.bzr-favicon, #lp-hierarchy a.person-tabs {
+ul.breadcrumbs a.bzr-favicon, ul.breadcrumbs a.person-tabs {
     padding: 8px 18px 0 23px;
 }
 h1 .edit {
@@ -93,6 +93,7 @@ span.invisible {left:-9999em;display:block;}
 .external-link {background:url(icon-sprites) 0 -704px no-repeat;}
 .mail {background:url(icon-sprites) 0 -736px no-repeat;}
 .cve {background:url(icon-sprites) 0 -768px no-repeat;}
+.cves {float: right; text-align: right;}
 .bug {background:url(icon-sprites) 0 -800px no-repeat;}
 .bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
 .bug-high {background:url(icon-sprites) 0 -864px no-repeat;}
@@ -137,12 +138,11 @@ span.invisible {left:-9999em;display:block;}
 .translation-template {background:url(icon-sprites-2) 0 -864px no-repeat;}
 .trash-icon {background:url(icon-sprites-2) 0 -896px no-repeat;}
 .stop {background:url(icon-sprites-2) 0 -928px no-repeat;}
-.bounty {background:url(icon-sprites-2) 0 -960px no-repeat;}
 .list {background:url(icon-sprites-2) 0 -992px no-repeat;}
 .bullet {background:url(icon-sprites-2) 0 -1024px no-repeat;}
 .zoom-in {background:url(icon-sprites-2) 0 -1056px no-repeat;}
 .zoom-out {background:url(icon-sprites-2) 0 -1088px no-repeat;}
-.arquitecture {background:url(icon-sprites-2) 0 -1120px no-repeat;}
+.architecture {background:url(icon-sprites-2) 0 -1120px no-repeat;}
 .ppa-icon {background:url(icon-sprites-2) 0 -1147px no-repeat;}
 .ppa-icon-inactive {background:url(icon-sprites-2) 0 -1171px no-repeat;}
 
@@ -309,7 +309,6 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 0 0.5em;
   /* Content headings are highlighted using a different color (the color is
      overriden per-application in subsequent rules) instead of bold text. */
-  color: #83ad23;
   font-weight: normal;
 }
 h1 {font-size: 2em;}
@@ -676,36 +675,12 @@ hr {
 
 /* === Universal page layout === */
 
-/* All pages begin with a global header or a topline. */
-#globalheader {
-  clear: both;
-  position: relative;
-  width: 100%;
-  height: 21px;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  background-color: #EEE;
-  background-image:  url(globalheader_bg.gif);
-  background-repeat: repeat-x;
-  background-position: top center;
+/* All pages include the sitemessage in the footer if one is defined
+   in the config. */
+.sitemessage {
+    font-size: 13px;
+    text-align: right;
 }
-#globalheader .sitemessage a {
-  color: #FFF;
-  text-decoration: underline;
-}
-/* Site-specific message. */
-#globalheader .sitemessage {
-  text-align: center;
-  color: #FFF;
-  font-size: 13px;
-  padding-top: 2px;
-}
-
-/* === Location bar === */
-/* The location bar consists of three element: the login control, the location
-hierarchy, and the application tabs. */
-#locationbar {margin-bottom: 30px;}
 
 /* === Login control === */
 /* At the top right of the page is a link to log in or a button to log out: */
@@ -727,75 +702,31 @@ hierarchy, and the application tabs. */
 }
 
 /* === Location hierarchy === */
-/*
-  # XXX mpt 20080710 bug=247420: Known issues with the hierarchy:
-  - The top border and bevel of the last segment is missing.
-  - The right border and bevel of the last segment is missing.
-  - The border between the last segment and the spine should not be present.
-  - The spine should have a slight top bevel as well as a border.
-*/
-/*
-  The location bar begins with a series of interlocking segments, showing
-  your location in the hierarchy of people and projects:
-*/
-#lp-hierarchy {
-  float: left;
-  width: auto;
-  background: #eee url(navigation-hierarchy-bg) top left no-repeat;
-  margin-bottom: -1px;
-  min-height: 25px;
+/* Breadcrumb styling - this should be moved into style-3.0.css. It is
+ * only here while we have existing non-3-0 templates, so that the
+ * breadcrumbs on non-3-0 pages don't appear as a simple ordered list.
+ */
+ol.breadcrumbs {
+    margin-left: 0;
+    list-style-type: none;
+    clear: both;
+    margin-bottom: 2em;
+    font-size: 80%;
 }
-/* The first segment has a rounded top left corner:*/
-.first-rounded {
-  background: url(navigation-hierarchy-nw) top left no-repeat;
-  min-height: 25px;
-  display: block;
-  width: 6px;
-  float: left;
+ol.breadcrumbs li {
+    display:inline;
+    padding: 0;
 }
-/* The segments have '>' separators for the benefit of those without CSS: */
-#lp-hierarchy small {display: none;}
-/* The last segment is darker (on the front page, this is the only item): */
-#lp-hierarchy.home {
-  background: url(navigation-hierarchy-home-bg) no-repeat;
-  padding: 0 0 2px 6px;
-  width:110px;
+ol.breadcrumbs li a {
+    color: #494949;
 }
-/* Each segment appears as a clickable button: */
-#lp-hierarchy a {
-  color: #000; float:left; display: block; padding: 6px 22px 0 8px;
-}
-/* The segments have chevrons to convey their parent-child relationship: */
-#lp-hierarchy .item {
-  background: url(navigation-hierarchy-chevron-normal) no-repeat right;
-  float: left;
-  min-height: 25px;
-  padding-bottom: 2px;
-  vertical-align: middle;
-}
-/* The penultimate segment leads into the dark color of the last segment: */
-#lp-hierarchy .before-last {
-  background:url(navigation-hierarchy-chevron-selected) no-repeat right;
-}
-/* The last segment is dark, and has a rounded top right corner: */
-#lp-hierarchy .last a {font-weight: bold; padding-right: 10px;}
-#lp-hierarchy .last {
-  background: #ddd url(navigation-hierarchy-ne) top right no-repeat;
-}
-
-/* === Location spine === */
-/*
-  A narrow horizontal bar ties the location bar together. On those pages with
-  application tabs, it visually connects the selected hierarchy element and
-  the selected tab:
-*/
-.apps-separator {
-  clear: left;
-  height: 5px;
-  margin: 0;
-  padding: 0;
-  background: #ddd;
-  border: 1px solid #ccc;
+ol.breadcrumbs li:after { content: "\00BB \0020" }
+/* The following leaves a small margin in chrome/webkit, but using none
+ * doesn't hide the » in webkit either (both work for FF3.5).
+ */
+ol.breadcrumbs li:last-child:after { content: ''; }
+ol.breadcrumbs li:last-child {
+    font-weight: bold;
 }
 
 /* === Location application tabs === */
@@ -1355,7 +1286,7 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
   text-decoration: underline;
 }
 
-a.official-tag { /* Looks just like a normal link */ }
+a.official-tag { /* Looks just like a normal link  */}
 
 a.unofficial-tag {
   color: #6699ee;
@@ -1421,7 +1352,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 
 /* === Public/private status === */
 /* The first portlet on many pages discloses whether the object is private: */
-#privacy {background: #fff;}
 #privacy.private {
   background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
@@ -1482,7 +1412,11 @@ highlighting menu items, so padding is handled by the contents instead: */
 ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.build-success, li.build-success   {list-style-image: url(/@@/build-success);}
 ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
-ul.language, li.language             {list-style-image: url(/@@/language);}
+ul.language, li.language             {
+  list-style-image: url(/@@/language);
+  /* Disable .language sprite. */
+  background: inherit;
+}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.news, li.news {
@@ -1539,11 +1473,16 @@ a.info {
 .boardCommentDetails table {
   margin: -0.5em -12px;
 }
+.boardCommentDetails tr {
+    width: 100%;
+}
 .boardCommentDetails td {
+    width:98%;
     padding: 0.5em 12px;
 }
 .boardCommentDetails td.bug-comment-index {
-    border-right: 1px solid #ddd;
+    width:2%;
+    border-left: 1px solid #ddd;
 }
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardBugActivityBody {
@@ -1629,64 +1568,15 @@ beside the mugshot. */
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
 /* --- Home --- */
-#home-description {
-  font-size: 1.5em;
-  font-family: "URW Gothic L","MgOpen Moderna","Lucida Sans",sans-serif;
-  text-align: center;
-  margin: auto;
-  margin-top: 1em;
-  margin-bottom: 1em;
-  padding: 0.5em;
-  background-color: #ededed;
-  width: 90%;
+
+/* The following style works around the fact that the locationbar, which is
+only used of the Login/Register links in 3.0 UI, is accessible on
+"locationless" pages. It adds extra space at the top of every page in
+Launchpad but that does actually look quite good ... ;-).*/
+#locationbar {
+    height: 1em;
 }
-#home-description .smaller {
-  font-size: 80%;
-}
-#home-stats {
-  margin: auto;
-  text-align: center;
-  color: gray;
-  max-width: 40em;
-}
-#home-page h2 {
-  width: 100%;
-  text-align: center;
-  margin-left: -0.8em;
-}
-#home-page img {
-  vertical-align: middle;
-}
-#featured-projects ul {
-  list-style-type: none;
-  width: 50%;
-  margin: 0;
-  padding: 0 ;
-  float: left;
-}
-#featured-projects li {
-  padding-bottom: 2px;
-}
-.home-banners {
-  background-color: #8890ff;
-  width: 220px;
-  padding: 1em 0 1em 1em;
-  margin-top: 1em;
-  overflow: hidden;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-}
-.home-banners a {
-  font-weight: bold;
-  color: white;
-}
-.home-banner-container {
-  width: 100%;
-  background-color: #ededed;
-  padding: 1em;
-  padding-top: 0;
-}
+/* -- Notices -- */
 
 .important-notice-container {
   text-align: center;
@@ -1734,17 +1624,8 @@ beside the mugshot. */
   border: 1px solid gray;
   padding: 0.3em;
   margin: 1em 0 1em 0;
-  float: left; /* So the border doesn't use 100% of the page */
 }
 
-div#build-status-summary {
-    clear:right;
-    float:right;
-}
-
-div#build-status-summary h2 {
-    margin-top:0;
-}
 
 div#build-status-summary th {
     text-align:left;
@@ -1809,6 +1690,30 @@ a.update-retry {
     padding-left: 1em;
 }
 
+/* PPA installation instructions slider.*/
+#pre-karmic-systems-slide-trigger {
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+#pre-karmic-systems-slide-trigger:hover {
+    text-decoration: underline
+}
+#ppa-install-slide-trigger {
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+#ppa-install-slide-trigger:hover {
+    text-decoration: underline
+}
+#ppa-install .widget-body {
+    margin: 1em;
+}
+#ppa-install .widget-body.lazr-closed {
+    height: 0px;
+    overflow: hidden;
+    display: block;
+}
+
 /* Brand the related PPA versions with the PPA icon (not currently
    in the sprite image.) */
 div#slide-trigger {
@@ -1850,6 +1755,41 @@ form.archive-subscription-activation button:hover {
     text-decoration: underline;
 }
 
+/* Colored build status. */
+.buildstatusNEEDSBUILD     {color: gray;}
+.buildstatusBUILDING       {color: black;}
+.buildstatusFULLYBUILT     {color: green;}
+.buildstatusFAILEDTOBUILD  {color: red;}
+.buildstatusMANUALDEPWAIT  {color: red;}
+.buildstatusCHROOTWAIT     {color: red;}
+.buildstatusSUPERSEDED     {color: red;}
+.buildstatusFAILEDTOUPLOAD {color: red;}
+
+/* Shaded logging area. */
+div.logtail {
+    margin: 0.5em;
+    background-color: #f6f6f6;
+    padding: 5px;
+    border: solid gray;
+    border-width: 1px;
+    font: 100% monospace;
+    -moz-border-radius: 5px;
+    -o-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -khtml-border-radius: 5px;
+}
+
+div.logtail p {
+    max-width: 100%;
+}
+
+/* <pre> for presenting source changelog nicely. */
+pre.changelog {
+    margin: 0.5em;
+    padding: 5px;
+    font: 116% monospace;
+}
+
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
    linkified should be lined-through. */
 a.ppa-icon-inactive {
@@ -1857,6 +1797,21 @@ a.ppa-icon-inactive {
 }
 span.ppa-icon-inactive {
     text-decoration: line-through;
+}
+
+div.builds_list form {
+    padding: 1em 1em 2em 0em;
+}
+
+/* XXX Michael Nelson 20090828 bug=420376
+ * Temporary style for actions on the ppa/+packages page until we move
+ * the copy/delete packages functionality into the page itself. */
+div.ppa-packaging-tmp-actions {
+    float:right;
+}
+
+div.ppa-packaging-tmp-actions .portlet {
+    border-top: 0 none;
 }
 
 
@@ -1936,6 +1891,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 #branch-pending-writes {
   background: #FFF59C;
   width: 40em;
+  margin: 1em auto;
   padding-left: 1em;
   padding-right: 1em;
   padding-top: 0.2em;
@@ -2066,7 +2022,7 @@ div#sub-unsub-spinner {
   display:none;
   padding:3px 5px 2px 17px;
 }
-.unsub-icon, .editsub-icon {position:absolute; right:8px;}
+.unsub-icon, .editsub-icon {position:absolute; right:16px;}
 
 .highlight-message {
   margin: 2em 0 2em 0;
@@ -2224,6 +2180,30 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 .questionstatusEXPIRED   {color: #666;} /* dark grey */
 .questionstatusINVALID   {color: #c00;} /* red */
 
+.search-box {
+  text-align: left;
+  float: left;
+  border:1px solid #d6d6d6;
+  margin: 0.5em 0 0.5em 0;
+  color: #717171;
+  padding: 8px;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+.search-box form.primary.search {
+  margin: 0.5em;
+}
+
+.bug-links td.bugs-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.bug-links td.bugs-link {
+  text-align: left;
+}
 
 /* --- Other --- */
 

@@ -15,8 +15,9 @@ Here are some imports we need to get this test running.
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.model.potemplate import POTemplateSubset
-    >>> from lp.translations.scripts.po_import import (
-    ...     AutoApproveProcess, ImportProcess)
+    >>> from lp.translations.scripts.po_import import ImportProcess
+    >>> from lp.translations.scripts.import_queue_gardener import (
+    ...     ImportQueueGardener)
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -50,7 +51,7 @@ POFile.importFromQueue and POTemplate.importFromQueue methods.
 Here's the person who'll be doing the import.
 
     >>> person_set = getUtility(IPersonSet)
-    >>> person = person_set.getByName('sabdfl')
+    >>> person = person_set.getByName('mark')
 
 And this is the POTemplate where the import will be done.
 
@@ -673,7 +674,7 @@ composed before, but also sends it.
     <BLANKLINE>
     The Launchpad team
 
-Now the auto-approval script runs. This can happen anytime, since it's
+Now the queue gardener runs. This can happen anytime, since it's
 asynchronous to the po-import script. The script tries to approve any
 entries that have not been approved, but look like they could be,
 without human intervention. This involves a bit of guesswork about what
@@ -682,9 +683,13 @@ that it thinks should be blocked, and also purges deleted or completed
 entries from the queue. Running at this point, all it does is purge the
 two hand-approved Welsh translations that have just been imported.
 
-    >>> process = AutoApproveProcess(transaction, FakeLogger())
-    >>> process.run()
-    INFO    Removed 2 entries from the queue.
+    >>> import logging
+    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> process = ImportQueueGardener('approver', test_args=[])
+    >>> process.logger = MockLogger()
+    >>> process.logger.setLevel(logging.INFO)
+    >>> process.main()
+    log>    Removed 2 entries from the queue.
     >>> transaction.commit()
 
 If users upload two versions of the same file, they are imported in the
@@ -761,13 +766,15 @@ It's in the queue now.
     >>> print entry.status.name
     NEEDS_REVIEW
 
-The auto-approval script runs again. This time it sees the two
-submitted translations and approves them for import based on some
-heuristic intelligence.
+The queue gardener runs again. This time it sees the two submitted
+translations and approves them for import based on some heuristic
+intelligence.
 
-    >>> process = AutoApproveProcess(transaction, FakeLogger())
-    >>> process.run()
-    INFO    The automatic approval system approved some entries.
+    >>> process = ImportQueueGardener('approver', test_args=[])
+    >>> process.logger = MockLogger()
+    >>> process.logger.setLevel(logging.INFO)
+    >>> process.main()
+    log>    The automatic approval system approved some entries.
     >>> print entry.status.name
     APPROVED
     >>> syncUpdate(entry)
@@ -1000,3 +1007,42 @@ Import fails and email is sent out even though it's a published upload.
     True
     >>> subject
     u'Import problem - Serbian (sr) - ...'
+
+
+No Contact Address
+------------------
+
+Not every user has a valid email address.  For instance, Kermit the
+Hermit has none at the moment.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> hermit = factory.makePerson(
+    ...     name='hermit', email_address_status=EmailAddressStatus.OLD)
+
+    >>> len(get_contact_email_addresses(hermit))
+    0
+
+Kermit uploads a translation, which gets approved.
+
+    >>> pofile = factory.makePOFile('lo')
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     'lo.po', 'Invalid content', True, hermit,
+    ...     pofile=pofile, potemplate=pofile.potemplate,
+    ...     productseries=pofile.potemplate.productseries)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> transaction.commit()
+
+The import fails.  The importer would like to send Kermit an email about
+this, but is unable to.  This is unfortunate, but does not faze the
+importer.  It completes normally.
+
+    >>> process = ImportProcess(transaction, FakeLogger())
+    >>> process.run()
+    INFO Importing: Lao ...
+    INFO Import requests completed.
+
+    >>> print entry.status.name
+    FAILED

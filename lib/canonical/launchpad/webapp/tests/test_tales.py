@@ -3,6 +3,7 @@
 
 """tales.py doctests."""
 
+from difflib import unified_diff
 from textwrap import dedent
 import unittest
 
@@ -10,7 +11,6 @@ from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctestunit import DocTestSuite
 
-from canonical.config import config
 from canonical.launchpad.ftests import test_tales
 from canonical.launchpad.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.tales import FormattersAPI
@@ -281,11 +281,11 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # correct last scanned ids to ensure that the new diff is not stale.
         bmp = self.factory.makeBranchMergeProposal()
         if line_count:
-            content = 'random content'
+            content = ''.join(unified_diff('', 'random content'))
         else:
-            content = None
+            content = ''
         preview = bmp.updatePreviewDiff(
-            content, u'diff stat', u'rev-a', u'rev-b', conflicts=conflicts)
+            content, u'rev-a', u'rev-b', conflicts=conflicts)
         bmp.source_branch.last_scanned_id = preview.source_revision_id
         bmp.target_branch.last_scanned_id = preview.target_revision_id
         # Update the values directly sidestepping the security.
@@ -293,7 +293,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         naked_diff.diff_lines_count = line_count
         naked_diff.added_lines_count = added
         naked_diff.removed_lines_count = removed
-        # In order to get the canonical url of the librarian file, we need to commit.
+        # In order to get the canonical url of the librarian file, we need to
+        # commit.
         # transaction.commit()
         # Make sure that the preview diff is in the db for the test.
         # Storm bug: 324724

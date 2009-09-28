@@ -97,7 +97,7 @@ Two attachments were added.
 
     >>> attachment_portlet = find_portlet(
     ...     user_browser.contents, 'Bug attachments')
-    >>> for li in attachment_portlet('li', 'download'):
+    >>> for li in attachment_portlet('li', 'download-attachment'):
     ...     print li.a.renderContents()
     attachment1
     Attachment description.
@@ -197,3 +197,48 @@ that will get their tags set as well.
     >>> print extract_text(tags)
     Tags: bar foo...
 
+
+=== References to HWDB submissions ===
+
+The uploaded message may contain a header "HWDB-Submission", its value
+should be a sequence of HWDB submission keys, separated by ', *'.
+If the message contains this header, the referenced HWDB submissions are
+linked to the new bug.
+
+Our test data contains such a header, mentioning two HWDB submision key.
+The database knows only the first key.
+
+    >>> extra_filebug_data_with_hwdb_submission = open(
+    ...     os.path.join(testfiles, 'extra_filebug_data_hwdb_submission.msg'))
+    >>> extra_filebug_data_with_hwdb_submission.read().split('\n')[2]
+    'HWDB-Submission: sample-submission, non-existing-submission-key'
+
+Once we submit the bug report...
+
+    >>> extra_filebug_data_with_hwdb_submission.seek(0)
+    >>> anon_browser.open('http://launchpad.dev/+storeblob')
+    >>> anon_browser.getControl(name='field.blob').add_file( # Don't change!
+    ...     extra_filebug_data_with_hwdb_submission, 'not/important',
+    ...     'not.important')
+    >>> anon_browser.getControl(name='FORM_SUBMIT').click() # Don't change!
+    >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
+
+    >>> filebug_url = (
+    ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
+    ...     '%s' % blob_token)
+    >>> user_browser.open(filebug_url)
+    >>> user_browser.getControl('Summary').value = 'Another summary'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Further information').value = (
+    ...     'A bug description.')
+    >>> user_browser.getControl('Submit Bug Report').click()
+
+...the existing HWDB submission is linked to the new bug.
+
+    >>> bug_id = user_browser.url.split('/')[-1]
+    >>> bug_url = '/bugs/%s' % bug_id
+    >>> linked_submissions = webservice.named_get(
+    ...     bug_url, 'getHWSubmissions').jsonBody()
+    >>> for submission in linked_submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission

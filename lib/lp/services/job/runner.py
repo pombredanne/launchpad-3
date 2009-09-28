@@ -12,10 +12,13 @@ __all__ = ['JobRunner']
 
 import sys
 
+from zope.component import getUtility
+
 from canonical.config import config
 from lazr.delegates import delegates
 import transaction
 
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
 from canonical.launchpad.webapp import errorlog
@@ -80,6 +83,10 @@ class BaseRunnableJob:
             return
         ctrl.send()
 
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        return [('job_id', self.job.id)]
+
     def notifyUserError(self, e):
         """See `IRunnableJob`."""
         ctrl = self.getUserErrorMailController(e)
@@ -91,15 +98,16 @@ class BaseRunnableJob:
 class JobRunner(object):
     """Runner of Jobs."""
 
-    def __init__(self, jobs):
+    def __init__(self, jobs, logger=None):
         self.jobs = jobs
         self.completed_jobs = []
         self.incomplete_jobs = []
+        self.logger = logger
 
     @classmethod
-    def fromReady(klass, job_class):
+    def fromReady(cls, job_class, logger=None):
         """Return a job runner for all ready jobs of a given class."""
-        return klass(job_class.iterReady())
+        return cls(job_class.iterReady(), logger)
 
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
@@ -114,6 +122,8 @@ class JobRunner(object):
         except Exception:
             transaction.abort()
             job.fail()
+            # Record the failure.
+            transaction.commit()
             self.incomplete_jobs.append(job)
             raise
         else:
@@ -136,6 +146,31 @@ class JobRunner(object):
                 job.notifyUserError(e)
             except Exception:
                 info = sys.exc_info()
-                errorlog.globalErrorUtility.raising(info)
+                request = errorlog.ScriptRequest(job.getOopsVars())
+                errorlog.globalErrorUtility.raising(info, request)
                 oops = errorlog.globalErrorUtility.getLastOopsReport()
                 job.notifyOops(oops)
+                if self.logger is not None:
+                    self.logger.info('Job resulted in OOPS: %s' % oops.id)
+
+
+class JobCronScript(LaunchpadCronScript):
+    """Base class for scripts that run jobs."""
+
+    def __init__(self):
+        dbuser = getattr(config, self.config_name).dbuser
+        super(JobCronScript, self).__init__(self.config_name, dbuser)
+
+    def main(self):
+        errorlog.globalErrorUtility.configure(self.config_name)
+        runner = JobRunner.fromReady(
+            getUtility(self.source_interface), self.logger)
+        cleanups = self.setUp()
+        try:
+            runner.runAll()
+        finally:
+            for cleanup in reversed(cleanups):
+                cleanup()
+        self.logger.info(
+            'Ran %d %s jobs.',
+            len(runner.completed_jobs), self.source_interface.__name__)

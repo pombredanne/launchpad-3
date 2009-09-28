@@ -6,10 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageBreadcrumbBuilder',
+    'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
+    'SourcePackageHelpView',
     'SourcePackageNavigation',
+    'SourcePackagePackaging',
     'SourcePackageView',
     ]
 
@@ -19,14 +21,13 @@ from zope.app.form.interfaces import IInputWidget
 
 from canonical.launchpad import helpers
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
@@ -35,7 +36,7 @@ from canonical.launchpad.webapp import (
     redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr.utils import smartquote
@@ -64,14 +65,18 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
             sourcepackage.name)
 
-        return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
+        redirection_url = canonical_url(
+            distro_sourcepackage, view_name='+filebug')
+        if self.request.form.get('no-redirect') is not None:
+            redirection_url += '?no-redirect'
+        return redirection(redirection_url)
 
 
-class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     @property
     def text(self):
-        return smartquote('"%s" package') % (self.context.name)
+        return smartquote('"%s" source package') % (self.context.name)
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -84,7 +89,8 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['packaging', 'edit_packaging', 'changelog', 'builds']
+    links = [
+        'packaging', 'edit_packaging', 'changelog', 'builds', 'set_upstream']
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
@@ -94,6 +100,9 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
+
+    def set_upstream(self):
+        return Link("+edit-packaging", "Set upstream link", icon="add")
 
     def builds(self):
         text = 'Show builds'
@@ -115,6 +124,9 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     schema = ISourcePackage
     field_names = ['productseries']
 
+    label = 'Define upstream link'
+    page_title = label
+
     @property
     def cancel_url(self):
         return canonical_url(self.context)
@@ -122,10 +134,12 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     @action(_("Change"), name="change")
     def change(self, action, data):
         self.context.setPackaging(data['productseries'], self.user)
-        self.status_message = 'Upstream link updated, thank you!'
+        self.request.response.addNotification('Upstream link updated.')
         self.next_url = canonical_url(self.context)
 
-class SourcePackageView(BuildRecordsView):
+
+class SourcePackageView:
+    """A view for (distro series) source packages."""
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -140,6 +154,10 @@ class SourcePackageView(BuildRecordsView):
         self.status_message = None
         self.error_message = None
         self.processForm()
+
+    @property
+    def label(self):
+        return self.context.title
 
     @property
     def cancel_url(self):
@@ -231,16 +249,18 @@ class SourcePackageView(BuildRecordsView):
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
 
-    @property
-    def search_name(self):
-        return False
+
+class SourcePackagePackaging(SourcePackageView):
+    """A View to show where the package is packged."""
+
+    page_title = 'Upstream links'
 
     @property
-    def default_build_state(self):
-        """Default build state for sourcepackage builds.
+    def label(self):
+        return "Upstream links for %s" % self.context.title
 
-        This overrides the default that is set on BuildRecordsView."""
-        # None maps to "all states". The reason we display all states on
-        # this page is because it's unlikely that there will be so
-        # many builds that the listing will be overwhelming.
-        return None
+
+class SourcePackageHelpView:
+    """A View to show Answers help."""
+
+    page_title = 'Help and support options'

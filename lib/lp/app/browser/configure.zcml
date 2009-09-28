@@ -28,4 +28,21 @@
         template="../templates/navigationmenu-actions.pt"
         permission="zope.Public"
         />
+
+    <!-- Hierarchy -->
+    <browser:page
+        for="zope.interface.Interface"
+        name="+hierarchy"
+        class="canonical.launchpad.browser.launchpad.Hierarchy"
+        template="../templates/launchpad-hierarchy.pt"
+        permission="zope.Public"
+        />
+
+    <!-- TALES watermark: namespace -->
+    <adapter
+        for="*"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.app.browser.watermark.WatermarkTalesAdapter"
+        name="watermark"
+        />
 </configure>

@@ -7,8 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
-    'LinkTranslationsBranchView',
-    'ProductSeriesBreadcrumbBuilder',
+    'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
     'ProductSeriesEditView',
@@ -40,6 +39,8 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationImplementationStatus)
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -52,6 +53,8 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser import StatusCount
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
@@ -63,7 +66,7 @@ from canonical.launchpad.webapp import (
     stepthrough, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -80,7 +83,8 @@ def quote(text):
     return cgi.escape(text, quote=True)
 
 
-class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
+class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
     """A class to navigate `IProductSeries` URLs."""
     usedfor = IProductSeries
 
@@ -122,11 +126,11 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
         return self.context.getRelease(name)
 
 
-class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProductSeries`."""
     @property
     def text(self):
-        """See `IBreadcrumbBuilder`."""
+        """See `IBreadcrumb`."""
         return 'Series ' + self.context.name
 
 
@@ -139,7 +143,7 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
     def branches(self):
         """Return a link to view the branches related to this series."""
         # Override to go to the branches for the product.
-        text = 'Code'
+        text = 'Branches'
         summary = 'View related branches of code'
         link = canonical_url(self.context.product, rootsite='code')
         return Link(link, text, summary=summary)
@@ -245,7 +249,8 @@ class ProductSeriesBugsMenu(ApplicationMenu):
         return Link('+subscribe', 'Subscribe to bug mail')
 
 
-class ProductSeriesSpecificationsMenu(ApplicationMenu):
+class ProductSeriesSpecificationsMenu(NavigationMenu,
+                                      HasSpecificationsMenuMixin):
     """Specs menu for ProductSeries.
 
     This menu needs to keep track of whether we are showing all the
@@ -256,46 +261,7 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
-
-    def listall(self):
-        """Return a link to show all blueprints."""
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def listaccepted(self):
-        """Return a link to show the approved goals."""
-        text = 'List approved blueprints'
-        return Link('+specs?acceptance=accepted', text, icon='info')
-
-    def listproposed(self):
-        """Return a link to show the proposed goals."""
-        text = 'List proposed blueprints'
-        return Link('+specs?acceptance=proposed', text, icon='info')
-
-    def listdeclined(self):
-        """Return a link to show the declined goals."""
-        text = 'List declined blueprints'
-        summary = 'Show the goals which have been declined'
-        return Link('+specs?acceptance=declined', text, summary, icon='info')
-
-    def setgoals(self):
-        """Return a link to set the series goals."""
-        text = 'Set series goals'
-        summary = 'Approve or decline feature goals that have been proposed'
-        return Link('+setgoals', text, summary, icon='edit')
-
-    def table(self):
-        """Return a link to show the people assigned to the blueprint."""
-        text = 'Assignments'
-        summary = 'Show the assignee, drafter and approver of these specs'
-        return Link('+assignments', text, summary, icon='info')
-
-    def new(self):
-        """Return a link to register a blueprint."""
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = ['listall', 'assignments', 'setgoals', 'listdeclined', 'new']
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):
@@ -344,6 +310,11 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
         # Check the form submission.
         self.processForm()
+
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return self.context.title
 
     def processForm(self):
         """Process a form if it was submitted."""
@@ -455,30 +426,19 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
 
-    @property
-    def milestone_table_class(self):
-        """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
-            return 'listing'
-        else:
-            # The page can remove the 'unseen' class to make the table
-            # visible.
-            return 'listing unseen'
 
     @property
-    def milestone_row_uri_template(self):
-        return (
-            '%s/+milestone/{name}/+productseries-table-row' %
-            canonical_url(self.context.product, path_only_if_possible=True))
+    def latest_release_with_download_files(self):
+        for release in self.context.releases:
+            if len(list(release.files)) > 0:
+                return release
+        return None
 
 
 class ProductSeriesUbuntuPackagingView(ProductSeriesView):
     """A view to show series package in Ubuntu."""
 
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return 'Ubuntu source packaging'
+    label = 'Ubuntu source packaging'
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -640,27 +600,6 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class LinkTranslationsBranchView(LaunchpadEditFormView):
-    """View to set the series' translations export branch."""
-
-    schema = IProductSeries
-    field_names = ['translations_branch']
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context) + '/+translations-settings'
-
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
-        self.updateContextFromData(data)
-        self.request.response.addInfoNotification(
-            'Translations export branch updated.')
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the settings page."""
-
-
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
     """Set the branch link from the code overview page."""
 
@@ -734,6 +673,9 @@ class ProductSeriesSourceListView(LaunchpadView):
 
     See `ICodeImportSet.getActiveImports` for our definition of running.
     """
+
+    page_title = 'Available code imports'
+    label = page_title
 
     def initialize(self):
         """See `LaunchpadFormView`."""

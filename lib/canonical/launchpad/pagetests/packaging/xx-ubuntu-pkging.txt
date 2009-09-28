@@ -124,8 +124,8 @@ executable script into the page using an invalid source package name.
 
     >>> user_browser.open('http://launchpad.dev/bzr/trunk/')
     >>> user_browser.getLink('Link to Ubuntu package').click()
-    >>> user_browser.title
-    'Ubuntu source packaging'
+    >>> print user_browser.title
+    Bazaar trunk...
 
     >>> user_browser.getControl(name='ubuntupkg').value = (
     ...     "bzr<script>window.alert('XSS')</script>")

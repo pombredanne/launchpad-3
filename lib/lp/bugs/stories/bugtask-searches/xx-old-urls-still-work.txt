@@ -91,12 +91,12 @@ too.
 Searching for assigned bugs using old status names works fine, but the
 user agent is automatically redirected to an updated location:
 
-    >>> url = "http://bugs.launchpad.dev/~sabdfl/+assignedbugs?" + query
+    >>> url = "http://bugs.launchpad.dev/~mark/+assignedbugs?" + query
     >>> anon_browser.open(url)
 
     >>> uri = URI(anon_browser.url)
     >>> print uri.path
-    /~sabdfl/+assignedbugs
+    /~mark/+assignedbugs
 
     >>> print_query_changes(query, uri.query)
     field.status:list=Unconfirmed --> field.status:list=New
@@ -108,12 +108,12 @@ user agent is automatically redirected to an updated location:
 Just as with assigned bugs, searching for reported bugs takes the user
 agent to a corrected location:
 
-    >>> url = "http://bugs.launchpad.dev/~sabdfl/+reportedbugs?" + query
+    >>> url = "http://bugs.launchpad.dev/~mark/+reportedbugs?" + query
     >>> anon_browser.open(url)
 
     >>> uri = URI(anon_browser.url)
     >>> print uri.path
-    /~sabdfl/+reportedbugs
+    /~mark/+reportedbugs
 
     >>> print_query_changes(query, uri.query)
     field.status:list=Unconfirmed --> field.status:list=New
@@ -126,12 +126,12 @@ functionality may be removed so it's important to get people moved
 over to the new locations as quickly and seamlessly as possible to
 avoid disruption.
 
-    >>> url = "http://bugs.launchpad.dev/~sabdfl/+subscribedbugs?" + query
+    >>> url = "http://bugs.launchpad.dev/~mark/+subscribedbugs?" + query
     >>> anon_browser.open(url)
 
     >>> uri = URI(anon_browser.url)
     >>> print uri.path
-    /~sabdfl/+subscribedbugs
+    /~mark/+subscribedbugs
 
     >>> print_query_changes(query, uri.query)
     field.status:list=Unconfirmed --> field.status:list=New

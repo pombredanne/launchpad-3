@@ -1,9 +1,12 @@
-= Logging and OOPS reporting =
+==========================
+Logging and OOPS reporting
+==========================
 
 The Mailman XMLRPCRunner logs errors and reports OOPSes.
 
 
-= MailmanErrorUtility =
+MailmanErrorUtility
+===================
 
 The MailmanErrorUtility is a ErrorReportingUtility that is configured
 in the [mailman] section of config.
@@ -13,21 +16,22 @@ in the [mailman] section of config.
     ...     MailmanErrorUtility)
 
     >>> error_utility = MailmanErrorUtility()
-    >>> error_utility._default_config_section
-    'mailman'
+    >>> print error_utility._default_config_section
+    mailman
 
-    >>> error_utility.prefix
-    'TMMX'
-    >>> config.mailman.oops_prefix
-    'TMMX'
+    >>> print error_utility.prefix
+    TMMX
+    >>> print config.mailman.oops_prefix
+    TMMX
 
-    >>> error_utility.error_dir
-    '/var/tmp/mailman-xmlrpc.test'
-    >>> config.mailman.error_dir
-    '/var/tmp/mailman-xmlrpc.test'
+    >>> print error_utility.error_dir
+    /var/tmp/mailman-xmlrpc.test
+    >>> print config.mailman.error_dir
+    /var/tmp/mailman-xmlrpc.test
 
 
-= Error logging =
+Error logging
+=============
 
 The log_exception() function is used by XMLRPCRunner to report known
 exceptions. It reports the OOPS.
@@ -44,12 +48,12 @@ exceptions. It reports the OOPS.
 
     >>> test_log_exception()
     >>> oops = error_utility.getLastOopsReport()
-    >>> oops.id
-    'OOPS-...TMMX...'
-    >>> oops.type
-    'AssertionError'
-    >>> oops.value
-    'There is an OOPS in progress.'
+    >>> print oops.id
+    OOPS-...TMMX...
+    >>> print oops.type
+    AssertionError
+    >>> print oops.value
+    There is an OOPS in progress.
     >>> print oops.tb_text
     Traceback (most recent call last):
     ...
@@ -77,4 +81,3 @@ tested by sabotaging the code by adding an undefined name ('defect') to
 the _create() method. The create-lists-txt test was run to generate a
 "NameError: global name 'defect' is not defined". The error was written
 to the xmlrpc log, and an OOPS was reported.
-

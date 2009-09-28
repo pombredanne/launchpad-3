@@ -16,23 +16,23 @@ First, some imports and set up::
 Get a proxied and unproxied person object for the same person, and demonstrate
 working comparisons::
 
-    >>> sabdfl = Person.get(1)
-    >>> sabdfl_proxied = getUtility(IPersonSet).get(1)
-    >>> sabdfl is sabdfl_proxied
+    >>> mark = Person.get(1)
+    >>> mark_proxied = getUtility(IPersonSet).get(1)
+    >>> mark is mark_proxied
     False
-    >>> sabdfl == sabdfl
+    >>> mark == mark
     True
-    >>> sabdfl == sabdfl_proxied
+    >>> mark == mark_proxied
     True
-    >>> sabdfl_proxied == sabdfl
+    >>> mark_proxied == mark
     True
-    >>> sabdfl_proxied == sabdfl_proxied
+    >>> mark_proxied == mark_proxied
     True
 
 A dbschema Item can also be given to sqlobject's select() method, or any
 of its variants.
 
-    >>> proxied_policy = sabdfl_proxied.subscriptionpolicy
+    >>> proxied_policy = mark_proxied.subscriptionpolicy
     >>> type(proxied_policy)
     <type 'zope.security._proxy._Proxy'>
 

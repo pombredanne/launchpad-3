@@ -28,7 +28,7 @@ __all__ = [
     'IBranchBatchNavigator',
     'IBranchCloud',
     'IBranchDelta',
-    'IBranchBatchNavigator',
+    'IBranchListingQueryOptimiser',
     'IBranchNavigationMenu',
     'IBranchSet',
     'NoSuchBranch',
@@ -67,6 +67,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
@@ -205,7 +206,8 @@ class BranchURIField(URIField):
     # is removed.
     def normalize(self, input):
         """Be extra-strict about trailing slashes."""
-        input = super(BranchURIField, self).normalize(input)
+        # Can't use super-- this derives from an old-style class
+        input = URIField.normalize(self, input)
         if self.trailing_slash == False and input[-1] == '/':
             # ensureNoSlash() doesn't trim the slash if the path
             # is empty (eg. http://example.com/). Due to the database
@@ -219,7 +221,8 @@ class BranchURIField(URIField):
         from canonical.launchpad.webapp import canonical_url
         from lazr.uri import URI
 
-        super(BranchURIField, self)._validate(value)
+        # Can't use super-- this derives from an old-style class
+        URIField._validate(self, value)
 
         # XXX thumper 2007-06-12:
         # Move this validation code into IBranchSet so it can be
@@ -309,7 +312,7 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
+class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
@@ -747,6 +750,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
         :param review_requests: An optional list of (`Person`, review_type).
         """
 
+    def scheduleDiffUpdates():
+        """Create UpdatePreviewDiffJobs for this branch's targets."""
+
     def getStackedBranches():
         """The branches that are stacked on this one."""
 
@@ -1127,6 +1133,31 @@ class IBranchSet(Interface):
     @collection_default_content()
     def getBranches(limit=50):
         """Return a collection of branches."""
+
+
+class IBranchListingQueryOptimiser(Interface):
+    """Interface for a helper utility to do efficient queries for branches.
+
+    Branch listings show several pieces of information and need to do batch
+    queries to the database to avoid many small queries.
+
+    Instead of having branch related queries scattered over other utility
+    objects, this interface and utility object brings them together.
+    """
+
+    def getProductSeriesForBranches(branch_ids):
+        """Return the ProductSeries associated with the branch_ids.
+
+        :param branch_ids: a list of branch ids.
+        :return: a list of `ProductSeries` objects.
+        """
+
+    def getOfficialSourcePackageLinksForBranches(branch_ids):
+        """The SeriesSourcePackageBranches associated with the branch_ids.
+
+        :param branch_ids: a list of branch ids.
+        :return: a list of `SeriesSourcePackageBranch` objects.
+        """
 
 
 class IBranchDelta(Interface):

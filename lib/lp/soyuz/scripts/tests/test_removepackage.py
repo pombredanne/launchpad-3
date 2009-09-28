@@ -101,7 +101,7 @@ class TestPackageRemover(unittest.TestCase):
     Perform tests directly on the script class.
     """
     layer = LaunchpadZopelessLayer
-    user_name = 'sabdfl'
+    user_name = 'mark'
     removal_comment = 'fooooooo'
 
     def getRemover(self, name='foo', version=None,

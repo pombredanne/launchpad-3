@@ -25,13 +25,15 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad.fields import (
     ContentNameField, Description, PublicPersonChoice, Summary, Title,
     UniqueField)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers)
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.milestone import IHasMilestones
+from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -47,9 +49,10 @@ from canonical.launchpad import _
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
+    export_factory_operation,
     export_read_operation, exported, operation_parameters,
     operation_returns_collection_of, operation_returns_entry,
-    webservice_error)
+    rename_parameters_as, webservice_error)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -196,7 +199,9 @@ class DistroSeriesVersionField(UniqueField):
 
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
-
+    @rename_parameters_as(dateexpected='date_targeted')
+    @export_factory_operation(
+        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
     def newMilestone(name, dateexpected=None, summary=None, code_name=None):
         """Create a new milestone for this DistroSeries."""
 
@@ -846,7 +851,8 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """
 
 
-class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
+class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
+                    IStructuralSubscriptionTarget):
     """A series of an operating system distribution."""
     export_as_webservice_entry()
 

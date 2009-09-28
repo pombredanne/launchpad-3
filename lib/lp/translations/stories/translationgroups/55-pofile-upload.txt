@@ -58,7 +58,7 @@ cannot be handled.
     ... msgid "This program is running as process number %1."
     ... msgstr "Hierdie program loop as prosesnommer %1."'''
 
-    >>> upload = admin_browser.getControl('File')
+    >>> upload = admin_browser.getControl(name='file')
     >>> upload.add_file(StringIO(af_file), 'application/msword', 'af.doc')
     >>> admin_browser.getControl('Upload').click()
     >>> print admin_browser.url
@@ -71,7 +71,7 @@ cannot be handled.
 
 Now let's upload one that is published.
 
-    >>> upload = admin_browser.getControl('File')
+    >>> upload = admin_browser.getControl(name='file')
     >>> upload.add_file(StringIO(af_file), 'application/x-po', 'af.po')
     >>> admin_browser.getControl(name='upload_type').value = ['upstream']
     >>> admin_browser.getControl('Upload').click()
@@ -84,7 +84,7 @@ Now let's upload one that is published.
 
 And one that is not published.
 
-    >>> upload = admin_browser.getControl('File')
+    >>> upload = admin_browser.getControl(name='file')
     >>> upload.add_file(StringIO(af_file), 'application/x-po', 'af.po')
     >>> admin_browser.getControl(name='upload_type').value = ['user']
     >>> admin_browser.getControl('Upload').click()

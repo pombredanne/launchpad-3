@@ -353,3 +353,8 @@ class BzrSync:
 def schedule_translation_upload(tip_changed):
     getUtility(IRosettaUploadJobSource).create(
         tip_changed.db_branch, tip_changed.old_tip_revision_id)
+
+
+@adapter(events.TipChanged)
+def schedule_diff_updates(tip_changed):
+    tip_changed.db_branch.scheduleDiffUpdates()

@@ -34,7 +34,7 @@ from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
-from lp.code.model.diff import Diff, PreviewDiff
+from lp.code.model.diff import PreviewDiff
 from lp.registry.model.person import Person
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
@@ -117,6 +117,13 @@ class BranchMergeProposal(SQLBase):
         enum=BranchMergeProposalStatus, notNull=True,
         default=BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
+    @property
+    def private(self):
+        return (
+            self.source_branch.private or self.target_branch.private or
+            (self.dependent_branch is not None and
+             self.dependent_branch.private))
+
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
@@ -146,6 +153,15 @@ class BranchMergeProposal(SQLBase):
         dbName='merge_reporter', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
         default=None)
+
+    @property
+    def related_bugs(self):
+        """Bugs which are linked to the source but not the target.
+
+        Implies that these bugs would be fixed, in the target, by the merge.
+        """
+        return (bug for bug in self.source_branch.linked_bugs
+                if bug not in self.target_branch.linked_bugs)
 
     @property
     def address(self):
@@ -455,12 +471,14 @@ class BranchMergeProposal(SQLBase):
         # a database query to identify if there are any active proposals
         # with the same source and target branches.
         self.syncUpdate()
+        review_requests = set(
+            (vote.reviewer, vote.review_type) for vote in self.votes)
         proposal = self.source_branch.addLandingTarget(
             registrant=registrant,
             target_branch=self.target_branch,
             dependent_branch=self.dependent_branch,
             whiteboard=self.whiteboard,
-            needs_review=True)
+            needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
         # properties of supersedes and superseded_by are visible to
@@ -645,18 +663,13 @@ class BranchMergeProposal(SQLBase):
                     code_review_message, original_email))
         return code_review_message
 
-    def updatePreviewDiff(self, diff_content, diff_stat,
-                          source_revision_id, target_revision_id,
-                          dependent_revision_id=None, conflicts=None):
+    def updatePreviewDiff(self, diff_content, source_revision_id,
+                          target_revision_id, dependent_revision_id=None,
+                          conflicts=None):
         """See `IBranchMergeProposal`."""
-        if self.preview_diff is None:
-            # Create the PreviewDiff.
-            preview = PreviewDiff()
-            preview.diff = Diff()
-            self.preview_diff = preview
-
-        self.preview_diff.update(
-            diff_content, diff_stat, source_revision_id, target_revision_id,
+        # Create the PreviewDiff.
+        self.preview_diff = PreviewDiff.create(
+            diff_content, source_revision_id, target_revision_id,
             dependent_revision_id, conflicts)
 
         # XXX: TimPenhey 2009-02-19 bug 324724

@@ -22,8 +22,6 @@ browsing to it.
 This takes us to the branch listing for that source package
 
     >>> browser.open(source_package_url)
-    >>> print browser.title
-    Bazaar branches of foo in distro Series
 
 Since there are no branches, there is no branch listing table:
 
@@ -36,8 +34,6 @@ Since there are no branches, there is no branch listing table:
 Listings of distribution source packages also just show a message.
 
     >>> browser.open("http://code.launchpad.dev/distro/+source/foo")
-    >>> print repr(browser.title)
-    'Bazaar branches for \xe2\x80\x9cfoo\xe2\x80\x9d package in distro'
 
 Since there are no branches, there is no branch listing table:
 

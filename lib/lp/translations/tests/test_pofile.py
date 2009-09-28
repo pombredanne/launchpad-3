@@ -13,12 +13,15 @@ from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.pofile import IPOFileSet
+from lp.translations.interfaces.translatablemessage import (
+    ITranslatableMessage)
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, verifyObject
 from canonical.testing import ZopelessDatabaseLayer
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
@@ -875,6 +878,60 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('eo'))
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('de'))
 
+class TestTranslationCredits(TestCaseWithFactory):
+    """Test generation of translation credits."""
+    
+    layer = ZopelessDatabaseLayer
+    
+    def setUp(self):
+        super(TestTranslationCredits, self).setUp()
+        self.pofile = self.factory.makePOFile('sr')
+        self.potemplate = self.pofile.potemplate
+        
+        self.potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.potemplate, sequence=1)
+        self.credits_potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.potemplate, singular=u'translator-credits')
+    
+    def test_prepareTranslationCredits_extending(self):
+        # This test ensures that continuous updates to the translation credits
+        # don't result in duplicate entries.
+        # Only the 'translator-credits' message is covered right now.
+        person = self.factory.makePerson()
+        
+        imported_credits_text = u"Imported Contributor <name@project.org>"
+        launchpad_credits_text = u"%s\n\nLaunchpad Contributions:\n  %s %s" % (
+            imported_credits_text, person.displayname, canonical_url(person))
+        
+        # Import a translation credits message to 'translator-credits'.
+        self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.credits_potmsgset,
+            translations=[imported_credits_text],
+            is_imported=True)
+        
+        # `person` updates the translation using Launchpad.
+        self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translator=person)
+        
+        # The first translation credits export.
+        credits_text = self.pofile.prepareTranslationCredits(
+            self.credits_potmsgset)
+        self.assertEquals(launchpad_credits_text, credits_text)
+        
+        # Now, re-import this generated message.
+        self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.credits_potmsgset,
+            translations=[credits_text],
+            is_imported=True)
+        
+        credits_text = self.pofile.prepareTranslationCredits(
+            self.credits_potmsgset)
+        self.assertEquals(launchpad_credits_text, credits_text)
+
 
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     """Test ordering of POTMsgSets as returned by PO file methods."""
@@ -1194,6 +1251,35 @@ class TestPOFileSet(TestCaseWithFactory):
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
         self.assertContentEqual([pofile1, pofile2], pofiles)
 
+    def test_POFileSet_getPOFilesTouchedSince_smaller_ids(self):
+        # Make sure that all relevant POFiles are returned,
+        # even the sharing ones with smaller IDs.
+        # This is a test for bug #414832 which caused sharing POFiles
+        # of the touched POFile not to be returned if they had
+        # IDs smaller than the touched POFile.
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        series1 = self.factory.makeProductSeries(product=product,
+                                                 name='one')
+        series2 = self.factory.makeProductSeries(product=product,
+                                                 name='two')
+        potemplate1 = self.factory.makePOTemplate(name='shared',
+                                                  productseries=series1)
+        pofile1 = self.factory.makePOFile('sr', potemplate=potemplate1)
+        potemplate2 = self.factory.makePOTemplate(name='shared',
+                                                  productseries=series2)
+        pofile2 = potemplate2.getPOFileByLang('sr')
+        now = datetime.now(pytz.UTC)
+        yesterday = now - timedelta(1)
+        week_ago = now - timedelta(7)
+        pofile1.date_changed = week_ago
+
+        # Let's make sure the condition from the bug holds,
+        # since pofile2 is created implicitely with the makePOTemplate call.
+        self.assertTrue(pofile1.id < pofile2.id)
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
+
     def test_POFileSet_getPOFilesTouchedSince_shared_in_distribution(self):
         # Make sure actual touched POFiles and POFiles that are sharing
         # with them in the same distribution/sourcepackage are all returned
@@ -1359,6 +1445,27 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.pofile.updateStatistics()
         self.assertEquals(self.pofile.newCount(), 0)
         self.assertEquals(self.pofile.updatesCount(), 1)
+
+
+class TestPOFile(TestCaseWithFactory):
+    """Test PO file methods."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        # Create a POFile to calculate statistics on.
+        super(TestPOFile, self).setUp()
+        self.pofile = self.factory.makePOFile('sr')
+        self.potemplate = self.pofile.potemplate
+
+        # Create a single POTMsgSet that is used across all tests.
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
+                                                    sequence=1)
+
+    def test_makeTranslatableMessage(self):
+        # TranslatableMessages can be created from the PO file
+        message = self.pofile.makeTranslatableMessage(self.potmsgset)
+        verifyObject(ITranslatableMessage, message)
 
 
 def test_suite():

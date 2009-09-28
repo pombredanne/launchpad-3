@@ -6,56 +6,67 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="main">
-      <h1>Translation groups</h1>
+    <div metal:fill-slot="main"
+         style="margin-bottom: 2em;">
       <p>
-        A <dfn>translation group</dfn> is a set of teams or individual
-        supervisors chosen by the owner of a distribution, project group, or
-        project to manage its translations.
-        Each team or supervisor in a group is responsible for one or more
-        specific languages.
+        Translation groups are communities of teams and individuals
+        who have each taken responsibility for reviewing translations
+        in a particular language. Projects and distributions select
+        the translation group best suited to their translation
+        policies. (<a href="https://help.launchpad.net/Translations/YourProject/ChoosingAGroup">More
+          about translation groups</a>)
       </p>
+
       <p>
-        Where contributions are &ldquo;Structured&rdquo; or
-        &ldquo;Restricted,&rdquo; members of the translation group have
-        the final say on translations in their languages.  Where
-        contributions are &ldquo;Closed,&rdquo; only members of the
-        translation group can translate at all.
+        If you are trying to decide which translation group to use for your
+        project, we recommend
+        <a href="launchpad-translators">Launchpad Translators</a> — read
+        more about
+        <a href="https://help.launchpad.net/Translations/LaunchpadTranslators">
+          what that group is about</a>.
       </p>
-      <table class="sortable listing" id="translation-groups" width="100%">
+
+      <table class="sortable listing" id="translation-groups"
+             style="margin-top:1em; margin-bottom:1em;">
         <thead>
           <tr>
-            <th>Translation Group</th>
-            <th>Supervises Translations for</th>
+            <th style="text-align:left;">Translation group</th>
+            <th>Manages translations for</th>
+            <th>Languages</th>
             <th>Created</th>
           </tr>
         </thead>
         <tbody>
           <tr tal:repeat="group context">
             <td>
-              <a
-                tal:content="group/title/fmt:shorten/57"
-                tal:attributes="href group/name"
-              >title</a>
+              <a tal:replace="structure group/fmt:link">Ubuntu Translators</a>
             </td>
             <td>
-              <span tal:condition="group/distributions" tal:omit-tag="">
-                <span tal:repeat="distro group/distributions" tal:omit-tag="">
-                  <span tal:replace="distro/name">ubuntu</span>,
+              <tal:projects condition="group/top_projects">
+                <span tal:repeat="project group/top_projects">
+                  <a tal:replace="structure project/fmt:link">ubuntu
+                  </a><tal:comma condition="not: repeat/project/end">, 
+                  </tal:comma>
                 </span>
-              </span>
-              <span tal:condition="group/projects" tal:omit-tag="">
-                <span tal:repeat="project group/projects" tal:omit-tag="">
-                  <span tal:replace="project/name">gnome</span>,
+                <span tal:condition="group/number_of_remaining_projects">
+                  and
+                  <a tal:attributes="href group/name"
+                     tal:content="
+                         string:${group/number_of_remaining_projects}
+                         other projects">
+                    5 other projects</a>
                 </span>
-              </span>
-              <span tal:condition="group/products" tal:omit-tag="">
-                <span tal:repeat="product group/products" tal:omit-tag="">
-                  <span tal:replace="product/name">a52dec</span>,
-                </span>
+              </tal:projects>
+            </td>
+            <td style="text-align: center;">
+              <span class="sortkey"
+                tal:content="group/translators/count" />
+              <span
+                tal:content="group/translators/count">
+                50
               </span>
             </td>
             <td>
@@ -70,36 +81,15 @@
           </tr>
         </tbody>
       </table>
-      <ul class="menu">
-        <tal:can-edit condition="context/required:launchpad.Admin">
-          <li class="add">
-            <a href="+new">Add a new translation group</a>
-          </li>
-        </tal:can-edit>
-      </ul>
     </div><!--main-->
-    <div metal:fill-slot="help">
-      <p>
-        These translation groups are available to help translate software to
-        various languages.  A group may help on any number of projects, and
-        be capable of translating into one or more languages.
-      </p>
-      <p>
-        A translation group is generally expected to work together with some
-        degree of coordination.  Some translation groups may exist to translate
-        particular classes of application, others may focus on specific language
-        families.  A translation group may even start as an arbitrary circle of
-        friends.  It is often easier to assign a translation group to work on a
-        project as a single entity with its own membership management, than to
-        keep track of individual translators on every project the group works
-        on.
-      </p>
-      <ul class="info">
-        <li>
-          <a href="https://help.launchpad.net/RosettaFAQ"
-          >Frequently asked questions</a>
-        </li>
-      </ul>
-    </div>
+    <tal:side metal:fill-slot="side"
+              define="overview_menu context/menu:overview"
+              condition="context/required:launchpad.Admin">
+      <div class="portlet ">
+        <span class="add sprite">
+          <a href="+new">Create a new translation group</a>
+        </span>
+      </div>
+    </tal:side>
   </body>
 </html>

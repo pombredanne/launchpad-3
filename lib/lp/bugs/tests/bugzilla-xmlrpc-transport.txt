@@ -1,4 +1,5 @@
-= TestBugzillaXMLRPCTransport =
+TestBugzillaXMLRPCTransport
+===========================
 
 The TestBugzillaXMLRPCTransport is an XML-RPC transport which simulates
 a remote Bugzilla instance that implements the Launchpad plugin API.
@@ -45,7 +46,8 @@ namespace with a given method name, an AssertionError will be raised.
     AssertionError: No method 'unregistered_method' in namespace 'Launchpad'.
 
 
-== Authentication ==
+Authentication
+--------------
 
 Some methods require authentication.
 
@@ -63,7 +65,8 @@ transport doesn't validate this cookie, it just checks that it exists.
     Wonderful, you've logged in! Aren't you a clever biped?
 
 
-== Launchpad.login() ==
+Launchpad.login()
+-----------------
 
 The Launchpad.login() method is used to log in to the remote service. It
 takes a single parameter, token, which is a Launchpad LoginToken.
@@ -92,7 +95,8 @@ The login cookies are in the transport's cookie jar.
         <Cookie Bugzilla_logincookie=...>]>
 
 
-== Launchpad.time() ==
+Launchpad.time()
+----------------
 
 Launchpad.time() returns the current time on the remote server, the
 remote server's timezone and what the remote server believes to be the
@@ -123,7 +127,8 @@ more useful.
     utc_time: 20080515T22:19:53
 
 
-== Launchpad.get_bugs() ==
+Launchpad.get_bugs()
+--------------------
 
 The plugin API offers a get_bugs() method which can be used to retrieve
 bugs from a remote Bugzilla instance. It takes a list of bug IDs to
@@ -321,7 +326,8 @@ returned.
     0
 
 
-== Launchpad.comments() ==
+Launchpad.comments()
+--------------------
 
 The Launchpad Bugzilla plugin defines a Launchpad.comments() method which
 allows a remote system to get the comments for a given bug or set of
@@ -429,7 +435,8 @@ in the returned 'bugs' dict are strings, not integers:
     ['1', '2']
 
 
-== Launchpad.add_comment() ==
+Launchpad.add_comment()
+-----------------------
 
 The plugin API offers a method, Launchpad.add_comment(), which can be
 used to add comments to a remote bug. It takes two arguments: the ID of
@@ -474,7 +481,8 @@ raised.
     Fault: <Fault 101: 'Bug #42 does not exist.'>
 
 
-== Launchpad.set_link() ==
+Launchpad.set_link()
+--------------------
 
 The plugin API method Launchpad.set_link() allows Launchpad to tell the
 remote Bugzilla which Launchpad bug links to a given bug on that

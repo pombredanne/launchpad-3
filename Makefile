@@ -90,6 +90,15 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
+	bin/test $(VERBOSITY) --layer=BugsWindmillLayer
+	bin/test $(VERBOSITY) --layer=CodeWindmillLayer
+
+jscheck_functest: build
+    # Run the old functest Windmill integration tests.  The test runner
+    # takes care of setting up the test environment.
+	@echo
+	@echo "Running Windmill funtest integration test suite"
+	@echo
 	bin/jstest
 
 check_mailman: build
@@ -246,7 +255,9 @@ rebuildfti:
 
 clean:
 	$(MAKE) -C sourcecode/pygettextpo clean
-	$(MAKE) -C sourcecode/mailman clean
+	if test -f sourcecode/mailman/Makefile; then \
+		$(MAKE) -C sourcecode/mailman clean; \
+	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \

@@ -39,9 +39,11 @@ membership can't be renewed and explain why.
     ...
     LookupError: label 'Renew'
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Renew membership of Karl Tilbury in Mirror Administrators
+    ...
     This membership cannot be renewed because Mirror Administrators
-    (ubuntu-mirror-admins) is not a team which accepts its members to
-    renew their own memberships.
+    (ubuntu-mirror-admins) is not a team that allows its members to renew
+    their own memberships.
 
 Other users (apart from Karl) can't see that page.
 
@@ -54,7 +56,7 @@ Other users (apart from Karl) can't see that page.
 If we change the team's renewal policy it still won't be possible for
 the user to renew that membership because it's not about to expire.
 
-    >>> team_admin_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> team_admin_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-mirror-admins/+edit')
     >>> team_admin_browser.getControl(
@@ -69,6 +71,8 @@ the user to renew that membership because it's not about to expire.
     ...
     LookupError: label 'Renew'
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Renew membership of Karl Tilbury in Mirror Administrators
+    ...
     This membership cannot be renewed because it is not set to expire in
     7 days or less. You or one of the team administrators has already
     renewed it.
@@ -99,9 +103,11 @@ mech_control TestBrowser voodoo.
     >>> browser.open('http://launchpad.dev/~karl/+expiringmembership/'
     ...              'ubuntu-mirror-admins')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    Renew team membership
+    Renew membership of Karl Tilbury in Mirror Administrators
+    ...
     This membership is going to expire in ... from now; if you want to
     remain a member of Mirror Administrators, you must renew it.
+    or Cancel
 
 Karl then renews his membership.
 
@@ -122,15 +128,17 @@ Karl can't renew it again, since it's now not set to expire soon.
     ...
     LookupError: label 'Renew'
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Renew membership of Karl Tilbury in Mirror Administrators
+    ...
     This membership cannot be renewed because it is not set to expire in
-    7 days or less. You or one of the team administrators has already 
+    7 days or less. You or one of the team administrators has already
     renewed it.
 
 In the case of subteams whose membership is about to expire, any admin of the
 member team can renew the soon-to-expire membership, as long as the parent
 team's renewal policy is ONDEMAND.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
     >>> landscape_devs = personset.getByName('landscape-developers')
     >>> mirror_admins.addMember(
@@ -150,9 +158,11 @@ now renew the membership.
     >>> browser.open('http://launchpad.dev/~landscape-developers'
     ...              '/+expiringmembership/ubuntu-mirror-admins')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    Renew team membership
+    Renew membership of Landscape Developers in Mirror Administrators
+    ...
     This membership is going to expire in ... from now; if you want this team
     to remain a member of Mirror Administrators, you must renew it.
+    or Cancel
 
     >>> browser.getControl('Renew').click()
     >>> browser.url
@@ -165,6 +175,8 @@ now renew the membership.
     >>> browser.open('http://launchpad.dev/~landscape-developers'
     ...              '/+expiringmembership/ubuntu-mirror-admins')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Renew membership of Landscape Developers in Mirror Administrators
+    ...
     This membership cannot be renewed because it is not set to expire in
     7 days or less. Somebody else has already renewed it.
 
@@ -175,4 +187,3 @@ Any user who's not an admin of landscape-developers can't even see that page.
     Traceback (most recent call last):
     ...
     Unauthorized: ...
-

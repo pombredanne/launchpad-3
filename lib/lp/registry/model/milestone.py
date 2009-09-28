@@ -35,8 +35,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -93,7 +91,7 @@ class HasMilestonesMixin:
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
-    implements(IHasBugs, IMilestone, IStructuralSubscriptionTarget)
+    implements(IHasBugs, IMilestone)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
