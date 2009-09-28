@@ -39,7 +39,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.packagediff import (
+    PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.build import Build
@@ -602,6 +603,14 @@ class SourcePackageRelease(SQLBase):
                 "%s was already requested by %s"
                 % (candidate.title, candidate.requester.displayname))
 
+        if self.sourcepackagename.name == 'udev':
+            # XXX 2009-11-23 Julian bug=314436
+            # Currently diff output for udev will fill disks.  It's
+            # disabled until diffutils is fixed in that bug.
+            status = PackageDiffStatus.FAILED
+        else:
+            status = PackageDiffStatus.PENDING
+
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
-            requester=requester)
+            requester=requester, status=status)

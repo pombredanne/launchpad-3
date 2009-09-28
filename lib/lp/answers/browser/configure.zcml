@@ -319,6 +319,7 @@
   <browser:page
     name="+index"
     for="lp.answers.interfaces.faq.IFAQ"
+    class=".faq.FAQView"
     permission="zope.Public"
     template="../templates/faq-index.pt"
     />
