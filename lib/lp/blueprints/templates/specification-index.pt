@@ -7,12 +7,12 @@
   i18n:domain="launchpad">
   <body>
 
-    <tal:registering metal:fill-slot="registering">
-      Registered by
-      <tal:registrant tal:replace="structure context/owner/fmt:link" /> on
-      <tal:registrant_date
-        tal:replace="structure context/datecreated/fmt:approximatedate" />
-    </tal:registering>
+  <tal:registering metal:fill-slot="registering">
+    Registered by
+    <tal:registrant tal:replace="structure context/owner/fmt:link" /> on
+    <tal:registrant_date
+      tal:replace="structure context/datecreated/fmt:approximatedate" />
+  </tal:registering>
 
 
 <div metal:fill-slot="main" tal:define="context_menu context/menu:context">

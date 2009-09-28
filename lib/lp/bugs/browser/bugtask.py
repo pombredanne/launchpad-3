@@ -156,8 +156,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, TextAreaEditorWidget,
-    TextLineEditorWidget, vocabulary_to_choice_edit_items)
+    TextAreaEditorWidget, TextLineEditorWidget,
+    vocabulary_to_choice_edit_items)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -2124,7 +2124,8 @@ class BugTaskSearchListingMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
-        return Link('+securitycontact', 'Change security contact', icon='edit')
+        return Link(
+            '+securitycontact', 'Change security contact', icon='edit')
 
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
@@ -3341,6 +3342,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
                        "importance", "status"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
+    page_title = 'Search'
 
     def initialize(self):
         """Initialize the view for the request."""
@@ -3373,6 +3375,10 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
+
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
 
 
 class BugTaskPrivacyAdapter:

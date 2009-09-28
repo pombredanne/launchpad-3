@@ -251,7 +251,7 @@ def apply_patches_replicated():
                 echo 'Waiting for sync';
                 sync (id=1);
                 wait for event (
-                    origin=ALL, confirmed=ALL, wait on=@master_node
+                    origin=ALL, confirmed=ALL, wait on=@master_node, timeout=0
                     );
                 """ % (slave_node.node_id, slave_node.node_id))
 
