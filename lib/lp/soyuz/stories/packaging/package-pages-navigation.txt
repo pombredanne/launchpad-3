@@ -101,7 +101,7 @@ and Answers.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    Main heading: ?alsa-utils? source package in The Hoary Hedgehog Release
+    Main heading: ?alsa-utils? source package in Hoary
 
 (XXX 20080612 mpt: That should eventually be "?alsa-utils? source package in
 Ubuntu Hoary".)

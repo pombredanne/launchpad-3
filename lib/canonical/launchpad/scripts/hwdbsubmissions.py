@@ -538,12 +538,31 @@ class SubmissionParser(object):
                 device[key] = value
         return devices
 
+    def _parseDmi(self, dmi_node):
+        """Parse the <dmi> node.
+
+        :return: A dictionary containing the key:value pairs of the DMI data.
+        """
+        dmi_data = {}
+        dmi_text = dmi_node.text.strip().split('\n')
+        for line_number, line in enumerate(dmi_text):
+            record = line.split(':', 1)
+            if len(record) != 2:
+                self._logError(
+                    'Line %i in <dmi>: No valid key:value data: %r'
+                    % (line_number, line),
+                    self.submission_key)
+                return None
+            dmi_data[record[0]] = record[1]
+        return dmi_data
+
     def _setHardwareSectionParsers(self):
         self._parse_hardware_section = {
             'hal': self._parseHAL,
             'processors': self._parseProcessors,
             'aliases': self._parseAliases,
             'udev': self._parseUdev,
+            'dmi': self._parseDmi,
             }
 
     def _parseHardware(self, hardware_node):
