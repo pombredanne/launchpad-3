@@ -239,10 +239,7 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if self.context.bug.linked_branches.count() > 0:
-            text = 'Link another branch'
-        else:
-            text = 'Link a related branch'
+        text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
