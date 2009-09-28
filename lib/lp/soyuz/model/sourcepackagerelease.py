@@ -341,23 +341,19 @@ class SourcePackageRelease(SQLBase):
         if archive.purpose != ArchivePurpose.PRIMARY:
             archives.append(distroarchseries.main_archive.id)
 
-        # Look for all sourcepackagerelease instances that match the name.
-        matching_sprs = SourcePackageRelease.select("""
-            SourcePackageName.name = %s AND
-            SourcePackageRelease.sourcepackagename = SourcePackageName.id
-            """ % sqlvalues(self.name),
-            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
-
         # Get the (successfully built) build records for this package.
         completed_builds = Build.select("""
-            sourcepackagerelease IN %s AND
+            Build.sourcepackagerelease = SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
+            SourcePackageName.name = %s AND
             distroarchseries = %s AND
             archive IN %s AND
             buildstate = %s
-            """ % sqlvalues([spr.id for spr in matching_sprs],
+            """ % sqlvalues(self.name,
                             distroarchseries, archives,
                             BuildStatus.FULLYBUILT),
-            orderBy=['-datebuilt', '-id'])
+            orderBy=['-datebuilt', '-id'],
+            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
 
         if completed_builds:
             # Historic build data exists, use the most recent value.
