@@ -15,7 +15,7 @@ the Firefox product which was filed by 'Sample Person'.
     # added and the status of the question.
     >>> def find_request_status(contents):
     ...     print extract_text(
-    ...         find_tag_by_id(contents, 'question-details'))
+    ...         find_tag_by_id(contents, 'registration'))
 
     >>> def  find_last_comment(contents):
     ...     soup = find_main_content(contents)

@@ -399,7 +399,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = ''
-        text = 'Code'
+        text = 'Branches'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 

@@ -768,6 +768,10 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     initial_focus_widget = None
 
     @property
+    def label(self):
+        return self.context.title
+
+    @property
     def page_title(self):
         return smartquote('%s question #%d: "%s"') % (
             self.context.target.displayname,

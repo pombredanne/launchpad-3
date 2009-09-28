@@ -46,7 +46,7 @@ You can even modify the title and description of 'Answered' and
 
     >>> def print_question_status(browser):
     ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'question-details'))
+    ...         find_tag_by_id(browser.contents, 'registration'))
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+question/3')
     >>> print_question_status(user_browser)

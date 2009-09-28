@@ -798,7 +798,7 @@ no results are found based on the selected search filter:
 
     >>> from zope.i18n import translate
     >>> search_view_harness.submit('', {})
-    >>> print translate(search_view_harness.view.pageheading)
+    >>> print translate(search_view_harness.view.page_title)
     Questions for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions for Ubuntu with the requested statuses.
@@ -806,7 +806,7 @@ no results are found based on the selected search filter:
     >>> MyCustomSearchQuestionsView.default_filter = dict(
     ...     status=[QuestionStatus.OPEN], search_text='Firefox')
     >>> search_view_harness.submit('', {})
-    >>> print translate(search_view_harness.view.pageheading)
+    >>> print translate(search_view_harness.view.page_title)
     Open questions matching "Firefox" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no open questions matching "Firefox" for Ubuntu.
@@ -818,7 +818,7 @@ It works also with user submitted values:
     ...     'field.search_text': '',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
-    >>> print translate(search_view_harness.view.pageheading)
+    >>> print translate(search_view_harness.view.page_title)
     Expired questions for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no expired questions for Ubuntu.
@@ -828,7 +828,7 @@ It works also with user submitted values:
     ...     'field.search_text': 'evolution',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
-    >>> print translate(search_view_harness.view.pageheading)
+    >>> print translate(search_view_harness.view.page_title)
     Questions matching "evolution" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions matching "evolution" for Ubuntu with the
