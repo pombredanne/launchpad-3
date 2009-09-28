@@ -852,7 +852,8 @@ class Branch(SQLBase):
         IStore(self).find(
             Branch,
             Branch.id == self.id,
-            Or(Branch.next_mirror_time > UTC_NOW, Branch.next_mirror_time == None)
+            Or(Branch.next_mirror_time > UTC_NOW,
+               Branch.next_mirror_time == None)
             ).set(next_mirror_time=UTC_NOW)
         self.next_mirror_time = AutoReload
         return self.next_mirror_time
