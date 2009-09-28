@@ -368,14 +368,13 @@ class EC2TestRunner:
 
 
     def configure_system(self):
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
         as_user = user_connection.perform
-        user_sftp = user_connection.ssh.open_sftp()
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            as_user('mkdir /home/%(USER)s/.bazaar')
-            bazaar_conf_file = user_sftp.open(
-                "/home/%(USER)s/.bazaar/bazaar.conf" % self.vals, 'w')
+            as_user('mkdir .bazaar')
+            bazaar_conf_file = user_connection.sftp.open(
+                ".bazaar/bazaar.conf", 'w')
             bazaar_conf_file.write(
                 'smtp_server = %(smtp_server)s\n' % self.vals)
             if self.vals['smtp_username']:
@@ -387,25 +386,18 @@ class EC2TestRunner:
             bazaar_conf_file.close()
         # Copy remote ec2-remote over
         self.log('Copying ec2test-remote.py to remote machine.\n')
-        user_sftp.put(
+        user_connection.sftp.put(
             os.path.join(os.path.dirname(os.path.realpath(__file__)),
                          'ec2test-remote.py'),
             '/var/launchpad/ec2test-remote.py')
-        user_sftp.close()
         # Set up launchpad login and email
         as_user('bzr launchpad-login %(launchpad-login)s')
         user_connection.close()
 
     def prepare_tests(self):
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
         # Clean up the test branch left in the instance image.
         user_connection.perform('rm -rf /var/launchpad/test')
-        # get newest sources
-        user_connection.run_with_ssh_agent(
-            "rsync -avp --partial --delete "
-            "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
-            "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
-            "/var/launchpad/sourcecode/")
         # Get trunk.
         user_connection.run_with_ssh_agent(
             'bzr branch %(trunk_branch)s /var/launchpad/test')
@@ -415,6 +407,10 @@ class EC2TestRunner:
                 'cd /var/launchpad/test; bzr merge %(branch)s')
         else:
             self.log('(Testing trunk, so no branch merge.)')
+        # get newest sources
+        user_connection.run_with_ssh_agent(
+            "/var/launchpad/test/utilities/update-sourcecode "
+            "/var/launchpad/sourcecode")
         # Get any new sourcecode branches as requested
         for dest, src in self.branches:
             fulldest = os.path.join('/var/launchpad/test/sourcecode', dest)
@@ -455,20 +451,18 @@ class EC2TestRunner:
         p('mv /var/launchpad/download-cache /var/launchpad/tmp/download-cache')
         if (self.include_download_cache_changes and
             self.download_cache_additions):
-            sftp = user_connection.ssh.open_sftp()
             root = os.path.realpath(
                 os.path.join(self.original_branch, 'download-cache'))
             for info in self.download_cache_additions:
                 src = os.path.join(root, info[0])
                 self.log('Copying %s to remote machine.\n' % (src,))
-                sftp.put(
+                user_connection.sftp.put(
                     src,
                     os.path.join('/var/launchpad/tmp/download-cache', info[0]))
-            sftp.close()
         p('/var/launchpad/test/utilities/link-external-sourcecode '
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database
-        p('/var/launchpad/test/utilities/launchpad-database-setup %(USER)s')
+        p('/var/launchpad/test/utilities/launchpad-database-setup $USER')
         # close ssh connection
         user_connection.close()
 
@@ -476,7 +470,7 @@ class EC2TestRunner:
         """Turn ec2 instance into a demo server."""
         self.configure_system()
         self.prepare_tests()
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
         p = user_connection.perform
         p('make -C /var/launchpad/test schema')
         p('mkdir -p /var/tmp/bazaar.launchpad.dev/static')
@@ -510,7 +504,7 @@ class EC2TestRunner:
     def run_tests(self):
         self.configure_system()
         self.prepare_tests()
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
 
         # Make sure we activate the failsafe --shutdown feature.  This will
         # make the server shut itself down after the test run completes, or
@@ -580,11 +574,9 @@ class EC2TestRunner:
 
             # deliver results as requested
             if self.file:
-                sftp = user_connection.ssh.open_sftp()
                 self.log(
                     'Writing abridged test results to %s.\n' % self.file)
-                sftp.get('/var/www/summary.log', self.file)
-                sftp.close()
+                user_connection.sftp.get('/var/www/summary.log', self.file)
         user_connection.close()
 
     def get_remote_test_options(self):

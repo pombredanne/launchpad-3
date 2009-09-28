@@ -97,7 +97,7 @@ Two attachments were added.
 
     >>> attachment_portlet = find_portlet(
     ...     user_browser.contents, 'Bug attachments')
-    >>> for li in attachment_portlet('li', 'download'):
+    >>> for li in attachment_portlet('li', 'download-attachment'):
     ...     print li.a.renderContents()
     attachment1
     Attachment description.
