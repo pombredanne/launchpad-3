@@ -10,19 +10,6 @@
     </div>
   </div>
 
-  <div
-    id="browse_url"
-    class="portletBody portletContent"
-    style="margin-bottom: 1.5em"
-    tal:define="link context_menu/source"
-    tal:condition="link/enabled"
-    >
-    <a id="codebrowse-link"
-       class="sprite info"
-       tal:attributes="href link/url"
-       tal:content="link/text" >Browse this branch</a>
-  </div>
-
   <dl id="download-url"
       tal:condition="view/bzr_download_url">
     <dt>Get this branch:</dt>
@@ -82,6 +69,17 @@
     </div>
   </tal:hosted-branch>
 
-
+  <div
+    id="browse_url"
+    class="portletBody portletContent"
+    style="margin-top: 1.5em"
+    tal:define="link context_menu/source"
+    tal:condition="link/enabled"
+    >
+    <a id="codebrowse-link"
+       class="sprite info"
+       tal:attributes="href link/url"
+       tal:content="link/text" >Browse this branch</a>
+  </div>
 
 </div>
