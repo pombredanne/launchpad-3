@@ -241,8 +241,8 @@ it is still in the Open status.
     >>> print user_browser.title
     Questions : Jokosher
 
-    >>> content = find_main_content(user_browser.contents)
-    >>> print extract_text(content(['img'], src='/@@/question')[0].parent)
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'registration'))
     Open Question #..., asked ... by Foo Bar
 
 No Privileges Person uses his browser's back button to view the bug

@@ -342,6 +342,13 @@
         template="../templates/bugtask-portlet-seriesbugs.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-milestonebugs"
+        template="../templates/bugtask-portlet-milestonebugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+nominations"
         class="lp.bugs.browser.bugtask.BugNominationsView"
         permission="zope.Public"
@@ -369,12 +376,26 @@
         name="+portlet-bugtasklist-seriesbugs"
         template="../templates/bugtask-portlet-seriesbugs.pt"/>
     <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-milestonebugs"
+        template="../templates/bugtask-portlet-milestonebugs.pt"/>
+    <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
         facet="bugs"
         permission="zope.Public"
         name="+portlet-bugtasklist-seriesbugs"
         template="../templates/bugtask-portlet-seriesbugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-milestonebugs"
+        template="../templates/bugtask-portlet-milestonebugs.pt"/>
     <browser:page
         name="+filebug"
         for="lp.registry.interfaces.project.IProject"
@@ -406,6 +427,13 @@
         permission="zope.Public"
         name="+portlet-bugtasklist-seriesbugs"
         template="../templates/bugtask-portlet-seriesbugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-milestonebugs"
+        template="../templates/bugtask-portlet-milestonebugs.pt"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+nominations"

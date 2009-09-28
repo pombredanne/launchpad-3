@@ -104,7 +104,7 @@ He sees that the question's status was changed to 'Answered':
 
     >>> def print_question_status(browser):
     ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'question-details'))
+    ...         find_tag_by_id(browser.contents, 'registration'))
 
     >>> print_question_status(user_browser)
     Answered ...
