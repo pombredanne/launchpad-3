@@ -10,6 +10,7 @@ __all__ = [
     'plan_update',
     ]
 
+import optparse
 import os
 import shutil
 import sys
@@ -39,17 +40,23 @@ def parse_config_file(file_handle):
 
 def interpret_config_entry(entry):
     """Interpret a single parsed line from the config file."""
-    return (entry[0], (entry[1], len(entry) > 2))
+    return entry[0], entry[1], len(entry) > 2
 
 
-def interpret_config(config_entries):
+def interpret_config(config_entries, public_only):
     """Interpret a configuration stream, as parsed by 'parse_config_file'.
 
     :param configuration: A sequence of parsed configuration entries.
+    :param public_only: If true, ignore private/optional branches.
     :return: A dict mapping the names of the sourcecode dependencies to a
         2-tuple of their branches and whether or not they are optional.
     """
-    return dict(map(interpret_config_entry, config_entries))
+    config = {}
+    for entry in config_entries:
+        branch_name, branch_url, optional = interpret_config_entry(entry)
+        if not optional or not public_only:
+            config[branch_name] = (branch_url, optional)
+    return config
 
 
 def _subset_dict(d, keys):
@@ -95,8 +102,15 @@ def get_branches(sourcecode_directory, new_branches,
     """Get the new branches into sourcecode."""
     for project, (branch_url, optional) in new_branches.iteritems():
         destination = os.path.join(sourcecode_directory, project)
-        remote_branch = Branch.open(
-            branch_url, possible_transports=possible_transports)
+        try:
+            remote_branch = Branch.open(
+                branch_url, possible_transports=possible_transports)
+        except BzrError:
+            if optional:
+                report_exception(sys.exc_info(), sys.stderr)
+                continue
+            else:
+                raise
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
         print 'Getting %s from %s' % (project, branch_url)
@@ -105,16 +119,10 @@ def get_branches(sourcecode_directory, new_branches,
         # we should avoid sharing repositories to avoid format
         # incompatibilities.
         force_new_repo = not optional
-        try:
-            remote_branch.bzrdir.sprout(
-                destination, create_tree_if_local=True,
-                source_branch=remote_branch, force_new_repo=force_new_repo,
-                possible_transports=possible_transports)
-        except BzrError:
-            if optional:
-                report_exception(sys.exc_info(), sys.stderr)
-            else:
-                raise
+        remote_branch.bzrdir.sprout(
+            destination, create_tree_if_local=True,
+            source_branch=remote_branch, force_new_repo=force_new_repo,
+            possible_transports=possible_transports)
 
 
 def update_branches(sourcecode_directory, update_branches,
@@ -128,19 +136,20 @@ def update_branches(sourcecode_directory, update_branches,
         destination = os.path.join(sourcecode_directory, project)
         print 'Updating %s' % (project,)
         local_tree = WorkingTree.open(destination)
-        remote_branch = Branch.open(
-            branch_url, possible_transports=possible_transports)
-        possible_transports.append(
-            remote_branch.bzrdir.root_transport)
         try:
-            local_tree.pull(
-                remote_branch, overwrite=True,
-                possible_transports=possible_transports)
+            remote_branch = Branch.open(
+                branch_url, possible_transports=possible_transports)
         except BzrError:
             if optional:
                 report_exception(sys.exc_info(), sys.stderr)
+                continue
             else:
                 raise
+        possible_transports.append(
+            remote_branch.bzrdir.root_transport)
+        local_tree.pull(
+            remote_branch, overwrite=True,
+            possible_transports=possible_transports)
 
 
 def remove_branches(sourcecode_directory, removed_branches):
@@ -154,17 +163,23 @@ def remove_branches(sourcecode_directory, removed_branches):
             os.unlink(destination)
 
 
-def update_sourcecode(sourcecode_directory, config_filename):
+def update_sourcecode(sourcecode_directory, config_filename, public_only,
+                      dry_run):
     """Update the sourcecode."""
     config_file = open(config_filename)
-    config = interpret_config(parse_config_file(config_file))
+    config = interpret_config(parse_config_file(config_file), public_only)
     config_file.close()
     branches = find_branches(sourcecode_directory)
     new, updated, removed = plan_update(branches, config)
     possible_transports = []
-    get_branches(sourcecode_directory, new, possible_transports)
-    update_branches(sourcecode_directory, updated, possible_transports)
-    remove_branches(sourcecode_directory, removed)
+    if dry_run:
+        print 'Branches to fetch:', new.keys()
+        print 'Branches to update:', updated.keys()
+        print 'Branches to remove:', list(removed)
+    else:
+        get_branches(sourcecode_directory, new, possible_transports)
+        update_branches(sourcecode_directory, updated, possible_transports)
+        remove_branches(sourcecode_directory, removed)
 
 
 def get_launchpad_root():
@@ -183,6 +198,14 @@ def get_launchpad_root():
 
 
 def main(args):
+    parser = optparse.OptionParser("usage: %prog [options] [root [conffile]]")
+    parser.add_option(
+        '--public-only', action='store_true',
+        help='Only fetch/update the public sourcecode branches.')
+    parser.add_option(
+        '--dry-run', action='store_true',
+        help='Only fetch/update the public sourcecode branches.')
+    options, args = parser.parse_args(args)
     root = get_launchpad_root()
     if len(args) > 1:
         sourcecode_directory = args[1]
@@ -192,8 +215,12 @@ def main(args):
         config_filename = args[2]
     else:
         config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
+    if len(args) > 3:
+        parser.error("Too many arguments.")
     print 'Sourcecode: %s' % (sourcecode_directory,)
     print 'Config: %s' % (config_filename,)
     load_plugins()
-    update_sourcecode(sourcecode_directory, config_filename)
+    update_sourcecode(
+        sourcecode_directory, config_filename,
+        options.public_only, options.dry_run)
     return 0

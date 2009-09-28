@@ -42,13 +42,13 @@ Celso's PPA.
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> cprov_browser.getLink('Delete packages').click()
     >>> print cprov_browser.title
-    +delete-packages : PPA for Celso Providelo : Celso Providelo
+    Delete packages from PPA for Celso Providelo...
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> admin_browser.getLink('Delete packages').click()
     >>> print admin_browser.title
-    +delete-packages : PPA for Celso Providelo : Celso Providelo
+    Delete packages from PPA for Celso Providelo...
 
 Once accessed the page provides a way to search for published package
 sources and optionally delete one or more matching packages via POST
@@ -300,7 +300,7 @@ message is presented.
     >>> admin_browser.open(
     ...    'http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages')
     >>> print admin_browser.title
-    +delete-packages : PPA for No Privileges Person : No Privileges Person
+    Delete packages from PPA for No Privileges Person...
 
     >>> print extract_text(find_main_content(admin_browser.contents))
     Delete packages from PPA for No Privileges Person
@@ -396,7 +396,7 @@ available for deletion because it contains a PUBLISHED binary.
 
     >>> user_browser.getLink('Delete packages').click()
     >>> print user_browser.title
-    +delete-packages : PPA for No Privileges Person : No Privileges Person
+    Delete packages from PPA for No Privileges Person...
 
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
@@ -543,7 +543,7 @@ as it would refer to non-existent links.
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/foobar/1.0")
     >>> user_browser.getLink('See full publishing history').click()
     >>> print extract_text(find_main_content(user_browser.contents))
-    Ubuntu
+    Publishing history of “foobar” 1.0 source package in Ubuntu
     ...
     1.0
     Removed from disk on 2006-12-02.

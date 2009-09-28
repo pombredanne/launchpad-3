@@ -76,6 +76,7 @@ from lp.code.enums import (
     CodeImportResultStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
 from lp.code.interfaces.branch import UnknownBranchTypeError
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -739,6 +740,18 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         return self.makeProductBranch(**kwargs)
 
+    def makeBranchTargetBranch(self, target, branch_type=BranchType.HOSTED,
+                               name=None, owner=None, creator=None):
+        """Create a branch in a BranchTarget."""
+        if name is None:
+            name = self.getUniqueString('branch')
+        if owner is None:
+            owner = self.makePerson()
+        if creator is None:
+            creator = owner
+        namespace = target.getNamespace(owner)
+        return namespace.createBranch(branch_type, name, creator)
+
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
 
@@ -796,20 +809,25 @@ class LaunchpadObjectFactory(ObjectFactory):
                                 initial_comment=None, source_branch=None,
                                 preview_diff=None):
         """Create a proposal to merge based on anonymous branches."""
-        if not product:
-            product = _DEFAULT
-        if dependent_branch is not None:
-            product = dependent_branch.product
+        if target_branch is not None:
+            target = target_branch.target
+        elif source_branch is not None:
+            target = source_branch.target
+        elif dependent_branch is not None:
+            target = dependent_branch.target
+        else:
+            # Create a target product branch, and use that target.  This is
+            # needed to make sure we get a branch target that has the needed
+            # security proxy.
+            target_branch = self.makeProductBranch(product)
+            target = target_branch.target
+
         if target_branch is None:
-            if source_branch is not None:
-                product = source_branch.product
-            target_branch = self.makeBranch(product=product)
-        if product == _DEFAULT:
-            product = target_branch.product
+            target_branch = self.makeBranchTargetBranch(target)
+        if source_branch is None:
+            source_branch = self.makeBranchTargetBranch(target)
         if registrant is None:
             registrant = self.makePerson()
-        if source_branch is None:
-            source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch,
             review_diff=review_diff, initial_comment=initial_comment)
@@ -1314,6 +1332,11 @@ class LaunchpadObjectFactory(ObjectFactory):
                     registrant=sender)
         return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
+
+    def makeCodeReviewVoteReference(self):
+        bmp = removeSecurityProxy(self.makeBranchMergeProposal())
+        candidate = self.makePerson()
+        return bmp.nominateReviewer(candidate, bmp.registrant)
 
     def makeMessage(self, subject=None, content=None, parent=None,
                     owner=None):

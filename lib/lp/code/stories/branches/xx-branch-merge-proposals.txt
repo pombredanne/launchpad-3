@@ -48,12 +48,6 @@ Users who are not logged on do not see the link to register.
     ...
     LinkNotFoundError
 
-Initially the branch is shown as not being proposed to be merged.
-
-    >>> print_tag_with_id(anon_browser.contents, 'merge-summary')
-    &laquo; No branches proposed for merging into this one.
-    &raquo; This branch is not proposed for merging into any others.
-
 Logged in users can.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
@@ -279,7 +273,7 @@ next to the heading "Merged at revision".
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
-    &raquo; Merged into lp://dev/~name12/gnome-terminal/main
+    Merged into lp://dev/~name12/gnome-terminal/main
     >>> sample_browser.getLink('Merged').click()
     >>> print_summary(sample_browser)
     Status: Merged
@@ -301,7 +295,7 @@ next to the heading "Merged at revision".
     >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
-    &raquo; Merged into lp://dev/~name12/gnome-terminal/main at revision 42
+    Merged into lp://dev/~name12/gnome-terminal/main at revision 42
 
 
 Resubmitting proposals

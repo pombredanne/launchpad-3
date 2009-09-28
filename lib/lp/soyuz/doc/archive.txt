@@ -305,7 +305,8 @@ Using 'version' filter:
     ...     version='1.0')
     Traceback (most recent call last):
     ...
-    AssertionError: 'version' can be only used when name is set
+    VersionRequiresName: The 'version' parameter can be used only together
+    with the 'name' parameter.
 
     >>> ice_version_lookup = cprov_archive.getPublishedSources(
     ...     name='ice', version='1.0')
@@ -492,13 +493,15 @@ filter is not passed too.
     ...     version='1.0')
     Traceback (most recent call last):
     ...
-    AssertionError: 'version' can be only used when name is set
+    VersionRequiresName: The 'version' parameter can be used only together
+    with the 'name' parameter.
 
     >>> moz_version_lookup = cprov_archive.getPublishedOnDiskBinaries(
     ...     version='1.0')
     Traceback (most recent call last):
     ...
-    AssertionError: 'version' can be only used when name is set
+    VersionRequiresName: The 'version' parameter can be used only together
+    with the 'name' parameter.
 
 Both methods support 'status' filter:
 

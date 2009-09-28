@@ -17,7 +17,7 @@ The attachment is now visible on the bug page.
     >>> user_browser.open('http://launchpad.dev/bugs/2')
     >>> attachment_portlet = find_portlet(
     ...     user_browser.contents, 'Bug attachments')
-    >>> for li in attachment_portlet.findAll('li', 'download'):
+    >>> for li in attachment_portlet.findAll('li', 'download-attachment'):
     ...     print li.a.renderContents()
     Great deal
 
@@ -38,7 +38,7 @@ attachment.
     >>> import re
     >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d')).click()
     >>> print user_browser.title
-    +edit : Bug #2 (blackhole) : Bugs in tomcat : Tomcat
+    Bug #2...
     >>> user_browser.getControl('Delete Attachment') is not None
     True
 

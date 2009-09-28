@@ -13,13 +13,6 @@
               tal:content="context/queue_status/title">
                     >
         Work in progress</span>
-
-        <a tal:define="link context_menu/edit_status"
-           tal:condition="link/enabled"
-           tal:attributes="href link/url">
-          <img tal:attributes="alt link/text;title link/text"
-               src="/@@/edit" />
-        </a>
       </td>
     </tr>
     <tr>
@@ -122,11 +115,6 @@
           replace="structure context/commit_message" />
         <tal:no-commit-message
           condition="not: context/commit_message">None</tal:no-commit-message>
-            <a tal:define="link context_menu/edit_commit_message"
-               tal:condition="link/enabled"
-               tal:attributes="href link/url"
-               ><img src="/@@/edit" tal:attributes="title link/text; alt link/text" />
-            </a>
       </td>
     </tr>
     <tr tal:condition="context/preview_diff">

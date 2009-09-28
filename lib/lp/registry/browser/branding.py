@@ -23,6 +23,7 @@ class BrandingChangeView(LaunchpadEditFormView):
     (some subset of icon, logo, mugshot).
     """
 
+    @property
     def label(self):
         return ('Change the images used to represent %s in Launchpad'
                 % self.context.displayname)

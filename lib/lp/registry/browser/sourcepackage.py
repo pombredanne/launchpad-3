@@ -65,14 +65,18 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
             sourcepackage.name)
 
-        return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
+        redirection_url = canonical_url(
+            distro_sourcepackage, view_name='+filebug')
+        if self.request.form.get('no-redirect') is not None:
+            redirection_url += '?no-redirect'
+        return redirection(redirection_url)
 
 
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     @property
     def text(self):
-        return smartquote('"%s" package') % (self.context.name)
+        return smartquote('"%s" source package') % (self.context.name)
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -120,15 +124,8 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     schema = ISourcePackage
     field_names = ['productseries']
 
-    @property
-    def label(self):
-        """See `LaunchpadFormView`."""
-        return 'Define upstream link for %s' % self.context.title
-
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    label = 'Define upstream link'
+    page_title = label
 
     @property
     def cancel_url(self):
@@ -159,9 +156,8 @@ class SourcePackageView:
         self.processForm()
 
     @property
-    def page_title(self):
-        """The HTML page title."""
-        return '%s package' % self.context.name
+    def label(self):
+        return self.context.title
 
     @property
     def cancel_url(self):
@@ -258,6 +254,10 @@ class SourcePackagePackaging(SourcePackageView):
     """A View to show where the package is packged."""
 
     page_title = 'Upstream links'
+
+    @property
+    def label(self):
+        return "Upstream links for %s" % self.context.title
 
 
 class SourcePackageHelpView:

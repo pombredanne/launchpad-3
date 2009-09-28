@@ -60,7 +60,7 @@
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+code-import-list"
       class="lp.registry.browser.productseries.ProductSeriesSourceListView"
-      template="../../../canonical/launchpad/templates/sources-list.pt"
+      template="../templates/sources-list.pt"
       permission="zope.Public"
       />
   <browser:page
@@ -316,6 +316,7 @@
     <browser:menus
         classes="
             BranchMergeProposalContextMenu
+            BranchMergeProposalEditMenu
             BranchMergeProposalActionNavigationMenu"
         module="lp.code.browser.branchmergeproposal"/>
     <browser:page
@@ -369,6 +370,29 @@
         <browser:page
             name="++bug-links"
             template="../templates/branch-bug-links.pt"/>
+
+        <browser:page
+            name="++branch-information"
+            template="../templates/branch-information.pt" />
+        <browser:page
+            name="++branch-management"
+            template="../templates/branch-management.pt" />
+        <browser:page
+            name="++branch-pending-merges"
+            template="../templates/branch-pending-merges.pt" />
+        <browser:page
+            name="++branch-import-details"
+            template="../templates/branch-import-details.pt" />
+        <browser:page
+            name="++branch-revisions"
+            template="../templates/branch-revisions.pt" />
+        <browser:page
+            name="++branch-metadata"
+            template="../templates/branch-metadata.pt" />
+        <browser:page
+            name="++branch-related-bugs-specs"
+            template="../templates/branch-related-bugs-specs.pt" />
+
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branch.IBranch"
@@ -548,7 +572,7 @@
     <browser:menus
         classes="
             BranchContextMenu
-            BranchNavigationMenu"
+            BranchEditMenu"
         module="lp.code.browser.branch"/>
     <browser:page
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
@@ -935,7 +959,7 @@
         name="code"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.hasbranches.IHasBranches"
-        factory="lp.code.browser.branchlisting.HasBranchesBreadcrumb"
+        factory="lp.code.browser.branchlisting.CodeVHostBreadcrumb"
         permission="zope.Public"/>
 
     <adapter

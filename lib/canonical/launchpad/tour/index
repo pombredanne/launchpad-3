@@ -68,7 +68,7 @@
                         <h3><a href="bugs">Bug tracking</a></h3>
                         <h4>Sharing code means sharing bugs.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/bugs.jpg" alt="Bug tracking" />
+                            <img src="images/bugs-screenshot.png" alt="Bug tracking" />
                         </p>
                         <p>Free software communities often share code, meaning the same bugs can crop up in different contexts.<br /><br />
 
@@ -82,7 +82,7 @@
                         <h3><a href="branch-hosting-tracking">Code hosting and review</a></h3>
                         <h4>Democratise your code using Bazaar with Launchpad.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/tracking.jpg" alt="Code hosting and tracking" />
+                            <img src="images/code-screenshot.png" alt="Code hosting and tracking" />
                         </p>
                         <p>
 
@@ -106,7 +106,7 @@
                         <h3><a href="translation">Translations</a></h3>
                         <h4>Translators shouldn&rsquo;t have to be software engineers.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/translations.jpg" alt="Translations" />
+                            <img src="images/trans-screenshot.png" alt="Translations" />
                         </p>
                         <p>
                             See your software translated by a community of over 35,000 working in 272 languages.<br /><br />
@@ -122,7 +122,7 @@
                         <h3><a href="ppa">Ubuntu package building and hosting</a></h3>
                         <h4>Distribute software to Ubuntu users.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/hosting.jpg" alt="Package building and hosting" />
+                            <img src="images/ppa-screenshot.png" alt="Package building and hosting" />
                         </p>
                         <p>
                             Build and distribute Ubuntu packages using your own personal APT repository, hosted by Launchpad.<br /><br />
@@ -142,7 +142,7 @@
                         <h3><a href="feature-tracking">Blueprint &ndash; specification tracking</a></h3>
                         <h4>Track new features from idea to implementation.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/blueprints.jpg" alt="Blueprint - specification tracking" />
+                            <img src="images/blueprint-screenshot.png" alt="Blueprint - specification tracking" />
                         </p>
                         <p>
                             Community planning for your project's road map. Anyone can use Launchpad to register a blueprint for your project, while you decide the priority and time-scales.<br /><br />
@@ -155,7 +155,7 @@
                         <h3><a href="community-support">Answers &ndash; community support</a></h3>
                         <h4>Help your users to help themselves.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/answers.jpg" alt="Answers - community support" />
+                            <img src="images/answers-screenshot.png" alt="Answers - community support" />
                         </p>
                         <p>
                             Track help requests just like bug reports, with community support contacts, statuses and email notifications.<br /><br />
