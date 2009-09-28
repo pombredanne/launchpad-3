@@ -183,7 +183,8 @@ class BranchEditMenu(NavigationMenu):
     usedfor = IBranch
     facet = 'branches'
     title = 'Edit branch'
-    links = ['delete', 'edit', 'edit_import', 'edit_whiteboard', 'reviewer']
+    links = (
+        'edit', 'reviewer', 'edit_import', 'edit_whiteboard', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED

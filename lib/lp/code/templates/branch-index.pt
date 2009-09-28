@@ -47,7 +47,6 @@
 <body>
 
 <metal:side fill-slot="side">
-  <div tal:replace="structure context/@@+global-actions" />
   <tal:public condition="not: context/private">
     <div id="privacy" class="portlet public">
       This branch is public
@@ -59,6 +58,7 @@
     </div>
   </tal:public>
 
+  <div tal:replace="structure context/@@+global-actions" />
   <tal:subscribers replace="structure context/@@+portlet-subscribers" />
 
 </metal:side>
@@ -90,7 +90,7 @@
 
     <div class="yui-u">
       <div class="portlet" id="branch-merges">
-        <h2>Branch Pending Merges</h2>
+        <h2>Branch merges</h2>
         <tal:branch-pending-merges
             replace="structure context/@@++branch-pending-merges" />
       </div>
@@ -130,16 +130,6 @@
 
   </div>
 
-  <div id="branch-mirror-details"
-       class="yui-g"
-       tal:condition="context/branch_type/enumvalue:MIRRORED">
-    <div class="portlet">
-      <h2>Mirror details</h2>
-      <tal:branch-pending-merges
-          replace="structure context/@@+mirror-status" />
-    </div>
-  </div>
-
   <div id="branch-import-details"
        class="yui-g"
        tal:condition="context/branch_type/enumvalue:IMPORTED">
@@ -175,18 +165,16 @@
   </div>
 
   <div class="yui-g">
-    <div class="yui-u first" id="recent-revisions">
-      <div class="portlet">
-        <h2>Recent revisions</h2>
-        <tal:branch-revisions replace="structure context/@@++branch-revisions" />
-      </div>
+    <div class="portlet" id="recent-revisions">
+      <h2>Recent revisions</h2>
+      <tal:branch-revisions replace="structure context/@@++branch-revisions" />
     </div>
+  </div>
 
-    <div class="yui-u" tal:condition="view/has_metadata">
-      <div class="portlet">
-        <h2>Branch metadata</h2>
-        <tal:branch-metadata replace="structure context/@@++branch-metadata" />
-      </div>
+  <div class="yui-g">
+    <div class="portlet" tal:condition="view/has_metadata">
+      <h2>Branch metadata</h2>
+      <tal:branch-metadata replace="structure context/@@++branch-metadata" />
     </div>
   </div>
 
