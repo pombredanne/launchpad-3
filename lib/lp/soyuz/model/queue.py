@@ -367,6 +367,13 @@ class PackageUpload(SQLBase):
         assert self.sources.count() == 1, (
             'Source is mandatory for delayed copies.')
         self.setAccepted()
+        # Use the changesfile of the original upload.
+        changes_file_object = StringIO.StringIO(
+            self.sourcepackagerelease.package_upload.changesfile.read())
+        self.notify(
+            announce_list=self.distroseries.changeslist,
+            changes_file_object=changes_file_object, allow_unsigned=True)
+        self.syncUpdate()
 
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -565,7 +572,7 @@ class PackageUpload(SQLBase):
         signed_message = signed_message_from_string(text)
         return signed_message.signedContent.splitlines(True)
 
-    def _getChangesDict(self, changes_file_object=None):
+    def _getChangesDict(self, changes_file_object=None, allow_unsigned=None):
         """Return a dictionary with changes file tags in it."""
         changes_lines = None
         if changes_file_object is None:
@@ -579,7 +586,14 @@ class PackageUpload(SQLBase):
         if hasattr(changes_file_object, "seek"):
             changes_file_object.seek(0)
 
-        unsigned = not self.signing_key
+        # When the 'changesfile' content comes from a different
+        # `PackageUpload` instance (e.g. when dealing with delayed copies)
+        # we need to be able to specify the "allow unsigned" flag explicitly.
+        # In that case the presence of the signing key is immaterial.
+        if allow_unsigned is None:
+            unsigned = not self.signing_key
+        else:
+            unsigned = allow_unsigned
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
         if self.isPPA():
@@ -907,7 +921,8 @@ class PackageUpload(SQLBase):
                     self.displayname)
 
     def notify(self, announce_list=None, summary_text=None,
-               changes_file_object=None, logger=None, dry_run=False):
+               changes_file_object=None, logger=None, dry_run=False,
+               allow_unsigned=None):
         """See `IPackageUpload`."""
 
         self.logger = logger
@@ -934,7 +949,8 @@ class PackageUpload(SQLBase):
         #    the email's summary section.
         # For now, it's just easier to re-read the original file if the caller
         # requires us to do that instead of using the librarian's copy.
-        changes, changes_lines = self._getChangesDict(changes_file_object)
+        changes, changes_lines = self._getChangesDict(
+            changes_file_object, allow_unsigned=allow_unsigned)
 
         # "files" will contain a list of tuples of filename,component,section.
         # If files is empty, we don't need to send an email if this is not
