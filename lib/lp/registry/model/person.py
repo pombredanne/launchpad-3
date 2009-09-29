@@ -2508,7 +2508,7 @@ class PersonSet:
 
         # There is an `EmailAddress` for this text address, but no
         # associated `Person`.
-        if email_address.personID is None:
+        if email_address.person is None:
             assert email_address.accountID is not None, (
                 '%s is not associated to a person or account'
                 % email_address.email)
@@ -2518,8 +2518,12 @@ class PersonSet:
             # There is a `Person` linked to the `Account`, link the
             # `EmailAddress` to this `Person` and return it.
             if account_person is not None:
-                removeSecurityProxy(
-                    email_address).personID = account_person.id
+                master_email = IMasterStore(EmailAddress).get(
+                    EmailAddress, email_address.id)
+                master_email.personID = account_person.id
+                # Populate the previously empty 'preferredemail' cached
+                # property, so the Person record is up-to-date.
+                account_person._preferredemail_cached = master_email
                 return account_person
             # There is no associated `Person` to the email `Account`.
             # This is probably because the account was created externally
