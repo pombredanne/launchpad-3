@@ -91,7 +91,12 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes'
 
-        changesfile_content = open(changesfile_path).read()
+        changesfile_content = ''
+        handle = open(changesfile_path, 'r')
+        try:
+            changesfile_content = handle.read()
+        finally:
+            handle.close()
 
         source = self.test_publisher.getPubSource(
             sourcename='foocomm', archive=ppa, version='1.0-2',

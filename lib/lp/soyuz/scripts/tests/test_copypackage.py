@@ -899,7 +899,19 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         ppa.buildd_secret = 'x'
         ppa.private = True
 
-        source = self.test_publisher.getPubSource(archive=ppa)
+        changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes'
+
+        changesfile_content = ''
+        handle = open(changesfile_path, 'r')
+        try:
+            changesfile_content = handle.read()
+        finally:
+            handle.close()
+
+        source = self.test_publisher.getPubSource(
+            sourcename='foocomm', archive=ppa, version='1.0-2',
+            changes_file_content=changesfile_content)
+
         self.test_publisher.getPubBinaries(pub_source=source)
 
         [build] = source.getBuilds()
@@ -944,7 +956,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # The returned object has a more descriptive 'displayname'
         # attribute than plain `IPackageUpload` instances.
         self.assertEquals(
-            'Delayed copy of foo - 666 (source, i386, raw-dist-upgrader)',
+            'Delayed copy of foocomm - 1.0-2 (source, i386, raw-dist-upgrader)',
             delayed_copy.displayname)
 
         # It is targeted to the right publishing context.
