@@ -445,12 +445,11 @@ class TestPullerMaster(TrialTestCase):
                 self.eventHandler.unique_name), oops.url)
 
     def test_startMirroring(self):
-        deferred = self.eventHandler.startMirroring()
+        # startMirroring does not send a message to the endpoint.
+        deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
         def checkMirrorStarted(ignored):
-            self.assertEqual(
-                [('startMirroring', self.arbitrary_branch_id)],
-                self.status_client.calls)
+            self.assertEqual([], self.status_client.calls)
 
         return deferred.addCallback(checkMirrorStarted)
 
