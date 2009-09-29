@@ -171,7 +171,7 @@ class LoggingProxy(xmlrpc.Proxy):
         """
         msg = '%s%s'%(method, args)
         self.logger.info(msg + ' --->')
-        def _logResult(self, result):
+        def _logResult(result):
             self.logger.info(msg + ' <--- ' + str(result))
             return result
         deferred = xmlrpc.Proxy.callRemote(self, method, *args)
