@@ -757,6 +757,9 @@ class RosettaUploadJob(BranchJobDerived):
                 for file_names, changed_files in self._iter_all_lists():
                     for changed_file in to_tree.iter_changes(
                             from_tree, specific_files=file_names):
+                        (from_kind, to_kind) = changed_file[6]
+                        if to_kind != 'file':
+                            continue
                         file_id, (from_path, to_path) = changed_file[:2]
                         changed_files.append((
                             to_path, to_tree.get_file_text(file_id)))
