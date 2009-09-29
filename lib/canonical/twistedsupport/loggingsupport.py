@@ -169,6 +169,7 @@ class LoggingProxy(xmlrpc.Proxy):
         """
         xmlrpc.Proxy.__init__(self, url)
         self.logger = logger
+        self.level
 
     def callRemote(self, method, *args):
         """See `xmlrpc.Proxy.callRemote`.
