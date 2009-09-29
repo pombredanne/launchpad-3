@@ -256,9 +256,8 @@ class TranslationImportQueueEntry(SQLBase):
 
     def setStatus(self, status):
         """See `ITranslationImportQueueEntry`."""
-        # XXX JeroenVermeulen 2009-04-09 bug=358404: This looks like a
-        # good place to set date_status_changed.
         self.status = status
+        self.date_status_changed = UTC_NOW
 
     def setErrorOutput(self, output):
         """See `ITranslationImportQueueEntry`."""
