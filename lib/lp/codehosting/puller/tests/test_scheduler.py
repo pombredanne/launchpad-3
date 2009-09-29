@@ -476,7 +476,7 @@ class TestPullerMaster(TrialTestCase):
 
     def test_mirrorComplete(self):
         arbitrary_revision_id = 'rev1'
-        deferred = self.eventHandler.startMirroring()
+        deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
         def mirrorSucceeded(ignored):
             self.status_client.calls = []
@@ -493,7 +493,7 @@ class TestPullerMaster(TrialTestCase):
     def test_mirrorFailed(self):
         arbitrary_error_message = 'failed'
 
-        deferred = self.eventHandler.startMirroring()
+        deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
         def mirrorFailed(ignored):
             self.status_client.calls = []
