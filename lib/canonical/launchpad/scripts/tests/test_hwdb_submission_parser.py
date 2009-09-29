@@ -185,7 +185,6 @@ class TestHWDBSubmissionParser(TestCase):
             """)
         parser = SubmissionParser(self.log)
         summary = parser._parseSummary(node)
-        utc_tz = pytz.timezone('UTC')
         expected_data = {
             'live_cd': False,
             'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
@@ -195,7 +194,7 @@ class TestHWDBSubmissionParser(TestCase):
             'private': False,
             'contactable': False,
             'date_created': datetime(2007, 9, 28, 16, 9, 20, 126842,
-                                     tzinfo=utc_tz),
+                                     tzinfo=pytz.UTC),
             'client': {
                 'name': 'hwtest',
                 'version': '0.9',
@@ -210,7 +209,7 @@ class TestHWDBSubmissionParser(TestCase):
             'SubmissionParser.parseSummary returned an unexpected result')
 
     def testSummaryNodeWithKernelRelease(self):
-        """The <smmary> node may contain the sub-node <kernel-release>."""
+        """The <summary> node may contain the sub-node <kernel-release>."""
         node = etree.fromstring("""
             <summary>
                 <live_cd value="False"/>
@@ -230,7 +229,6 @@ class TestHWDBSubmissionParser(TestCase):
             """)
         parser = SubmissionParser(self.log)
         summary = parser._parseSummary(node)
-        utc_tz = pytz.timezone('UTC')
         expected_data = {
             'live_cd': False,
             'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
@@ -240,7 +238,7 @@ class TestHWDBSubmissionParser(TestCase):
             'private': False,
             'contactable': False,
             'date_created': datetime(2007, 9, 28, 16, 9, 20, 126842,
-                                     tzinfo=utc_tz),
+                                     tzinfo=pytz.UTC),
             'client': {
                 'name': 'hwtest',
                 'version': '0.9',
