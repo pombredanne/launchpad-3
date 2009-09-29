@@ -361,10 +361,8 @@
 </metal:bug_reporting_guidelines>
 
 <metal:similar-bugs define-macro="display-similar-bugs">
-  <p>Existing bugs that could match:<br />
-    <em>
-      <span id="filebug-query" tal:replace="view/search_text">Summary query</span>
-    </em>
+  <p id="filebug-query">Existing bugs that could match:<br />
+    <em><span tal:replace="view/search_text">Summary query</span></em>
   </p>
   <ul id="similar-bugs">
     <li tal:repeat="bug view/similar_bugs" class="similar-bug">
