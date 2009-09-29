@@ -556,6 +556,82 @@ class SubmissionParser(object):
             dmi_data[record[0]] = record[1]
         return dmi_data
 
+    def _parseSysfsAttributes(self, sysfs_node):
+        """Parse the <sysfs-attributes> node.
+
+        :return: A dictionary {path: attrs, ...} where path is the
+            path is the path of a sysfs directory, and where attrs
+            is a dictionary containing attribute names and values.
+
+        A sample of the input data:
+
+        P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+        A: modalias=input:b0019v0000p0001e0000-e0,1,k74,ramlsfw
+        A: uniq=
+        A: phys=LNXPWRBN/button/input0
+        A: name=Power Button
+
+        P: /devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03/input/input8
+        A: modalias=input:b0019v0000p0006e0000-e0,1,kE0,E1,E3,F0,F1
+        A: uniq=
+        A: phys=/video/input0
+        A: name=Video Bus
+
+        Data for different devices is separated by empty lines. The data
+        for each device starts with a line 'P: /devices/LNXSYSTM...',
+        specifying the sysfs path of a device, followed by zero or more
+        lines of the form 'A: key=value'
+        """
+        sysfs_lines = sysfs_node.text.split('\n')
+        sysfs_data = {}
+        attributes = None
+
+        for line_number, line in enumerate(sysfs_lines):
+            if len(line) == 0:
+                attributes = None
+                continue
+            record = line.split(': ', 1)
+            if len(record) != 2:
+                self._logError(
+                    'Line %i in <sysfs-attributes>: No valid key:value data: '
+                    '%r' % (line_number, line),
+                    self.submission_key)
+                return None
+
+            key, value = record
+            if key == 'P':
+                if attributes is not None:
+                    self._logError(
+                        "Line %i in <sysfs-attributes>: duplicate 'P' line "
+                        "found: %r" % (line_number, line),
+                        self.submission_key)
+                    return None
+                attributes = {}
+                sysfs_data[value] = attributes
+            elif key == 'A':
+                if attributes is None:
+                    self._logError(
+                        "Line %i in <sysfs-attributes>: Block for a device "
+                        "does not start with 'P:': %r" % (line_number, line),
+                        self.submission_key)
+                    return None
+                attribute_data = value.split('=', 1)
+                if len(attribute_data) != 2:
+                    self._logError(
+                        'Line %i in <sysfs-attributes>: Attribute line does '
+                        'not contain key=value data: %r'
+                        % (line_number, line),
+                        self.submission_key)
+                    return None
+                attributes[attribute_data[0]] = attribute_data[1]
+            else:
+                self._logError(
+                    'Line %i in <sysfs-attributes>: Unexpected key: %r'
+                    % (line_number, line),
+                    self.submission_key)
+                return None
+        return sysfs_data
+
     def _setHardwareSectionParsers(self):
         self._parse_hardware_section = {
             'hal': self._parseHAL,
@@ -563,6 +639,7 @@ class SubmissionParser(object):
             'aliases': self._parseAliases,
             'udev': self._parseUdev,
             'dmi': self._parseDmi,
+            'sysfs-attributes': self._parseSysfsAttributes,
             }
 
     def _parseHardware(self, hardware_node):

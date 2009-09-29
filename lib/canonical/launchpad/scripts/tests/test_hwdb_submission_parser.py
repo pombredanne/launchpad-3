@@ -11,6 +11,7 @@ except ImportError:
 from datetime import datetime
 import logging
 import os
+from textwrap import dedent
 from unittest import TestCase, TestLoader
 
 import pytz
@@ -648,6 +649,169 @@ invalid line
         self.assertErrorMessage(
             parser.submission_key,
             "Line 1 in <dmi>: No valid key:value data: 'invalid line'")
+
+    def testSysfsAttributes(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        The content of the <sys-attributes> node is converted into
+        a dictionary.
+        """
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            A: uniq=
+            A: phys=LNXPWRBN/button/input0
+            A: name=Power Button
+
+            P: /devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03
+            A: uniq=
+            A: phys=/video/input0
+            A: name=Video Bus
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            {
+                '/devices/LNXSYSTM:00/LNXPWRBN:00/input/input0': {
+                    'modalias': 'input:b0019v0000p0001e0000-e0,1,k74',
+                    'uniq': '',
+                    'phys': 'LNXPWRBN/button/input0',
+                    'name': 'Power Button',
+                    },
+                '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03': {
+                    'uniq': '',
+                    'phys': '/video/input0',
+                    'name': 'Video Bus',
+                    },
+
+                },
+            result,
+            'Invalid parsing result of <sysfs-attributes> node.')
+
+    def testSysfsAttributesLineWithoutKeyValueData(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        Lines not in key: value format are rejected.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> lines not in key:value format')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            invalid line
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node containing '
+            'a line not in key:value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 3 in <sysfs-attributes>: No valid key:value data: "
+            "'invalid line'")
+
+    def testSysfsAttributesDuplicatePLine(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        A line starting with "P:" must be the first line of a device block.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node with duplicate P: line')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node containing '
+            'a duplicate P: line.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 3 in <sysfs-attributes>: duplicate 'P' line found: "
+            "'P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0'")
+
+    def testSysfsAttributesNoPLineAtDeviceStart(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        The data for a device must start with a "P:" line.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node without leading P: line')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node where a '
+            'device block does not start with a "P": line.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <sysfs-attributes>: Block for a device does not "
+            "start with 'P:': "
+            "'A: modalias=input:b0019v0000p0001e0000-e0,1,k74'")
+
+    def testSysfsAttributesNoAttributeKeyValue(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        A line starting with "A:" must be in key=value format.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node with A: line not in key=value '
+            'format')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: equal sign is missing
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node with A: '
+            'line not in key=value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 2 in <sysfs-attributes>: Attribute line does not contain "
+            "key=value data: 'A: equal sign is missing'")
+
+    def testSysfsAttributesInvalidMainKey(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        All lines must start with "P:" or "A:".
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node with invalid main key.')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            X: an invalid line
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node containg '
+            'a line that does not start with "A:" or "P:".')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 2 in <sysfs-attributes>: Unexpected key: "
+            "'X: an invalid line'")
 
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
