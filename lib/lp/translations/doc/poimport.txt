@@ -15,7 +15,7 @@ Here are some imports we need to get this test running.
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.model.potemplate import POTemplateSubset
-    >>> from lp.translations.scripts.po_import import ImportProcess
+    >>> from lp.translations.scripts.po_import import TranslationsImport
     >>> from lp.translations.scripts.import_queue_gardener import (
     ...     ImportQueueGardener)
     >>> import datetime
@@ -644,12 +644,15 @@ And run the import script.
 
     >>> import email
     >>> from lp.services.mail import stub
-    >>> process = ImportProcess(transaction, FakeLogger())
-    >>> process.run()
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG   Starting the import process.
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
+    DEBUG   Finished the import process.
 
 The import script also generates an email similar to the ones we saw
 composed before, but also sends it.
@@ -782,11 +785,14 @@ intelligence.
 Now that these submissions have been approved, the next run of the
 import script picks them up and processes them.
 
-    >>> process = ImportProcess(transaction, FakeLogger())
-    >>> process.run()
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG   Starting the import process.
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
+    DEBUG   Finished the import process.
 
     >>> print entry.status.name
     IMPORTED
@@ -866,8 +872,10 @@ So if we try to import now, nothing happens. Our request remains on the
 queue, but doesn't become a candidate for processing until warty
 imports are resumed.
 
-    >>> process = ImportProcess(transaction, FakeLogger())
-    >>> process.run()
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG Starting the import process.
     INFO No requests pending.
 
     >>> print entry.status.name
@@ -1039,10 +1047,13 @@ The import fails.  The importer would like to send Kermit an email about
 this, but is unable to.  This is unfortunate, but does not faze the
 importer.  It completes normally.
 
-    >>> process = ImportProcess(transaction, FakeLogger())
-    >>> process.run()
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG Starting the import process.
     INFO Importing: Lao ...
     INFO Import requests completed.
+    DEBUG Finished the import process.
 
     >>> print entry.status.name
     FAILED
