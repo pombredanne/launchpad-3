@@ -11,6 +11,7 @@ except ImportError:
 from datetime import datetime
 import logging
 import os
+from textwrap import dedent
 from unittest import TestCase, TestLoader
 
 import pytz
@@ -656,36 +657,34 @@ invalid line
         a dictionary.
         """
         parser = SubmissionParser(self.log)
-        node = etree.fromstring("""
-<sysfs-attributes>
-P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
-A: modalias=input:b0019v0000p0001e0000-e0,1,k74
-A: uniq=
-A: phys=LNXPWRBN/button/input0
-A: name=Power Button
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            A: uniq=
+            A: phys=LNXPWRBN/button/input0
+            A: name=Power Button
 
-P: /devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03
-A: uniq=
-A: phys=/video/input0
-A: name=Video Bus
-</sysfs-attributes>
-""")
+            P: /devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03
+            A: uniq=
+            A: phys=/video/input0
+            A: name=Video Bus
+            </sysfs-attributes>
+            """))
         result = parser._parseSysfsAttributes(node)
         self.assertEqual(
             {
-                '/devices/LNXSYSTM:00/LNXPWRBN:00/input/input0':
-                    {
-                        'modalias': 'input:b0019v0000p0001e0000-e0,1,k74',
-                        'uniq': '',
-                        'phys': 'LNXPWRBN/button/input0',
-                        'name': 'Power Button',
-                        },
-                '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03':
-                    {
-                        'uniq': '',
-                        'phys': '/video/input0',
-                        'name': 'Video Bus',
-                        },
+                '/devices/LNXSYSTM:00/LNXPWRBN:00/input/input0': {
+                    'modalias': 'input:b0019v0000p0001e0000-e0,1,k74',
+                    'uniq': '',
+                    'phys': 'LNXPWRBN/button/input0',
+                    'name': 'Power Button',
+                    },
+                '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03': {
+                    'uniq': '',
+                    'phys': '/video/input0',
+                    'name': 'Video Bus',
+                    },
 
                 },
             result,
@@ -699,13 +698,13 @@ A: name=Video Bus
         parser = SubmissionParser(self.log)
         parser.submission_key = (
             'Detect <sysfs-attributes> lines not in key:value format')
-        node = etree.fromstring("""
-<sysfs-attributes>
-P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
-A: modalias=input:b0019v0000p0001e0000-e0,1,k74
-invalid line
-</sysfs-attributes>
-""")
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            invalid line
+            </sysfs-attributes>
+            """))
         result = parser._parseSysfsAttributes(node)
         self.assertEqual(
             None, result,
@@ -724,13 +723,13 @@ invalid line
         parser = SubmissionParser(self.log)
         parser.submission_key = (
             'Detect <sysfs-attributes> node with duplicate P: line')
-        node = etree.fromstring("""
-<sysfs-attributes>
-P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
-A: modalias=input:b0019v0000p0001e0000-e0,1,k74
-P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
-</sysfs-attributes>
-""")
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            </sysfs-attributes>
+            """))
         result = parser._parseSysfsAttributes(node)
         self.assertEqual(
             None, result,
@@ -749,11 +748,11 @@ P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
         parser = SubmissionParser(self.log)
         parser.submission_key = (
             'Detect <sysfs-attributes> node without leading P: line')
-        node = etree.fromstring("""
-<sysfs-attributes>
-A: modalias=input:b0019v0000p0001e0000-e0,1,k74
-</sysfs-attributes>
-""")
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            </sysfs-attributes>
+            """))
         result = parser._parseSysfsAttributes(node)
         self.assertEqual(
             None, result,
@@ -774,12 +773,12 @@ A: modalias=input:b0019v0000p0001e0000-e0,1,k74
         parser.submission_key = (
             'Detect <sysfs-attributes> node with A: line not in key=value '
             'format')
-        node = etree.fromstring("""
-<sysfs-attributes>
-P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
-A: equal sign is missing
-</sysfs-attributes>
-""")
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: equal sign is missing
+            </sysfs-attributes>
+            """))
         result = parser._parseSysfsAttributes(node)
         self.assertEqual(
             None, result,
@@ -798,12 +797,12 @@ A: equal sign is missing
         parser = SubmissionParser(self.log)
         parser.submission_key = (
             'Detect <sysfs-attributes> node with invalid main key.')
-        node = etree.fromstring("""
-<sysfs-attributes>
-P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
-X: an invalid line
-</sysfs-attributes>
-""")
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            X: an invalid line
+            </sysfs-attributes>
+            """))
         result = parser._parseSysfsAttributes(node)
         self.assertEqual(
             None, result,
