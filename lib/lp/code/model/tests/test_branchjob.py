@@ -957,6 +957,26 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         entry = entries[0]
         self.assertEqual(pot_path, entry.path)
 
+    def test_init_translation_file_lists_skip_dirs(self):
+        # The method _init_translation_file_lists extracts all translation
+        # files from the branch but does not add changed directories to the
+        # template_files_changed and translation_files_changed lists .
+        pot_path = u"subdir/foo.pot"
+        po_path = u"subdir/foo.po"
+        revision_id = self._makeBranchWithTreeAndFiles(((pot_path,),
+                                                       (po_path,)))
+        self._makeProductSeries(TranslationsBranchImportMode.NO_IMPORT)
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION, True)
+        job._init_translation_file_lists()
+
+        self.assertEqual(1, len(job.template_files_changed))
+        template_file_path = job.template_files_changed[0][0]
+        self.assertEqual(pot_path, template_file_path)
+
+        self.assertEqual(1, len(job.translation_files_changed))
+        translation_file_path = job.translation_files_changed[0][0]
+        self.assertEqual(po_path, translation_file_path)
+
     def test_upload_xpi_template(self):
         # XPI templates are indentified by a special name. They are imported
         # like POT files.
