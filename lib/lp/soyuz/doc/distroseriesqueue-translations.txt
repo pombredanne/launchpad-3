@@ -234,6 +234,14 @@ As we can see from the translation import queue content.
   dapper/pmount by mark: po/pmount.pot
   dapper/pmount by mark: po/it_IT.po
 
+The upload also shows up as the latest translations upload for the
+package.
+
+  >>> from lp.registry.model.sourcepackage import SourcePackage
+  >>> dapper_pmount = SourcePackage(pmount_sourcepackagename, dapper)
+  >>> print len(dapper_pmount.getLatestTranslationsUploads())
+  1
+
   # Let's abort the transaction so we can check the same upload in a different
   # component.
   >>> transaction.abort()
@@ -258,6 +266,12 @@ This time, we don't get any entry in the import queue.
   # Let's abort the transaction so we can check the same upload in a different
   # component.
   >>> transaction.abort()
+
+There is no latest translations upload for the package, either.
+
+  >>> print len(dapper_pmount.getLatestTranslationsUploads())
+  0
+
 
 == Translations from PPA build ==
 
