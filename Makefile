@@ -197,7 +197,6 @@ stop_librarian:
 	bin/killservice librarian
 
 pull_branches: support_files
-	# Mirror the branches to the mirrored area.
 	$(PY) cronscripts/supermirror-pull.py
 
 scan_branches:
