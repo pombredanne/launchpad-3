@@ -58,7 +58,6 @@ from canonical.launchpad.database.account import *
 from canonical.launchpad.database.personnotification import *
 from canonical.launchpad.database.packaging import *
 from canonical.launchpad.database.librarian import *
-from canonical.launchpad.database.launchpadstatistic import *
 from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.structuralsubscription import *
@@ -66,4 +65,3 @@ from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.temporaryblobstorage import *
 from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.oauth import *
-from canonical.launchpad.database.hwdb import *
