@@ -299,7 +299,6 @@
         <browser:navigation
             module="lp.translations.browser.language"
             classes="
-                LanguageNavigation
                 LanguageSetNavigation"/>
         <browser:defaultView
             for="canonical.launchpad.interfaces.ILanguage"
