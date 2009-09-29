@@ -170,6 +170,7 @@ class LoggingProxy(xmlrpc.Proxy):
         xmlrpc.Proxy.__init__(self, url)
         self.logger = logger
         self.level = level
+        self.request_count = 0
 
     def callRemote(self, method, *args):
         """See `xmlrpc.Proxy.callRemote`.
@@ -177,10 +178,13 @@ class LoggingProxy(xmlrpc.Proxy):
         In addition to the superclass' behavior, we log the call and its
         result.
         """
-        msg = '%s%s'%(method, args)
-        self.logger.log(self.level, msg + ' --->')
+        request = self.request_count
+        self.request_count += 1
+        self.logger.log(
+            self.level, 'Sending request [%d]: %s%s', request, method, args)
         def _logResult(result):
-            self.logger.log(self.level, msg + ' <--- ' + str(result))
+            self.logger.log(
+                self.level, 'Reply to request [%d]: %s', request, result)
             return result
         deferred = xmlrpc.Proxy.callRemote(self, method, *args)
         return deferred.addBoth(_logResult)
