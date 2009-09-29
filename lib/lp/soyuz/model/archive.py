@@ -56,7 +56,7 @@ from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, default_name_by_purpose)
+    PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -320,8 +320,10 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
             clauses.append("""
                 SourcePackageRelease.version = %s
             """ % sqlvalues(version))
@@ -491,8 +493,11 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
+
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
@@ -1186,6 +1191,22 @@ class Archive(SQLBase):
 
         return subscription
 
+    def getSourcePackageReleases(self, build_status=None):
+        """See `IArchive`."""
+        store = Store.of(self)
+
+        extra_exprs = []
+        if build_status is not None:
+            extra_exprs.append(Build.buildstate == build_status)
+
+        result_set = store.find(
+            SourcePackageRelease, 
+            Build.sourcepackagereleaseID == SourcePackageRelease.id,
+            Build.archive == self,
+            *extra_exprs)
+
+        result_set.config(distinct=True).order_by(SourcePackageRelease.id)
+        return result_set
 
 class ArchiveSet:
     implements(IArchiveSet)

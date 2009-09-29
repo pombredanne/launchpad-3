@@ -21,10 +21,12 @@ from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
+from canonical.lazr.utils import smartquote
 from lp.code.model.branch import Branch
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.soyuz.model.build import Build, BuildSet
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -152,7 +154,8 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
-                    HasTranslationImportsMixin, HasTranslationTemplatesMixin):
+                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
+                    HasBranchesMixin, HasMergeProposalsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -285,10 +288,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def title(self):
-        titlestr = self.sourcepackagename.name
-        titlestr += ' in ' + self.distribution.displayname
-        titlestr += ' ' + self.distroseries.displayname
-        return titlestr
+        """See `ISourcePackage`."""
+        return smartquote('"%s" source package in %s') % (
+            self.sourcepackagename.name, self.distroseries.displayname)
 
     @property
     def distribution(self):

@@ -15,7 +15,7 @@ the Firefox product which was filed by 'Sample Person'.
     # added and the status of the question.
     >>> def find_request_status(contents):
     ...     print extract_text(
-    ...         find_tag_by_id(contents, 'question-details'))
+    ...         find_tag_by_id(contents, 'registration'))
 
 
     >>> def  find_last_comment(contents):
@@ -327,7 +327,7 @@ The history of the question is available on the 'History' page.
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> anon_browser.getLink('History').click()
     >>> print anon_browser.title
-    +history : Questions for Mozilla Firefox : Mozilla Firefox
+    History of question #2...
 
 It lists all the actions performed through workflow on the question:
 
@@ -410,7 +410,7 @@ a similar problem so he asks his own question.
 
     >>> user_browser.getLink('ask your own question separately').click()
     >>> print user_browser.title
-    +addquestion : Questions for Mozilla Firefox : Mozilla Firefox
+    Ask a question about...
 
 The 'Got a question of your own?' section in not relevant to the
 question owner, so Sample person does not see it.

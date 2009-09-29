@@ -29,7 +29,7 @@ overview page.
 
     >>> browser.open('http://code.launchpad.dev/applets')
     >>> print browser.title
-    Bazaar branches of Gnome Applets
+    Branches : Gnome Applets
 
 If there are not any branches, a helpful message is shown.
 
@@ -71,23 +71,6 @@ in downloads that may have been added for the product.
 Development focus branches
 ==========================
 
-If the product has branches, but no branch has been set as the current
-development focus, then if the user is able to set the development focus
-branch, they are shown an option.
-
-    >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> sample_browser.open('http://code.launchpad.dev/gnome-terminal')
-    >>> print extract_text(get_summary(sample_browser))
-    10 branches ... commits in the last month
-    0 active reviews or unmerged proposals
-
-This text is not shown if the user cannot set the branch.
-
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
-    >>> print extract_text(get_summary(browser))
-    10 branches ... commits in the last month
-    0 active reviews or unmerged proposals
-
 If a development focus branch is set and browseable, the user is shown
 a link to browse the code and a simple command line to get the branch.
 If the branch is not browseable (in this case, it has no revisions but
@@ -97,7 +80,7 @@ shown.
     >>> browser.open('http://code.launchpad.dev/evolution')
     >>> summary = get_summary(browser)
     >>> print extract_text(get_summary(browser))
-    3 branches ...
+    3 active branches ...
     0 active reviews or unmerged proposals
     You can get a copy of the development focus branch using the
     command:
@@ -186,12 +169,12 @@ for project branch listings.  'Register a branch' and 'Import your project'.
 If the product specifies that it officially uses Launchpad code, then
 the 'Import your project' button is not shown.
 
-    >>> sample_browser.open('http://launchpad.dev/gnome-terminal')
-    >>> sample_browser.getLink('Change details').click()
-    >>> sample_browser.getControl(
+    >>> admin_browser.open('http://launchpad.dev/gnome-terminal')
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getControl(
     ...     'Code for this project is published in Bazaar branches '
     ...     'on Launchpad').click()
-    >>> sample_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change').click()
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> print_links(browser)
@@ -209,21 +192,23 @@ shows correct singular and plural forms.
     ...     print extract_text(get_summary(browser))
 
     >>> print_summary('gnome-terminal')
-    10 branches owned by 1 person and 2 teams, 0 commits in the last month
+    8 active branches owned by 1 person and 2 teams, 0 commits in the last month
     ...
-    >>> print_summary('firefox')
-    5 branches owned by 2 people, 0 commits in the last month
+    >>> from lp.testing import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
+    >>> fooix = factory.makeProduct('fooix')
+    >>> ignored = factory.makeProductBranch(fooix)
+    >>> ignored = factory.makeProductBranch(fooix)
+    >>> logout()
+    >>> print_summary('fooix')
+    2 active branches owned by 2 people, 0 commits in the last month
     ...
     >>> print_summary('evolution')
-    3 branches owned by 1 person and 1 team, 0 commits in the last month
+    3 active branches owned by 1 person and 1 team, 0 commits in the last month
     ...
     >>> print_summary('iso-codes')
-    1 branch owned by 1 person, 0 commits in the last month
+    1 active branch owned by 1 person, 0 commits in the last month
     ...
-
-# XXX: thumper 2008-04-24
-# There is no easy way to change the database user in the pagetests
-# in order to add revisions to the branches to show commits by users.
 
 
 Product has Branches, but none initially visible
@@ -240,7 +225,7 @@ branch, then they will not appear on the initial branch listing.
 
     >>> browser.open('http://code.launchpad.dev/iso-codes')
     >>> print extract_text(get_summary(browser))
-    1 branch owned by 1 person, 0 commits in the last month
+    0 active branches, 0 commits in the last month
     0 active reviews or unmerged proposals
 
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')

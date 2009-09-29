@@ -26,7 +26,7 @@ release in the series.
     http://launchpad.dev/firefox/+milestone/1.0/+addrelease
 
     >>> print browser.title
-    +addrelease : Mozilla Firefox
+    Create a new release for Mozilla Firefox...
 
 Links to previous releases from the series are listed.
 
@@ -115,7 +115,7 @@ The release owner can edit the release via its +edit form:
     >>> browser.open('http://launchpad.dev/firefox/trunk/1.0')
     >>> browser.getLink('Change release details', index=1).click()
     >>> print browser.title
-    +edit : Series trunk : Mozilla Firefox
+    Edit Mozilla Firefox 1.0 release details...
 
     >>> browser.getControl('Changelog').value = 'This is not a joke.'
     >>> browser.getControl('Change').click()
@@ -154,7 +154,7 @@ Celso is a member of ubuntu-team, so he can edit this release too:
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
     >>> browser.getLink('Change release details', index=0).click()
     >>> print browser.title
-    +edit : Series trunk : Tomcat
+    Edit Tomcat 0.6.6.6 release details...
 
     >>> browser.getControl('Changelog').value = 'Fixes 3 bugs.'
     >>> browser.getControl('Change').click()
@@ -175,7 +175,7 @@ others:
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
     >>> browser.getLink('Change release details', index=0).click()
     >>> print browser.title
-    +edit : Series trunk : Tomcat
+    Edit Tomcat 0.6.6.6 release details...
 
     >>> browser.getControl('Changelog').value = 'Fixes 4 bugs.'
     >>> browser.getControl('Change').click()

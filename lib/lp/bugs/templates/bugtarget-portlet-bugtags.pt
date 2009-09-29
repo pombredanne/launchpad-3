@@ -36,11 +36,12 @@
       });
     });
   </script>
-
-  <p tal:condition="view/show_manage_tags_link"
-     style="text-align:right">
-    <a tal:attributes="href context/fmt:url/+manage-official-tags">
-      Edit official tags <span class="sprite edit" />
-    </a>
-  </p>
+  <ul>
+    <li tal:condition="view/show_manage_tags_link">
+      <a class="sprite edit"
+         tal:attributes="href context/fmt:url/+manage-official-tags">
+        Edit official tags
+      </a>
+    </li>
+  </ul>
 </div>

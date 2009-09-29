@@ -37,10 +37,22 @@
             set_schema=".interfaces.language.ILanguage" />
     </class>
 
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.services.worlddata.interfaces.language.ILanguage"
+        factory="lp.translations.browser.language.LanguageBreadcrumb"
+        permission="zope.Public"/>
+
     <securedutility
         class=".model.language.LanguageSet"
         provides=".interfaces.language.ILanguageSet">
         <allow interface=".interfaces.language.ILanguageSet" />
     </securedutility>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.services.worlddata.interfaces.language.ILanguageSet"
+        factory="lp.translations.browser.language.LanguageSetBreadcrumb"
+        permission="zope.Public"/>
 
 </configure>

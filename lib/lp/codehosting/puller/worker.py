@@ -12,18 +12,19 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.plugins.loom.branch import LoomSupport
-from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
 from bzrlib import urlutils
 from bzrlib.ui import SilentUIFactory
 import bzrlib.ui
 
 from canonical.config import config
+from canonical.launchpad.webapp import errorlog
+
+from lp.codehosting.bzrutils import identical_formats
+from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.codehosting.vfs.branchfs import (
     BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, make_branch_mirrorer)
-from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.code.enums import BranchType
-from canonical.launchpad.webapp import errorlog
 from lazr.uri import InvalidURIError
 
 
@@ -117,37 +118,6 @@ class PullerWorkerProtocol:
 
     def log(self, fmt, *args):
         self.sendEvent('log', fmt % args)
-
-
-def get_vfs_format_classes(branch):
-    """Return the vfs classes of the branch, repo and bzrdir formats.
-
-    'vfs' here means that it will return the underlying format classes of a
-    remote branch.
-    """
-    if isinstance(branch, RemoteBranch):
-        branch._ensure_real()
-        branch = branch._real_branch
-    repository = branch.repository
-    if isinstance(repository, RemoteRepository):
-        repository._ensure_real()
-        repository = repository._real_repository
-    bzrdir = branch.bzrdir
-    if isinstance(bzrdir, RemoteBzrDir):
-        bzrdir._ensure_real()
-        bzrdir = bzrdir._real_bzrdir
-    return (
-        branch._format.__class__,
-        repository._format.__class__,
-        bzrdir._format.__class__,
-        )
-
-
-def identical_formats(branch_one, branch_two):
-    """Check if two branches have the same bzrdir, repo, and branch formats.
-    """
-    return (get_vfs_format_classes(branch_one) ==
-            get_vfs_format_classes(branch_two))
 
 
 class BranchMirrorer(object):
