@@ -17,6 +17,7 @@ __all__ = [
 
 import bz2
 import glob
+import logging
 import os
 
 from twisted.python import log
@@ -150,16 +151,22 @@ class LaunchpadLogFile(DailyLogFile):
 
 
 class _QuietQueryFactory(xmlrpc._QueryFactory):
-    """XXX."""
+    """Override noisy to false to avoid useless log spam."""
     noisy = False
 
 
 class LoggingProxy(xmlrpc.Proxy):
-    """XXX."""
+    """A proxy that logs requests and the corresponding responses."""
 
     queryFactory = _QuietQueryFactory
 
-    def __init__(self, url, logger):
+    def __init__(self, url, logger, level=logging.INFO):
+        """Contstruct a `LoggingProxy`.
+
+        :param url: The URL to which to post method calls.
+        :param logger: The logger to log requests and responses to.
+        :param level: The log level at which to log requests and responses.
+        """
         xmlrpc.Proxy.__init__(self, url)
         self.logger = logger
 
@@ -170,9 +177,9 @@ class LoggingProxy(xmlrpc.Proxy):
         result.
         """
         msg = '%s%s'%(method, args)
-        self.logger.info(msg + ' --->')
+        self.logger.log(self.level, msg + ' --->')
         def _logResult(result):
-            self.logger.info(msg + ' <--- ' + str(result))
+            self.logger.log(self.level, msg + ' <--- ' + str(result))
             return result
         deferred = xmlrpc.Proxy.callRemote(self, method, *args)
         return deferred.addBoth(_logResult)
