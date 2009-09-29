@@ -96,19 +96,16 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
         testing_person = removeSecurityProxy(
             testing_account).createPerson(self.rationale)
         self.assertIs(None, testing_account.preferredemail.person)
+        self.assertIs(None, testing_person.preferredemail)
 
         ensured_person = getUtility(IPersonSet).ensurePerson(
             self.email_address, self.displayname, self.rationale)
 
-        # The existing Person was retrieved.
+        # The existing Person was retrieved and the Account
+        # 'preferredemail' is also bound to the existing Person.
         self.assertEquals(testing_person.id, ensured_person.id)
-
-        # The Account 'preferredemail' is also bound to the existing Person.
-        self.assertEquals(testing_account.id,
-                          ensured_person.preferredemail.account.id)
-        self.assertEquals(
-            self.email_address,
-            removeSecurityProxy(ensured_person.preferredemail).email)
+        self.assertEquals(testing_account.preferredemail.id,
+                          ensured_person.preferredemail.id)
 
 
 def test_suite():
