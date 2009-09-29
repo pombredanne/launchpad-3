@@ -670,17 +670,21 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             status=PackagePublishingStatus.PUBLISHED, exact_match=True)
         histories = list(histories)
 
+        builds = []
+        for history in histories:
+            builds += list(history.getBuilds())
+
         uploads = [
-            history.sourcepackagerelease.package_upload
-            for history in histories
-            if history.sourcepackagerelease.package_upload
+            build.package_upload
+            for build in builds
+            if build.package_upload
             ]
         custom_files = []
         for upload in uploads:
             custom_files += [
                 custom for custom in upload.customfiles
-                if custom.format == our_format
+                if custom.customformat == our_format
                 ]
 
-        custom_files.sort(key=attrgetter('date_created'))
+        custom_files.sort(key=attrgetter('id'))
         return [custom.libraryfilealias for custom in custom_files]

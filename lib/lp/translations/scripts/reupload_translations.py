@@ -4,6 +4,8 @@ __all__ = [
 	'ReuploadPackageTranslations',
 	]
 
+from StringIO import StringIO
+
 from zope.component import getUtility
 
 from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
@@ -91,6 +93,6 @@ class ReuploadPackageTranslations(LaunchpadScript):
             self.logger.debug("Uploading file '%s' for %s." % (
                 alias.filename, package.displayname))
             queue.addOrUpdateEntriesFromTarball(
-                alias.content, True, rosetta_team,
+                StringIO(alias.read()), True, rosetta_team,
                 sourcepackagename=package.sourcepackagename,
                 distroseries=self.distroseries)
