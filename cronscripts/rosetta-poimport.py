@@ -11,5 +11,6 @@ from canonical.config import config
 from lp.translations.scripts.po_import import TranslationsImport
 
 if __name__ == '__main__':
-    TranslationsImport('rosetta-poimport', dbuser=config.poimport.dbuser)
+    script = TranslationsImport(
+        'rosetta-poimport', dbuser=config.poimport.dbuser)
     script.lock_and_run()
