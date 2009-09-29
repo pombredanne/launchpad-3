@@ -16,7 +16,7 @@
 
   <!-- LaunchpadStatisticSet -->
   <securedutility
-    class="canonical.launchpad.database.LaunchpadStatisticSet"
+    class="canonical.launchpad.database.launchpadstatistic.LaunchpadStatisticSet"
     provides="canonical.launchpad.interfaces.ILaunchpadStatisticSet">
     <allow interface="canonical.launchpad.interfaces.ILaunchpadStatisticSet" />
   </securedutility>
