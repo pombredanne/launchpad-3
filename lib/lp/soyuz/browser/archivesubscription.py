@@ -9,7 +9,6 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSubscribersView',
-    'PersonalArchiveSubscriptionBreadcrumb',
     'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
     'traverse_archive_subscription_for_subscriber'
@@ -74,14 +73,6 @@ class PersonalArchiveSubscription:
         return self.displayname
 
 
-class PersonalArchiveSubscriptionNavigation(Navigation):
-    """Navigation for `IPersonalArchiveSubscription`.
-
-    Without this, a breadcrumb will not be created for personal
-    archive subscription objects.
-    """
-    usedfor = IPersonalArchiveSubscription
-
 def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     """Return the subscription for a subscriber to an archive."""
     subscription = None
@@ -94,14 +85,6 @@ def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
         return None
     else:
         return PersonalArchiveSubscription(subscriber, archive)
-
-
-class PersonalArchiveSubscriptionBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for `PersonalArchiveSubscription`."""
-
-    @property
-    def text(self):
-        return self.context.displayname
 
 
 class IArchiveSubscriberUI(Interface):

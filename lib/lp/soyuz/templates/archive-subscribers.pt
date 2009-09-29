@@ -10,6 +10,11 @@
   <metal:block fill-slot="head_epilogue">
     <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
+
+    <tal:devmode condition="devmode">
+        <script type="text/javascript"
+                tal:attributes="src string:${lp_js}/soyuz/archivesubscribers_index.js"></script>
+    </tal:devmode>
   </metal:block>
 
   <div metal:fill-slot="main">
@@ -92,51 +97,12 @@
         </table>
         </form>
       </div><!-- class="portlet" -->
+      <script type="text/javascript" id="setup-archivesubscribers-index">
+          YUI().use('soyuz.archivesubscribers_index', function(Y) {
+              Y.soyuz.setup_archivesubscribers_index();
+          });
+      </script>
     </div>
-    <script type="text/javascript">
-YUI({
-        base: '../../lib/yui/current/build/',
-        filter: 'raw'
-    }).use('node', 'event', 'lazr.effects', function(Y) {
-
-    // If there are no errors then we hide the add-subscriber row and
-    // potentially the whole table if there are no subscribers.
-    if (Y.Lang.isNull(Y.get('p.error.message'))) {
-
-        // Hide the add-subscriber row.
-        var add_subscriber_row = Y.get(
-            '#archive-subscribers .add-subscriber');
-        add_subscriber_row.setStyle('display', 'none');
-
-        // If there are no subscribers, then hide the complete section.
-        var subscribers = Y.get('#subscribers');
-        if (Y.Lang.isObject(Y.get('#no-subscribers'))) {
-            subscribers.setStyle('display', 'none');
-        }
-    }
-
-    // Add a link to open the add-subscriber row.
-    var placeholder = Y.get('#add-subscriber-placeholder');
-    placeholder.set(
-        'innerHTML', '<a class="js-action sprite add" href="#" />');
-    var add_subscriber_node = Y.get("#add-subscriber-placeholder a");
-    add_subscriber_node.set('innerHTML', 'Add access');
-
-    // Unfortunately we can't use the lazr slider, as it uses display:block
-    // which breaks table rows (they use display:table-row).
-    function show_add_subscriber(e) {
-        e.preventDefault();
-        subscribers.setStyle('display', 'block');
-        add_subscriber_row.setStyle('display', 'table-row');
-    }
-
-    Y.on('click', show_add_subscriber,
-         '#add-subscriber-placeholder a');
-
-});
-    </script>
-
-
   </div>
 </body>
 </html>

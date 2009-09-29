@@ -76,7 +76,6 @@ class TestArchiveSubscriptionBreadcrumb(BaseBreadcrumbTestCase):
             owner, self.ppa)
 
     def test_personal_archive_subscription(self):
-
         self.traversed_objects = [
             self.root, self.ppa.owner, self.personal_archive_subscription]
         subscription_url = canonical_url(self.personal_archive_subscription)
