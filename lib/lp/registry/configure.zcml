@@ -313,7 +313,7 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.project.IProject"
-        factory="lp.registry.browser.project.ProjectBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -767,7 +767,7 @@
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.IPerson"
-            factory="lp.registry.browser.person.PersonBreadcrumb"
+            factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -1186,7 +1186,7 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
-        factory="lp.registry.browser.product.ProductBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -1432,7 +1432,7 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistribution"
-        factory="lp.registry.browser.distribution.DistributionBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -1499,16 +1499,6 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"
         permission="zope.Public"/>
-
-    <!--
-                XXX CarlosPerelloMarin 2007-08-12: This redirect is only useful until all
-                supported Ubuntu distro series stop pointing to
-                https://launchpad.net/ubuntu/.../+translate URLs and instead, use the
-                translations.launchpad.net domain for the 'Translate this application'
-                menu entry available in most graphical applications. See bug #138090 for
-                more details.
-                -->
-
 
     <!-- This is class ProductReleaseSet -->
 

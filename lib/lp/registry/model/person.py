@@ -40,7 +40,7 @@ from zope.event import notify
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    SQLRelatedJoin, StringCol)
+    StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
 from storm.expr import And, In, Join, Lower, Not, Or, SQL
@@ -478,18 +478,20 @@ class Person(
     @property
     def oauth_access_tokens(self):
         """See `IPerson`."""
-        return OAuthAccessToken.select("""
-            person = %s
-            AND (date_expires IS NULL OR date_expires > %s)
-            """ % sqlvalues(self, UTC_NOW))
+        return Store.of(self).find(
+            OAuthAccessToken,
+            OAuthAccessToken.person == self,
+            Or(OAuthAccessToken.date_expires == None,
+               OAuthAccessToken.date_expires > UTC_NOW))
 
     @property
     def oauth_request_tokens(self):
         """See `IPerson`."""
-        return OAuthRequestToken.select("""
-            person = %s
-            AND (date_expires IS NULL OR date_expires > %s)
-            """ % sqlvalues(self, UTC_NOW))
+        return Store.of(self).find(
+            OAuthRequestToken,
+            OAuthRequestToken.person == self,
+            Or(OAuthRequestToken.date_expires == None,
+               OAuthRequestToken.date_expires > UTC_NOW))
 
     @cachedproperty('_location')
     def location(self):
@@ -2489,13 +2491,34 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        person = self.getByEmail(email)
-        if person:
+        # Start by looking to see if there is an IEmailAddress for the given
+        # text address.  There are many cases where an email address can be
+        # created without an associated IPerson.  For example we created an
+        # account linked to the address through an external system such SSO
+        # or ShipIt.
+        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+
+        # There is no IEmailAddress for this text address, so we need to
+        # create both the IPerson and IEmailAddress here, now.
+        if email_address is None:
+            person, email_address = self.createPersonAndEmail(
+                email, rationale, comment=comment, displayname=displayname,
+                registrant=registrant, hide_email_addresses=True)
             return person
-        person, dummy = self.createPersonAndEmail(
-            email, rationale, comment=comment, displayname=displayname,
-            registrant=registrant)
-        return person
+
+        # There is an IEmailAddress for this text address, but there is no
+        # associated IPerson record.  This is likely because the account
+        # was created externally to Launchpad.  Create just the IPerson
+        # now and associate it with the IEmailAddress.
+        if email_address.personID is None:
+            name = generate_nick(email)
+            person = self._newPerson(
+                name, displayname, hide_email_addresses=True,
+                rationale=rationale, comment=comment, registrant=registrant,
+                account=email_address.account)
+            return person
+
+        return IMasterStore(Person).get(Person, email_address.personID)
 
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""

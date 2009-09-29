@@ -4,7 +4,8 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.2.7 (r${revno});
+    release modules/canonical.launchpad.versioninfo/release;
+    version string:Launchpad ${release} (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
@@ -26,9 +27,7 @@
     yui string:${icingroot}/yui/3.0.0pr2/build;
     lazr_js string:${icingroot}/lazr/build;
     lp_js string:${icingroot}/build">
-    <title i18n:translate=""
-      tal:content="view/page_title|CONTEXTS/fmt:pagetitle">Launchpad</title>
-
+    <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
 
     <tal:atomfeeds define="feed_links view/feed_links | nothing">
@@ -44,15 +43,6 @@
     <style tal:condition="is_demo" type="text/css">
       html, body {background-image: url(/@@/demo) !important;}
     </style>
-
-    <tal:comment condition="nothing">
-      Internet Explorer apparently doubles the horizontal margins of the
-      application tabs, which causes the 'Answers' tab to wrap onto a second
-      row. To work around this, we give IE some speshul CSS:
-    </tal:comment>
-    <!--[if lte IE 7]>
-      <style type="text/css">#lp-apps span {margin: 0 0.125%;}</style>
-    <![endif]-->
 
     <tal:comment condition="nothing">
       This CSS collapses the contents of collapsible fieldsets,
@@ -80,22 +70,19 @@
       ${view/context/fmt:public-private-css}
       yui-skin-sam">
     <div class="yui-d0">
-      <div id="globalheader" xml:lang="en" lang="en" dir="ltr"
-           tal:condition="site_message">
-        <div class="sitemessage" tal:content="structure site_message">
-          This site is running pre-release code.
-        </div>
-      </div>
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
 
       <div class="watermark-apps-portlet top-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
-        <span tal:replace="structure context/watermark:logo"></span>
-        <h2 tal:replace="structure context/watermark:heading">
+        <span tal:replace="structure view/watermark:logo"></span>
+        <h2 tal:replace="structure view/watermark:heading">
           Celso Providelo
         </h2>
+        <div id="registration" class="registering">
+          <metal:registering define-slot="registering" />
+        </div>
         <metal:heading_nav
           use-macro="context/@@+base-layout-macros/application-buttons"/>
       </div>
@@ -119,10 +106,12 @@
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
             <div tal:condition="view/macro:pagehas/applicationtabs">
-              <h2
-                tal:condition="context/title|nothing"
-                tal:content="context/title"
-                metal:define-slot="heading" />
+              <h1
+                tal:condition="view/label|nothing"
+                tal:content="view/label"
+                metal:define-slot="heading"
+                >Page Label
+              </h1>
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>

@@ -16,7 +16,10 @@ __all__ = [
 
 import bz2
 from cStringIO import StringIO
-import cElementTree as etree
+try:
+    import xml.etree.cElementTree as etree
+except ImportError:
+    import cElementTree as etree
 from datetime import datetime, timedelta
 from logging import getLogger
 import os
@@ -437,16 +440,207 @@ class SubmissionParser(object):
             aliases.append(alias)
         return aliases
 
-    _parse_hardware_section = {
-        'hal': _parseHAL,
-        'processors': _parseProcessors,
-        'aliases': _parseAliases}
+    def _parseUdev(self, udev_node):
+        """Parse the <udev> node.
+
+        :return: A list of dictionaries, where each dictionary
+            describes a udev device.
+
+        The <udev> node contains the output produced by
+        "udevadm info --export-db". Each entry of the dictionaries
+        represents the data of the key:value pairs as they appear
+        in this data. The value of d['S'] is a list of strings,
+        the value s['E'] is a dictionary containing the key=value
+        pairs of the "E:" lines.
+        """
+        # We get the plain text as produced by "udevadm info --export-db"
+        # This data looks like:
+        #
+        # P: /devices/LNXSYSTM:00
+        # E: UDEV_LOG=3
+        # E: DEVPATH=/devices/LNXSYSTM:00
+        # E: MODALIAS=acpi:LNXSYSTM:
+        #
+        # P: /devices/LNXSYSTM:00/ACPI_CPU:00
+        # E: UDEV_LOG=3
+        # E: DEVPATH=/devices/LNXSYSTM:00/ACPI_CPU:00
+        # E: DRIVER=processor
+        # E: MODALIAS=acpi:ACPI_CPU:
+        #
+        # Data for different devices is separated by empty lines.
+        # Each line for a device consists of key:value pairs.
+        # The following keys are defined:
+        #
+        # A: udev_device_get_num_fake_partitions()
+        # E: udev_device_get_properties_list_entry()
+        # L: the device link priority (udev_device_get_devlink_priority())
+        # N: the device node file name (udev_device_get_devnode())
+        # P: the device path (udev_device_get_devpath())
+        # R: udev_device_get_ignore_remove()
+        # S: udev_get_dev_path()
+        # W: udev_device_get_watch_handle()
+        #
+        # The key P is always present; the keys A, L, N, R, W appear at
+        # most once per device; the keys E and S may appear more than
+        # once.
+        # The values of the E records have the format "key=value"
+        #
+        # See also the libudev reference manual:
+        # http://www.kernel.org/pub/linux/utils/kernel/hotplug/libudev/
+        # and the udev file udevadm-info.c, function print_record()
+
+        udev_data = udev_node.text.split('\n')
+        devices = []
+        device = None
+        line_number = 0
+
+        for line_number, line in enumerate(udev_data):
+            if len(line) == 0:
+                device = None
+                continue
+            record = line.split(':', 1)
+            if len(record) != 2:
+                self._logError(
+                    'Line %i in <udev>: No valid key:value data: %r'
+                    % (line_number, line),
+                    self.submission_key)
+                return None
+
+            key, value = record
+            if device is None:
+                device = {
+                    'E': {},
+                    'S': [],
+                    }
+                devices.append(device)
+            # Some attribute lines have a space character after the
+            # ':', others don't have it (see udevadm-info.c).
+            value = value.lstrip()
+
+            if key == 'E':
+                property_data = value.split('=', 1)
+                if len(property_data) != 2:
+                    self._logError(
+                        'Line %i in <udev>: Property without valid key=value '
+                        'data: %r' % (line_number, line),
+                        self.submission_key)
+                    return None
+                property_key, property_value = property_data
+                device['E'][property_key] = property_value
+            elif key == 'S':
+                device['S'].append(value)
+            else:
+                if key in device:
+                    self._logWarning(
+                        'Line %i in <udev>: Duplicate attribute key: %r'
+                        % (line_number, line),
+                        self.submission_key)
+                device[key] = value
+        return devices
+
+    def _parseDmi(self, dmi_node):
+        """Parse the <dmi> node.
+
+        :return: A dictionary containing the key:value pairs of the DMI data.
+        """
+        dmi_data = {}
+        dmi_text = dmi_node.text.strip().split('\n')
+        for line_number, line in enumerate(dmi_text):
+            record = line.split(':', 1)
+            if len(record) != 2:
+                self._logError(
+                    'Line %i in <dmi>: No valid key:value data: %r'
+                    % (line_number, line),
+                    self.submission_key)
+                return None
+            dmi_data[record[0]] = record[1]
+        return dmi_data
+
+    def _parseSysfsAttributes(self, sysfs_node):
+        """Parse the <sysfs-attributes> node.
+
+        :return: A dictionary {path: attrs, ...} where path is the
+            path is the path of a sysfs directory, and where attrs
+            is a dictionary containing attribute names and values.
+
+        A sample of the input data:
+
+        P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+        A: modalias=input:b0019v0000p0001e0000-e0,1,k74,ramlsfw
+        A: uniq=
+        A: phys=LNXPWRBN/button/input0
+        A: name=Power Button
+
+        P: /devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03/input/input8
+        A: modalias=input:b0019v0000p0006e0000-e0,1,kE0,E1,E3,F0,F1
+        A: uniq=
+        A: phys=/video/input0
+        A: name=Video Bus
+
+        Data for different devices is separated by empty lines. The data
+        for each device starts with a line 'P: /devices/LNXSYSTM...',
+        specifying the sysfs path of a device, followed by zero or more
+        lines of the form 'A: key=value'
+        """
+        sysfs_lines = sysfs_node.text.split('\n')
+        sysfs_data = {}
+        attributes = None
+
+        for line_number, line in enumerate(sysfs_lines):
+            if len(line) == 0:
+                attributes = None
+                continue
+            record = line.split(': ', 1)
+            if len(record) != 2:
+                self._logError(
+                    'Line %i in <sysfs-attributes>: No valid key:value data: '
+                    '%r' % (line_number, line),
+                    self.submission_key)
+                return None
+
+            key, value = record
+            if key == 'P':
+                if attributes is not None:
+                    self._logError(
+                        "Line %i in <sysfs-attributes>: duplicate 'P' line "
+                        "found: %r" % (line_number, line),
+                        self.submission_key)
+                    return None
+                attributes = {}
+                sysfs_data[value] = attributes
+            elif key == 'A':
+                if attributes is None:
+                    self._logError(
+                        "Line %i in <sysfs-attributes>: Block for a device "
+                        "does not start with 'P:': %r" % (line_number, line),
+                        self.submission_key)
+                    return None
+                attribute_data = value.split('=', 1)
+                if len(attribute_data) != 2:
+                    self._logError(
+                        'Line %i in <sysfs-attributes>: Attribute line does '
+                        'not contain key=value data: %r'
+                        % (line_number, line),
+                        self.submission_key)
+                    return None
+                attributes[attribute_data[0]] = attribute_data[1]
+            else:
+                self._logError(
+                    'Line %i in <sysfs-attributes>: Unexpected key: %r'
+                    % (line_number, line),
+                    self.submission_key)
+                return None
+        return sysfs_data
 
     def _setHardwareSectionParsers(self):
         self._parse_hardware_section = {
             'hal': self._parseHAL,
             'processors': self._parseProcessors,
-            'aliases': self._parseAliases}
+            'aliases': self._parseAliases,
+            'udev': self._parseUdev,
+            'dmi': self._parseDmi,
+            'sysfs-attributes': self._parseSysfsAttributes,
+            }
 
     def _parseHardware(self, hardware_node):
         """Parse the <hardware> part of a submission.

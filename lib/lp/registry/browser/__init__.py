@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_status_count',
+    'get_status_counts',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
@@ -19,6 +19,7 @@ from operator import attrgetter
 from zope.component import getUtility
 
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadEditFormView)
@@ -38,21 +39,26 @@ class StatusCount:
         self.count = count
 
 
-def get_status_counts(workitems, status_attr):
+def get_status_counts(workitems, status_attr, key='sortkey'):
     """Return a list StatusCounts summarising the workitem."""
     statuses = {}
     for workitem in workitems:
         status = getattr(workitem, status_attr)
+        if status is None:
+            # This is not something we want to count.
+            continue
         if status not in statuses:
             statuses[status] = 0
         statuses[status] += 1
     return [
         StatusCount(status, statuses[status])
-        for status in sorted(statuses, key=attrgetter('sortkey'))]
+        for status in sorted(statuses, key=attrgetter(key))]
 
 
 class MilestoneOverlayMixin:
     """A mixin that provides the data for the milestoneoverlay script."""
+
+    milestone_can_release = True
 
     @property
     def milestone_form_uri(self):
@@ -63,6 +69,63 @@ class MilestoneOverlayMixin:
     def series_api_uri(self):
         """The series URL for API access."""
         return canonical_url(self.context, path_only_if_possible=True)
+
+    @property
+    def milestone_table_class(self):
+        """The milestone table will be unseen if there are no milestones."""
+        if len(self.context.all_milestones) > 0:
+            return 'listing'
+        else:
+            # The page can remove the 'unseen' class to make the table
+            # visible.
+            return 'listing unseen'
+
+    @property
+    def milestone_row_uri_template(self):
+        if IProductSeries.providedBy(self.context):
+            pillar = self.context.product
+        else:
+            pillar = self.context.distribution
+        uri = canonical_url(pillar, path_only_if_possible=True)
+        return '%s/+milestone/{name}/+productseries-table-row' % uri
+
+    @property
+    def register_milestone_script(self):
+        """Return the script to enable milestone creation via AJAX."""
+        uris = {
+            'series_api_uri': self.series_api_uri,
+            'milestone_form_uri': self.milestone_form_uri,
+            'milestone_row_uri': self.milestone_row_uri_template,
+            }
+        return """
+            YUI().use(
+                'node', 'lp.milestoneoverlay', 'lp.milestonetable',
+                function (Y) {
+
+                var series_uri = '%(series_api_uri)s';
+                var milestone_form_uri = '%(milestone_form_uri)s';
+                var milestone_row_uri = '%(milestone_row_uri)s';
+                var milestone_rows_id = '#milestone-rows';
+
+                Y.on('domready', function () {
+                    var create_milestone_link = Y.get(
+                        '.menu-link-create_milestone');
+                    create_milestone_link.addClass('js-action');
+                    var config = {
+                        milestone_form_uri: milestone_form_uri,
+                        series_uri: series_uri,
+                        next_step: Y.lp.milestonetable.get_milestone_row,
+                        activate_node: create_milestone_link
+                        };
+                    Y.lp.milestoneoverlay.attach_widget(config);
+                    var table_config = {
+                        milestone_row_uri_template: milestone_row_uri,
+                        milestone_rows_id: milestone_rows_id
+                        }
+                    Y.lp.milestonetable.setup(table_config);
+                });
+            });
+            """ % uris
 
 
 class RegistryDeleteViewMixin:

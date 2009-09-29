@@ -34,6 +34,14 @@ class ITranslationsPerson(Interface):
         title=_("Whether person agrees to relicense their translations"),
         readonly=False)
 
+    def getTranslationHistory(no_older_than=None):
+        """Query most recent `POFileTranslator` entries for this person.
+
+        :param no_older_than: Optional cutoff date.  If given, older
+            `POFileTranslator` entries are ignored.
+        :return: a Storm query result.
+        """
+
     def getReviewableTranslationFiles(no_older_than=None):
         """List `POFile`s this person should be able to review.
 
@@ -43,7 +51,7 @@ class ITranslationsPerson(Interface):
         :param no_older_than: Optional cutoff date.  Translations that
             this person hasn't contributed to since this date will be
             ignored.
-        :return: a sequence of `POFile`s ordered by age of oldest
+        :return: A query result of `POFile`s ordered by age of oldest
             unreviewed `TranslationMessage` (oldest first).
         """
 
@@ -55,4 +63,27 @@ class ITranslationsPerson(Interface):
         recent past.
 
         :param maximum: Maximum number of `POFile`s to return.
+        """
+
+    def getTranslatableFiles(no_older_than=None, urgent_first=True):
+        """List `POFile`s this person should be able to help translate.
+
+        These are translations that this person is not a reviewer for,
+        but has worked on recently.
+
+        :param no_older_than: Optional cutoff date to define "recently."
+        :param urgent_first: If True, sort `POFile`s with the most
+            untranslated strings to the front.  If False, sort the other
+            way around.
+        :return: A query result of `POFile`s ordered by number of
+            untranslated messages.
+        """
+
+    def suggestTranslatableFiles(no_older_than=None):
+        """Suggest `POFile`s this person could help translate.
+
+        Similar to `getTranslatableFiles`, this method picks an
+        arbitrary series of `POFile`s that the user is not a reviewer
+        for and has not worked on recently, but which are in a language
+        the user works in.
         """

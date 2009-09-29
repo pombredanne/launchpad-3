@@ -7,7 +7,7 @@ Remove this section when the old templates and these declarations are gone.
 #maincontent {
     float: left;
     width: 100%;
-    margin-right: -25em;
+    margin-right: -25%;
     }
 #maincontent ol, #maincontent ul {
     padding-left: auto;
@@ -207,7 +207,7 @@ span.nolink {
     }
 .footer {
     clear: both;
-    margin-top: 2em;
+    margin-top: 4em;
     padding-top: 0.5em;
     }
 .footer .lp-arcana {
@@ -217,6 +217,7 @@ span.nolink {
     -webkit-border-radius: 3px 3px 0 0;
     -khtml-border-radius: 3px 3px 0 0;
     border-radius: 3px 3px 0 0;
+    height:2em;
     }
 .footer .lp-arcana img {
     vertical-align: middle;
@@ -228,16 +229,25 @@ span.nolink {
     margin: 3em 3em 1em 3em;
     text-align: center;
     }
+.footer .lp-branding {
+    float: left;
+    }
 .portlet, .aside {
     clear: both;
-    border-top: 1px solid #d6d6d6;
-    padding: 0.5em 0;
+    border-top: 1px solid #EBEBEB;
+    padding: 1em 0;
     }
 .top-portlet {
     padding: 0 0 0.5em 0;
     margin: 0 0 1em;
     }
-
+.full-page-width {
+    z-index: 10;
+    width: 131%;
+    }
+.warning.message {
+    margin-top: 17px;
+    }
 /*
 
 Use percentages when setting font-size.
@@ -268,6 +278,7 @@ Pixels  Percent
 Use the following 'application' colors for table column headings,
 app stats etc.
 
+Launchpad-Gold: #F8C300
 Answers: #3840BE
 Blueprints: #3594BB
 Bugs: #9F2B33
@@ -293,6 +304,9 @@ strong.registry-stat {
     }
 strong.translations-stat {
     color: #BB3A84;
+    }
+.launchpad-gold {
+    color: #F8C300;
     }
 
 
@@ -338,7 +352,8 @@ li {
     padding-bottom: .3em;
     }
 dt {
-    margin-bottom: .1em;
+    margin-bottom: .3em;
+    margin-top: 0.5em;
     }
 dd {
     margin-bottom: .8em;
@@ -378,9 +393,8 @@ span.see-all {
     }
 .see-all a {
     padding-left: 8px;
-    background: url(/@@/link-grey-arrow.png) left center no-repeat;
+    background: inherit;
     font-size: 72%;
-    color: #484848;
     text-decoration: underline;
     }
 .rss-right {
@@ -397,6 +411,9 @@ span.see-all {
     font-size: 85%;
     color: #666;
     font-style: italic;
+    }
+li .registered {
+    font-style: normal;
     }
 .description {
     clear: both;
@@ -473,7 +490,6 @@ p.search-results {
 /* == Watermark heading styles */
 div.watermark-apps-portlet {
     padding-bottom:1em;
-    border-bottom: 1px solid #d6d6d6;
 }
 div.watermark-apps-portlet img {
     float: left;
@@ -524,11 +540,18 @@ div.watermark-apps-portlet h1 {
     color: #747474;
 }
 
+/* Registering slot */
+.registering {
+    float: right;
+    padding-top: 10px;
+    font-size: 85%;
+    color: #666;
+}
+
 /* Side content exceptions */
 .side {
     padding: 0.5em;
     color: #484848;
-    background: #f3f3f3;
     }
 .side .portlet {
     width: 90%;
@@ -547,9 +570,6 @@ div.watermark-apps-portlet h1 {
     background: #fbfbfb;
     }
 
-.downloads a {
-    color: #4f843c;
-    }
 .downloads li {
     margin: 0;
     padding: 2px 0 0;
@@ -565,17 +585,20 @@ div.watermark-apps-portlet h1 {
     border-radius: 3px;
     background: #4f843c url(/@@/bg-project-downloads.png) center right no-repeat;
     padding: 6%;
-    padding-right: 50px;
+    padding-right: 40px;
     color: #fff;
-    font-size: 108%;
-    text-decoration: underline;
+    font-size: 93%;
+    }
+.downloads .version {
+    -moz-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    -khtml-border-radius: 5px 5px 0 0;
+    border-radius: 5px 5px 0 0;
+    background: #d3e3c7;
+    padding: 0.2em 1em;
     }
 .downloads .released {
-    margin: .3em 0 1em 0;
-    padding: 0 .2em 0 0;
-    text-align: right;
-    }
-.downloads .released span {
+    margin: .3em 0 .5em 0;
     -moz-border-radius: 0 0 5px 5px;
     -webkit-border-radius: 0 0 5px 5px;
     -khtml-border-radius: 0 0 5px 5px;
@@ -584,14 +607,35 @@ div.watermark-apps-portlet h1 {
     padding: 0.2em 1em;
     }
 .downloads .alternate {
-    text-align: right;
+    padding: 0 0 0 1em;
     }
 
-.involvement ul {
-    border-top: 1px solid #d0d0d0;
+ul.super-add-action {
+    margin: 0 auto 1em;
+}
+
+ul.super-add-action li {
+    padding: 0;
+}
+
+ul.super-add-action li a {
+    display: block;
+    border: 1px solid black;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -khtml-border-radius: 3px;
+    background: #4f843c url(/@@/bg-action-add) center left no-repeat;
+    border-radius: 3px;
+    padding: 6%;
+    padding-left: 45px;
+    color: #fff;
+    font-size: 108%;
+    font-weight: bold;
+    text-decoration: underline;
     }
+
 .involvement li {
-    border-bottom: 1px solid #d0d0d0;
+    border-top: 1px solid #d0d0d0;
     padding: 0;
     font-size: 108%;
     font-weight: bold;
@@ -620,6 +664,10 @@ div.watermark-apps-portlet h1 {
     color: #5ba4c6;
     background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
     }
+.involvement a:hover {
+    text-decoration: none;
+    background-color: #eee;
+    }
 
 .announcements li {
     margin-bottom: 0.5em;
@@ -639,6 +687,39 @@ div.watermark-apps-portlet h1 {
     margin-top: -2px;
     }
 
+/* For the Latest updates portlet
+ * at https://launchpad.dev/~cprov/+archive/ppa */
+ul.latest-ppa-updates .duration {
+    font-size: 75%;
+}
+ul.latest-ppa-updates li {
+    padding: 3px;
+    background-repeat: no-repeat;
+    background-position:right center;
+}
+/* The following could be generalised for use to the following selector:
+ * .side .portlet li.nth-child(odd)
+ * if needed. */
+ul.latest-ppa-updates li:nth-child(odd) {
+    border-top: 1px solid #dedede;
+    border-bottom: 1px solid #dedede;
+    background-color: #eeeeff;
+}
+ul.latest-ppa-updates li.FULLYBUILT {
+    background-image: url('/@@/yes');
+}
+ul.latest-ppa-updates li.FULLYBUILT_PENDING {
+    background-image: url('/@@/build-success-publishing');
+}
+ul.latest-ppa-updates li.NEEDSBUILD {
+    background-image: url('/@@/build-needed');
+}
+ul.latest-ppa-updates li.FAILEDTOBUILD {
+    background-image: url('/@@/build-failed');
+}
+ul.latest-ppa-updates li.BUILDING {
+    background-image: url('/@@/processing');
+}
 /* From nice_pre in tales.py */
 pre.wrap {
   white-space: -moz-pre-wrap;
@@ -649,11 +730,22 @@ pre.wrap {
 
 /* ==== Listing tables ==== */
 
-table.listing thead {
-  font-size: 116%;
-}
 table.listing th {
-  font-weight: bold;
+    font-weight: bold;
+}
+table.narrow-listing {
+    width: 45em;
+}
+/* ~person/+karma */
+table.cozy-listing {
+    width: 20em;
+    background-color: #fff;
+    border: 1px solid #d2d2d2;
+    border-bottom: 1px solid #d2d2d2;
+}
+table.cozy-listing td {
+    border: 1px #d2d2d2;
+    border-style: dotted none none none;
 }
 
 ul.language, li.language             {
@@ -665,53 +757,178 @@ ul.language, li.language             {
 /* ==== Translations hand-made forms ==== */
 
 form.translations div.fields {
-  padding: 1em;
+    padding: 1em;
 }
 
 form.translations div.actions {
-  padding: 1em;
-  text-align: right;
+    padding: 1em;
+    text-align: right;
+    clear:both;
 }
 
 form.translations input {
-  padding-left: 0.5em;
-  padding-right: 0.5em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
 }
 
 form.translations select {
-  margin-left: 0.5em;
-  padding-right: 0.5em;
+    margin-left: 0.5em;
+    padding-right: 0.5em;
 }
 
 form.translations label {
-  padding-left: 0.5em;
-  padding-right: 1em;
+    padding-left: 0.5em;
+    padding-right: 1em;
 }
 
 form.translations .listbox label {
-  padding: 2px 1em 2px 2px;
+    padding: 2px 1em 2px 2px;
 }
 
 /* Provide top-alignment for radio boxes and longer explanations
  * without using tables.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+ *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
  */
-form.translations div.fields div.alignment {
-  position: relative;
-}
-form.translations div.alignment div.top-alignment {
-  position: absolute;
-  top: 0px;
-}
-form.translations div.alignment .spacer {
-  visibility: hidden;
-}
 form.translations div.alignment .content {
-  display: inline-block;
-  margin-left: 0px;
+    float:left;
+}
+form.translations div.alignment .selector {
+    margin-right: 0.5em;
+    float: left;
+    clear: both;
+}
+form.translations div.alignment .content label {
+    padding: 0px;
+    margin: 0px;
+    font-weight: bold;
+}
+form.translations div.alignment .secondary label {
+    font-weight: normal;
+    padding: 2px 1em 2px 2px;
 }
 
-form.translations div.alignment .content label {
-  padding: 0px;
-  margin: 0px;
-  font-weight: bold;
+/* Translations statistics and legend.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+lang/es
+ *   https://translations.launchpad.dev/evolution/trunk/+lang/es
+ */
+
+div.translations-legend {
+    padding-top: 2em;
+    padding-bottom: 1em;
+}
+table.translation-stats td {
+    text-align:center;
+}
+table.translation-stats td.template-name {
+    text-align:left;
+}
+table.translation-stats tfoot td,
+table.translation-stats tfoot th {
+    background-color: #f7f7f7;
+    border: 0px;
+    border-top: 2px solid #d2d2d2;
+    border-bottom: 2px solid #d2d2d2;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-weight: bold;
+}
+table.translation-stats tfoot th {
+    text-align:left;
+}
+table.translation-stats tfoot td {
+    text-align:center;
+}
+
+/* Home page */
+.homepage {
+    margin: auto;
+    width: 90%;
+    max-width: 80em;
+}
+.homepage-portlet {
+    margin-bottom: 3em;
+    line-height: 140%;
+}
+.homepage-portlet h2 {
+    border-bottom: 1px solid;
+    margin-top: 2em;
+    font-size: 167%;
+    }
+.homepage-whatslaunchpad h2 {
+    font-size: 189%;
+    font-weight: bold;
+    line-height: 110%;
+    margin-bottom: 0.5em;
+}
+#homepage-whatslaunchpad ul {
+    margin-left: 1em;
+    margin-bottom: 0.5em;
+}
+#homepage-whatslaunchpad ul,
+#homepage-whatslaunchpad-tour {
+    font-size: 116%;
+    font-weight: bold;
+}
+#homepage-stats {
+    max-width: 50em;
+    margin: auto;
+    padding-top: 0.5em;
+    color: gray;
+    font-size: 83.3%
+}
+#homepage-blogposts {
+    padding-right: 4em;
+}
+#homepage-blogposts .blogdate {
+    font-size: 85%;
+    color: grey;
+}
+.homepage-blogposts-older {
+    font-weight: bold;
+}
+.homepage-getstarted h2 {
+    border-bottom: 1px solid;
+    margin-top: 1em;
+    font-size: 161%;
+    }
+#homepage-featured {
+    width: 100%;
+}
+#homepage-featured ul {
+    width: 48%;
+}
+#homepage-featured-left {
+    float: left;
+}
+#homepage-featured-right {
+    float: right;
+}
+#homepage-featured-top img {
+    float: left;
+}
+#homepage-featured-top-title {
+    height: 64px;
+    display: block;
+    margin-left: 70px;
+}
+#homepage-featured-top-title span{
+    font-size: 131%;
+    font-weight: bold;
+    position: relative;
+    top: 20px;
+}
+#homepage-featured-top-text {
+    margin-top: 0.5em;
+    margin-bottom: 1em;
+    border-bottom: 1px solid #888888;
+}
+.homepage-featured-more {
+    font-weight: bold;
+    margin-top: 2em;
+    clear: both;
 }

@@ -22,13 +22,14 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.browser.product import ProductEditView
 from lp.translations.browser.translations import TranslationsMixin
 
+
 class ProductTranslationsMenu(NavigationMenu):
 
     usedfor = IProduct
     facet = 'translations'
     links = (
         'overview',
-        'translators',
+        'settings',
         'translationdownload',
         'imports',
         )
@@ -38,7 +39,7 @@ class ProductTranslationsMenu(NavigationMenu):
         return Link('+imports', text)
 
     @enabled_with_permission('launchpad.Edit')
-    def translators(self):
+    def settings(self):
         text = 'Settings'
         return Link('+changetranslators', text, icon='edit')
 
@@ -62,13 +63,24 @@ class ProductTranslationsMenu(NavigationMenu):
 
 
 class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
-    label = "Select a new translation group"
+    label = "Set permissions and policies"
+    page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
 
 
 class ProductView(LaunchpadView):
 
     __used_for__ = IProduct
+
+    label = "Translation overview"
 
     @cachedproperty
     def uses_translations(self):
@@ -99,3 +111,10 @@ class ProductView(LaunchpadView):
             'potemplates': translatable.getCurrentTranslationTemplates(),
             'base_url': canonical_url(translatable)
             }
+
+    @cachedproperty
+    def untranslatable_series(self):
+        """Return series which are not yet set up for translations."""
+        all_series = set(self.context.serieses)
+        translatable = set(self.context.translatable_series)
+        return all_series - translatable

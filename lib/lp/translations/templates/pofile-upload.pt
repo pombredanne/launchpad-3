@@ -9,14 +9,6 @@
 
   <div metal:fill-slot="main">
 
-    <h1>
-      Upload
-      <tal:language replace="context/language/englishname">
-        Spanish
-      </tal:language>
-      translation
-    </h1>
-
     <form action="+upload" method="POST" enctype="multipart/form-data"
           class="translations">
       <h2>Choose a file to upload</h2>
@@ -28,32 +20,21 @@
       <h2>What kind of upload is this?</h2>
       <div class="fields">
         <div class="alignment">
-          <div class="top-alignment">
-            <input id="user_type" name="upload_type" type="radio"
-                   value="user" checked="checked" />
-          </div>
-          <!-- Preserve space for the input box -->
-          <input type="radio" class="spacer" />
 
+          <input id="user_type" name="upload_type" type="radio"
+                 value="user" checked="checked" class="selector"/>
           <span class="content">
             <label for="user_type">
               Updated translation
             </label>
             <p class="discreet">
-              You have exported a PO file from Launchpad, worked on it off-line,
-              and now you want to contribute your updates back.
+              You have exported a PO file from Launchpad, worked on it
+              off-line, and now you want to contribute your updates back.
             </p>
           </span>
-        </div>
 
-        <div class="alignment">
-          <div class="top-alignment">
-            <input id="upstream_type" name="upload_type" type="radio"
-                   value="upstream" />
-          </div>
-          <!-- Preserve space for the input box -->
-          <input type="radio" class="spacer" />
-
+          <input id="upstream_type" name="upload_type" type="radio"
+                 value="upstream" class="selector"/>
           <span class="content">
             <label for="upstream_type">
               Imported translation

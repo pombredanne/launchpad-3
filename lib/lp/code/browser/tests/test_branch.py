@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
-from lp.app.interfaces.rootcontext import IRootContext
+from lp.app.interfaces.headings import IRootContext
 from lp.code.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
     BranchSparkView, BranchView)

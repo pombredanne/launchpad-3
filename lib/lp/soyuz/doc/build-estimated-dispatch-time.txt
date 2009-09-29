@@ -33,7 +33,7 @@ distroseries).
     >>> hoary.main_archive.require_virtualized
     False
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
     >>> alsa_hoary = hoary.getSourcePackage('alsa-utils')
     >>> alsa_spr = alsa_hoary['1.0.9a-4'].sourcepackagerelease

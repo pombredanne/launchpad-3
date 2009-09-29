@@ -27,8 +27,6 @@ browsing to it.
 This takes us to the branch listing for that source package
 
     >>> browser.open(source_package_url)
-    >>> print browser.title
-    Bazaar branches of foo in distro Series
 
 Both of the branches we made appear in the listing.
 

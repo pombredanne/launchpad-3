@@ -69,6 +69,8 @@ class BugNominationView(LaunchpadFormView):
         else:
             return "Nominate bug #%d for series" % self.context.bug.id
 
+    page_title = label
+
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
         current_bugtask = getUtility(ILaunchBag).bugtask
@@ -236,6 +238,11 @@ class BugNominationEditView(LaunchpadView):
     def getCurrentBugTaskURL(self):
         """Return the URL of the current bugtask."""
         return canonical_url(getUtility(ILaunchBag).bugtask)
+
+    @property
+    def title(self):
+        return 'Approve or decline nomination for bug #%d in %s' % (
+            self.context.bug.id, self.context.target.bugtargetdisplayname)
 
 
 class BugNominationContextMenu(BugContextMenu):

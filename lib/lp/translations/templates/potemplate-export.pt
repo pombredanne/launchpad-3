@@ -9,8 +9,6 @@
 <body>
 
 <div metal:fill-slot="main">
-  <h1>Download translations</h1>
-
   <div class="main-portlet">
 
     <h2>Select files to download</h2>
@@ -18,26 +16,20 @@
     <form action="" method="post" class="translations">
 
       <div class="fields">
-        <div>
-          <label>
-              <input name="what" type="radio" value="all"
-                  checked="checked" />
-              Everything
-          </label>
-        </div>
-
         <div class="alignment">
-          <div class="top-alignment">
+          <div>
             <label>
-              <input name="what" type="radio" value="some" />
-              Selected files:
+              <input name="what" type="radio" value="all"
+                     checked="checked" />
+              Everything
             </label>
           </div>
-          <span class="spacer">
-            <!-- preserve space for the actual radio button and label -->
-            <label><input type="radio" />Selected files.</label>
-          </span>
-          <span class="listbox" style="margin-left: 1.5em;">
+
+          <label class="selector">
+            <input name="what" type="radio" value="some" />
+            Selected files:
+          </label>
+          <div class="listbox content secondary">
             <div>
               <label>
                 <input type="checkbox" name="potemplate" />
@@ -53,8 +45,9 @@
                 </label>
               </div>
             </tal:thing>
-          </span>
+          </div>
         </div>
+        <div style="clear:both;">&nbsp;</div>
       </div>
       <h2>Choose file format for the export</h2>
       <div class="fields">

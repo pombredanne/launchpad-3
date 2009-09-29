@@ -12,7 +12,7 @@ correctness of exposing package sets on the web services API.
 
 The actual package set *functionality* is tested in much greater detail
 here:
-    
+
     lib/lp/soyuz/doc/packageset.txt
 
 Please refer to the tests contained in the file above if you are really
@@ -29,7 +29,7 @@ source packages.
     ...     '/package-sets', 'new', {},
     ...     name=u'umbrella', description=u'Contains all source packages',
     ...     owner=name12['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -67,7 +67,7 @@ When a `PackageSet` cannot be found, an error is returned.
 
     >>> response = webservice.named_get(
     ...     '/package-sets', 'getByName', {}, name=u'not-found')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 400 Bad Request
     ...
     NoSuchPackageSet: No such packageset: 'not-found'.
@@ -83,7 +83,7 @@ Populate the 'umbrella' package set with source packages.
     >>> response = webservice.named_post(
     ...     '/package-sets/umbrella', 'addSources', {},
     ...     names=[spn.name for spn in all_spns])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
@@ -93,7 +93,7 @@ exist will not fail. Non-existing source package names are *ignored*.
     >>> response = webservice.named_post(
     ...     '/package-sets/umbrella', 'addSources', {},
     ...     names=[u'does-not-exist'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     null
@@ -101,7 +101,7 @@ exist will not fail. Non-existing source package names are *ignored*.
     >>> response = webservice.named_post(
     ...     '/package-sets/umbrella', 'removeSources', {},
     ...     names=[u'does-not-exist'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     null
@@ -110,7 +110,7 @@ Let's see what we got.
 
     >>> response = webservice.named_get(
     ...     '/package-sets/umbrella', 'getSourcesIncluded', {})
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     ["a52dec",
@@ -138,7 +138,7 @@ from the 'umbrella' package set.
     >>> response = webservice.named_post(
     ...     '/package-sets/umbrella', 'removeSources', {},
     ...     names=["foobar", "iceweasel"])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
@@ -147,7 +147,7 @@ from the list below.
 
     >>> response = webservice.named_get(
     ...     '/package-sets/umbrella', 'getSourcesIncluded', {})
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     ["a52dec",
@@ -183,7 +183,7 @@ however, we only have the 'umbrella' package set. It hence has no subsets.
 
     >>> response = webservice.named_get(
     ...     '/package-sets/umbrella', 'setsIncluded', {})
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     {"total_size": 0, "start": null, "entries": []}
@@ -194,7 +194,7 @@ Let's create a few more package sets and set up a package set hierarchy.
     ...     '/package-sets', 'new', {},
     ...     name=u'gnome', description=u'Contains all gnome packages',
     ...     owner=name12['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -202,7 +202,7 @@ Let's create a few more package sets and set up a package set hierarchy.
     ...     '/package-sets', 'new', {},
     ...     name=u'mozilla', description=u'Contains all mozilla packages',
     ...     owner=name12['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -210,7 +210,7 @@ Let's create a few more package sets and set up a package set hierarchy.
     ...     '/package-sets', 'new', {},
     ...     name=u'firefox', description=u'Contains all firefox packages',
     ...     owner=name12['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -219,7 +219,7 @@ Let's create a few more package sets and set up a package set hierarchy.
     ...     name=u'thunderbird',
     ...     description=u'Contains all thunderbird packages',
     ...     owner=name12['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -228,7 +228,7 @@ Let's create a few more package sets and set up a package set hierarchy.
     ...     name=u'languagepack',
     ...     description=u'Contains all languagepack packages',
     ...     owner=name12['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -247,27 +247,27 @@ set hierarchy:
     >>> response = webservice.named_post(
     ...     '/package-sets/umbrella', 'addSubsets', {},
     ...     names=[u'gnome', u'mozilla'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
     >>> response = webservice.named_post(
     ...     '/package-sets/gnome', 'addSubsets', {}, names=[u'languagepack'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
     >>> response = webservice.named_post(
     ...     '/package-sets/thunderbird', 'addSubsets', {},
     ...     names=[u'languagepack'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
     >>> response = webservice.named_post(
     ...     '/package-sets/mozilla', 'addSubsets', {},
     ...     names=[u'firefox', u'thunderbird'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
@@ -277,7 +277,7 @@ non-existing package sets will not fail.
     >>> response = webservice.named_post(
     ...     '/package-sets/thunderbird', 'addSubsets', {},
     ...     names=[u'does-not-exist'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     null
@@ -285,7 +285,7 @@ non-existing package sets will not fail.
     >>> response = webservice.named_post(
     ...     '/package-sets/thunderbird', 'removeSubsets', {},
     ...     names=[u'does-not-exist'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     null
@@ -337,7 +337,7 @@ stop including 'languagepack'.
     >>> response = webservice.named_post(
     ...     '/package-sets/thunderbird', 'removeSubsets', {},
     ...     names=[u'languagepack'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
@@ -355,13 +355,13 @@ package sets.
     >>> response = webservice.named_post(
     ...     '/package-sets/firefox', 'addSources', {},
     ...     names=['at', 'mozilla-firefox', 'language-pack-de'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
     >>> response = webservice.named_get(
     ...     '/package-sets/firefox', 'getSourcesIncluded', {})
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     ["at", "language-pack-de", "mozilla-firefox"]
@@ -369,13 +369,13 @@ package sets.
     >>> response = webservice.named_post(
     ...     '/package-sets/thunderbird', 'addSources', {},
     ...     names=['at', 'cnews', 'thunderbird', 'language-pack-de'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
     >>> response = webservice.named_get(
     ...     '/package-sets/thunderbird', 'getSourcesIncluded', {})
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     ["at", "cnews", "language-pack-de", "thunderbird"]
@@ -405,7 +405,7 @@ If a non-existing source package name is passed it returns an error.
     >>> response = webservice.named_get(
     ...     '/package-sets/', 'setsIncludingSource', {},
     ...     sourcepackagename=u'does-not-exist')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 400 Bad Request
     ...
     No such source package: 'does-not-exist'.
@@ -418,7 +418,7 @@ package sets?
     >>> response = webservice.named_get(
     ...     '/package-sets/firefox', 'getSourcesSharedBy', {},
     ...     other_package_set=thunderbird['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     ["at", "language-pack-de"]
@@ -428,7 +428,7 @@ How about the complement set i.e. the packages not shared?
     >>> response = webservice.named_get(
     ...     '/package-sets/firefox', 'getSourcesNotSharedBy', {},
     ...     other_package_set=thunderbird['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     ["mozilla-firefox"]
@@ -437,7 +437,7 @@ How about the complement set i.e. the packages not shared?
     >>> response = webservice.named_get(
     ...     '/package-sets/thunderbird', 'getSourcesNotSharedBy', {},
     ...     other_package_set=firefox['self_link'])
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
     ["cnews", "thunderbird"]
@@ -462,7 +462,7 @@ main archive.
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
     ...     person=name12['self_link'],
     ...     packageset='firefox')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -490,7 +490,7 @@ main archive.
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
     ...     person=name12['self_link'],
     ...     packageset='mozilla')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -519,7 +519,7 @@ Let's delete the upload privilege for the 'mozilla' package set.
     ...     ubuntu['main_archive_link'], 'deletePackagesetUploader', {},
     ...     person=name12['self_link'],
     ...     packageset='mozilla')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
@@ -539,7 +539,7 @@ Let's grant 'cprov' an upload permission to 'mozilla' and 'thunderbird'.
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
     ...     person=cprov['self_link'],
     ...     packageset='mozilla')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 
@@ -547,7 +547,7 @@ Let's grant 'cprov' an upload permission to 'mozilla' and 'thunderbird'.
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
     ...     person=cprov['self_link'],
     ...     packageset='thunderbird')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 201 Created
     ...
 

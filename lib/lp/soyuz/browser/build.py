@@ -106,7 +106,7 @@ class BuildContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def retry(self):
         """Only enabled for build records that are active."""
-        text = 'Retry build'
+        text = 'Retry this build'
         return Link(
             '+retry', text, icon='retry',
             enabled=self.context.can_be_retried)
@@ -124,22 +124,9 @@ class BuildView(LaunchpadView):
     """Auxiliary view class for IBuild"""
     __used_for__ = IBuild
 
-    def retry_build(self):
-        """Check user confirmation and perform the build record retry."""
-        if not self.context.can_be_retried:
-            self.request.response.addErrorNotification(
-                'Build can not be retried')
-        else:
-            action = self.request.form.get('RETRY', None)
-            # No action, return None to present the form again.
-            if action is None:
-                return
-
-            # Invoke context method to retry the build record.
-            self.context.retry()
-            self.request.response.addInfoNotification('Build record active')
-
-        self.request.response.redirect(canonical_url(self.context))
+    @property
+    def label(self):
+        return self.context.title
 
     @property
     def user_can_retry_build(self):
@@ -150,15 +137,26 @@ class BuildView(LaunchpadView):
         return (check_permission('launchpad.Edit', self.context)
             and self.context.can_be_retried)
 
-    @property
-    def has_done_upload(self):
-        """Return True if this build's package upload is done."""
-        package_upload = self.context.package_upload
+    @cachedproperty
+    def package_upload(self):
+        """Return the corresponding package upload for this build."""
+        return self.context.package_upload
 
-        if package_upload is None:
-            return False
+    @cachedproperty
+    def has_published_binaries(self):
+        """Whether or not binaries were already published for this build."""
+        # Binaries imported by gina (missing `PackageUpload` record)
+        # are always published.
+        imported_binaries = (
+            self.package_upload is None and
+            self.context.binarypackages.count() > 0)
+        # Binaries uploaded from the buildds are published when the
+        # corresponding `PackageUpload` status is DONE.
+        uploaded_binaries = (
+            self.package_upload is not None and
+            self.package_upload.status == PackageUploadStatus.DONE)
 
-        if package_upload.status == PackageUploadStatus.DONE:
+        if imported_binaries or uploaded_binaries:
             return True
 
         return False
@@ -198,11 +196,41 @@ class BuildView(LaunchpadView):
 
         return files
 
+class BuildRetryView(BuildView):
+    """View class for retrying `IBuild`s"""
+
+    __used_for__ = IBuild
+
+    @property
+    def label(self):
+        return 'Retry %s' % self.context.title
+
+    def retry_build(self):
+        """Check user confirmation and perform the build record retry."""
+        if not self.context.can_be_retried:
+            self.request.response.addErrorNotification(
+                'Build can not be retried')
+        else:
+            action = self.request.form.get('RETRY', None)
+            # No action, return None to present the form again.
+            if action is None:
+                return
+
+            # Invoke context method to retry the build record.
+            self.context.retry()
+            self.request.response.addInfoNotification('Build record active')
+
+        self.request.response.redirect(canonical_url(self.context))
+
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""
 
     schema = IBuildRescoreForm
+
+    @property
+    def label(self):
+        return 'Rescore %s' % self.context.title
 
     def initialize(self):
         """See `ILaunchpadFormView`.

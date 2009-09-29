@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionLanguagePackAdminView',
+    'DistributionSettingsView',
     'DistributionView',
     ]
 
@@ -19,6 +20,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.browser.distribution import DistributionEditView
+from lp.translations.browser.translations import TranslationsMixin
 
 
 class DistributionTranslationsMenu(NavigationMenu):
@@ -51,7 +54,8 @@ class DistributionLanguagePackAdminView(LaunchpadEditFormView):
     """Browser view to change the language pack administrator."""
 
     schema = IDistribution
-    label = "Change the language pack administrator"
+    label = "Select the language pack administrator"
+    page_title = "Set language pack administrator"
     field_names = ['language_pack_admin']
 
     @property
@@ -74,6 +78,8 @@ class DistributionLanguagePackAdminView(LaunchpadEditFormView):
 
 class DistributionView(LaunchpadView):
     """Default Distribution view class."""
+
+    label = "Translations overview"
 
     @cachedproperty
     def translation_focus(self):
@@ -102,3 +108,25 @@ class DistributionView(LaunchpadView):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
+
+class DistributionSettingsView(TranslationsMixin, DistributionEditView):
+    label = "Set permissions and policies"
+    page_title = "Permissions and policies"
+    field_names = ["translationgroup", "translationpermission"]
+
+    @property
+    def page_title(self):
+        return "Set translation permissions for %s" % (
+            self.context.displayname)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    @action('Change', name='change')
+    def edit(self, action, data):
+        self.updateContextFromData(data)

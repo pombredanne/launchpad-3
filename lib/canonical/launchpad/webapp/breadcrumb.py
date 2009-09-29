@@ -7,6 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'Breadcrumb',
+    'DisplaynameBreadcrumb',
+    'NameBreadcrumb',
+    'TitleBreadcrumb',
     ]
 
 
@@ -27,6 +30,7 @@ class Breadcrumb:
     implements(IBreadcrumb)
 
     text = None
+    _url = None
 
     def __init__(self, context):
         self.context = context
@@ -46,20 +50,35 @@ class Breadcrumb:
 
     @property
     def url(self):
-        return canonical_url(self.context, rootsite=self.rootsite)
-
-    @property
-    def icon(self):
-        """See `IBreadcrumb`."""
-        # Get the <img> tag from the path adapter.
-        return queryAdapter(
-            self.context, IPathAdapter, name='image').icon()
+        if self._url is None:
+            return canonical_url(self.context, rootsite=self.rootsite)
+        else:
+            return self._url
 
     def __repr__(self):
-        if self.icon is not None:
-            icon_repr = " icon='%s'" % self.icon
-        else:
-            icon_repr = ""
+        return "<%s url='%s' text='%s'>" % (
+            self.__class__.__name__, self.url, self.text)
 
-        return "<%s url='%s' text='%s'%s>" % (
-            self.__class__.__name__, self.url, self.text, icon_repr)
+
+class NameBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's name as its text."""
+
+    @property
+    def text(self):
+        return self.context.name
+
+
+class DisplaynameBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's displayname as its text."""
+
+    @property
+    def text(self):
+        return self.context.displayname
+
+
+class TitleBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's title as its text."""
+
+    @property
+    def text(self):
+        return self.context.title
