@@ -185,7 +185,6 @@ class TestHWDBSubmissionParser(TestCase):
             """)
         parser = SubmissionParser(self.log)
         summary = parser._parseSummary(node)
-        utc_tz = pytz.timezone('UTC')
         expected_data = {
             'live_cd': False,
             'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
@@ -195,7 +194,7 @@ class TestHWDBSubmissionParser(TestCase):
             'private': False,
             'contactable': False,
             'date_created': datetime(2007, 9, 28, 16, 9, 20, 126842,
-                                     tzinfo=utc_tz),
+                                     tzinfo=pytz.UTC),
             'client': {
                 'name': 'hwtest',
                 'version': '0.9',
@@ -204,6 +203,57 @@ class TestHWDBSubmissionParser(TestCase):
                      'version': '1.1'},
                     {'name': 'find_network_controllers',
                      'version': '2.34'}]}
+            }
+        self.assertEqual(
+            summary, expected_data,
+            'SubmissionParser.parseSummary returned an unexpected result')
+
+    def testSummaryNodeWithKernelRelease(self):
+        """The <summary> node may contain the sub-node <kernel-release>."""
+        node = etree.fromstring("""
+            <summary>
+                <live_cd value="False"/>
+                <system_id value="f982bb1ab536469cebfd6eaadcea0ffc"/>
+                <distribution value="Ubuntu"/>
+                <distroseries value="7.04"/>
+                <architecture value="amd64"/>
+                <private value="False"/>
+                <contactable value="False"/>
+                <date_created value="2007-09-28T16:09:20.126842"/>
+                <client name="hwtest" version="0.9">
+                    <plugin name="architecture_info" version="1.1"/>
+                    <plugin name="find_network_controllers" version="2.34"/>
+                </client>
+                <kernel-release value="2.6.28-15-generic"/>
+            </summary>
+            """)
+        parser = SubmissionParser(self.log)
+        summary = parser._parseSummary(node)
+        expected_data = {
+            'live_cd': False,
+            'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
+            'distribution': 'Ubuntu',
+            'distroseries': '7.04',
+            'architecture': 'amd64',
+            'private': False,
+            'contactable': False,
+            'date_created': datetime(2007, 9, 28, 16, 9, 20, 126842,
+                                     tzinfo=pytz.UTC),
+            'client': {
+                'name': 'hwtest',
+                'version': '0.9',
+                'plugins': [
+                    {
+                        'name': 'architecture_info',
+                        'version': '1.1'
+                        },
+                    {
+                        'name': 'find_network_controllers',
+                        'version': '2.34'
+                        }
+                    ]
+                },
+            'kernel-release': '2.6.28-15-generic',
             }
         self.assertEqual(
             summary, expected_data,
