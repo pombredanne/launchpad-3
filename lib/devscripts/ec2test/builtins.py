@@ -281,7 +281,7 @@ class cmd_land(EC2Command):
         Option('print-commit', help="Print the full commit message."),
         Option(
             'testfix',
-            help="Include the [testfix] prefix in the commit message?"),
+            help="Include the [testfix] prefix in the commit message."),
         Option(
             'commit-text', short_name='s', type=str,
             help=(
