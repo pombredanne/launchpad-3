@@ -126,6 +126,9 @@
       <tal:releasecriticalbugs
           tal:condition="view/shouldShowReleaseCriticalPortlet"
           tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+      <tal:milestonecriticalbugs
+          tal:condition="view/shouldShowReleaseCriticalPortlet"
+          tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
     </tal:side>
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="search_url string:+bugs;
@@ -198,11 +201,11 @@
               <img alt="" src="/@@/bug" />
             </td>
             <td style="text-align: right">
-              #<span tal:replace="bugtask/id" />
+              #<span tal:replace="bugtask/bug/id" />
             </td>
             <td>
               <a tal:attributes="href bugtask/fmt:url"
-                 tal:content="bugtask/title" />
+                 tal:content="bugtask/bug/title" />
             </td>
             <td tal:attributes="class string:status${bugtask/status/name}"
                 tal:content="bugtask/status/title" />

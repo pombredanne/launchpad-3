@@ -56,7 +56,7 @@ from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, default_name_by_purpose)
+    PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -320,8 +320,10 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
             clauses.append("""
                 SourcePackageRelease.version = %s
             """ % sqlvalues(version))
@@ -491,8 +493,11 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
+
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))

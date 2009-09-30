@@ -399,30 +399,37 @@ class ITranslationImportQueue(Interface):
         All returned items will implement `IHasTranslationImports`.
         """
 
-    def executeOptimisticApprovals(ztm):
-        """Try to move entries from the Needs Review status to Approved one.
+    def executeOptimisticApprovals(txn=None):
+        """Try to approve Needs-Review entries.
 
-        :arg ztm: Zope transaction manager object.
+        :arg txn: Optional transaction manager.  If given, will be
+            committed regularly.
 
         This method moves all entries that we know where should they be
         imported from the Needs Review status to the Accepted one.
         """
 
-    def executeOptimisticBlock(ztm):
+    def executeOptimisticBlock(txn=None):
         """Try to move entries from the Needs Review status to Blocked one.
 
-        :arg ztm: Zope transaction manager object or None.
+        :arg txn: Optional transaction manager.  If given, will be
+            committed regularly.
 
-        This method moves all .po entries that are on the same directory that
-        a .pot entry that has the status Blocked to that same status.
+        This method moves uploaded translations for Blocked templates to
+        the Blocked status as well.  This lets you block a template plus
+        all its present or future translations in one go.
 
-        Return the number of items blocked.
+        :return: The number of items blocked.
         """
 
     def cleanUpQueue():
-        """Remove old DELETED and IMPORTED entries.
+        """Remove old entries in terminal states.
 
-        Only entries older than 5 days will be removed.
+        This "garbage-collects" entries from the queue based on their
+        status (e.g. Deleted and Imported ones) and how long they have
+        been in that status.
+
+        :return: The number of entries deleted.
         """
 
     def remove(entry):
