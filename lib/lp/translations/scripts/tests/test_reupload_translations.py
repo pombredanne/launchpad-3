@@ -16,14 +16,11 @@ import transaction
 
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.delegates import delegates
-
 from canonical.testing import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
 
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueue)
@@ -93,9 +90,6 @@ class TestReuploadPackageTranslations(TestCaseWithFactory):
             '-s', distroseries.name,
             '-p', sourcepackagename.name,
             '-qqq'])
-
-    def _instrument_findPackage(self, tar):
-        self.script._findPackage = wrap_findPackage
 
     def test_findPackage(self):
         # _findPackage finds a SourcePackage by name.
