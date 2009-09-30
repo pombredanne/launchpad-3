@@ -471,7 +471,6 @@ class MemcachedLayer(BaseLayer):
         MemcachedLayer._memcached_process.stdin.close()
 
         # Wait for the memcached to become operational.
-        test_key = "MemcachedLayer__live_test"
         while not MemcachedLayer.client.set(test_key, "live"):
             if MemcachedLayer._memcached_process.returncode is not None:
                 raise LayerInvariantError(
