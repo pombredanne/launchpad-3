@@ -86,30 +86,39 @@ class EC2Account:
         """
         if demo_networks is None:
             demo_networks = []
-        try:
-            group = self.conn.get_all_security_groups(self.name)[0]
-        except EC2ResponseError, e:
-            if e.code != 'InvalidGroup.NotFound':
-                raise
-        else:
-            # If an existing security group was configured, try deleting it
-            # since our external IP might have changed.
+        # Try to delete old security groups.
+        expire_before = datetime.utcnow() - timedelta(hours=6)
+        def try_delete_group(group):
             try:
                 group.delete()
             except EC2ResponseError, e:
                 if e.code != 'InvalidGroup.InUse':
                     raise
-                # Otherwise, it means that an instance is already using
-                # it, so simply re-use it. It's unlikely that our IP changed!
-                #
-                # XXX: JonathanLange 2009-06-05: If the security group exists
-                # already, verify that the current IP is permitted; if it is
-                # not, make an INFO log and add the current IP.
-                self.log("Security group already in use, so reusing.")
-                return group
-
+                self.log('Cannot delete; security group '
+                         '%r in use.\n' % group.name)
+        for group in self.conn.get_all_security_groups():
+            if group.name in (self.name, self.unique_name):
+                self.log('Deleting security group %r\n' % group.name)
+                try_delete_group(group)
+            elif group.name.startswith(self.name):
+                creation_datetime = find_datetime_string(group.name)
+                if creation_datetime is None:
+                    self.log('Found security group %r without creation '
+                             'date; leaving.\n' % group.name)
+                elif creation_datetime >= expire_before:
+                    self.log('Found recent security group %r; '
+                             'leaving\n' % group.name)
+                else:
+                    self.log('Deleting old security '
+                             'group %r\n' % group.name)
+                    try_delete_group(group)
+            else:
+                self.log('Found other security group %r; '
+                         'leaving.\n' % group.name)
+        # Create the security group.
         security_group = self.conn.create_security_group(
-            self.name, 'Authorization to access the test runner instance.')
+            self.unique_name,
+            'Authorization to access the test runner instance.')
         # Authorize SSH and HTTP.
         ip = get_ip()
         security_group.authorize('tcp', 22, 22, '%s/32' % ip)
@@ -134,7 +143,7 @@ class EC2Account:
         expire_before = datetime.utcnow() - timedelta(hours=6)
         try:
             for key_pair in self.conn.get_all_key_pairs():
-                if key_pair.name == self.name:
+                if key_pair.name in (self.name, self.unique_name):
                     self.log('Deleting key pair %r\n' % key_pair.name)
                     key_pair.delete()
                 elif key_pair.name.startswith(self.name):
