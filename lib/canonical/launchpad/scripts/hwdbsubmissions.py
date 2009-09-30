@@ -7,7 +7,7 @@ Base classes, intended to be used both for the commercial certification
 data and for the community test submissions.
 """
 
-
+__metaclass__ = type
 __all__ = [
            'SubmissionParser',
            'process_pending_submissions',
@@ -1235,58 +1235,28 @@ class SubmissionParser(object):
         root_device.createDBData(submission, None)
         return True
 
-class HALDevice:
-    """The representation of a HAL device node."""
 
-    def __init__(self, id, udi, properties, parser):
-        """HALDevice constructor.
-
-        :param id: The ID of the HAL device in the submission data as
-            specified in <device id=...>.
-        :type id: int
-        :param udi: The UDI of the HAL device.
-        :type udi: string
-        :param properties: The HAL properties of the device.
-        :type properties: dict
-        :param parser: The parser processing a submission.
-        :type parser: SubmissionParser
-        """
-        self.id = id
-        self.udi = udi
-        self.properties = properties
+class BaseDevice:
+    """A base class to represent device data from HAL and udev."""
+    def __init__(self, parser):
         self.children = []
         self.parser = parser
         self.parent = None
+
+    # Translation of the HAL info.bus/info.subsystem property and the
+    # udev property SUBSYSTEM to HWBus enumerated buses.
+    subsystem_hwbus = {
+        'pcmcia': HWBus.PCMCIA,
+        'usb_device': HWBus.USB,
+        'ide': HWBus.IDE,
+        'serio': HWBus.SERIAL,
+        }
 
     def addChild(self, child):
         """Add a child device and set the child's parent."""
         assert type(child) == type(self)
         self.children.append(child)
         child.parent = self
-
-    def getProperty(self, property_name):
-        """Return the property property_name.
-
-        Note that there is no check of the property type.
-        """
-        if property_name not in self.properties:
-            return None
-        name, type_ = self.properties[property_name]
-        return name
-
-    @property
-    def parent_udi(self):
-        """The UDI of the parent device."""
-        return self.getProperty('info.parent')
-
-    # Translation of the HAL info.bus/info.subsystem property to HWBus
-    # enumerated buses.
-    hal_bus_hwbus = {
-        'pcmcia': HWBus.PCMCIA,
-        'usb_device': HWBus.USB,
-        'ide': HWBus.IDE,
-        'serio': HWBus.SERIAL,
-        }
 
     # Translation of subclasses of the PCI class storage to HWBus
     # enumerated buses. The Linux kernel accesses IDE and SATA disks
@@ -1307,6 +1277,22 @@ class HALDevice:
         7: HWBus.SAS,
         }
 
+    @property
+    def device_id(self):
+        """A unique ID for this device."""
+        raise NotImplementedError()
+
+    @property
+    def pci_class(self):
+        """The PCI device class of the device or None for Non-PCI devices."""
+        raise NotImplementedError()
+
+    @property
+    def pci_subclass(self):
+        """The PCI device sub-class of the device or None for Non-PCI devices.
+        """
+        raise NotImplementedError()
+
     def translateScsiBus(self):
         """Return the real bus of a device where raw_bus=='scsi'.
 
@@ -1321,29 +1307,29 @@ class HALDevice:
         parent = self.parent
         if parent is None:
             self.parser._logWarning(
-                'Found SCSI device without a parent: %s.' % self.udi)
+                'Found SCSI device without a parent: %s.' % self.device_id)
             return None
         grandparent = parent.parent
         if grandparent is None:
             self.parser._logWarning(
-                'Found SCSI device without a grandparent: %s.' % self.udi)
+                'Found SCSI device without a grandparent: %s.'
+                % self.device_id)
             return None
 
         grandparent_bus = grandparent.raw_bus
         if grandparent_bus == 'pci':
-            if (grandparent.getProperty('pci.device_class')
-                != PCI_CLASS_STORAGE):
+            if (grandparent.pci_class != PCI_CLASS_STORAGE):
                 # This is not a storage class PCI device? This
                 # indicates a bug somewhere in HAL or in the hwdb
                 # client, or a fake submission.
-                device_class = grandparent.getProperty('pci.device_class')
+                device_class = grandparent.pci_class
                 self.parser._logWarning(
                     'A (possibly fake) SCSI device %s is connected to '
                     'PCI device %s that has the PCI device class %s; '
                     'expected class 1 (storage).'
-                    % (self.udi, grandparent.udi, device_class))
+                    % (self.device_id, grandparent.device_id, device_class))
                 return None
-            pci_subclass = grandparent.getProperty('pci.device_subclass')
+            pci_subclass = grandparent.pci_subclass
             return self.pci_storage_subclass_hwbus.get(pci_subclass)
         elif grandparent_bus == 'usb':
             # USB storage devices have the following HAL device hierarchy:
@@ -1395,26 +1381,78 @@ class HALDevice:
         # subclass 7).
         # XXX Abel Deuring 2005-05-14 How can we detect ExpressCards?
         # I do not have any such card at present...
-        parent_class = self.parent.getProperty('pci.device_class')
-        parent_subclass = self.parent.getProperty('pci.device_subclass')
+        parent_class = self.parent.pci_class
+        parent_subclass = self.parent.pci_subclass
         if (parent_class == PCI_CLASS_BRIDGE
             and parent_subclass == PCI_SUBCLASS_BRIDGE_CARDBUS):
             return HWBus.PCCARD
         else:
             return HWBus.PCI
 
-    translate_bus_name = {
-        'pci': translatePciBus,
-        'scsi': translateScsiBus,
-        }
+    @property
+    def raw_bus(self):
+        """Return the device bus as specified by HAL or udev."""
+        raise NotImplementedError()
+
+
+class HALDevice(BaseDevice):
+    """The representation of a HAL device node."""
+
+    def __init__(self, id, udi, properties, parser):
+        """HALDevice constructor.
+
+        :param id: The ID of the HAL device in the submission data as
+            specified in <device id=...>.
+        :type id: int
+        :param udi: The UDI of the HAL device.
+        :type udi: string
+        :param properties: The HAL properties of the device.
+        :type properties: dict
+        :param parser: The parser processing a submission.
+        :type parser: SubmissionParser
+        """
+        super(HALDevice, self).__init__(parser)
+        self.id = id
+        self.udi = udi
+        self.properties = properties
+
+    def getProperty(self, property_name):
+        """Return the HAL property property_name.
+
+        Note that there is no check of the property type.
+        """
+        if property_name not in self.properties:
+            return None
+        name, type_ = self.properties[property_name]
+        return name
+
+    @property
+    def parent_udi(self):
+        """The UDI of the parent device."""
+        return self.getProperty('info.parent')
+
+    @property
+    def device_id(self):
+        """See `BaseDevice`."""
+        return self.udi
+
+    @property
+    def pci_class(self):
+        """See `BaseDevice`."""
+        return self.getProperty('pci.device_class')
+
+    @property
+    def pci_subclass(self):
+        """The PCI device sub-class of the device or None for Non-PCI devices.
+        """
+        return self.getProperty('pci.device_subclass')
 
     @property
     def raw_bus(self):
-        """Return the device bus as specified by HAL.
-
-        Older versions of HAL stored this value in the property
-        info.bus; newer versions store it in info.subsystem.
-        """
+        """See `BaseDevice`."""
+        # Older versions of HAL stored this value in the property
+        # info.bus; newer versions store it in info.subsystem.
+        #
         # Note that info.bus is gone for all devices except the
         # USB bus. For USB devices, the property info.bus returns more
         # detailed data: info.subsystem has the value 'usb' for all
@@ -1436,7 +1474,7 @@ class HALDevice:
             cannot be determined.
         """
         device_bus = self.raw_bus
-        result = self.hal_bus_hwbus.get(device_bus)
+        result = self.subsystem_hwbus.get(device_bus)
         if result is not None:
             return result
 
@@ -1612,8 +1650,8 @@ class HALDevice:
                 # possible bridges, like ISA->USB..
                 parent = self.parent
                 parent_bus = parent.raw_bus
-                parent_class = parent.getProperty('pci.device_class')
-                parent_subclass = parent.getProperty('pci.device_subclass')
+                parent_class = parent.pci_class
+                parent_subclass = parent.pci_subclass
                 if (parent_bus == 'pci'
                     and parent_class == PCI_CLASS_SERIALBUS_CONTROLLER
                     and parent_subclass == PCI_SUBCLASS_SERIALBUS_USB):

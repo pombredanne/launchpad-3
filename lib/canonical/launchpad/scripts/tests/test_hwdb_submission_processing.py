@@ -380,6 +380,51 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                          'Unexpected value of HALDevice.parent_udi, '
                          'when no parent information available.')
 
+    def testHALDeviceDeviceId(self):
+        """Test of HALDevice.device_id."""
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+            '/some/udi/path', device.device_id,
+            'Unexpected value of HALDevice.parent_udi')
+
+    def testHALDevicePciClass(self):
+        """Test of HALDevice.pci_class."""
+        properties = {
+            'pci.device_class': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+            device.pci_class, 1,
+            'Unexpected value of HALDevice.device_class.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+            device.pci_class, None,
+            'Unexpected value of HALDevice.device_class for Non-PCI device.')
+
+    def testHALDevicePciSubClass(self):
+        """Test of HALDevice.pci_subclass."""
+        properties = {
+            'pci.device_subclass': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+            device.pci_subclass, 1,
+            'Unexpected value of HALDevice.device_class.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+            device.pci_subclass, None,
+            'Unexpected value of HALDevice.device_class for Non-PCI device.')
+
     def testHalDeviceRawBus(self):
         """test of HALDevice.raw_bus."""
         properties = {
