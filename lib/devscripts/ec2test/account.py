@@ -16,7 +16,8 @@ import urllib
 from datetime import datetime, timedelta
 
 from boto.exception import EC2ResponseError
-from devscripts.ec2test.utils import find_datetime_string
+from devscripts.ec2test.utils import (
+    find_datetime_string, make_datetime_string, make_random_string)
 
 import paramiko
 
@@ -57,6 +58,8 @@ class EC2Account:
         :param connection: An open boto ec2 connection.
         """
         self.name = name
+        self.unique_name = "%s-%s-%s" % (
+            self.name, make_datetime_string(), make_random_string())
         self.conn = connection
 
     def log(self, msg):
@@ -122,7 +125,7 @@ class EC2Account:
 
     def acquire_private_key(self):
         """Create & return a new key pair for the test runner."""
-        key_pair = self.conn.create_key_pair(self.name)
+        key_pair = self.conn.create_key_pair(self.unique_name)
         return paramiko.RSAKey.from_private_key(
             cStringIO.StringIO(key_pair.material.encode('ascii')))
 

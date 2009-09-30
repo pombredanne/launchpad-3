@@ -24,7 +24,6 @@ from bzrlib.plugins.launchpad.account import get_lp_login
 import paramiko
 
 from devscripts.ec2test.credentials import EC2Credentials
-from devscripts.ec2test.utils import make_datetime_string, make_random_string
 
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
@@ -225,8 +224,6 @@ class EC2Instance:
     def __init__(self, name, image, instance_type, demo_networks, account,
                  vals, from_scratch, user_key):
         self._name = name
-        self._key_name = "%s-%s-%s" % (
-            self._name, make_datetime_string(), make_random_string())
         self._image = image
         self._account = account
         self._instance_type = instance_type
