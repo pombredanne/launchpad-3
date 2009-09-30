@@ -11,9 +11,6 @@ import os.path
 from datetime import datetime, timedelta
 from pytz import UTC
 
-from bzrlib.errors import (
-    NotStacked, UnstackableBranchFormat, UnstackableRepositoryFormat)
-
 from zope.component import getUtility
 
 from storm.expr import Join, SQL
