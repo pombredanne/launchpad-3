@@ -108,6 +108,7 @@ from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
+from lp.services.memcache.client import memcache_client_factory
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
@@ -426,6 +427,83 @@ class BaseLayer:
             return frame.f_locals['test']
         finally:
             del frame # As per no-leak stack inspection in Python reference.
+
+
+class MemcachedLayer(BaseLayer):
+    """Provides tests access to a memcached.
+
+    Most tests needing memcache access will actually need to use
+    ZopelessLayer, FunctionalLayer or sublayer as they will be accessing
+    memcached using a utility.
+    """
+    _reset_between_tests = True
+
+    client = None # Class attribute. A memcache.Client instance.
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        # Create a client
+        MemcachedLayer.client = memcache_client_factory()
+
+        # Ensure an old memcached isn't still running.
+        test_key = "MemcachedLayer__live_test"
+        if MemcachedLayer.client.set(test_key, "live"):
+            raise LayerInvariantError("memcached already running.")
+
+        cmd = [
+            'memcached',
+            '-m', str(config.memcached.memory_size),
+            '-l', str(config.memcached.address),
+            '-p', str(config.memcached.port),
+            '-U', str(config.memcached.port),
+            ]
+        if config.memcached.verbose:
+            cmd.append('-vv')
+        MemcachedLayer._memcached_process = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE)
+        MemcachedLayer._memcached_process.stdin.close()
+
+        # Wait for the memcached to become operational.
+        test_key = "MemcachedLayer__live_test"
+        while not MemcachedLayer.client.set(test_key, "live"):
+            if MemcachedLayer._memcached_process.returncode is not None:
+                raise LayerInvariantError(
+                    "memcached never started or has died.",
+                    MemcachedLayer._memcached_process.stdout.read())
+            MemcachedLayer.client.forget_dead_hosts()
+            time.sleep(0.1)
+
+        def terminate_on_exit(pid=MemcachedLayer._memcached_process.pid):
+            try:
+                if pid is not None:
+                    os.kill(pid, signal.SIGKILL)
+            except:
+                pass
+        atexit.register(terminate_on_exit)
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        MemcachedLayer.client.disconnect_all()
+        MemcachedLayer.client = None
+        # Kill our memcached, and there is no reason to be nice about it.
+        if MemcachedLayer._memcached_process.returncode is None:
+            os.kill(MemcachedLayer._memcached_process.pid, signal.SIGKILL)
+        MemcachedLayer._memcached_process.wait()
+        del MemcachedLayer._memcached_process
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        if MemcachedLayer._reset_between_tests:
+            MemcachedLayer.client.forget_dead_hosts()
+            MemcachedLayer.client.flush_all()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
 
 
 class LibrarianLayer(BaseLayer):
@@ -865,7 +943,7 @@ class FunctionalLayer(BaseLayer):
 
 class ZopelessLayer(BaseLayer):
     """Layer for tests that need the Zopeless component architecture
-    loaded using execute_zcml_for_scrips()
+    loaded using execute_zcml_for_scripts().
     """
 
     # Set to True if tests in the Zopeless layer are currently being run.
