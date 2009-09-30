@@ -9,6 +9,7 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+import re
 from StringIO import StringIO
 import tarfile
 import transaction
@@ -19,6 +20,7 @@ from lazr.delegates import delegates
 
 from canonical.testing import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from canonical.launchpad.scripts.tests import run_script
 
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -133,7 +135,37 @@ class TestReuploadPackageTranslations(TestCaseWithFactory):
 class TestReuploadScript(TestCaseWithFactory):
     """Test reupload-translations script."""
     layer = LaunchpadZopelessLayer
-# XXX: Run script.
+
+    def setUp(self):
+        super(TestReuploadScript, self).setUp()
+        self.distroseries = self.factory.makeDistroRelease()
+        self.sourcepackagename1 = self.factory.makeSourcePackageName()
+        self.sourcepackagename2 = self.factory.makeSourcePackageName()
+        transaction.commit()
+
+    def test_reupload_translations(self):
+        """Test a run of the script."""
+        retcode, stdout, stderr = run_script(
+            'scripts/rosetta/reupload-translations.py', [
+                '-d', self.distroseries.distribution.name,
+                '-s', self.distroseries.name,
+                '-p', self.sourcepackagename1.name,
+                '-p', self.sourcepackagename2.name,
+                '-vvv',
+                '--dry-run',
+            ])
+
+        self.assertEqual(0, retcode)
+        self.assertEqual('', stdout)
+
+        expected_output = (
+            "INFO\s*Dry run.  Not really uploading anything.\n"
+            "INFO\s*Processing [^\s]+ in .*\n"
+            "WARNING\s*Found no translations upload for .*\n"
+            "INFO\s*Processing [^\s]+ in .*\n"
+            "WARNING\s*Found no translations upload for .*\n"
+            "INFO\s*Done.\n")
+        self.assertTrue(re.match(expected_output, stderr))
 
 
 def test_suite():
