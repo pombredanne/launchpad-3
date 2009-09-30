@@ -446,7 +446,8 @@ class Archive(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find((
             LibraryFileAlias.filename,
-            LibraryFileContent.filesize),
+            LibraryFileContent.sha1,
+            LibraryFileContent.filesize,),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -467,11 +468,9 @@ class Archive(SQLBase):
         # the same.
         result = result.config(distinct=True)
 
-        # Storm's result.sum() throws errors when the result is empty.
-        if result.count() == 0:
-            return 0
-        else:
-            return result.sum(LibraryFileContent.filesize)
+        # Using result.sum(LibraryFileContent.filesize) throws errors when
+        # the result is empty, so instead:
+        return sum(result.values(LibraryFileContent.filesize))
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
