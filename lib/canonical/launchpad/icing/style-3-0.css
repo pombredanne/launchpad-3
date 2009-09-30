@@ -366,6 +366,9 @@ thead th, tr.thead th {
     vertical-align: bottom;
     }
 
+form {
+    margin-bottom: 1em;
+}
 form h1 {
     margin-bottom: 1em;
     }
