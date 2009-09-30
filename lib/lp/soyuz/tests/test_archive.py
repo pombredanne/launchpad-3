@@ -177,32 +177,30 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
     def test_sources_size_does_not_count_duplicated_files(self):
         # If there are multiple copies of the same file name/size
         # only one will be counted.
-        pub_jaunty = self.publisher.getPubSource(
-            filename='foo_0.5.11~ppa1~jaunty.dsc', filecontent='22',
-            archive=self.ppa)
+        pub_1 = self.publisher.getPubSource(
+            filecontent='22', version='0.5.11~ppa1', archive=self.ppa)
 
-        pub_karmic = self.publisher.getPubSource(
-            filename='foo_0.5.11~ppa1~karmic.dsc', filecontent='333',
-            archive=self.ppa)
+        pub_2 = self.publisher.getPubSource(
+            filecontent='333', version='0.5.11~ppa2', archive=self.ppa)
 
         self.assertEquals(5, self.ppa.sources_size)
 
         shared_tarball = self.publisher.addMockFile(
-            filename='foo_0.5.11~ppa1.tar.gz', filecontent='1')
+            filename='foo_0.5.11.tar.gz', filecontent='1')
 
         # After adding a the shared tarball to the jaunty version,
         # the sources_size updates to reflect the change.
-        pub_jaunty.sourcepackagerelease.addFile(shared_tarball)
+        pub_1.sourcepackagerelease.addFile(shared_tarball)
         self.assertEquals(
             6, self.ppa.sources_size,
             'The sources_size should update after a file is added.')
 
-        # But after adding a copy of th shared tarball to the karmic version,
+        # But after adding a copy of the shared tarball to the karmic version,
         # the sources_size is unchanged.
         shared_tarball_copy = self.publisher.addMockFile(
-            filename='foo_0.5.11~ppa1.tar.gz', filecontent='1')
+            filename='foo_0.5.11.tar.gz', filecontent='1')
 
-        pub_karmic.sourcepackagerelease.addFile(shared_tarball_copy)
+        pub_2.sourcepackagerelease.addFile(shared_tarball_copy)
         self.assertEquals(
             6, self.ppa.sources_size,
             'The sources_size should change after adding a duplicate file.')
