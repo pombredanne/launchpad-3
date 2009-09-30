@@ -8,6 +8,7 @@ __all__ = [
     'find_datetime_string',
     'make_datetime_string',
     'make_random_string',
+    'make_unique_name',
     ]
 
 
@@ -52,3 +53,9 @@ def make_random_string():
     simple non-RFC-compliant hack here is sufficient.
     """
     return binascii.hexlify(os.urandom(16))
+
+
+def make_unique_name(base=None):
+    """Return a unique name starting with `base`."""
+    return "%s-%s-%s" % (
+        base, make_datetime_string(), make_random_string())
