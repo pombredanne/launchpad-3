@@ -73,8 +73,8 @@
          tal:content="structure link/render">
          Add comment
     </div>
-    <tal:comments condition="view/conversation"
-                  replace="structure view/conversation/@@+render"/>
+    <div id="#conversation"
+         tal:content="structure view/conversation/@@+render"/>
   </div>
   <tal:comment replace="structure context/@@+comment/++form++" />
       <div class="actions" id="launchpad-form-actions">

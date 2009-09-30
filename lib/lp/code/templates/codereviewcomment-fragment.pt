@@ -1,0 +1,1 @@
+<tal:fragment replace="structure view/comment/@@+render"/>
