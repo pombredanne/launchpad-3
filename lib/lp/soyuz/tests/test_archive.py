@@ -168,26 +168,32 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
             previous_size + 1,
             self.publisher.ubuntutest.main_archive.binaries_size)
 
+    def test_sources_size_on_empty_archive(self):
+        # Zero is returned for an archive without sources.
+        self.assertEquals(
+            0, self.ppa.sources_size,
+            'Zero should be returned for an archive without sources.')
+
     def test_sources_size_does_not_count_duplicated_files(self):
         # If there are multiple copies of the same file name/size
         # only one will be counted.
         self.publisher.getPubSource(
-            filename='foo_0.5.1.orig.tar.gz', filecontent='1',
+            filename='foo_0.5.1.orig.tar.gz', filecontent='22',
             archive=self.ppa)
 
         self.publisher.getPubSource(
-            filename='foo_0.5.2.orig.tar.gz', filecontent='1',
+            filename='foo_0.5.2.orig.tar.gz', filecontent='333',
             archive=self.ppa)
 
-        self.assertEquals(2, self.ppa.sources_size)
+        self.assertEquals(5, self.ppa.sources_size)
 
         # Just pretend this is a separate dsc for a different distroseries
         # version based on the same tarball.
         self.publisher.getPubSource(
-            filename='foo_0.5.1.orig.tar.gz', filecontent='1',
+            filename='foo_0.5.1.orig.tar.gz', filecontent='22',
             archive=self.ppa)
         self.assertEquals(
-            2, self.ppa.sources_size,
+            5, self.ppa.sources_size,
             'The sources size should not count duplicates.')
 
 

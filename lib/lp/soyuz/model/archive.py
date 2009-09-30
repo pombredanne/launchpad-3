@@ -444,8 +444,9 @@ class Archive(SQLBase):
     def sources_size(self):
         """See `IArchive`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(
-            (LibraryFileContent),
+        result = store.find((
+            LibraryFileAlias.filename,
+            LibraryFileContent.filesize),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -453,15 +454,24 @@ class Archive(SQLBase):
             SourcePackageReleaseFile.libraryfileID == LibraryFileAlias.id,
             LibraryFileAlias.contentID == LibraryFileContent.id)
 
-        # We need to select distinct `LibraryFileContent`s because that how
-        # they end up published in the archive disk. Duplications may happen
-        # because of the publishing records join, the same `LibraryFileAlias`
-        # gets logically re-published in several locations and the fact that
-        # the same `LibraryFileContent` can be shared by multiple
-        # `LibraryFileAlias.` (librarian-gc).
+        # Note: we can't use the LFC.sha1 instead of LFA.filename above
+        # because some archives publish the same file content with different
+        # names in the archive, so although the duplication will be removed
+        # in the librarian by the librarian-gc, we do not (yet) remove
+        # this duplication in the pool when the filenames are different.
+
+        # We need to select distinct on the (filename, filesize) result
+        # so that we only count duplicate files (with the same filename)
+        # once (ie. the same tarball used for different distroseries) as
+        # we do avoid this duplication in the pool when the names are
+        # the same.
         result = result.config(distinct=True)
-        size = sum([lfc.filesize for lfc in result])
-        return size
+
+        # Storm's result.sum() throws errors when the result is empty.
+        if result.count() == 0:
+            return 0
+        else:
+            return result.sum(LibraryFileContent.filesize)
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
