@@ -524,6 +524,35 @@ The optional param exclude_needsbuild is also provided:
     pending: 1
     succeeded: 8
 
+== Getting published sources and binaries for an IArchive ==
+
+IArchive exposes the getPublishedSources() and getPublishedBinaries()
+methods.
+
+    >>> response = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources')
+    >>> print response.getheader('status')
+    200 Ok
+    >>> response = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedBinaries')
+    >>> print response.getheader('status')
+    200 Ok
+
+If either method is called with the version parameter, the name must
+be specified too, otherwise it is considered a bad webservice
+request.
+
+    >>> response = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources', version='1.0')
+    >>> print response.getheader('status')
+    400 Bad Request
+    >>> response = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedBinaries',
+    ...     version='1.0')
+    >>> print response.getheader('status')
+    400 Bad Request
+
+
 == Package copying/synchronisation ==
 
 IArchive contains 2 custom operations to copy packages from another archive.

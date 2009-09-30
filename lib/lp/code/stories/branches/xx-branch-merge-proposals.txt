@@ -273,7 +273,7 @@ next to the heading "Merged at revision".
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
-    &raquo; Merged into lp://dev/~name12/gnome-terminal/main
+    Merged into lp://dev/~name12/gnome-terminal/main
     >>> sample_browser.getLink('Merged').click()
     >>> print_summary(sample_browser)
     Status: Merged
@@ -295,7 +295,7 @@ next to the heading "Merged at revision".
     >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
-    &raquo; Merged into lp://dev/~name12/gnome-terminal/main at revision 42
+    Merged into lp://dev/~name12/gnome-terminal/main at revision 42
 
 
 Resubmitting proposals

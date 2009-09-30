@@ -216,9 +216,9 @@ class TestPerson(TestCaseWithFactory):
             self.assertEqual(
                 str(exc),
                 'This team cannot be converted to Private Membership since '
-                'it is referenced by a bug, a bugaffectsperson, '
-                'a bugnotificationrecipient, a bugsubscription, '
-                'a bugtask and a message.')
+                'it is referenced by a bug, a bugactivity, '
+                'a bugaffectsperson, a bugnotificationrecipient, '
+                'a bugsubscription, a bugtask and a message.')
 
     def test_visibility_validator_product_subscription(self):
         self.bzr.addSubscription(

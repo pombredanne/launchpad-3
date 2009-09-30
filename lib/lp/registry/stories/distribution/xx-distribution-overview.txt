@@ -76,19 +76,18 @@ Others do not have any series so the portlet is not shown.
     None
 
 
-== Registering information ==
+== Registration information ==
 
-The distroseries pages presents the 'registering' information besides
+The distroseries pages presents the registeration information besides
 its main 'heading'.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu')
 
     >>> print extract_text(
-    ...     first_tag_by_class(anon_browser.contents, 'registering'))
+    ...     find_tag_by_id(anon_browser.contents, 'registration'))
     registered by Ubuntu Team on 2006-10-16
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    registered by Ubuntu Team on 2006-10-16
     Ubuntu Linux
     ...
 
