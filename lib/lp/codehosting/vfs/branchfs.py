@@ -195,7 +195,7 @@ def get_multi_server(write_hosted=False, write_mirrored=False):
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     branchfs_endpoint = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
-        config.codehosting.hosted_branches_root, mkdir=True)
+        config.codehosting.mirrored_branches_root, mkdir=True)
     if not write_hosted:
         hosted_transport = get_readonly_transport(hosted_transport)
     mirrored_transport = get_chrooted_transport(
@@ -599,7 +599,7 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
     if hosted_directory is None:
         hosted_directory = config.codehosting.hosted_branches_root
     if mirror_directory is None:
-        mirror_directory = config.codehosting.mirrored_branches_root
+        mirror_directory = config.codehosting.hosted_branches_root
     if branchfs_endpoint_url is None:
         branchfs_endpoint_url = config.codehosting.branchfs_endpoint
 
