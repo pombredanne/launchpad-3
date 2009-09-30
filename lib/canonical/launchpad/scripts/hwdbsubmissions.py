@@ -260,6 +260,7 @@ class SubmissionParser(object):
         'contactable': _getValueAttributeAsBoolean,
         'date_created': _getValueAttributeAsDateTime,
         'client': _getClientData,
+        'kernel-release': _getValueAttributeAsString,
         }
 
     def _parseSummary(self, summary_node):
