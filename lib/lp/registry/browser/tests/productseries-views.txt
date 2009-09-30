@@ -254,8 +254,10 @@ portion do.
     >>> [spec.milestone.name for spec in view.specifications]
     [u'0.1']
 
-    # Listing and deleting product release files is done in the story
-    # because they require the Librarian to be running.
+    # Listing and deleting product release files is done in
+    # product-release-views because they require the Librarian to be running.
+
+
 
 Series that are the active focus of development cannot be deleted. The
 view's can_delete property checks this rule.
@@ -291,7 +293,15 @@ development.
 Calling the view's delete action on a series that can be deleted will
 untarget the bugtasks and specifications that are targeted to the
 series' milestones. The milestones, releases, and release files are
-deleted.
+deleted. Bugs and blueprints targeted to the series are unassigned.
+Series structural subscriptions are removed. Branch links are removed.
+
+    >>> owner = product.owner
+    >>> series_specification = factory.makeSpecification(product=product)
+    >>> series_specification.proposeGoal(productseries, owner)
+    >>> #series_bugtask = factory.makeBugTask(bug=bug, target=productseries)
+    >>> subscription = productseries.addSubscription(owner, owner)
+    >>> productseries.branch = factory.makeBranch()
 
     >>> view = create_initialized_view(productseries, '+delete', form=form)
     >>> for notification in view.request.response.notifications:
@@ -308,11 +318,18 @@ deleted.
     None
     >>> print bugtask.milestone
     None
+    >>> print series_specification.milestone
+    None
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    []
+
+#    >>> print series_bugtask.milestone
+#    None
 
 The series was not actually deleted because there are problematic objects
 like translations. The series are assigned to the Obsolete Junk project.
 The series name is changed to 'product_name-series_name-date_created' to
-avoid conflicts.
+avoid conflicts. The linked branch is removed.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
@@ -323,7 +340,8 @@ avoid conflicts.
     True
     >>> print productseries.name
     field-rabbit-20090501-193424
-
+    >>> print productseries.branch
+    None
 
 Linking packages
 ----------------

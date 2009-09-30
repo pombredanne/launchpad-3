@@ -654,6 +654,9 @@ milestone.
     >>> bug = factory.makeBug(product=firefox)
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone
+    >>> subscription = milestone.addSubscription(owner, owner)
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    [<StructuralSubscription ...>]
 
     >>> view = create_initialized_view(milestone, '+delete')
     >>> [bugtask.milestone.name for bugtask in view.bugtasks]
@@ -684,6 +687,9 @@ milestone.
 
     >>> print bugtask.milestone
     None
+
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    []
 
 No Privileges Person cannot access this view because he is neither the
 project owner or series driver..

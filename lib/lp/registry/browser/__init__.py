@@ -17,6 +17,7 @@ __all__ = [
 from operator import attrgetter
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from lp.registry.interfaces.productseries import IProductSeries
@@ -158,10 +159,36 @@ class RegistryDeleteViewMixin:
         else:
             return []
 
+    def _unsubscribe_structure(self, structure):
+        """Removed the subscriptions from structure."""
+        for subscription in structure.getSubscriptions():
+            # The owner of the subscription or an admin ar the only users
+            # that can destroy a subscription, but this rule cannot prevent
+            # the owner of the structure to delete it.
+            removeSecurityProxy(subscription).destroySelf()
+
+    def _untarget_bugs_and_specifications(self, series):
+        """Untarget the associated bugs and subscriptions."""
+        for spec in series.all_specifications:
+            spec.proposeGoal(None, self.user)
+#        params = BugTaskSearchParams(user=None)
+#        params.setProductSeries(series)
+#        for bugtask in getUtility(IBugTaskSet).search(params):
+#            removeSecurityProxy(bugtask).destroySelf()
+
     def _deleteProductSeries(self, series):
-        """Remove the series and delete/unlink related objects."""
-        # Delete all milestones, releases, and files.
-        # Any associated bugtasks and specifications are untargeted.
+        """Remove the series and delete/unlink related objects.
+
+        All subordinate milestones, releases, and files will be deleted.
+        Milestone bugs and blueprints will be untargetd.
+        Series bugs and blueprints will be unstargeted.
+        Series and milestone structural subscriptions are unsubscribed.
+        Series branches are unlinked
+        """
+        self._unsubscribe_structure(series)
+        self._untarget_bugs_and_specifications(series)
+        series.branch = None
+
         for milestone in series.all_milestones:
             self._deleteMilestone(milestone)
         # Series are not deleted because some objects like translations are
@@ -174,6 +201,7 @@ class RegistryDeleteViewMixin:
 
     def _deleteMilestone(self, milestone):
         """Delete a milestone and unlink related objects."""
+        self._unsubscribe_structure(milestone)
         for bugtask in self._getBugtasks(milestone):
             bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
@@ -191,6 +219,7 @@ class RegistryDeleteViewMixin:
 
 class RegistryEditFormView(LaunchpadEditFormView):
     """A base class that provides consistent edit form behaviour."""
+
     @property
     def page_title(self):
         """The page title."""
