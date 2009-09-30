@@ -273,9 +273,6 @@ class cmd_land(EC2Command):
     """Land a merge proposal on Launchpad."""
 
     takes_options = [
-        machine_id_option,
-        instance_type_option,
-        postmortem_option,
         debug_option,
         Option('dry-run', help="Just print the equivalent ec2 test command."),
         Option('print-commit', help="Print the full commit message."),
