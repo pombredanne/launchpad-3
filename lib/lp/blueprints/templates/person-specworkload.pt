@@ -11,9 +11,9 @@
 
 <div metal:fill-slot="main">
   <p>
-    This page lists the specifications which are related to this person -
-    either they were created by them, or they are in some way expected to
-    work on the specs.
+    This page lists the specifications that
+    <tal:name replace="context/displayname" /> is expected to work on, or
+    or is its creator.
   </p>
 
   <tal:team_definition define="is_team context/isTeam" >

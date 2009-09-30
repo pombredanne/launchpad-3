@@ -54,23 +54,61 @@ class Bugzilla(ExternalBugTracker):
         self.remote_bug_status = {}
         self.remote_bug_product = {}
 
-    def getExternalBugTrackerToUse(self):
-        """Return the correct `Bugzilla` subclass for the current bugtracker.
+    def _remoteSystemHasBugzillaAPI(self):
+        """Return True if the remote host offers the Bugzilla API.
 
-        See `IExternalBugTracker`.
+        :return: True if the remote host offers an XML-RPC API and its
+            version is > 3.4. Return False otherwise.
+        """
+        api = BugzillaAPI(self.baseurl)
+        if self._test_xmlrpc_proxy is not None:
+            proxy = self._test_xmlrpc_proxy
+        else:
+            proxy = api.xmlrpc_proxy
+
+        try:
+            # We try calling Bugzilla.version() on the remote
+            # server because it's the most lightweight method there is.
+            remote_version_dict = proxy.Bugzilla.version()
+        except xmlrpclib.Fault, fault:
+            if fault.faultCode == 'Client':
+                return False
+            else:
+                raise
+        except xmlrpclib.ProtocolError, error:
+            # We catch 404s, which occur when xmlrpc.cgi doesn't exist
+            # on the remote server, and 500s, which sometimes occur when
+            # an invalid request is made to the remote server. We allow
+            # any other error types to propagate upward.
+            if error.errcode in (404, 500):
+                return False
+            else:
+                raise
+        except xmlrpclib.ResponseError:
+            # The server returned an unparsable response.
+            return False
+        else:
+            if remote_version_dict['version'] >= '3.4':
+                return True
+            else:
+                return False
+
+    def _remoteSystemHasPluginAPI(self):
+        """Return True if the remote host has the Launchpad plugin installed.
         """
         plugin = BugzillaLPPlugin(self.baseurl)
+        if self._test_xmlrpc_proxy is not None:
+            proxy = self._test_xmlrpc_proxy
+        else:
+            proxy = plugin.xmlrpc_proxy
+
         try:
             # We try calling Launchpad.plugin_version() on the remote
             # server because it's the most lightweight method there is.
-            if self._test_xmlrpc_proxy is not None:
-                proxy = self._test_xmlrpc_proxy
-            else:
-                proxy = plugin.xmlrpc_proxy
             proxy.Launchpad.plugin_version()
         except xmlrpclib.Fault, fault:
             if fault.faultCode == 'Client':
-                return self
+                return False
             else:
                 raise
         except xmlrpclib.ProtocolError, error:
@@ -80,14 +118,26 @@ class Bugzilla(ExternalBugTracker):
             # can consider to be a problem, so we let it travel up the
             # stack for the error log.
             if error.errcode in (404, 500):
-                return self
+                return False
             else:
                 raise
         except xmlrpclib.ResponseError:
             # The server returned an unparsable response.
-            return self
+            return False
         else:
-            return plugin
+            return True
+
+    def getExternalBugTrackerToUse(self):
+        """Return the correct `Bugzilla` subclass for the current bugtracker.
+
+        See `IExternalBugTracker`.
+        """
+        if self._remoteSystemHasPluginAPI():
+            return BugzillaLPPlugin(self.baseurl)
+        elif self._remoteSystemHasBugzillaAPI():
+            return BugzillaAPI(self.baseurl)
+        else:
+            return self
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""

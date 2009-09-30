@@ -47,6 +47,8 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
@@ -111,7 +113,7 @@ class UsesLaunchpadMixin:
         if IProduct.providedBy(self.context):
             if self.context.official_codehosting:
                 url = canonical_url(self.context, rootsite='code')
-                uses.append(href_template % (url, 'Code'))
+                uses.append(href_template % (url, 'Branches'))
         if self.context.official_rosetta:
             url = canonical_url(self.context, rootsite='translations')
             uses.append(href_template % (url, 'Translations'))
@@ -296,7 +298,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
              'mirror_admin', 'reassign', 'addseries', 'series', 'milestones',
              'top_contributors',
-             'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
+             'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
              'ppas',]
@@ -325,10 +327,6 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     def top_contributors(self):
         text = 'More contributors'
         return Link('+topcontributors', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-        return Link('+mentoring', text, icon='info')
 
     def cdimage_mirrors(self):
         text = 'CD mirrors'
@@ -458,30 +456,11 @@ class DistributionBugsMenu(ApplicationMenu):
         return Link('+subscribe', text, icon='edit')
 
 
-class DistributionSpecificationsMenu(ApplicationMenu):
-
+class DistributionSpecificationsMenu(NavigationMenu,
+                                     HasSpecificationsMenuMixin):
     usedfor = IDistribution
     facet = 'specifications'
     links = ['listall', 'doc', 'assignments', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def assignments(self):
-        text = 'Assignments'
-        return Link('+assignments', text, icon='info')
-
-    def doc(self):
-        text = 'Documentation'
-        summary = 'List all complete informational specifications'
-        return Link('+documentation', text, summary,
-            icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
 
 
 class DistributionPackageSearchView(PackageSearchViewBase):
@@ -663,13 +642,15 @@ class DistributionArchivesView(LaunchpadView):
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
 
+    page_title = "Personal Package Archives"
+
     def initialize(self):
         self.name_filter = self.request.get('name_filter')
         self.show_inactive = self.request.get('show_inactive')
 
     @property
-    def page_title(self):
-        return '%s Personal Package Archives' % self.context.title
+    def label(self):
+        return 'Personal Package Archives for %s' % self.context.title
 
     @property
     def search_results(self):

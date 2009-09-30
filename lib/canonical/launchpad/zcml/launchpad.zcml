@@ -256,6 +256,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+graphics"
+      class="canonical.launchpad.browser.launchpad.LaunchpadGraphics"
       template="../templates/launchpad-graphics.pt"
       permission="zope.Public"
       />

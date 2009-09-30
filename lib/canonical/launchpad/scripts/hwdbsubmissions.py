@@ -440,16 +440,130 @@ class SubmissionParser(object):
             aliases.append(alias)
         return aliases
 
-    _parse_hardware_section = {
-        'hal': _parseHAL,
-        'processors': _parseProcessors,
-        'aliases': _parseAliases}
+    def _parseUdev(self, udev_node):
+        """Parse the <udev> node.
+
+        :return: A list of dictionaries, where each dictionary
+            describes a udev device.
+
+        The <udev> node contains the output produced by
+        "udevadm info --export-db". Each entry of the dictionaries
+        represents the data of the key:value pairs as they appear
+        in this data. The value of d['S'] is a list of strings,
+        the value s['E'] is a dictionary containing the key=value
+        pairs of the "E:" lines.
+        """
+        # We get the plain text as produced by "udevadm info --export-db"
+        # This data looks like:
+        #
+        # P: /devices/LNXSYSTM:00
+        # E: UDEV_LOG=3
+        # E: DEVPATH=/devices/LNXSYSTM:00
+        # E: MODALIAS=acpi:LNXSYSTM:
+        #
+        # P: /devices/LNXSYSTM:00/ACPI_CPU:00
+        # E: UDEV_LOG=3
+        # E: DEVPATH=/devices/LNXSYSTM:00/ACPI_CPU:00
+        # E: DRIVER=processor
+        # E: MODALIAS=acpi:ACPI_CPU:
+        #
+        # Data for different devices is separated by empty lines.
+        # Each line for a device consists of key:value pairs.
+        # The following keys are defined:
+        #
+        # A: udev_device_get_num_fake_partitions()
+        # E: udev_device_get_properties_list_entry()
+        # L: the device link priority (udev_device_get_devlink_priority())
+        # N: the device node file name (udev_device_get_devnode())
+        # P: the device path (udev_device_get_devpath())
+        # R: udev_device_get_ignore_remove()
+        # S: udev_get_dev_path()
+        # W: udev_device_get_watch_handle()
+        #
+        # The key P is always present; the keys A, L, N, R, W appear at
+        # most once per device; the keys E and S may appear more than
+        # once.
+        # The values of the E records have the format "key=value"
+        #
+        # See also the libudev reference manual:
+        # http://www.kernel.org/pub/linux/utils/kernel/hotplug/libudev/
+        # and the udev file udevadm-info.c, function print_record()
+
+        udev_data = udev_node.text.split('\n')
+        devices = []
+        device = None
+        line_number = 0
+
+        for line_number, line in enumerate(udev_data):
+            if len(line) == 0:
+                device = None
+                continue
+            record = line.split(':', 1)
+            if len(record) != 2:
+                self._logError(
+                    'Line %i in <udev>: No valid key:value data: %r'
+                    % (line_number, line),
+                    self.submission_key)
+                return None
+
+            key, value = record
+            if device is None:
+                device = {
+                    'E': {},
+                    'S': [],
+                    }
+                devices.append(device)
+            # Some attribute lines have a space character after the
+            # ':', others don't have it (see udevadm-info.c).
+            value = value.lstrip()
+
+            if key == 'E':
+                property_data = value.split('=', 1)
+                if len(property_data) != 2:
+                    self._logError(
+                        'Line %i in <udev>: Property without valid key=value '
+                        'data: %r' % (line_number, line),
+                        self.submission_key)
+                    return None
+                property_key, property_value = property_data
+                device['E'][property_key] = property_value
+            elif key == 'S':
+                device['S'].append(value)
+            else:
+                if key in device:
+                    self._logWarning(
+                        'Line %i in <udev>: Duplicate attribute key: %r'
+                        % (line_number, line),
+                        self.submission_key)
+                device[key] = value
+        return devices
+
+    def _parseDmi(self, dmi_node):
+        """Parse the <dmi> node.
+
+        :return: A dictionary containing the key:value pairs of the DMI data.
+        """
+        dmi_data = {}
+        dmi_text = dmi_node.text.strip().split('\n')
+        for line_number, line in enumerate(dmi_text):
+            record = line.split(':', 1)
+            if len(record) != 2:
+                self._logError(
+                    'Line %i in <dmi>: No valid key:value data: %r'
+                    % (line_number, line),
+                    self.submission_key)
+                return None
+            dmi_data[record[0]] = record[1]
+        return dmi_data
 
     def _setHardwareSectionParsers(self):
         self._parse_hardware_section = {
             'hal': self._parseHAL,
             'processors': self._parseProcessors,
-            'aliases': self._parseAliases}
+            'aliases': self._parseAliases,
+            'udev': self._parseUdev,
+            'dmi': self._parseDmi,
+            }
 
     def _parseHardware(self, hardware_node):
         """Parse the <hardware> part of a submission.

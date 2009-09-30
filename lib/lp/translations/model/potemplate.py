@@ -183,8 +183,12 @@ class POTemplate(SQLBase, RosettaStats):
     _uses_english_msgids = None
 
     def __storm_invalidated__(self):
-        self._cached_pofiles_by_language = None
+        self.clearPOFileCache()
         self._uses_english_msgids = None
+
+    def clearPOFileCache(self):
+        """See `IPOTemplate`."""
+        self._cached_pofiles_by_language = None
 
     @property
     def uses_english_msgids(self):
@@ -1220,6 +1224,10 @@ class POTemplateSet:
             Or(
                 POTemplate.from_sourcepackagename == sourcepackagename,
                 POTemplate.sourcepackagename == sourcepackagename))
+
+        if distroseries:
+            conditions = And(
+                conditions, POTemplate.distroseries == distroseries)
 
         store = IStore(POTemplate)
         matches = helpers.shortlist(store.find(POTemplate, conditions))

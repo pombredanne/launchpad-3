@@ -47,18 +47,9 @@ currently subscribed to the bug:
     Mark Shuttleworth
     Ubuntu Team
 
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
-
-Unlike the main bug page, here the 'Subscribers' portlet does not have
-any 'Subscribe' links.
-
-    >>> user_browser.getLink('Subscribe')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
 He subscribes David Allouche to the bug using his Launchpad username.
 
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
     >>> user_browser.getControl("Person").value = 'ddaa'
     >>> user_browser.getControl("Subscribe user").click()
     >>> user_browser.url

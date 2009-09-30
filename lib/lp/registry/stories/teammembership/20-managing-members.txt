@@ -14,7 +14,7 @@ have been invited.
     ...             print contents.encode('ascii', 'replace')
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> browser.getLink('Show all members').click()
+    >>> browser.getLink('All members').click()
     >>> browser.url
     'http://launchpad.dev/~landscape-developers/+members'
 

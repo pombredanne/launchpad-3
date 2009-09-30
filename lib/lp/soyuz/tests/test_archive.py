@@ -14,6 +14,7 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -242,6 +243,55 @@ class TestSeriesWithSources(TestCaseWithFactory):
         self.assertEqual(
             [u'1.0', u'0.5'], versions,
             "The latest version was not first.")
+
+
+class TestGetSourcePackageReleases(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGetSourcePackageReleases, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create an archive with some published binaries.
+        self.archive = self.factory.makeArchive()
+        binaries_foo = self.publisher.getPubBinaries(
+            archive=self.archive, binaryname="foo-bin")
+        binaries_bar = self.publisher.getPubBinaries(
+            archive=self.archive, binaryname="bar-bin")
+
+        # Collect the builds for reference.
+        self.builds_foo = [
+            binary.binarypackagerelease.build for binary in binaries_foo]
+        self.builds_bar = [
+            binary.binarypackagerelease.build for binary in binaries_bar]
+
+        # Collect the source package releases for reference.
+        self.sourcepackagereleases = [
+            self.builds_foo[0].sourcepackagerelease,
+            self.builds_bar[0].sourcepackagerelease,
+            ]
+
+    def test_getSourcePackageReleases_with_no_params(self):
+        # With no params all source package releases are returned.
+        sprs = self.archive.getSourcePackageReleases()
+
+        self.assertContentEqual(self.sourcepackagereleases, sprs)
+
+    def test_getSourcePackageReleases_with_buildstatus(self):
+        # Results are filtered by the specified buildstatus.
+
+        # Set the builds for one of the sprs to needs build.
+        for build in self.builds_foo:
+            build.buildstate = BuildStatus.NEEDSBUILD
+
+        result = self.archive.getSourcePackageReleases(
+            build_status=BuildStatus.NEEDSBUILD)
+
+        self.failUnlessEqual(1, result.count())
+        self.failUnlessEqual(
+            self.sourcepackagereleases[0], result[0])
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

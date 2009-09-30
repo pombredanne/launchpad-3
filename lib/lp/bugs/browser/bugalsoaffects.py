@@ -53,12 +53,16 @@ from canonical.widgets.popup import SearchForUpstreamPopupWidget
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
+    page_title = 'Record as affecting another project'
+
     @property
     def first_step(self):
         return ChooseProductStep
 
 
 class BugAlsoAffectsDistroMetaView(MultiStepView):
+    page_title = 'Record as affecting another distribution/package'
+
     @property
     def first_step(self):
         return DistroBugTaskCreationStep

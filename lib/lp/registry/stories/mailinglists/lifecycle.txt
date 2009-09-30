@@ -13,8 +13,9 @@ The owner of Landscape Developers applies for a mailing list.
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink(url='+mailinglist').click()
-    >>> browser.title
-    'Configure mailing list'
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> print backslashreplace(browser.title)
+    Mailing list configuration...
 
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
@@ -243,6 +244,7 @@ not show up.
 
 The contact address is now set to the mailing list address.
 
+    >>> browser.goBack()
     >>> browser.getLink(url='+contactaddress').click()
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]

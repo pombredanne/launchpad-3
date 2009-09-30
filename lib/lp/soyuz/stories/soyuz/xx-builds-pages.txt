@@ -41,7 +41,7 @@ For Distribution, it's possible to filter build results by state and name:
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Builds").click()
     >>> print anon_browser.title
-    +builds : Ubuntu
+    Ubuntu Linux builds...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -51,7 +51,7 @@ For DistroSeries, an architecture filter is also presented:
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    +builds : 5.04 : Ubuntu
+    The Hoary Hedgehog Release builds...
 
     >>> print check_builds_options(anon_browser.contents)
     State, Arch and Name present
@@ -61,7 +61,7 @@ For DistroArchSeries, same as Distribution:
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary/i386")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    +builds : i386 : 5.04 : Ubuntu
+    The Hoary Hedgehog Release for i386 (x86) builds...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -71,7 +71,7 @@ For Builder, same as Distribution:
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
     >>> anon_browser.getLink("View full history").click()
     >>> print anon_browser.title
-    +history : Bob The Builder : Build Farm
+    Build history for “Bob...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -82,7 +82,7 @@ For Archive (PPA), same as Distribution:
     ...     "http://launchpad.dev/~cprov/+archive/+packages")
     >>> anon_browser.getLink("View all builds").click()
     >>> print anon_browser.title
-    +builds : PPA for Celso Providelo : Celso Providelo
+    Builds for PPA for Celso Providelo...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -93,7 +93,7 @@ For SourcePackage, it's only possible to filter by state.
     ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    +builds : “pmount” package : 5.04 : Ubuntu
+    Builds for ...pmount... in Hoary :...
 
     >>> print check_builds_options(anon_browser.contents)
     State present, Name not present

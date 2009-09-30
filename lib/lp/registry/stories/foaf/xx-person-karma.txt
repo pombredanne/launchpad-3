@@ -15,17 +15,11 @@ profile page.
     >>> print karma.renderContents()
     138
 
-The navigation menu links to Sample Person's karma summary page, which
-details their karma-generating activities.
+The total karma points is also a link to the person's karma summary page.
 
-    >>> print_navigation_links(anon_browser.contents)
-    Profile
-    Related software: ...
-    Karma: http://launchpad.dev/~name12/+karma
-
-    >>> anon_browser.getLink('Karma').click()
+    >>> anon_browser.getLink('138').click()
     >>> print anon_browser.title
-    +karma : Sample Person
+    Launchpad Karma for Sample Person...
 
 Any user can see the categories that a user has earned karma in.
 

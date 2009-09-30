@@ -9,14 +9,6 @@
 
   <div metal:fill-slot="main">
 
-    <h1>
-      Upload
-      <tal:language replace="context/language/englishname">
-        Spanish
-      </tal:language>
-      translation
-    </h1>
-
     <form action="+upload" method="POST" enctype="multipart/form-data"
           class="translations">
       <h2>Choose a file to upload</h2>
