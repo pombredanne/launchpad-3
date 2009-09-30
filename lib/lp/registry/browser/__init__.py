@@ -171,10 +171,10 @@ class RegistryDeleteViewMixin:
         """Untarget the associated bugs and subscriptions."""
         for spec in series.all_specifications:
             spec.proposeGoal(None, self.user)
-#        params = BugTaskSearchParams(user=None)
-#        params.setProductSeries(series)
-#        for bugtask in getUtility(IBugTaskSet).search(params):
-#            removeSecurityProxy(bugtask).destroySelf()
+        params = BugTaskSearchParams(user=None)
+        params.setProductSeries(series)
+        for bugtask in getUtility(IBugTaskSet).search(params):
+            removeSecurityProxy(bugtask).destroySelf()
 
     def _deleteProductSeries(self, series):
         """Remove the series and delete/unlink related objects.

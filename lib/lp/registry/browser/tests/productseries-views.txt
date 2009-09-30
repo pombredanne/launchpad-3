@@ -299,7 +299,7 @@ Series structural subscriptions are removed. Branch links are removed.
     >>> owner = product.owner
     >>> series_specification = factory.makeSpecification(product=product)
     >>> series_specification.proposeGoal(productseries, owner)
-    >>> #series_bugtask = factory.makeBugTask(bug=bug, target=productseries)
+    >>> series_bugtask = factory.makeBugTask(bug=bug, target=productseries)
     >>> subscription = productseries.addSubscription(owner, owner)
     >>> productseries.branch = factory.makeBranch()
 
@@ -318,13 +318,12 @@ Series structural subscriptions are removed. Branch links are removed.
     None
     >>> print bugtask.milestone
     None
+    >>> bugtask.related_tasks
+    []
     >>> print series_specification.milestone
     None
     >>> [subscription for subscription in owner.structural_subscriptions]
     []
-
-#    >>> print series_bugtask.milestone
-#    None
 
 The series was not actually deleted because there are problematic objects
 like translations. The series are assigned to the Obsolete Junk project.
