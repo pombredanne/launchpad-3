@@ -1709,8 +1709,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         old_owner = self.context.owner
         old_driver = self.context.driver
         self.updateContextFromData(data)
-        self._reassignProductDependencies(
-            self.context, old_owner, self.context.owner)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
                 "Successfully changed the maintainer to %s"
@@ -1733,22 +1731,3 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-
-    def _reassignProductDependencies(self, product, oldOwner, newOwner):
-        """Reassign ownership of objects related to this product.
-
-        Objects related to this product includes: ProductSeries,
-        ProductReleases and TranslationImportQueueEntries that are owned
-        by oldOwner of the product.
-
-        """
-        import_queue = getUtility(ITranslationImportQueue)
-        for entry in import_queue.getAllEntries(target=product):
-            if entry.importer == oldOwner:
-                removeSecurityProxy(entry).importer = newOwner
-        for series in product.serieses:
-            if series.owner == oldOwner:
-                series.owner = newOwner
-        for release in product.releases:
-            if release.owner == oldOwner:
-                release.owner = newOwner

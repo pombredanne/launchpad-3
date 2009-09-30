@@ -177,7 +177,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
-    owner = ForeignKey(
+    _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,
         notNull=True)
@@ -489,6 +489,34 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self._cached_licenses = tuple(sorted(licenses))
 
     licenses = property(_getLicenses, _setLicenses)
+
+    def _getOwner(self):
+        """Get the owner."""
+        return self._owner
+    def _setOwner(self, new_owner):
+        """Set the owner.
+
+        Change the owner and change the ownership of related artifacts.
+        """
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        from lp.translations.interfaces.translationimportqueue import (
+            ITranslationImportQueue)
+        from zope.security.proxy import removeSecurityProxy
+        old_owner = self._owner
+        self._owner = new_owner
+        import_queue = getUtility(ITranslationImportQueue)
+        for entry in import_queue.getAllEntries(target=self):
+            if entry.importer == old_owner:
+                removeSecurityProxy(entry).importer = new_owner
+        for series in self.serieses:
+            if series.owner == old_owner:
+                series.owner = new_owner
+        for release in self.releases:
+            if release.owner == old_owner:
+                release.owner = new_owner
+
+
+    owner = property(_getOwner, _setOwner)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
