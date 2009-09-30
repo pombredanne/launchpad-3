@@ -2523,7 +2523,8 @@ class PersonSet:
                 master_email.personID = account_person.id
                 # Populate the previously empty 'preferredemail' cached
                 # property, so the Person record is up-to-date.
-                account_person._preferredemail_cached = master_email
+                if master_email.status == EmailAddressStatus.PREFERRED:
+                    account_person._preferredemail_cached = master_email
                 return account_person
             # There is no associated `Person` to the email `Account`.
             # This is probably because the account was created externally
