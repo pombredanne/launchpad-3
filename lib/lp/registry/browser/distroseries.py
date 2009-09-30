@@ -442,15 +442,8 @@ class DistroSeriesAddView(LaunchpadFormView):
         'name', 'displayname', 'title', 'summary', 'description', 'version',
         'parent_series']
 
-    @property
-    def label(self):
-        """See `LaunchpadFormView`."""
-        return 'Register a series in %s' % self.context.displayname
-
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    label = 'Register a series'
+    page_title = label
 
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):

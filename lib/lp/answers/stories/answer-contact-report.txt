@@ -40,7 +40,7 @@ Clicking on the name of the project will show the project answers.
 
     >>> anon_browser.getLink('Gnome Baker').click()
     >>> print anon_browser.title
-    Questions for gnomebaker
+    Questions : gnomebaker
 
 When the user is logged in, and he is visiting this page in his profile
 he will see a link after each project to manage his registration.
