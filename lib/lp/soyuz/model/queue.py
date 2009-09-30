@@ -367,9 +367,11 @@ class PackageUpload(SQLBase):
         assert self.sources.count() == 1, (
             'Source is mandatory for delayed copies.')
         self.setAccepted()
+        # The second assert guarantees that we'll actually have a SPR.
+        spr = self.mySourcePackageRelease()
         # Use the changesfile of the original upload.
         changes_file_object = StringIO.StringIO(
-            self.sourcepackagerelease.package_upload.changesfile.read())
+            spr.package_upload.changesfile.read())
         self.notify(
             announce_list=self.distroseries.changeslist,
             changes_file_object=changes_file_object, allow_unsigned=True)
@@ -490,6 +492,25 @@ class PackageUpload(SQLBase):
         if self.sources:
             return self.sources[0].sourcepackagerelease
         elif self.builds:
+            return self.builds[0].build.sourcepackagerelease
+        else:
+            return None
+
+    def mySourcePackageRelease(self):
+        """The source package release related to this queue item.
+
+        al-maisan, Wed, 30 Sep 2009 17:58:31 +0200:
+        The cached property version above behaves very finicky in
+        tests and I've had a *hell* of a time revising these and
+        making them pass.
+
+        In any case, Celso's advice was to stay away from it
+        and I am hence introducing this non-cached variant for
+        usage inside the content class.
+        """
+        if self.sources is not None and self.sources.count() > 0:
+            return self.sources[0].sourcepackagerelease
+        elif self.builds is not None and self.builds.count() > 0:
             return self.builds[0].build.sourcepackagerelease
         else:
             return None
@@ -701,7 +722,7 @@ class PackageUpload(SQLBase):
             message.ORIGIN = '\nOrigin: %s' % changes['origin']
 
         if self.sources or self.builds:
-            message.SPR_URL = canonical_url(self.sourcepackagerelease)
+            message.SPR_URL = canonical_url(self.mySourcePackageRelease())
 
     def _sendRejectionNotification(
         self, recipients, changes_lines, changes, summary_text, dry_run,
@@ -1098,7 +1119,7 @@ class PackageUpload(SQLBase):
         # the section of the source package uploaded in order to facilitate
         # filtering on the part of the email recipients.
         if self.sources:
-            spr = self.sourcepackagerelease
+            spr = self.mySourcePackageRelease()
             xlp_component_header = 'component=%s, section=%s' % (
                 spr.component.name, spr.section.name)
             extra_headers['X-Launchpad-Component'] = xlp_component_header
