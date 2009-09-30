@@ -719,7 +719,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Filling stanza options.
         fields = IndexStanzaFields()
         fields.append('Package', spr.name)
-        fields.append('Binary', spr.dsc_binaries)
+        # XXX Michael Nelson 20090930 bug=436182. We have an issue
+        # in the upload parser that has introduced '\n' at the end of
+        # certain dsc_binaries fields. This work-around allows
+        # critical teams to continue, while giving us more
+        # time to fix the actual issue and update the corrupted data.
+        fields.append('Binary', spr.dsc_binaries.rstrip())
         fields.append('Version', spr.version)
         fields.append('Section', self.section.name)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)
