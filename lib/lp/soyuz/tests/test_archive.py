@@ -177,24 +177,32 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
     def test_sources_size_does_not_count_duplicated_files(self):
         # If there are multiple copies of the same file name/size
         # only one will be counted.
-        self.publisher.getPubSource(
-            filename='foo_0.5.1.orig.tar.gz', filecontent='22',
+        pub_jaunty = self.publisher.getPubSource(
+            filename='foo_0.5.11~ppa1~jaunty.dsc', filecontent='22',
             archive=self.ppa)
 
-        self.publisher.getPubSource(
-            filename='foo_0.5.2.orig.tar.gz', filecontent='333',
+        pub_karmic = self.publisher.getPubSource(
+            filename='foo_0.5.11~ppa1~karmic.dsc', filecontent='333',
             archive=self.ppa)
 
         self.assertEquals(5, self.ppa.sources_size)
 
-        # Just pretend this is a separate dsc for a different distroseries
-        # version based on the same tarball.
-        self.publisher.getPubSource(
-            filename='foo_0.5.1.orig.tar.gz', filecontent='22',
-            archive=self.ppa)
+        shared_tarball = self.publisher.addMockFile(
+            filename='foo_0.5.11~ppa1.tar.gz', filecontent='1')
+
+        # After adding the shared tarball to the jaunty version, the
+        # sources_size updates to reflect the change.
+        pub_jaunty.sourcepackagerelease.addFile(shared_tarball)
         self.assertEquals(
-            5, self.ppa.sources_size,
-            'The sources size should not count duplicates.')
+            6, self.ppa.sources_size,
+            'The sources_size should update after a file is added.')
+
+        # But after adding the shared tarball to the karmic version,
+        # the sources_size is unchanged.
+        pub_karmic.sourcepackagerelease.addFile(shared_tarball)
+        self.assertEquals(
+            6, self.ppa.sources_size,
+            'The sources_size should change after adding a duplicate file.')
 
 
 class TestSeriesWithSources(TestCaseWithFactory):
