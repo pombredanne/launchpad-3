@@ -496,7 +496,7 @@ class MemcachedLayer(BaseLayer):
         MemcachedLayer.client = None
         # Kill our memcached, and there is no reason to be nice about it.
         if (MemcachedLayer._memcached_process is not None
-            and MemcachedLayer._memcached_process.pid is None):
+            and MemcachedLayer._memcached_process.pid is not None):
             os.kill(MemcachedLayer._memcached_process.pid, signal.SIGKILL)
             MemcachedLayer._memcached_process.wait()
         MemcachedLayer._memcached_process = None
