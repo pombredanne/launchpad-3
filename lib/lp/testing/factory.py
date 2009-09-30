@@ -509,9 +509,9 @@ class LaunchpadObjectFactory(ObjectFactory):
                          productseries=productseries,
                          name=name)
 
-    def makeProductRelease(self, milestone=None):
+    def makeProductRelease(self, milestone=None, product=None):
         if milestone is None:
-            milestone = self.makeMilestone()
+            milestone = self.makeMilestone(product=product)
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
 
