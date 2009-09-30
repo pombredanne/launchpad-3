@@ -1,8 +1,13 @@
+#! /usr/bin/python2.4
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 __metaclass__ = type
 
 __all__ = [
-	'ReuploadPackageTranslations',
-	]
+    'ReuploadPackageTranslations',
+    ]
 
 from zope.component import getUtility
 
@@ -30,7 +35,7 @@ class ReuploadPackageTranslations(LaunchpadScript):
         self.parser.add_option('-l', '--dry-run', dest='dryrun',
             action='store_true', default=False,
             help="Pretend to upload, but make no actual changes.")
- 
+
     def main(self):
         """See `LaunchpadScript`."""
         self.uploadless_packages = []

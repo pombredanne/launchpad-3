@@ -49,7 +49,7 @@ def upload_tarball(translation_files):
     """Create a tarball and upload it to the Librarian.
 
     :param translation_files: A dict mapping filenames to file contents.
-    :return: A `LibraryFileAlias`. 
+    :return: A `LibraryFileAlias`.
     """
     buf = StringIO()
     tarball = tarfile.open('', 'w:gz', buf)
