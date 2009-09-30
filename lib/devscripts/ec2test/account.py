@@ -13,7 +13,10 @@ import re
 import sys
 import urllib
 
+from datetime import datetime, timedelta
+
 from boto.exception import EC2ResponseError
+from devscripts.ec2test.utils import find_datetime_string
 
 import paramiko
 
@@ -123,17 +126,28 @@ class EC2Account:
         return paramiko.RSAKey.from_private_key(
             cStringIO.StringIO(key_pair.material.encode('ascii')))
 
-    def delete_previous_key_pair(self):
-        """Delete previously used keypair, if it exists."""
+    def delete_previous_key_pairs(self):
+        """Delete previously used keypairs, if found."""
+        expire_before = datetime.utcnow() - timedelta(hours=6)
         try:
-            # Only one keypair will match 'self.name' since it's a unique
-            # identifier.
-            key_pairs = self.conn.get_all_key_pairs(self.name)
-            assert len(key_pairs) == 1, (
-                "Should be only one keypair, found %d (%s)"
-                % (len(key_pairs), key_pairs))
-            key_pair = key_pairs[0]
-            key_pair.delete()
+            for key_pair in self.conn.get_all_key_pairs():
+                if key_pair.name == self.name:
+                    self.log('Deleting key pair %r\n' % key_pair.name)
+                    key_pair.delete()
+                elif key_pair.name.startswith(self.name):
+                    creation_datetime = find_datetime_string(key_pair.name)
+                    if creation_datetime is None:
+                        self.log('Found key pair %r without creation date; '
+                                 'leaving.\n' % key_pair.name)
+                    elif creation_datetime >= expire_before:
+                        self.log('Found recent key pair %r; '
+                                 'leaving\n' % key_pair.name)
+                    else:
+                        self.log('Deleting old key pair %r\n' % key_pair.name)
+                        key_pair.delete()
+                else:
+                    self.log('Found other key pair %r; '
+                             'leaving.\n' % key_pair.name)
         except EC2ResponseError, e:
             if e.code != 'InvalidKeyPair.NotFound':
                 if e.code == 'AuthFailure':
