@@ -392,7 +392,8 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         return Popen(args, stdout=PIPE, stderr=STDOUT,
                      cwd=LayerProcessController.appserver_config.root,
                      env=dict(LPCONFIG='testrunner-appserver',
-                              PYTHONPATH=os.pathsep.join(sys.path)))
+                              PYTHONPATH=os.pathsep.join(sys.path),
+                              PATH=os.environ['PATH']))
 
     def test_import(self):
         # Test that a simple invocation of the script works.

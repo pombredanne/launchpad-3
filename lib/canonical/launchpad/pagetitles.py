@@ -134,7 +134,7 @@ archive_subscribers = ContextDisplayName('Manage access to %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
-bazaar_index = 'Launchpad Code'
+bazaar_index = 'Launchpad Branches'
 
 bazaar_sync_review = (
     'Review upstream repositories for Launchpad Bazaar syncing')
@@ -378,16 +378,6 @@ errorservice_index = 'Error log report'
 errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
-
-def faq_index(context, view):
-    """Return the FAQ index page title."""
-    return (
-        smartquote('%s FAQ #%d: "%s"') %
-        (context.target.displayname, context.id, context.title))
-
-def faq_listing(context, view):
-    """Return the FAQ lising page title."""
-    return view.heading
 
 def hasmentoringoffers_mentoring(context, view):
     """Return the mentoring title for the context."""
@@ -708,10 +698,6 @@ rosetta_index = 'Launchpad Translations'
 rosetta_products = 'Projects with Translations in Launchpad'
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
-
-def question_listing(context, view):
-    """Return the page title list questions."""
-    return view.pagetitle
 
 questions_index = 'Launchpad Answers'
 

@@ -51,11 +51,6 @@
       </dd>
     </dl>
   </div>
-  <p id="registrant">
-    Registered
-    <tal:created replace="context/datecreated/fmt:approximatedate" />
-    by <tal:registrant replace="structure context/registrant/fmt:link" />
-  </p>
   <ul class="horizontal">
     <li>
       <a tal:replace="structure context/menu:overview/rdf/fmt:link-icon" />
