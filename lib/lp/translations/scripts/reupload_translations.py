@@ -16,6 +16,9 @@ from lp.translations.interfaces.translationimportqueue import (
 
 class ReuploadPackageTranslations(LaunchpadScript):
     """Re-upload latest translations for given distribution packages."""
+    def __init__(self, *args, **kwargs):
+        super(ReuploadPackageTranslations, self).__init__(*args, **kwargs)
+        self.uploadless_packages = []
 
     def add_my_options(self):
         """See `LaunchpadScript`."""
@@ -87,10 +90,17 @@ class ReuploadPackageTranslations(LaunchpadScript):
         queue = getUtility(ITranslationImportQueue)
         rosetta_team = getUtility(ILaunchpadCelebrities).rosetta_experts
 
+        have_uploads = False
         for alias in tarball_aliases:
+            have_uploads = True
             self.logger.debug("Uploading file '%s' for %s." % (
                 alias.filename, package.displayname))
             queue.addOrUpdateEntriesFromTarball(
                 alias.read(), True, rosetta_team,
                 sourcepackagename=package.sourcepackagename,
                 distroseries=self.distroseries)
+
+        if not have_uploads:
+            self.logger.warn(
+                "Found no translations upload for %s." % package.displayname)
+            self.uploadless_packages.append(package)
