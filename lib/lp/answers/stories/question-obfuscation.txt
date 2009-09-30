@@ -51,7 +51,7 @@ Related question's portlet.
     >>> user_browser.getControl(name='field.faq-query').value = 'voip'
     >>> user_browser.getControl('Search', index=0).click()
     >>> user_browser.getControl('4').selected = True
-    >>> user_browser.getControl('Link FAQ').click()
+    >>> user_browser.getControl('Link to FAQ').click()
     >>> user_browser.getLink('How can I make VOIP calls?').click()
     >>> print user_browser.title
     Questions : Ubuntu
