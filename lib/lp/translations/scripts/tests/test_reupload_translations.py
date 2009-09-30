@@ -106,6 +106,8 @@ class TestReuploadPackageTranslations(TestCaseWithFactory):
             [self.sourcepackage], self.script.uploadless_packages)
 
     def test_processPackage(self):
+        # _processPackage will fetch the package's latest translations
+        # upload from the Librarian and re-import it.
         translation_files = {
             'po/messages.pot': '# pot',
             'po/nl.po': '# nl',
