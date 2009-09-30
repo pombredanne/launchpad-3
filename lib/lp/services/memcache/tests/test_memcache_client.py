@@ -13,6 +13,7 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.testing import TestCase
 
+
 class MemcacheClientTestCase(TestCase):
     layer = LaunchpadZopelessLayer
 
