@@ -24,12 +24,13 @@
     <div tal:condition="view/isPrivate" id="privacy" class="aside private">
       This report will be private, though you can disclose it later.
     </div>
-    <h2>
+    <h2 id="filebug-query-heading">
       <tal:heading condition="not:view/show_duplicate_list">
         Report a bug
       </tal:heading>
       <tal:heading condition="view/show_duplicate_list">
-        Is the bug you&rsquo;re reporting one of these?
+        Is "<span tal:replace="view/search_text">Some Bug Summary</span>"
+        possibly one of these?
       </tal:heading>
     </h2>
   </div>

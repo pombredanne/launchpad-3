@@ -84,10 +84,9 @@ To help the user verify if a bug is indeed simliar to the problem
 being reported, the user's original summary is displayed above
 the list of potentially similar bugs.
 
-    >>> query = find_tag_by_id(user_browser.contents, 'filebug-query')
+    >>> query = find_tag_by_id(user_browser.contents, 'filebug-query-heading')
     >>> print extract_text(query)
-    Existing bugs that could match:
-    reflow
+    Is "reflow" possibly one of these?
 
 == Projects ==
 
