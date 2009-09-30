@@ -737,7 +737,7 @@ Make Celso's PPA private and create a private source publication.
 
     >>> def _create_source(archive, version):
     ...     """Create source with meaningful '.changes' file."""
-    ...     changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes'
+    ...     changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_%s_binary/foocomm_%s_i386.changes' % ((version,)*2)
     ... 
     ...     changesfile_content = ''
     ...     handle = open(changesfile_path, 'r')
