@@ -7,12 +7,14 @@ __metaclass__ = type
 __all__ = [
     'find_datetime_string',
     'make_datetime_string',
+    'make_random_string',
     ]
 
 
+import binascii
+import datetime
+import os
 import re
-
-from datetime import datetime
 
 
 def make_datetime_string(when=None):
@@ -22,7 +24,7 @@ def make_datetime_string(when=None):
     `find_datetime_string`.
     """
     if when is None:
-        when = datetime.utcnow()
+        when = datetime.datetime.utcnow()
     return when.strftime('%Y-%m-%d-%H%M')
 
 
@@ -39,4 +41,14 @@ def find_datetime_string(text):
     if match is None:
         return None
     else:
-        return datetime(*(int(part) for part in match.groups()))
+        return datetime.datetime(
+            *(int(part) for part in match.groups()))
+
+
+def make_random_string():
+    """Return a simple random UUID.
+
+    The uuid module is only available in Python 2.5 and above, but a
+    simple non-RFC-compliant hack here is sufficient.
+    """
+    return binascii.hexlify(os.urandom(16))

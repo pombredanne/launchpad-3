@@ -13,7 +13,7 @@ from devscripts.ec2test import utils
 
 
 class TestDateTimeUtils(unittest.TestCase):
-    """Tests for the config file parser."""
+    """Tests for date/time related utilities."""
 
     example_date = datetime(1986, 4, 26, 1, 23)
     example_date_string = '1986-04-26-0123'
@@ -33,3 +33,17 @@ class TestDateTimeUtils(unittest.TestCase):
         self.failUnlessEqual(
             self.example_date,
             utils.find_datetime_string(self.example_date_text))
+
+
+class TestRandomUtils(unittest.TestCase):
+    """Tests for randomness related utilities."""
+
+    def test_make_random_string(self):
+        rand_a = utils.make_random_string()
+        rand_b = utils.make_random_string()
+        self.failIfEqual(rand_a, rand_b)
+        self.failUnlessEqual(32, len(rand_a))
+        self.failUnlessEqual(32, len(rand_b))
+        hex_chars = set('0123456789abcdefABCDEF')
+        self.failUnless(hex_chars.issuperset(rand_a))
+        self.failUnless(hex_chars.issuperset(rand_b))
