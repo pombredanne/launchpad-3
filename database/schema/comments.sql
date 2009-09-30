@@ -763,8 +763,11 @@ COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of
 
 -- SprintAttendance
 COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
+COMMENT ON COLUMN SprintAttendance.attendee IS 'The person attending the sprint.';
+COMMENT ON COLUMN SprintAttendance.sprint IS 'The sprint the person is attending.';
 COMMENT ON COLUMN SprintAttendance.time_starts IS 'The time from which the person will be available to participate in meetings at the sprint.';
 COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the sprint or conference - this is the last time at which the person is available for meetings during the sprint.';
+COMMENT ON COLUMN SprintAttendance.is_physical IS 'Is the person physically attending the sprint';
 
 
 -- SprintSpecification
