@@ -250,7 +250,8 @@ class EC2Instance:
         self.security_group = self._account.acquire_security_group(
             demo_networks=self._demo_networks)
         reservation = self._image.run(
-            key_name=self._name, security_groups=[self._name],
+            key_name=self._account.unique_name,
+            security_groups=[self._account.unique_name],
             instance_type=self._instance_type)
         self._boto_instance = reservation.instances[0]
         self.log('Instance %s starting..' % self._boto_instance.id)
