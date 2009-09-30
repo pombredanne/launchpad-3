@@ -288,6 +288,7 @@ class LaunchpadTestCase(BaseTestCase):
 
     want_launchpad_database = True
     want_librarian_running = True
+    want_memcached = True
 
 
 class FunctionalTestCase(BaseTestCase):
@@ -313,6 +314,7 @@ class LaunchpadFunctionalTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_functional_flag = True
+    want_memcached = True
 
 
 class LaunchpadZopelessTestCase(BaseTestCase):
@@ -322,6 +324,7 @@ class LaunchpadZopelessTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_zopeless_flag = True
+    want_memcached = True
 
 
 class LaunchpadScriptTestCase(BaseTestCase):
@@ -331,6 +334,7 @@ class LaunchpadScriptTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_zopeless_flag = True
+    want_memcached = True
 
     def testSwitchDbConfig(self):
         # Test that we can switch database configurations, and that we
@@ -355,6 +359,7 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
     want_librarian_running = True
     want_functional_flag = True
     want_zopeless_flag = False
+    want_memcached = True
 
     def testAppServerIsAvailable(self):
         # Test that the app server is up and running.

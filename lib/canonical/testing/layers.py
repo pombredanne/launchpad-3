@@ -438,7 +438,12 @@ class MemcachedLayer(BaseLayer):
     """
     _reset_between_tests = True
 
-    client = None # Class attribute. A memcache.Client instance.
+    # A memcache.Client instance.
+    client = None
+
+    # A subprocess.Popen instance if this process spawned the test
+    # memcached.
+    _memcached_process = None
 
     @classmethod
     @profiled
@@ -446,10 +451,11 @@ class MemcachedLayer(BaseLayer):
         # Create a client
         MemcachedLayer.client = memcache_client_factory()
 
-        # Ensure an old memcached isn't still running.
+        # First, check to see if there is a memcached already running.
+        # This happens when new layers are run as a subprocess.
         test_key = "MemcachedLayer__live_test"
         if MemcachedLayer.client.set(test_key, "live"):
-            raise LayerInvariantError("memcached already running.")
+            return
 
         cmd = [
             'memcached',
@@ -474,6 +480,8 @@ class MemcachedLayer(BaseLayer):
             MemcachedLayer.client.forget_dead_hosts()
             time.sleep(0.1)
 
+        # Register an atexit hook just in case tearDown doesn't get
+        # invoked for some perculiar reason.
         def terminate_on_exit(pid=MemcachedLayer._memcached_process.pid):
             try:
                 if pid is not None:
@@ -488,10 +496,11 @@ class MemcachedLayer(BaseLayer):
         MemcachedLayer.client.disconnect_all()
         MemcachedLayer.client = None
         # Kill our memcached, and there is no reason to be nice about it.
-        if MemcachedLayer._memcached_process.returncode is None:
+        if (MemcachedLayer._memcached_process is not None
+            and MemcachedLayer._memcached_process.pid is None):
             os.kill(MemcachedLayer._memcached_process.pid, signal.SIGKILL)
-        MemcachedLayer._memcached_process.wait()
-        del MemcachedLayer._memcached_process
+            MemcachedLayer._memcached_process.wait()
+        MemcachedLayer._memcached_process = None
 
     @classmethod
     @profiled
@@ -777,7 +786,7 @@ def test_default_timeout():
     return None
 
 
-class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
+class LaunchpadLayer(DatabaseLayer, LibrarianLayer, MemcachedLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon
@@ -785,6 +794,8 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     already connected to the database.
 
     This layer is mainly used by tests that call initZopeless() themselves.
+    Most tests will use a sublayer such as LaunchpadFunctionalLayer that
+    provides access to the Component Architecture.
     """
     @classmethod
     @profiled
@@ -1378,6 +1389,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     def resetBetweenTests(cls, flag):
         LibrarianLayer._reset_between_tests = flag
         DatabaseLayer._reset_between_tests = flag
+        MemcachedLayer._reset_between_tests = flag
 
     @classmethod
     @profiled
