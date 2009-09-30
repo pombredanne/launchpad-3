@@ -301,9 +301,13 @@ class cmd_land(EC2Command):
         ec2_path = os.path.join(get_launchpad_root(), 'utilities', 'ec2')
         command = [ec2_path, 'test', '--headless']
         command.extend(['--email=%s' % email for email in emails])
+        # 'ec2 test' has a bug where you cannot pass full URLs to branches to
+        # the -b option. It has special logic for 'launchpad' branches, so we
+        # piggy back on this to get 'devel' or 'db-devel'.
+        target_branch_name = target_url.split('/')[-1]
         command.extend(
-            ['-b', 'launchpad=%s' % (target_url), '-s', commit_message,
-             str(source_url)])
+            ['-b', 'launchpad=%s' % (target_branch_name), '-s',
+             commit_message, str(source_url)])
         return command
 
     def run(self, merge_proposal, machine=None,
