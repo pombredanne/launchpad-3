@@ -108,7 +108,7 @@ continue to work.
     ...        '&field.status=%s&field.status-empty-marker=1')
     >>> browser.open(url % (old_sort, old_status))
     >>> print browser.title
-    Questions for Ubuntu Linux : Ubuntu
+    Questions : Ubuntu
     >>> browser.getControl(name='field.sort').displayValue
     ['by status']
 
@@ -118,6 +118,6 @@ Using the new values returns the same page.
     >>> new_status = 'NEEDSINFO'
     >>> browser.open(url % (new_sort, new_status))
     >>> print browser.title
-    Questions for Ubuntu Linux : Ubuntu
+    Questions : Ubuntu
     >>> browser.getControl(name='field.sort').displayValue
     ['by status']

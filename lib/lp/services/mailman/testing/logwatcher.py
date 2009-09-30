@@ -33,8 +33,8 @@ except AttributeError:
 
 BREAK_ON_TIMEOUT = bool(os.getenv('BREAK_ON_TIMEOUT'))
 LINES_TO_CAPTURE = 50
-LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=20)
-FAILURE_CAPTURE_INTERVAL = datetime.timedelta(seconds=60)
+LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=10)
+FAILURE_CAPTURE_INTERVAL = datetime.timedelta(seconds=10)
 SECONDS_TO_SNOOZE = 0.1
 Empty = object()
 NL = '\n'

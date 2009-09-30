@@ -74,7 +74,7 @@
               <h2>Recent Launchpad blog posts</h2>
               <ul>
                 <li class="news">
-                  <a href="http://blog.launchpad.net/?p=1010">
+                  <a href="http://blog.launchpad.net/releases/launchpad-3-0-is-here-new-ui-and-more">
                     Welcome to Launchpad 3.0</a><span class="blogdate"> &ndash; 23 Sep 2009</span><br />
                   Find out what's new in the latest version of Launchpad.
                 </li>
@@ -92,8 +92,8 @@
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
-                    Launchpad now open source!</a><span class="blogdate"> &ndash; 21 Jul 2009</span><br />
-                  Translate a phrase once, have it show up in all your releases.
+                    Launchpad now open source</a><span class="blogdate"> &ndash; 21 Jul 2009</span><br />
+                  Get the code to Launchpad and join our development community.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/?p=551">
@@ -137,7 +137,7 @@
                 working within Launchpad.<br />
               </tal:logged_out>You can test Launchpad's functionality
               in our sandbox environment.
-              (<a href="https://help.launchpad.net/StagingServer">What's this?</a>)<br />
+              (<a href="/+help/home-page-staging-help.html" target="help">What's this?</a>)<br />
               <tal:logged_in condition="view/user" omit-tag="">
                 If you're ready, you can:
                 <ul tal:define="apphomes view/apphomes">
