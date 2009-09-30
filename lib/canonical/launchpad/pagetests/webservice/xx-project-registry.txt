@@ -345,8 +345,10 @@ changed as well.
     >>> login('test@canonical.com')
     >>> test_project_owner = factory.makePerson(name='test-project-owner')
     >>> test_project = factory.makeProduct(name='test-project', owner=test_project_owner)
-    >>> test_series = factory.makeProductSeries(product=test_project, name='test-series')
-    >>> test_milestone = factory.makeMilestone(product=test_project, name='test-milestone')
+    >>> test_series = factory.makeProductSeries(
+    ...     product=test_project, name='test-series', owner=test_project_owner)
+    >>> test_milestone = factory.makeMilestone(
+    ...     product=test_project, name='test-milestone', productseries=test_series)
     >>> test_project_release = factory.makeProductRelease(
     ...     product=test_project, milestone=test_milestone)
     >>> logout()
