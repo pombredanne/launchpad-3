@@ -294,7 +294,6 @@ class cmd_land(EC2Command):
     def _get_landing_command(self, source_url, target_url, commit_message,
                              emails):
         """Return the command that would need to be run to submit with ec2."""
-        # XXX: JonathanLange 2009-09-24: Maybe call EC2 APIs directly.
         ec2_path = os.path.join(get_launchpad_root(), 'utilities', 'ec2')
         command = [ec2_path, 'test', '--headless']
         command.extend(['--email=%s' % email for email in emails])
@@ -348,6 +347,8 @@ class cmd_land(EC2Command):
         if dry_run:
             print landing_command
         else:
+            # XXX: JonathanLange 2009-09-24 bug=439348: Call EC2 APIs
+            # directly, rather than spawning a subprocess.
             return subprocess.call(landing_command)
 
 
