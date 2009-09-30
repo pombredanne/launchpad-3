@@ -70,16 +70,11 @@
   </tal:hosted-branch>
 
   <div
-    id="browse_url"
-    class="portletBody portletContent"
     style="margin-top: 1.5em"
     tal:define="link context_menu/source"
     tal:condition="link/enabled"
     >
-    <a id="codebrowse-link"
-       class="sprite info"
-       tal:attributes="href link/url"
-       tal:content="link/text" >Browse this branch</a>
+    <a tal:replace="structure link/fmt:link" />
   </div>
 
 </div>

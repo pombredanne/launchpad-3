@@ -1890,17 +1890,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   height: 2.5em;
 }
 
-#download-url dt, #upload-url dt {
-  font-weight: normal;
-}
-#download-url dd, #upload-url dd {
-  font-size: 120%;
-  font-weight: bold;
-}
-#download-url dd span.branch-url, #upload-url dd span.branch-url {
-  font-weight: normal;
-}
-
 #branch-pending-writes {
   background: #FFF59C;
   width: 40em;

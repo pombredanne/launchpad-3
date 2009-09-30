@@ -15,6 +15,17 @@
     #merge-summary {
       margin: 1em 0;
     }
+    #download-url dt, #upload-url dt {
+      font-weight: normal;
+    }
+    #download-url dd, #upload-url dd {
+      font-size: 120%;
+      font-weight: bold;
+    }
+    #download-url dd span.branch-url, #upload-url dd span.branch-url {
+      font-weight: normal;
+    }
+
   </style>
   <script type="text/javascript"
       tal:condition="devmode"
