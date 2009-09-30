@@ -18,10 +18,6 @@ class ReuploadPackageTranslations(LaunchpadScript):
     """Re-upload latest translations for given distribution packages."""
     description = "Re-upload latest translations uploads for package(s)."
 
-    def __init__(self, *args, **kwargs):
-        super(ReuploadPackageTranslations, self).__init__(*args, **kwargs)
-        self.uploadless_packages = []
-
     def add_my_options(self):
         """See `LaunchpadScript`."""
         self.parser.add_option('-d', '--distribution', dest='distro',
@@ -37,6 +33,7 @@ class ReuploadPackageTranslations(LaunchpadScript):
  
     def main(self):
         """See `LaunchpadScript`."""
+        self.uploadless_packages = []
         self._setDistroDetails()
 
         if len(self.options.packages) == 0:
