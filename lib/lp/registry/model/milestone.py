@@ -188,6 +188,9 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
+        assert len(self.getSubscriptions()) == 0, (
+            "You cannot delete a milestone which has structural "
+            "subscriptions.")
         assert bugtasks.count() == 0, (
             "You cannot delete a milestone which has bugtasks targeted "
             "to it.")
