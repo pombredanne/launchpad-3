@@ -935,11 +935,6 @@ class PackageUpload(SQLBase):
             debug(self.logger, "Not sending email, upload contains binaries.")
             return
 
-        # Get the changes file from the librarian and parse the tags to
-        # a dictionary.  This can throw exceptions but since the tag file
-        # already will have parsed elsewhere we don't need to worry about that
-        # here.  Any exceptions from the librarian can be left to the caller.
-
         # XXX julian 2007-05-11:
         # Requiring an open changesfile object is a bit ugly but it is
         # required because of several problems:
