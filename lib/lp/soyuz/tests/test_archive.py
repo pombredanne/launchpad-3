@@ -188,14 +188,14 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
         shared_tarball = self.publisher.addMockFile(
             filename='foo_0.5.11.tar.gz', filecontent='1')
 
-        # After adding a the shared tarball to the jaunty version,
+        # After adding a the shared tarball to the ppa1 version,
         # the sources_size updates to reflect the change.
         pub_1.sourcepackagerelease.addFile(shared_tarball)
         self.assertEquals(
             6, self.ppa.sources_size,
             'The sources_size should update after a file is added.')
 
-        # But after adding a copy of the shared tarball to the karmic version,
+        # But after adding a copy of the shared tarball to the ppa2 version,
         # the sources_size is unchanged.
         shared_tarball_copy = self.publisher.addMockFile(
             filename='foo_0.5.11.tar.gz', filecontent='1')
