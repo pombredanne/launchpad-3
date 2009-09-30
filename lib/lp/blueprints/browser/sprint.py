@@ -34,8 +34,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
+    GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation, NavigationMenu,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -43,8 +43,9 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
 from canonical.widgets.date import DateTimeWidget
 
+from lp.app.interfaces.headings import IMajorHeadingView
 from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
+    HasSpecificationsMenuMixin, HasSpecificationsView)
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
     SpecificationSort)
@@ -71,7 +72,8 @@ class SprintNavigation(Navigation):
     usedfor = ISprint
 
 
-class SprintOverviewMenu(ApplicationMenu):
+class SprintOverviewMenu(NavigationMenu):
+    """Defines a menu used for the global actions."""
 
     usedfor = ISprint
     facet = 'overview'
@@ -107,32 +109,16 @@ class SprintOverviewMenu(ApplicationMenu):
         return Link('+branding', text, summary, icon='edit')
 
 
-class SprintSpecificationsMenu(ApplicationMenu):
-
+class SprintSpecificationsMenu(NavigationMenu,
+                               HasSpecificationsMenuMixin):
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'addspec']
-
-    def assignments(self):
-        text = 'Assignments'
-        summary = 'View the specification assignments'
-        return Link('+assignments', text, summary, icon='info')
-
-    def declined(self):
-        text = 'List declined blueprints'
-        summary = 'Show topics that were not accepted for discussion'
-        return Link('+specs?acceptance=declined', text, summary, icon='info')
+    links = ['assignments', 'listdeclined', 'settopics', 'new']
 
     @enabled_with_permission('launchpad.Driver')
     def settopics(self):
         text = 'Set agenda'
-        summary = 'Approve or defer topics for discussion'
-        return Link('+settopics', text, summary, icon='edit')
-
-    def addspec(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for this meeting'
-        return Link('+addspec', text, summary, icon='info')
+        return Link('+settopics', text, icon='edit')
 
 
 class SprintSetNavigation(GetitemNavigation):
@@ -155,6 +141,14 @@ class SprintSetFacets(StandardLaunchpadFacets):
 class SprintView(HasSpecificationsView, LaunchpadView):
 
     __used_for__ = ISprint
+
+    implements(IMajorHeadingView)
+
+    # XXX Michael Nelson 20090923 bug=435255
+    # This class inherits a label from HasSpecificationsView, which causes
+    # a second h1 to display. But as this view implements IMajorHeadingView
+    # it should not include an h1 below the app buttons.
+    label = None
 
     def initialize(self):
         self.notices = []
@@ -202,7 +196,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
         dt = dt.astimezone(self.tzinfo)
         return dt.strftime('%Y-%m-%d')
 
-    _local_timeformat = '%H:%M on %A, %Y-%m-%d'
+    _local_timeformat = '%H:%M %Z on %A, %Y-%m-%d'
     @property
     def local_start(self):
         """The sprint start time, in the local time zone, as text."""
@@ -290,6 +284,7 @@ class SprintEditView(LaunchpadEditFormView):
 
     schema = ISprint
     label = "Edit sprint details"
+
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
                    'time_zone', 'time_starts', 'time_ends', 'address',
                    ]

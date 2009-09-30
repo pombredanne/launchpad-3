@@ -134,7 +134,7 @@ archive_subscribers = ContextDisplayName('Manage access to %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
-bazaar_index = 'Launchpad Code'
+bazaar_index = 'Launchpad Branches'
 
 bazaar_sync_review = (
     'Review upstream repositories for Launchpad Bazaar syncing')
@@ -391,13 +391,6 @@ def hasmentoringoffers_mentoring(context, view):
         return 'Mentoring available in %s' % context.displayname
 
 hasannouncements_index = ContextDisplayName('%s news and announcements')
-
-def hasspecifications_specs(context, view):
-    """Return the secifications title for the context."""
-    if IPerson.providedBy(context):
-        return "Blueprints involving %s" % context.title
-    else:
-        return "Blueprints for %s" % context.title
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
@@ -796,8 +789,6 @@ specification_goaldecide = 'Approve or decline blueprint goal'
 
 specification_dependency = 'Create a blueprint dependency'
 
-specification_deptree = 'Complete dependency tree'
-
 specification_distroseries = ('Target blueprint to a distribution release')
 
 specification_productseries = 'Target blueprint to a series'
@@ -806,13 +797,9 @@ specification_removedep = 'Remove a dependency'
 
 specification_givefeedback = 'Clear feedback requests'
 
-specification_requestfeedback = 'Request feedback on this blueprint'
-
 specification_edit = 'Edit blueprint details'
 
 specification_linksprint = 'Put blueprint on sprint agenda'
-
-specification_subscription = 'Subscribe to blueprint'
 
 specification_queue = 'Queue blueprint for review'
 
@@ -833,8 +820,6 @@ specificationtarget_index = ContextTitle('Blueprint listing for %s')
 def specificationtarget_specs(context, view):
     """Return the page title for a specificationtarget."""
     return view.title
-
-specificationtarget_assignments = ContextTitle('Blueprint assignments for %s')
 
 specificationtarget_workload = ContextTitle('Blueprint workload in %s')
 

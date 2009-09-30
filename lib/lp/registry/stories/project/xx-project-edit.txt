@@ -62,7 +62,6 @@ Other users cannot see the Project group status in the details portlet.
     Maintainer: Sample Person
     Driver: Not yet appointed
     Bug tracker: The Mozilla.org Bug Tracker
-    Registered ... by Sample Person
     Download RDF metadata
 
 Administrators can also change the maintainer and registrant independent
@@ -92,7 +91,7 @@ The project maintainer and registrant are now updated.
     Change maintainer
 
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
+    ...     find_tag_by_id(admin_browser.contents, 'registration'))
     Registered ... by David Allouche
 
 The registrant really should only be a person, not a team, but that
@@ -105,5 +104,5 @@ teams as registrants.
     >>> admin_browser.getControl('Change').click()
 
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
+    ...     find_tag_by_id(admin_browser.contents, 'registration'))
     Registered ... by Registry Administrators
