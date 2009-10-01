@@ -76,7 +76,6 @@ from lp.code.enums import (
     CodeImportResultStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
 from lp.code.interfaces.branch import UnknownBranchTypeError
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.codeimport import ICodeImportSet

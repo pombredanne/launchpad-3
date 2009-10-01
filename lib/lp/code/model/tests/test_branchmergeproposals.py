@@ -742,8 +742,9 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         source_owner = bmp.source_branch.owner
         target_owner = bmp.target_branch.owner
         prerequisite_owner = bmp.prerequisite_branch.owner
-        self.assertEqual(set([source_owner, target_owner, prerequisite_owner]),
-                         set(recipients.keys()))
+        self.assertEqual(
+            set([source_owner, target_owner, prerequisite_owner]),
+            set(recipients.keys()))
         source_subscriber = self.factory.makePerson()
         bmp.source_branch.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
