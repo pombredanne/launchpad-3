@@ -11,12 +11,12 @@ For instance, it can be used in the following scenario:
   % bin/test -vvm lp.registry | tee test.out
   % # Oh nos!  Failures!
   % # Fix tests.
-  % utilities/retest.py test.out
+  % bin/retest test.out
 
 Or, when run without arguments (or if any argument is "-"), a test
 report (or a part of) can be piped in, for example by pasting it:
 
-  % utilities/retest.py
+  % bin/retest
   Tests with failures:
      lib/lp/registry/browser/tests/sourcepackage-views.txt
      lib/lp/registry/tests/../stories/product/xx-product-package-pages.txt
