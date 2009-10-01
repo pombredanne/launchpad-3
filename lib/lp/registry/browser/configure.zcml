@@ -447,18 +447,20 @@
         module="lp.registry.browser.distributionsourcepackage"
         classes="
             DistributionSourcePackageNavigation"/>
-    <browser:pages
+    <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageView"
         facet="overview"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/distributionsourcepackage-index.pt"/>
-        <browser:page
-            name="+changelog"
-            template="../templates/distributionsourcepackage-changelog.pt"/>
-    </browser:pages>
+        permission="zope.Public"
+        name="+index"
+        template="../templates/distributionsourcepackage-index.pt" />
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageChangelogView"
+        facet="overview"
+        permission="zope.Public"
+        name="+changelog"
+        template="../templates/distributionsourcepackage-changelog.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         permission="launchpad.Edit"

@@ -187,7 +187,6 @@ the time it last exported them, it won't export them again.
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
     DEBUG Last commit was at ....
-    INFO Committed 0 file(s).
     INFO Unlock.
     INFO Processed 1 item(s); 0 failure(s).
 
