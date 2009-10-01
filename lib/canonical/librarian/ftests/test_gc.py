@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import shutil
 import sys
 import os
 from subprocess import Popen, PIPE, STDOUT
@@ -530,45 +531,52 @@ class TestLibrarianGarbageCollection(TestCase):
         # Long non-hexadecimal number
         noisedir3_path = os.path.join(config.librarian_server.root, '11.bak')
 
-        os.mkdir(noisedir1_path)
-        os.mkdir(noisedir2_path)
-        os.mkdir(noisedir3_path)
-
-        # Files in the noise directories.
-        noisefile1_path = os.path.join(noisedir1_path, 'abc')
-        noisefile2_path = os.path.join(noisedir2_path, 'def')
-        noisefile3_path = os.path.join(noisedir2_path, 'ghi')
-        open(noisefile1_path, 'w').write('hello')
-        open(noisefile2_path, 'w').write('there')
-        open(noisefile3_path, 'w').write('testsuite')
-
-        # Pretend it is tomorrow to ensure the files don't count as
-        # recently created, and run the delete_unwanted_files process.
-        org_time = librariangc.time
-        def tomorrow_time():
-            return org_time() + 24 * 60 * 60 + 1
         try:
-            librariangc.time = tomorrow_time
-            librariangc.delete_unwanted_files(self.con)
+            os.mkdir(noisedir1_path)
+            os.mkdir(noisedir2_path)
+            os.mkdir(noisedir3_path)
+
+            # Files in the noise directories.
+            noisefile1_path = os.path.join(noisedir1_path, 'abc')
+            noisefile2_path = os.path.join(noisedir2_path, 'def')
+            noisefile3_path = os.path.join(noisedir2_path, 'ghi')
+            open(noisefile1_path, 'w').write('hello')
+            open(noisefile2_path, 'w').write('there')
+            open(noisefile3_path, 'w').write('testsuite')
+
+            # Pretend it is tomorrow to ensure the files don't count as
+            # recently created, and run the delete_unwanted_files process.
+            org_time = librariangc.time
+            def tomorrow_time():
+                return org_time() + 24 * 60 * 60 + 1
+            try:
+                librariangc.time = tomorrow_time
+                librariangc.delete_unwanted_files(self.con)
+            finally:
+                librariangc.time = org_time
+
+            # None of the rubbish we created has been touched.
+            self.assert_(os.path.isdir(noisedir1_path))
+            self.assert_(os.path.isdir(noisedir2_path))
+            self.assert_(os.path.isdir(noisedir3_path))
+            self.assert_(os.path.exists(noisefile1_path))
+            self.assert_(os.path.exists(noisefile2_path))
+            self.assert_(os.path.exists(noisefile3_path))
         finally:
-            librariangc.time = org_time
+            # We need to clean this up ourselves, as the standard librarian
+            # cleanup only removes files it knows where valid to avoid
+            # accidents.
+            shutil.rmtree(noisedir1_path)
+            shutil.rmtree(noisedir2_path)
+            shutil.rmtree(noisedir3_path)
 
-        # None of the rubbish we created has been touched.
-        self.assert_(os.path.isdir(noisedir1_path))
-        self.assert_(os.path.isdir(noisedir2_path))
-        self.assert_(os.path.isdir(noisedir3_path))
-        self.assert_(os.path.exists(noisefile1_path))
-        self.assert_(os.path.exists(noisefile2_path))
-        self.assert_(os.path.exists(noisefile3_path))
-
-    def test_deleteUnwantedFilesBug437084(self):
+    def test_delete_unwanted_files_bug437084(self):
         # There was a bug where delete_unwanted_files() would die
         # if the last file found on disk was unwanted.
         self.layer.switchDbUser(dbuser='testadmin')
         content='foo'
         self.client.addFile(
-                'foo.txt', len(content), StringIO(content), 'text/plain',
-                )
+            'foo.txt', len(content), StringIO(content), 'text/plain')
         # Roll back the database changes, leaving the file on disk.
         transaction.abort()
 
