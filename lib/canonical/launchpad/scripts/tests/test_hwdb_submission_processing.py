@@ -459,7 +459,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         device = HALDevice(1, '/some/udi/path', properties, parser)
         self.assertEqual(
              None, device.usb_product_id,
-            'Unexpected value of HALDevice.usb_product_id for Non-USB device.')
+            'Unexpected value of HALDevice.usb_product_id for Non-USB '
+            'device.')
 
     def testHalDeviceRawBus(self):
         """test of HALDevice.raw_bus."""

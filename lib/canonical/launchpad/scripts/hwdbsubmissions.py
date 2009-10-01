@@ -1889,12 +1889,10 @@ class HALDevice(BaseDevice):
         """The vendor of this device."""
         return self.getVendorOrProduct('vendor')
 
-
     @property
     def product(self):
         """The vendor of this device."""
         return self.getVendorOrProduct('product')
-
 
     def getVendorOrProductID(self, type_):
         """Return the vendor or product ID for this device.
