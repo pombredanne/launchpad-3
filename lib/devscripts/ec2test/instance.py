@@ -199,9 +199,9 @@ class EC2Instance:
         # for initialization.
         #
         # We always recreate the keypairs because there is no way to
-        # programmatically retrieve the private key component, unless we
-        # generate it.
-        account.delete_previous_key_pairs()
+        # programmatically retrieve the private key component, unless
+        # we generate it.
+        account.collect_garbage()
 
         if machine_id and machine_id.startswith('based-on:'):
             from_scratch = True
