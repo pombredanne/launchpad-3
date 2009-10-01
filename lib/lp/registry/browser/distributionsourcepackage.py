@@ -198,7 +198,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     implements(IDistributionSourcePackageActionMenu)
 
     @property
-    def page_title(self):
+    def label(self):
         return self.context.title
 
     def setUpFields(self):

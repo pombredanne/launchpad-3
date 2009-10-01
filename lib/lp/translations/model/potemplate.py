@@ -1225,6 +1225,10 @@ class POTemplateSet:
                 POTemplate.from_sourcepackagename == sourcepackagename,
                 POTemplate.sourcepackagename == sourcepackagename))
 
+        if distroseries:
+            conditions = And(
+                conditions, POTemplate.distroseries == distroseries)
+
         store = IStore(POTemplate)
         matches = helpers.shortlist(store.find(POTemplate, conditions))
 
