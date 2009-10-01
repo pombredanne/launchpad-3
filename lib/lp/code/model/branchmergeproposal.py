@@ -243,6 +243,11 @@ class BranchMergeProposal(SQLBase):
         for branch in branches:
             branch_recipients = branch.getNotificationRecipients()
             for recipient in branch_recipients:
+                # If the recipient cannot see either of the branches, skip
+                # them.
+                if (not self.source_branch.visibleByUser(recipient) or
+                    not self.target_branch.visibleByUser(recipient)):
+                    continue
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
                 if (subscription.review_level < min_level):
