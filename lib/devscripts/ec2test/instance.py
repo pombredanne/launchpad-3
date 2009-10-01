@@ -212,6 +212,9 @@ class EC2Instance:
 
         :param name: The name to use for the key pair and security group for
             the instance.
+        :type name: `EC2InstanceName` or `str`. In the latter case, it
+            will be passed to `EC2InstanceName.make()` to generate a
+            safe name to use.
         :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
         :param machine_id: The AMI to use, or None to do the usual regexp
             matching.  If you put 'based-on:' before the AMI id, it is assumed
@@ -222,6 +225,9 @@ class EC2Instance:
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
+        if not isinstance(name, EC2InstanceName):
+            name = EC2InstanceName.make(name)
+
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
 
@@ -270,6 +276,7 @@ class EC2Instance:
 
     def __init__(self, name, image, instance_type, demo_networks, account,
                  vals, from_scratch, user_key):
+        assert isinstance(name, EC2InstanceName)
         self._name = name
         self._image = image
         self._account = account
