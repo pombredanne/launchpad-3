@@ -16,8 +16,7 @@ import urllib
 from datetime import datetime, timedelta
 
 from boto.exception import EC2ResponseError
-from devscripts.ec2test.utils import (
-    find_datetime_string, make_datetime_string, make_random_string)
+from devscripts.ec2test.session import EC2SessionName
 
 import paramiko
 
@@ -58,8 +57,6 @@ class EC2Account:
         :param connection: An open boto ec2 connection.
         """
         self.name = name
-        self.unique_name = "%s-%s-%s" % (
-            self.name, make_datetime_string(), make_random_string())
         self.conn = connection
 
     def log(self, msg):
@@ -76,49 +73,15 @@ class EC2Account:
         "Appropriate" means configured to allow this machine to connect via
         SSH, HTTP and HTTPS.
 
-        If a group is already configured with this name for this connection,
-        then re-use that. Otherwise, create a new security group and configure
-        it appropriately.
-
         The name of the security group is the `EC2Account.name` attribute.
 
         :return: A boto security group.
         """
         if demo_networks is None:
             demo_networks = []
-        # Try to delete old security groups.
-        expire_before = datetime.utcnow() - timedelta(hours=6)
-        def try_delete_group(group):
-            try:
-                group.delete()
-            except EC2ResponseError, e:
-                if e.code != 'InvalidGroup.InUse':
-                    raise
-                self.log('Cannot delete; security group '
-                         '%r in use.\n' % group.name)
-        for group in self.conn.get_all_security_groups():
-            if group.name in (self.name, self.unique_name):
-                self.log('Deleting security group %r\n' % group.name)
-                try_delete_group(group)
-            elif group.name.startswith(self.name):
-                creation_datetime = find_datetime_string(group.name)
-                if creation_datetime is None:
-                    self.log('Found security group %r without creation '
-                             'date; leaving.\n' % group.name)
-                elif creation_datetime >= expire_before:
-                    self.log('Found recent security group %r; '
-                             'leaving\n' % group.name)
-                else:
-                    self.log('Deleting old security '
-                             'group %r\n' % group.name)
-                    try_delete_group(group)
-            else:
-                self.log('Found other security group %r; '
-                         'leaving.\n' % group.name)
         # Create the security group.
         security_group = self.conn.create_security_group(
-            self.unique_name,
-            'Authorization to access the test runner instance.')
+            self.name, 'Authorization to access the test runner instance.')
         # Authorize SSH and HTTP.
         ip = get_ip()
         security_group.authorize('tcp', 22, 22, '%s/32' % ip)
@@ -132,6 +95,37 @@ class EC2Account:
             security_group.authorize('tcp', 443, 443, network)
         return security_group
 
+    def delete_previous_security_groups(self):
+        """Delete previously used security groups, if found."""
+        def try_delete_group(group):
+            try:
+                group.delete()
+            except EC2ResponseError, e:
+                if e.code != 'InvalidGroup.InUse':
+                    raise
+                self.log('Cannot delete; security group '
+                         '%r in use.\n' % group.name)
+        expire_before = datetime.utcnow() - timedelta(hours=6)
+        for group in self.conn.get_all_security_groups():
+            session_name = EC2SessionName(group.name)
+            if session_name in (self.name, self.name.base):
+                self.log('Deleting security group %r\n' % group.name)
+                try_delete_group(group)
+            elif session_name.base == self.name.base:
+                if session_name.timestamp is None:
+                    self.log('Found security group %r without creation '
+                             'date; leaving.\n' % group.name)
+                elif session_name.timestamp >= expire_before:
+                    self.log('Found recent security group %r; '
+                             'leaving\n' % group.name)
+                else:
+                    self.log('Deleting old security '
+                             'group %r\n' % group.name)
+                    try_delete_group(group)
+            else:
+                self.log('Found other security group %r; '
+                         'leaving.\n' % group.name)
+
     def acquire_private_key(self):
         """Create & return a new key pair for the test runner."""
         key_pair = self.conn.create_key_pair(self.unique_name)
@@ -140,37 +134,47 @@ class EC2Account:
 
     def delete_previous_key_pairs(self):
         """Delete previously used keypairs, if found."""
+        def try_delete_key_pair(key_pair):
+            try:
+                key_pair.delete()
+            except EC2ResponseError, e:
+                if e.code != 'InvalidKeyPair.NotFound':
+                    if e.code == 'AuthFailure':
+                        # Inserted because of previous support issue.
+                        self.log(
+                            'POSSIBLE CAUSES OF ERROR:\n'
+                            '  Did you sign up for EC2?\n'
+                            '  Did you put a credit card number in your AWS '
+                            'account?\n'
+                            'Please doublecheck before reporting a '
+                            'problem.\n')
+                    raise
+                self.log('Cannot delete; key pair not '
+                         'found %r\n' % key_pair.name)
         expire_before = datetime.utcnow() - timedelta(hours=6)
-        try:
-            for key_pair in self.conn.get_all_key_pairs():
-                if key_pair.name in (self.name, self.unique_name):
-                    self.log('Deleting key pair %r\n' % key_pair.name)
-                    key_pair.delete()
-                elif key_pair.name.startswith(self.name):
-                    creation_datetime = find_datetime_string(key_pair.name)
-                    if creation_datetime is None:
-                        self.log('Found key pair %r without creation date; '
-                                 'leaving.\n' % key_pair.name)
-                    elif creation_datetime >= expire_before:
-                        self.log('Found recent key pair %r; '
-                                 'leaving\n' % key_pair.name)
-                    else:
-                        self.log('Deleting old key pair %r\n' % key_pair.name)
-                        key_pair.delete()
-                else:
-                    self.log('Found other key pair %r; '
+        for key_pair in self.conn.get_all_key_pairs():
+            session_name = EC2SessionName(key_pair.name)
+            if session_name in (self.name, self.name.base):
+                self.log('Deleting key pair %r\n' % key_pair.name)
+                try_delete_key_pair(key_pair)
+            elif session_name.base == self.name.base:
+                if session_name.timestamp is None:
+                    self.log('Found key pair %r without creation date; '
                              'leaving.\n' % key_pair.name)
-        except EC2ResponseError, e:
-            if e.code != 'InvalidKeyPair.NotFound':
-                if e.code == 'AuthFailure':
-                    # Inserted because of previous support issue.
-                    self.log(
-                        'POSSIBLE CAUSES OF ERROR:\n'
-                        '  Did you sign up for EC2?\n'
-                        '  Did you put a credit card number in your AWS '
-                        'account?\n'
-                        'Please doublecheck before reporting a problem.\n')
-                raise
+                elif session_name.timestamp >= expire_before:
+                    self.log('Found recent key pair %r; '
+                             'leaving\n' % key_pair.name)
+                else:
+                    self.log('Deleting old key pair %r\n' % key_pair.name)
+                    try_delete_key_pair(key_pair)
+            else:
+                self.log('Found other key pair %r; '
+                         'leaving.\n' % key_pair.name)
+
+    def collect_garbage(self):
+        """Remove any old keys and security groups."""
+        self.delete_previous_security_groups()
+        self.delete_previous_key_pairs()
 
     def acquire_image(self, machine_id):
         """Get the image.
