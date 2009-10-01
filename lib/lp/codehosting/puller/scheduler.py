@@ -6,12 +6,10 @@
 __metaclass__ = type
 __all__ = [
     'BadMessage',
-    'BranchStatusClient',
     'JobScheduler',
     'LockError',
     'PullerMaster',
     'PullerMonitorProtocol',
-    'TimeoutError',
     ]
 
 
@@ -378,7 +376,10 @@ class PullerMaster:
             'mirrorFailed', self.branch_id, reason)
 
     def mirrorSucceeded(self, revision_id):
-        self.logger.info('Successfully mirrored to rev %s', revision_id)
+        self.logger.info(
+            'Successfully mirrored branch %d %s to %s to rev %s',
+            self.branch_id, self.source_url, self.destination_url,
+            revision_id)
         return self.branch_puller_endpoint.callRemote(
             'mirrorComplete', self.branch_id, revision_id)
 
