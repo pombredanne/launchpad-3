@@ -19,7 +19,6 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.database.postgresql import ConnectionString, listReferences
-from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.lp import initZopeless
@@ -50,7 +49,7 @@ class SanitizeDb(LaunchpadScript):
             and not self.options.force):
             self.parser.error(
             "Attempting to sanitize a potential production database '%s'. "
-            "--force required." % pg_connection_string.dbname)
+            "--force required." % self.pg_connection_string.dbname)
 
         self.logger.debug("Connect using '%s'." % self.pg_connection_string)
 
@@ -395,7 +394,7 @@ class SanitizeDb(LaunchpadScript):
         removed.
         """
         from canonical.launchpad.database.emailaddress import EmailAddress
-        count =-self.store.find(
+        count = self.store.find(
             EmailAddress, EmailAddress.person == None).remove()
         self.logger.info(
             "Removed %d email addresses not linked to people.", count)

@@ -6,6 +6,7 @@
 
 __metaclass__ = type
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from lp.scripts.utilities.sanitizedb import SanitizeDb
