@@ -543,12 +543,21 @@ div.watermark-apps-portlet h1 {
     color: #747474;
 }
 
+/* Facet menu, a.k.a. application tabs */
+.facetmenu {
+    z-index: 1;
+    width: 100%;
+    white-space: nowrap;
+    margin-top: 1.5em;
+}
 /* Registering slot */
 .registering {
     float: right;
-    padding-top: 10px;
+    position: relative;
+    top: -0.5em;
     font-size: 85%;
     color: #666;
+    z-index: -1;
 }
 
 /* Side content exceptions */
