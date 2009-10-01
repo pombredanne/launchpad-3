@@ -269,8 +269,15 @@ class IAccountPrivate(Interface):
     password = PasswordField(
         title=_("Password."), readonly=False, required=True)
 
-    def createPerson(self, rationale):
-        """Create and return a new `IPerson` associated with this account."""
+    def createPerson(self, rationale, name=None, comment=None):
+        """Create and return a new `IPerson` associated with this account.
+
+        :param rationale: A member of `AccountCreationRationale`.
+        :param name: Specify a name for the `IPerson` instead of
+            using an automatically generated one.
+        :param comment: Populate `IPerson.creation_comment`. See
+            `IPerson`.
+        """
 
 
 class IAccountSpecialRestricted(Interface):

@@ -1367,6 +1367,20 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
             (bmp.source_branch.bzr_identity, bmp.target_branch.bzr_identity))
         self.assertIn(message, ctrl.body)
 
+    def test_MergeProposalCreateJob_with_sourcepackage_branch(self):
+        """Jobs for merge proposals with sourcepackage branches work."""
+        self.useBzrBranches()
+        bmp = self.factory.makeBranchMergeProposal(
+            target_branch=self.factory.makePackageBranch())
+        tree = self.create_branch_and_tree(db_branch=bmp.target_branch)[1]
+        tree.commit('Initial commit')
+        self.createBzrBranch(bmp.source_branch, tree.branch)
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        job = MergeProposalCreatedJob.create(bmp)
+        transaction.commit()
+        self.layer.switchDbUser(config.mpcreationjobs.dbuser)
+        job.run()
+
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""

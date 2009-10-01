@@ -176,3 +176,22 @@ is disabled.
     >>> print extract_text(tag)
     This archive has been disabled.
 
+When a COPY archive gets enabled, No Privileges users can still access
+it and the 'disabled' styling is gone.
+
+    >>> login('foo.bar@canonical.com')
+    >>> disabled_archive.enabled = True
+    >>> logout()
+
+    >>> nopriv_browser.reload()
+
+    >>> print nopriv_browser.title
+    Copy archive disabled-security-rebuild for No Privileges Person : Ubuntu
+
+    >>> main_content = find_main_content(nopriv_browser.contents)
+    >>> print main_content.h1
+    <h1 id="displayname">...</h1>
+
+    >>> print first_tag_by_class(nopriv_browser.contents, 'warning message')
+    None
+

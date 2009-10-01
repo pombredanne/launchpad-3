@@ -66,8 +66,9 @@
                         <p class="screen-holder">
                             <img src="images/hosting/1.png" alt="Drive-by contributions" />                        </p>
                         <p>
-                            With Launchpad and Bazaar, contributors can create their own branch of your code, make their changes and then push it all back up to Launchpad to be listed right alongside your official branches. And because they never touch your trunk they don&rsquo;t need to ask for commit access.
-                        </p>
+                            With Launchpad and Bazaar, contributors can create their own branch of your code, make their changes and then push it all back up to Launchpad to be listed right alongside your official branches.</p><br />
+                       <p> And because they never touch your trunk they don&rsquo;t need to ask for commit access.</p><br />
+                        <p>So, with no extra effort on your part new contributors can submit code to your project and propose it for merging into your trunk.</p>
                     </div>
                     <div class="block odd">
                         <h3>Straightforward code review</h3>

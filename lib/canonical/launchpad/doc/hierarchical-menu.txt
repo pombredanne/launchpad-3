@@ -143,6 +143,25 @@ above it.
     >>> cooker_hierarchy.display_breadcrumbs
     False
 
+Additionally, if the view implements IMajorHeadingView then the breadcrumbs
+will not be displayed.
+
+    >>> ham_recipe = Recipe('ham', cookbook)
+    >>> ham_request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/ham',
+    ...     [root, cookbook, ham_recipe])
+
+    >>> ham_hierarchy = getMultiAdapter(
+    ...     (ham_recipe, ham_request), name='+hierarchy')
+    >>> hierarchy.display_breadcrumbs
+    True
+
+    >>> from zope.interface import alsoProvides
+    >>> from lp.app.interfaces.headings import IMajorHeadingView
+    >>> alsoProvides(ham_recipe, IMajorHeadingView)
+    >>> ham_hierarchy.display_breadcrumbs
+    False
+
 
 == Building IBreadcrumb objects ==
 

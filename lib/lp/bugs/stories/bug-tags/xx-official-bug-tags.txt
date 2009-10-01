@@ -109,12 +109,25 @@ The tags portlet displays a mix of official and unofficial tags.
     ...             print a.contents[0]
     ...         print
 
-All official tags are displayed as a 'cloud'.
+This example adds 12 official tags and 12 unofficial tags.  The tag cloud
+displays all the official tags and 10 of the unofficial tags.
 
     >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
     >>> print_tags_portlet(browser.contents)
     Tags
     ----
+    official-tag-01
+    official-tag-02
+    official-tag-03
+    official-tag-04
+    official-tag-05
+    official-tag-06
+    official-tag-07
+    official-tag-08
+    official-tag-09
+    official-tag-10
+    official-tag-11
+    official-tag-12
     unofficial-tag-01
     unofficial-tag-02
     unofficial-tag-03
@@ -125,9 +138,6 @@ All official tags are displayed as a 'cloud'.
     unofficial-tag-08
     unofficial-tag-09
     unofficial-tag-10
-    unofficial-tag-11
-    unofficial-tag-12
-    <BLANKLINE>
 
 == Entering Official Tags ==
 
