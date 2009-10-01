@@ -105,7 +105,7 @@ class SanitizeDb(LaunchpadScript):
             'webserviceban',
             ]
         for table in tables_to_empty:
-            self.removeTable(table)
+            self.removeTableRows(table)
 
         self.removeDeactivatedPeople()
         self.removeDeactivatedAccounts()
@@ -303,7 +303,7 @@ class SanitizeDb(LaunchpadScript):
             Product, Product.active == False).remove()
         self.logger.info("Removed %d inactive products.", count)
 
-    def removeTable(self, table):
+    def removeTableRows(self, table):
         """Remove all data from a table."""
         count = self.store.execute("DELETE FROM %s" % table).rowcount
         self.logger.info("Removed %d %s rows (all).", count, table)
