@@ -21,6 +21,7 @@ from bzrlib.errors import BzrError
 from bzrlib.plugin import load_plugins
 from bzrlib.trace import report_exception
 from bzrlib.transport import get_transport
+from bzrlib import ui
 from bzrlib.workingtree import WorkingTree
 
 
@@ -219,6 +220,8 @@ def main(args):
         parser.error("Too many arguments.")
     print 'Sourcecode: %s' % (sourcecode_directory,)
     print 'Config: %s' % (config_filename,)
+    ui.ui_factory = ui.make_ui_for_terminal(sys.stdin,
+        sys.stdout, sys.stderr)
     load_plugins()
     update_sourcecode(
         sourcecode_directory, config_filename,
