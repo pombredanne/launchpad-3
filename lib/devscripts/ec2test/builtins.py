@@ -248,7 +248,7 @@ class cmd_test(EC2Command):
                 'You have specified no way to get the results '
                 'of your headless test run.')
 
-        session_name = EC2SessionName(EC2TestRunner.name)
+        session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
             session_name, instance_type, machine)
 
@@ -294,7 +294,7 @@ class cmd_demo(EC2Command):
         branches, test_branch = _get_branches_and_test_branch(
             trunk, branch, test_branch)
 
-        session_name = EC2SessionName(EC2TestRunner.name)
+        session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
             session_name, instance_type, machine, demo)
 
@@ -368,7 +368,7 @@ class cmd_update_image(EC2Command):
 
         credentials = EC2Credentials.load_from_file()
 
-        session_name = EC2SessionName(EC2TestRunner.name)
+        session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
             session_name, instance_type, machine,
             credentials=credentials)
