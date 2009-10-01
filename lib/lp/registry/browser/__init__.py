@@ -137,15 +137,22 @@ class RegistryDeleteViewMixin:
         """The context's URL."""
         return canonical_url(self.context)
 
-    def _getBugtasks(self, milestone):
-        """Return the list `IBugTask`s targeted to the milestone."""
-        params = BugTaskSearchParams(milestone=milestone, user=None)
+    def _getBugtasks(self, target):
+        """Return the list `IBugTask`s associated with the target."""
+        if IProductSeries.providedBy(target):
+            params = BugTaskSearchParams(user=None)
+            params.setProductSeries(target)
+        else:
+            params = BugTaskSearchParams(milestone=target, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 
-    def _getSpecifications(self, milestone):
-        """Return the list `ISpecification`s targeted to the milestone."""
-        return list(milestone.specifications)
+    def _getSpecifications(self, target):
+        """Return the list `ISpecification`s associated to the target."""
+        if IProductSeries.providedBy(target):
+            return list(target.all_specifications)
+        else:
+            return list(target.specifications)
 
     def _getProductRelease(self, milestone):
         """The `IProductRelease` associated with the milestone."""
@@ -169,11 +176,9 @@ class RegistryDeleteViewMixin:
 
     def _remove_series_bugs_and_specifications(self, series):
         """Untarget the associated bugs and subscriptions."""
-        for spec in series.all_specifications:
+        for spec in self._getSpecifications(series):
             spec.proposeGoal(None, self.user)
-        params = BugTaskSearchParams(user=None)
-        params.setProductSeries(series)
-        for bugtask in getUtility(IBugTaskSet).search(params):
+        for bugtask in self._getBugtasks(series):
             # Bugtasks cannot be deleted directly. In this case, the bugtask
             # is already reported on the product, so the series bugtask has
             # no purpose without a series.
