@@ -20,7 +20,7 @@ Each project has a page that lists the status of all its series.
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> anon_browser.getLink('View full history').click()
     >>> print anon_browser.title
-    Mozilla Firefox timeline
+    timeline...
 
 Each series, the status, milestones, releases, bugs and blueprints are
 listed.

@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
 
+import sys
+
 from cStringIO import StringIO
 
 from bzrlib.branch import Branch
@@ -17,6 +19,7 @@ import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
 from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import classProvides, implements
 
 from canonical.config import config
@@ -99,8 +102,8 @@ class Diff(SQLBase):
                 base_revision = graph.find_unique_lca(
                     source_revision, merge_target.get_revision_id())
                 repo = source_branch.repository
-                merge_source, merge_base = repo.revision_trees(
-                    [source_revision, base_revision])
+                merge_source = repo.revision_tree(source_revision)
+                merge_base = repo.revision_tree(base_revision)
                 merger = Merge3Merger(
                     merge_target, merge_target, merge_base, merge_source,
                     do_merge=False)
@@ -150,7 +153,17 @@ class Diff(SQLBase):
             diff_content.seek(0)
             diff_content_bytes = diff_content.read(size)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
-        diffstat = cls.generateDiffstat(diff_content_bytes)
+        # Generation of diffstat is currently failing in some circumstances.
+        # See bug 436325.  Since diffstats are incidental to the whole
+        # process, we don't want failure here to kill the generation of the
+        # diff itself, but we do want to hear about it.  So log an error using
+        # the error reporting utility.
+        try:
+            diffstat = cls.generateDiffstat(diff_content_bytes)
+        except Exception:
+            getUtility(IErrorReportingUtility).raising(sys.exc_info())
+            # Set the diffstat to be empty.
+            diffstat = {}
         return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
                    diffstat=diffstat)
 

@@ -53,7 +53,7 @@ in the context of the bug page.
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/')
   >>> browser.getLink('Unsubscribe').click()
   >>> print browser.title
-  Bug #1 - Subscription options
+  Bug #1...
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+subscribe'
 

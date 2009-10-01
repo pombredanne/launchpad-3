@@ -15,7 +15,7 @@ Mark is a qualified user.
     >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
-    >>> download = browser.getLink('Download')
+    >>> download = browser.getLink('download a full tarball')
     >>> download_url = download.url
     >>> download.click()
     >>> print browser.url
@@ -42,7 +42,7 @@ reasonable level.
     ...         'http://translations.launchpad.dev/'
     ...         'ubuntu/hoary/+source/mozilla/')
     ...     try:
-    ...         browser.getLink('Download').click()
+    ...         browser.getLink('download a full tarball').click()
     ...     except LinkNotFoundError:
     ...         see_link = False
     ...     else:
@@ -158,8 +158,8 @@ export format, and request the download.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/mozilla/+export')
-    >>> print browser.title
-    Download translations for mozilla package in Ubuntu Hoary
+    >>> browser.title
+    'Download : \xe2\x80\x9cmozilla...
 
     >>> browser.getControl('Request Download').click()
 

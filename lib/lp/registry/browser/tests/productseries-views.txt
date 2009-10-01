@@ -22,11 +22,12 @@ update the milestones and releases table.
         YUI().use(... 'lp.milestoneoverlay', 'lp.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
-            var milestone_row_uri_template =
+            var milestone_row_uri =
                 '/app/+milestone/{name}/+productseries-table-row';
             var milestone_rows_id = '#milestone-rows';...
             Y.on('domready', function () {
-                var create_milestone_link = Y.get('.menu-link-create_milestone');
+                var create_milestone_link = Y.get(
+                    '.menu-link-create_milestone');
                 create_milestone_link.addClass('js-action');...
                 Y.lp.milestoneoverlay.attach_widget(config);...
                 Y.lp.milestonetable.setup(table_config);...
@@ -346,7 +347,10 @@ and a packaging contents.
 
     >>> view = create_view(productseries, '+addpackage')
     >>> print view.label
-    Add distribution packaging record
+    Packaging of hotter in distributions
+
+    >>> print view.page_title
+    Packaging of hotter in distributions
 
     >>> print view.field_names
     ['distroseries', 'sourcepackagename', 'packaging']

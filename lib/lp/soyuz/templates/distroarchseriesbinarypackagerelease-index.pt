@@ -44,7 +44,7 @@
         </div>
 
         <div id="downloadable-files">
-            <ul class="download" tal:condition="context/files">
+            <ul tal:condition="context/files">
               <li tal:repeat="file context/files">
                 <a class="sprite"
                    tal:content="file/libraryfile/filename"

@@ -93,6 +93,7 @@ span.invisible {left:-9999em;display:block;}
 .external-link {background:url(icon-sprites) 0 -704px no-repeat;}
 .mail {background:url(icon-sprites) 0 -736px no-repeat;}
 .cve {background:url(icon-sprites) 0 -768px no-repeat;}
+.cves {float: right; text-align: right;}
 .bug {background:url(icon-sprites) 0 -800px no-repeat;}
 .bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
 .bug-high {background:url(icon-sprites) 0 -864px no-repeat;}
@@ -146,7 +147,9 @@ span.invisible {left:-9999em;display:block;}
 .ppa-icon-inactive {background:url(icon-sprites-2) 0 -1171px no-repeat;}
 
 .bug-status-expand {background:url(icon-sprites-3) 0 -10px no-repeat;}
-.merge-proposal {background:url(icon-sprites-3) 0 -46px no-repeat;}
+.merge-proposal {
+  background:url(icon-sprites-3) 0 -46px no-repeat;
+  padding-left: 22px}
 .build-superseded {background:url(icon-sprites-3) 0 -80px no-repeat;}
 .build-sucess {background:url(icon-sprites-3) 0 -112px no-repeat;}
 .build-needed {background:url(icon-sprites-3) 0 -144px no-repeat;}
@@ -308,7 +311,6 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 0 0.5em;
   /* Content headings are highlighted using a different color (the color is
      overriden per-application in subsequent rules) instead of bold text. */
-  color: #83ad23;
   font-weight: normal;
 }
 h1 {font-size: 2em;}
@@ -675,30 +677,11 @@ hr {
 
 /* === Universal page layout === */
 
-/* All pages begin with a global header or a topline. */
-#globalheader {
-  clear: both;
-  position: relative;
-  width: 100%;
-  height: 21px;
-  overflow: hidden;
-  margin: 0 0 1em 0;
-  padding: 0;
-  background-color: #EEE;
-  background-image:  url(globalheader_bg.gif);
-  background-repeat: repeat-x;
-  background-position: top center;
-}
-#globalheader .sitemessage a {
-  color: #FFF;
-  text-decoration: underline;
-}
-/* Site-specific message. */
-#globalheader .sitemessage {
-  text-align: center;
-  color: #FFF;
-  font-size: 13px;
-  padding-top: 2px;
+/* All pages include the sitemessage in the footer if one is defined
+   in the config. */
+.sitemessage {
+    font-size: 13px;
+    text-align: right;
 }
 
 /* === Login control === */
@@ -729,7 +712,8 @@ ol.breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 0.5em;
+    margin-bottom: 2em;
+    font-size: 80%;
 }
 ol.breadcrumbs li {
     display:inline;
@@ -1370,7 +1354,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 
 /* === Public/private status === */
 /* The first portlet on many pages discloses whether the object is private: */
-#privacy {background: #fff;}
 #privacy.private {
   background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
@@ -1587,64 +1570,15 @@ beside the mugshot. */
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
 /* --- Home --- */
-#home-description {
-  font-size: 1.5em;
-  font-family: "URW Gothic L","MgOpen Moderna","Lucida Sans",sans-serif;
-  text-align: center;
-  margin: auto;
-  margin-top: 1em;
-  margin-bottom: 1em;
-  padding: 0.5em;
-  background-color: #ededed;
-  width: 90%;
+
+/* The following style works around the fact that the locationbar, which is
+only used of the Login/Register links in 3.0 UI, is accessible on
+"locationless" pages. It adds extra space at the top of every page in
+Launchpad but that does actually look quite good ... ;-).*/
+#locationbar {
+    height: 1em;
 }
-#home-description .smaller {
-  font-size: 80%;
-}
-#home-stats {
-  margin: auto;
-  text-align: center;
-  color: gray;
-  max-width: 40em;
-}
-#home-page h2 {
-  width: 100%;
-  text-align: center;
-  margin-left: -0.8em;
-}
-#home-page img {
-  vertical-align: middle;
-}
-#featured-projects ul {
-  list-style-type: none;
-  width: 50%;
-  margin: 0;
-  padding: 0 ;
-  float: left;
-}
-#featured-projects li {
-  padding-bottom: 2px;
-}
-.home-banners {
-  background-color: #8890ff;
-  width: 220px;
-  padding: 1em 0 1em 1em;
-  margin-top: 1em;
-  overflow: hidden;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-}
-.home-banners a {
-  font-weight: bold;
-  color: white;
-}
-.home-banner-container {
-  width: 100%;
-  background-color: #ededed;
-  padding: 1em;
-  padding-top: 0;
-}
+/* -- Notices -- */
 
 .important-notice-container {
   text-align: center;
@@ -1692,17 +1626,8 @@ beside the mugshot. */
   border: 1px solid gray;
   padding: 0.3em;
   margin: 1em 0 1em 0;
-  float: left; /* So the border doesn't use 100% of the page */
 }
 
-div#build-status-summary {
-    clear:right;
-    float:right;
-}
-
-div#build-status-summary h2 {
-    margin-top:0;
-}
 
 div#build-status-summary th {
     text-align:left;
@@ -1765,6 +1690,30 @@ p.update-failure-message {
 
 a.update-retry {
     padding-left: 1em;
+}
+
+/* PPA installation instructions slider.*/
+#pre-karmic-systems-slide-trigger {
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+#pre-karmic-systems-slide-trigger:hover {
+    text-decoration: underline
+}
+#ppa-install-slide-trigger {
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+#ppa-install-slide-trigger:hover {
+    text-decoration: underline
+}
+#ppa-install .widget-body {
+    margin: 1em;
+}
+#ppa-install .widget-body.lazr-closed {
+    height: 0px;
+    overflow: hidden;
+    display: block;
 }
 
 /* Brand the related PPA versions with the PPA icon (not currently
@@ -1836,6 +1785,13 @@ div.logtail p {
     max-width: 100%;
 }
 
+/* <pre> for presenting source changelog nicely. */
+pre.changelog {
+    margin: 0.5em;
+    padding: 5px;
+    font: 116% monospace;
+}
+
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
    linkified should be lined-through. */
 a.ppa-icon-inactive {
@@ -1848,6 +1804,18 @@ span.ppa-icon-inactive {
 div.builds_list form {
     padding: 1em 1em 2em 0em;
 }
+
+/* XXX Michael Nelson 20090828 bug=420376
+ * Temporary style for actions on the ppa/+packages page until we move
+ * the copy/delete packages functionality into the page itself. */
+div.ppa-packaging-tmp-actions {
+    float:right;
+}
+
+div.ppa-packaging-tmp-actions .portlet {
+    border-top: 0 none;
+}
+
 
 /* --- Code --- */
 
@@ -1925,6 +1893,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 #branch-pending-writes {
   background: #FFF59C;
   width: 40em;
+  margin: 1em auto;
   padding-left: 1em;
   padding-right: 1em;
   padding-top: 0.2em;
@@ -2213,6 +2182,30 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 .questionstatusEXPIRED   {color: #666;} /* dark grey */
 .questionstatusINVALID   {color: #c00;} /* red */
 
+.search-box {
+  text-align: left;
+  float: left;
+  border:1px solid #d6d6d6;
+  margin: 0.5em 0 0.5em 0;
+  color: #717171;
+  padding: 8px;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+.search-box form.primary.search {
+  margin: 0.5em;
+}
+
+.bug-links td.bugs-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.bug-links td.bugs-link {
+  text-align: left;
+}
 
 /* --- Other --- */
 

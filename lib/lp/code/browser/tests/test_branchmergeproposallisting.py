@@ -31,7 +31,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
     def setUp(self):
         # Use an admin so we don't have to worry about launchpad.Edit
         # permissions on the merge proposals for adding comments.
-        TestCaseWithFactory.setUp(self, user="foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
 
     def _createComment(self, proposal, reviewer=None, vote=None,
                        comment=_default):
@@ -51,6 +51,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         view_context = proposal.source_branch.owner
         view = BranchMergeProposalListingView(
             view_context, LaunchpadTestRequest())
+        view.initialize()
         batch_navigator = view.proposals
         # There will only be one item in the list of proposals.
         [listing_item] = batch_navigator.proposals

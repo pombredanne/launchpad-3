@@ -18,10 +18,6 @@
   </tal:devmode>
 </metal:block>
 
-<tal:heading metal:fill-slot="heading">
-  <h1 tal:content="view/page_title"/>
-</tal:heading>
-
 <tal:side metal:fill-slot="side">
     <tal:menu replace="structure view/@@+global-actions" />
 
@@ -152,7 +148,7 @@
                tal:replace="structure row/series_package/menu:overview/set_upstream/fmt:link"/>
             <tal:has_packaging condition="row/packaging">
               <img tal:replace="structure row/packaging/productseries/image:icon"/>
-              <tal:title replace="row/packaging/productseries/title"/>
+              <a tal:replace="structure row/packaging/productseries/fmt:link"/>
               <a tal:attributes="
                 href row/series_package/menu:overview/edit_packaging/url">
                 <img src="/@@/edit"/>

@@ -130,8 +130,12 @@ we need to be logged in as an admin.
     >>> login('carlos@canonical.com')
     >>> entry.setStatus(RosettaImportStatus.IMPORTED)
 
-Need to update our saved date_status_changed to detect if it changes now.
+The status change updates date_status_changed as well.
 
+    >>> entry.date_status_changed > previous_date_status_changed
+    True
+
+    >>> transaction.commit()
     >>> previous_date_status_changed = entry.date_status_changed
 
 Do the new upload. It will be a published upload.
@@ -144,15 +148,15 @@ Do the new upload. It will be a published upload.
 
 And the new status is
 
-    >>> po_sr_entry.status.title
-    'Needs Review'
+    >>> print po_sr_entry.status.title
+    Needs Review
 
 The dateimported remains the same as it was already waiting to be imported.
 
     >>> po_sr_entry.dateimported > previous_dateimported
     True
 
-And the date_status_changed is newer
+However the date_status_changed is still updated.
 
     >>> po_sr_entry.date_status_changed > previous_date_status_changed
     True

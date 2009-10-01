@@ -56,7 +56,7 @@ from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, default_name_by_purpose)
+    PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -187,6 +187,11 @@ class Archive(SQLBase):
             alsoProvides(self, IDistributionArchive)
 
     @property
+    def title(self):
+        """See `IArchive`."""
+        return self.displayname
+
+    @property
     def is_ppa(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PPA
@@ -315,8 +320,10 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
             clauses.append("""
                 SourcePackageRelease.version = %s
             """ % sqlvalues(version))
@@ -437,8 +444,10 @@ class Archive(SQLBase):
     def sources_size(self):
         """See `IArchive`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(
-            (LibraryFileContent),
+        result = store.find((
+            LibraryFileAlias.filename,
+            LibraryFileContent.sha1,
+            LibraryFileContent.filesize,),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -446,15 +455,22 @@ class Archive(SQLBase):
             SourcePackageReleaseFile.libraryfileID == LibraryFileAlias.id,
             LibraryFileAlias.contentID == LibraryFileContent.id)
 
-        # We need to select distinct `LibraryFileContent`s because that how
-        # they end up published in the archive disk. Duplications may happen
-        # because of the publishing records join, the same `LibraryFileAlias`
-        # gets logically re-published in several locations and the fact that
-        # the same `LibraryFileContent` can be shared by multiple
-        # `LibraryFileAlias.` (librarian-gc).
+        # Note: we can't use the LFC.sha1 instead of LFA.filename above
+        # because some archives publish the same file content with different
+        # names in the archive, so although the duplication will be removed
+        # in the librarian by the librarian-gc, we do not (yet) remove
+        # this duplication in the pool when the filenames are different.
+
+        # We need to select distinct on the (filename, filesize) result
+        # so that we only count duplicate files (with the same filename)
+        # once (ie. the same tarball used for different distroseries) as
+        # we do avoid this duplication in the pool when the names are
+        # the same.
         result = result.config(distinct=True)
-        size = sum([lfc.filesize for lfc in result])
-        return size
+
+        # Using result.sum(LibraryFileContent.filesize) throws errors when
+        # the result is empty, so instead:
+        return sum(result.values(LibraryFileContent.filesize))
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
@@ -486,8 +502,11 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
+
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
@@ -1181,6 +1200,22 @@ class Archive(SQLBase):
 
         return subscription
 
+    def getSourcePackageReleases(self, build_status=None):
+        """See `IArchive`."""
+        store = Store.of(self)
+
+        extra_exprs = []
+        if build_status is not None:
+            extra_exprs.append(Build.buildstate == build_status)
+
+        result_set = store.find(
+            SourcePackageRelease, 
+            Build.sourcepackagereleaseID == SourcePackageRelease.id,
+            Build.archive == self,
+            *extra_exprs)
+
+        result_set.config(distinct=True).order_by(SourcePackageRelease.id)
+        return result_set
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1577,4 +1612,4 @@ class ArchiveSet:
             DistroSeries.distribution == distribution,
             )
 
-        return results
+        return results.order_by(SourcePackagePublishingHistory.id)

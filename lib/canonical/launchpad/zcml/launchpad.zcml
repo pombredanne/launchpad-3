@@ -256,6 +256,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+graphics"
+      class="canonical.launchpad.browser.launchpad.LaunchpadGraphics"
       template="../templates/launchpad-graphics.pt"
       permission="zope.Public"
       />
@@ -320,11 +321,6 @@
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
       classes="LaunchpadRootFacets"
-      />
-
-  <browser:menus
-      module="lp.bugs.browser.malone"
-      classes="MaloneContextMenu"
       />
 
   <!-- This is a view on TALES CONTEXTS rather than all dicts. -->

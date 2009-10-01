@@ -138,7 +138,8 @@ class GenericBranchCollection:
         # Decorate the result set to work around bug 217644.
         return DecoratedResultSet(results, identity)
 
-    def getMergeProposals(self, statuses=None, for_branches=None):
+    def getMergeProposals(self, statuses=None, for_branches=None,
+                          target_branch=None):
         """See `IBranchCollection`."""
         expressions = [
             BranchMergeProposal.source_branchID.is_in(
@@ -148,6 +149,9 @@ class GenericBranchCollection:
             branch_ids = [branch.id for branch in for_branches]
             expressions.append(
                 BranchMergeProposal.source_branchID.is_in(branch_ids))
+        if target_branch is not None:
+            expressions.append(
+                BranchMergeProposal.target_branch == target_branch)
         expressions.extend(self._getExtraMergeProposalExpressions())
         if statuses is not None:
             expressions.append(

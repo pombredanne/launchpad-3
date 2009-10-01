@@ -2,8 +2,7 @@
 
 On the Bugs front page there is a link to file a bug.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/')
-    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/+filebug')
     >>> user_browser.title
     'Report a bug'
 

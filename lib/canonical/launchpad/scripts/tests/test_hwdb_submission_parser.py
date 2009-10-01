@@ -4,10 +4,14 @@
 """Tests of the HWDB submissions parser."""
 
 from cStringIO import StringIO
-import cElementTree as etree
+try:
+    import xml.etree.cElementTree as etree
+except ImportError:
+    import cElementTree as etree
 from datetime import datetime
 import logging
 import os
+from textwrap import dedent
 from unittest import TestCase, TestLoader
 
 import pytz
@@ -181,7 +185,6 @@ class TestHWDBSubmissionParser(TestCase):
             """)
         parser = SubmissionParser(self.log)
         summary = parser._parseSummary(node)
-        utc_tz = pytz.timezone('UTC')
         expected_data = {
             'live_cd': False,
             'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
@@ -191,7 +194,7 @@ class TestHWDBSubmissionParser(TestCase):
             'private': False,
             'contactable': False,
             'date_created': datetime(2007, 9, 28, 16, 9, 20, 126842,
-                                     tzinfo=utc_tz),
+                                     tzinfo=pytz.UTC),
             'client': {
                 'name': 'hwtest',
                 'version': '0.9',
@@ -200,6 +203,57 @@ class TestHWDBSubmissionParser(TestCase):
                      'version': '1.1'},
                     {'name': 'find_network_controllers',
                      'version': '2.34'}]}
+            }
+        self.assertEqual(
+            summary, expected_data,
+            'SubmissionParser.parseSummary returned an unexpected result')
+
+    def testSummaryNodeWithKernelRelease(self):
+        """The <summary> node may contain the sub-node <kernel-release>."""
+        node = etree.fromstring("""
+            <summary>
+                <live_cd value="False"/>
+                <system_id value="f982bb1ab536469cebfd6eaadcea0ffc"/>
+                <distribution value="Ubuntu"/>
+                <distroseries value="7.04"/>
+                <architecture value="amd64"/>
+                <private value="False"/>
+                <contactable value="False"/>
+                <date_created value="2007-09-28T16:09:20.126842"/>
+                <client name="hwtest" version="0.9">
+                    <plugin name="architecture_info" version="1.1"/>
+                    <plugin name="find_network_controllers" version="2.34"/>
+                </client>
+                <kernel-release value="2.6.28-15-generic"/>
+            </summary>
+            """)
+        parser = SubmissionParser(self.log)
+        summary = parser._parseSummary(node)
+        expected_data = {
+            'live_cd': False,
+            'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
+            'distribution': 'Ubuntu',
+            'distroseries': '7.04',
+            'architecture': 'amd64',
+            'private': False,
+            'contactable': False,
+            'date_created': datetime(2007, 9, 28, 16, 9, 20, 126842,
+                                     tzinfo=pytz.UTC),
+            'client': {
+                'name': 'hwtest',
+                'version': '0.9',
+                'plugins': [
+                    {
+                        'name': 'architecture_info',
+                        'version': '1.1'
+                        },
+                    {
+                        'name': 'find_network_controllers',
+                        'version': '2.34'
+                        }
+                    ]
+                },
+            'kernel-release': '2.6.28-15-generic',
             }
         self.assertEqual(
             summary, expected_data,
@@ -506,6 +560,308 @@ class TestHWDBSubmissionParser(TestCase):
                            'vendor': 'Medion',
                            'model': 'MD 4394'}],
                          'Invalid parsing result for <aliases>')
+
+    def testUdev(self):
+        """The content of the <udev> node is converted into a list of dicts.
+        """
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring("""
+<udev>P: /devices/LNXSYSTM:00
+E: UDEV_LOG=3
+E: DEVPATH=/devices/LNXSYSTM:00
+E: MODALIAS=acpi:LNXSYSTM:
+
+P: /devices/pci0000:00/0000:00:1a.0
+E: UDEV_LOG=3
+E: DEVPATH=/devices/pci0000:00/0000:00:1a.0
+S: char/189:256
+</udev>
+""")
+        result = parser._parseUdev(node)
+        self.assertEqual(
+            [
+                {
+                    'P': '/devices/LNXSYSTM:00',
+                    'E': {
+                        'UDEV_LOG': '3',
+                        'DEVPATH': '/devices/LNXSYSTM:00',
+                        'MODALIAS': 'acpi:LNXSYSTM:',
+                        },
+                    'S': [],
+                    },
+                {
+                    'P': '/devices/pci0000:00/0000:00:1a.0',
+                    'E': {
+                        'UDEV_LOG': '3',
+                        'DEVPATH': '/devices/pci0000:00/0000:00:1a.0',
+                        },
+                    'S': ['char/189:256'],
+                    },
+                ],
+            result,
+            'Invalid parsing result for <udev>')
+
+    def testUdevLineWithoutColon(self):
+        """<udev> nodes with lines not in key: value format are rejected."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Detect udev lines not in key:value format'
+        node = etree.fromstring("""
+<udev>P: /devices/LNXSYSTM:00
+bad line
+</udev>
+""")
+        result = parser._parseUdev(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result for a <udev> node with a line not having '
+            'the key: value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <udev>: No valid key:value data: 'bad line'")
+
+    def testUdevPropertyLineWithoutEqualSign(self):
+        """<udev> nodes with lines not in key: value format are rejected."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect udev property lines not in key=value format')
+        node = etree.fromstring("""
+<udev>P: /devices/LNXSYSTM:00
+E: bad property
+</udev>
+""")
+        result = parser._parseUdev(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result for a <udev> node with a property line '
+            'not having the key=value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <udev>: Property without valid key=value data: "
+            "'E: bad property'")
+
+    def testUdevDataWithDuplicateKey(self):
+        """<udev> nodes with lines not in key: value format are rejected."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Detect duplactae attributes in udev data'
+        node = etree.fromstring("""
+<udev>P: /devices/LNXSYSTM:00
+W:1
+W:2
+</udev>
+""")
+        result = parser._parseUdev(node)
+        self.assertEqual(
+            [
+                {
+                    'P': '/devices/LNXSYSTM:00',
+                    'E': {},
+                    'S': [],
+                    'W': '2',
+                    },
+                ],
+            result,
+            'Invalid parsing result for a <udev> node with a duplicate '
+            'attribute.')
+        self.assertWarningMessage(
+            parser.submission_key,
+            "Line 2 in <udev>: Duplicate attribute key: 'W:2'")
+
+    def testDmi(self):
+        """The content of the <udev> node is converted into a dictionary."""
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring("""<dmi>/sys/class/dmi/id/bios_vendor:LENOVO
+/sys/class/dmi/id/bios_version:7LETB9WW (2.19 )
+/sys/class/dmi/id/sys_vendor:LENOVO
+/sys/class/dmi/id/modalias:dmi:bvnLENOVO:bvr7LETB9WW
+</dmi>""")
+        result = parser._parseDmi(node)
+        self.assertEqual(
+            {
+                '/sys/class/dmi/id/bios_vendor': 'LENOVO',
+                '/sys/class/dmi/id/bios_version': '7LETB9WW (2.19 )',
+                '/sys/class/dmi/id/sys_vendor': 'LENOVO',
+                '/sys/class/dmi/id/modalias': 'dmi:bvnLENOVO:bvr7LETB9WW',
+                },
+            result,
+            'Invalid parsing result for <dmi>.')
+
+    def testDmiInvalidData(self):
+        """<dmi> nodes with lines not in key:value format are rejected."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Invalid DMI data'
+        node = etree.fromstring("""<dmi>/sys/class/dmi/id/bios_vendor:LENOVO
+invalid line
+</dmi>""")
+        result = parser._parseDmi(node)
+        self.assertEqual(
+            None, result,
+            '<dmi> node with invalid data not deteced.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <dmi>: No valid key:value data: 'invalid line'")
+
+    def testSysfsAttributes(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        The content of the <sys-attributes> node is converted into
+        a dictionary.
+        """
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            A: uniq=
+            A: phys=LNXPWRBN/button/input0
+            A: name=Power Button
+
+            P: /devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03
+            A: uniq=
+            A: phys=/video/input0
+            A: name=Video Bus
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            {
+                '/devices/LNXSYSTM:00/LNXPWRBN:00/input/input0': {
+                    'modalias': 'input:b0019v0000p0001e0000-e0,1,k74',
+                    'uniq': '',
+                    'phys': 'LNXPWRBN/button/input0',
+                    'name': 'Power Button',
+                    },
+                '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03': {
+                    'uniq': '',
+                    'phys': '/video/input0',
+                    'name': 'Video Bus',
+                    },
+
+                },
+            result,
+            'Invalid parsing result of <sysfs-attributes> node.')
+
+    def testSysfsAttributesLineWithoutKeyValueData(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        Lines not in key: value format are rejected.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> lines not in key:value format')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            invalid line
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node containing '
+            'a line not in key:value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 3 in <sysfs-attributes>: No valid key:value data: "
+            "'invalid line'")
+
+    def testSysfsAttributesDuplicatePLine(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        A line starting with "P:" must be the first line of a device block.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node with duplicate P: line')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node containing '
+            'a duplicate P: line.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 3 in <sysfs-attributes>: duplicate 'P' line found: "
+            "'P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0'")
+
+    def testSysfsAttributesNoPLineAtDeviceStart(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        The data for a device must start with a "P:" line.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node without leading P: line')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node where a '
+            'device block does not start with a "P": line.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <sysfs-attributes>: Block for a device does not "
+            "start with 'P:': "
+            "'A: modalias=input:b0019v0000p0001e0000-e0,1,k74'")
+
+    def testSysfsAttributesNoAttributeKeyValue(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        A line starting with "A:" must be in key=value format.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node with A: line not in key=value '
+            'format')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: equal sign is missing
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node with A: '
+            'line not in key=value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 2 in <sysfs-attributes>: Attribute line does not contain "
+            "key=value data: 'A: equal sign is missing'")
+
+    def testSysfsAttributesInvalidMainKey(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        All lines must start with "P:" or "A:".
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node with invalid main key.')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            X: an invalid line
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node containg '
+            'a line that does not start with "A:" or "P:".')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 2 in <sysfs-attributes>: Unexpected key: "
+            "'X: an invalid line'")
 
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""

@@ -6,7 +6,7 @@ which support is desired:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu')
     >>> print browser.title
-    Questions for Ubuntu
+    Questions : Ubuntu
 
 Asking a new question requires logging in:
 
@@ -16,8 +16,8 @@ Asking a new question requires logging in:
     Unauthorized...
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/')
     >>> user_browser.getLink('Ask a question').click()
-    >>> user_browser.title
-    'Ask a question about Ubuntu'
+    >>> print user_browser.title
+    Ask a question...
 
 
 == Get Help Online ==
@@ -31,11 +31,12 @@ associated with the source package of the used application.
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+sources/mozilla-firefox/+gethelp')
-    >>> user_browser.title
-    'Help and support options for ...mozilla-firefox...'
-    >>> user_browser.getLink('Submit your question').click()
-    >>> user_browser.title
-    'Ask a question about mozilla-firefox in Ubuntu Hoary'
+    >>> print user_browser.title
+    Help and support...
+
+    >>> user_browser.getLink('Ask a question').click()
+    >>> print user_browser.title
+    Ask a question...
 
 
 == Searching for Similar FAQs and Questions ==
@@ -154,12 +155,14 @@ redirect the user to the question page.
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
     >>> user_browser.title
-    'mozilla-firefox in ubuntu question #...Visiting a web page...'
+    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'registration'))
+    Open... Question #..., asked...by...No Privileges Person...
     >>> contents = find_main_content(user_browser.contents)
-    >>> contents.findChild('div', id='question-details')
-    <div...>Open<... Question #..., asked...by...No Privileges Person...
-    >>> contents.find('div', 'report')
-    <div class="report"><p>I use Ubuntu on AMD64 ...</div>
+    >>> print extract_text(contents.find('div', 'report'))
+    I use Ubuntu on AMD64 ...
 
 The user automatically got subscribed to this new question.
 

@@ -105,10 +105,13 @@ class CveUnlinkView(CveLinkView):
         self.request.response.addInfoNotification(
             'CVE-%s removed.' % data['sequence'])
 
+    @property
     def label(self):
         return  'Bug # %s Remove link to CVE report' % self.context.bug.id
 
     page_title = label
+
+    heading = 'Remove links to bug reports'
 
 
 class CveSetView:

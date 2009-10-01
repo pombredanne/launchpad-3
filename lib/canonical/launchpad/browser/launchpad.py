@@ -9,20 +9,22 @@ __all__ = [
     'ApplicationButtons',
     'BrowserWindowDimensions',
     'DoesNotExistView',
-    'get_launchpad_views',
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
-    'LaunchpadRootNavigation',
     'LaunchpadImageFolder',
+    'LaunchpadGraphics',
+    'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
     'NavigationMenuTabs',
+    'RDFIndexView',
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
+    'get_launchpad_views',
     ]
 
 
@@ -34,10 +36,12 @@ import time
 import urllib
 from datetime import timedelta, datetime
 
+from zope import i18n
 from zope.app import zapi
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
+from zope.i18nmessageid import Message
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
@@ -50,6 +54,7 @@ from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.layers import WebServiceLayer
 
+from lp.app.interfaces.headings import IMajorHeadingView
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
@@ -103,6 +108,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
+from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -250,11 +256,20 @@ class Hierarchy(LaunchpadView):
                 if extra_breadcrumb is not None:
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
-        if len(breadcrumbs):
+        if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
             if page_crumb:
                 breadcrumbs.append(page_crumb)
         return breadcrumbs
+
+    @property
+    def _naked_context_view(self):
+        """Return the unproxied view for the context of the hierarchy."""
+        from zope.security.proxy import removeSecurityProxy
+        if len(self.request.traversed_objects) > 0:
+            return removeSecurityProxy(self.request.traversed_objects[-1])
+        else:
+            return None
 
     def makeBreadcrumbForRequestedPage(self):
         """Return an `IBreadcrumb` for the requested page.
@@ -263,16 +278,28 @@ class Hierarchy(LaunchpadView):
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the requested page (as specified in self.request) is the default
-        one for the last traversed object, return None.
+        one for our parent view's context, return None.
         """
         url = self.request.getURL()
-        last_segment = URI(url).path.split('/')[-1]
-        default_view_name = zapi.getDefaultViewName(
-            self.request.traversed_objects[-1], self.request)
-        if last_segment.startswith('+') and last_segment != default_view_name:
+        obj = self.request.traversed_objects[-2]
+        default_view_name = zapi.getDefaultViewName(obj, self.request)
+        view = self._naked_context_view
+        if view.__name__ != default_view_name:
+            title = getattr(view, 'page_title', None)
+            if title is None:
+                title = getattr(view, 'label', None)
+            if title is None or title == '':
+                template = getattr(view, 'template', None)
+                if template is None:
+                    template = view.index
+                template_api = PageTemplateContextsAPI(
+                    dict(context=obj, template=template, view=view))
+                title = template_api.pagetitle()
+            if isinstance(title, Message):
+                title = i18n.translate(title, context=self.request)
             breadcrumb = Breadcrumb(None)
             breadcrumb._url = url
-            breadcrumb.text = last_segment
+            breadcrumb.text = title
             return breadcrumb
         else:
             return None
@@ -282,7 +309,11 @@ class Hierarchy(LaunchpadView):
         """Return whether the breadcrumbs should be displayed."""
         # If there is only one breadcrumb then it does not make sense
         # to display it as it will simply repeat the context.title.
-        return len(self.items) > 1
+        # If the view is an IMajorHeadingView then we do not want
+        # to display breadcrumbs either.
+        has_major_heading = IMajorHeadingView.providedBy(
+            self._naked_context_view)
+        return len(self.items) > 1 and not has_major_heading
 
 
 class MaintenanceMessage:
@@ -368,7 +399,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = ''
-        text = 'Code'
+        text = 'Branches'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
@@ -956,6 +987,10 @@ class BrowserWindowDimensions(LaunchpadView):
         return u'Thanks.'
 
 
+class LaunchpadGraphics(LaunchpadView):
+    label = page_title = 'Overview of Launchpad graphics and icons'
+
+
 def get_launchpad_views(cookies):
     """The state of optional page elements the user may choose to view.
 
@@ -1004,3 +1039,8 @@ class DoesNotExistView:
 
     def __call__(self):
         raise NotFound(self.context, self.__name__)
+
+
+class RDFIndexView(LaunchpadView):
+    """View for /rdf page."""
+    page_title = label = "Launchpad RDF"

@@ -13,7 +13,9 @@ __all__ = [
     'DenyingServer',
     'ensure_base',
     'get_branch_stacked_on_url',
+    'get_vfs_format_classes',
     'HttpAsLocalTransport',
+    'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
     'remove_exception_logging_hook',
@@ -22,12 +24,11 @@ __all__ = [
 import os
 import sys
 
-from bzrlib import config
+from bzrlib import config, trace
 from bzrlib.errors import (
     NoSuchFile, NotStacked, UnstackableBranchFormat,
     UnstackableRepositoryFormat)
-from bzrlib.remote import RemoteBzrDir
-from bzrlib import trace
+from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
 
@@ -260,3 +261,34 @@ class DenyingServer:
         """Prevent creation of transport for 'url'."""
         raise AssertionError(
             "Creation of transport for %r is currently forbidden" % url)
+
+
+def get_vfs_format_classes(branch):
+    """Return the vfs classes of the branch, repo and bzrdir formats.
+
+    'vfs' here means that it will return the underlying format classes of a
+    remote branch.
+    """
+    if isinstance(branch, RemoteBranch):
+        branch._ensure_real()
+        branch = branch._real_branch
+    repository = branch.repository
+    if isinstance(repository, RemoteRepository):
+        repository._ensure_real()
+        repository = repository._real_repository
+    bzrdir = branch.bzrdir
+    if isinstance(bzrdir, RemoteBzrDir):
+        bzrdir._ensure_real()
+        bzrdir = bzrdir._real_bzrdir
+    return (
+        branch._format.__class__,
+        repository._format.__class__,
+        bzrdir._format.__class__,
+        )
+
+
+def identical_formats(branch_one, branch_two):
+    """Check if two branches have the same bzrdir, repo, and branch formats.
+    """
+    return (get_vfs_format_classes(branch_one) ==
+            get_vfs_format_classes(branch_two))

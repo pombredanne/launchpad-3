@@ -12,6 +12,7 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
+    'ProductDistributionsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditNavigationMenu',
@@ -21,8 +22,10 @@ __all__ = [
     'ProductNavigation',
     'ProductNavigationMenu',
     'ProductOverviewMenu',
+    'ProductPackagesView',
     'ProductRdfView',
     'ProductReviewLicenseView',
+    'ProductSeriesView',
     'ProductSetBreadcrumb',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -54,6 +57,9 @@ from canonical.config import config
 from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+from lp.app.interfaces.headings import IEditableContextTitle
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
@@ -265,7 +271,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         summary = 'Branches for %s' % self.context.displayname
         return Link('', text, summary)
 
@@ -376,7 +382,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'edit',
         'reassign',
         'top_contributors',
-        'mentorship',
         'distributions',
         'packages',
         'series',
@@ -397,10 +402,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     def distributions(self):
         text = 'Packaging information'
         return Link('+distributions', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-        return Link('+mentoring', text, icon='info')
 
     def packages(self):
         text = 'Show distribution packages'
@@ -476,32 +477,11 @@ class ProductBugsMenu(ApplicationMenu):
         return Link('+subscribe', text, icon='edit')
 
 
-class ProductSpecificationsMenu(ApplicationMenu):
-
+class ProductSpecificationsMenu(NavigationMenu,
+                                HasSpecificationsMenuMixin):
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'table', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        summary = 'Show all specifications for %s' %  self.context.title
-        return Link('+specs?show=all', text, summary, icon='info')
-
-    def doc(self):
-        text = 'List documentation'
-        summary = 'List all complete informational specifications'
-        return Link('+documentation', text, summary,
-            icon='info')
-
-    def table(self):
-        text = 'Assignments'
-        summary = 'Show the full assignment of work, drafting and approving'
-        return Link('+assignments', text, summary, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = ['listall', 'doc', 'assignments', 'new']
 
 
 def _sort_distros(a, b):
@@ -780,7 +760,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                   ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
-    implements(IProductActionMenu)
+    implements(IProductActionMenu, IEditableContextTitle)
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)
@@ -805,6 +785,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             id='programminglang', title='Edit programming languages',
             tag='span', public_attribute='programming_language',
             accept_empty=True,
+            width='9em',
             **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
@@ -957,6 +938,18 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         """
         return (check_permission('launchpad.Edit', self.context) or
                 check_permission('launchpad.Commercial', self.context))
+
+
+class ProductPackagesView(ProductView):
+    """View for displaying product packaging"""
+
+    label = 'Packages in Launchpad'
+
+
+class ProductDistributionsView(ProductView):
+    """View for displaying product packaging by distribution"""
+
+    label = 'Package comparison by distribution'
 
 
 class ProductDownloadFilesView(LaunchpadView,
@@ -1308,6 +1301,13 @@ class ProductAddSeriesView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
+class ProductSeriesView(ProductView):
+    """A view for showing a product's series."""
+
+    label = 'timeline'
+    page_title = label
+
+
 class ProductRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
 
@@ -1407,6 +1407,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
 
     schema = IProductReviewSearch
+    label = 'Review projects'
 
     full_row_field_names = [
         'search_text',
@@ -1475,7 +1476,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         # Override the defaults with the form values if available.
         search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=10)
+                              self.request, size=100)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
@@ -1549,7 +1550,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    page_title = "Register a project in Launchpad"
+    page_title = ProjectAddStepOne.page_title
 
     product = None
 
@@ -1671,6 +1672,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 class ProductAddView(MultiStepView):
     """The controlling view for product/+new."""
 
+    page_title = ProjectAddStepOne.page_title
     total_steps = 2
 
     @property
