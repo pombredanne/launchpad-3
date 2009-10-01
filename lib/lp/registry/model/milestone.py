@@ -241,6 +241,7 @@ class MilestoneSet:
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
         return Milestone.selectBy(active=True, orderBy='id')
 
+
 class ProjectMilestone(HasBugsBase):
     """A virtual milestone implementation for project.
 
@@ -304,4 +305,3 @@ class ProjectMilestone(HasBugsBase):
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.target.official_bug_tags
-

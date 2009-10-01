@@ -162,31 +162,34 @@ class RegistryDeleteViewMixin:
     def _unsubscribe_structure(self, structure):
         """Removed the subscriptions from structure."""
         for subscription in structure.getSubscriptions():
-            # The owner of the subscription or an admin ar the only users
+            # The owner of the subscription or an admin are the only users
             # that can destroy a subscription, but this rule cannot prevent
-            # the owner of the structure to delete it.
+            # the owner from removing the structure.
             removeSecurityProxy(subscription).destroySelf()
 
-    def _untarget_bugs_and_specifications(self, series):
+    def _remove_series_bugs_and_specifications(self, series):
         """Untarget the associated bugs and subscriptions."""
         for spec in series.all_specifications:
             spec.proposeGoal(None, self.user)
         params = BugTaskSearchParams(user=None)
         params.setProductSeries(series)
         for bugtask in getUtility(IBugTaskSet).search(params):
+            # Bugtasks cannot be deleted directly. In this case, the bugtask
+            # is already reported on the product, so the series bugtask has
+            # no purpose without a series.
             removeSecurityProxy(bugtask).destroySelf()
 
     def _deleteProductSeries(self, series):
         """Remove the series and delete/unlink related objects.
 
         All subordinate milestones, releases, and files will be deleted.
-        Milestone bugs and blueprints will be untargetd.
-        Series bugs and blueprints will be unstargeted.
+        Milestone bugs and blueprints will be untargeted.
+        Series bugs and blueprints will be untargeted.
         Series and milestone structural subscriptions are unsubscribed.
-        Series branches are unlinked
+        Series branches are unlinked.
         """
         self._unsubscribe_structure(series)
-        self._untarget_bugs_and_specifications(series)
+        self._remove_series_bugs_and_specifications(series)
         series.branch = None
 
         for milestone in series.all_milestones:
