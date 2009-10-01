@@ -37,17 +37,20 @@ class EC2SessionName(str):
     @property
     def base(self):
         parts = self.split('/')
-        assert len(parts) == 3
+        if len(parts) != 3:
+            return None
         return parts[0]
 
     @property
     def timestamp(self):
         parts = self.split('/')
-        assert len(parts) == 3
+        if len(parts) != 3:
+            return None
         return find_datetime_string(parts[1])
 
     @property
     def rand(self):
         parts = self.split('/')
-        assert len(parts) == 3
+        if len(parts) != 3:
+            return None
         return parts[2]

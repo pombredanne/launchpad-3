@@ -37,6 +37,6 @@ class TestEC2SessionName(unittest.TestCase):
         self.failUnlessRaises(
             AssertionError, session.EC2SessionName.make, "forward/slash")
         broken_name = session.EC2SessionName('bob')
-        self.failUnlessRaises(AssertionError, lambda: broken_name.base)
-        self.failUnlessRaises(AssertionError, lambda: broken_name.timestamp)
-        self.failUnlessRaises(AssertionError, lambda: broken_name.rand)
+        self.failUnless(broken_name.base is None)
+        self.failUnless(broken_name.timestamp is None)
+        self.failUnless(broken_name.rand is None)
