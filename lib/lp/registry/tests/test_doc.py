@@ -133,6 +133,12 @@ special = {
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
         ),
+    'product.txt': LayeredDocFileSuite(
+        '../doc/product.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
     'productrelease.txt': LayeredDocFileSuite(
         '../doc/productrelease.txt',
         setUp=setUp,

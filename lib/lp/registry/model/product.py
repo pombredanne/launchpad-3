@@ -1287,7 +1287,7 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product.ownerID
+            Person.id == Product._ownerID
             ).config(distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate
