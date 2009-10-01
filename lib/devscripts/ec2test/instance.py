@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'EC2Instance',
-    'EC2InstanceName',
     ]
 
 import code
@@ -24,8 +23,7 @@ from bzrlib.errors import BzrCommandError
 import paramiko
 
 from devscripts.ec2test.credentials import EC2Credentials
-from devscripts.ec2test.utils import (
-    find_datetime_string, make_datetime_string, make_random_string)
+from devscripts.ec2test.session import EC2SessionName
 
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
@@ -161,47 +159,6 @@ mkdir /var/launchpad/sourcecode
 """
 
 
-class EC2InstanceName(str):
-    """A name for an EC2 instance.
-
-    This is used when naming key pairs and security groups, so it's
-    useful to be unique. However, to aid garbage collection of old key
-    pairs and security groups, the name contains a common element and
-    a timestamp. The form taken should always be:
-
-      <base-name>/<timestamp>/<random-data>
-
-    None of the parts should contain forward-slashes, and the
-    timestamp should acceptable input to `find_datetime_string`.
-
-    `EC2InstanceName.make()` will generate a suitable name for you.
-    """
-
-    @classmethod
-    def make(cls, base):
-        assert '/' not in base
-        return cls("%s/%s/%s" % (
-                base, make_datetime_string(), make_random_string()))
-
-    @property
-    def base(self):
-        parts = self.split('/')
-        assert len(parts) == 3
-        return parts[0]
-
-    @property
-    def timestamp(self):
-        parts = self.split('/')
-        assert len(parts) == 3
-        return find_datetime_string(parts[1])
-
-    @property
-    def rand(self):
-        parts = self.split('/')
-        assert len(parts) == 3
-        return parts[2]
-
-
 class EC2Instance:
     """A single EC2 instance."""
 
@@ -212,9 +169,7 @@ class EC2Instance:
 
         :param name: The name to use for the key pair and security group for
             the instance.
-        :type name: `EC2InstanceName` or `str`. In the latter case, it
-            will be passed to `EC2InstanceName.make()` to generate a
-            safe name to use.
+        :type name: `EC2SessionName`
         :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
         :param machine_id: The AMI to use, or None to do the usual regexp
             matching.  If you put 'based-on:' before the AMI id, it is assumed
@@ -225,9 +180,7 @@ class EC2Instance:
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
-        if not isinstance(name, EC2InstanceName):
-            name = EC2InstanceName.make(name)
-
+        assert isinstance(name, EC2SessionName)
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
 
@@ -276,7 +229,6 @@ class EC2Instance:
 
     def __init__(self, name, image, instance_type, demo_networks, account,
                  vals, from_scratch, user_key):
-        assert isinstance(name, EC2InstanceName)
         self._name = name
         self._image = image
         self._account = account
