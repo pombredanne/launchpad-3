@@ -38,7 +38,7 @@ class TestBranchLinks(TestCaseWithFactory):
 
         client.waits.forElement(id=u'buglink-1', timeout=u'10000')
         client.asserts.assertText(id=u'linkbug',
-            validator=u'Link to another bug')
+            validator=u'Link to another bug report')
 
         client.click(id=u'linkbug')
         client.waits.forElement(id=u'field.bug')
@@ -47,7 +47,7 @@ class TestBranchLinks(TestCaseWithFactory):
 
         client.waits.forElement(id=u'buglink-1', timeout=u'10000')
         client.asserts.assertText(id=u'linkbug',
-            validator=u'Link to another bug')
+            validator=u'Link to another bug report')
 
         # And now to unlink.
         client.click(id=u'delete-buglink-1')

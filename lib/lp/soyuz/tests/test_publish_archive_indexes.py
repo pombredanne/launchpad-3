@@ -209,6 +209,33 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
 
         os.remove(index_filename)
 
+    def testSourceStanzaWithTrailingBlankWithApt(self):
+        """This is a regression test for bug 436182.
+
+        We have a separate issue in the upload parser that is incorrectly
+        adding a '\n' to the end of the dsc_binaries field in certain
+        situations. This causes apt_pkg.ParseTagFile() to error when
+        generating the index.
+        """
+        pub_source = self.getPubSource()
+        pub_source.sourcepackagerelease.dsc_binaries += '\n'
+
+        index_filename = tempfile.mktemp()
+        index_file = open(index_filename, 'w')
+        index_file.write(pub_source.getIndexStanza().encode('utf-8'))
+        index_file.close()
+
+        parser = apt_pkg.ParseTagFile(open(index_filename))
+        parser.Step()
+
+        self.assertEqual(parser.Section['Package'], 'foo')
+
+        # Without the fix, this raises a key-error due to apt-pkg not
+        # being able to parse the file.
+        self.assertEqual(parser.Section['Version'], '666')
+
+        os.remove(index_filename)
+
     def testIndexStanzaFields(self):
         """Check how this auxiliary class works...
 

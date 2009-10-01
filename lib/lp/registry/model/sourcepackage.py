@@ -54,6 +54,7 @@ from canonical.launchpad.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -655,3 +656,35 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             self.distribution.name,
             self.distroseries.getSuite(pocket),
             self.name)
+
+    def getLatestTranslationsUploads(self):
+        """See `ISourcePackage`."""
+        our_format = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
+
+        packagename = self.sourcepackagename.name
+        displayname = self.displayname
+        distro = self.distroseries.distribution
+
+        histories = distro.main_archive.getPublishedSources(
+            name=packagename, distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED, exact_match=True)
+        histories = list(histories)
+
+        builds = []
+        for history in histories:
+            builds += list(history.getBuilds())
+
+        uploads = [
+            build.package_upload
+            for build in builds
+            if build.package_upload
+            ]
+        custom_files = []
+        for upload in uploads:
+            custom_files += [
+                custom for custom in upload.customfiles
+                if custom.customformat == our_format
+                ]
+
+        custom_files.sort(key=attrgetter('id'))
+        return [custom.libraryfilealias for custom in custom_files]
