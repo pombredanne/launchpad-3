@@ -591,7 +591,11 @@ class PackageUpload(SQLBase):
         """Strip any PGP signature from the supplied changes lines."""
         text = "".join(changes_lines)
         signed_message = signed_message_from_string(text)
-        return signed_message.signedContent.splitlines(True)
+        # For unsigned '.changes' files we'll get a None `signedContent`.
+        if signed_message.signedContent is not None:
+            return signed_message.signedContent.splitlines(True)
+        else:
+            return changes_lines
 
     def _getChangesDict(self, changes_file_object=None, allow_unsigned=None):
         """Return a dictionary with changes file tags in it."""
