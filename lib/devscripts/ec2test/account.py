@@ -99,7 +99,7 @@ class EC2Account:
                 # XXX: JonathanLange 2009-06-05: If the security group exists
                 # already, verify that the current IP is permitted; if it is
                 # not, make an INFO log and add the current IP.
-                self.log("Security group already in use, so reusing.")
+                self.log("Security group already in use, so reusing.\n")
                 return group
 
         security_group = self.conn.create_security_group(

@@ -380,6 +380,88 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                          'Unexpected value of HALDevice.parent_udi, '
                          'when no parent information available.')
 
+    def testHALDeviceDeviceId(self):
+        """Test of HALDevice.device_id."""
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+            '/some/udi/path', device.device_id,
+            'Unexpected value of HALDevice.device_id')
+
+    def testHALDevicePciClass(self):
+        """Test of HALDevice.pci_class."""
+        properties = {
+            'pci.device_class': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             1, device.pci_class,
+            'Unexpected value of HALDevice.pci_class.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+            None, device.pci_class,
+            'Unexpected value of HALDevice.pci_class for Non-PCI device.')
+
+    def testHALDevicePciSubClass(self):
+        """Test of HALDevice.pci_subclass."""
+        properties = {
+            'pci.device_subclass': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             1, device.pci_subclass,
+            'Unexpected value of HALDevice.pci_subclass.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.pci_subclass,
+            'Unexpected value of HALDevice.pci_sub_class for Non-PCI device.')
+
+    def testHALDeviceUsbVendorId(self):
+        """Test of HALDevice.usb_vendor_id."""
+        properties = {
+            'usb_device.vendor_id': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             1, device.usb_vendor_id,
+            'Unexpected value of HALDevice.usb_vendor_id.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.usb_vendor_id,
+            'Unexpected value of HALDevice.usb_vendor_id for Non-USB device.')
+
+    def testHALDeviceUsbProductId(self):
+        """Test of HALDevice.usb_product_id."""
+        properties = {
+            'usb_device.product_id': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             1, device.usb_product_id,
+            'Unexpected value of HALDevice.usb_product_id.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.usb_product_id,
+            'Unexpected value of HALDevice.usb_product_id for Non-USB '
+            'device.')
+
     def testHalDeviceRawBus(self):
         """test of HALDevice.raw_bus."""
         properties = {

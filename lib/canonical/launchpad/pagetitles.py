@@ -128,10 +128,6 @@ archive_edit = ContextDisplayName('Edit %s')
 
 archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
-archive_subscriber_edit = ContextDisplayName('Edit %s')
-
-archive_subscribers = ContextDisplayName('Manage access to %s')
-
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Branches'
@@ -561,10 +557,6 @@ people_mergerequest_sent = 'Merge request sent'
 people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
-
-person_archive_subscription = ContextDisplayName('%s')
-
-person_archive_subscriptions = 'Private PPA access'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')

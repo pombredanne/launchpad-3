@@ -8,6 +8,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.model.person import PersonSet
 from lp.registry.interfaces.person import (
@@ -81,6 +82,30 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
             self.email_address, self.displayname, self.rationale)
         self.assertEquals(test_account.id, ensured_person.account.id)
         self.assertTrue(ensured_person.hide_email_addresses)
+
+    def test_ensurePerson_for_existing_account_with_person(self):
+        # IPerson.ensurePerson return existing Person for existing
+        # Accounts and additionally bounds the account email to the
+        # Person in question.
+
+        # Create a testing `Account` and a testing `Person` directly,
+        # linked. However the `Account` email is not linked to the
+        # `Person`.
+        testing_account = self.factory.makeAccount(
+            self.displayname, email=self.email_address)
+        testing_person = removeSecurityProxy(
+            testing_account).createPerson(self.rationale)
+        self.assertIs(None, testing_account.preferredemail.person)
+        self.assertIs(None, testing_person.preferredemail)
+
+        ensured_person = getUtility(IPersonSet).ensurePerson(
+            self.email_address, self.displayname, self.rationale)
+
+        # The existing Person was retrieved and the Account
+        # 'preferredemail' is also bound to the existing Person.
+        self.assertEquals(testing_person.id, ensured_person.id)
+        self.assertEquals(testing_account.preferredemail.id,
+                          ensured_person.preferredemail.id)
 
 
 def test_suite():
