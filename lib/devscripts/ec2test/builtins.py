@@ -18,6 +18,7 @@ import socket
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
     AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+from devscripts.ec2test.session import EC2SessionName
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 
@@ -247,9 +248,9 @@ class cmd_test(EC2Command):
                 'You have specified no way to get the results '
                 'of your headless test run.')
 
-
+        session_name = EC2SessionName(EC2TestRunner.name)
         instance = EC2Instance.make(
-            EC2TestRunner.name, instance_type, machine)
+            session_name, instance_type, machine)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
@@ -293,8 +294,9 @@ class cmd_demo(EC2Command):
         branches, test_branch = _get_branches_and_test_branch(
             trunk, branch, test_branch)
 
+        session_name = EC2SessionName(EC2TestRunner.name)
         instance = EC2Instance.make(
-            EC2TestRunner.name, instance_type, machine, demo)
+            session_name, instance_type, machine, demo)
 
         runner = EC2TestRunner(
             test_branch, branches=branches,
@@ -365,8 +367,9 @@ class cmd_update_image(EC2Command):
 
         credentials = EC2Credentials.load_from_file()
 
+        session_name = EC2SessionName(EC2TestRunner.name)
         instance = EC2Instance.make(
-            EC2TestRunner.name, instance_type, machine,
+            session_name, instance_type, machine,
             credentials=credentials)
         instance.check_bundling_prerequisites()
 
