@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 from pytz import utc
 from sqlobject import SQLObjectNotFound
 from storm.locals import SQL, AutoReload
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
@@ -560,6 +561,21 @@ class TestLibrarianGarbageCollection(TestCase):
         self.assert_(os.path.exists(noisefile2_path))
         self.assert_(os.path.exists(noisefile3_path))
 
+    def test_deleteUnwantedFilesBug437084(self):
+        # There was a bug where delete_unwanted_files() would die
+        # if the last file found on disk was unwanted.
+        self.layer.switchDbUser(dbuser='testadmin')
+        content='foo'
+        self.client.addFile(
+                'foo.txt', len(content), StringIO(content), 'text/plain',
+                )
+        # Roll back the database changes, leaving the file on disk.
+        transaction.abort()
+
+        self.layer.switchDbUser(config.librarian_gc.dbuser)
+
+        # This should cope.
+        librariangc.delete_unwanted_files(self.con)
 
     def test_cronscript(self):
         script_path = os.path.join(
