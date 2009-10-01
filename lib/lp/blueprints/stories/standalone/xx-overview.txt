@@ -1,4 +1,6 @@
-= Blueprints Overview =
+===================
+Blueprints Overview
+===================
 
 Launchpad makes it easy for users to see the blueprints filed against any
 product or distribution. There's a page where users can find the latest
@@ -6,14 +8,16 @@ blueprints, and also other pages where users can browse through complete
 lists of blueprints for a given product or distribution.
 
 
-== Viewing lists of blueprints ==
+Viewing lists of blueprints
+===========================
 
 Launchpad provides a dedicated page where users can browse through all the
 available blueprints for any product or distribution. Users can reach this
 page from any context by following the "Blueprints" tab.
 
 
-=== Viewing blueprints targeted to a product ===
+Viewing blueprints targeted to a product
+----------------------------------------
 
 Let's use the Mozilla Firefox product as an example. Users can see the list
 of blueprints attached to Mozilla Firefox by following the "Blueprints" tab:
@@ -27,7 +31,8 @@ of blueprints attached to Mozilla Firefox by following the "Blueprints" tab:
     High    ...svg-support  ...Approved...Beta Available...
 
 
-=== Viewing blueprints targeted to a product series ===
+Viewing blueprints targeted to a product series
+-----------------------------------------------
 
 It's possible to narrow down the list of blueprints to show only those
 targeted to a given product series. Let's pick the Mozilla Firefox 1.0
@@ -39,6 +44,7 @@ the blueprints page for 1.0:
     >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for 1.0
+    ...
     Launchpad lets projects track the features they intend to implement...
 
 Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
@@ -80,6 +86,8 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> browser.getLink('Target milestone').click()
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    Target to a milestone
+    ...
     Support Native SVG Objects
     Select the milestone of Mozilla Firefox in which you would like
     this feature to be implemented...
@@ -109,7 +117,8 @@ It's possible to navigate to the milestone directly:
     Mozilla Firefox 1.0.9
 
 
-=== Viewing blueprints targeted to a distribution ===
+Viewing blueprints targeted to a distribution
+---------------------------------------------
 
 Let's use the Ubuntu distribution as an example. Users can see the list of
 blueprints attached to Ubuntu Linux by following the "Blueprints" tab:
@@ -123,7 +132,8 @@ blueprints attached to Ubuntu Linux by following the "Blueprints" tab:
     Undefined...media-integrity-check...Discussion...Unknown
 
 
-=== Viewing blueprints targeted to a distribution series ===
+Viewing blueprints targeted to a distribution series
+----------------------------------------------------
 
 As before, it's possible to narrow down the list of blueprints to show only
 those targeted to a given distribution series. Let's pick the Grumpy Groundhog
@@ -135,6 +145,7 @@ blueprints page for Grumpy:
     >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Grumpy
+    ...
     Launchpad lets projects track the features they intend to implement...
 
 Let's target an existing Ubuntu blueprint to the Grumpy series:
@@ -175,6 +186,8 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> browser.getLink('media-integrity-check').click()
     >>> browser.getLink('Target milestone').click()
     >>> print extract_text(find_main_content(browser.contents))
+    Target to a milestone
+    ...
     CD Media Integrity Check
     Select the milestone of Ubuntu in which you would like this feature
     to be implemented...
@@ -182,7 +195,8 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> milestones = browser.getControl('Milestone')
     >>> milestones.displayValue = ['Ubuntu drift-1']
     >>> browser.getControl('Change').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'milestone-target'))
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'milestone-target'))
     Milestone target: drift-1
 
 Finally, the blueprint listing for Grumpy includes an entry for our chosen
