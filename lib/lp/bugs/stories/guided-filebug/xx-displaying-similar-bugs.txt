@@ -86,7 +86,7 @@ the list of potentially similar bugs.
 
     >>> query = find_tag_by_id(user_browser.contents, 'filebug-query-heading')
     >>> print extract_text(query)
-    Is "reflow" possibly one of these?
+    Is "reflow" one of these bugs?
 
 == Projects ==
 
