@@ -29,7 +29,6 @@ from canonical.launchpad import _
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.fields import (
     ContentNameField, ParticipatingPersonChoice)
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice

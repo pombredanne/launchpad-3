@@ -47,7 +47,6 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -65,8 +64,6 @@ from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet

@@ -14,11 +14,10 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productseries import IProductSeries
 
 from lazr.restful.interface import copy_field
-from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     collection_default_content, exported, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, operation_parameters,

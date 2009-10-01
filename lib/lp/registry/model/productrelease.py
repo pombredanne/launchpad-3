@@ -22,7 +22,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFile, IProductReleaseSet, UpstreamFileType)
+    IProductRelease, IProductReleaseFile, IProductReleaseSet,
+    UpstreamFileType)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
