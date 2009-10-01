@@ -65,7 +65,6 @@ class CheckWatches(LaunchpadCronScript):
             "Resetting %s bug watches for bug tracker %s" %
             (bug_tracker.watches.count(), bug_tracker_name))
 
-
     def main(self):
         start_time = time.time()
 

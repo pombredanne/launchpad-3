@@ -97,7 +97,8 @@ longer appear in the set returned by getBugWatchesNeedingUpdate().
     Remote bug: 42   LP bug: 2
 
 
-== Auto-creating bug trackers ==
+Auto-creating bug trackers
+--------------------------
 
 The bugtracker module contains a method, make_bugtracker_name() which
 can be used to generate a bug tracker name when a bugtracker is
@@ -162,7 +163,8 @@ collide.
     u'auto-bugs.example.com-1'
 
 
-== Top Bug Trackers ==
+Top Bug Trackers
+----------------
 
 The Malone front page shows a list of the top Malone bug trackers, as
 ordered by the number of bugs being monitored by Malone in each of
@@ -175,7 +177,8 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
      (4, u'mozilla.org'), (5, u'debbugs')]
 
 
-== Getting Bug Trackers ==
+Getting Bug Trackers
+--------------------
 
 You can get a specific bug tracker from the database by querying by
 its base URL.
@@ -298,7 +301,8 @@ an alias.
     gnome-bugzilla [u'gnome-terminal', u'gnome']
 
 
-== Imported bug messages ==
+Imported bug messages
+---------------------
 
 Each BugTracker has an imported_bug_messages property that returns all
 bug messages which have been imported for a given bug tracker.
@@ -346,7 +350,8 @@ We will forge some BugMessage records before trying again:
     - message subject: You are Number 4.
 
 
-== Filing a bug on the remote tracker ==
+Filing a bug on the remote tracker
+----------------------------------
 
 The IBugTracker interface defines a method, getBugFilingAndSearchLinks(),
 which returns the URLs of the bug filing form and the bug search on the remote
@@ -519,7 +524,8 @@ summary and description correctly.
     bug_search_url: ...?product=test&short_desc=%C2%ABHi%C2%A9
 
 
-== BugTracker.multi_product ==
+BugTracker.multi_product
+------------------------
 
 As described above, some bug trackers don't need to have a remote
 product passed to `getBugFilingAndSearchLinks()` in order to be able to return a
@@ -556,7 +562,8 @@ trackers.
     bug_search_url: None
 
 
-== Custom bug tracker bug filing links ==
+Custom bug tracker bug filing links
+-----------------------------------
 
 Some bug trackers are heavily customised, so their bug filing URLs may
 be different from the default URL form for that type of bug tracker.
@@ -576,3 +583,15 @@ use the default setup.
     http://.../enter_bug.cgi?product=testproduct&short_desc=Foo&comment=Bar
     bug_search_url:
     http://.../query.cgi?product=testproduct&short_desc=Foo
+
+
+Resetting a tracker's watches
+-----------------------------
+
+It's possible to reset all the watches on a bug tracker by calling its
+resetAllWatches() method.
+
+    >>> from operator import attrgetter
+    >>> for watch in sorted(
+    ...     mozilla_bugzilla.watches, key=attrgetter('id')):
+    ...     print watch.bug.id, watch.lastchecked
