@@ -476,6 +476,7 @@
                     needs_upgrading
                     getUpgradeFormat
                     isBranchMergeable
+                    visibleByUser
                     "/>
     <require
         permission="launchpad.Edit"
