@@ -1238,6 +1238,7 @@ class SubmissionParser(object):
 
 class BaseDevice:
     """A base class to represent device data from HAL and udev."""
+
     def __init__(self, parser):
         self.children = []
         self.parser = parser

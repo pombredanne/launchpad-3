@@ -387,7 +387,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         device = HALDevice(1, '/some/udi/path', properties, parser)
         self.assertEqual(
             '/some/udi/path', device.device_id,
-            'Unexpected value of HALDevice.parent_udi')
+            'Unexpected value of HALDevice.device_id')
 
     def testHALDevicePciClass(self):
         """Test of HALDevice.pci_class."""
@@ -397,15 +397,15 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
         device = HALDevice(1, '/some/udi/path', properties, parser)
         self.assertEqual(
-            device.pci_class, 1,
-            'Unexpected value of HALDevice.device_class.')
+             1, device.pci_class,
+            'Unexpected value of HALDevice.pci_class.')
 
         properties = {}
         parser = SubmissionParser(self.log)
         device = HALDevice(1, '/some/udi/path', properties, parser)
         self.assertEqual(
-            device.pci_class, None,
-            'Unexpected value of HALDevice.device_class for Non-PCI device.')
+            None, device.pci_class,
+            'Unexpected value of HALDevice.pci_class for Non-PCI device.')
 
     def testHALDevicePciSubClass(self):
         """Test of HALDevice.pci_subclass."""
@@ -416,14 +416,14 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         device = HALDevice(1, '/some/udi/path', properties, parser)
         self.assertEqual(
             device.pci_subclass, 1,
-            'Unexpected value of HALDevice.device_class.')
+            'Unexpected value of HALDevice.pci_subclass.')
 
         properties = {}
         parser = SubmissionParser(self.log)
         device = HALDevice(1, '/some/udi/path', properties, parser)
         self.assertEqual(
-            device.pci_subclass, None,
-            'Unexpected value of HALDevice.device_class for Non-PCI device.')
+             None, device.pci_subclass,
+            'Unexpected value of HALDevice.pci_sub_class for Non-PCI device.')
 
     def testHalDeviceRawBus(self):
         """test of HALDevice.raw_bus."""
