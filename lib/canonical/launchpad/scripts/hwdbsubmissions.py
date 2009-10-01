@@ -1294,6 +1294,16 @@ class BaseDevice:
         """
         raise NotImplementedError()
 
+    @property
+    def usb_vendor_id(self):
+        """The USB vendor ID of the device or None for Non-USB devices."""
+        raise NotImplementedError()
+
+    @property
+    def usb_product_id(self):
+        """The USB product ID of the device or None for Non-USB devices."""
+        raise NotImplementedError()
+
     def translateScsiBus(self):
         """Return the real bus of a device where raw_bus=='scsi'.
 
@@ -1394,78 +1404,6 @@ class BaseDevice:
     def raw_bus(self):
         """Return the device bus as specified by HAL or udev."""
         raise NotImplementedError()
-
-
-class HALDevice(BaseDevice):
-    """The representation of a HAL device node."""
-
-    def __init__(self, id, udi, properties, parser):
-        """HALDevice constructor.
-
-        :param id: The ID of the HAL device in the submission data as
-            specified in <device id=...>.
-        :type id: int
-        :param udi: The UDI of the HAL device.
-        :type udi: string
-        :param properties: The HAL properties of the device.
-        :type properties: dict
-        :param parser: The parser processing a submission.
-        :type parser: SubmissionParser
-        """
-        super(HALDevice, self).__init__(parser)
-        self.id = id
-        self.udi = udi
-        self.properties = properties
-
-    def getProperty(self, property_name):
-        """Return the HAL property property_name.
-
-        Note that there is no check of the property type.
-        """
-        if property_name not in self.properties:
-            return None
-        name, type_ = self.properties[property_name]
-        return name
-
-    @property
-    def parent_udi(self):
-        """The UDI of the parent device."""
-        return self.getProperty('info.parent')
-
-    @property
-    def device_id(self):
-        """See `BaseDevice`."""
-        return self.udi
-
-    @property
-    def pci_class(self):
-        """See `BaseDevice`."""
-        return self.getProperty('pci.device_class')
-
-    @property
-    def pci_subclass(self):
-        """The PCI device sub-class of the device or None for Non-PCI devices.
-        """
-        return self.getProperty('pci.device_subclass')
-
-    @property
-    def raw_bus(self):
-        """See `BaseDevice`."""
-        # Older versions of HAL stored this value in the property
-        # info.bus; newer versions store it in info.subsystem.
-        #
-        # Note that info.bus is gone for all devices except the
-        # USB bus. For USB devices, the property info.bus returns more
-        # detailed data: info.subsystem has the value 'usb' for all
-        # HAL nodes belonging to USB devices, while info.bus has the
-        # value 'usb_device' for the root node of a USB device, and the
-        # value 'usb' for sub-nodes of a USB device. We use these
-        # different value to to find the root USB device node, hence
-        # try to read info.bus first.
-        result = self.getProperty('info.bus')
-        if result is not None:
-            return result
-        return self.getProperty('info.subsystem')
 
     @property
     def real_bus(self):
@@ -1627,7 +1565,7 @@ class HALDevice(BaseDevice):
             info.bus == 'usb' is used for end points of USB devices;
             the root node of a USB device has info.bus == 'usb_device'.
 
-            info.bus == 'viedo4linux' is used for the "input aspect"
+            info.bus == 'video4linux' is used for the "input aspect"
             of video devices.
         """
         bus = self.raw_bus
@@ -1642,8 +1580,8 @@ class HALDevice(BaseDevice):
             # info.bus property that we treat as a real device.
             return self.udi == ROOT_UDI
         elif bus == 'usb_device':
-            vendor_id = self.getProperty('usb_device.vendor_id')
-            product_id = self.getProperty('usb_device.product_id')
+            vendor_id = self.usb_vendor_id
+            product_id = self.usb_product_id
             if vendor_id == 0 and product_id == 0:
                 # double-check: The parent device should be a PCI host
                 # controller, identifiable by its device class and subclass.
@@ -1795,6 +1733,88 @@ class HALDevice(BaseDevice):
                     self.parser.submission_key)
             return False
         return True
+
+
+class HALDevice(BaseDevice):
+    """The representation of a HAL device node."""
+
+    def __init__(self, id, udi, properties, parser):
+        """HALDevice constructor.
+
+        :param id: The ID of the HAL device in the submission data as
+            specified in <device id=...>.
+        :type id: int
+        :param udi: The UDI of the HAL device.
+        :type udi: string
+        :param properties: The HAL properties of the device.
+        :type properties: dict
+        :param parser: The parser processing a submission.
+        :type parser: SubmissionParser
+        """
+        super(HALDevice, self).__init__(parser)
+        self.id = id
+        self.udi = udi
+        self.properties = properties
+
+    def getProperty(self, property_name):
+        """Return the HAL property property_name.
+
+        Note that there is no check of the property type.
+        """
+        if property_name not in self.properties:
+            return None
+        name, type_ = self.properties[property_name]
+        return name
+
+    @property
+    def parent_udi(self):
+        """The UDI of the parent device."""
+        return self.getProperty('info.parent')
+
+    @property
+    def device_id(self):
+        """See `BaseDevice`."""
+        return self.udi
+
+    @property
+    def pci_class(self):
+        """See `BaseDevice`."""
+        return self.getProperty('pci.device_class')
+
+    @property
+    def pci_subclass(self):
+        """The PCI device sub-class of the device or None for Non-PCI devices.
+        """
+        return self.getProperty('pci.device_subclass')
+
+    @property
+    def usb_vendor_id(self):
+        """See `BaseDevice`."""
+        return self.getProperty('usb_device.vendor_id')
+
+    @property
+    def usb_product_id(self):
+        """See `BaseDevice`."""
+        return self.getProperty('usb_device.product_id')
+
+    @property
+    def raw_bus(self):
+        """See `BaseDevice`."""
+        # Older versions of HAL stored this value in the property
+        # info.bus; newer versions store it in info.subsystem.
+        #
+        # Note that info.bus is gone for all devices except the
+        # USB bus. For USB devices, the property info.bus returns more
+        # detailed data: info.subsystem has the value 'usb' for all
+        # HAL nodes belonging to USB devices, while info.bus has the
+        # value 'usb_device' for the root node of a USB device, and the
+        # value 'usb' for sub-nodes of a USB device. We use these
+        # different value to to find the root USB device node, hence
+        # try to read info.bus first.
+        result = self.getProperty('info.bus')
+        if result is not None:
+            return result
+        return self.getProperty('info.subsystem')
 
     def getScsiVendorAndModelName(self):
         """Separate vendor and model name of SCSI decvices.
