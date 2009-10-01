@@ -160,6 +160,18 @@ mkdir /var/launchpad/sourcecode
 """
 
 
+postmortem_banner = """\
+Postmortem Console. EC2 instance is not yet dead.
+It will shut down when you exit this prompt (CTRL-D)
+
+Tab-completion is enabled.
+EC2Instance is available as `instance`.
+Also try these:
+  http://%(dns)s/current_test.log
+  ssh -A %(dns)s
+"""
+
+
 class EC2Instance:
     """A single EC2 instance."""
 
@@ -323,7 +335,8 @@ class EC2Instance:
         """
         authorized_keys_file = conn.sftp.open(remote_filename, 'w')
         authorized_keys_file.write(
-            "%s %s\n" % (self._user_key.get_name(), self._user_key.get_base64()))
+            "%s %s\n" % (self._user_key.get_name(),
+                         self._user_key.get_base64()))
         authorized_keys_file.close()
 
     def _ensure_ec2test_user_has_keys(self, connection=None):
@@ -348,8 +361,8 @@ class EC2Instance:
             if our_connection:
                 connection.close()
             self.log(
-                'You can now use ssh -A ec2test@%s to log in the instance.\n' %
-                self.hostname)
+                'You can now use ssh -A ec2test@%s to '
+                'log in the instance.\n' % self.hostname)
             self._ec2test_user_has_keys = True
 
     def connect(self):
@@ -393,25 +406,17 @@ class EC2Instance:
             try:
                 return func(*args, **kw)
             except Exception:
-                # When running in postmortem mode, it is really helpful to see if
-                # there are any exceptions before it waits in the console (in the
-                # finally block), and you can't figure out why it's broken.
+                # When running in postmortem mode, it is really helpful to see
+                # if there are any exceptions before it waits in the console
+                # (in the finally block), and you can't figure out why it's
+                # broken.
                 traceback.print_exc()
         finally:
             try:
                 if postmortem:
                     console = code.InteractiveConsole(locals())
-                    console.interact((
-                        'Postmortem Console.  EC2 instance is not yet dead.\n'
-                        'It will shut down when you exit this prompt (CTRL-D).\n'
-                        '\n'
-                        'Tab-completion is enabled.'
-                        '\n'
-                        'EC2Instance is available as `instance`.\n'
-                        'Also try these:\n'
-                        '  http://%(dns)s/current_test.log\n'
-                        '  ssh -A %(dns)s') %
-                                     {'dns': self.hostname})
+                    console.interact(
+                        postmortem_banner % {'dns': self.hostname})
                     print 'Postmortem console closed.'
             finally:
                 if shutdown:
