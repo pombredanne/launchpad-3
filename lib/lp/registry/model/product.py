@@ -23,6 +23,7 @@ from sqlobject import (
 from storm.locals import And, Desc, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from lazr.delegates import delegates
@@ -69,7 +70,7 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
+    HasTranslationImportsMixin, ITranslationImportQueue)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
@@ -499,9 +500,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         Change the owner and change the ownership of related artifacts.
         """
-        from lp.translations.interfaces.translationimportqueue import (
-            ITranslationImportQueue)
-        from zope.security.proxy import removeSecurityProxy
         old_owner = self._owner
         self._owner = new_owner
         if old_owner is not None:
