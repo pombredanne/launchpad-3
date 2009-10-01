@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import re
 import unittest
 
 from datetime import datetime
@@ -48,16 +47,3 @@ class TestRandomUtils(unittest.TestCase):
         hex_chars = set('0123456789abcdefABCDEF')
         self.failUnless(hex_chars.issuperset(rand_a))
         self.failUnless(hex_chars.issuperset(rand_b))
-
-    def test_make_unique_name(self):
-        unique_name = utils.make_unique_name("fred")
-        match = re.match(
-            r'^fred-\d{4}-\d{2}-\d{2}-\d{4}-[0-9a-zA-Z]{32}$', unique_name)
-        self.failIf(match is None, "Did not match %r" % unique_name)
-
-    def test_datetime_string_in_unique_name(self):
-        unique_name = utils.make_unique_name("fred")
-        timestamp = utils.find_datetime_string(unique_name)
-        self.failIf(timestamp is None)
-        timestamp_string = utils.make_datetime_string(timestamp)
-        self.failUnless(timestamp_string in unique_name)
