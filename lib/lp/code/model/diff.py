@@ -50,6 +50,9 @@ class Diff(SQLBase):
                     in simplejson.loads(self._diffstat).items())
 
     def _set_diffstat(self, diffstat):
+        if diffstat is None:
+            self._diffstat = None
+            return
         # diffstats should be mappings of path to line counts.
         assert isinstance(diffstat, dict)
         self._diffstat = simplejson.dumps(diffstat)
@@ -163,7 +166,7 @@ class Diff(SQLBase):
         except Exception:
             getUtility(IErrorReportingUtility).raising(sys.exc_info())
             # Set the diffstat to be empty.
-            diffstat = {}
+            diffstat = None
             added_lines_count = None
             removed_lines_count = None
         else:

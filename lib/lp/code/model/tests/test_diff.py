@@ -186,7 +186,9 @@ class TestDiff(DiffTestCase):
         diff_bytes = "not a real diff"
         diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
         self.assertNotEqual(last_oops_id, errorlog.globalErrorUtility.lastid)
-        self.assertEqual({}, diff.diffstat)
+        self.assertIs(None, diff.diffstat)
+        self.assertIs(None, diff.added_lines_count)
+        self.assertIs(None, diff.removed_lines_count)
 
 
 class TestStaticDiff(TestCaseWithFactory):
