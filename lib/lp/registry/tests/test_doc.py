@@ -139,6 +139,12 @@ special = {
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
         ),
+    'private-team-roles.txt': LayeredDocFileSuite(
+        '../doc/private-team-roles.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
     'productrelease.txt': LayeredDocFileSuite(
         '../doc/productrelease.txt',
         setUp=setUp,

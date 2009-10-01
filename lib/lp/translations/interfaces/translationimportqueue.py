@@ -9,6 +9,7 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
@@ -152,9 +153,8 @@ class ITranslationImportQueueEntry(Interface):
             required=True))
 
     importer = exported(
-        ReferenceChoice(
+        ParticipatingPersonChoice(
             title=_("Uploader"),
-            schema=IPerson,
             required=True,
             readonly=True,
             description=_(
