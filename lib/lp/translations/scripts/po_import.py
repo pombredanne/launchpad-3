@@ -31,7 +31,7 @@ class TranslationsImport(LaunchpadCronScript):
     """Import .po and .pot files attached to Rosetta."""
     # Time goal for one run.  It is not exact.  The script can run for
     # longer than this, but will know to stop taking on new work.
-    # Since the script is run every 9 or 10 minutes, we set the "alarm"
+    # Since the script is run every 9 or 10 minutes, we set the goal
     # at 8 minutes.  That leaves a bit of time to complete the last
     # ongoing batch of imports.
     time_to_run = timedelta(minutes=8)
@@ -189,7 +189,7 @@ class TranslationsImport(LaunchpadCronScript):
             self.logger.info("Import requests completed.")
 
         self._reportFailures()
-        
+
         self.logger.debug("Finished the import process.")
 
     def _reportFailures(self):

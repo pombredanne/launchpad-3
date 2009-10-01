@@ -1305,7 +1305,7 @@ If such bad requests do end up on the import queue, the import queue code will
 raise errors about them.
 
     >>> def print_import_failures(import_script):
-    ...     """List failures recorded in import script instance."""
+    ...     """List failures recorded in an import script instance."""
     ...     for reason, entries in script.failures.iteritems():
     ...         print reason
     ...         for entry in entries:
