@@ -12,10 +12,12 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing import DatabaseFunctionalLayer
 
+from lp.archiveuploader.permission import verify_upload
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import run_with_login, TestCaseWithFactory
 
 
@@ -247,13 +249,29 @@ class TestWriteToBranch(PermissionTest):
         branch = self.makeOfficialPackageBranch()
         self.assertCanEdit(branch.owner, branch)
 
+    def assertCanUpload(self, person, spn, archive, component,
+                        strict_component=True):
+        """Assert that 'person' can upload 'spn' to 'archive'."""
+        # For now, just check that doesn't raise an exception.
+        self.assertIs(
+            None,
+            verify_upload(person, spn, archive, component, strict_component))
+
     def test_package_upload_permissions_grant_branch_edit(self):
         # If you can upload to the package, then you are also allowed to write
         # to the branch.
+        permission_set = getUtility(IArchivePermissionSet)
+        # Only admins or techboard members can add permissions normally. That
+        # restriction isn't relevant to these tests.
+        self.permission_set = removeSecurityProxy(permission_set)
         branch = self.makeOfficialPackageBranch()
         package = branch.sourcepackage
         person = self.factory.makePerson()
-        # XXX: somehow give 'person' permission to upload to 'package'.
+        # Give 'person' permission to upload to 'package'.
+        archive = branch.distroseries.distribution.main_archive
+        spn = package.sourcepackagename
+        self.permission_set.newPackageUploader(archive, person, spn)
+        self.assertCanUpload(person, spn, archive, None)
         self.assertCanEdit(person, branch)
 
 
