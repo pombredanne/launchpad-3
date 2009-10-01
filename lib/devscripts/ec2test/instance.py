@@ -19,6 +19,7 @@ import time
 import traceback
 
 from bzrlib.errors import BzrCommandError
+from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
@@ -199,8 +200,8 @@ class EC2Instance:
         # for initialization.
         #
         # We always recreate the keypairs because there is no way to
-        # programmatically retrieve the private key component, unless
-        # we generate it.
+        # programmatically retrieve the private key component, unless we
+        # generate it.
         account.collect_garbage()
 
         if machine_id and machine_id.startswith('based-on:'):
@@ -213,10 +214,6 @@ class EC2Instance:
         image = account.acquire_image(machine_id)
 
         vals = os.environ.copy()
-        # Importing get_lp_login in the module prevents tests from
-        # running (ImportError: No module named launchpad.account) and
-        # I have no idea why.
-        from bzrlib.plugins.launchpad.account import get_lp_login
         login = get_lp_login()
         if not login:
             raise BzrCommandError(
@@ -256,8 +253,7 @@ class EC2Instance:
         self.security_group = self._account.acquire_security_group(
             demo_networks=self._demo_networks)
         reservation = self._image.run(
-            key_name=self._account.unique_name,
-            security_groups=[self._account.unique_name],
+            key_name=self._name, security_groups=[self._name],
             instance_type=self._instance_type)
         self._boto_instance = reservation.instances[0]
         self.log('Instance %s starting..' % self._boto_instance.id)

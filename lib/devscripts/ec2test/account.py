@@ -128,7 +128,7 @@ class EC2Account:
 
     def acquire_private_key(self):
         """Create & return a new key pair for the test runner."""
-        key_pair = self.conn.create_key_pair(self.unique_name)
+        key_pair = self.conn.create_key_pair(self.name)
         return paramiko.RSAKey.from_private_key(
             cStringIO.StringIO(key_pair.material.encode('ascii')))
 
