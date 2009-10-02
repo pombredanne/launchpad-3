@@ -249,20 +249,42 @@ class TestWriteToBranch(PermissionTest):
         branch = self.makeOfficialPackageBranch()
         self.assertCanEdit(branch.owner, branch)
 
+    def assertCanUpload(self, person, spn, archive, component,
+                        strict_component=True):
+        """Assert that 'person' can upload 'spn' to 'archive'."""
+        # For now, just check that doesn't raise an exception.
+        self.assertIs(
+            None,
+            verify_upload(person, spn, archive, component, strict_component))
+
+    def assertCannotUpload(self, reason, person, spn, archive, component):
+        """Assert that 'person' cannot upload to the archive.
+
+        :param reason: The expected reason for not being able to upload. A
+            string.
+        :param person: The person trying to upload.
+        :param spn: The `ISourcePackageName` being uploaded to. None if the
+            package does not yet exist.
+        :param archive: The `IArchive` being uploaded to.
+        :param component: The IComponent to which the package belongs.
+        """
+        exception = verify_upload(person, spn, archive, component)
+        self.assertEqual(reason, str(exception))
+
     def personMayEditBranch(self, person, branch):
         """Return True if person may edit branch.
 
         A person P may be allowed to edit the branch B on the following
         grounds:
 
-          - P is owner of B or member of team owning B
+          - P is owner of B or a member of the team owning B
           - B is a source package branch (i.e. a branch linked to a
             source package SP in the distro series DS, component C) and
             - P is authorised to upload SP in DS.distribution.main_archive
             - P is authorised to upload to C in DS.distribution.main_archive
             - P is authorised to upload SP via a package set
 
-        Please note: this method is not in the proper place here and needs
+        Please note: this method is probably not in the proper place and needs
         to find a better home.
         """
         def current_component(ds, package):
@@ -270,10 +292,8 @@ class TestWriteToBranch(PermissionTest):
                 [package.sourcepackagename])
             return releases.get(package, None)
 
-        # This is a bit hacky but works in the context of the test at hand.
-        result = run_with_login(
-            person, check_permission, 'launchpad.Edit', branch)
-        # P is owner of B or member of team owning B.
+        result = check_permission('launchpad.Edit', branch)
+        # P is owner of B or a member of the team owning B
         if result == True:
             return result
 
@@ -302,28 +322,6 @@ class TestWriteToBranch(PermissionTest):
         # returning None.
         return result is None
         
-    def assertCanUpload(self, person, spn, archive, component,
-                        strict_component=True):
-        """Assert that 'person' can upload 'spn' to 'archive'."""
-        # For now, just check that doesn't raise an exception.
-        self.assertIs(
-            None,
-            verify_upload(person, spn, archive, component, strict_component))
-
-    def assertCannotUpload(self, reason, person, spn, archive, component):
-        """Assert that 'person' cannot upload to the archive.
-
-        :param reason: The expected reason for not being able to upload. A
-            string.
-        :param person: The person trying to upload.
-        :param spn: The `ISourcePackageName` being uploaded to. None if the
-            package does not yet exist.
-        :param archive: The `IArchive` being uploaded to.
-        :param component: The IComponent to which the package belongs.
-        """
-        exception = verify_upload(person, spn, archive, component)
-        self.assertEqual(reason, str(exception))
-
     def test_package_upload_permissions_grant_branch_edit(self):
         # If you can upload to the package, then you are also allowed to write
         # to the branch.
