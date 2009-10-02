@@ -304,17 +304,6 @@ def get_default_search_params(user, request):
     return search_params
 
 
-def bug_or_bugs(count):
-    """Return 'bug' if the count is 1, otherwise return 'bugs'.
-
-    zope.i18n does not support for ngettext-like functionality.
-    """
-    if count == 1:
-        return 'bug'
-    else:
-        return 'bugs'
-
-
 OLD_BUGTASK_STATUS_MAP = {
     'Unconfirmed': 'New',
     'Needs Info': 'Incomplete',
@@ -1702,17 +1691,13 @@ class BugsInfoMixin:
         The available keys are:
         * 'count' - The number of bugs.
         * 'url' - The URL of the search.
-        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
         params = get_default_search_params(self.user, self.request)
         params.resolved_upstream = True
-        fixed_elsewhere = self.context.searchTasks(params)
-        count = fixed_elsewhere.count()
-        label = bug_or_bugs(count)
-        search_url = (
-            "%s/+bugs?field.status_upstream=resolved_upstream" %
-                canonical_url(self.context))
-        return dict(count=count, url=search_url, label=label)
+        count = self.context.searchTasks(params).count
+        search_url = "%s?field.status_upstream=resolved_upstream" % (
+            canonical_url(self.context, view_name='+bugs'))
+        return dict(count=count, url=search_url)
 
     @property
     def open_cve_bugs_info(self):
@@ -1721,19 +1706,15 @@ class BugsInfoMixin:
         The available keys are:
         * 'count' - The number of bugs.
         * 'url' - The URL of the search.
-        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
         params = get_default_search_params(self.user, self.request)
         params.has_cve = True
-        open_cve_bugs = self.context.searchTasks(params)
-        count = open_cve_bugs.count()
-        label = bug_or_bugs(count)
-        search_url = (
-            "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
-        report_view = queryMultiAdapter(
-            (self.context, self.request), name='+cve')
-        return dict(count=count, url=search_url, label=label,
-                    has_report=(report_view is not None))
+        count = self.context.searchTasks(params).count
+        search_url = "%s?field.has_cve=on" % (
+            canonical_url(self.context, view_name='+bugs'))
+        has_report = queryMultiAdapter(
+            (self.context, self.request), name='+cve') is not None
+        return dict(count=count, url=search_url, has_report=has_report)
 
     @property
     def pending_bugwatches_info(self):
@@ -1744,7 +1725,6 @@ class BugsInfoMixin:
         The available keys are:
         * 'count' - The number of bugs.
         * 'url' - The URL of the search.
-        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
         if not IProduct.providedBy(self.context):
             return None
@@ -1752,13 +1732,10 @@ class BugsInfoMixin:
             return None
         params = get_default_search_params(self.user, self.request)
         params.pending_bugwatch_elsewhere = True
-        pending_bugwatch_elsewhere = self.context.searchTasks(params)
-        count = pending_bugwatch_elsewhere.count()
-        label = bug_or_bugs(count)
-        search_url = (
-            "%s/+bugs?field.status_upstream=pending_bugwatch" %
-            canonical_url(self.context))
-        return dict(count=count, url=search_url, label=label)
+        count = self.context.searchTasks(params).count
+        search_url = "%s?field.status_upstream=pending_bugwatch" % (
+            canonical_url(self.context, view_name='+bugs'))
+        return dict(count=count, url=search_url)
 
     @property
     def expirable_bugs_info(self):
@@ -1772,17 +1749,13 @@ class BugsInfoMixin:
         The available keys are:
         * 'count' - The number of bugs.
         * 'url' - The URL of the search, or None.
-        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
         if not target_has_expirable_bugs_listing(self.context):
             return None
-        bugtaskset = getUtility(IBugTaskSet)
-        expirable_bugtasks = bugtaskset.findExpirableBugTasks(
-            0, user=self.user, target=self.context)
-        count = expirable_bugtasks.count()
-        label = bug_or_bugs(count)
-        url = "%s/+expirable-bugs" % canonical_url(self.context)
-        return dict(count=count, url=url, label=label)
+        count = getUtility(IBugTaskSet).findExpirableBugTasks(
+            0, user=self.user, target=self.context).count
+        url = canonical_url(self.context, view_name='+expirable-bugs')
+        return dict(count=count, url=url)
 
     @property
     def new_bugs_info(self):
@@ -1819,7 +1792,7 @@ class BugsInfoMixin:
                     BugTaskSearchParams(
                         user=self.user, assignee=self.user,
                         status=any(*UNRESOLVED_BUGTASK_STATUSES),
-                        omit_dupes=True)).count(),
+                        omit_dupes=True)).count,
                 url=get_buglisting_search_filter_url(assignee=self.user.name))
         else:
             return None
