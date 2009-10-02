@@ -220,8 +220,9 @@ def main(args):
         parser.error("Too many arguments.")
     print 'Sourcecode: %s' % (sourcecode_directory,)
     print 'Config: %s' % (config_filename,)
-    ui.ui_factory = ui.make_ui_for_terminal(sys.stdin,
-        sys.stdout, sys.stderr)
+    # Tell bzr to use the terminal (if any) to show progress bars
+    ui.ui_factory = ui.make_ui_for_terminal(
+        sys.stdin, sys.stdout, sys.stderr)
     load_plugins()
     update_sourcecode(
         sourcecode_directory, config_filename,
