@@ -8,7 +8,8 @@ __metaclass__ = type
 __all__ = [
     'assignee_renderer',
     'BugListingBatchNavigator',
-    'BugListingPortletView',
+    'BugListingPortletInfoView',
+    'BugListingPortletStatsView',
     'BugNominationsView',
     'bugtarget_renderer',
     'BugTargetTraversalMixin',
@@ -1830,8 +1831,12 @@ class BugsStatsMixin(BugsInfoMixin):
             return self.context.searchTasks(params).count()
 
 
-class BugListingPortletView(LaunchpadView, BugsStatsMixin):
-    """Portlet containing all available bug listings."""
+class BugListingPortletInfoView(LaunchpadView, BugsInfoMixin):
+    """Portlet containing available bug listings without stats."""
+
+
+class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
+    """Portlet containing available bug listings with stats."""
 
     def getOpenBugsURL(self):
         """Return the URL for open bugs on this bug target."""

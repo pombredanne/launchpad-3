@@ -24,15 +24,21 @@
             template="../templates/bugtarget-portlet-recently-touched-bugs.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugListingPortletView"
+            class="lp.bugs.browser.bugtask.BugListingPortletInfoView"
             permission="zope.Public"
             name="+portlet-bugfilters"
             template="../templates/bugtarget-portlet-bugfilters.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugListingPortletView"
+            class="lp.bugs.browser.bugtask.BugListingPortletInfoView"
             permission="zope.Public"
-            name="+bugtarget-portlet-bugfilters-content"
+            name="+bugtarget-portlet-bugfilters-info"
+            template="../templates/bugtarget-portlet-bugfilters-content.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtask.BugListingPortletStatsView"
+            permission="zope.Public"
+            name="+bugtarget-portlet-bugfilters-stats"
             template="../templates/bugtarget-portlet-bugfilters-content.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
