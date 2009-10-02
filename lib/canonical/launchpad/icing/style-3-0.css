@@ -553,7 +553,8 @@ div.watermark-apps-portlet h1 {
     float: right;
     font-size: 85%;
     color: #666;
-    width: 21%;
+    position: relative;
+    top: 2em;
 }
 
 /* Side content exceptions */
