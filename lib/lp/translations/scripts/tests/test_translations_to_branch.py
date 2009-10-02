@@ -125,6 +125,8 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
 class TestExportToStackedBranch(TestCaseWithFactory):
     """Test workaround for bzr bug 375013."""
+    # XXX JeroenVermeulen 2009-10-02 bug=375013: Once bug 375013 is
+    # fixed, this entire test can go.
     layer = ZopelessAppServerLayer
 
     def setUp(self):
