@@ -4,6 +4,14 @@ The TranslationImportQueueEntry is an entry of the queue that will be imported
 into Rosetta.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> from lp.translations.model.translationimportqueue import (
+    ...     TranslationImportQueueEntry)
+
+    >>> def clear_queue(queue):
+    ...     """Remove all entries off the import queue."""
+    ...     store = IStore(TranslationImportQueueEntry)
+    ...     store.find(TranslationImportQueueEntry).remove()
 
 
 == getGuessedPOFile ==
@@ -130,8 +138,12 @@ we need to be logged in as an admin.
     >>> login('carlos@canonical.com')
     >>> entry.setStatus(RosettaImportStatus.IMPORTED)
 
-Need to update our saved date_status_changed to detect if it changes now.
+The status change updates date_status_changed as well.
 
+    >>> entry.date_status_changed > previous_date_status_changed
+    True
+
+    >>> transaction.commit()
     >>> previous_date_status_changed = entry.date_status_changed
 
 Do the new upload. It will be a published upload.
@@ -144,15 +156,15 @@ Do the new upload. It will be a published upload.
 
 And the new status is
 
-    >>> po_sr_entry.status.title
-    'Needs Review'
+    >>> print po_sr_entry.status.title
+    Needs Review
 
 The dateimported remains the same as it was already waiting to be imported.
 
     >>> po_sr_entry.dateimported > previous_dateimported
     True
 
-And the date_status_changed is newer
+However the date_status_changed is still updated.
 
     >>> po_sr_entry.date_status_changed > previous_date_status_changed
     True
@@ -1292,6 +1304,15 @@ bug 138650 for an example).
 If such bad requests do end up on the import queue, the import queue code will
 raise errors about them.
 
+    >>> def print_import_failures(import_script):
+    ...     """List failures recorded in an import script instance."""
+    ...     for reason, entries in script.failures.iteritems():
+    ...         print reason
+    ...         for entry in entries:
+    ...             print "-> " + entry
+
+    >>> clear_queue(translationimportqueue)
+
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, rosetta_experts,
     ...      productseries=evolution_productseries)
@@ -1302,12 +1323,29 @@ raise errors about them.
     >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
     >>> import logging
-    >>> from lp.translations.scripts.po_import import ImportProcess
-    >>> ImportProcess(transaction, logging).run()
-    Traceback (most recent call last):
+    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.translations.scripts.po_import import TranslationsImport
+
+    >>> script = TranslationsImport('poimport', test_args=[])
+    >>> script.logger = FakeLogger()
+    >>> script.main()
+    DEBUG Starting...
+    ERROR Entry is approved but has no place to import to.
     ...
-    AssertionError: Broken translation import queue entry 4 (for evolution):
-    ...
+    DEBUG Finished the import process.
+
+    >>> print_import_failures(script)
+    Entry is approved but has no place to import to.
+    -> 'po/sr.po' (id ...) in Evolution trunk series
+
+The entry is marked as Failed.
+
+    >>> print entry.status.name
+    FAILED
+
+This happens for distribution packages as well as products.
+
+    >>> clear_queue(translationimportqueue)
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/th.po', 'bar', False, rosetta_experts,
@@ -1319,24 +1357,20 @@ raise errors about them.
 
     >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
-    >>> ImportProcess(transaction, logging).run()
-    Traceback (most recent call last):
-    ...
-    AssertionError: Broken translation import queue entry 4 (for evolution):
-    ...
+    >>> script = TranslationsImport('poimport', test_args=[])
+    >>> script.logger.setLevel(logging.FATAL)
+    >>> script.main()
+    >>> print_import_failures(script)
+    Entry is approved but has no place to import to.
+    -> 'po/th.po' (id ...) in ubuntu Hoary package evolution
+
+    >>> print entry.status.name
+    FAILED
+
+    >>> clear_queue(translationimportqueue)
 
 
 == getRequestTargets output ordering ==
-
-TranslationImportQueue.getRequestTargets first lists distro series
-(ordered by distro name and series name), followed by products (ordered
-by name).
-
-    >>> print_list(get_target_names(RosettaImportStatus.APPROVED))
-    ubuntu/hoary    Hoary
-    evolution       Evolution
-    firefox         Mozilla Firefox
-
 
 The queue is populated with a wild mix of requests: for packages in
 different release series of Ubuntu, for packages in different distros,
@@ -1384,29 +1418,24 @@ upstream, some were produced right here in Launchpad.
     >>> entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
     >>> flush_database_updates()
 
-
-The targets (distro series or products) that these requests are for are
-always listed in the same, predictable order.
+TranslationImportQueue.getRequestTargets first lists distro series
+(ordered by distro name and series name), followed by products (ordered
+by name).
 
     >>> print_list(get_target_names())
     debian/sarge        Sarge
     debian/woody        Woody
     kubuntu/krunch      Krunch
     ubuntu/grumpy       Grumpy
-    ubuntu/hoary        Hoary
     alsa-utils          alsa-utils
     evolution           Evolution
-    firefox             Mozilla Firefox
-    netapplet           NetApplet
 
     >>> for status in RosettaImportStatus.items:
     ...     print "%s:" % status.name
     ...     print_list(get_target_names(status))
     APPROVED:
     kubuntu/krunch      Krunch
-    ubuntu/hoary        Hoary
     evolution           Evolution
-    firefox             Mozilla Firefox
     IMPORTED:
     evolution           Evolution
     DELETED:
@@ -1415,12 +1444,14 @@ always listed in the same, predictable order.
     NEEDS_REVIEW:
     debian/sarge        Sarge
     debian/woody        Woody
-    ubuntu/hoary        Hoary
-    evolution           Evolution
-    firefox             Mozilla Firefox
-    netapplet           NetApplet
     BLOCKED:
     ubuntu/grumpy       Grumpy
+
+You can also select by status.
+
+    >>> print_list(get_target_names(RosettaImportStatus.APPROVED))
+    kubuntu/krunch      Krunch
+    evolution           Evolution
 
 
 == cleanUpQueue ==

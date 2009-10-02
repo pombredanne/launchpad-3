@@ -578,6 +578,7 @@ def delete_unwanted_files(con):
                 next_wanted_content_id = get_next_wanted_content_id()
 
                 if (config.librarian_server.upstream_host is None
+                        and next_wanted_content_id is not None
                         and next_wanted_content_id < content_id):
                     log.error(
                         "LibraryFileContent %d exists in the database but "
