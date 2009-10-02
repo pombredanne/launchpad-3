@@ -1,4 +1,5 @@
-== checkwatches.py ==
+checkwatches.py
+===============
 
 The updating and syncing of bug watches is done by a cronscript. We
 can't test it properly, since we don't yet have a mock HTTP server we
@@ -212,7 +213,8 @@ the error that was raised:
     'Unsupported Bugtracker'
 
 
-== Batched Bugwatch Updating ==
+Batched Bugwatch Updating
+-------------------------
 
 checkwatches.py will only update those bugs that need updating, but
 there is a further limit on the amount of bugs which will be updated for
@@ -259,3 +261,10 @@ requests are actually made.
     INFO Updating 5 watches for 5 bugs on http://bugs.example.com
     ERROR Connection timed out when updating ... (OOPS-...)
 
+
+Updating all the watches on a bug tracker
+-----------------------------------------
+
+It's possible to update all the watches on a bug tracker using
+checkwatches. This is handled by the Checkwatches script's
+updateAllWatches() method.

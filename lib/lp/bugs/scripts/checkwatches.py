@@ -260,6 +260,86 @@ class BugWatchUpdater(object):
                 self.txn.abort()
         self._logout()
 
+    def updateAllWatches(self, bug_tracker_name, batch_size):
+        """Update all the watches for `bug_tracker_name`.
+
+        :param bug_tracker_name: The name of the bug tracker to update.
+        :param batch_size: The number of bug watches to update in one
+            go. If zero, all bug watches will be updated.
+        """
+        self._login()
+        bug_tracker = getUtility(IBugTrackerSet).getByName(bug_tracker_name)
+        if bug_tracker is None:
+            # If the bug tracker is nonsense then just ignore it.
+            self.log.info(
+                "Bug tracker '%s' doesn't exist. Ignoring." %
+                bug_tracker_name)
+            return
+        elif bug_tracker.watches.count() == 0:
+            # If there are no watches to update, ignore the bug tracker.
+            self.log.info(
+                "Bug tracker '%s' doesn't have any watches. Ignoring." %
+                bug_tracker_name)
+            return
+
+        # Reset all the bug watches for the bug tracker.
+        self.log.info(
+            "Resetting %s bug watches for bug tracker %s" %
+            (bug_tracker.watches.count(), bug_tracker_name))
+        bug_tracker.resetWatches()
+
+        # Take a copy of the bug tracker URL. If the transaction fails
+        # later we can't refer to the baseurl attribute of the bug
+        # tracker.
+        bug_tracker_url = bug_tracker.baseurl
+
+        # Loop over the bug watches in batches as specificed by
+        # batch_size until there are none left to update.
+        self.log.info(
+            "Updating %s watches on bug tracker '%s'" %
+            (bug_tracker.watches.count(), bug_tracker_name))
+        iteration = 0
+        has_watches_to_update = True
+        while has_watches_to_update:
+            self.txn.begin()
+            try:
+                self.updateBugTracker(bug_tracker, batch_size)
+                self.txn.commit()
+            except (KeyboardInterrupt, SystemExit):
+                # We should never catch KeyboardInterrupt or SystemExit.
+                raise
+            except Exception, error:
+                # If something unexpected goes wrong, we log it and
+                # continue: a failure shouldn't break the updating of
+                # the other bug trackers.
+                info = sys.exc_info()
+                properties = [
+                    ('bugtracker', bug_tracker_name),
+                    ('baseurl', bug_tracker_url)]
+                if isinstance(error, BugWatchUpdateError):
+                    self.error(
+                        str(error), properties=properties, info=info)
+                elif isinstance(error, socket.timeout):
+                    self.error(
+                        "Connection timed out when updating %s" %
+                        bug_tracker_url,
+                        properties=properties, info=info)
+                else:
+                    self.error(
+                        "An exception was raised when updating %s" %
+                        bug_tracker_url,
+                        properties=properties, info=info)
+                self.txn.abort()
+                break
+
+            watches_left = bug_tracker.getBugWatchesNeedingUpdate(23).count()
+            self.log.info(
+                "%s watches left to check on bug tracker '%s'" %
+                (watches_left, bug_tracker_name))
+            has_watches_to_update = watches_left > 0
+
+        self._logout()
+
     def _getBugWatch(self, bug_watch_id):
         """Return the bug watch with id `bug_watch_id`."""
         return getUtility(IBugWatchSet).get(bug_watch_id)

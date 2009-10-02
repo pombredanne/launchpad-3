@@ -41,30 +41,6 @@ class CheckWatches(LaunchpadCronScript):
             help="Update all the watches on the bug tracker, regardless of "
                  "whether or not they need checking.")
 
-    def update_all_watches(self, bug_tracker_name, batch_size):
-        """Update all the watches for `bug_tracker_name`.
-
-        :param bug_tracker_name: The name of the bug tracker to update.
-        :param batch_size: The number of bug watches to update in one
-            go. If zero, all bug watches will be updated.
-        """
-        bug_tracker = getUtility(IBugTrackerSet).getByName(bug_tracker_name)
-        if bug_tracker is None:
-            # If the bug tracker is nonsense then just ignore it.
-            self.logger.info(
-                "Bug tracker %s doesn't exist. Ignoring." % bug_tracker_name)
-            return
-        elif bug_tracker.watches.count() == 0:
-            # If there are no watches to update, ignore the bug tracker.
-            self.logger.info(
-                "Bug tracker %s doesn't have any watches. Ignoring." %
-                bug_tracker_name)
-            return
-
-        self.logger.info(
-            "Resetting %s bug watches for bug tracker %s" %
-            (bug_tracker.watches.count(), bug_tracker_name))
-
     def main(self):
         start_time = time.time()
 
@@ -77,9 +53,9 @@ class CheckWatches(LaunchpadCronScript):
 
         if self.options.update_all and len(self.options.bug_trackers) > 0:
             # The user has requested that we update *all* the watches
-            # for these bugtrackers.
-            for bugtracker in self.options.bug_trackers:
-                self.update_all_watches(bugtracker, batch_size)
+            # for these bugtrackers
+            for bug_tracker in self.options.bug_trackers:
+                updater.updateAllWatches(bug_tracker, batch_size)
         else:
             # Otherwise we just update those watches that need updating,
             # and we let the BugWatchUpdater decide which those are.
