@@ -369,15 +369,15 @@ Person.
 
     >>> bugfilters_portlet_view = create_view(firefox, '+portlet-bugfilters')
 
-    >>> print bugfilters_portlet_view.getOpenBugsURL()
+    >>> print bugfilters_portlet_view.open_bugs_url
     +bugs?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed
     >>> print bugfilters_portlet_view.context.open_bugtasks.count()
     3
 
-    >>> print bugfilters_portlet_view.getBugsAssignedToMeURL()
+    >>> print bugfilters_portlet_view.my_bugs_url
     +bugs?search=Search&field.assignee=name12
 
-    >>> print bugfilters_portlet_view.getBugsAssignedToMeCount()
+    >>> print bugfilters_portlet_view.my_bugs_count
     1
 
 If Sample Person were assigned to second bug, but that bug was a dupe,
@@ -395,12 +395,12 @@ it would not be included in the counts.
     ...     bugfilters_portlet_view.user)
     >>> flush_database_updates()
 
-    >>> print bugfilters_portlet_view.getBugsAssignedToMeCount()
+    >>> print bugfilters_portlet_view.my_bugs_count
     1
 
 The critical bugs link and counts consider only unresolved bugs.
 
-    >>> print bugfilters_portlet_view.getCriticalBugsURL()
+    >>> print bugfilters_portlet_view.critical_bugs_url
     +bugs?search=Search&field.importance=Critical&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed
 
     >>> bugfilters_portlet_view.context.critical_bugtasks.count()
@@ -421,24 +421,11 @@ The critical bugs link and counts consider only unresolved bugs.
 
 Moving along...
 
-    >>> print bugfilters_portlet_view.getNewBugsURL()
+    >>> print bugfilters_portlet_view.new_bugs_url
     +bugs?search=Search&field.status=New
 
     >>> print bugfilters_portlet_view.context.new_bugtasks.count()
     3
-
-    >>> print bugfilters_portlet_view.getUnassignedBugsURL()
-    +bugs?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&assignee_option=none
-    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
-    1
-
-And finally, all bugs ever reported.
-
-    >>> print bugfilters_portlet_view.getAllBugsEverReportedURL()
-    +bugs?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&field.status=Fix+Released&field.status=Invalid&field.status=Won%27t+Fix&field.omit_dupes.used=
-
-    >>> print bugfilters_portlet_view.context.all_bugtasks.count()
-    4
 
 All counts ignore bugtasks with status Unknown. Let's set bug four's
 status in firefox to Unknown and note how the count is decremented by 1
