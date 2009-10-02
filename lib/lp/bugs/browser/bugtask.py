@@ -293,16 +293,22 @@ def get_sortorder_from_request(request):
         return ["-importance"]
 
 
-def get_default_search_params(user, request):
+def get_default_search_params(user):
     """Return a BugTaskSearchParams instance with default values.
 
     By default, a search includes any bug that is unresolved and not a
     duplicate of another bug.
+
+    If this search will be used to display a list of bugs to the user
+    it may be a good idea to set the orderby attribute using
+    get_sortorder_from_request():
+
+      >>> params = get_default_search_params(user)
+      >>> params.orderby = get_sortorder_from_request(request)
+
     """
-    search_params = BugTaskSearchParams(
+    return BugTaskSearchParams(
         user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES), omit_dupes=True)
-    search_params.orderby = get_sortorder_from_request(request)
-    return search_params
 
 
 OLD_BUGTASK_STATUS_MAP = {
@@ -1765,14 +1771,14 @@ class BugsStatsMixin(BugsInfoMixin):
     @property
     def bugs_fixed_elsewhere_count(self):
         """A count of bugs fixed elsewhere."""
-        params = get_default_search_params(self.user, self.request)
+        params = get_default_search_params(self.user)
         params.resolved_upstream = True
         return self.context.searchTasks(params).count()
 
     @property
     def open_cve_bugs_count(self):
         """A count of open bugs linked to CVEs."""
-        params = get_default_search_params(self.user, self.request)
+        params = get_default_search_params(self.user)
         params.has_cve = True
         return self.context.searchTasks(params).count()
 
@@ -1786,7 +1792,7 @@ class BugsStatsMixin(BugsInfoMixin):
             return None
         if self.context.official_malone:
             return None
-        params = get_default_search_params(self.user, self.request)
+        params = get_default_search_params(self.user)
         params.pending_bugwatch_elsewhere = True
         return self.context.searchTasks(params).count()
 
@@ -1826,7 +1832,7 @@ class BugsStatsMixin(BugsInfoMixin):
         if self.user is None:
             return None
         else:
-            params = get_default_search_params(self.user, self.request)
+            params = get_default_search_params(self.user)
             params.assignee = self.user
             return self.context.searchTasks(params).count()
 
@@ -2369,7 +2375,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             else:
                 form_values['tag'] = tags
 
-        search_params = get_default_search_params(self.user, self.request)
+        search_params = get_default_search_params(self.user)
+        search_params.orderby = get_sortorder_from_request(self.request)
         for name, value in form_values.items():
             setattr(search_params, name, value)
         return search_params
