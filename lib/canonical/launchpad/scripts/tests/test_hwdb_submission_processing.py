@@ -462,6 +462,60 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             'Unexpected value of HALDevice.usb_product_id for Non-USB '
             'device.')
 
+    def testHALDeviceScsiVendor(self):
+        """Test of HALDevice.scsi_vendor."""
+        properties = {
+            'scsi.vendor': ('SEAGATE', 'string'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             'SEAGATE', device.scsi_vendor,
+            'Unexpected value of HALDevice.scsi_vendor.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.scsi_vendor,
+            'Unexpected value of HALDevice.scsi_vendor for Non-SCSI device.')
+
+    def testHALDeviceScsiModel(self):
+        """Test of HALDevice.scsi_model."""
+        properties = {
+            'scsi.model': ('ST1234567', 'string'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             'ST1234567', device.scsi_model,
+            'Unexpected value of HALDevice.scsi_model.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.scsi_model,
+            'Unexpected value of HALDevice.scsi_model for Non-SCSI device.')
+
+    def testHALDeviceDriverName(self):
+        """Test of HALDevice.driver_name."""
+        properties = {
+            'info.linux.driver': ('ahci', 'string'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             'ahci', device.driver_name,
+            'Unexpected value of HALDevice.driver_name.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.driver_name,
+            'Unexpected value of HALDevice.driver_name for Non-SCSI device.')
+
     def testHalDeviceRawBus(self):
         """test of HALDevice.raw_bus."""
         properties = {
