@@ -1281,58 +1281,58 @@ class BaseDevice:
     @property
     def device_id(self):
         """A unique ID for this device."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def pci_class(self):
         """The PCI device class of the device or None for Non-PCI devices."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def pci_subclass(self):
         """The PCI device sub-class of the device or None for Non-PCI devices.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def usb_vendor_id(self):
         """The USB vendor ID of the device or None for Non-USB devices."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def usb_product_id(self):
         """The USB product ID of the device or None for Non-USB devices."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def scsi_vendor(self):
         """The SCSI vendor name of the device or None for Non-SCSI devices."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def scsi_model(self):
         """The SCSI model name of the device or None for Non-SCSI devices."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def vendor(self):
         """The vendor of this device."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def product(self):
         """The vendor of this device."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def vendor_id(self):
         """The vendor ID of this device."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def product_id(self):
         """The product ID of this device."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def vendor_id_for_db(self):
@@ -1469,7 +1469,7 @@ class BaseDevice:
     @property
     def raw_bus(self):
         """Return the device bus as specified by HAL or udev."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def real_bus(self):
