@@ -526,6 +526,11 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         """Does the series have any targeted bugtasks or specifications."""
         return len(self.bugtasks) > 0 or len(self.specifications) > 0
 
+    @property
+    def has_linked_branch(self):
+        """Is the series linked to a branch."""
+        return self.context.branch is not None
+
     @cachedproperty
     def product_release_files(self):
         """A list of all `IProductReleaseFile`s that belong to this series."""

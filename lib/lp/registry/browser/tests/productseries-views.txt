@@ -229,6 +229,8 @@ deleted are available.
     []
     >>> view.product_release_files
     []
+    >>> view.has_linked_branch
+    False
 
 Most series that are deleted do not have any related objects, but a small
 portion do.
@@ -270,6 +272,9 @@ portion do.
     ...         print spec.goal.name
     rabbit
     0.1
+
+    >>> view.has_linked_branch
+    True
 
     # Listing and deleting product release files is done in
     # product-release-views because they require the Librarian to be running.
