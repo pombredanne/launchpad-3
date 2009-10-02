@@ -1684,47 +1684,62 @@ class BugsInfoMixin:
     """Contains several properties yielding aggregate bug information.
     """
 
-    @property
-    def bugs_fixed_elsewhere_info(self):
-        """Return a dict with count and URL of bugs fixed elsewhere.
+    # Bugs fixed elsewhere.
 
-        The available keys are:
-        * 'count' - The number of bugs.
-        * 'url' - The URL of the search.
-        """
+    @property
+    def bugs_fixed_elsewhere_url(self):
+        """A URL to a list of bugs fixed elsewhere."""
+        return "%s?field.status_upstream=resolved_upstream" % (
+            canonical_url(self.context, view_name='+bugs'))
+
+    @property
+    def bugs_fixed_elsewhere_count(self):
+        """A count of bugs fixed elsewhere."""
         params = get_default_search_params(self.user, self.request)
         params.resolved_upstream = True
-        count = self.context.searchTasks(params).count
-        search_url = "%s?field.status_upstream=resolved_upstream" % (
-            canonical_url(self.context, view_name='+bugs'))
-        return dict(count=count, url=search_url)
+        return self.context.searchTasks(params).count()
+
+    # Open bugs linked to CVEs.
 
     @property
-    def open_cve_bugs_info(self):
-        """Return a dict with count and URL of open bugs linked to CVEs.
+    def open_cve_bugs_url(self):
+        """A URL to a list of open bugs linked to CVEs."""
+        return "%s?field.has_cve=on" % (
+            canonical_url(self.context, view_name='+bugs'))
 
-        The available keys are:
-        * 'count' - The number of bugs.
-        * 'url' - The URL of the search.
-        """
+    @property
+    def open_cve_bugs_count(self):
+        """A count of open bugs linked to CVEs."""
         params = get_default_search_params(self.user, self.request)
         params.has_cve = True
-        count = self.context.searchTasks(params).count
-        search_url = "%s?field.has_cve=on" % (
-            canonical_url(self.context, view_name='+bugs'))
-        has_report = queryMultiAdapter(
-            (self.context, self.request), name='+cve') is not None
-        return dict(count=count, url=search_url, has_report=has_report)
+        return self.context.searchTasks(params).count()
 
     @property
-    def pending_bugwatches_info(self):
-        """Return a dict with count and URL of bugs that need a bugwatch.
+    def open_cve_bugs_has_report(self):
+        """Whether or not the context has a CVE report page."""
+        return queryMultiAdapter(
+            (self.context, self.request), name='+cve') is not None
+
+    # Bugs with pending watches.
+
+    @property
+    def pending_bugwatches_url(self):
+        """A URL to a list of bugs that need a bugwatch.
 
         None is returned if the context is not an upstream product.
+        """
+        if not IProduct.providedBy(self.context):
+            return None
+        if self.context.official_malone:
+            return None
+        return "%s?field.status_upstream=pending_bugwatch" % (
+            canonical_url(self.context, view_name='+bugs'))
 
-        The available keys are:
-        * 'count' - The number of bugs.
-        * 'url' - The URL of the search.
+    @property
+    def pending_bugwatches_count(self):
+        """A count of bugs that need a bugwatch.
+
+        None is returned if the context is not an upstream product.
         """
         if not IProduct.providedBy(self.context):
             return None
@@ -1732,70 +1747,97 @@ class BugsInfoMixin:
             return None
         params = get_default_search_params(self.user, self.request)
         params.pending_bugwatch_elsewhere = True
-        count = self.context.searchTasks(params).count
-        search_url = "%s?field.status_upstream=pending_bugwatch" % (
-            canonical_url(self.context, view_name='+bugs'))
-        return dict(count=count, url=search_url)
+        return self.context.searchTasks(params).count()
+
+    # Bugs that can expire.
 
     @property
-    def expirable_bugs_info(self):
-        """Return a dict with count and url of bugs that can expire, or None.
+    def expirable_bugs_url(self):
+        """A URL to a list of bugs that can expire, or None.
 
         If the bugtarget is not a supported implementation, or its pillar
         does not have enable_bug_expiration set to True, None is returned.
         The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
         or `IProductSeries`.
-
-        The available keys are:
-        * 'count' - The number of bugs.
-        * 'url' - The URL of the search, or None.
         """
-        if not target_has_expirable_bugs_listing(self.context):
-            return None
-        count = getUtility(IBugTaskSet).findExpirableBugTasks(
-            0, user=self.user, target=self.context).count
-        url = canonical_url(self.context, view_name='+expirable-bugs')
-        return dict(count=count, url=url)
-
-    @property
-    def new_bugs_info(self):
-        """Return a dict with new bugs info."""
-        return dict(
-            count=self.context.new_bugtasks.count,
-            url=get_buglisting_search_filter_url(
-                status=BugTaskStatus.NEW.title))
-
-    @property
-    def open_bugs_info(self):
-        """Return a dict with open bugs info."""
-        return dict(
-            count=self.context.open_bugtasks.count,
-            url=canonical_url(
-                self.context, rootsite='bugs', view_name='+bugs'))
-
-    @property
-    def critical_bugs_info(self):
-        """Return a dict with critical bugs info."""
-        return dict(
-            count=self.context.critical_bugtasks.count,
-            url=get_buglisting_search_filter_url(
-                status=[status.title for status
-                        in UNRESOLVED_BUGTASK_STATUSES],
-                importance=BugTaskImportance.CRITICAL.title))
-
-    @property
-    def my_bugs_info(self):
-        """Return a dict with info on bugs assigned to the user, or None."""
-        if self.user:
-            return dict(
-                count=self.context.searchTasks(
-                    BugTaskSearchParams(
-                        user=self.user, assignee=self.user,
-                        status=any(*UNRESOLVED_BUGTASK_STATUSES),
-                        omit_dupes=True)).count,
-                url=get_buglisting_search_filter_url(assignee=self.user.name))
+        if target_has_expirable_bugs_listing(self.context):
+            return canonical_url(self.context, view_name='+expirable-bugs')
         else:
             return None
+
+    @property
+    def expirable_bugs_count(self):
+        """A count of bugs that can expire, or None.
+
+        If the bugtarget is not a supported implementation, or its pillar
+        does not have enable_bug_expiration set to True, None is returned.
+        The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
+        or `IProductSeries`.
+        """
+        if target_has_expirable_bugs_listing(self.context):
+            return getUtility(IBugTaskSet).findExpirableBugTasks(
+                0, user=self.user, target=self.context).count()
+        else:
+            return None
+
+    # New bugs.
+
+    @property
+    def new_bugs_url(self):
+        """A URL to a page of new bugs."""
+        return get_buglisting_search_filter_url(
+            status=BugTaskStatus.NEW.title)
+
+    @property
+    def new_bugs_count(self):
+        """A count of new bugs."""
+        return self.context.new_bugtasks.count()
+
+    # Open bugs.
+
+    @property
+    def open_bugs_url(self):
+        """A URL to a list of open bugs."""
+        return canonical_url(self.context, view_name='+bugs')
+
+    @property
+    def open_bugs_count(self):
+        """A count of open bugs."""
+        return self.context.open_bugtasks.count()
+
+    # Critical bugs.
+
+    @property
+    def critical_bugs_url(self):
+        """A URL to a list of critical bugs."""
+        return get_buglisting_search_filter_url(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
+            importance=BugTaskImportance.CRITICAL.title)
+
+    @property
+    def critical_bugs_count(self):
+        """A count of critical bugs."""
+        return self.context.critical_bugtasks.count()
+
+    # User bugs.
+
+    @property
+    def my_bugs_url(self):
+        """A URL to a list of bugs assigned to the user, or None."""
+        if self.user is None:
+            return None
+        else:
+            return get_buglisting_search_filter_url(assignee=self.user.name)
+
+    @property
+    def my_bugs_count(self):
+        """A count of bugs assigned to the user, or None."""
+        if self.user is None:
+            return None
+        else:
+            params = get_default_search_params(self.user, self.request)
+            params.assignee = self.user
+            return self.context.searchTasks(params).count()
 
 
 class BugListingPortletView(LaunchpadView, BugsInfoMixin):

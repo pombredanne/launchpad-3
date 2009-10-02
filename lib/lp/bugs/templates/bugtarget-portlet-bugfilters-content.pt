@@ -1,63 +1,60 @@
 <tal:portlet-bug-filters-content
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:metal="http://xml.zope.org/namespaces/metal">
-  <tr tal:define="open_bugs_info view/open_bugs_info">
-    <td class="bugs-count" tal:content="open_bugs_info/count" />
+  <tr>
+    <td class="bugs-count" tal:content="view/open_bugs_count" />
     <td class="bugs-link">
-      <a tal:attributes="href open_bugs_info/url">Open bugs</a>
+      <a tal:attributes="href view/open_bugs_url">Open bugs</a>
     </td>
   </tr>
-  <tr tal:condition="view/user"
-      tal:define="my_bugs_info view/my_bugs_info">
-    <td class="bugs-count" tal:content="my_bugs_info/count" />
+  <tr tal:condition="view/user">
+    <td class="bugs-count" tal:content="view/my_bugs_count" />
     <td class="bugs-link">
-      <a tal:attributes="href my_bugs_info/url">Bugs assigned to me</a>
+      <a tal:attributes="href view/my_bugs_url">Bugs assigned to me</a>
     </td>
   </tr>
-  <tr tal:define="critical_bugs_info view/critical_bugs_info">
-    <td class="bugs-count" tal:content="critical_bugs_info/count" />
+  <tr>
+    <td class="bugs-count" tal:content="view/critical_bugs_count" />
     <td class="bugs-link">
-      <a tal:attributes="href critical_bugs_info/url">Critical bugs</a>
+      <a tal:attributes="href view/critical_bugs_url">Critical bugs</a>
     </td>
   </tr>
-  <tr tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">
-    <td class="bugs-count" tal:content="fixed_elsewhere/count" />
+  <tr>
+    <td class="bugs-count" tal:content="view/bugs_fixed_elsewhere_count" />
     <td class="bugs-link">
-      <a tal:attributes="href fixed_elsewhere/url">
+      <a tal:attributes="href view/bugs_fixed_elsewhere_url">
         Bugs fixed elsewhere
       </a>
     </td>
   </tr>
-  <tr tal:define="new_bugs_info view/new_bugs_info">
-    <td class="bugs-count" tal:content="new_bugs_info/count" />
+  <tr>
+    <td class="bugs-count" tal:content="view/new_bugs_count" />
     <td class="bugs-link">
-      <a tal:attributes="href new_bugs_info/url">New bugs</a>
+      <a tal:attributes="href view/new_bugs_url">New bugs</a>
     </td>
   </tr>
-  <tr tal:define="cve_bugs_info view/open_cve_bugs_info">
-    <td class="bugs-count" tal:content="cve_bugs_info/count" />
+  <tr>
+    <td class="bugs-count" tal:content="view/open_cve_bugs_count" />
     <td class="bugs-link">
-      <a tal:attributes="href cve_bugs_info/url">Open CVE bugs</a>
-      <span tal:condition="cve_bugs_info/has_report">
+      <a tal:attributes="href view/open_cve_bugs_url">Open CVE bugs</a>
+      <span tal:condition="view/open_cve_bugs_has_report">
         - <a tal:attributes="href context/fmt:url/+cve">CVE reports</a>
       </span>
     </td>
   </tr>
-  <tr tal:define="expirable_bugs_info view/expirable_bugs_info"
-      tal:condition="expirable_bugs_info">
-    <td class="bugs-count" tal:content="expirable_bugs_info/count" />
+  <tr tal:condition="view/expirable_bugs_url">
+    <td class="bugs-count" tal:content="view/expirable_bugs_count" />
     <td class="bugs-link">
-      <a tal:attributes="href expirable_bugs_info/url">
+      <a tal:attributes="href view/expirable_bugs_url">
         Incomplete bugs
       </a>
       (can expire)
     </td>
   </tr>
-  <tr tal:define="pending_bugwatches view/pending_bugwatches_info"
-      tal:condition="pending_bugwatches">
-    <td class="bugs-count" tal:content="pending_bugwatches/count" />
+  <tr tal:condition="view/pending_bugwatches_url">
+    <td class="bugs-count" tal:content="view/pending_bugwatches_count" />
     <td class="bugs-link">
-      <a tal:attributes="href pending_bugwatches/url">
+      <a tal:attributes="href view/pending_bugwatches_url">
         Bugs need forwarding upstream
       </a>
     </td>
