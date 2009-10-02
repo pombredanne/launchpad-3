@@ -16,6 +16,9 @@ from canonical.testing import ZopelessAppServerLayer
 
 from lp.testing import map_branch_contents, TestCaseWithFactory
 
+from lp.translations.scripts.translations_to_branch import (
+    ExportTranslationsToBranch)
+
 
 class TestExportTranslationsToBranch(TestCaseWithFactory):
 
@@ -118,6 +121,34 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
         self.assertEqual(
             None, re.search("INFO\s+Committed [0-9]+ file", stderr))
+
+
+class TestExportToStackedBranch(TestCaseWithFactory):
+    """Test workaround for bzr bug 375013."""
+    layer = ZopelessAppServerLayer
+
+    def setUp(self):
+        super(TestExportToStackedBranch, self).setUp()
+        self.useBzrBranches()
+
+        base_branch, tree = self.create_branch_and_tree(hosted=True)
+        base_bzrbranch = tree.branch
+
+        stacked_branch = self.factory.makeBranch(stacked_on=base_branch)
+        stacked_bzrbranch = self.createBzrBranch(stacked_branch)
+        stacked_bzrbranch.set_stacked_on_url(base_bzrbranch.base)
+
+    def test_export_to_shared_branch(self):
+        # The script knows how to deal with stacked branches.
+        # Otherwise, this would fail.
+        script = ExportTranslationsToBranch('reupload', test_args=[])
+        committer = script._prepareBranchCommit(self.stacked_branch)
+        try:
+            self.assertNotEqual(None, committer)
+            committer.writeFile('x.txt', 'x')
+            committer.commit("x!")
+        finally:
+            committer.unlock()
 
 
 def test_suite():

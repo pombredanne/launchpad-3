@@ -89,6 +89,10 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         :param db_branch: A `Branch`.
         :return: `DirectBranchCommit`.
         """
+        # XXX JeroenVermeulen 2009-09-30 bug=375013: It should become
+        # possible again to commit to these branches at some point.
+        # When that happens, remove this workaround and just call
+        # _makeDirectBranchCommit directly.
         committer = self._makeDirectBranchCommit(db_branch)
         if not db_branch.stacked_on:
             # The normal case.
@@ -96,9 +100,6 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         self.logger.info("Unstacking branch to work around bug 375013.")
         try:
-            # XXX JeroenVermeulen 2009-09-30 bug=375013: It should
-            # become possible again to commit to these branches at some
-            # point.  When that happens, remove this workaround.
             committer.bzrbranch.set_stacked_on_url(None)
         finally:
             committer.unlock()
