@@ -932,7 +932,8 @@ class BugTask(SQLBase, BugTaskMixin):
                     "to another project.")
         else:
             if (IDistributionSourcePackage.providedBy(target) and
-                target.distribution == self.target.distribution):
+                (target.distribution == self.target or
+                 target.distribution == self.target.distribution)):
                 self.sourcepackagename = target.sourcepackagename
             else:
                 raise IllegalTarget(
