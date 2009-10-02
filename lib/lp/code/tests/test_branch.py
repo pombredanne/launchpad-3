@@ -334,25 +334,33 @@ class TestWriteToBranch(PermissionTest):
         branch = self.makeOfficialPackageBranch()
         package = branch.sourcepackage
         person = self.factory.makePerson()
-        # Give 'person' permission to upload to 'package'.
+
+        # Person is not allowed to edit the branch presently.
+        self.assertCannotEdit(person, branch)
+
+        # Now give 'person' permission to upload to 'package'.
         archive = branch.distroseries.distribution.main_archive
         spn = package.sourcepackagename
         self.permission_set.newPackageUploader(archive, person, spn)
-
         # Make sure person *is* authorised to upload the source package
         # targeted by the branch at hand.
         self.assertCanUpload(person, spn, archive, None)
-        # Now person should be able to edit.
+
+        # Person still cannot edit the branch on the basis of ownership.
+        self.assertCannotEdit(person, branch)
+
+        # But it can edit it based on source package upload privileges.
         self.assertTrue(self.personMayEditBranch(person, branch))
 
-        # person2 has no upload rights ..
         person2 = self.factory.makePerson()
+        # person2 has no upload rights ..
         self.assertCannotUpload(
             ("The signer of this package has no upload rights to this "
              "distribution's primary archive.  Did you mean to upload to "
              "a PPA?"),
             person2, spn, archive, None)
         # .. and is not authorised to edit the branch.
+        self.assertCannotEdit(person2, branch)
         self.assertFalse(self.personMayEditBranch(person2, branch))
 
 
