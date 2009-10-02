@@ -12,10 +12,7 @@ Cron job to run daily to check all of the BugWatches
 import time
 import _pythonpath
 
-from zope.component import getUtility
-
 from canonical.config import config
-from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts.checkwatches import BugWatchUpdater
 from lp.services.scripts.base import LaunchpadCronScript
 
