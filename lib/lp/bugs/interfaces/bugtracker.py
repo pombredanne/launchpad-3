@@ -314,6 +314,9 @@ class IBugTracker(Interface):
     def destroySelf():
         """Delete this bug tracker."""
 
+    def resetWatches():
+        """Reset the lastchecked times of this BugTracker's `BugWatch`es."""
+
 
 class IBugTrackerSet(Interface):
     """A set of IBugTracker's.

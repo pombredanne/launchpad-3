@@ -1,3 +1,4 @@
+=====================================
 XML-RPC integration for mailing lists
 =====================================
 
@@ -11,7 +12,7 @@ see if there is any work for Mailman to do.
 
 
 Registered lists
-----------------
+================
 
 When there's nothing for Mailman to do, we'll just get an empty dictionary
 back from the XMLRPC call.
@@ -93,7 +94,7 @@ Launchpad.
 
 
 Creating the mailing lists
---------------------------
+==========================
 
 Mailman will attempt to satisfy the requested creation.  This will either
 succeed or fail, and this status is communicated back to Launchpad.  Let's say
@@ -158,7 +159,7 @@ create.
 
 
 Deactivating mailing lists
---------------------------
+==========================
 
 The other action that Mailman needs to take is to deactivate a list when the
 team owner requests it.  These also show up as pending actions when Mailman
@@ -220,7 +221,7 @@ deactivation failed for some reason.
 
 
 Modifying mailing lists
------------------------
+=======================
 
 Activate mailing lists can also be modified.  Currently the only modification
 supported is changing the list's welcome message.  Because deactivated and
@@ -289,7 +290,7 @@ the other...
 
 
 Error conditions
-----------------
+================
 
 Although we control both ends of this XMLRPC interface, it might still be
 possible to pass bad input, due to bugs and such.  The XMLRPC interface is
@@ -391,7 +392,7 @@ And of course, entirely bogus status strings aren't accepted either.
 
 
 Public teams
-------------
+============
 
 We provide a method to query whether or not a given team is public.  That's
 useful when deciding whether or not anonymous access to the team's mailing

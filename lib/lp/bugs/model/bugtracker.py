@@ -13,6 +13,7 @@ __all__ = [
 from datetime import datetime, timedelta
 from itertools import chain
 from pytz import timezone
+import transaction
 # splittype is not formally documented, but is in urllib.__all__, is
 # simple, and is heavily used by the rest of urllib, hence is unlikely
 # to change or go away.
@@ -30,7 +31,8 @@ from storm.locals import Bool
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, flush_database_updates
+from canonical.database.sqlbase import (
+    SQLBase, flush_database_updates, sqlvalues)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators.email import valid_email
@@ -484,6 +486,15 @@ class BugTracker(SQLBase):
         bugtracker_person = self.linkPersonToSelf(display_name, person)
 
         return person
+
+    def resetWatches(self):
+        """See `IBugTracker`."""
+        transaction.begin()
+        store = Store.of(self)
+        store.execute(
+            "UPDATE BugWatch SET lastchecked = NULL WHERE bugtracker = %s" %
+            sqlvalues(self))
+        transaction.commit()
 
 
 class BugTrackerSet:

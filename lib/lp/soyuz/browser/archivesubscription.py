@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSubscribersView',
+    'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
     'traverse_archive_subscription_for_subscriber'
     ]
@@ -34,10 +35,11 @@ from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IPersonalArchiveSubscription)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView)
+    canonical_url, LaunchpadView, Navigation)
 from canonical.widgets import DateWidget
 from canonical.widgets.popup import PersonPickerWidget
 
@@ -64,6 +66,12 @@ class PersonalArchiveSubscription:
     def displayname(self):
         """See `IPersonalArchiveSubscription`."""
         return "Access to %s" % self.archive.displayname
+
+    @property
+    def title(self):
+        """Required for default headings in templates."""
+        return self.displayname
+
 
 def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     """Return the subscription for a subscriber to an archive."""
@@ -110,6 +118,11 @@ class ArchiveSubscribersView(LaunchpadFormView):
     custom_widget('date_expires', CustomWidgetFactory(DateWidget))
     custom_widget('subscriber', PersonPickerWidget,
         header="Select the subscriber")
+
+    @property
+    def label(self):
+        """Return a label for the view's main heading."""
+        return "Manage access to " + self.context.title
 
     def initialize(self):
         """Ensure that we are dealing with a private archive."""
@@ -210,6 +223,11 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
     custom_widget('description', TextWidget, displayWidth=40)
     custom_widget('date_expires', CustomWidgetFactory(DateWidget))
 
+    @property
+    def label(self):
+        """Return a label for the view's main heading."""
+        return "Edit " + self.context.displayname
+
     def validate_update_subscription(self, action, data):
         """Ensure that the date of expiry is not in the past."""
         form.getWidgetsData(self.widgets, 'field', data)
@@ -241,12 +259,12 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
             self.context.subscriber.displayname)
         self.request.response.addNotification(notification)
 
-    @action(u'Cancel access', name='cancel')
+    @action(u'Revoke access', name='cancel')
     def cancel_subscription(self, action, data):
         """Cancel the context subscription."""
         self.context.cancel(self.user)
 
-        notification = "You have cancelled %s's subscription to %s." % (
+        notification = "You have revoked %s's access to %s." % (
             self.context.subscriber.displayname,
             self.context.archive.displayname)
         self.request.response.addNotification(notification)
@@ -264,6 +282,8 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
+
+    label = "Private PPA access"
 
     @cachedproperty
     def subscriptions_with_tokens(self):
@@ -293,6 +313,11 @@ class PersonArchiveSubscriptionView(LaunchpadView):
     has a current token), and the ability to generate and re-generate
     tokens.
     """
+
+    @property
+    def label(self):
+        """Return the label for the view's main heading."""
+        return self.context.title
 
     def initialize(self):
         """Process any posted actions."""

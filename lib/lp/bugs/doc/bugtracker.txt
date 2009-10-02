@@ -589,9 +589,30 @@ Resetting a tracker's watches
 -----------------------------
 
 It's possible to reset all the watches on a bug tracker by calling its
-resetAllWatches() method.
+resetWatches() method.
 
     >>> from operator import attrgetter
-    >>> for watch in sorted(
-    ...     mozilla_bugzilla.watches, key=attrgetter('id')):
-    ...     print watch.bug.id, watch.lastchecked
+
+    >>> def print_tracker_watch_times(bugtracker):
+    ...     for watch in sorted(
+    ...         bugtracker.watches, key=attrgetter('id')):
+    ...         if watch.lastchecked is not None:
+    ...             print watch.bug.id, "not None"
+    ...         else:
+    ...             print watch.bug.id, watch.lastchecked
+
+    >>> print_tracker_watch_times(mozilla_bugzilla)
+    2 not None
+    1 None
+    1 not None
+    1 not None
+
+Calling resetWatches() on mozilla_bugzilla will set all its
+lastchecked times to None.
+
+    >>> mozilla_bugzilla.resetWatches()
+    >>> print_tracker_watch_times(mozilla_bugzilla)
+    2 None
+    1 None
+    1 None
+    1 None
