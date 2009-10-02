@@ -18,10 +18,6 @@ see that there are '0 bugs need forwarding upstream'.
     >>> user_browser.title
     'Bugs in ALSA utilities'
 
-    >>> # Bug statistics are loaded asynchronously, but the link to
-    >>> # the content is embedded in the page for us to follow.
-    >>> user_browser.getLink(
-    ...     url="+bugtarget-portlet-bugfilters-content").click()
     >>> pending_watches_link = user_browser.getLink(
     ...     'Bugs fixed elsewhere')
 
@@ -76,10 +72,6 @@ He wants to link bugs to to the upstream bug tracker.
     >>> user_browser.title
     'Bugs in ALSA utilities'
 
-    >>> # Bug statistics are loaded asynchronously, but the link to
-    >>> # the content is embedded in the page for us to follow.
-    >>> user_browser.getLink(
-    ...     url="+bugtarget-portlet-bugfilters-content").click()
     >>> pending_watches_link = user_browser.getLink(
     ...     'Bugs need forwarding upstream')
     >>> pending_watches_link.click()
