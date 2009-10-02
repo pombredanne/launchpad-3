@@ -21,7 +21,7 @@ class TestEC2SessionName(unittest.TestCase):
         # valid names.
         name = session.EC2SessionName.make("fred")
         check = re.compile(
-            r'^fred/\d{4}-\d{2}-\d{2}-\d{4}/[0-9a-zA-Z]{32}$').match
+            r'^fred/\d{4}-\d{2}-\d{2}-\d{4}/[0-9a-zA-Z]{8}$').match
         self.failIf(check(name) is None, "Did not match %r" % name)
         possible_expires = [
             None, '1986-04-26-0123', timedelta(hours=10),

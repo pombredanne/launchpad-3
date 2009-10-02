@@ -65,7 +65,8 @@ class EC2SessionName(str):
         else:
             assert '/' not in expires
             assert find_datetime_string(expires) is not None
-        return cls("%s/%s/%s" % (base, expires, make_random_string()))
+        rand = make_random_string(8)
+        return cls("%s/%s/%s" % (base, expires, rand))
 
     @property
     def base(self):
