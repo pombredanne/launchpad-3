@@ -27,6 +27,13 @@ VALID_AMI_OWNERS = (
     # ...anyone else want in on the fun?
     )
 
+AUTH_FAILURE_MESSAGE = """\
+POSSIBLE CAUSES OF ERROR:
+- Did you sign up for EC2?
+- Did you put a credit card number in your AWS account?
+Please double-check before reporting a problem.
+"""
+
 
 def get_ip():
     """Uses AWS checkip to obtain this machine's IP address.
@@ -67,27 +74,15 @@ class EC2Account:
         sys.stdout.write(msg)
         sys.stdout.flush()
 
-    def _find_expired_artifacts(self, artifact_desc, artifacts):
+    def _find_expired_artifacts(self, artifacts):
         now = datetime.utcnow()
         for artifact in artifacts:
             session_name = EC2SessionName(artifact.name)
-            if session_name in (self.name, self.name.base):
-                self.log('Found %s %r\n' % (artifact_desc, artifact.name))
+            if (session_name in (self.name, self.name.base) or (
+                    session_name.base == self.name.base and
+                    session_name.expires is not None and
+                    session_name.expires < now)):
                 yield artifact
-            elif session_name.base == self.name.base:
-                if session_name.expires is None:
-                    self.log('Found %s %r without creation date; '
-                             'leaving.\n' % (artifact_desc, artifact.name))
-                elif session_name.expires >= now:
-                    self.log('Found recent %s %r; '
-                             'leaving\n' % (artifact_desc, artifact.name))
-                else:
-                    self.log('Found expired %s %r\n' % (
-                            artifact_desc, artifact.name))
-                    yield artifact
-            else:
-                self.log('Found other %s %r; leaving.\n' % (
-                        artifact_desc, artifact.name))
 
     def acquire_security_group(self, demo_networks=None):
         """Get a security group with the appropriate configuration.
@@ -120,16 +115,15 @@ class EC2Account:
     def delete_previous_security_groups(self):
         """Delete previously used security groups, if found."""
         expired_groups = self._find_expired_artifacts(
-            "security group", self.conn.get_all_security_groups())
+            self.conn.get_all_security_groups())
         for group in expired_groups:
             try:
                 group.delete()
             except EC2ResponseError, e:
-                if e.code == 'InvalidGroup.InUse':
-                    self.log('Cannot delete; security group '
-                             '%r in use.\n' % group.name)
-                else:
+                if e.code != 'InvalidGroup.InUse':
                     raise
+                self.log('Cannot delete; security group '
+                         '%r in use.\n' % group.name)
             else:
                 self.log('Deleted security group %r.' % group.name)
 
@@ -142,7 +136,7 @@ class EC2Account:
     def delete_previous_key_pairs(self):
         """Delete previously used keypairs, if found."""
         expired_key_pairs = self._find_expired_artifacts(
-            "key pair", self.conn.get_all_key_pairs())
+            self.conn.get_all_key_pairs())
         for key_pair in expired_key_pairs:
             try:
                 key_pair.delete()
@@ -150,16 +144,12 @@ class EC2Account:
                 if e.code != 'InvalidKeyPair.NotFound':
                     if e.code == 'AuthFailure':
                         # Inserted because of previous support issue.
-                        self.log(
-                            'POSSIBLE CAUSES OF ERROR:\n'
-                            '  Did you sign up for EC2?\n'
-                            '  Did you put a credit card number in your AWS '
-                            'account?\n'
-                            'Please doublecheck before reporting a '
-                            'problem.\n')
+                        self.log(AUTH_FAILURE_MESSAGE)
                     raise
                 self.log('Cannot delete; key pair not '
                          'found %r\n' % key_pair.name)
+            else:
+                self.log('Deleted key pair %r.' % key_pair.name)
 
     def collect_garbage(self):
         """Remove any old keys and security groups."""
