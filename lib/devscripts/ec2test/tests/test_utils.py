@@ -38,12 +38,24 @@ class TestDateTimeUtils(unittest.TestCase):
 class TestRandomUtils(unittest.TestCase):
     """Tests for randomness related utilities."""
 
+    hex_chars = frozenset('0123456789abcdefABCDEF')
+
     def test_make_random_string(self):
         rand_a = utils.make_random_string()
         rand_b = utils.make_random_string()
         self.failIfEqual(rand_a, rand_b)
         self.failUnlessEqual(32, len(rand_a))
         self.failUnlessEqual(32, len(rand_b))
-        hex_chars = set('0123456789abcdefABCDEF')
-        self.failUnless(hex_chars.issuperset(rand_a))
-        self.failUnless(hex_chars.issuperset(rand_b))
+        self.failUnless(self.hex_chars.issuperset(rand_a))
+        self.failUnless(self.hex_chars.issuperset(rand_b))
+
+    def test_make_random_string_with_length(self):
+        for length in (8, 16, 64):
+            rand = utils.make_random_string(length)
+            self.failUnlessEqual(length, len(rand))
+            self.failUnless(self.hex_chars.issuperset(rand))
+
+    def test_make_random_string_with_bad_length(self):
+        # length must be a multiple of 2.
+        self.failUnlessRaises(
+            AssertionError, utils.make_random_string, 15)

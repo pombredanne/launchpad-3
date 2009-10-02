@@ -45,10 +45,11 @@ def find_datetime_string(text):
             *(int(part) for part in match.groups()))
 
 
-def make_random_string():
+def make_random_string(length=32):
     """Return a simple random UUID.
 
     The uuid module is only available in Python 2.5 and above, but a
     simple non-RFC-compliant hack here is sufficient.
     """
-    return binascii.hexlify(os.urandom(16))
+    assert length % 2 == 0, "length must be a multiple of 2"
+    return binascii.hexlify(os.urandom(length/2))
