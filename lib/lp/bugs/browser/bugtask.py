@@ -1696,10 +1696,6 @@ class BugsInfoMixin:
     """
 
     @property
-    def _default_search_params(self):
-        return get_default_search_params(self.user, self.request)
-
-    @property
     def bugs_fixed_elsewhere_info(self):
         """Return a dict with count and URL of bugs fixed elsewhere.
 
@@ -1708,7 +1704,7 @@ class BugsInfoMixin:
         * 'url' - The URL of the search.
         * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
-        params = self._default_search_params
+        params = get_default_search_params(self.user, self.request)
         params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
         count = fixed_elsewhere.count()
@@ -1727,7 +1723,7 @@ class BugsInfoMixin:
         * 'url' - The URL of the search.
         * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
-        params = self._default_search_params
+        params = get_default_search_params(self.user, self.request)
         params.has_cve = True
         open_cve_bugs = self.context.searchTasks(params)
         count = open_cve_bugs.count()
@@ -1754,7 +1750,7 @@ class BugsInfoMixin:
             return None
         if self.context.official_malone:
             return None
-        params = self._default_search_params
+        params = get_default_search_params(self.user, self.request)
         params.pending_bugwatch_elsewhere = True
         pending_bugwatch_elsewhere = self.context.searchTasks(params)
         count = pending_bugwatch_elsewhere.count()
