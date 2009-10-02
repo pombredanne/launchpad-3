@@ -12,7 +12,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing import DatabaseFunctionalLayer
 
-from lp.archiveuploader.permission import verify_upload
+from lp.archiveuploader.permission import (
+    person_may_edit_branch, verify_upload)
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -271,57 +272,6 @@ class TestWriteToBranch(PermissionTest):
         exception = verify_upload(person, spn, archive, component)
         self.assertEqual(reason, str(exception))
 
-    def personMayEditBranch(self, person, branch):
-        """Return True if person may edit branch.
-
-        A person P may be allowed to edit the branch B on the following
-        grounds:
-
-          - P is owner of B or a member of the team owning B
-          - B is a source package branch (i.e. a branch linked to a
-            source package SP in the distro series DS, component C) and
-            - P is authorised to upload SP in DS.distribution.main_archive
-            - P is authorised to upload to C in DS.distribution.main_archive
-            - P is authorised to upload SP via a package set
-
-        Please note: this method is probably not in the proper place and needs
-        to find a better home.
-        """
-        def current_component(ds, package):
-            releases = ds.getCurrentSourceReleases(
-                [package.sourcepackagename])
-            return releases.get(package, None)
-
-        result = check_permission('launchpad.Edit', branch)
-        # P is owner of B or a member of the team owning B
-        if result == True:
-            return result
-
-        # Check whether we're dealing with a source package branch and
-        # whether person is authorised to upload the respective source
-        # package.
-        package = branch.sourcepackage
-        if package is None:
-            # No package .. hmm .. this can't be a source package branch
-            # then. Abort.
-            return False
-
-        distroseries = branch.distroseries
-        if distroseries is None:
-            # No distro series? Very fishy .. abort.
-            return False
-
-        archive = branch.distroseries.distribution.main_archive
-        spn = package.sourcepackagename
-        component = current_component(distroseries, package)
-
-        # Is person authorised to upload the source package this branch
-        # is targeting?
-        result = verify_upload(person, spn, archive, component)
-        # verify_upload() indicates that person *is* allowed to upload by
-        # returning None.
-        return result is None
-        
     def test_package_upload_permissions_grant_branch_edit(self):
         # If you can upload to the package, then you are also allowed to write
         # to the branch.
@@ -335,7 +285,7 @@ class TestWriteToBranch(PermissionTest):
 
         # Person is not allowed to edit the branch presently.
         self.assertCannotEdit(person, branch)
-        self.assertFalse(self.personMayEditBranch(person, branch))
+        self.assertFalse(person_may_edit_branch(person, branch))
 
         # Now give 'person' permission to upload to 'package'.
         archive = branch.distroseries.distribution.main_archive
@@ -349,7 +299,7 @@ class TestWriteToBranch(PermissionTest):
         self.assertCannotEdit(person, branch)
 
         # But it can edit it based on source package upload privileges.
-        self.assertTrue(self.personMayEditBranch(person, branch))
+        self.assertTrue(person_may_edit_branch(person, branch))
 
         person2 = self.factory.makePerson()
         # person2 has no upload rights ..
@@ -360,7 +310,7 @@ class TestWriteToBranch(PermissionTest):
             person2, spn, archive, None)
         # .. and is not authorised to edit the branch.
         self.assertCannotEdit(person2, branch)
-        self.assertFalse(self.personMayEditBranch(person2, branch))
+        self.assertFalse(person_may_edit_branch(person2, branch))
 
 
 def test_suite():
