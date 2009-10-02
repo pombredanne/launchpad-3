@@ -12,7 +12,9 @@ inserted into the page later.
     ...     browser.open(
     ...         'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % path)
     ...     table = BeautifulSoup(browser.contents).find('table', 'bug-links')
-    ...     for link in table.findAll('a'):
+    ...     tbody_info, tbody_links = table('tbody')
+    ...     print_table(tbody_info)
+    ...     for link in tbody_links('a'):
     ...         text = extract_text(link)
     ...         if len(text) > 0:
     ...             print "%s\n  --> %s" % (text, link['href'])
@@ -34,17 +36,10 @@ general stats.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/debian/+bugs
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/debian/+bugs?...
     New bugs
-      --> +bugs?...
-    Open CVE bugs
-      --> http://bugs.launchpad.dev/debian/+bugs?...
-    CVE reports
-      --> /debian/+cve
+    Open CVE bugs - CVE reports
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+subscribe
 
@@ -60,19 +55,11 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/debian/+bugs
     Bugs assigned to me
-      --> +bugs?...
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/debian/+bugs?...
     New bugs
-      --> +bugs?...
-    Open CVE bugs
-      --> http://bugs.launchpad.dev/debian/+bugs?...
-    CVE reports
-      --> /debian/+cve
+    Open CVE bugs - CVE reports
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+subscribe
 
@@ -99,17 +86,10 @@ link to review nominations.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/debian/woody/+bugs
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/debian/woody/+bugs?...
     New bugs
-      --> +bugs?...
-    Open CVE bugs
-      --> http://bugs.launchpad.dev/debian/woody/+bugs?...
-    CVE reports
-      --> /debian/woody/+cve
+    Open CVE bugs - CVE reports
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/woody/+subscribe
     Review nominations
@@ -127,19 +107,11 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/debian/woody/+bugs
     Bugs assigned to me
-      --> +bugs?...
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/debian/woody/+bugs?...
     New bugs
-      --> +bugs?...
-    Open CVE bugs
-      --> http://bugs.launchpad.dev/debian/woody/+bugs?...
-    CVE reports
-      --> /debian/woody/+cve
+    Open CVE bugs - CVE reports
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/woody/+subscribe
     Review nominations
@@ -167,15 +139,10 @@ If the user is not logged-in general stats are shown.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bugs
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bugs?...
     New bugs
-      --> +bugs?...
     Open CVE bugs
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bugs?...
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
 
@@ -191,17 +158,11 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bugs
     Bugs assigned to me
-      --> +bugs?...
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bugs?...
     New bugs
-      --> +bugs?...
     Open CVE bugs
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bugs?...
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
 
@@ -231,15 +192,10 @@ option to subscribe to bug mail.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/debian/woody/+source/mozilla-firefox/+bugs
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/debian/woody/+source/mozilla-firefox/+bugs?...
     New bugs
-      --> +bugs?...
     Open CVE bugs
-      --> http://bugs.launchpad.dev/debian/woody/+source/mozilla-firefox/+bugs?...
 
     >>> print_portlet_contents(anon_browser, path)
     2 Open bugs
@@ -253,17 +209,11 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/debian/woody/+source/mozilla-firefox/+bugs
     Bugs assigned to me
-      --> +bugs?...
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/debian/woody/+source/mozilla-firefox/+bugs?...
     New bugs
-      --> +bugs?...
     Open CVE bugs
-      --> http://bugs.launchpad.dev/debian/woody/+source/mozilla-firefox/+bugs?...
 
     >>> print_portlet_contents(user_browser, path)
     2 Open bugs
@@ -290,15 +240,10 @@ If the user is not logged-in general stats are shown.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/mozilla/+bugs
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/mozilla/+bugs?...
     New bugs
-      --> +bugs?...
     Open CVE bugs
-      --> http://bugs.launchpad.dev/mozilla/+bugs?...
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/mozilla/+subscribe
 
@@ -314,17 +259,11 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/mozilla/+bugs
     Bugs assigned to me
-      --> +bugs?...
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/mozilla/+bugs?...
     New bugs
-      --> +bugs?...
     Open CVE bugs
-      --> http://bugs.launchpad.dev/mozilla/+bugs?...
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/mozilla/+subscribe
 
@@ -353,17 +292,10 @@ If the user is not logged-in general stats are shown.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/firefox/+bugs
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/firefox/+bugs?...
     New bugs
-      --> +bugs?...
-    Open CVE bugs
-      --> http://bugs.launchpad.dev/firefox/+bugs?...
-    CVE reports
-      --> /firefox/+cve
+    Open CVE bugs - CVE reports
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/firefox/+subscribe
 
@@ -379,19 +311,11 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
-      --> http://bugs.launchpad.dev/firefox/+bugs
     Bugs assigned to me
-      --> +bugs?...
     Critical bugs
-      --> +bugs?...
     Bugs fixed elsewhere
-      --> http://bugs.launchpad.dev/firefox/+bugs?...
     New bugs
-      --> +bugs?...
-    Open CVE bugs
-      --> http://bugs.launchpad.dev/firefox/+bugs?...
-    CVE reports
-      --> /firefox/+cve
+    Open CVE bugs - CVE reports
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/firefox/+subscribe
 
