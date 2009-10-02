@@ -337,6 +337,7 @@ class TestWriteToBranch(PermissionTest):
 
         # Person is not allowed to edit the branch presently.
         self.assertCannotEdit(person, branch)
+        self.assertFalse(self.personMayEditBranch(person, branch))
 
         # Now give 'person' permission to upload to 'package'.
         archive = branch.distroseries.distribution.main_archive
