@@ -13,7 +13,7 @@ import re
 import sys
 import urllib
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from boto.exception import EC2ResponseError
 from devscripts.ec2test.session import EC2SessionName
@@ -105,21 +105,21 @@ class EC2Account:
                     raise
                 self.log('Cannot delete; security group '
                          '%r in use.\n' % group.name)
-        expire_before = datetime.utcnow() - timedelta(hours=6)
+        now = datetime.utcnow()
         for group in self.conn.get_all_security_groups():
             session_name = EC2SessionName(group.name)
             if session_name in (self.name, self.name.base):
                 self.log('Deleting security group %r\n' % group.name)
                 try_delete_group(group)
             elif session_name.base == self.name.base:
-                if session_name.timestamp is None:
+                if session_name.expires is None:
                     self.log('Found security group %r without creation '
                              'date; leaving.\n' % group.name)
-                elif session_name.timestamp >= expire_before:
+                elif session_name.expires >= now:
                     self.log('Found recent security group %r; '
                              'leaving\n' % group.name)
                 else:
-                    self.log('Deleting old security '
+                    self.log('Deleting expired security '
                              'group %r\n' % group.name)
                     try_delete_group(group)
             else:
@@ -151,21 +151,21 @@ class EC2Account:
                     raise
                 self.log('Cannot delete; key pair not '
                          'found %r\n' % key_pair.name)
-        expire_before = datetime.utcnow() - timedelta(hours=6)
+        now = datetime.utcnow()
         for key_pair in self.conn.get_all_key_pairs():
             session_name = EC2SessionName(key_pair.name)
             if session_name in (self.name, self.name.base):
                 self.log('Deleting key pair %r\n' % key_pair.name)
                 try_delete_key_pair(key_pair)
             elif session_name.base == self.name.base:
-                if session_name.timestamp is None:
+                if session_name.expires is None:
                     self.log('Found key pair %r without creation date; '
                              'leaving.\n' % key_pair.name)
-                elif session_name.timestamp >= expire_before:
+                elif session_name.expires >= now:
                     self.log('Found recent key pair %r; '
                              'leaving\n' % key_pair.name)
                 else:
-                    self.log('Deleting old key pair %r\n' % key_pair.name)
+                    self.log('Deleting expired key pair %r\n' % key_pair.name)
                     try_delete_key_pair(key_pair)
             else:
                 self.log('Found other key pair %r; '
