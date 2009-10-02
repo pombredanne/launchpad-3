@@ -597,9 +597,9 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
     """
     # Get the defaults from the config.
     if hosted_directory is None:
-        hosted_directory = config.codehosting.hosted_branches_root
+        hosted_directory = config.codehosting.mirrored_branches_root
     if mirror_directory is None:
-        mirror_directory = config.codehosting.hosted_branches_root
+        mirror_directory = config.codehosting.mirrored_branches_root
     if branchfs_endpoint_url is None:
         branchfs_endpoint_url = config.codehosting.branchfs_endpoint
 
