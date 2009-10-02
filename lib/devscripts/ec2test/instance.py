@@ -24,6 +24,7 @@ from bzrlib.plugins.launchpad.account import get_lp_login
 import paramiko
 
 from devscripts.ec2test.credentials import EC2Credentials
+from devscripts.ec2test.session import EC2SessionName
 
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
@@ -159,6 +160,18 @@ mkdir /var/launchpad/sourcecode
 """
 
 
+postmortem_banner = """\
+Postmortem Console. EC2 instance is not yet dead.
+It will shut down when you exit this prompt (CTRL-D)
+
+Tab-completion is enabled.
+EC2Instance is available as `instance`.
+Also try these:
+  http://%(dns)s/current_test.log
+  ssh -A %(dns)s
+"""
+
+
 class EC2Instance:
     """A single EC2 instance."""
 
@@ -169,6 +182,7 @@ class EC2Instance:
 
         :param name: The name to use for the key pair and security group for
             the instance.
+        :type name: `EC2SessionName`
         :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
         :param machine_id: The AMI to use, or None to do the usual regexp
             matching.  If you put 'based-on:' before the AMI id, it is assumed
@@ -179,6 +193,7 @@ class EC2Instance:
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
+        assert isinstance(name, EC2SessionName)
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
 
@@ -199,7 +214,7 @@ class EC2Instance:
         # We always recreate the keypairs because there is no way to
         # programmatically retrieve the private key component, unless we
         # generate it.
-        account.delete_previous_key_pair()
+        account.collect_garbage()
 
         if machine_id and machine_id.startswith('based-on:'):
             from_scratch = True
@@ -320,7 +335,8 @@ class EC2Instance:
         """
         authorized_keys_file = conn.sftp.open(remote_filename, 'w')
         authorized_keys_file.write(
-            "%s %s\n" % (self._user_key.get_name(), self._user_key.get_base64()))
+            "%s %s\n" % (self._user_key.get_name(),
+                         self._user_key.get_base64()))
         authorized_keys_file.close()
 
     def _ensure_ec2test_user_has_keys(self, connection=None):
@@ -345,8 +361,8 @@ class EC2Instance:
             if our_connection:
                 connection.close()
             self.log(
-                'You can now use ssh -A ec2test@%s to log in the instance.\n' %
-                self.hostname)
+                'You can now use ssh -A ec2test@%s to '
+                'log in the instance.\n' % self.hostname)
             self._ec2test_user_has_keys = True
 
     def connect(self):
@@ -390,25 +406,17 @@ class EC2Instance:
             try:
                 return func(*args, **kw)
             except Exception:
-                # When running in postmortem mode, it is really helpful to see if
-                # there are any exceptions before it waits in the console (in the
-                # finally block), and you can't figure out why it's broken.
+                # When running in postmortem mode, it is really helpful to see
+                # if there are any exceptions before it waits in the console
+                # (in the finally block), and you can't figure out why it's
+                # broken.
                 traceback.print_exc()
         finally:
             try:
                 if postmortem:
                     console = code.InteractiveConsole(locals())
-                    console.interact((
-                        'Postmortem Console.  EC2 instance is not yet dead.\n'
-                        'It will shut down when you exit this prompt (CTRL-D).\n'
-                        '\n'
-                        'Tab-completion is enabled.'
-                        '\n'
-                        'EC2Instance is available as `instance`.\n'
-                        'Also try these:\n'
-                        '  http://%(dns)s/current_test.log\n'
-                        '  ssh -A %(dns)s') %
-                                     {'dns': self.hostname})
+                    console.interact(
+                        postmortem_banner % {'dns': self.hostname})
                     print 'Postmortem console closed.'
             finally:
                 if shutdown:
