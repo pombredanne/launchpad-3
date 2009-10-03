@@ -44,6 +44,13 @@ class NoRightsForArchive(CannotUploadToArchive):
         "a PPA?")
 
 
+class InsufficientUploadRights(CannotUploadToArchive):
+    """Raised when a person has insufficient upload rights."""
+    _fmt = (
+        "The signer of this package is lacking the upload rights for "
+        "the source package, component or package set in question.")
+
+
 class NoRightsForComponent(CannotUploadToArchive):
     """Raised when a person tries to upload to a component without permission.
     """
@@ -97,6 +104,18 @@ def can_upload(person, suitesourcepackage, archive=None):
         person, sourcepackagename, archive, component, strict_component=True)
 
 
+def packagesets_valid_for(archive, person):
+    """Return the package sets that 'person' can upload to 'archive'.
+
+    :param archive: The `IArchive` than 'person' wishes to upload to.
+    :param person: An `IPerson` wishing to upload to an archive.
+    :return: A `set` of `IPackageset`s that 'person' can upload to.
+    """
+    permission_set = getUtility(IArchivePermissionSet)
+    permissions = permission_set.packagesetsForUploader(archive, person)
+    return set(permission.packageset for permission in permissions)
+
+
 def verify_upload(person, sourcepackagename, archive, component,
                   strict_component=True):
     """Can 'person' upload 'sourcepackagename' to 'archive'?
@@ -128,7 +147,10 @@ def verify_upload(person, sourcepackagename, archive, component,
         return None
 
     if not components_valid_for(archive, person):
-        return NoRightsForArchive()
+        if not packagesets_valid_for(archive, person):
+            return NoRightsForArchive()
+        else:
+            return InsufficientUploadRights()
 
     if (component is not None
         and strict_component

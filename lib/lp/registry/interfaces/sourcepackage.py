@@ -239,6 +239,13 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
         :return: `IArchive`.
         """
 
+    def getLatestTranslationsUploads():
+        """Find latest Translations tarballs as produced by Soyuz.
+
+        :return: A list of `ILibraryFileAlias`es, usually of size zero
+            or one.  If not, they are sorted from oldest to newest.
+        """
+
 
 class ISourcePackageFactory(Interface):
     """A creator of source packages."""

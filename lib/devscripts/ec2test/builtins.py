@@ -6,7 +6,9 @@
 __metaclass__ = type
 __all__ = []
 
+import os
 import pdb
+import subprocess
 
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
@@ -14,6 +16,9 @@ from bzrlib.help import help_commands
 from bzrlib.option import ListOption, Option
 
 import socket
+
+from devscripts import get_launchpad_root
+from devscripts.autoland import LaunchpadBranchLander, MissingReviewError
 
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
@@ -262,6 +267,89 @@ class cmd_test(EC2Command):
             instance=instance, vals=instance._vals)
 
         instance.set_up_and_run(postmortem, not headless, runner.run_tests)
+
+
+class cmd_land(EC2Command):
+    """Land a merge proposal on Launchpad."""
+
+    takes_options = [
+        debug_option,
+        Option('dry-run', help="Just print the equivalent ec2 test command."),
+        Option('print-commit', help="Print the full commit message."),
+        Option(
+            'testfix',
+            help="Include the [testfix] prefix in the commit message."),
+        Option(
+            'commit-text', short_name='s', type=str,
+            help=(
+                'A description of the landing, not including reviewer '
+                'metadata etc.')),
+        Option(
+            'force',
+            help="Land the branch even if the proposal is not approved."),
+        ]
+
+    takes_args = ['merge_proposal']
+
+    def _get_landing_command(self, source_url, target_url, commit_message,
+                             emails):
+        """Return the command that would need to be run to submit with ec2."""
+        ec2_path = os.path.join(get_launchpad_root(), 'utilities', 'ec2')
+        command = [ec2_path, 'test', '--headless']
+        command.extend(['--email=%s' % email for email in emails])
+        # 'ec2 test' has a bug where you cannot pass full URLs to branches to
+        # the -b option. It has special logic for 'launchpad' branches, so we
+        # piggy back on this to get 'devel' or 'db-devel'.
+        target_branch_name = target_url.split('/')[-1]
+        command.extend(
+            ['-b', 'launchpad=%s' % (target_branch_name), '-s',
+             commit_message, str(source_url)])
+        return command
+
+    def run(self, merge_proposal, machine=None,
+            instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
+            debug=False, commit_text=None, dry_run=False, testfix=False,
+            print_commit=False, force=False):
+        if debug:
+            pdb.set_trace()
+        if print_commit and dry_run:
+            raise BzrCommandError(
+                "Cannot specify --print-commit and --dry-run.")
+        lander = LaunchpadBranchLander.load()
+        mp = lander.load_merge_proposal(merge_proposal)
+        if not mp.is_approved:
+            if force:
+                print "Merge proposal is not approved, landing anyway."
+            else:
+                raise BzrCommandError(
+                    "Merge proposal is not approved. Get it approved, or use "
+                    "--force to land it without approval.")
+        if commit_text is None:
+            commit_text = mp.commit_message
+        if commit_text is None:
+            raise BzrCommandError(
+                "Commit text not specified. Use --commit-text, or specify a "
+                "message on the merge proposal.")
+        try:
+            commit_message = mp.get_commit_message(commit_text, testfix)
+        except MissingReviewError:
+            raise BzrCommandError(
+                "Cannot land branches that haven't got approved code "
+                "reviews. Get an 'Approved' vote so we can fill in the "
+                "[r=REVIEWER] section.")
+        if print_commit:
+            print commit_message
+            return
+
+        landing_command = self._get_landing_command(
+            mp.source_branch, mp.target_branch, commit_message,
+            mp.get_stakeholder_emails())
+        if dry_run:
+            print landing_command
+        else:
+            # XXX: JonathanLange 2009-09-24 bug=439348: Call EC2 APIs
+            # directly, rather than spawning a subprocess.
+            return subprocess.call(landing_command)
 
 
 class cmd_demo(EC2Command):
