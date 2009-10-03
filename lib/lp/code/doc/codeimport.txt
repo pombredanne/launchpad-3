@@ -94,7 +94,7 @@ three members of the vcs-imports team.
     Operator @vcs-imports
     >>> print message.get_payload()
     A new code import has been requested by No Privileges Person:
-        http://code.launchpad.dev/~vcs-imports/firefox/trunk-cvs
+        http://code.launchpad.dev/~no-priv/firefox/trunk-cvs
     -- =
     You are getting this email because you are a member of the vcs-imports team.
 
@@ -207,6 +207,24 @@ created if done through the web UI, so we'll add nopriv here.
     ...     nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
+    To: david.allouche@canonical.com, ...
+    Subject: Code import product.../name... status: Reviewed
+    <BLANKLINE>
+    The import has been approved and an import will start shortly.
+    <BLANKLINE>
+    ... is now being imported from:
+        http://svn.example.com/project/trunk
+    instead of:
+        http://svn.example.com/project
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    http://code.launchpad.dev/~person.../product.../name...
+    You are getting this email because you are a member of the vcs-imports
+    team.
+    <BLANKLINE>
+    ----------------------------------------
+    From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
     Subject: Code import product.../name... status: Reviewed
     <BLANKLINE>
@@ -218,10 +236,11 @@ created if done through the web UI, so we'll add nopriv here.
         http://svn.example.com/project
     <BLANKLINE>
     -- =
-    http://code.launchpad.dev/~vcs-imports/product.../name...
+    <BLANKLINE>
+    http://code.launchpad.dev/~person.../product.../name...
     You are receiving this email as you are subscribed to the branch.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~vcs-import=
-    s/product.../name.../+edit-subscription.
+    To unsubscribe from this branch go to .../+edit-subscription.
+    <BLANKLINE>
     ----------------------------------------
 
 updateFromData is smart enough to not send an email if no changes were
@@ -238,6 +257,10 @@ from a 'noreply' address.
     ...     {'svn_branch_url': 'http://svn.example.org/project/trunk'},
     ...     None)
     >>> print_emails(group_similar=True)
+    From: noreply@launchpad.net
+    To: david.allouche@canonical.com, ...
+    Subject: Code import product.../name... status: Reviewed
+    ...
     From: noreply@launchpad.net
     To: no-priv@canonical.com
     Subject: Code import product.../name... status: Reviewed
@@ -351,7 +374,7 @@ The code imports themselves are viewed under the branch's URL,
 and are not traversable in themselves.
 
     >>> print canonical_url(svn_import.branch)
-    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn
+    http://code.launchpad.dev/~no-priv/firefox/trunk-svn
     >>> print canonical_url(svn_import)
     Traceback (most recent call last):
     NoCanonicalUrl: ...
@@ -410,7 +433,7 @@ CVS details are displayed in a similar way.
     >>> modify_event = cvs_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(
     ...     cvs_import, modify_event, None)
-    ~vcs-imports/firefox/trunk-cvs is now being imported from:
+    ~no-priv/firefox/trunk-cvs is now being imported from:
         hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     instead of:
         hello from :pserver:anonymous@cvs.example.com:/cvsroot
@@ -421,7 +444,7 @@ And for Git.
     >>> modify_event = git_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(
     ...     git_import, modify_event, None)
-    ~vcs-imports/firefox/trunk-git is now being imported from:
+    ~no-priv/firefox/trunk-git is now being imported from:
         git://git.example.com/goodbye.git
     instead of:
         git://git.example.com/hello.git
