@@ -300,8 +300,8 @@
 
 <metal:application-buttons define-macro="application-buttons">
   <!-- Application Menu -->
-  <ul
-    tal:define="facetmenu view/menu:facet">
+  <ul class="facetmenu"
+      tal:define="facetmenu view/menu:facet">
     <tal:facet repeat="link facetmenu">
       <li
         tal:condition="python: link.enabled and link.selected"
