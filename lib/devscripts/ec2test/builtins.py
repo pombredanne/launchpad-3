@@ -108,6 +108,32 @@ postmortem_option = Option(
           'and/or of this script.'))
 
 
+def filename_type(filename):
+    """An option validator for filenames.
+
+    :raise: an error if 'filename' is not a file we can write to.
+    :return: 'filename' otherwise.
+    """
+    if filename is None:
+        return filename
+
+    check_file = filename
+    if os.path.exists(check_file):
+        if not os.path.isfile(check_file):
+            raise BzrCommandError(
+                'file argument %s exists and is not a file' % (filename,))
+    else:
+        check_file = os.path.dirname(check_file)
+        if (not os.path.exists(check_file) or
+            not os.path.isdir(check_file)):
+            raise BzrCommandError(
+                'file %s cannot be created.' % (filename,))
+    if not os.access(check_file, os.W_OK):
+        raise BzrCommandError(
+            'you do not have permission to write %s' % (filename,))
+    return filename
+
+
 class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
 
@@ -164,7 +190,7 @@ class cmd_test(EC2Command):
         machine_id_option,
         instance_type_option,
         Option(
-            'file', short_name='f',
+            'file', short_name='f', type=filename_type,
             help=('Store abridged test results in FILE.')),
         ListOption(
             'email', short_name='e', argname='EMAIL', type=str,

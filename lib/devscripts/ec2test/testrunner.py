@@ -34,27 +34,6 @@ class UnknownBranchURL(Exception):
             "Couldn't parse '%s', not a Launchpad branch." % (branch_url,))
 
 
-def validate_file(filename):
-    """Raise an error if 'filename' is not a file we can write to."""
-    if filename is None:
-        return
-
-    check_file = filename
-    if os.path.exists(check_file):
-        if not os.path.isfile(check_file):
-            raise ValueError(
-                'file argument %s exists and is not a file' % (filename,))
-    else:
-        check_file = os.path.dirname(check_file)
-        if (not os.path.exists(check_file) or
-            not os.path.isdir(check_file)):
-            raise ValueError(
-                'file %s cannot be created.' % (filename,))
-    if not os.access(check_file, os.W_OK):
-        raise ValueError(
-            'you do not have permission to write %s' % (filename,))
-
-
 def parse_branch_url(branch_url):
     """Given the URL of a branch, return its components in a dict."""
     _lp_match = re.compile(
@@ -311,12 +290,6 @@ class EC2TestRunner:
         else:
             email = None
         self.email = email
-
-        # We do a lot of looking before leaping here because we want to avoid
-        # wasting time and money on errors we could have caught early.
-
-        # Validate and set file.
-        validate_file(file)
         self.file = file
 
         # Make a dict for string substitution based on the environ.
