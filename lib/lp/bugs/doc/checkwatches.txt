@@ -328,7 +328,6 @@ will ignore it.
     INFO Bug tracker 'auto-example.com' doesn't have any watches. Ignoring.
 
 Similarly, updateAllWatches() will ignore the bug tracker if it doesn't exist.
-ignore it.
 
     >>> update_all('nah-this-wont-work')
     INFO Bug tracker 'nah-this-wont-work' doesn't exist. Ignoring.
