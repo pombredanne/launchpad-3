@@ -370,33 +370,3 @@ made.
     INFO 2 watches left to check on bug tracker 'auto-example.com'
     INFO 1 watches left to check on bug tracker 'auto-example.com'
     INFO 0 watches left to check on bug tracker 'auto-example.com'
-
-
-Updating all watches from the command line
-------------------------------------------
-
-In order to update all bug watches from the checkwatches command line,
-a user needs to pass the '--all' option to the checkwatches cron script.
-
-    >>> import subprocess
-    >>> process = subprocess.Popen(
-    ...     ['cronscripts/checkwatches.py', '-vvt', 'savannah', '--all'],
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
-    >>> out
-    ''
-
-    >>> process.returncode
-    0
-
-    >>> print err
-    INFO    creating lockfile
-    INFO    Resetting 1 bug watches for bug tracker 'savannah'
-    INFO    Updating 1 watches on bug tracker 'savannah'
-    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
-    INFO    0 watches left to check on bug tracker 'savannah'
-    INFO    Time for this run...
-    DEBUG   Removing lock file...
-    <BLANKLINE>
-
