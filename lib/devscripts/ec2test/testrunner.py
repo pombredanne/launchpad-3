@@ -131,7 +131,6 @@ class EC2TestRunner:
           - file (after checking we can write to it)
           - vals, a dict containing
             - the environment
-            - email (distinct from the email attribute)
             - key_type
             - key
             - launchpad_login
@@ -311,12 +310,11 @@ class EC2TestRunner:
             self._smtp_password = config.get_user_option('smtp_password')
             from_email = config.username()
             if not from_email:
+                # XXX: JonathanLange 2009-10-04: Is this strictly true? I
+                # can't actually see where this is used.
                 raise ValueError(
                     'To send email, your bzr email address must be set '
                     '(use ``bzr whoami``).')
-            else:
-                self.vals['email'] = (
-                    from_email.encode('utf8').encode('string-escape'))
 
         self._instance = instance
 
