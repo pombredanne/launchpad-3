@@ -255,6 +255,10 @@ class cmd_test(EC2Command):
                 'You have specified no way to get the results '
                 'of your headless test run.')
 
+        if test_options != '-vv' and submit_pqm_message is not None:
+            raise BzrCommandError(
+                "Submitting to PQM with non-default test options isn't "
+                "supported")
 
         instance = EC2Instance.make(
             EC2TestRunner.name, instance_type, machine)

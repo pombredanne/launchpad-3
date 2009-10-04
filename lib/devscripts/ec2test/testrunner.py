@@ -168,11 +168,6 @@ class EC2TestRunner:
         self.include_download_cache_changes = include_download_cache_changes
         self.open_browser = open_browser
 
-        if test_options != '-vv' and pqm_message is not None:
-            raise ValueError(
-                "Submitting to PQM with non-default test options isn't "
-                "supported")
-
         trunk_specified = False
         trunk_branch = TRUNK_BRANCH
 
