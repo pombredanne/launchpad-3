@@ -555,13 +555,18 @@ class EC2InstanceConnection:
             self._sftp = self._ssh.open_sftp()
         return self._sftp
 
-    def perform(self, cmd, ignore_failure=False, out=None):
+    def perform(self, cmd, ignore_failure=False, out=None, err=None):
         """Perform 'cmd' on server.
 
         :param ignore_failure: If False, raise an error on non-zero exit
             statuses.
         :param out: A stream to write the output of the remote command to.
+        :param err: A stream to write the error of the remote command to.
         """
+        if out is None:
+            out = sys.stdout
+        if err is None:
+            err = sys.stderr
         cmd = cmd % self._instance._vals
         self._instance.log(
             '%s@%s$ %s\n'
@@ -574,15 +579,13 @@ class EC2InstanceConnection:
             if session.recv_ready():
                 data = session.recv(4096)
                 if data:
-                    sys.stdout.write(data)
-                    sys.stdout.flush()
-                    if out is not None:
-                        out.write(data)
+                    out.write(data)
+                    out.flush()
             if session.recv_stderr_ready():
                 data = session.recv_stderr(4096)
                 if data:
-                    sys.stderr.write(data)
-                    sys.stderr.flush()
+                    err.write(data)
+                    err.flush()
             if session.exit_status_ready():
                 break
         session.close()
