@@ -1,4 +1,5 @@
-= Monitoring External Bug Trackers in Malone =
+Monitoring External Bug Trackers in Launchpad Bugs
+==================================================
 
 Malone allows you to monitor bugs in external bug tracking systems. This
 document discusses the API of external bug trackers. To learn more about
