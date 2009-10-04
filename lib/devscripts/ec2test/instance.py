@@ -29,13 +29,14 @@ from devscripts.ec2test.credentials import EC2Credentials
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
 AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 
+
 class AcceptAllPolicy:
     """We accept all unknown host key."""
 
-    # Normally the console output is supposed to contain the Host key
-    # but it doesn't seem to be the case here, so we trust that the host
-    # we are connecting to is the correct one.
     def missing_host_key(self, client, hostname, key):
+        # Normally the console output is supposed to contain the Host key but
+        # it doesn't seem to be the case here, so we trust that the host we
+        # are connecting to is the correct one.
         pass
 
 
@@ -320,7 +321,8 @@ class EC2Instance:
         """
         authorized_keys_file = conn.sftp.open(remote_filename, 'w')
         authorized_keys_file.write(
-            "%s %s\n" % (self._user_key.get_name(), self._user_key.get_base64()))
+            "%s %s\n" % (
+                self._user_key.get_name(), self._user_key.get_base64()))
         authorized_keys_file.close()
 
     def _ensure_ec2test_user_has_keys(self, connection=None):
@@ -390,9 +392,10 @@ class EC2Instance:
             try:
                 return func(*args, **kw)
             except Exception:
-                # When running in postmortem mode, it is really helpful to see if
-                # there are any exceptions before it waits in the console (in the
-                # finally block), and you can't figure out why it's broken.
+                # When running in postmortem mode, it is really helpful to see
+                # if there are any exceptions before it waits in the console
+                # (in the finally block), and you can't figure out why it's
+                # broken.
                 traceback.print_exc()
         finally:
             try:
@@ -400,7 +403,8 @@ class EC2Instance:
                     console = code.InteractiveConsole(locals())
                     console.interact((
                         'Postmortem Console.  EC2 instance is not yet dead.\n'
-                        'It will shut down when you exit this prompt (CTRL-D).\n'
+                        'It will shut down when you exit this prompt '
+                        '(CTRL-D).\n'
                         '\n'
                         'Tab-completion is enabled.'
                         '\n'
@@ -486,7 +490,7 @@ class EC2Instance:
         connection.perform('sudo mkdir /mnt/ec2')
         connection.perform('sudo chown $USER:$USER /mnt/ec2')
 
-        remote_pk, remote_cert =  self.copy_key_and_certificate_to_image(
+        remote_pk, remote_cert = self.copy_key_and_certificate_to_image(
             connection.sftp)
 
         bundle_dir = os.path.join('/mnt', name)
@@ -530,7 +534,7 @@ class EC2Instance:
             'ec2-register',
             '--private-key=%s' % self.local_pk,
             '--cert=%s' % self.local_cert,
-            manifest_path
+            manifest_path,
             ]
         self.log("Executing command: %s" % ' '.join(cmd))
         subprocess.check_call(cmd, env=env)
