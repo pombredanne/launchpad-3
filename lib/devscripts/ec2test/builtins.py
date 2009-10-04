@@ -168,47 +168,50 @@ class cmd_test(EC2Command):
             help=('Store abridged test results in FILE.')),
         ListOption(
             'email', short_name='e', argname='EMAIL', type=str,
-            help=('Email address to which results should be mailed.  Defaults to '
-                  'the email address from `bzr whoami`. May be supplied multiple '
-                  'times. The first supplied email address will be used as the '
-                  'From: address.')),
+            help=('Email address to which results should be mailed.  '
+                  'Defaults to the email address from `bzr whoami`. May be '
+                  'supplied multiple times. The first supplied email address '
+                  'will be used as the From: address.')),
         Option(
             'noemail', short_name='n',
             help=('Do not try to email results.')),
         Option(
             'test-options', short_name='o', type=str,
-            help=('Test options to pass to the remote test runner.  Defaults to '
-                  "``-o '-vv'``.  For instance, to run specific tests, you might "
-                  "use ``-o '-vvt my_test_pattern'``.")),
+            help=('Test options to pass to the remote test runner.  Defaults '
+                  "to ``-o '-vv'``.  For instance, to run specific tests, "
+                  "you might use ``-o '-vvt my_test_pattern'``.")),
         Option(
             'submit-pqm-message', short_name='s', type=str, argname="MSG",
-            help=('A pqm message to submit if the test run is successful.  If '
-                  'provided, you will be asked for your GPG passphrase before '
-                  'the test run begins.')),
+            help=(
+                'A pqm message to submit if the test run is successful.  If '
+                'provided, you will be asked for your GPG passphrase before '
+                'the test run begins.')),
         Option(
             'pqm-public-location', type=str,
-            help=('The public location for the pqm submit, if a pqm message is '
-                  'provided (see --submit-pqm-message).  If this is not provided, '
-                  'for local branches, bzr configuration is consulted; for '
-                  'remote branches, it is assumed that the remote branch *is* '
-                  'a public branch.')),
+            help=('The public location for the pqm submit, if a pqm message '
+                  'is provided (see --submit-pqm-message).  If this is not '
+                  'provided, for local branches, bzr configuration is '
+                  'consulted; for remote branches, it is assumed that the '
+                  'remote branch *is* a public branch.')),
         Option(
             'pqm-submit-location', type=str,
-            help=('The submit location for the pqm submit, if a pqm message is '
-                  'provided (see --submit-pqm-message).  If this option is not '
-                  'provided, the script will look for an explicitly specified '
-                  'launchpad branch using the -b/--branch option; if that branch '
-                  'was specified and is owned by the launchpad-pqm user on '
-                  'launchpad, it is used as the pqm submit location. Otherwise, '
-                  'for local branches, bzr configuration is consulted; for '
-                  'remote branches, it is assumed that the submit branch is %s.'
+            help=('The submit location for the pqm submit, if a pqm message '
+                  'is provided (see --submit-pqm-message).  If this option '
+                  'is not provided, the script will look for an explicitly '
+                  'specified launchpad branch using the -b/--branch option; '
+                  'if that branch was specified and is owned by the '
+                  'launchpad-pqm user on launchpad, it is used as the pqm '
+                  'submit location. Otherwise, for local branches, bzr '
+                  'configuration is consulted; for remote branches, it is '
+                  'assumed that the submit branch is %s.'
                   % (TRUNK_BRANCH,))),
         Option(
             'pqm-email', type=str,
-            help=('Specify the email address of the PQM you are submitting to. '
-                  'If the branch is local, then the bzr configuration is '
-                  'consulted; for remote branches "Launchpad PQM '
-                  '<launchpad@pqm.canonical.com>" is used by default.')),
+            help=(
+                'Specify the email address of the PQM you are submitting to. '
+                'If the branch is local, then the bzr configuration is '
+                'consulted; for remote branches "Launchpad PQM '
+                '<launchpad@pqm.canonical.com>" is used by default.')),
         postmortem_option,
         Option(
             'headless',
@@ -489,7 +492,8 @@ class cmd_update_image(EC2Command):
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
         user_connection.run_with_ssh_agent(
-            'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
+            'bzr pull -d /var/launchpad/download-cache '
+            'lp:lp-source-dependencies')
         if public:
             update_sourcecode_options = '--public-only'
         else:
