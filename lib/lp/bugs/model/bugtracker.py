@@ -13,7 +13,6 @@ __all__ = [
 from datetime import datetime, timedelta
 from itertools import chain
 from pytz import timezone
-import transaction
 # splittype is not formally documented, but is in urllib.__all__, is
 # simple, and is heavily used by the rest of urllib, hence is unlikely
 # to change or go away.
@@ -489,12 +488,10 @@ class BugTracker(SQLBase):
 
     def resetWatches(self):
         """See `IBugTracker`."""
-        transaction.begin()
         store = Store.of(self)
         store.execute(
             "UPDATE BugWatch SET lastchecked = NULL WHERE bugtracker = %s" %
             sqlvalues(self))
-        transaction.commit()
 
 
 class BugTrackerSet:

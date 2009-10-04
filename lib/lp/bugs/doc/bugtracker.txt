@@ -612,6 +612,7 @@ Calling resetWatches() on mozilla_bugzilla will set all its
 lastchecked times to None.
 
     >>> mozilla_bugzilla.resetWatches()
+    >>> transaction.commit()
     >>> print_tracker_watch_times(mozilla_bugzilla)
     2 None
     1 None
@@ -624,7 +625,9 @@ resetWatches() also clears the last_error_type field of the watches.
     >>> for watch in mozilla_bugzilla.watches:
     ...     watch.last_error_type = BugWatchErrorType.UNKNOWN
 
+    >>> txn = transaction.begin()
     >>> mozilla_bugzilla.resetWatches()
+    >>> txn.commit()
     >>> for watch in mozilla_bugzilla.watches:
     ...     print watch.last_error_type
     None

@@ -287,6 +287,7 @@ class BugWatchUpdater(object):
             "Resetting %s bug watches for bug tracker '%s'" %
             (bug_tracker.watches.count(), bug_tracker_name))
         bug_tracker.resetWatches()
+        self.txn.commit()
 
         # Take a copy of the bug tracker URL. If the transaction fails
         # later we can't refer to the baseurl attribute of the bug
