@@ -132,7 +132,6 @@ class EC2TestRunner:
 
     def __init__(self, branch, email=False, file=None, test_options='-vv',
                  headless=False, branches=(),
-                 machine_id=None,
                  pqm_message=None, pqm_public_location=None,
                  pqm_submit_location=None,
                  open_browser=False, pqm_email=None,
