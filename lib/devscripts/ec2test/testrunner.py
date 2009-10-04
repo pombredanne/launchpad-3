@@ -131,9 +131,6 @@ class EC2TestRunner:
           - file (after checking we can write to it)
           - vals, a dict containing
             - the environment
-            - smtp_server
-            - smtp_username
-            - smtp_password
             - email (distinct from the email attribute)
             - key_type
             - key
@@ -303,18 +300,15 @@ class EC2TestRunner:
 
         # Email configuration.
         if email is not None or pqm_message is not None:
-            server = self.vals['smtp_server'] = config.get_user_option(
-                'smtp_server')
-            if server is None or server == 'localhost':
+            self._smtp_server = config.get_user_option('smtp_server')
+            if self._smtp_server is None or self._smtp_server == 'localhost':
                 raise ValueError(
                     'To send email, a remotely accessible smtp_server (and '
                     'smtp_username and smtp_password, if necessary) must be '
                     'configured in bzr.  See the SMTP server information '
                     'here: https://wiki.canonical.com/EmailSetup .')
-            self.vals['smtp_username'] = config.get_user_option(
-                'smtp_username')
-            self.vals['smtp_password'] = config.get_user_option(
-                'smtp_password')
+            self._smtp_username = config.get_user_option('smtp_username')
+            self._smtp_password = config.get_user_option('smtp_password')
             from_email = config.username()
             if not from_email:
                 raise ValueError(
@@ -342,13 +336,13 @@ class EC2TestRunner:
             bazaar_conf_file = user_connection.sftp.open(
                 ".bazaar/bazaar.conf", 'w')
             bazaar_conf_file.write(
-                'smtp_server = %(smtp_server)s\n' % self.vals)
-            if self.vals['smtp_username']:
+                'smtp_server = %s\n' % (self._smtp_server,))
+            if self._smtp_username:
                 bazaar_conf_file.write(
-                    'smtp_username = %(smtp_username)s\n' % self.vals)
-            if self.vals['smtp_password']:
+                    'smtp_username = %s\n' % (self._smtp_username,))
+            if self._smtp_password:
                 bazaar_conf_file.write(
-                    'smtp_password = %(smtp_password)s\n' % self.vals)
+                    'smtp_password = %s\n' % (self._smtp_password,))
             bazaar_conf_file.close()
         # Copy remote ec2-remote over
         self.log('Copying ec2test-remote.py to remote machine.\n')
