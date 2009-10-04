@@ -131,7 +131,6 @@ class EC2TestRunner:
           - file (after checking we can write to it)
           - vals, a dict containing
             - the environment
-            - branch
             - smtp_server
             - smtp_username
             - smtp_password
@@ -145,6 +144,7 @@ class EC2TestRunner:
         self.headless = headless
         self.include_download_cache_changes = include_download_cache_changes
         self.open_browser = open_browser
+        self.file = file
 
         trunk_specified = False
         trunk_branch = TRUNK_BRANCH
@@ -169,7 +169,7 @@ class EC2TestRunner:
             if user == 'launchpad-pqm':
                 trunk_specified = True
             trunk_branch = src
-
+        self._trunk_branch = trunk_branch
         self.branches = branches.items()
 
         # XXX: JonathanLange 2009-05-31: The trunk_specified stuff above and
@@ -270,6 +270,8 @@ class EC2TestRunner:
                         '--ignore-download-cache-changes, -c and -g '
                         'respectively), or '
                         'commit or remove the files in the download-cache.')
+        self._branch = branch
+
         if email is not False:
             if email is True:
                 email = [config.username()]
@@ -289,7 +291,6 @@ class EC2TestRunner:
         else:
             email = None
         self.email = email
-        self.file = file
 
         # Make a dict for string substitution based on the environ.
         #
@@ -299,8 +300,6 @@ class EC2TestRunner:
         # a method means it uses...?). Consider changing things around so that
         # vals is not needed.
         self.vals = vals
-        self._trunk_branch = trunk_branch
-        self.vals['branch'] = branch
 
         # Email configuration.
         if email is not None or pqm_message is not None:
@@ -369,9 +368,9 @@ class EC2TestRunner:
         user_connection.run_with_ssh_agent(
             'bzr branch %s /var/launchpad/test' % (self._trunk_branch,))
         # Merge the branch in.
-        if self.vals['branch'] is not None:
+        if self._branch is not None:
             user_connection.run_with_ssh_agent(
-                'cd /var/launchpad/test; bzr merge %(branch)s')
+                'cd /var/launchpad/test; bzr merge %s' % (self._branch,))
         else:
             self.log('(Testing trunk, so no branch merge.)')
         # get newest sources
@@ -497,8 +496,8 @@ class EC2TestRunner:
             cmd.append('--daemon')
 
         # Which branch do we want to test?
-        if self.vals['branch'] is not None:
-            branch = self.vals['branch']
+        if self._branch is not None:
+            branch = self._branch
             remote_branch = Branch.open(branch)
             branch_revno = remote_branch.revno()
         else:
