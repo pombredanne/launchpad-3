@@ -304,7 +304,7 @@ BugWatchUpdater's logger.
     ...     updater.updateAllWatches(bug_tracker_name, batch_size)
 
     >>> update_all('savannah', batch_size)
-    INFO Resetting 1 bug watches for bug tracker savannah
+    INFO Resetting 1 bug watches for bug tracker 'savannah'
     INFO Updating 1 watches on bug tracker 'savannah'
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     INFO 0 watches left to check on bug tracker 'savannah'
@@ -346,14 +346,30 @@ We'll add some more watches in order to demonstrate this.
     >>> empty_tracker.watches.count()
     5
 
-    >>> try:
-    ...     urllib2.urlopen = do_not_urlopen
-    ...     update_all(empty_tracker.name, batch_size=1)
-    ... finally:
-    ...     urllib2.urlopen = urlopen
+With a batch_size of 1, only one bug watch will be updated at once.
+We'll use a custom BugWatchUpdater to make sure that no connections are
+made.
+
+    >>> class NonConnectingUpdater(BugWatchUpdater):
+    ...
+    ...     def updateBugTracker(self, bug_tracker, batch_size):
+    ...         # Update as many watches as the batch size says.
+    ...         watches_to_update = (
+    ...             bug_tracker.getBugWatchesNeedingUpdate(23)[:batch_size])
+    ...
+    ...         for watch in watches_to_update:
+    ...             watch.lastchecked = datetime.now(pytz.timezone('UTC'))
+
+    >>> non_connecting_updater = NonConnectingUpdater(transaction)
+    >>> non_connecting_updater.log = FakeLogger()
+    >>> non_connecting_updater.updateAllWatches(
+    ...     empty_tracker.name, 1)
     INFO Resetting 5 bug watches for bug tracker 'auto-example.com'
     INFO Updating 5 watches on bug tracker 'auto-example.com'
-    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    INFO 4 watches left to check on bug tracker 'auto-example.com'
+    INFO 3 watches left to check on bug tracker 'auto-example.com'
+    INFO 2 watches left to check on bug tracker 'auto-example.com'
+    INFO 1 watches left to check on bug tracker 'auto-example.com'
     INFO 0 watches left to check on bug tracker 'auto-example.com'
 
 
@@ -377,7 +393,7 @@ a user needs to pass the '--all' option to the checkwatches cron script.
 
     >>> print err
     INFO    creating lockfile
-    INFO    Resetting 1 bug watches for bug tracker savannah
+    INFO    Resetting 1 bug watches for bug tracker 'savannah'
     INFO    Updating 1 watches on bug tracker 'savannah'
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     INFO    0 watches left to check on bug tracker 'savannah'

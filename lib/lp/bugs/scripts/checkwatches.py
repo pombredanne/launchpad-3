@@ -284,7 +284,7 @@ class BugWatchUpdater(object):
 
         # Reset all the bug watches for the bug tracker.
         self.log.info(
-            "Resetting %s bug watches for bug tracker %s" %
+            "Resetting %s bug watches for bug tracker '%s'" %
             (bug_tracker.watches.count(), bug_tracker_name))
         bug_tracker.resetWatches()
 
@@ -661,7 +661,6 @@ class BugWatchUpdater(object):
         for bug_watch in list(bug_watches):
             if bug_watch.remotebug not in remote_ids_to_check:
                 bug_watches.remove(bug_watch)
-
 
         self.log.info("Updating %i watches for %i bugs on %s" %
             (len(bug_watches), len(remote_ids_to_check),
