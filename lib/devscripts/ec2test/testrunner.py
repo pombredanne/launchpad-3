@@ -114,8 +114,7 @@ class EC2TestRunner:
                  pqm_message=None, pqm_public_location=None,
                  pqm_submit_location=None,
                  open_browser=False, pqm_email=None,
-                 include_download_cache_changes=None, instance=None,
-                 vals=None):
+                 include_download_cache_changes=None, instance=None):
         """Create a new EC2TestRunner.
 
         This sets the following attributes:
@@ -129,11 +128,6 @@ class EC2TestRunner:
           - email (after validating email capabilities)
           - image (after connecting to ec2)
           - file (after checking we can write to it)
-          - vals, a dict containing
-            - the environment
-            - key_type
-            - key
-            - launchpad_login
         """
         self.original_branch = branch
         self.test_options = test_options
@@ -287,15 +281,6 @@ class EC2TestRunner:
         else:
             email = None
         self.email = email
-
-        # Make a dict for string substitution based on the environ.
-        #
-        # XXX: JonathanLange 2009-06-02: Although this defintely makes the
-        # scripts & commands easier to write, it makes it harder to figure out
-        # how the different bits of the system interoperate (passing 'vals' to
-        # a method means it uses...?). Consider changing things around so that
-        # vals is not needed.
-        self.vals = vals
 
         # Email configuration.
         if email is not None or pqm_message is not None:
