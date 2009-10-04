@@ -216,14 +216,13 @@ class EC2Instance:
         if not login:
             raise BzrCommandError(
                 'you must have set your launchpad login in bzr.')
-        vals['launchpad-login'] = login
 
         return EC2Instance(
             name, image, instance_type, demo_networks, account, vals,
-            from_scratch, user_key)
+            from_scratch, user_key, login)
 
     def __init__(self, name, image, instance_type, demo_networks, account,
-                 vals, from_scratch, user_key):
+                 vals, from_scratch, user_key, launchpad_login):
         self._name = name
         self._image = image
         self._account = account
@@ -233,6 +232,7 @@ class EC2Instance:
         self._vals = vals
         self._from_scratch = from_scratch
         self._user_key = user_key
+        self._launchpad_login = launchpad_login
 
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
@@ -367,7 +367,9 @@ class EC2Instance:
             self._ensure_ec2test_user_has_keys(root_connection)
             root_connection.close()
             conn = self._connect('ec2test')
-            conn.run_script(from_scratch_ec2test % self._vals)
+            conn.run_script(
+                from_scratch_ec2test
+                % {'launchpad-login': self._launchpad_login})
             self._from_scratch = False
             return conn
         self._ensure_ec2test_user_has_keys()

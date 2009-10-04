@@ -114,7 +114,8 @@ class EC2TestRunner:
                  pqm_message=None, pqm_public_location=None,
                  pqm_submit_location=None,
                  open_browser=False, pqm_email=None,
-                 include_download_cache_changes=None, instance=None):
+                 include_download_cache_changes=None, instance=None,
+                 launchpad_login=None):
         """Create a new EC2TestRunner.
 
         This sets the following attributes:
@@ -127,7 +128,7 @@ class EC2TestRunner:
           - message (after validating PQM submisson)
           - email (after validating email capabilities)
           - image (after connecting to ec2)
-          - file (after checking we can write to it)
+          - file
         """
         self.original_branch = branch
         self.test_options = test_options
@@ -135,6 +136,7 @@ class EC2TestRunner:
         self.include_download_cache_changes = include_download_cache_changes
         self.open_browser = open_browser
         self.file = file
+        self._launchpad_login = launchpad_login
 
         trunk_specified = False
         trunk_branch = TRUNK_BRANCH
@@ -334,7 +336,7 @@ class EC2TestRunner:
                          'ec2test-remote.py'),
             '/var/launchpad/ec2test-remote.py')
         # Set up launchpad login and email
-        as_user('bzr launchpad-login %(launchpad-login)s')
+        as_user('bzr launchpad-login %s' % (self._launchpad_login,))
         user_connection.close()
 
     def prepare_tests(self):

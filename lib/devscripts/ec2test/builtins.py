@@ -297,7 +297,7 @@ class cmd_test(EC2Command):
             pqm_submit_location=pqm_submit_location,
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance)
+            instance=instance, launchpad_login=instance._launchpad_login)
 
         instance.set_up_and_run(postmortem, not headless, runner.run_tests)
 
