@@ -90,10 +90,7 @@ a user needs to pass the '--all' option to the checkwatches cron script.
 
     >>> print err
     INFO    creating lockfile
-    INFO    Resetting 1 bug watches for bug tracker 'savannah'
-    INFO    Updating 1 watches on bug tracker 'savannah'
-    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
-    INFO    0 watches left to check on bug tracker 'savannah'
+    INFO    Bug tracker 'savannah' doesn't have any watches. Ignoring.
     INFO    Time for this run...
     DEBUG   Removing lock file...
     <BLANKLINE>
@@ -124,3 +121,6 @@ tracker option fully.
                             bug tracker in this run. If BATCH_SIZE is 0,
                             all watches on the bug tracker that are
                             eligible for checking will be checked.
+      --all                 Update all the watches on the bug tracker,
+                            regardless of whether or not they need
+                            checking.
