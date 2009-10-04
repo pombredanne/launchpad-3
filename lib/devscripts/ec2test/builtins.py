@@ -516,7 +516,8 @@ class cmd_update_image(EC2Command):
             directory before bundling.
         """
         user_connection = instance.connect()
-        user_connection.perform('bzr launchpad-login %(launchpad-login)s')
+        user_connection.perform(
+            'bzr launchpad-login %s' % (instance._launchpad_login,))
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
         user_connection.run_with_ssh_agent(

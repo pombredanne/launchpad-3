@@ -211,25 +211,23 @@ class EC2Instance:
         # get the image
         image = account.acquire_image(machine_id)
 
-        vals = os.environ.copy()
         login = get_lp_login()
         if not login:
             raise BzrCommandError(
                 'you must have set your launchpad login in bzr.')
 
         return EC2Instance(
-            name, image, instance_type, demo_networks, account, vals,
+            name, image, instance_type, demo_networks, account,
             from_scratch, user_key, login)
 
     def __init__(self, name, image, instance_type, demo_networks, account,
-                 vals, from_scratch, user_key, launchpad_login):
+                 from_scratch, user_key, launchpad_login):
         self._name = name
         self._image = image
         self._account = account
         self._instance_type = instance_type
         self._demo_networks = demo_networks
         self._boto_instance = None
-        self._vals = vals
         self._from_scratch = from_scratch
         self._user_key = user_key
         self._launchpad_login = launchpad_login
@@ -363,7 +361,7 @@ class EC2Instance:
             self._upload_local_key(root_connection, 'local_key')
             root_connection.perform(
                 'cat local_key >> ~/.ssh/authorized_keys && rm local_key')
-            root_connection.run_script(from_scratch_root % self._vals)
+            root_connection.run_script(from_scratch_root)
             self._ensure_ec2test_user_has_keys(root_connection)
             root_connection.close()
             conn = self._connect('ec2test')
@@ -569,7 +567,6 @@ class EC2InstanceConnection:
             out = sys.stdout
         if err is None:
             err = sys.stderr
-        cmd = cmd % self._instance._vals
         self._instance.log(
             '%s@%s$ %s\n'
             % (self._username, self._instance._boto_instance.id, cmd))
@@ -607,7 +604,6 @@ class EC2InstanceConnection:
         Use this to run commands that require local SSH credentials. For
         example, getting private branches from Launchpad.
         """
-        cmd = cmd % self._instance._vals
         self._instance.log(
             '%s@%s$ %s\n'
             % (self._username, self._instance._boto_instance.id, cmd))
