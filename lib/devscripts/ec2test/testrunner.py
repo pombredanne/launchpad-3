@@ -131,7 +131,6 @@ class EC2TestRunner:
           - file (after checking we can write to it)
           - vals, a dict containing
             - the environment
-            - trunk_branch (either from global or derived from branches)
             - branch
             - smtp_server
             - smtp_username
@@ -300,7 +299,7 @@ class EC2TestRunner:
         # a method means it uses...?). Consider changing things around so that
         # vals is not needed.
         self.vals = vals
-        self.vals['trunk_branch'] = trunk_branch
+        self._trunk_branch = trunk_branch
         self.vals['branch'] = branch
 
         # Email configuration.
@@ -368,7 +367,7 @@ class EC2TestRunner:
         user_connection.perform('rm -rf /var/launchpad/test')
         # Get trunk.
         user_connection.run_with_ssh_agent(
-            'bzr branch %(trunk_branch)s /var/launchpad/test')
+            'bzr branch %s /var/launchpad/test' % (self._trunk_branch,))
         # Merge the branch in.
         if self.vals['branch'] is not None:
             user_connection.run_with_ssh_agent(
@@ -503,7 +502,7 @@ class EC2TestRunner:
             remote_branch = Branch.open(branch)
             branch_revno = remote_branch.revno()
         else:
-            branch = self.vals['trunk_branch']
+            branch = self._trunk_branch
             branch_revno = None
         cmd.append('--public-branch=%s' % branch)
         if branch_revno is not None:
