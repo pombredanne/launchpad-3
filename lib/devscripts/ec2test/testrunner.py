@@ -33,6 +33,7 @@ class UnknownBranchURL(Exception):
             self,
             "Couldn't parse '%s', not a Launchpad branch." % (branch_url,))
 
+
 def validate_file(filename):
     """Raise an error if 'filename' is not a file we can write to."""
     if filename is None:
@@ -135,7 +136,8 @@ class EC2TestRunner:
                  pqm_message=None, pqm_public_location=None,
                  pqm_submit_location=None,
                  open_browser=False, pqm_email=None,
-                 include_download_cache_changes=None, instance=None, vals=None):
+                 include_download_cache_changes=None, instance=None,
+                 vals=None):
         """Create a new EC2TestRunner.
 
         This sets the following attributes:
@@ -308,8 +310,8 @@ class EC2TestRunner:
                 for item in email:
                     if not isinstance(item, basestring):
                         raise ValueError(
-                            'email must be True, False, a string, or a list of '
-                            'strings')
+                            'email must be True, False, a string, or a list '
+                            'of strings')
                     tmp.append(item)
                 email = tmp
         else:
@@ -365,7 +367,6 @@ class EC2TestRunner:
         # logging, rather than printing to stdout.
         sys.stdout.write(msg)
         sys.stdout.flush()
-
 
     def configure_system(self):
         user_connection = self._instance.connect()
@@ -537,7 +538,7 @@ class EC2TestRunner:
         else:
             branch = self.vals['trunk_branch']
             branch_revno = None
-        cmd.append('--public-branch=%s'  % branch)
+        cmd.append('--public-branch=%s' % branch)
         if branch_revno is not None:
             cmd.append('--public-branch-revno=%d' % branch_revno)
 
