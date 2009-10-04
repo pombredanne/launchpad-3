@@ -162,7 +162,7 @@ class EC2TestRunner:
             - key
             - launchpad_login
         """
-        self.original_branch = branch # just for easy access in debugging
+        self.original_branch = branch
         self.test_options = test_options
         self.headless = headless
         self.include_download_cache_changes = include_download_cache_changes
