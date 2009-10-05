@@ -208,23 +208,8 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         self.layer.txn.commit()
 
-        # Check the announcement email.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        # This is now a MIMEMultipart message.
-        msg = message_from_string(raw_msg)
-        body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
-
-        self.assertEquals(from_addr, 'bounces@canonical.com')
-        self.assertEquals(
-            to_addrs, ['breezy-autotest-changes@lists.ubuntu.com'])
-
-        expected_subject = (
-            '[ubuntutest/breezy-autotest-security]\n\t'
-            'dist-upgrader_20060302.0120_all.tar.gz, foocomm 1.0-2 (Accepted)')
-        self.assertEquals(msg['Subject'], expected_subject)
-
-        self.assertTrue(body.startswith('foocomm (1.0-2) breezy; urgency=low'))
+        # Make sure no announcement email was sent.
+        self.assertEquals(len(stub.test_emails), 0)
 
         self.layer.switchDbUser('launchpad')
 
