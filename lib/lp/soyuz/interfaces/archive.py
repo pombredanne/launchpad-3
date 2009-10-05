@@ -253,6 +253,16 @@ class IArchivePublic(IHasOwner, IPrivacy):
         description=_(
             "A delta to apply to all build scores for this archive."))
 
+    external_dependencies = Text(
+        title=_("External dependencies"), required=False, readonly=False,
+        description=_(
+            "Comma-separated list of repositories to be used to retrieve any "
+            "external build dependencies when building packages in this "
+            "archive, in the format: "
+            "deb [user:pass@]<host>[/path] %(series)s[-pocket] [components]  "
+            "The series variable is replaced with the series name of the "
+            "context build."))
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
@@ -964,16 +974,6 @@ class IArchiveAppend(Interface):
 
 class IArchiveEdit(Interface):
     """Archive interface for operations restricted by edit privilege."""
-
-    external_dependencies = Text(
-        title=_("External dependencies"), required=False, readonly=False,
-        description=_(
-            "Comma-separated list of repositories to be used to retrieve any "
-            "external build dependencies when building packages in this "
-            "archive, in the format: "
-            "deb [user:pass@]<host>[/path] %(series)s[-pocket] [components]  "
-            "The series variable is replaced with the series name of the "
-            "context build."))
 
     @operation_parameters(
         person=Reference(schema=IPerson),
