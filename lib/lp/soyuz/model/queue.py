@@ -549,6 +549,15 @@ class PackageUpload(SQLBase):
                     pub_record.createMissingBuilds(
                         pas_verify=pas_verify, logger=logger)
 
+            # The stanza above copied the required files from the restricted
+            # to the public librarian. We can hence safely assume that the
+            # changes file is available (from the latter) now.
+            changes_file_object = StringIO.StringIO(self.changesfile.read())
+            self.notify(
+                announce_list=self.distroseries.changeslist,
+                changes_file_object=changes_file_object, allow_unsigned=True)
+            self.syncUpdate()
+
         self.setDone()
 
         return publishing_records
