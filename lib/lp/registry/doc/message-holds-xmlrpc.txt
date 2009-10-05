@@ -1,3 +1,4 @@
+=====================================
 XMLRPC interface for holding messages
 =====================================
 
@@ -176,7 +177,7 @@ transitioned to their permanent states.
 
 
 Private membership teams
-------------------------
+========================
 
 When a private membership team has a mailing list, its messages can also be
 held for moderator approval.
@@ -220,3 +221,51 @@ to the mailing list.
     >>> dispositions = mailinglist_api.getMessageDispositions()
     >>> print_dispositions(dispositions)
     <fourth-post> team-private accept
+
+
+Non-ascii messages
+==================
+
+Messages with non-ascii in their headers or bodies are not exactly legal (they
+should be encoded) but do occur especially in spam.  These messages can be
+held for moderator approval too.
+
+    >>> spam_message = message_from_string("""\
+    ... From: Anne \xa9 Person <anne.person@example.com>
+    ... To: team-one@lists.launchpad.dev
+    ... Subject: \xa9 Badgers!
+    ... Message-ID: <fifth-post>
+    ... Date: Fri, 01 Aug 2000 01:08:59 -0000
+    ...
+    ... Watch out for badgers! \xa9
+    ... """)
+
+    >>> import xmlrpclib
+    >>> mailinglist_api.holdMessage(
+    ...     'team-one',
+    ...     xmlrpclib.Binary(spam_message.as_string()))
+    True
+    >>> commit()
+
+    >>> held_message_spam = message_set.getMessageByMessageID('<fifth-post>')
+    >>> print held_message_spam.message_id
+    <fifth-post>
+    >>> print held_message_spam.posted_by.displayname
+    Anne Person
+
+    >>> held_message_spam.posted_message.open()
+    >>> try:
+    ...     print held_message_spam.posted_message.read()
+    ... finally:
+    ...     held_message_spam.posted_message.close()
+    From: Anne © Person <anne.person@example.com>
+    To: team-one@lists.launchpad.dev
+    Subject: © Badgers!
+    Message-ID: <fifth-post>
+    Date: Fri, 01 Aug 2000 01:08:59 -0000
+    <BLANKLINE>
+    Watch out for badgers! ©
+    <BLANKLINE>
+
+    >>> held_message_spam.status
+     <DBItem PostedMessageStatus.NEW, (0) New status>

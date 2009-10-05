@@ -222,7 +222,7 @@ The diff is now visible through the merge proposal.
     >>> preview_diff = webservice.get(
     ...     merge_proposal['preview_diff_link']).jsonBody()
     >>> pprint_entry(preview_diff)
-    added_lines_count: None
+    added_lines_count: 0
     branch_merge_proposal_link:
       u'http://.../~source/fooix/fix-it/+merge/1'
     conflicts: u'oh, no conflicts'
@@ -231,7 +231,7 @@ The diff is now visible through the merge proposal.
     diff_text_link:
       u'http://.../~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
     diffstat: {u'fooix.txt': [0, 0]}
-    removed_lines_count: None
+    removed_lines_count: 0
     resource_type_link: u'http://.../#preview_diff'
     self_link:
       u'http://.../~source/fooix/fix-it/+merge/1/+preview-diff'

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 
+from copy import copy
 from datetime import datetime, timedelta
 import socket
 import sys
@@ -259,6 +260,87 @@ class BugWatchUpdater(object):
                 self.txn.abort()
         self._logout()
 
+    def forceUpdateAll(self, bug_tracker_name, batch_size):
+        """Update all the watches for `bug_tracker_name`.
+
+        :param bug_tracker_name: The name of the bug tracker to update.
+        :param batch_size: The number of bug watches to update in one
+            go. If zero, all bug watches will be updated.
+        """
+        self._login()
+        bug_tracker = getUtility(IBugTrackerSet).getByName(bug_tracker_name)
+        if bug_tracker is None:
+            # If the bug tracker is nonsense then just ignore it.
+            self.log.info(
+                "Bug tracker '%s' doesn't exist. Ignoring." %
+                bug_tracker_name)
+            return
+        elif bug_tracker.watches.count() == 0:
+            # If there are no watches to update, ignore the bug tracker.
+            self.log.info(
+                "Bug tracker '%s' doesn't have any watches. Ignoring." %
+                bug_tracker_name)
+            return
+
+        # Reset all the bug watches for the bug tracker.
+        self.log.info(
+            "Resetting %s bug watches for bug tracker '%s'" %
+            (bug_tracker.watches.count(), bug_tracker_name))
+        bug_tracker.resetWatches()
+        self.txn.commit()
+
+        # Take a copy of the bug tracker URL. If the transaction fails
+        # later we can't refer to the baseurl attribute of the bug
+        # tracker.
+        bug_tracker_url = bug_tracker.baseurl
+
+        # Loop over the bug watches in batches as specificed by
+        # batch_size until there are none left to update.
+        self.log.info(
+            "Updating %s watches on bug tracker '%s'" %
+            (bug_tracker.watches.count(), bug_tracker_name))
+        iteration = 0
+        has_watches_to_update = True
+        while has_watches_to_update:
+            self.txn.begin()
+            try:
+                self.updateBugTracker(bug_tracker, batch_size)
+                self.txn.commit()
+            except (KeyboardInterrupt, SystemExit):
+                # We should never catch KeyboardInterrupt or SystemExit.
+                raise
+            except Exception, error:
+                # If something unexpected goes wrong, we log it and
+                # continue: a failure shouldn't break the updating of
+                # the other bug trackers.
+                info = sys.exc_info()
+                properties = [
+                    ('bugtracker', bug_tracker_name),
+                    ('baseurl', bug_tracker_url)]
+                if isinstance(error, BugWatchUpdateError):
+                    self.error(
+                        str(error), properties=properties, info=info)
+                elif isinstance(error, socket.timeout):
+                    self.error(
+                        "Connection timed out when updating %s" %
+                        bug_tracker_url,
+                        properties=properties, info=info)
+                else:
+                    self.error(
+                        "An exception was raised when updating %s" %
+                        bug_tracker_url,
+                        properties=properties, info=info)
+                self.txn.abort()
+                break
+
+            watches_left = bug_tracker.getBugWatchesNeedingUpdate(23).count()
+            self.log.info(
+                "%s watches left to check on bug tracker '%s'" %
+                (watches_left, bug_tracker_name))
+            has_watches_to_update = watches_left > 0
+
+        self._logout()
+
     def _getBugWatch(self, bug_watch_id):
         """Return the bug watch with id `bug_watch_id`."""
         return getUtility(IBugWatchSet).get(bug_watch_id)
@@ -294,8 +376,8 @@ class BugWatchUpdater(object):
         if (bug_tracker == gnome_bugzilla and
             isinstance(remotesystem_to_use, BugzillaAPI)):
 
-            api_watches = []
-            normal_watches = []
+            syncable_watches = []
+            other_watches = []
 
             bug_ids = [bug_watch.remotebug for bug_watch in bug_watches]
             remote_products = remotesystem_to_use.getProductsForRemoteBugs(
@@ -304,17 +386,22 @@ class BugWatchUpdater(object):
             # For bug watches on remote bugs that are against products
             # in the _syncable_gnome_products list - i.e. ones with which
             # we want to sync comments - we return a BugzillaAPI
-            # instance. Otherwise we return a normal Bugzilla instance.
+            # instance with sync_comments=True, otherwise we return a
+            # similar BugzillaAPI instance, but with sync_comments=False.
+            remotesystem_for_syncables = remotesystem_to_use
+            remotesystem_for_others = copy(remotesystem_to_use)
+            remotesystem_for_others.sync_comments = False
+
             for bug_watch in bug_watches:
                 if (remote_products[bug_watch.remotebug] in
                     self._syncable_gnome_products):
-                    api_watches.append(bug_watch)
+                    syncable_watches.append(bug_watch)
                 else:
-                    normal_watches.append(bug_watch)
+                    other_watches.append(bug_watch)
 
             trackers_and_watches = [
-                (remotesystem_to_use, api_watches),
-                (remotesystem, normal_watches),
+                (remotesystem_for_syncables, syncable_watches),
+                (remotesystem_for_others, other_watches),
                 ]
         else:
             trackers_and_watches = [(remotesystem_to_use, bug_watches)]
@@ -575,7 +662,6 @@ class BugWatchUpdater(object):
         for bug_watch in list(bug_watches):
             if bug_watch.remotebug not in remote_ids_to_check:
                 bug_watches.remove(bug_watch)
-
 
         self.log.info("Updating %i watches for %i bugs on %s" %
             (len(bug_watches), len(remote_ids_to_check),

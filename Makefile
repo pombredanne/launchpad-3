@@ -197,9 +197,7 @@ stop_librarian:
 	bin/killservice librarian
 
 pull_branches: support_files
-	# Mirror the hosted branches in the development upload area to the
-	# mirrored area.
-	$(PY) cronscripts/supermirror-pull.py upload
+	$(PY) cronscripts/supermirror-pull.py
 
 scan_branches:
 	# Scan branches from the filesystem into the database.
