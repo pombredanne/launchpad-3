@@ -249,10 +249,14 @@ class GenericBranchCollection:
             table=Distribution,
             join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
 
-    def officialBranches(self):
+    def officialBranches(self, pocket=None):
         """See `IBranchCollection`"""
+        if pocket is None:
+            expressions = []
+        else:
+            expressions = [SeriesSourcePackageBranch.pocket == pocket]
         return self._filterBy(
-            [],
+            expressions,
             table=SeriesSourcePackageBranch,
             join=Join(SeriesSourcePackageBranch,
                       SeriesSourcePackageBranch.branch == Branch.id))

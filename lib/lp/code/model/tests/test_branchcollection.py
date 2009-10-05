@@ -283,6 +283,21 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual(
             sorted([branch1, branch2]), sorted(collection.getBranches()))
 
+    def test_official_branches_pocket(self):
+        # If passed a pocket, `officialBranches` returns a new collection that
+        # only has branches that have been officially linked to a source
+        # package in that pocket.
+        branch1 = self.factory.makePackageBranch()
+        self._makeOffical(branch1, PackagePublishingPocket.RELEASE)
+        branch2 = self.factory.makePackageBranch()
+        self._makeOffical(branch2, PackagePublishingPocket.BACKPORTS)
+        self.factory.makePackageBranch()
+        self.factory.makePackageBranch()
+        collection = self.all_branches.officialBranches(
+            PackagePublishingPocket.BACKPORTS)
+        self.assertEqual(
+            sorted([branch2]), sorted(collection.getBranches()))
+
     def test_in_distribution_source_package(self):
         # 'inDistributionSourcePackage' returns a new collection that only has
         # branches for the source package across any distroseries of the

@@ -124,7 +124,7 @@ class IBranchCollection(Interface):
     def inDistributionSourcePackage(distro_source_package):
         """Restrict to branches in a 'package' for a 'distribution'."""
 
-    def officialBranches():
+    def officialBranches(pocket=None):
         """Restrict to branches that are official for some source package."""
 
     def isJunk():
