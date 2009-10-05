@@ -134,11 +134,7 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
         expressions = self._getBranchExpressions()
-        results = self.store.using(*tables).find(Branch, *expressions)
-        def identity(x):
-            return x
-        # Decorate the result set to work around bug 217644.
-        return DecoratedResultSet(results, identity)
+        return self.store.using(*tables).find(Branch, *expressions)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None):
