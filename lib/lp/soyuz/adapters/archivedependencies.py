@@ -36,7 +36,6 @@ __all__ = [
     'pocket_dependencies',
     ]
 
-from canonical.config import config
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.archive import ArchivePurpose, ALLOW_RELEASE_BUILDS
