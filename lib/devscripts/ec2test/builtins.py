@@ -347,14 +347,13 @@ class cmd_land(EC2Command):
                 LaunchpadBranchLander, MissingReviewError)
         except ImportError:
             self.outf.write(
-                "*************************************************\n\n"
+                "***************************************************\n\n"
                 "Could not load the autoland module; please ensure\n"
                 "that launchpadlib and lazr.uri are installed and\n"
                 "found in sys.path/PYTHONPATH.\n\n"
-                "Note that these should *not* be installed with\n"
-                "setuptools/easy_install because this will break\n"
-                "the rest of Launchpad.\n\n"
-                "*************************************************\n")
+                "Note that these should *not* be installed system-\n"
+                "wide because this will break the rest of Launchpad.\n\n"
+                "***************************************************\n")
             raise
         if debug:
             pdb.set_trace()
