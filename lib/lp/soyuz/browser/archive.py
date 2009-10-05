@@ -1757,6 +1757,8 @@ class ArchiveAdminView(BaseArchiveEditView):
                    'buildd_secret', 'authorized_size', 'relative_build_score',
                    'external_dependencies']
 
+    custom_widget('external_dependencies', TextAreaWidget, height=3)
+
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
 
