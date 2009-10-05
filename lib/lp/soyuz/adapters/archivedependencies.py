@@ -163,9 +163,9 @@ def get_sources_list_for_building(build):
     # specified in the configuration.
     archive_config_key = 'ppa.%s_%s' % (
         build.archive.owner.name, build.archive.name)
-    if archive_config_key in config:
-        archive_config = config[archive_config_key]
-        for archive_dep in archive_config.dependencies.splitlines():
+    dependencies = build.archive.external_dependencies
+    if dependencies is not None:
+        for archive_dep in dependencies.split(","):
             line = archive_dep % (
                 {'series': build.distroarchseries.distroseries.name})
             sources_list_lines.append(line)
