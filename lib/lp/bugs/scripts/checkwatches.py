@@ -260,7 +260,7 @@ class BugWatchUpdater(object):
                 self.txn.abort()
         self._logout()
 
-    def updateAllWatches(self, bug_tracker_name, batch_size):
+    def forceUpdateAll(self, bug_tracker_name, batch_size):
         """Update all the watches for `bug_tracker_name`.
 
         :param bug_tracker_name: The name of the bug tracker to update.

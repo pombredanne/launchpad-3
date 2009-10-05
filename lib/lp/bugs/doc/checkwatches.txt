@@ -267,8 +267,8 @@ Updating all the watches on a bug tracker
 -----------------------------------------
 
 It's possible to update all the watches on a bug tracker using
-checkwatches using BugWatchUpdater's updateAllWatches() method.
-updateAllWatches() accepts a bug_tracker_name argument because it's
+checkwatches using BugWatchUpdater's forceUpdateAll() method.
+forceUpdateAll() accepts a bug_tracker_name argument because it's
 called by the checkwatches script, which doesn't know or care about
 IBugTracker and instances thereof.
 
@@ -292,7 +292,7 @@ So our Savannah instance now has no watches that need checking.
     >>> savannah.getBugWatchesNeedingUpdate(23).count()
     0
 
-However, updateAllWatches() will update every watch, whether they've
+However, forceUpdateAll() will update every watch, whether they've
 been recently checked or not.
 
 We'll create a helper method here, because we want to monkey patch the
@@ -301,7 +301,7 @@ BugWatchUpdater's logger.
     >>> def update_all(bug_tracker_name, batch_size=None):
     ...     updater = BugWatchUpdater(transaction)
     ...     updater.log = FakeLogger()
-    ...     updater.updateAllWatches(bug_tracker_name, batch_size)
+    ...     updater.forceUpdateAll(bug_tracker_name, batch_size)
 
     >>> update_all('savannah', batch_size)
     INFO Resetting 1 bug watches for bug tracker 'savannah'
@@ -318,7 +318,7 @@ since that's the error that was raised during the update.
     ...         watch.lastchecked is not None, watch.last_error_type.title)
     True, Unsupported Bugtracker
 
-If a bug tracker doesn't have any watches to update, updateAllWatches()
+If a bug tracker doesn't have any watches to update, forceUpdateAll()
 will ignore it.
 
     >>> login('test@canonical.com')
@@ -327,7 +327,7 @@ will ignore it.
     >>> update_all(empty_tracker.name)
     INFO Bug tracker 'auto-example.com' doesn't have any watches. Ignoring.
 
-Similarly, updateAllWatches() will ignore the bug tracker if it doesn't exist.
+Similarly, forceUpdateAll() will ignore the bug tracker if it doesn't exist.
 
     >>> update_all('nah-this-wont-work')
     INFO Bug tracker 'nah-this-wont-work' doesn't exist. Ignoring.
@@ -361,7 +361,7 @@ made.
 
     >>> non_connecting_updater = NonConnectingUpdater(transaction)
     >>> non_connecting_updater.log = FakeLogger()
-    >>> non_connecting_updater.updateAllWatches(
+    >>> non_connecting_updater.forceUpdateAll(
     ...     empty_tracker.name, 1)
     INFO Resetting 5 bug watches for bug tracker 'auto-example.com'
     INFO Updating 5 watches on bug tracker 'auto-example.com'

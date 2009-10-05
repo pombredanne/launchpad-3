@@ -52,7 +52,7 @@ class CheckWatches(LaunchpadCronScript):
             # The user has requested that we update *all* the watches
             # for these bugtrackers
             for bug_tracker in self.options.bug_trackers:
-                updater.updateAllWatches(bug_tracker, batch_size)
+                updater.forceUpdateAll(bug_tracker, batch_size)
         else:
             # Otherwise we just update those watches that need updating,
             # and we let the BugWatchUpdater decide which those are.
