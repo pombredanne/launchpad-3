@@ -76,7 +76,6 @@ from lp.code.enums import (
     CodeImportResultStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
 from lp.code.interfaces.branch import UnknownBranchTypeError
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -509,9 +508,9 @@ class LaunchpadObjectFactory(ObjectFactory):
                          productseries=productseries,
                          name=name)
 
-    def makeProductRelease(self, milestone=None):
+    def makeProductRelease(self, milestone=None, product=None):
         if milestone is None:
-            milestone = self.makeMilestone()
+            milestone = self.makeMilestone(product=product)
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
 
