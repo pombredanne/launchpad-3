@@ -17,7 +17,8 @@ __all__ = [
 from operator import attrgetter
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+
+from storm.store import Store
 
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from lp.registry.interfaces.productseries import IProductSeries
@@ -172,7 +173,7 @@ class RegistryDeleteViewMixin:
             # The owner of the subscription or an admin are the only users
             # that can destroy a subscription, but this rule cannot prevent
             # the owner from removing the structure.
-            removeSecurityProxy(subscription).destroySelf()
+            Store.of(subscription).remove(subscription)
 
     def _remove_series_bugs_and_specifications(self, series):
         """Untarget the associated bugs and subscriptions."""
@@ -182,7 +183,7 @@ class RegistryDeleteViewMixin:
             # Bugtasks cannot be deleted directly. In this case, the bugtask
             # is already reported on the product, so the series bugtask has
             # no purpose without a series.
-            removeSecurityProxy(bugtask).destroySelf()
+            Store.of(bugtask).remove(bugtask)
 
     def _deleteProductSeries(self, series):
         """Remove the series and delete/unlink related objects.
