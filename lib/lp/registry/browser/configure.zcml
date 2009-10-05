@@ -689,7 +689,7 @@
         template="../templates/announcement-delete.pt"/>
     <browser:pages
         for="lp.registry.interfaces.announcement.IHasAnnouncements"
-        class="lp.registry.browser.announcement.AnnouncementSetView"
+        class="lp.registry.browser.announcement.HasAnnouncementsView"
         facet="overview"
         permission="zope.Public">
         <browser:page

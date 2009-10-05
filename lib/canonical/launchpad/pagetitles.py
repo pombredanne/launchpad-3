@@ -487,8 +487,6 @@ milestone_edit = ContextTitle('Edit %s')
 
 milestone_delete = ContextTitle('Delete %s')
 
-announcements_all = 'Announcements from all projects hosted in Launchpad'
-
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
 def object_driver(context, view):

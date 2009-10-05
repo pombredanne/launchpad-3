@@ -239,7 +239,7 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to unpublish an announcement."""
 
     schema = IAnnouncement
-    page_title  = 'Retract announcement'
+    page_title = 'Retract announcement'
 
     @action(_('Retract'), name='retract')
     def retract_action(self, action, data):
@@ -251,7 +251,7 @@ class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to delete an annoucement."""
 
     schema = IAnnouncement
-    page_title  = 'Delete announcement'
+    page_title = 'Delete announcement'
 
     @action(_("Delete"), name="delete", validator='validate_cancel')
     def action_delete(self, action, data):
@@ -308,6 +308,9 @@ class AnnouncementSetView(HasAnnouncementsView):
         AnnouncementsFeedLink,
         RootAnnouncementsFeedLink,
         )
+
+    page_title = 'Announcements from all projects hosted in Launchpad'
+    label = page_title
 
 
 class AnnouncementView(LaunchpadView):
