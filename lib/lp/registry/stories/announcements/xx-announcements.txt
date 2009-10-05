@@ -269,6 +269,9 @@ The page shows the announcement and it has a link back to the announcements
 page that any user can navigate.
 
     >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(content.h1)
+    Derby announcement headline
+
     >>> print extract_text(content.findAll('p')[1])
     Derby announcement summary
 
