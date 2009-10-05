@@ -25,3 +25,23 @@ Announcement breadcrumbs use the announcement title.
     >>> hierarchy.items
     [<DisplaynameBreadcrumb ... text='Cube'>,
      <TitleBreadcrumb ... text='A title'>]
+
+
+Menus
+-----
+
+The announcement module provides two menus. There is an edit menu for an
+announcement.
+
+    >>> from lp.registry.browser.announcement import (
+    ...     AnnouncementEditNavigationMenu, AnnouncementCreateNavigationMenu)
+    >>> from lp.testing.menu import check_menu_links
+
+    >>> check_menu_links(AnnouncementEditNavigationMenu(announcement))
+    True
+
+There is a menu for views for IHasAnnouncements objects to list there
+announcements. The product implements IHasAnnouncements.
+
+    >>> check_menu_links(AnnouncementCreateNavigationMenu(product))
+    True
