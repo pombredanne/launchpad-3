@@ -18,7 +18,6 @@ from bzrlib.option import ListOption, Option
 import socket
 
 from devscripts import get_launchpad_root
-from devscripts.autoland import LaunchpadBranchLander, MissingReviewError
 
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
@@ -343,6 +342,20 @@ class cmd_land(EC2Command):
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
             print_commit=False, force=False):
+        try:
+            from devscripts.autoland import (
+                LaunchpadBranchLander, MissingReviewError)
+        except ImportError:
+            self.outf.write(
+                "*************************************************\n\n"
+                "Could not load the autoland module; please ensure\n"
+                "that launchpadlib and lazr.uri are installed and\n"
+                "found in sys.path/PYTHONPATH.\n\n"
+                "Note that these should *not* be installed with\n"
+                "setuptools/easy_install because this will break\n"
+                "the rest of Launchpad.\n\n"
+                "*************************************************\n")
+            raise
         if debug:
             pdb.set_trace()
         if print_commit and dry_run:
