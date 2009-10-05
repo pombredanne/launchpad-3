@@ -31,6 +31,15 @@ def clone_branch(db_branch, new_distro_series):
         sourcepackagename=new_branch.sourcepackagename,
         distroseries=new_distro_series)
 
+    # make new db branch
+    # make it official
+
+    # for both hosted and mirrored area:
+    #  move .bzr directory from old to new (some abstraction violations here!)
+    #  init branch at old location
+    #  set stacked on url for old location
+    #  pull from new location to new
+
 
 def branch_ubuntu():
     pass
