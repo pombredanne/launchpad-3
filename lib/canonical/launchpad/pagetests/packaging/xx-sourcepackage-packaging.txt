@@ -15,7 +15,7 @@ package's +packaging page:
   * Blueprints - not linked
   * Translations - http://translations.launchpad.dev/ubuntu/warty/+source/mozilla
   * Answers - http://answers.launchpad.dev/ubuntu/warty/+source/mozilla
-  Main heading: Upstream links for mozilla in Ubuntu Warty
+  Main heading: Upstream links for ...mozilla... source package in Warty
 
   >>> print extract_text(
   ...     find_tags_by_class(user_browser.contents, 'informational')[0])

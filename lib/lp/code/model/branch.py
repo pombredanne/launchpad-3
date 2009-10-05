@@ -37,7 +37,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad import _
 from lp.services.job.model.job import Job
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -60,7 +59,7 @@ from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
     BranchTargetError, BranchTypeError, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet)
+    IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
@@ -73,6 +72,8 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
+from lp.services.mail.notificationrecipientset import (
+    NotificationRecipientSet)
 
 
 class Branch(SQLBase):
@@ -848,8 +849,14 @@ class Branch(SQLBase):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
-        self.next_mirror_time = UTC_NOW
-        self.syncUpdate()
+        from canonical.launchpad.interfaces import IStore
+        IStore(self).find(
+            Branch,
+            Branch.id == self.id,
+            Or(Branch.next_mirror_time > UTC_NOW,
+               Branch.next_mirror_time == None)
+            ).set(next_mirror_time=UTC_NOW)
+        self.next_mirror_time = AutoReload
         return self.next_mirror_time
 
     def startMirroring(self):
@@ -942,6 +949,35 @@ class Branch(SQLBase):
             or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
             return True
         return False
+
+    def _checkBranchVisibleByUser(self, user):
+        """Is *this* branch visible by the user.
+
+        This method doesn't check the stacked upon branch.  That is handled by
+        the `visibleByUser` method.
+        """
+        if not self.private:
+            return True
+        if user is None:
+            return False
+        if user.inTeam(self.owner):
+            return True
+        for subscriber in self.subscribers:
+            if user.inTeam(subscriber):
+                return True
+        return user_has_special_branch_access(user)
+
+    def visibleByUser(self, user, checked_branches=None):
+        """See `IBranch`."""
+        if checked_branches is None:
+            checked_branches = []
+        can_access = self._checkBranchVisibleByUser(user)
+        if can_access and self.stacked_on is not None:
+            checked_branches.append(self)
+            if self.stacked_on not in checked_branches:
+                can_access = self.stacked_on.visibleByUser(
+                    user, checked_branches)
+        return can_access
 
 
 class DeletionOperation:

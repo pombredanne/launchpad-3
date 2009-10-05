@@ -50,6 +50,24 @@ from lp.testing import (
     TestCase, TestCaseWithFactory)
 
 
+def _create_source(test_publisher, archive):
+    """Create source with meaningful '.changes' file."""
+    changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes'
+
+    changesfile_content = ''
+    handle = open(changesfile_path, 'r')
+    try:
+        changesfile_content = handle.read()
+    finally:
+        handle.close()
+
+    source = test_publisher.getPubSource(
+        sourcename='foocomm', archive=archive, version='1.0-2',
+        changes_file_content=changesfile_content)
+
+    return source
+
+
 class ReUploadFileTestCase(TestCaseWithFactory):
     """Test `ILibraryFileAlias` reupload helper.
 
@@ -770,7 +788,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA)
         private_archive.buildd_secret = 'x'
         private_archive.private = True
-        source = self.test_publisher.getPubSource(archive=private_archive)
+        source = _create_source(self.test_publisher, private_archive)
 
         archive = self.test_publisher.ubuntutest.main_archive
         series = source.distroseries
@@ -899,7 +917,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         ppa.buildd_secret = 'x'
         ppa.private = True
 
-        source = self.test_publisher.getPubSource(archive=ppa)
+        source = _create_source(self.test_publisher, ppa)
         self.test_publisher.getPubBinaries(pub_source=source)
 
         [build] = source.getBuilds()
@@ -944,7 +962,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # The returned object has a more descriptive 'displayname'
         # attribute than plain `IPackageUpload` instances.
         self.assertEquals(
-            'Delayed copy of foo - 666 (source, i386, raw-dist-upgrader)',
+            'Delayed copy of foocomm - 1.0-2 (source, i386, raw-dist-upgrader)',
             delayed_copy.displayname)
 
         # It is targeted to the right publishing context.

@@ -124,15 +124,8 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     schema = ISourcePackage
     field_names = ['productseries']
 
-    @property
-    def label(self):
-        """See `LaunchpadFormView`."""
-        return 'Define upstream link for %s' % self.context.title
-
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    label = 'Define upstream link'
+    page_title = label
 
     @property
     def cancel_url(self):
@@ -163,10 +156,8 @@ class SourcePackageView:
         self.processForm()
 
     @property
-    def page_title(self):
-        """The HTML page title."""
-        return smartquote('"%s" source package in %s') % (
-            self.context.name, self.context.distroseries.title)
+    def label(self):
+        return self.context.title
 
     @property
     def cancel_url(self):
