@@ -174,6 +174,9 @@ class Archive(SQLBase):
     relative_build_score = IntCol(
         dbName='relative_build_score', notNull=True, default=0)
 
+    external_dependencies = StringCol(
+        dbName='external_dependencies', notNull=False, default=None)
+
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
