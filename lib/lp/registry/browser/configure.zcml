@@ -725,6 +725,11 @@
         name="+announcement-macros"
         permission="zope.Public"
         template="../templates/announcement-macros.pt" />
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.announcement.IAnnouncement"
+        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+        permission="zope.Public"/>
     <browser:menus
         module="lp.registry.browser.announcement"
         classes="
