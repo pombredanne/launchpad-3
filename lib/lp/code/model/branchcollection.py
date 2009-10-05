@@ -21,6 +21,8 @@ from lp.code.model.branchmergeproposal import (
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranch)
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Owner, Person
@@ -246,6 +248,14 @@ class GenericBranchCollection:
              Branch.sourcepackagename == sourcepackagename],
             table=Distribution,
             join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
+
+    def officialBranches(self):
+        """See `IBranchCollection`"""
+        return self._filterBy(
+            [],
+            table=SeriesSourcePackageBranch,
+            join=Join(SeriesSourcePackageBranch,
+                      SeriesSourcePackageBranch.branch == Branch.id))
 
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""
