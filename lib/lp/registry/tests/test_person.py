@@ -30,7 +30,7 @@ from lp.registry.model.person import Person
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.testing.systemdocs import create_initialized_view
+from lp.testing.views import create_initialized_view
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)

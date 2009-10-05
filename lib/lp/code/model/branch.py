@@ -849,8 +849,14 @@ class Branch(SQLBase):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
-        self.next_mirror_time = UTC_NOW
-        self.syncUpdate()
+        from canonical.launchpad.interfaces import IStore
+        IStore(self).find(
+            Branch,
+            Branch.id == self.id,
+            Or(Branch.next_mirror_time > UTC_NOW,
+               Branch.next_mirror_time == None)
+            ).set(next_mirror_time=UTC_NOW)
+        self.next_mirror_time = AutoReload
         return self.next_mirror_time
 
     def startMirroring(self):

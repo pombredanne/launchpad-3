@@ -651,12 +651,12 @@ class IMailingListAPIView(Interface):
             team.
         """
 
-    def holdMessage(team_name, text):
+    def holdMessage(team_name, bytes):
         """Hold the message for approval though the Launchpad u/i.
 
         :param team_name: The name of the team/mailing list that this message
             was posted to.
-        :param text: The original text of the message.
+        :param bytes: The original text of the message as bytes.
         :return: True
         """
 
