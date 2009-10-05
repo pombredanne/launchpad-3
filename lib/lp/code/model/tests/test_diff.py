@@ -59,7 +59,7 @@ class DiffTestCase(TestCaseWithFactory):
         # There's a conflict because the source branch added a line "d", but
         # the target branch added the line "c" in the same place.
         self.assertIn(
-            '+<<<<<<< TREE\n c\n+=======\n+d\n+>>>>>>> MERGE-SOURCE\n',
+            '+<<<''<<<< TREE\n c\n+=======\n+d\n+>>>>>''>> MERGE-SOURCE\n',
             diff_text)
 
 
@@ -140,6 +140,28 @@ class TestDiff(DiffTestCase):
         "+d\n"
         "+e\n")
 
+    diff_bytes_2 = (
+        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "@@ -1,3 +0,0 @@\n"
+        "-a\n"
+        "-b\n"
+        "-c\n"
+        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "@@ -0,0 +1,2 @@\n"
+        "+a\n"
+        "+b\n"
+        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "@@ -1,3 +1,5 @@\n"
+        " a\n"
+        "-b\n"
+        " c\n"
+        "+d\n"
+        "+e\n"
+        "+f\n")
+
     def test_generateDiffstat(self):
         self.assertEqual(
             {'foo': (2, 1), 'bar': (0, 3), 'baz': (2, 0)},
@@ -150,6 +172,13 @@ class TestDiff(DiffTestCase):
         self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
                          diff.diffstat)
 
+    def test_fromFileSets_added_removed(self):
+        """fromFile sets added_lines_count, removed_lines_count."""
+        diff = Diff.fromFile(
+            StringIO(self.diff_bytes_2), len(self.diff_bytes_2))
+        self.assertEqual(5, diff.added_lines_count)
+        self.assertEqual(4, diff.removed_lines_count)
+
     def test_fromFile_withError(self):
         # If the diff is formatted such that generating the diffstat fails, we
         # want to record an oops but continue.
@@ -157,7 +186,9 @@ class TestDiff(DiffTestCase):
         diff_bytes = "not a real diff"
         diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
         self.assertNotEqual(last_oops_id, errorlog.globalErrorUtility.lastid)
-        self.assertEqual({}, diff.diffstat)
+        self.assertIs(None, diff.diffstat)
+        self.assertIs(None, diff.added_lines_count)
+        self.assertIs(None, diff.removed_lines_count)
 
 
 class TestStaticDiff(TestCaseWithFactory):
