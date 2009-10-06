@@ -83,8 +83,29 @@ Updating all watches from the command line
 In order to update all bug watches from the checkwatches command line,
 a user needs to pass the '--reset' option to the checkwatches cron script.
 
+First, lets add some bug watches to the Savannah bug tracker to
+demonstrate this.
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> from lp.testing.factory import LaunchpadObjectFactory
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+
+    >>> factory = LaunchpadObjectFactory()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('foo.bar@canonical.com')
+    >>> savannah = getUtility(IBugTrackerSet).getByName('savannah')
+    >>> for i in range(5):
+    ...     bug_watch = factory.makeBugWatch(bugtracker=savannah)
+    ...     bug_watch.lastchecked = datetime.now(pytz.timezone('UTC'))
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
     >>> run_cronscript_with_args(['-vvt', 'savannah', '--reset'])
-    INFO    Bug tracker 'savannah' doesn't have any watches. Ignoring.
+    INFO Resetting 5 bug watches for bug tracker 'savannah'
+    INFO Updating 5 watches on bug tracker 'savannah'
+    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    INFO 0 watches left to check on bug tracker 'savannah'
     INFO    Time for this run...
 
 
