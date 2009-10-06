@@ -38,7 +38,9 @@ def make_branch_official(new_branch):
 
 
 def switch_branches(prefix, scheme, old_branch, new_branch):
+    # What happens if this function gets interrupted?
     #  move .bzr directory from old to new
+    os.makedirs(os.path.join(prefix, branch_id_to_path(new_branch.id)))
     os.rename(
         os.path.join(prefix, branch_id_to_path(old_branch.id), '.bzr'),
         os.path.join(prefix, branch_id_to_path(new_branch.id), '.bzr'))
