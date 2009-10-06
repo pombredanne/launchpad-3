@@ -1087,7 +1087,7 @@ class CheckWatchesCronScript(LaunchpadCronScript):
                  "on the bug tracker that are eligible for checking will "
                  "be checked.")
         self.parser.add_option(
-            '--all', action='store_true', dest='update_all',
+            '--reset', action='store_true', dest='update_all',
             help="Update all the watches on the bug tracker, regardless of "
                  "whether or not they need checking.")
 
