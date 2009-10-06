@@ -73,7 +73,7 @@
          tal:content="structure link/render">
          Add comment
     </div>
-    <div id="#conversation"
+    <div id="conversation"
          tal:content="structure view/conversation/@@+render"/>
   </div>
   <tal:comment replace="structure context/@@+comment/++form++" />
