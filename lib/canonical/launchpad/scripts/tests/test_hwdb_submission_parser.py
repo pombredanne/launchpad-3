@@ -1380,32 +1380,19 @@ invalid line
         unique.
         """
         udev = [
-            {
-                'P': '/devices/LNXSYSTM:00'
-                },
-            {
-                'P': '/devices/LNXSYSTM:00/ACPI_CPU:00'
-                },
+            {'P': '/devices/LNXSYSTM:00'},
+            {'P': '/devices/LNXSYSTM:00/ACPI_CPU:00'},
             ]
         sysfs_attributes = [
-            {
-                'P': '/devices/LNXSYSTM:00'
-                },
+            {'P': '/devices/LNXSYSTM:00'},
             ]
         processors = [
-            {
-                'id': 1,
-                },
-            {
-                'id': 2,
-                }
+            {'id': 1},
+            {'id': 2},
             ]
         packages = {
-            'bzr': {
-                'id': 4},
-            'python-dev': {
-                'id': 6,
-                },
+            'bzr': {'id': 4},
+            'python-dev': {'id': 6},
             }
         submission = {
             'hardware': {
@@ -1432,32 +1419,19 @@ invalid line
         invalid.
         """
         udev = [
-            {
-                'P': '/devices/LNXSYSTM:00'
-                },
-            {
-                'P': '/devices/LNXSYSTM:00'
-                },
+            {'P': '/devices/LNXSYSTM:00'},
+            {'P': '/devices/LNXSYSTM:00'},
             ]
         sysfs_attributes = [
-            {
-                'P': '/devices/LNXSYSTM:00'
-                },
+            {'P': '/devices/LNXSYSTM:00'},
             ]
         processors = [
-            {
-                'id': 1,
-                },
-            {
-                'id': 2,
-                }
+            {'id': 1},
+            {'id': 2}
             ]
         packages = {
-            'bzr': {
-                'id': 4},
-            'python-dev': {
-                'id': 6,
-                },
+            'bzr': {'id': 4},
+            'python-dev': {'id': 6},
             }
         submission = {
             'hardware': {
@@ -1507,25 +1481,15 @@ invalid line
         Variant for submissions with udev data.
         """
         devices = [
-            {
-                'P': '/devices/LNXSYSTM:00',
-                },
-            {
-                'P': '/devices/LNXSYSTM:00/ACPI_CPU:00',
-                },
+            {'P': '/devices/LNXSYSTM:00'},
+            {'P': '/devices/LNXSYSTM:00/ACPI_CPU:00'},
             ]
         processors = [
-            {
-                'id': 3
-                },
-            {
-                'id': 4
-                },
+            {'id': 3},
+            {'id': 4},
             ]
         packages = {
-            'bzr': {
-                'id': 5
-                },
+            'bzr': {'id': 5},
             }
         submission = {
             'hardware': {
@@ -1793,23 +1757,16 @@ invalid line
         # Each dict for a udev device must have a 'P' key.
         parser = SubmissionParser(self.log)
         devices = [
-            {
-                'P': '/devices/LNXSYSTM:00',
-                },
-            {
-                'P': '/devices/LNXSYSTM:00/ACPI_CPU:00',
-                },
+            {'P': '/devices/LNXSYSTM:00'},
+            {'P': '/devices/LNXSYSTM:00/ACPI_CPU:00'},
             ]
         self.assertTrue(parser.checkUdevDictsHavePathKey(devices))
 
         parser = SubmissionParser(self.log)
         parser.submission_key = 'Submission having udev data without "P" key'
         devices = [
-            {
-                'P': '/devices/LNXSYSTM:00',
-                },
-            {
-                },
+            {'P': '/devices/LNXSYSTM:00'},
+            {},
             ]
         self.assertFalse(parser.checkUdevDictsHavePathKey(devices))
 
