@@ -13,8 +13,6 @@ from storm.expr import And, Count, Desc, LeftJoin, Join, Or, Select, Union
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
