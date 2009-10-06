@@ -51,3 +51,4 @@ dist
 ./production-configs
 bzr.dev
 _trial_temp
+lazr-js
