@@ -108,7 +108,7 @@ class BranchMergeProposal(SQLBase):
     target_branch = ForeignKey(
         dbName='target_branch', foreignKey='Branch', notNull=True)
 
-    dependent_branch = ForeignKey(
+    prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
     whiteboard = StringCol(default=None)
@@ -121,8 +121,8 @@ class BranchMergeProposal(SQLBase):
     def private(self):
         return (
             self.source_branch.private or self.target_branch.private or
-            (self.dependent_branch is not None and
-             self.dependent_branch.private))
+            (self.prerequisite_branch is not None and
+             self.prerequisite_branch.private))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
@@ -238,8 +238,8 @@ class BranchMergeProposal(SQLBase):
             self.target_branch: self.target_branch.bzr_identity,
             }
         branches = [self.source_branch, self.target_branch]
-        if self.dependent_branch is not None:
-            branches.append(self.dependent_branch)
+        if self.prerequisite_branch is not None:
+            branches.append(self.prerequisite_branch)
         for branch in branches:
             branch_recipients = branch.getNotificationRecipients()
             for recipient in branch_recipients:
@@ -487,7 +487,7 @@ class BranchMergeProposal(SQLBase):
         proposal = self.source_branch.addLandingTarget(
             registrant=registrant,
             target_branch=self.target_branch,
-            dependent_branch=self.dependent_branch,
+            prerequisite_branch=self.prerequisite_branch,
             whiteboard=self.whiteboard,
             needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
@@ -675,13 +675,13 @@ class BranchMergeProposal(SQLBase):
         return code_review_message
 
     def updatePreviewDiff(self, diff_content, source_revision_id,
-                          target_revision_id, dependent_revision_id=None,
+                          target_revision_id, prerequisite_revision_id=None,
                           conflicts=None):
         """See `IBranchMergeProposal`."""
         # Create the PreviewDiff.
         self.preview_diff = PreviewDiff.create(
             diff_content, source_revision_id, target_revision_id,
-            dependent_revision_id, conflicts)
+            prerequisite_revision_id, conflicts)
 
         # XXX: TimPenhey 2009-02-19 bug 324724
         # Since the branch_merge_proposal attribute of the preview_diff
