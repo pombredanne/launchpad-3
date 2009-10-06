@@ -18,7 +18,6 @@ from bzrlib.option import ListOption, Option
 import socket
 
 from devscripts import get_launchpad_root
-from devscripts.autoland import LaunchpadBranchLander, MissingReviewError
 
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
@@ -108,6 +107,32 @@ postmortem_option = Option(
           'and/or of this script.'))
 
 
+def filename_type(filename):
+    """An option validator for filenames.
+
+    :raise: an error if 'filename' is not a file we can write to.
+    :return: 'filename' otherwise.
+    """
+    if filename is None:
+        return filename
+
+    check_file = filename
+    if os.path.exists(check_file):
+        if not os.path.isfile(check_file):
+            raise BzrCommandError(
+                'file argument %s exists and is not a file' % (filename,))
+    else:
+        check_file = os.path.dirname(check_file)
+        if (not os.path.exists(check_file) or
+            not os.path.isdir(check_file)):
+            raise BzrCommandError(
+                'file %s cannot be created.' % (filename,))
+    if not os.access(check_file, os.W_OK):
+        raise BzrCommandError(
+            'you do not have permission to write %s' % (filename,))
+    return filename
+
+
 class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
 
@@ -164,51 +189,54 @@ class cmd_test(EC2Command):
         machine_id_option,
         instance_type_option,
         Option(
-            'file', short_name='f',
+            'file', short_name='f', type=filename_type,
             help=('Store abridged test results in FILE.')),
         ListOption(
             'email', short_name='e', argname='EMAIL', type=str,
-            help=('Email address to which results should be mailed.  Defaults to '
-                  'the email address from `bzr whoami`. May be supplied multiple '
-                  'times. The first supplied email address will be used as the '
-                  'From: address.')),
+            help=('Email address to which results should be mailed.  '
+                  'Defaults to the email address from `bzr whoami`. May be '
+                  'supplied multiple times. The first supplied email address '
+                  'will be used as the From: address.')),
         Option(
             'noemail', short_name='n',
             help=('Do not try to email results.')),
         Option(
             'test-options', short_name='o', type=str,
-            help=('Test options to pass to the remote test runner.  Defaults to '
-                  "``-o '-vv'``.  For instance, to run specific tests, you might "
-                  "use ``-o '-vvt my_test_pattern'``.")),
+            help=('Test options to pass to the remote test runner.  Defaults '
+                  "to ``-o '-vv'``.  For instance, to run specific tests, "
+                  "you might use ``-o '-vvt my_test_pattern'``.")),
         Option(
             'submit-pqm-message', short_name='s', type=str, argname="MSG",
-            help=('A pqm message to submit if the test run is successful.  If '
-                  'provided, you will be asked for your GPG passphrase before '
-                  'the test run begins.')),
+            help=(
+                'A pqm message to submit if the test run is successful.  If '
+                'provided, you will be asked for your GPG passphrase before '
+                'the test run begins.')),
         Option(
             'pqm-public-location', type=str,
-            help=('The public location for the pqm submit, if a pqm message is '
-                  'provided (see --submit-pqm-message).  If this is not provided, '
-                  'for local branches, bzr configuration is consulted; for '
-                  'remote branches, it is assumed that the remote branch *is* '
-                  'a public branch.')),
+            help=('The public location for the pqm submit, if a pqm message '
+                  'is provided (see --submit-pqm-message).  If this is not '
+                  'provided, for local branches, bzr configuration is '
+                  'consulted; for remote branches, it is assumed that the '
+                  'remote branch *is* a public branch.')),
         Option(
             'pqm-submit-location', type=str,
-            help=('The submit location for the pqm submit, if a pqm message is '
-                  'provided (see --submit-pqm-message).  If this option is not '
-                  'provided, the script will look for an explicitly specified '
-                  'launchpad branch using the -b/--branch option; if that branch '
-                  'was specified and is owned by the launchpad-pqm user on '
-                  'launchpad, it is used as the pqm submit location. Otherwise, '
-                  'for local branches, bzr configuration is consulted; for '
-                  'remote branches, it is assumed that the submit branch is %s.'
+            help=('The submit location for the pqm submit, if a pqm message '
+                  'is provided (see --submit-pqm-message).  If this option '
+                  'is not provided, the script will look for an explicitly '
+                  'specified launchpad branch using the -b/--branch option; '
+                  'if that branch was specified and is owned by the '
+                  'launchpad-pqm user on launchpad, it is used as the pqm '
+                  'submit location. Otherwise, for local branches, bzr '
+                  'configuration is consulted; for remote branches, it is '
+                  'assumed that the submit branch is %s.'
                   % (TRUNK_BRANCH,))),
         Option(
             'pqm-email', type=str,
-            help=('Specify the email address of the PQM you are submitting to. '
-                  'If the branch is local, then the bzr configuration is '
-                  'consulted; for remote branches "Launchpad PQM '
-                  '<launchpad@pqm.canonical.com>" is used by default.')),
+            help=(
+                'Specify the email address of the PQM you are submitting to. '
+                'If the branch is local, then the bzr configuration is '
+                'consulted; for remote branches "Launchpad PQM '
+                '<launchpad@pqm.canonical.com>" is used by default.')),
         postmortem_option,
         Option(
             'headless',
@@ -252,6 +280,10 @@ class cmd_test(EC2Command):
                 'You have specified no way to get the results '
                 'of your headless test run.')
 
+        if test_options != '-vv' and submit_pqm_message is not None:
+            raise BzrCommandError(
+                "Submitting to PQM with non-default test options isn't "
+                "supported")
 
         instance = EC2Instance.make(
             EC2TestRunner.name, instance_type, machine)
@@ -264,7 +296,7 @@ class cmd_test(EC2Command):
             pqm_submit_location=pqm_submit_location,
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance, vals=instance._vals)
+            instance=instance, launchpad_login=instance._launchpad_login)
 
         instance.set_up_and_run(postmortem, not headless, runner.run_tests)
 
@@ -310,6 +342,19 @@ class cmd_land(EC2Command):
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
             print_commit=False, force=False):
+        try:
+            from devscripts.autoland import (
+                LaunchpadBranchLander, MissingReviewError)
+        except ImportError:
+            self.outf.write(
+                "***************************************************\n\n"
+                "Could not load the autoland module; please ensure\n"
+                "that launchpadlib and lazr.uri are installed and\n"
+                "found in sys.path/PYTHONPATH.\n\n"
+                "Note that these should *not* be installed system-\n"
+                "wide because this will break the rest of Launchpad.\n\n"
+                "***************************************************\n")
+            raise
         if debug:
             pdb.set_trace()
         if print_commit and dry_run:
@@ -387,7 +432,7 @@ class cmd_demo(EC2Command):
         runner = EC2TestRunner(
             test_branch, branches=branches,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance, vals=instance._vals)
+            instance=instance)
 
         demo_network_string = '\n'.join(
             '  ' + network for network in demo)
@@ -483,13 +528,15 @@ class cmd_update_image(EC2Command):
             directory before bundling.
         """
         user_connection = instance.connect()
-        user_connection.perform('bzr launchpad-login %(launchpad-login)s')
+        user_connection.perform(
+            'bzr launchpad-login %s' % (instance._launchpad_login,))
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
         user_connection.run_with_ssh_agent(
-            'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
+            'bzr pull -d /var/launchpad/download-cache '
+            'lp:lp-source-dependencies')
         if public:
             update_sourcecode_options = '--public-only'
         else:

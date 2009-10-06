@@ -110,9 +110,9 @@ class IPreviewDiff(IDiff):
                     'generate the diff.'),
             readonly=True))
 
-    dependent_revision_id = exported(
+    prerequisite_revision_id = exported(
         TextLine(
-            title=_('The tip revision id of the dependent branch used to '
+            title=_('The tip revision id of the prerequisite branch used to '
                     'generate the diff.'),
             readonly=True))
 
@@ -131,4 +131,4 @@ class IPreviewDiff(IDiff):
         Bool(readonly=True, description=_(
                 'If the preview diff is stale, it is out of date when '
                 'compared to the tip revisions of the source, target, and '
-                'possibly dependent branches.')))
+                'possibly prerequisite branches.')))
