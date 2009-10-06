@@ -2,7 +2,8 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
-  &raquo;
+
+  <img src="/@@/merge-proposal-icon" />
   <a tal:attributes="href context/fmt:url"
      tal:content="view/friendly_text">Approved</a>
   <tal:for-merging condition="not: context/queue_status/enumvalue:MERGED">

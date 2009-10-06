@@ -543,7 +543,7 @@ as it would refer to non-existent links.
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/foobar/1.0")
     >>> user_browser.getLink('See full publishing history').click()
     >>> print extract_text(find_main_content(user_browser.contents))
-    “foobar” 1.0 source package in Ubuntu
+    Publishing history of “foobar” 1.0 source package in Ubuntu
     ...
     1.0
     Removed from disk on 2006-12-02.

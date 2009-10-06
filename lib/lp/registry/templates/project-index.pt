@@ -7,6 +7,12 @@
   i18n:domain="launchpad"
 >
   <body>
+    <tal:registering metal:fill-slot="registering">
+      Registered
+      <tal:created replace="context/datecreated/fmt:approximatedate" />
+      by
+      <tal:registrant replace="structure context/registrant/fmt:link" />
+    </tal:registering>
 
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="context/title">Mozilla</h1>

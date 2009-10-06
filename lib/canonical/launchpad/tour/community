@@ -92,23 +92,7 @@ Launchpad also helps you organise the social structure of your community with a 
                         </p>
                     </div>
                     <div class="block odd">
-                        <h3>Mentoring</h3>
-                        <h4>Grow your community by mentoring eager new contributors.</h4>
-                        <p class="screen-holder">
-                            <img src="images/community/4.png" alt="Mentoring"  />                        </p>
-                        <p>
-                            Launchpad&rsquo;s mentoring framework lets you connect new and enthusiastic developers with experienced contributors.  By flagging certain bugs and blueprints as suitable starting points for new participants, you can help people learn the ropes of your project.
-                        </p>
-                    </div>
-                    <div class="clear"></div>
-                </div>
-                <div class="furthur-information-block-bot"></div>
-            </div>
-            <div class="furthur-information-block singular">
-                <div class="furthur-information-block-top"></div>
-                <div class="furthur-information-block-mid">
-                    <div class="block">
-                        <h3>Karma</h3>
+                         <h3>Karma</h3>
                         <h4>Karma gives you a quick way to separate the heavy contributors from the newcomers!</h4>
                         <p class="screen-holder">
                             <img src="images/community/5.png" alt="Karma"  />                        </p>
