@@ -64,8 +64,8 @@ class TagFileParseError(Exception):
     """This exception is raised if parse_changes encounters nastiness"""
     pass
 
-re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)");
-re_multi_line_field = re.compile(r"^\s(.*)");
+re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
+re_multi_line_field = re.compile(r"^(\s.*)")
 
 
 def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
@@ -103,7 +103,8 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
 
     num_of_lines = len(indexed_lines.keys())
     index = 0
-    first = -1
+    first_value_for_newline_delimited_field = False
+    more_values_can_follow = False
     while index < num_of_lines:
         index += 1
         line = indexed_lines[index]
@@ -145,21 +146,47 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
         if slf:
             field = slf.groups()[0].lower()
             changes[field] = slf.groups()[1]
-            first = 1
+
+            # If there is no value on this line, we assume this is
+            # the first line of a multiline field, such as the 'files'
+            # field.
+            if changes[field] == '':
+                first_value_for_newline_delimited_field = True
+
+            # Either way, more values for this field could follow
+            # on the next line.
+            more_values_can_follow = True
             continue
         if line.rstrip() == " .":
-            changes[field] += '\n'
+            changes[field] += '\n' + line
             continue
         mlf = re_multi_line_field.match(line)
         if mlf:
-            if first == -1:
+            if more_values_can_follow is False:
                 raise TagFileParseError("%s: could not parse .changes file "
                 "line %d: '%s'\n [Multi-line field continuing on from nothing?]"
                 % (filename, index,line))
-            if first == 1 and changes[field] != "":
-                changes[field] += '\n'
-            first = 0
-            changes[field] += mlf.groups()[0] + '\n'
+
+            # XXX Michael Nelson 20091001 bug=440014
+            # Is there any reason why we're not simply using
+            # apt_pkg.ParseTagFile instead of this looong function.
+            # If we can get rid of this code that is trying to mimic
+            # what ParseTagFile does out of the box, it would be a good
+            # thing.
+
+            # The first value for a newline delimited field, such as
+            # the 'files' field, has its leading spaces stripped. Other
+            # fields (such as a 'binary' field spanning multiple lines)
+            # should *not* be l-stripped of their leading spaces otherwise
+            # they will be re-parsed incorrectly by apt_get.ParseTagFiles()
+            # (for example, from a Source index).
+            value = mlf.groups()[0]
+            if first_value_for_newline_delimited_field:
+                changes[field] = value.lstrip()
+            else:
+                changes[field] += '\n' + value
+
+            first_value_for_newline_delimited_field = False
             continue
         error += line
 

@@ -5,6 +5,7 @@
 
 # arch-tag: 52e0c871-49a3-4186-beb8-9817d02d5465
 
+import apt_pkg
 import unittest
 import sys
 import shutil
@@ -106,19 +107,110 @@ class Testtagfiles(unittest.TestCase):
         tf = parse_tagfile(datadir("changes-with-exploit-bottom"))
         self.assertRaises(KeyError, tf.__getitem__, "you")
 
+
+class TestTagFileDebianPolicyCompat(unittest.TestCase):
+
+    def setUp(self):
+        """Parse the test file using apt_pkg for comparison."""
+
+        tagfile_path = datadir("test436182_0.1_source.changes")
+        tagfile = open(tagfile_path)
+        self.apt_pkg_parsed_version = apt_pkg.ParseTagFile(tagfile)
+        self.apt_pkg_parsed_version.Step()
+
+        # Is it just because this is a very old file that test-related
+        # things are imported locally?
+        from lp.archiveuploader.tagfiles import parse_tagfile
+        self.parse_tagfile_version = parse_tagfile(
+            tagfile_path, allow_unsigned = True)
+
+    def test_parse_tagfile_with_multiline_values(self):
+        """parse_tagfile should not leave trailing '\n' on multiline values.
+
+        This is a regression test for bug 436182.
+        Previously we,
+          1. Stripped leading spaces from subsequent lines of multiline
+             values, and
+          2. appended a trailing '\n' to the end of the value.
+        """
+
+        expected_text = (
+            'test75874, anotherbinary,\n'
+            ' andanother, andonemore,\n'
+            ' lastone')
+
+        self.assertEqual(
+            expected_text,
+            self.apt_pkg_parsed_version.Section['Binary'])
+
+        self.assertEqual(
+            expected_text,
+            self.parse_tagfile_version['binary'])
+
+    def test_parse_tagfile_with_newline_delimited_field(self):
+        """parse_tagfile should not leave leading or tailing '\n' when
+        parsing newline delimited fields.
+
+        Newline-delimited fields should be parsed to match
+        apt_pkg.ParseTageFile.
+
+        Note: in the past, our parse_tagfile function left the leading
+        '\n' in the parsed value, whereas it should not have.
+
+        XXX check where this value is used and ensure it won't be affected
+        (ie. skipping the first value prior to the first \n for example.)
+
+        For an example,
+        see http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Files
+        """
+
+        expected_text = (
+            'f26bb9b29b1108e53139da3584a4dc92 1511 test75874_0.1.tar.gz\n '
+            '29c955ff520cea32ab3e0316306d0ac1 393742 '
+                'pmount_0.9.7.orig.tar.gz\n'
+            ' 91a8f46d372c406fadcb57c6ff7016f3 5302 '
+                'pmount_0.9.7-2ubuntu2.diff.gz')
+
+        self.assertEqual(
+            expected_text,
+            self.apt_pkg_parsed_version.Section['Files'])
+
+        self.assertEqual(
+            expected_text,
+            self.parse_tagfile_version['files'])
+
+    def test_parse_description_field(self):
+        """Apt-pkg preserves the blank-line indicator and not strip leading
+        spaces.
+
+        See http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Description
+        """
+        from lp.archiveuploader.tagfiles import parse_tagfile
+
+        expected_text = (
+            "Here's the single-line synopsis.\n"
+            " Then there is the extended description which can\n"
+            " span multiple lines, and even include blank-lines like this:\n"
+            " .\n"
+            " There you go. If a line contains more than two spaces,"
+            " it should not\n"
+            " be stripped at all and be displayed verbatim. Like this one:\n"
+            "  Don't strip me.\n"
+            "    Or me.\n"
+            " OK, back to normal.")
+
+        self.assertEqual(
+            expected_text,
+            self.apt_pkg_parsed_version.Section['Description'])
+
+        # In the past our parse_tagfile function replaced blank-line
+        # indicators in the description (' .\n') with new lines ('\n'),
+        # but it is now compatible with ParseTagFiles (and ready to be
+        # replaced by ParseTagFiles).
+        self.assertEqual(
+            expected_text,
+            self.parse_tagfile_version['description'])
+
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(Testtagfiles))
-    return suite
-
-def main(argv):
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity = 2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    return unittest.TestLoader().loadTestsFromName(__name__)
 
