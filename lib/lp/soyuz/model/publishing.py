@@ -440,7 +440,12 @@ class IndexStanzaFields:
             if name != 'Files':
                 value = ' %s' % value
 
-            output_lines.append('%s:%s' % (name, value))
+            # XXX Michael Nelson 20090930 bug=436182. We have an issue
+            # in the upload parser that has introduced '\n' at the end of
+            # certain dsc_binaries fields. This work-around allows
+            # critical teams to continue, while giving us more
+            # time to fix the actual issue and update the corrupted data.
+            output_lines.append('%s:%s' % (name, value.rstrip()))
 
         return '\n'.join(output_lines)
 

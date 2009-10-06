@@ -69,6 +69,36 @@ line.
     DEBUG   Removing lock file:...
     <BLANKLINE>
 
+
+Updating all watches from the command line
+------------------------------------------
+
+In order to update all bug watches from the checkwatches command line,
+a user needs to pass the '--all' option to the checkwatches cron script.
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     ['cronscripts/checkwatches.py', '-vvt', 'savannah', '--all'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out
+    ''
+
+    >>> process.returncode
+    0
+
+    >>> print err
+    INFO    creating lockfile
+    INFO    Bug tracker 'savannah' doesn't have any watches. Ignoring.
+    INFO    Time for this run...
+    DEBUG   Removing lock file...
+    <BLANKLINE>
+
+
+Getting help
+------------
+
 The help for the checkwatches cronscript explains the usage of the bug
 tracker option fully.
 
@@ -91,3 +121,6 @@ tracker option fully.
                             bug tracker in this run. If BATCH_SIZE is 0,
                             all watches on the bug tracker that are
                             eligible for checking will be checked.
+      --all                 Update all the watches on the bug tracker,
+                            regardless of whether or not they need
+                            checking.

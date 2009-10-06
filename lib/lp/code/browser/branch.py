@@ -255,11 +255,12 @@ class BranchContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
-        text = 'Propose for merging into another branch'
+        text = 'Propose for merging'
         enabled = (
             self.context.target.supports_merge_proposals and
             not self.context.branch_type == BranchType.IMPORTED)
-        return Link('+register-merge', text, icon='add', enabled=enabled)
+        return Link('+register-merge', text, icon='merge-proposal',
+                    enabled=enabled)
 
     def link_bug(self):
         if self.context.linked_bugs:
