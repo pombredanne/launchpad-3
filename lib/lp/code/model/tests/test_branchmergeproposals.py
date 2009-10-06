@@ -96,9 +96,9 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
         self.setPrivate(bmp.target_branch)
         self.assertTrue(bmp.private)
         bmp.target_branch.setPrivate(False)
-        removeSecurityProxy(bmp).dependent_branch = self.factory.makeBranch(
-            product=bmp.source_branch.product)
-        self.setPrivate(bmp.dependent_branch)
+        removeSecurityProxy(bmp).prerequisite_branch = (
+            self.factory.makeBranch(product=bmp.source_branch.product))
+        self.setPrivate(bmp.prerequisite_branch)
         self.assertTrue(bmp.private)
 
 
@@ -734,16 +734,17 @@ class TestMergeProposalNotification(TestCaseWithFactory):
                          set(recipients.keys()))
 
     def test_getNotificationRecipientsAnyBranch(self):
-        dependent_branch = self.factory.makeProductBranch()
+        prerequisite_branch = self.factory.makeProductBranch()
         bmp = self.factory.makeBranchMergeProposal(
-            dependent_branch=dependent_branch)
+            prerequisite_branch=prerequisite_branch)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.NOEMAIL)
         source_owner = bmp.source_branch.owner
         target_owner = bmp.target_branch.owner
-        dependent_owner = bmp.dependent_branch.owner
-        self.assertEqual(set([source_owner, target_owner, dependent_owner]),
-                         set(recipients.keys()))
+        prerequisite_owner = bmp.prerequisite_branch.owner
+        self.assertEqual(
+            set([source_owner, target_owner, prerequisite_owner]),
+            set(recipients.keys()))
         source_subscriber = self.factory.makePerson()
         bmp.source_branch.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
@@ -752,15 +753,16 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         bmp.target_branch.subscribe(target_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
-        dependent_subscriber = self.factory.makePerson()
-        bmp.dependent_branch.subscribe(dependent_subscriber,
+        prerequisite_subscriber = self.factory.makePerson()
+        bmp.prerequisite_branch.subscribe(prerequisite_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         self.assertEqual(
-            set([source_subscriber, target_subscriber, dependent_subscriber,
-                 source_owner, target_owner, dependent_owner]),
+            set([source_subscriber, target_subscriber,
+                 prerequisite_subscriber, source_owner, target_owner,
+                 prerequisite_owner]),
             set(recipients.keys()))
 
     def test_getNotificationRecipientsIncludesReviewers(self):
@@ -836,6 +838,37 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         self.assertFalse(owner in recipients)
+
+    def test_getNotificationRecipients_privacy(self):
+        # If a user can see only one of the source and target branches, then
+        # they do not get email about the proposal.
+        bmp = self.factory.makeBranchMergeProposal()
+        # Subscribe eric to the source branch only.
+        eric = self.factory.makePerson()
+        bmp.source_branch.subscribe(
+            eric, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        # Subscribe bob to the target branch only.
+        bob = self.factory.makePerson()
+        bmp.target_branch.subscribe(
+            bob, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        # Subscribe charlie to both.
+        charlie = self.factory.makePerson()
+        bmp.source_branch.subscribe(
+            charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        bmp.target_branch.subscribe(
+            charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        # Make both branches private.
+        removeSecurityProxy(bmp.source_branch).private = True
+        removeSecurityProxy(bmp.target_branch).private = True
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.FULL)
+        self.assertFalse(bob in recipients)
+        self.assertFalse(eric in recipients)
+        self.assertTrue(charlie in recipients)
 
 
 class TestGetAddress(TestCaseWithFactory):

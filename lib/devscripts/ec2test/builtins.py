@@ -6,7 +6,9 @@
 __metaclass__ = type
 __all__ = []
 
+import os
 import pdb
+import subprocess
 
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
@@ -14,6 +16,9 @@ from bzrlib.help import help_commands
 from bzrlib.option import ListOption, Option
 
 import socket
+
+from devscripts import get_launchpad_root
+from devscripts.autoland import LaunchpadBranchLander, MissingReviewError
 
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
@@ -103,6 +108,32 @@ postmortem_option = Option(
           'and/or of this script.'))
 
 
+def filename_type(filename):
+    """An option validator for filenames.
+
+    :raise: an error if 'filename' is not a file we can write to.
+    :return: 'filename' otherwise.
+    """
+    if filename is None:
+        return filename
+
+    check_file = filename
+    if os.path.exists(check_file):
+        if not os.path.isfile(check_file):
+            raise BzrCommandError(
+                'file argument %s exists and is not a file' % (filename,))
+    else:
+        check_file = os.path.dirname(check_file)
+        if (not os.path.exists(check_file) or
+            not os.path.isdir(check_file)):
+            raise BzrCommandError(
+                'file %s cannot be created.' % (filename,))
+    if not os.access(check_file, os.W_OK):
+        raise BzrCommandError(
+            'you do not have permission to write %s' % (filename,))
+    return filename
+
+
 class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
 
@@ -159,51 +190,54 @@ class cmd_test(EC2Command):
         machine_id_option,
         instance_type_option,
         Option(
-            'file', short_name='f',
+            'file', short_name='f', type=filename_type,
             help=('Store abridged test results in FILE.')),
         ListOption(
             'email', short_name='e', argname='EMAIL', type=str,
-            help=('Email address to which results should be mailed.  Defaults to '
-                  'the email address from `bzr whoami`. May be supplied multiple '
-                  'times. The first supplied email address will be used as the '
-                  'From: address.')),
+            help=('Email address to which results should be mailed.  '
+                  'Defaults to the email address from `bzr whoami`. May be '
+                  'supplied multiple times. The first supplied email address '
+                  'will be used as the From: address.')),
         Option(
             'noemail', short_name='n',
             help=('Do not try to email results.')),
         Option(
             'test-options', short_name='o', type=str,
-            help=('Test options to pass to the remote test runner.  Defaults to '
-                  "``-o '-vv'``.  For instance, to run specific tests, you might "
-                  "use ``-o '-vvt my_test_pattern'``.")),
+            help=('Test options to pass to the remote test runner.  Defaults '
+                  "to ``-o '-vv'``.  For instance, to run specific tests, "
+                  "you might use ``-o '-vvt my_test_pattern'``.")),
         Option(
             'submit-pqm-message', short_name='s', type=str, argname="MSG",
-            help=('A pqm message to submit if the test run is successful.  If '
-                  'provided, you will be asked for your GPG passphrase before '
-                  'the test run begins.')),
+            help=(
+                'A pqm message to submit if the test run is successful.  If '
+                'provided, you will be asked for your GPG passphrase before '
+                'the test run begins.')),
         Option(
             'pqm-public-location', type=str,
-            help=('The public location for the pqm submit, if a pqm message is '
-                  'provided (see --submit-pqm-message).  If this is not provided, '
-                  'for local branches, bzr configuration is consulted; for '
-                  'remote branches, it is assumed that the remote branch *is* '
-                  'a public branch.')),
+            help=('The public location for the pqm submit, if a pqm message '
+                  'is provided (see --submit-pqm-message).  If this is not '
+                  'provided, for local branches, bzr configuration is '
+                  'consulted; for remote branches, it is assumed that the '
+                  'remote branch *is* a public branch.')),
         Option(
             'pqm-submit-location', type=str,
-            help=('The submit location for the pqm submit, if a pqm message is '
-                  'provided (see --submit-pqm-message).  If this option is not '
-                  'provided, the script will look for an explicitly specified '
-                  'launchpad branch using the -b/--branch option; if that branch '
-                  'was specified and is owned by the launchpad-pqm user on '
-                  'launchpad, it is used as the pqm submit location. Otherwise, '
-                  'for local branches, bzr configuration is consulted; for '
-                  'remote branches, it is assumed that the submit branch is %s.'
+            help=('The submit location for the pqm submit, if a pqm message '
+                  'is provided (see --submit-pqm-message).  If this option '
+                  'is not provided, the script will look for an explicitly '
+                  'specified launchpad branch using the -b/--branch option; '
+                  'if that branch was specified and is owned by the '
+                  'launchpad-pqm user on launchpad, it is used as the pqm '
+                  'submit location. Otherwise, for local branches, bzr '
+                  'configuration is consulted; for remote branches, it is '
+                  'assumed that the submit branch is %s.'
                   % (TRUNK_BRANCH,))),
         Option(
             'pqm-email', type=str,
-            help=('Specify the email address of the PQM you are submitting to. '
-                  'If the branch is local, then the bzr configuration is '
-                  'consulted; for remote branches "Launchpad PQM '
-                  '<launchpad@pqm.canonical.com>" is used by default.')),
+            help=(
+                'Specify the email address of the PQM you are submitting to. '
+                'If the branch is local, then the bzr configuration is '
+                'consulted; for remote branches "Launchpad PQM '
+                '<launchpad@pqm.canonical.com>" is used by default.')),
         postmortem_option,
         Option(
             'headless',
@@ -247,6 +281,10 @@ class cmd_test(EC2Command):
                 'You have specified no way to get the results '
                 'of your headless test run.')
 
+        if test_options != '-vv' and submit_pqm_message is not None:
+            raise BzrCommandError(
+                "Submitting to PQM with non-default test options isn't "
+                "supported")
 
         instance = EC2Instance.make(
             EC2TestRunner.name, instance_type, machine)
@@ -259,9 +297,92 @@ class cmd_test(EC2Command):
             pqm_submit_location=pqm_submit_location,
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance, vals=instance._vals)
+            instance=instance, launchpad_login=instance._launchpad_login)
 
         instance.set_up_and_run(postmortem, not headless, runner.run_tests)
+
+
+class cmd_land(EC2Command):
+    """Land a merge proposal on Launchpad."""
+
+    takes_options = [
+        debug_option,
+        Option('dry-run', help="Just print the equivalent ec2 test command."),
+        Option('print-commit', help="Print the full commit message."),
+        Option(
+            'testfix',
+            help="Include the [testfix] prefix in the commit message."),
+        Option(
+            'commit-text', short_name='s', type=str,
+            help=(
+                'A description of the landing, not including reviewer '
+                'metadata etc.')),
+        Option(
+            'force',
+            help="Land the branch even if the proposal is not approved."),
+        ]
+
+    takes_args = ['merge_proposal']
+
+    def _get_landing_command(self, source_url, target_url, commit_message,
+                             emails):
+        """Return the command that would need to be run to submit with ec2."""
+        ec2_path = os.path.join(get_launchpad_root(), 'utilities', 'ec2')
+        command = [ec2_path, 'test', '--headless']
+        command.extend(['--email=%s' % email for email in emails])
+        # 'ec2 test' has a bug where you cannot pass full URLs to branches to
+        # the -b option. It has special logic for 'launchpad' branches, so we
+        # piggy back on this to get 'devel' or 'db-devel'.
+        target_branch_name = target_url.split('/')[-1]
+        command.extend(
+            ['-b', 'launchpad=%s' % (target_branch_name), '-s',
+             commit_message, str(source_url)])
+        return command
+
+    def run(self, merge_proposal, machine=None,
+            instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
+            debug=False, commit_text=None, dry_run=False, testfix=False,
+            print_commit=False, force=False):
+        if debug:
+            pdb.set_trace()
+        if print_commit and dry_run:
+            raise BzrCommandError(
+                "Cannot specify --print-commit and --dry-run.")
+        lander = LaunchpadBranchLander.load()
+        mp = lander.load_merge_proposal(merge_proposal)
+        if not mp.is_approved:
+            if force:
+                print "Merge proposal is not approved, landing anyway."
+            else:
+                raise BzrCommandError(
+                    "Merge proposal is not approved. Get it approved, or use "
+                    "--force to land it without approval.")
+        if commit_text is None:
+            commit_text = mp.commit_message
+        if commit_text is None:
+            raise BzrCommandError(
+                "Commit text not specified. Use --commit-text, or specify a "
+                "message on the merge proposal.")
+        try:
+            commit_message = mp.get_commit_message(commit_text, testfix)
+        except MissingReviewError:
+            raise BzrCommandError(
+                "Cannot land branches that haven't got approved code "
+                "reviews. Get an 'Approved' vote so we can fill in the "
+                "[r=REVIEWER] section.")
+        if print_commit:
+            print commit_message
+            return
+
+        landing_command = self._get_landing_command(
+            mp.source_branch, mp.target_branch, commit_message,
+            mp.get_stakeholder_emails())
+        if dry_run:
+            print landing_command
+        else:
+            # XXX: JonathanLange 2009-09-24 bug=439348: Call EC2 APIs
+            # directly, rather than spawning a subprocess.
+            return subprocess.call(landing_command)
 
 
 class cmd_demo(EC2Command):
@@ -299,7 +420,7 @@ class cmd_demo(EC2Command):
         runner = EC2TestRunner(
             test_branch, branches=branches,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance, vals=instance._vals)
+            instance=instance)
 
         demo_network_string = '\n'.join(
             '  ' + network for network in demo)
@@ -395,13 +516,15 @@ class cmd_update_image(EC2Command):
             directory before bundling.
         """
         user_connection = instance.connect()
-        user_connection.perform('bzr launchpad-login %(launchpad-login)s')
+        user_connection.perform(
+            'bzr launchpad-login %s' % (instance._launchpad_login,))
         for cmd in extra_update_image_command:
             user_connection.run_with_ssh_agent(cmd)
         user_connection.run_with_ssh_agent(
             'bzr pull -d /var/launchpad/test ' + TRUNK_BRANCH)
         user_connection.run_with_ssh_agent(
-            'bzr pull -d /var/launchpad/download-cache lp:lp-source-dependencies')
+            'bzr pull -d /var/launchpad/download-cache '
+            'lp:lp-source-dependencies')
         if public:
             update_sourcecode_options = '--public-only'
         else:
