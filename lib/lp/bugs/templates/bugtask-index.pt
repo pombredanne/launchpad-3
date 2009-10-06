@@ -292,7 +292,7 @@
               </script>
               <script type="text/javascript">
                 YUI().use('lp.comment', function(Y) {
-                var comment = new Y.Comment();
+                var comment = new Y.lp.Comment();
                 comment.render();
                 })
               </script>
