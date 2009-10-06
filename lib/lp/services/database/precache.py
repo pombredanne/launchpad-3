@@ -27,7 +27,7 @@ class PrecacheResultSet:
 
     >>> results = store.find(Product).precache(
     ...     (Person, EmailAddress),
-    ...     Product.ownerID == Person.id,
+    ...     Product._ownerID == Person.id,
     ...     EmailAddress.personID == Person.id)
     """
     delegates(IResultSet, context='result_set')

@@ -18,7 +18,7 @@ candidates.
 Branch merge proposals are created by calling the `addLandingTarget`
 method on a branch.  Junk branches cannot have landing targets.
 
-  * The target branch and dependent branch (if it has one) must both
+  * The target branch and prerequisite branch (if it has one) must both
     have the same product as the source branch.
 
   * There must not already exist a branch merge proposal for the source
@@ -31,7 +31,6 @@ All merge proposals have to be registered by a Person.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
@@ -51,7 +50,7 @@ and a target branch.
     ...     '~name12/gnome-terminal/scanned')
 
     >>> merge_proposal = source_branch.addLandingTarget(
-    ...     sample_person, target_branch, dependent_branch=scanned_branch,
+    ...     sample_person, target_branch, prerequisite_branch=scanned_branch,
     ...     date_created=now.next())
 
 This merge proposal is now listing against both the source and target
@@ -82,18 +81,18 @@ The landing_candidates only returns unmerged proposals, with the most
 recent branch merge proposals first.
 
     >>> proposal = factory.makeBranchMergeProposal(
-    ...     target_branch=target_branch, dependent_branch=scanned_branch)
+    ...     target_branch=target_branch, prerequisite_branch=scanned_branch)
     >>> proposal = proposal.resubmit(proposal.registrant)
     >>> proposal.rejectBranch(sample_person, 'some-revision')
     >>> from lp.code.enums import BranchMergeProposalStatus
     >>> proposal = factory.makeBranchMergeProposal(
-    ...     target_branch=target_branch, dependent_branch=scanned_branch,
+    ...     target_branch=target_branch, prerequisite_branch=scanned_branch,
     ...     set_state=BranchMergeProposalStatus.MERGED)
 
     >>> branch = branch_lookup.getByUniqueName(
     ...     '~launchpad/gnome-terminal/launchpad')
     >>> proposal = branch.addLandingTarget(
-    ...     sample_person, target_branch, dependent_branch=scanned_branch,
+    ...     sample_person, target_branch, prerequisite_branch=scanned_branch,
     ...     date_created=now.next())
 
     >>> flush_database_updates()
@@ -117,7 +116,7 @@ recent branch merge proposals first.
     Work in progress
 
     >>> for proposal in BranchMergeProposal.selectBy(
-    ...     dependent_branch=scanned_branch, orderBy=['id']):
+    ...     prerequisite_branch=scanned_branch, orderBy=['id']):
     ...     print proposal.queue_status.title
     Work in progress
     Superseded

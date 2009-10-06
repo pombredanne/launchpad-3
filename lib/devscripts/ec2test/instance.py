@@ -29,13 +29,14 @@ from devscripts.ec2test.credentials import EC2Credentials
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
 AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 
+
 class AcceptAllPolicy:
     """We accept all unknown host key."""
 
-    # Normally the console output is supposed to contain the Host key
-    # but it doesn't seem to be the case here, so we trust that the host
-    # we are connecting to is the correct one.
     def missing_host_key(self, client, hostname, key):
+        # Normally the console output is supposed to contain the Host key but
+        # it doesn't seem to be the case here, so we trust that the host we
+        # are connecting to is the correct one.
         pass
 
 
@@ -210,28 +211,26 @@ class EC2Instance:
         # get the image
         image = account.acquire_image(machine_id)
 
-        vals = os.environ.copy()
         login = get_lp_login()
         if not login:
             raise BzrCommandError(
                 'you must have set your launchpad login in bzr.')
-        vals['launchpad-login'] = login
 
         return EC2Instance(
-            name, image, instance_type, demo_networks, account, vals,
-            from_scratch, user_key)
+            name, image, instance_type, demo_networks, account,
+            from_scratch, user_key, login)
 
     def __init__(self, name, image, instance_type, demo_networks, account,
-                 vals, from_scratch, user_key):
+                 from_scratch, user_key, launchpad_login):
         self._name = name
         self._image = image
         self._account = account
         self._instance_type = instance_type
         self._demo_networks = demo_networks
         self._boto_instance = None
-        self._vals = vals
         self._from_scratch = from_scratch
         self._user_key = user_key
+        self._launchpad_login = launchpad_login
 
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
@@ -320,7 +319,8 @@ class EC2Instance:
         """
         authorized_keys_file = conn.sftp.open(remote_filename, 'w')
         authorized_keys_file.write(
-            "%s %s\n" % (self._user_key.get_name(), self._user_key.get_base64()))
+            "%s %s\n" % (
+                self._user_key.get_name(), self._user_key.get_base64()))
         authorized_keys_file.close()
 
     def _ensure_ec2test_user_has_keys(self, connection=None):
@@ -361,11 +361,13 @@ class EC2Instance:
             self._upload_local_key(root_connection, 'local_key')
             root_connection.perform(
                 'cat local_key >> ~/.ssh/authorized_keys && rm local_key')
-            root_connection.run_script(from_scratch_root % self._vals)
+            root_connection.run_script(from_scratch_root)
             self._ensure_ec2test_user_has_keys(root_connection)
             root_connection.close()
             conn = self._connect('ec2test')
-            conn.run_script(from_scratch_ec2test % self._vals)
+            conn.run_script(
+                from_scratch_ec2test
+                % {'launchpad-login': self._launchpad_login})
             self._from_scratch = False
             return conn
         self._ensure_ec2test_user_has_keys()
@@ -390,9 +392,10 @@ class EC2Instance:
             try:
                 return func(*args, **kw)
             except Exception:
-                # When running in postmortem mode, it is really helpful to see if
-                # there are any exceptions before it waits in the console (in the
-                # finally block), and you can't figure out why it's broken.
+                # When running in postmortem mode, it is really helpful to see
+                # if there are any exceptions before it waits in the console
+                # (in the finally block), and you can't figure out why it's
+                # broken.
                 traceback.print_exc()
         finally:
             try:
@@ -400,7 +403,8 @@ class EC2Instance:
                     console = code.InteractiveConsole(locals())
                     console.interact((
                         'Postmortem Console.  EC2 instance is not yet dead.\n'
-                        'It will shut down when you exit this prompt (CTRL-D).\n'
+                        'It will shut down when you exit this prompt '
+                        '(CTRL-D).\n'
                         '\n'
                         'Tab-completion is enabled.'
                         '\n'
@@ -486,7 +490,7 @@ class EC2Instance:
         connection.perform('sudo mkdir /mnt/ec2')
         connection.perform('sudo chown $USER:$USER /mnt/ec2')
 
-        remote_pk, remote_cert =  self.copy_key_and_certificate_to_image(
+        remote_pk, remote_cert = self.copy_key_and_certificate_to_image(
             connection.sftp)
 
         bundle_dir = os.path.join('/mnt', name)
@@ -530,7 +534,7 @@ class EC2Instance:
             'ec2-register',
             '--private-key=%s' % self.local_pk,
             '--cert=%s' % self.local_cert,
-            manifest_path
+            manifest_path,
             ]
         self.log("Executing command: %s" % ' '.join(cmd))
         subprocess.check_call(cmd, env=env)
@@ -551,14 +555,18 @@ class EC2InstanceConnection:
             self._sftp = self._ssh.open_sftp()
         return self._sftp
 
-    def perform(self, cmd, ignore_failure=False, out=None):
+    def perform(self, cmd, ignore_failure=False, out=None, err=None):
         """Perform 'cmd' on server.
 
         :param ignore_failure: If False, raise an error on non-zero exit
             statuses.
         :param out: A stream to write the output of the remote command to.
+        :param err: A stream to write the error of the remote command to.
         """
-        cmd = cmd % self._instance._vals
+        if out is None:
+            out = sys.stdout
+        if err is None:
+            err = sys.stderr
         self._instance.log(
             '%s@%s$ %s\n'
             % (self._username, self._instance._boto_instance.id, cmd))
@@ -570,15 +578,13 @@ class EC2InstanceConnection:
             if session.recv_ready():
                 data = session.recv(4096)
                 if data:
-                    sys.stdout.write(data)
-                    sys.stdout.flush()
-                    if out is not None:
-                        out.write(data)
+                    out.write(data)
+                    out.flush()
             if session.recv_stderr_ready():
                 data = session.recv_stderr(4096)
                 if data:
-                    sys.stderr.write(data)
-                    sys.stderr.flush()
+                    err.write(data)
+                    err.flush()
             if session.exit_status_ready():
                 break
         session.close()
@@ -598,7 +604,6 @@ class EC2InstanceConnection:
         Use this to run commands that require local SSH credentials. For
         example, getting private branches from Launchpad.
         """
-        cmd = cmd % self._instance._vals
         self._instance.log(
             '%s@%s$ %s\n'
             % (self._username, self._instance._boto_instance.id, cmd))
