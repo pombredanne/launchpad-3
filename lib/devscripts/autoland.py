@@ -53,7 +53,12 @@ class LaunchpadBranchLander:
             raise BzrCommandError(
                 "No public branch at %s" % branch_url)
         proposals = lp_branch.landing_targets
-        if len(proposals) != 1:
+        if len(proposals) == 0:
+            raise BzrCommandError(
+                "The public branch has no source merge proposals.  "
+                "You must have a merge proposal before attempting to "
+                "land the branch.")
+        elif len(proposals) > 1:
             raise BzrCommandError(
                 "The public branch has multiple source merge proposals.  "
                 "You must provide the URL to the one you wish to use.")
