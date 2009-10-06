@@ -5,6 +5,8 @@ import os
 from launchpadlib.launchpad import (
     Launchpad, EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT)
 from lazr.uri import URI
+from bzrlib.errors import BzrCommandError
+
 
 # XXX: JonathanLange 2009-09-24: Both of these are available in more recent
 # versions of launchpadlib. When we start using such versions, we should
@@ -41,6 +43,21 @@ class LaunchpadBranchLander:
         api_mp_uri = self._launchpad._root_uri.append(
             web_mp_uri.path.lstrip('/'))
         return MergeProposal(self._launchpad.load(str(api_mp_uri)))
+
+    def get_merge_proposal_from_branch(self, branch):
+        """Get the merge proposal from the branch."""
+        branch_url = branch.get_public_branch()
+        lp_branch = self._launchpad.branches.getByUrl(
+            url=branch_url)
+        if lp_branch is None:
+            raise BzrCommandError(
+                "No public branch at %s" % branch_url)
+        proposals = lp_branch.landing_targets
+        if len(proposals) != 1:
+            raise BzrCommandError(
+                "The public branch has multiple source merge proposals.  "
+                "You must provide the URL to the one you wish to use.")
+        return MergeProposal(proposals[0])
 
 
 class MergeProposal:

@@ -10,6 +10,7 @@ import os
 import pdb
 import subprocess
 
+from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
 from bzrlib.help import help_commands
@@ -322,7 +323,7 @@ class cmd_land(EC2Command):
             help="Land the branch even if the proposal is not approved."),
         ]
 
-    takes_args = ['merge_proposal']
+    takes_args = ['merge_proposal?']
 
     def _get_landing_command(self, source_url, target_url, commit_message,
                              emails):
@@ -339,7 +340,7 @@ class cmd_land(EC2Command):
              commit_message, str(source_url)])
         return command
 
-    def run(self, merge_proposal, machine=None,
+    def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
             print_commit=False, force=False):
@@ -349,7 +350,13 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
         lander = LaunchpadBranchLander.load()
-        mp = lander.load_merge_proposal(merge_proposal)
+
+        if merge_proposal is None:
+            (tree, bzrbranch, relpath) = (
+                BzrDir.open_containing_tree_or_branch(''))
+            mp = lander.get_merge_proposal_from_branch(bzrbranch)
+        else:
+            mp = lander.load_merge_proposal(merge_proposal)
         if not mp.is_approved:
             if force:
                 print "Merge proposal is not approved, landing anyway."
