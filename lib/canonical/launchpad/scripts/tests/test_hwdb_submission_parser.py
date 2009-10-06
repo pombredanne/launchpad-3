@@ -1373,6 +1373,109 @@ invalid line
                 % duplicate_entry['id'])
             del packages['python-xml']
 
+    def testFindDuplicateIDsUdev(self):
+        """SubmissionParser.findDuplicateIDs lists duplicate IDS.
+
+        The IDs of udev devices, processors and packages should be
+        unique.
+        """
+        udev = [
+            {
+                'P': '/devices/LNXSYSTM:00'
+                },
+            {
+                'P': '/devices/LNXSYSTM:00/ACPI_CPU:00'
+                },
+            ]
+        sysfs_attributes = [
+            {
+                'P': '/devices/LNXSYSTM:00'
+                },
+            ]
+        processors = [
+            {
+                'id': 1,
+                },
+            {
+                'id': 2,
+                }
+            ]
+        packages = {
+            'bzr': {
+                'id': 4},
+            'python-dev': {
+                'id': 6,
+                },
+            }
+        submission = {
+            'hardware': {
+                'udev': udev,
+                'sysfs-attributes': sysfs_attributes,
+                'processors': processors
+                },
+            'software': {
+                'packages': packages
+                }
+            }
+
+        parser = SubmissionParser()
+        duplicates = parser.findDuplicateIDs(submission)
+        self.assertEqual(
+            set(), duplicates,
+            'Duplicate IDs for udev submission detected, where no duplicates '
+            'exist.')
+
+    def testFindDuplicateIDsDuplicateUdevNode(self):
+        """SubmissionParser.findDuplicateIDs lists duplicate IDS.
+
+        Two udev dictionaries with the same device['P'] value are
+        invalid.
+        """
+        udev = [
+            {
+                'P': '/devices/LNXSYSTM:00'
+                },
+            {
+                'P': '/devices/LNXSYSTM:00'
+                },
+            ]
+        sysfs_attributes = [
+            {
+                'P': '/devices/LNXSYSTM:00'
+                },
+            ]
+        processors = [
+            {
+                'id': 1,
+                },
+            {
+                'id': 2,
+                }
+            ]
+        packages = {
+            'bzr': {
+                'id': 4},
+            'python-dev': {
+                'id': 6,
+                },
+            }
+        submission = {
+            'hardware': {
+                'udev': udev,
+                'sysfs-attributes': sysfs_attributes,
+                'processors': processors
+                },
+            'software': {
+                'packages': packages
+                }
+            }
+
+        parser = SubmissionParser()
+        duplicates = parser.findDuplicateIDs(submission)
+        self.assertEqual(
+            set(('/devices/LNXSYSTM:00', )), duplicates,
+            'Duplicate udev nodes not detected.')
+
     def testIDMap(self):
         """Test of SubmissionParser._getIDMap."""
         devices = [{'id': 1},
@@ -1398,8 +1501,60 @@ invalid line
                           6: packages['python-dev']},
                          'Invalid result of SubmissionParser._getIDMap')
 
-    def testInvalidIDReferences(self):
-        """Test of SubmissionParser.checkIDReferences."""
+    def testIDMapUdev(self):
+        """Test of SubmissionParser._getIDMap.
+
+        Variant for submissions with udev data.
+        """
+        devices = [
+            {
+                'P': '/devices/LNXSYSTM:00',
+                },
+            {
+                'P': '/devices/LNXSYSTM:00/ACPI_CPU:00',
+                },
+            ]
+        processors = [
+            {
+                'id': 3
+                },
+            {
+                'id': 4
+                },
+            ]
+        packages = {
+            'bzr': {
+                'id': 5
+                },
+            }
+        submission = {
+            'hardware': {
+                'udev': devices,
+                'processors': processors
+                },
+            'software': {
+                'packages': packages
+                }
+            }
+
+        parser = SubmissionParser()
+        result = parser._getIDMap(submission)
+        self.assertEqual(
+            {
+                '/devices/LNXSYSTM:00': devices[0],
+                '/devices/LNXSYSTM:00/ACPI_CPU:00': devices[1],
+                3: processors[0],
+                4: processors[1],
+                5: packages['bzr'],
+                },
+            result,
+            'Invalid result of SubmissionParser._getIDMap')
+
+    def testInvalidIDReferencesUdev(self):
+        """Test of SubmissionParser.checkIDReferences.
+
+        Variant for submissions containing udev data.
+        """
         devices = [{'id': 1},
                    {'id': 2}]
         processors = [{'id': 3},
@@ -1633,6 +1788,34 @@ invalid line
                          'Circular parent/child relationship in UDIs not '
                          'detected')
 
+    def testCheckUdevDictsHavePathKey(self):
+        """Test of SubmissionParser.checkNodesHavePathKey()"""
+        # Each dict for a udev device must have a 'P' key.
+        parser = SubmissionParser(self.log)
+        devices = [
+            {
+                'P': '/devices/LNXSYSTM:00',
+                },
+            {
+                'P': '/devices/LNXSYSTM:00/ACPI_CPU:00',
+                },
+            ]
+        self.assertTrue(parser.checkUdevDictsHavePathKey(devices))
+
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Submission having udev data without "P" key'
+        devices = [
+            {
+                'P': '/devices/LNXSYSTM:00',
+                },
+            {
+                },
+            ]
+        self.assertFalse(parser.checkUdevDictsHavePathKey(devices))
+
+        self.assertErrorMessage(
+            parser.submission_key, 'udev node found without a "P" key')
+
     def _setupConsistencyCheckParser(self):
         """Prepare and return a SubmissionParser instance.
 
@@ -1729,6 +1912,33 @@ invalid line
         self.assertEqual(result, True,
                          'checkConsistency failed, but all partial checks '
                          'succeeded')
+
+    def testConsistencyCheckValidUdevData(self):
+        """Test of SubmissionParser.checkConsistency."""
+        parser = self._setupConsistencyCheckParser()
+        self.assertTrue(parser.checkConsistency(
+            {
+                'hardware': {
+                    'udev': [],
+                    'sysfs-attributes': []
+                    }
+                }
+            ))
+
+    def testConsistencyCheckInvalidUdevData(self):
+        """Test of SubmissionParser.checkConsistency."""
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check with invalid udev data'
+        self.assertFalse(parser.checkConsistency(
+            {
+                'hardware': {
+                    'udev': [{}],
+                    'sysfs-attributes': []
+                    }
+                }
+            ))
+        self.assertErrorMessage(
+            parser.submission_key, 'udev node found without a "P" key')
 
     def testConsistencyCheckWithDuplicateIDs(self):
         """SubmissionParser.checkConsistency detects duplicate IDs."""
