@@ -23,6 +23,19 @@ product series.
 
 The only field shown is the branch field.
 
+    >>> import datetime
+    >>> import pytz
+    >>> from zope.component import getUtility
+    >>> from lp.code.interfaces.branch import IBranchSet
+    >>> from lp.testing import time_counter
+    >>> login('admin@canonical.com')
+    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
+    >>> start_date = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=34, hours=12)
+    >>> delta = datetime.timedelta(days=1)
+    >>> factory.makeRevisionsForBranch(
+    ...     branch, count=10, date_generator=time_counter(start_date, delta))
+    >>> logout()
+
     >>> print sample_browser.title
     Link an existing branch to...
     >>> sample_browser.getControl('Branch').value = '~name12/firefox/main'
@@ -34,7 +47,14 @@ Updating the branch takes the user back to the product series page.
     Series trunk : Mozilla Firefox
     >>> branch = find_tag_by_id(sample_browser.contents, 'branch-details')
     >>> print extract_text(branch)
-    lp://dev/firefox - Sample Person ...
+    lp://dev/firefox - Sample Person
+    Change branch
+
+As the branch has revisions XXX
+
+    >>> revisions = find_tag_by_id(sample_browser.contents, 'branch-revision-details')
+    >>> print extract_text(revisions)
+    10 revisions, 5 in the past month.
 
 A helpful informational message is also shown to the user.
 
