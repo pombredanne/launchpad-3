@@ -1,15 +1,14 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-"""Helper functions for the checkwatches.py cronscript."""
+"""Classes and logic for the checkwatches cronscript."""
 
 __metaclass__ = type
-
 
 from copy import copy
 from datetime import datetime, timedelta
 import socket
 import sys
+import time
 
 import pytz
 
@@ -18,14 +17,6 @@ from zope.event import notify
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-from lp.bugs import externalbugtracker
-from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
-    BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
-    UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
-    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
-from lp.bugs.externalbugtracker.bugzilla import (
-    BugzillaAPI)
 from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
@@ -33,9 +24,6 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
-from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBackLinking)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.scripts.logger import log as default_log
@@ -45,6 +33,19 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
 from canonical.launchpad.webapp.publisher import canonical_url
+
+from lp.bugs import externalbugtracker
+from lp.bugs.externalbugtracker import (
+    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
+    BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
+    UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
+    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
+from lp.bugs.externalbugtracker.bugzilla import (
+    BugzillaAPI)
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.externalbugtracker import (
+    ISupportsBackLinking)
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 SYNCABLE_GNOME_PRODUCTS = []
@@ -1067,3 +1068,48 @@ class BugWatchUpdater(object):
 
         # Also put it in the log.
         self.log.error("%s (%s)" % (message, oops_info.oopsid))
+
+
+class CheckWatchesCronScript(LaunchpadCronScript):
+
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option(
+            '-t', '--bug-tracker', action='append',
+            dest='bug_trackers', metavar="BUG_TRACKER",
+            help="Only check a given bug tracker. Specifying more than "
+                "one bugtracker using this option will check all the "
+                "bugtrackers specified.")
+        self.parser.add_option(
+            '-b', '--batch-size', action='store', dest='batch_size',
+            help="Set the number of watches to be checked per bug "
+                 "tracker in this run. If BATCH_SIZE is 0, all watches "
+                 "on the bug tracker that are eligible for checking will "
+                 "be checked.")
+        self.parser.add_option(
+            '--reset', action='store_true', dest='update_all',
+            help="Update all the watches on the bug tracker, regardless of "
+                 "whether or not they need checking.")
+
+    def main(self):
+        start_time = time.time()
+
+        updater = BugWatchUpdater(self.txn, self.logger)
+
+        # Make sure batch_size is an integer or None.
+        batch_size = self.options.batch_size
+        if batch_size is not None:
+            batch_size = int(batch_size)
+
+        if self.options.update_all and len(self.options.bug_trackers) > 0:
+            # The user has requested that we update *all* the watches
+            # for these bugtrackers
+            for bug_tracker in self.options.bug_trackers:
+                updater.forceUpdateAll(bug_tracker, batch_size)
+        else:
+            # Otherwise we just update those watches that need updating,
+            # and we let the BugWatchUpdater decide which those are.
+            updater.updateBugTrackers(self.options.bug_trackers, batch_size)
+
+        run_time = time.time() - start_time
+        self.logger.info("Time for this run: %.3f seconds." % run_time)
