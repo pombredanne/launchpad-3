@@ -481,7 +481,7 @@ class ConnectionString:
     Some PostgreSQL tools take libpq connection strings. Other tools
     need the components seperated out (such as pg_dump command line
     arguments). This class allows you to switch easily between formats.
-    
+
     >>> cs = ConnectionString('user=foo dbname=launchpad_dev')
     >>> cs.dbname
     'launchpad_dev'

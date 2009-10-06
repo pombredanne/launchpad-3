@@ -12,7 +12,7 @@ __all__ = [
     'DistributionSourcePackageBranchesView',
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
-    'HasBranchesBreadcrumb',
+    'CodeVHostBreadcrumb',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -100,12 +100,9 @@ def get_plural_text(count, singular, plural):
         return plural
 
 
-class HasBranchesBreadcrumb(Breadcrumb):
+class CodeVHostBreadcrumb(Breadcrumb):
     rootsite = 'code'
-
-    @property
-    def text(self):
-        return 'Branches for %s' % self.context.displayname
+    text = 'Branches'
 
 
 class BranchBadges(HasBadgeBase):
