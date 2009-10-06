@@ -10,24 +10,26 @@
   <metal:block fill-slot="head_epilogue">
     <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
+
+    <tal:devmode condition="devmode">
+        <script type="text/javascript"
+                tal:attributes="src string:${lp_js}/soyuz/archivesubscribers_index.js"></script>
+    </tal:devmode>
   </metal:block>
 
-  <div metal:fill-slot="heading">
-    <h1 tal:content="CONTEXTS/fmt:pagetitle">
-      Manage access to Blah PPA
-    </h1>
-  </div>
   <div metal:fill-slot="main">
     <div class="top-portlet">
       <p>You can grant access to people or teams to install software
          from your PPA.
       </p>
 
-      <div class="subscribers">
-        <p tal:condition="not: view/has_subscriptions" id="no-subscribers">
-          No one has access to install software from this PPA.
-        </p>
+      <p tal:condition="not: view/has_subscriptions" id="no-subscribers">
+        No one has access to install software from this PPA.
+      </p>
 
+      <div id="add-subscriber-placeholder"></div>
+
+      <div id="subscribers">
         <p class="error message" tal:condition="view/errors"
            tal:content="view/error_count" />
 
@@ -44,13 +46,13 @@
                id="archive-subscribers" class="listing">
           <thead>
             <tr class="archive_subscriber_row">
-              <th>Name</th>
+              <th style="width:30%">Name</th>
               <th>Expires</th>
               <th colspan="2">Comment</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
+            <tr class="add-subscriber" style="background-color:#eeeeff;">
               <tal:single-row-form define="widgets widgets|view/widgets"
                                    repeat="widget widgets">
 
@@ -95,8 +97,12 @@
         </table>
         </form>
       </div><!-- class="portlet" -->
+      <script type="text/javascript" id="setup-archivesubscribers-index">
+          YUI().use('soyuz.archivesubscribers_index', function(Y) {
+              Y.soyuz.setup_archivesubscribers_index();
+          });
+      </script>
     </div>
-
   </div>
 </body>
 </html>
