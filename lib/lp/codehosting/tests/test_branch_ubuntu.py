@@ -12,7 +12,9 @@ from bzrlib.errors import NotStacked
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport.chroot import ChrootServer
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+import transaction
+
+from canonical.testing.layers import ZopelessAppServerLayer
 
 from lp.codehosting.branch_ubuntu import clone_branch, switch_branches
 from lp.codehosting.vfs import branch_id_to_path
@@ -78,7 +80,7 @@ class TestSwitchBranches(TestCaseWithTransport):
 
 class TestCloneBranch(TestCaseWithFactory):
 
-    layer = ZopelessDatabaseLayer
+    layer = ZopelessAppServerLayer
 
     def test_clone_branch(self):
         # Argh, _so_ _much_ to set up:
@@ -101,6 +103,12 @@ class TestCloneBranch(TestCaseWithFactory):
             sourcepackage=sourcepackage)
         sourcepackage.setBranch(
             PackagePublishingPocket.RELEASE, db_branch, db_branch.owner)
+
+        transaction.commit()
+
+        self.useBzrBranches(real_server=True)
+        self.createBranchAtURL('lp-hosted:///' + db_branch.unique_name)
+        self.createBranchAtURL('lp-mirrored:///' + db_branch.unique_name)
 
         clone_branch(db_branch, new_distro_series)
 

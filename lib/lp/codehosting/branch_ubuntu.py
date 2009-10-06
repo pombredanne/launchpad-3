@@ -7,6 +7,8 @@ import os
 
 from bzrlib.bzrdir import BzrDir
 
+import transaction
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
@@ -66,17 +68,21 @@ def clone_branch(db_branch, new_distro_series):
     # make it official
     make_branch_official(new_branch)
 
+    # It's probably finally time to make a transport not backed by an external
+    # process?
+    transaction.commit()
+
     # for both hosted and mirrored area:
     #  move .bzr directory from old to new (some abstraction violations here!)
     #  init branch at old location
     #  set stacked on url for old location
     #  pull from new location to new
     switch_branches(
-        config.codehosting.mirrored_branches_root, 'lp-mirrored://', db_branch,
-        new_branch)
+        config.codehosting.mirrored_branches_root,
+        'lp-mirrored:///', db_branch, new_branch)
     switch_branches(
-        config.codehosting.hosted_branches_root, 'lp-hosted://', db_branch,
-        new_branch)
+        config.codehosting.hosted_branches_root,
+        'lp-hosted:///', db_branch, new_branch)
 
 
 def branch_ubuntu():
