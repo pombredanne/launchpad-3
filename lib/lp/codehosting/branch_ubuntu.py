@@ -25,9 +25,8 @@ def make_db_branch_in_new_distro_series(db_branch, new_distro_series):
     new_namespace = getUtility(IBranchNamespaceSet).get(
         person=db_branch.owner, product=None, distroseries=new_distro_series,
         sourcepackagename=db_branch.sourcepackagename)
-    new_branch = new_namespace.new(
-        BranchType.HOSTED, db_branch.name, db_branch.registrant,
-        title=db_branch.title)
+    new_branch = new_namespace.createBranch(
+        BranchType.HOSTED, db_branch.name, db_branch.registrant)
     return new_branch
 
 

@@ -12,8 +12,13 @@ from bzrlib.errors import NotStacked
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport.chroot import ChrootServer
 
-from lp.codehosting.branch_ubuntu import switch_branches
+from canonical.testing.layers import ZopelessDatabaseLayer
+
+from lp.codehosting.branch_ubuntu import clone_branch, switch_branches
 from lp.codehosting.vfs import branch_id_to_path
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import TestCaseWithFactory
 
 
 class FakeBranch:
@@ -69,6 +74,35 @@ class TestSwitchBranches(TestCaseWithTransport):
         self.assertEqual(
             old_location_branch.last_revision(),
             new_location_branch.last_revision())
+
+
+class TestCloneBranch(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_clone_branch(self):
+        # Argh, _so_ _much_ to set up:
+
+        #  A distro, source package and an official branch for that package,
+        #  and the branch exists in both hosted and mirrored areas.
+
+        distro = self.factory.makeDistribution()
+        old_distro_series = self.factory.makeDistroRelease(
+            distribution=distro)
+        old_distro_series.status = DistroSeriesStatus.CURRENT
+        new_distro_series = self.factory.makeDistroRelease(
+            distribution=distro)
+        new_distro_series.status = DistroSeriesStatus.FROZEN
+
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=old_distro_series)
+
+        db_branch = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage)
+        sourcepackage.setBranch(
+            PackagePublishingPocket.RELEASE, db_branch, db_branch.owner)
+
+        clone_branch(db_branch, new_distro_series)
 
 
 def test_suite():
