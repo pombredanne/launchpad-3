@@ -1118,6 +1118,68 @@ class SubmissionParser(object):
         self._removeChildren(ROOT_UDI, udi_test)
         return udi_test.keys()
 
+    PCI_PROPERTIES = set(
+        ('PCI_CLASS', 'PCI_ID', 'PCI_SUBSYS_ID', 'PCI_SLOT_NAME'))
+    pci_class_re = re.compile('^[0-9a-f]{1,6}$', re.I)
+    pci_id_re = re.compile('^[0-9a-f]{4}:[0-9a-f]{4}$', re.I)
+
+    def checkUdevPciProperties(self, udev_data):
+        """Validation of udev PCI devices.
+
+        Each PCI device must have the properties PCI_CLASS, PCI_ID,
+        PCI_SUBSYS_ID, PCI_SLOT_NAME. Non-PCI devices must not have
+        them.
+
+        The value of PCI class must be a 24 bit integer in
+        hexadecimal representation.
+
+        The values of PCI_ID and PCI_SUBSYS_ID must be two 16 bit
+        integers, separated by a ':'.
+        """
+        for device in udev_data:
+            properties = device['E']
+            property_names = set(properties.keys())
+            existing_pci_properties = property_names.intersection(
+                self.PCI_PROPERTIES)
+            subsystem = device['E'].get('SUBSYSTEM')
+            if subsystem is None:
+                self._logError(
+                    'udev device without SUBSYSTEM property found.',
+                    self.submission_key)
+                return False
+            if subsystem == 'pci':
+                if existing_pci_properties != self.PCI_PROPERTIES:
+                    self._logError(
+                        'PCI udev device without required PCI properties: %r'
+                        % self.PCI_PROPERTIES.difference(
+                            existing_pci_properties),
+                        self.submission_key)
+                    return False
+                if self.pci_class_re.search(properties['PCI_CLASS']) is None:
+                    self._logError(
+                        'Invalid udev PCI class: %r' % properties['PCI_CLASS'],
+                        self.submission_key)
+                    return False
+                for pci_id in (properties['PCI_ID'],
+                               properties['PCI_SUBSYS_ID']):
+                    if self.pci_id_re.search(pci_id) is None:
+                        self._logError(
+                            'Invalid udev PCI device ID: %r' % pci_id,
+                            self.submission_key)
+                        return False
+            else:
+                if len(existing_pci_properties) > 0:
+                    self._logError(
+                        'Non-PCI udev device with PCI properties: %r'
+                        % existing_pci_properties,
+                        self.submission_key)
+                    return False
+            return True
+
+    def checkConsistentUdevDeviceData(self, udev_data):
+        """Consistency checks for udev data."""
+        return self.checkUdevPciProperties(udev_data)
+
     def checkConsistency(self, parsed_data):
         """Run consistency checks on the submitted data.
 
@@ -1125,6 +1187,10 @@ class SubmissionParser(object):
         :param: parsed_data: parsed submission data, as returned by
                              parseSubmission
         """
+        if ('udev' in parsed_data['hardware'] and
+            not self.checkConsistentUdevDeviceData(
+                parsed_data['hardware']['udev'])):
+            return False
         duplicate_ids = self.findDuplicateIDs(parsed_data)
         if duplicate_ids:
             self._logError('Duplicate IDs found: %s' % duplicate_ids,
@@ -1138,20 +1204,22 @@ class SubmissionParser(object):
                 self.submission_key)
             return False
 
-        try:
-            udi_device_map = self.getUDIDeviceMap(
-                parsed_data['hardware']['hal']['devices'])
-            udi_children = self.getUDIChildren(udi_device_map)
-        except ValueError, value:
-            self._logError(value, self.submission_key)
-            return False
+        if 'hal' in parsed_data['hardware']:
+            try:
+                udi_device_map = self.getUDIDeviceMap(
+                    parsed_data['hardware']['hal']['devices'])
+                udi_children = self.getUDIChildren(udi_device_map)
+            except ValueError, value:
+                self._logError(value, self.submission_key)
+                return False
 
-        circular = self.checkHALDevicesParentChildConsistency(udi_children)
-        if circular:
-            self._logError('Found HAL devices with circular parent/child '
-                           'relationship: %s' % circular,
-                           self.submission_key)
-            return False
+            circular = self.checkHALDevicesParentChildConsistency(
+                udi_children)
+            if circular:
+                self._logError('Found HAL devices with circular parent/child '
+                               'relationship: %s' % circular,
+                               self.submission_key)
+                return False
 
         return True
 
@@ -2116,6 +2184,54 @@ class HALDevice(BaseDevice):
     def product_id(self):
         """See `BaseDevice`."""
         return self.getVendorOrProductID('product')
+
+
+class UdevDevice(BaseDevice):
+    """The representation of a udev device node."""
+
+    def __init__(self, udev_data, sysfs_data, parser):
+        """HALDevice constructor.
+
+        :param udevdata: The udev data for this device
+        :param sysfs_data: sysfs data for this device.
+        :param parser: The parser processing a submission.
+        :type parser: SubmissionParser
+        """
+        super(UdevDevice, self).__init__(parser)
+        self.udev = udev_data
+        self.sysfs = sysfs_data
+
+    @property
+    def device_id(self):
+        """See `BaseDevice`."""
+        return self.udev['P']
+
+    @property
+    def pci_class_info(self):
+        """Parse the udev property PCI_SUBSYS_ID.
+
+        :return: (PCI class, PCI sub-class, version) for a PCI device
+            or (None, None, None) for other devices.
+        """
+        if self.udev['E'].get('SUBSYSTEM') == 'pci':
+            # SubmissionParser.checkConsistentUdevDeviceData() ensures
+            # that PCI_CLASS is a 24 bit integer in hexadecimal
+            # representation.
+            class_info = int(self.udev['E']['PCI_CLASS'], 16)
+            return (class_info >> 16, (class_info >> 8) & 0xFF,
+                    class_info & 0xFF)
+        else:
+            return (None, None, None)
+
+    @property
+    def pci_class(self):
+        """See `BaseDevice`."""
+        return self.pci_class_info[0]
+
+    @property
+    def pci_subclass(self):
+        """See `BaseDevice`."""
+        return self.pci_class_info[1]
 
 
 class ProcessingLoop(object):
