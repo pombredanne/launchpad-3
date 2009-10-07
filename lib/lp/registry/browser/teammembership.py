@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 
-import cgi
 import pytz
 from datetime import datetime
 
@@ -26,7 +25,6 @@ from canonical.launchpad.webapp import LaunchpadView, canonical_url
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
-from canonical.lazr.utils import smartquote
 from canonical.widgets import DateWidget
 
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -34,6 +32,7 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
 class TeamMembershipBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITeamMembership`."""
+
     @property
     def text(self):
         return "%s's membership" % self.context.person.displayname
