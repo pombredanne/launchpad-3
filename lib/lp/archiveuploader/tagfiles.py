@@ -53,12 +53,12 @@ class TagStanza(object):
         """Expose a dicty has_key"""
         return key in self.stanza.keys()
 
-    """Enables (foo in bar) functionality"""
+    # Enables (foo in bar) functionality.
     __contains__ = has_key
 
     def items(self):
         """Allows for k,v in foo.items()"""
-        return [ (k,self.stanza[k]) for k in self.stanza.keys() ]
+        return [ (k, self.stanza[k]) for k in self.stanza.keys() ]
 
 class TagFileParseError(Exception):
     """This exception is raised if parse_changes encounters nastiness"""
@@ -117,11 +117,15 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
             if dsc_whitespace_rules:
                 index += 1
                 if index > num_of_lines:
-                    raise TagFileParseError("%s: invalid .dsc file at line %d" % (filename, index))
+                    raise TagFileParseError(
+                        "%s: invalid .dsc file at line %d" % (
+                            filename, index))
                 line = indexed_lines[index]
                 if not line.startswith("-----BEGIN PGP SIGNATURE"):
-                    raise TagFileParseError("%s: invalid .dsc file at line %d -- "
-                        "expected PGP signature; got '%s'" % (filename, index,line))
+                    raise TagFileParseError(
+                        "%s: invalid .dsc file at line %d -- "
+                        "expected PGP signature; got '%s'" % (
+                            filename, index,line))
                 inside_signature = 0
                 break
             else:
@@ -129,8 +133,9 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
         if line.startswith("-----BEGIN PGP SIGNATURE"):
             break
 
-        # If we're at the start of a signed section, then consume the signature
-        # information, and remember that we're inside the signed data.
+        # If we're at the start of a signed section, then consume the
+        # signature information, and remember that we're inside the signed
+        # data.
         if line.startswith("-----BEGIN PGP SIGNED MESSAGE"):
             inside_signature = 1
             if dsc_whitespace_rules:
@@ -163,9 +168,10 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
         mlf = re_multi_line_field.match(line)
         if mlf:
             if more_values_can_follow is False:
-                raise TagFileParseError("%s: could not parse .changes file "
-                "line %d: '%s'\n [Multi-line field continuing on from nothing?]"
-                % (filename, index,line))
+                raise TagFileParseError(
+                    "%s: could not parse .changes file line %d: '%s'\n"
+                    " [Multi-line field continuing on from nothing?]" % (
+                        filename, index,line))
 
             # XXX Michael Nelson 20091001 bug=440014
             # Is there any reason why we're not simply using
@@ -191,12 +197,14 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
         error += line
 
     if dsc_whitespace_rules and inside_signature:
-        raise TagFileParseError("%s: invalid .dsc format at line %d" % (filename, index))
+        raise TagFileParseError(
+            "%s: invalid .dsc format at line %d" % (filename, index))
 
     changes["filecontents"] = "".join(lines)
 
     if error:
-        raise TagFileParseError("%s: unable to parse .changes file: %s" % (filename, error))
+        raise TagFileParseError(
+            "%s: unable to parse .changes file: %s" % (filename, error))
 
     return changes
 

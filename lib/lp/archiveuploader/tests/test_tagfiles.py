@@ -7,8 +7,6 @@
 
 import apt_pkg
 import unittest
-import sys
-import shutil
 from lp.archiveuploader.tests import datadir
 
 class Testtagfiles(unittest.TestCase):
@@ -33,7 +31,7 @@ class Testtagfiles(unittest.TestCase):
             self.assertEquals("FooBar" in stanza, False)
 
     def testTagFileOnSeveral(self):
-        """lp.archiveuploader.tagfiles.TagFile should parse multiple stanzas"""
+        """TagFile should parse multiple stanzas."""
         from lp.archiveuploader.tagfiles import TagFile
         f = TagFile(file(datadir("multiple-stanzas"), "r"))
         seen = 0
