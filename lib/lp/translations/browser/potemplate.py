@@ -518,10 +518,6 @@ class POTemplateEditView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
-    @property
-    def page_title(self):
-        return 'Edit template "%s" details' % (self.context.name)
-
 
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""

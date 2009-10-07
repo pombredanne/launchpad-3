@@ -93,6 +93,7 @@ span.invisible {left:-9999em;display:block;}
 .external-link {background:url(icon-sprites) 0 -704px no-repeat;}
 .mail {background:url(icon-sprites) 0 -736px no-repeat;}
 .cve {background:url(icon-sprites) 0 -768px no-repeat;}
+.cves {float: right; text-align: right;}
 .bug {background:url(icon-sprites) 0 -800px no-repeat;}
 .bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
 .bug-high {background:url(icon-sprites) 0 -864px no-repeat;}
@@ -146,7 +147,9 @@ span.invisible {left:-9999em;display:block;}
 .ppa-icon-inactive {background:url(icon-sprites-2) 0 -1171px no-repeat;}
 
 .bug-status-expand {background:url(icon-sprites-3) 0 -10px no-repeat;}
-.merge-proposal {background:url(icon-sprites-3) 0 -46px no-repeat;}
+.merge-proposal {
+  background:url(icon-sprites-3) 0 -46px no-repeat;
+  padding-left: 22px}
 .build-superseded {background:url(icon-sprites-3) 0 -80px no-repeat;}
 .build-sucess {background:url(icon-sprites-3) 0 -112px no-repeat;}
 .build-needed {background:url(icon-sprites-3) 0 -144px no-repeat;}
@@ -709,7 +712,7 @@ ol.breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 1em;
+    margin-bottom: 2em;
     font-size: 80%;
 }
 ol.breadcrumbs li {
@@ -1351,7 +1354,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 
 /* === Public/private status === */
 /* The first portlet on many pages discloses whether the object is private: */
-#privacy {background: #fff;}
 #privacy.private {
   background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
@@ -1576,116 +1578,6 @@ Launchpad but that does actually look quite good ... ;-).*/
 #locationbar {
     height: 1em;
 }
-
-#homepage {
-    margin: auto;
-    width: 90%;
-    max-width: 80em;
-}
-
-.homepage-portlet {
-    margin-bottom: 3em;
-    line-height: 140%;
-}
-
-.homepage-portlet h2 {
-    margin-bottom: 0.5em;
-    font-size: 131%;
-}
-
-/* Home: search form */
-
-#homepage-searchform {
-    text-align: center;
-}
-
-#homepage-stats {
-    max-width: 50em;
-    margin: auto;
-    padding-top: 0.5em;
-    color: gray;
-    font-size: 83.3%
-}
-
-/* Home: What's launchpad */
-
-#homepage-whatslaunchpad ul {
-    margin-left: 1em;
-    margin-bottom: 0.5em;
-}
-
-#homepage-whatslaunchpad ul,
-#homepage-whatslaunchpad-tour {
-    font-size: 116%;
-    font-weight: bold;
-}
-
-/* Home: blog posts */
-
-#homepage-blogposts {
-    padding-right: 4em;
-}
-
-#homepage-blogposts .blogdate {
-    font-size: 85%;
-    color: grey;
-}
-
-#homepage-blogposts-older {
-    text-align: right;
-}
-
-/* Home: Get started */
-
-#homepage-getstarted ul {
-    margin-top: 0.5em;
-}
-
-/* Home: Featured projects */
-
-#homepage-featured {
-    width: 100%;
-}
-
-#homepage-featured ul {
-    width: 48%;
-}
-
-#homepage-featured-left {
-    float: left;
-}
-
-#homepage-featured-right {
-    float: right;
-}
-
-#homepage-featured-top img {
-    float: left;
-}
-#homepage-featured-top-title {
-    height: 64px;
-    display: block;
-    margin-left: 70px;
-}
-
-#homepage-featured-top-title span{
-    font-size: 131%;
-    font-weight: bold;
-    position: relative;
-    top: 20px;
-}
-
-#homepage-featured-top-text {
-    margin-top: 0.5em;
-    margin-bottom: 1em;
-}
-
-#homepage-featured-more {
-    margin-top: 0.5em;
-    text-align: right;
-    clear: both;
-}
-
 /* -- Notices -- */
 
 .important-notice-container {
@@ -2290,6 +2182,30 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 .questionstatusEXPIRED   {color: #666;} /* dark grey */
 .questionstatusINVALID   {color: #c00;} /* red */
 
+.search-box {
+  text-align: left;
+  float: left;
+  border:1px solid #d6d6d6;
+  margin: 0.5em 0 0.5em 0;
+  color: #717171;
+  padding: 8px;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+.search-box form.primary.search {
+  margin: 0.5em;
+}
+
+.bug-links td.bugs-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.bug-links td.bugs-link {
+  text-align: left;
+}
 
 /* --- Other --- */
 

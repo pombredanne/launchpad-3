@@ -23,7 +23,6 @@ This page is used to search packages in a distribution context.
     pmount
     (Matching binaries: pmount.)
 
-
 Follow pmount source package path
 
     >>> browser.getLink('pmount').click()
@@ -61,7 +60,6 @@ Now run a search for mozilla-firefox and check that it is found:
     mozilla-firefox
     The Mozilla Firefox web browser
     (Matching binaries: mozilla-firefox, mozilla-firefox-data.)
-
 
 The search page will also present commercial packages:
 
@@ -190,6 +188,23 @@ A /$DISTRO/+source/$PACKAGE page shows an overview of a source package in
 a distribution.  There are several sections of information.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/iceweasel/")
+
+The page has an appropriate title and main heading.
+
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> print backslashreplace(user_browser.title)
+    \u201ciceweasel\u201d package : Ubuntu
+
+    >>> print_location(user_browser.contents)
+    Hierarchy: Ubuntu > ?iceweasel? package
+    Tabs:
+    * Overview (selected) - not linked
+    * Branches - http://code.launchpad.dev/ubuntu/+source/iceweasel
+    * Bugs - http://bugs.launchpad.dev/ubuntu/+source/iceweasel
+    * Blueprints - not linked
+    * Translations - not linked
+    * Answers - http://answers.launchpad.dev/ubuntu/+source/iceweasel
+    Main heading: ?iceweasel? package in Ubuntu
 
 Under the title there's a short paragraph that says how many 'new' bugs
 and open questions the package has.
@@ -359,6 +374,20 @@ the index page.
     >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/")
     >>> browser.getLink("View full change log").click()
 
+    >>> print backslashreplace(browser.title)
+    Change log : \u201cfoobar\u201d package : Ubuntu
+
+    >>> print_location(browser.contents)
+    Hierarchy: Ubuntu > ?foobar? package > Change log
+    Tabs:
+    * Overview (selected) - http://launchpad.dev/ubuntu/+source/foobar
+    * Branches - http://code.launchpad.dev/ubuntu/+source/foobar
+    * Bugs - http://bugs.launchpad.dev/ubuntu/+source/foobar
+    * Blueprints - not linked
+    * Translations - not linked
+    * Answers - http://answers.launchpad.dev/ubuntu/+source/foobar
+    Main heading: Change log for ?foobar? package in Ubuntu
+
 Each version history entry has a header with the version as the title
 and details of the publishing status in each distroseries it's published
 in.
@@ -517,3 +546,45 @@ When the page is reload all versions are presented in descending order.
     1.0.9a-4ubuntu1
     1.0.9a-4
     1.0.8-1ubuntu1
+
+Returning to the distribution source package index page using the
+'Overview' facet link.
+
+    >>> anon_browser.getLink('Overview').click()
+    >>> print backslashreplace(anon_browser.title)
+    \u201calsa-utils\u201d package : Ubuntu
+
+
+Publishing History
+------------------
+
+Users can inspect the full publishing history by clicking on a link at
+the bottom of the 'packages_list' section in the distribution source
+package index page.
+
+    >>> anon_browser.getLink('See full publishing history').click()
+
+The full publishing history is presented in a new page, with the
+appropriate title and main heading, but preserving the distribution
+source package hierarchy.
+
+    >>> print backslashreplace(anon_browser.title)
+    Publishing history : \u201calsa-utils\u201d package : Ubuntu
+
+    >>> print_location(anon_browser.contents)
+    Hierarchy: Ubuntu > ?alsa-utils? package > Publishing history
+    Tabs:
+    * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
+    * Branches - http://code.launchpad.dev/ubuntu/+source/alsa-utils
+    * Bugs - http://bugs.launchpad.dev/ubuntu/+source/alsa-utils
+    * Blueprints - not linked
+    * Translations - not linked
+    * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
+    Main heading: Publishing history of ?alsa-utils? package in Ubuntu
+
+Returning to the distribution source package index is also possible via
+the 'back' link at the bottom of the page.
+
+    >>> anon_browser.getLink('back').click()
+    >>> print backslashreplace(anon_browser.title)
+    \u201calsa-utils\u201d package : Ubuntu

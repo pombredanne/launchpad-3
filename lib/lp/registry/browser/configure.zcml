@@ -447,18 +447,20 @@
         module="lp.registry.browser.distributionsourcepackage"
         classes="
             DistributionSourcePackageNavigation"/>
-    <browser:pages
+    <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageView"
         facet="overview"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/distributionsourcepackage-index.pt"/>
-        <browser:page
-            name="+changelog"
-            template="../templates/distributionsourcepackage-changelog.pt"/>
-    </browser:pages>
+        permission="zope.Public"
+        name="+index"
+        template="../templates/distributionsourcepackage-index.pt" />
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageChangelogView"
+        facet="overview"
+        permission="zope.Public"
+        name="+changelog"
+        template="../templates/distributionsourcepackage-changelog.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         permission="launchpad.Edit"
@@ -687,7 +689,7 @@
         template="../templates/announcement-delete.pt"/>
     <browser:pages
         for="lp.registry.interfaces.announcement.IHasAnnouncements"
-        class="lp.registry.browser.announcement.AnnouncementSetView"
+        class="lp.registry.browser.announcement.HasAnnouncementsView"
         facet="overview"
         permission="zope.Public">
         <browser:page
@@ -723,6 +725,11 @@
         name="+announcement-macros"
         permission="zope.Public"
         template="../templates/announcement-macros.pt" />
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.announcement.IAnnouncement"
+        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+        permission="zope.Public"/>
     <browser:menus
         module="lp.registry.browser.announcement"
         classes="

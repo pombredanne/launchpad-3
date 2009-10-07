@@ -30,7 +30,7 @@ from lp.registry.model.person import Person
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.testing.systemdocs import create_initialized_view
+from lp.testing.views import create_initialized_view
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
@@ -216,9 +216,9 @@ class TestPerson(TestCaseWithFactory):
             self.assertEqual(
                 str(exc),
                 'This team cannot be converted to Private Membership since '
-                'it is referenced by a bug, a bugaffectsperson, '
-                'a bugnotificationrecipient, a bugsubscription, '
-                'a bugtask and a message.')
+                'it is referenced by a bug, a bugactivity, '
+                'a bugaffectsperson, a bugnotificationrecipient, '
+                'a bugsubscription, a bugtask and a message.')
 
     def test_visibility_validator_product_subscription(self):
         self.bzr.addSubscription(

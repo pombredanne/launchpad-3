@@ -11,6 +11,7 @@ except ImportError:
 from datetime import datetime
 import logging
 import os
+from textwrap import dedent
 from unittest import TestCase, TestLoader
 
 import pytz
@@ -184,7 +185,6 @@ class TestHWDBSubmissionParser(TestCase):
             """)
         parser = SubmissionParser(self.log)
         summary = parser._parseSummary(node)
-        utc_tz = pytz.timezone('UTC')
         expected_data = {
             'live_cd': False,
             'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
@@ -194,7 +194,7 @@ class TestHWDBSubmissionParser(TestCase):
             'private': False,
             'contactable': False,
             'date_created': datetime(2007, 9, 28, 16, 9, 20, 126842,
-                                     tzinfo=utc_tz),
+                                     tzinfo=pytz.UTC),
             'client': {
                 'name': 'hwtest',
                 'version': '0.9',
@@ -203,6 +203,57 @@ class TestHWDBSubmissionParser(TestCase):
                      'version': '1.1'},
                     {'name': 'find_network_controllers',
                      'version': '2.34'}]}
+            }
+        self.assertEqual(
+            summary, expected_data,
+            'SubmissionParser.parseSummary returned an unexpected result')
+
+    def testSummaryNodeWithKernelRelease(self):
+        """The <summary> node may contain the sub-node <kernel-release>."""
+        node = etree.fromstring("""
+            <summary>
+                <live_cd value="False"/>
+                <system_id value="f982bb1ab536469cebfd6eaadcea0ffc"/>
+                <distribution value="Ubuntu"/>
+                <distroseries value="7.04"/>
+                <architecture value="amd64"/>
+                <private value="False"/>
+                <contactable value="False"/>
+                <date_created value="2007-09-28T16:09:20.126842"/>
+                <client name="hwtest" version="0.9">
+                    <plugin name="architecture_info" version="1.1"/>
+                    <plugin name="find_network_controllers" version="2.34"/>
+                </client>
+                <kernel-release value="2.6.28-15-generic"/>
+            </summary>
+            """)
+        parser = SubmissionParser(self.log)
+        summary = parser._parseSummary(node)
+        expected_data = {
+            'live_cd': False,
+            'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
+            'distribution': 'Ubuntu',
+            'distroseries': '7.04',
+            'architecture': 'amd64',
+            'private': False,
+            'contactable': False,
+            'date_created': datetime(2007, 9, 28, 16, 9, 20, 126842,
+                                     tzinfo=pytz.UTC),
+            'client': {
+                'name': 'hwtest',
+                'version': '0.9',
+                'plugins': [
+                    {
+                        'name': 'architecture_info',
+                        'version': '1.1'
+                        },
+                    {
+                        'name': 'find_network_controllers',
+                        'version': '2.34'
+                        }
+                    ]
+                },
+            'kernel-release': '2.6.28-15-generic',
             }
         self.assertEqual(
             summary, expected_data,
@@ -614,6 +665,203 @@ W:2
         self.assertWarningMessage(
             parser.submission_key,
             "Line 2 in <udev>: Duplicate attribute key: 'W:2'")
+
+    def testDmi(self):
+        """The content of the <udev> node is converted into a dictionary."""
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring("""<dmi>/sys/class/dmi/id/bios_vendor:LENOVO
+/sys/class/dmi/id/bios_version:7LETB9WW (2.19 )
+/sys/class/dmi/id/sys_vendor:LENOVO
+/sys/class/dmi/id/modalias:dmi:bvnLENOVO:bvr7LETB9WW
+</dmi>""")
+        result = parser._parseDmi(node)
+        self.assertEqual(
+            {
+                '/sys/class/dmi/id/bios_vendor': 'LENOVO',
+                '/sys/class/dmi/id/bios_version': '7LETB9WW (2.19 )',
+                '/sys/class/dmi/id/sys_vendor': 'LENOVO',
+                '/sys/class/dmi/id/modalias': 'dmi:bvnLENOVO:bvr7LETB9WW',
+                },
+            result,
+            'Invalid parsing result for <dmi>.')
+
+    def testDmiInvalidData(self):
+        """<dmi> nodes with lines not in key:value format are rejected."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Invalid DMI data'
+        node = etree.fromstring("""<dmi>/sys/class/dmi/id/bios_vendor:LENOVO
+invalid line
+</dmi>""")
+        result = parser._parseDmi(node)
+        self.assertEqual(
+            None, result,
+            '<dmi> node with invalid data not deteced.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <dmi>: No valid key:value data: 'invalid line'")
+
+    def testSysfsAttributes(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        The content of the <sys-attributes> node is converted into
+        a dictionary.
+        """
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            A: uniq=
+            A: phys=LNXPWRBN/button/input0
+            A: name=Power Button
+
+            P: /devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03
+            A: uniq=
+            A: phys=/video/input0
+            A: name=Video Bus
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            {
+                '/devices/LNXSYSTM:00/LNXPWRBN:00/input/input0': {
+                    'modalias': 'input:b0019v0000p0001e0000-e0,1,k74',
+                    'uniq': '',
+                    'phys': 'LNXPWRBN/button/input0',
+                    'name': 'Power Button',
+                    },
+                '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03': {
+                    'uniq': '',
+                    'phys': '/video/input0',
+                    'name': 'Video Bus',
+                    },
+
+                },
+            result,
+            'Invalid parsing result of <sysfs-attributes> node.')
+
+    def testSysfsAttributesLineWithoutKeyValueData(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        Lines not in key: value format are rejected.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> lines not in key:value format')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            invalid line
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node containing '
+            'a line not in key:value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 3 in <sysfs-attributes>: No valid key:value data: "
+            "'invalid line'")
+
+    def testSysfsAttributesDuplicatePLine(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        A line starting with "P:" must be the first line of a device block.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node with duplicate P: line')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node containing '
+            'a duplicate P: line.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 3 in <sysfs-attributes>: duplicate 'P' line found: "
+            "'P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0'")
+
+    def testSysfsAttributesNoPLineAtDeviceStart(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        The data for a device must start with a "P:" line.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node without leading P: line')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            A: modalias=input:b0019v0000p0001e0000-e0,1,k74
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node where a '
+            'device block does not start with a "P": line.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 1 in <sysfs-attributes>: Block for a device does not "
+            "start with 'P:': "
+            "'A: modalias=input:b0019v0000p0001e0000-e0,1,k74'")
+
+    def testSysfsAttributesNoAttributeKeyValue(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        A line starting with "A:" must be in key=value format.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node with A: line not in key=value '
+            'format')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            A: equal sign is missing
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node with A: '
+            'line not in key=value format.')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 2 in <sysfs-attributes>: Attribute line does not contain "
+            "key=value data: 'A: equal sign is missing'")
+
+    def testSysfsAttributesInvalidMainKey(self):
+        """Test of SubmissionParser._parseSysfsAttributes().
+
+        All lines must start with "P:" or "A:".
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'Detect <sysfs-attributes> node with invalid main key.')
+        node = etree.fromstring(dedent("""
+            <sysfs-attributes>
+            P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+            X: an invalid line
+            </sysfs-attributes>
+            """))
+        result = parser._parseSysfsAttributes(node)
+        self.assertEqual(
+            None, result,
+            'Invalid parsing result of a <sysfs-attributes> node containg '
+            'a line that does not start with "A:" or "P:".')
+        self.assertErrorMessage(
+            parser.submission_key,
+            "Line 2 in <sysfs-attributes>: Unexpected key: "
+            "'X: an invalid line'")
 
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
@@ -1125,6 +1373,83 @@ W:2
                 % duplicate_entry['id'])
             del packages['python-xml']
 
+    def testFindDuplicateIDsUdev(self):
+        """SubmissionParser.findDuplicateIDs lists duplicate IDS.
+
+        The IDs of udev devices, processors and packages should be
+        unique.
+        """
+        udev = [
+            {'P': '/devices/LNXSYSTM:00'},
+            {'P': '/devices/LNXSYSTM:00/ACPI_CPU:00'},
+            ]
+        sysfs_attributes = [
+            {'P': '/devices/LNXSYSTM:00'},
+            ]
+        processors = [
+            {'id': 1},
+            {'id': 2},
+            ]
+        packages = {
+            'bzr': {'id': 4},
+            'python-dev': {'id': 6},
+            }
+        submission = {
+            'hardware': {
+                'udev': udev,
+                'sysfs-attributes': sysfs_attributes,
+                'processors': processors
+                },
+            'software': {
+                'packages': packages
+                }
+            }
+
+        parser = SubmissionParser()
+        duplicates = parser.findDuplicateIDs(submission)
+        self.assertEqual(
+            set(), duplicates,
+            'Duplicate IDs for udev submission detected, where no duplicates '
+            'exist.')
+
+    def testFindDuplicateIDsDuplicateUdevNode(self):
+        """SubmissionParser.findDuplicateIDs lists duplicate IDS.
+
+        Two udev dictionaries with the same device['P'] value are
+        invalid.
+        """
+        udev = [
+            {'P': '/devices/LNXSYSTM:00'},
+            {'P': '/devices/LNXSYSTM:00'},
+            ]
+        sysfs_attributes = [
+            {'P': '/devices/LNXSYSTM:00'},
+            ]
+        processors = [
+            {'id': 1},
+            {'id': 2}
+            ]
+        packages = {
+            'bzr': {'id': 4},
+            'python-dev': {'id': 6},
+            }
+        submission = {
+            'hardware': {
+                'udev': udev,
+                'sysfs-attributes': sysfs_attributes,
+                'processors': processors
+                },
+            'software': {
+                'packages': packages
+                }
+            }
+
+        parser = SubmissionParser()
+        duplicates = parser.findDuplicateIDs(submission)
+        self.assertEqual(
+            set(('/devices/LNXSYSTM:00', )), duplicates,
+            'Duplicate udev nodes not detected.')
+
     def testIDMap(self):
         """Test of SubmissionParser._getIDMap."""
         devices = [{'id': 1},
@@ -1150,8 +1475,50 @@ W:2
                           6: packages['python-dev']},
                          'Invalid result of SubmissionParser._getIDMap')
 
-    def testInvalidIDReferences(self):
-        """Test of SubmissionParser.checkIDReferences."""
+    def testIDMapUdev(self):
+        """Test of SubmissionParser._getIDMap.
+
+        Variant for submissions with udev data.
+        """
+        devices = [
+            {'P': '/devices/LNXSYSTM:00'},
+            {'P': '/devices/LNXSYSTM:00/ACPI_CPU:00'},
+            ]
+        processors = [
+            {'id': 3},
+            {'id': 4},
+            ]
+        packages = {
+            'bzr': {'id': 5},
+            }
+        submission = {
+            'hardware': {
+                'udev': devices,
+                'processors': processors
+                },
+            'software': {
+                'packages': packages
+                }
+            }
+
+        parser = SubmissionParser()
+        result = parser._getIDMap(submission)
+        self.assertEqual(
+            {
+                '/devices/LNXSYSTM:00': devices[0],
+                '/devices/LNXSYSTM:00/ACPI_CPU:00': devices[1],
+                3: processors[0],
+                4: processors[1],
+                5: packages['bzr'],
+                },
+            result,
+            'Invalid result of SubmissionParser._getIDMap')
+
+    def testInvalidIDReferencesUdev(self):
+        """Test of SubmissionParser.checkIDReferences.
+
+        Variant for submissions containing udev data.
+        """
         devices = [{'id': 1},
                    {'id': 2}]
         processors = [{'id': 3},
@@ -1385,6 +1752,27 @@ W:2
                          'Circular parent/child relationship in UDIs not '
                          'detected')
 
+    def testCheckUdevDictsHavePathKey(self):
+        """Test of SubmissionParser.checkNodesHavePathKey()"""
+        # Each dict for a udev device must have a 'P' key.
+        parser = SubmissionParser(self.log)
+        devices = [
+            {'P': '/devices/LNXSYSTM:00'},
+            {'P': '/devices/LNXSYSTM:00/ACPI_CPU:00'},
+            ]
+        self.assertTrue(parser.checkUdevDictsHavePathKey(devices))
+
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Submission having udev data without "P" key'
+        devices = [
+            {'P': '/devices/LNXSYSTM:00'},
+            {},
+            ]
+        self.assertFalse(parser.checkUdevDictsHavePathKey(devices))
+
+        self.assertErrorMessage(
+            parser.submission_key, 'udev node found without a "P" key')
+
     def _setupConsistencyCheckParser(self):
         """Prepare and return a SubmissionParser instance.
 
@@ -1481,6 +1869,33 @@ W:2
         self.assertEqual(result, True,
                          'checkConsistency failed, but all partial checks '
                          'succeeded')
+
+    def testConsistencyCheckValidUdevData(self):
+        """Test of SubmissionParser.checkConsistency."""
+        parser = self._setupConsistencyCheckParser()
+        self.assertTrue(parser.checkConsistency(
+            {
+                'hardware': {
+                    'udev': [],
+                    'sysfs-attributes': []
+                    }
+                }
+            ))
+
+    def testConsistencyCheckInvalidUdevData(self):
+        """Test of SubmissionParser.checkConsistency."""
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check with invalid udev data'
+        self.assertFalse(parser.checkConsistency(
+            {
+                'hardware': {
+                    'udev': [{}],
+                    'sysfs-attributes': []
+                    }
+                }
+            ))
+        self.assertErrorMessage(
+            parser.submission_key, 'udev node found without a "P" key')
 
     def testConsistencyCheckWithDuplicateIDs(self):
         """SubmissionParser.checkConsistency detects duplicate IDs."""

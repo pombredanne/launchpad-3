@@ -52,6 +52,17 @@ class NullJob(BaseRunnableJob):
         return 'appending a string to a list'
 
 
+class RaisingJobException(Exception):
+    """Raised by the RaisingJob when run."""
+
+
+class RaisingJob(NullJob):
+    """A job that raises when it runs."""
+
+    def run(self):
+        raise RaisingJobException(self.message)
+
+
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
@@ -201,6 +212,16 @@ class TestJobRunner(TestCaseWithFactory):
             implements(IRunnableJob)
         runner = JobRunner([Runnable()])
         self.assertRaises(AttributeError, runner.runAll)
+
+    def test_runJob_records_failure(self):
+        """When a job fails, the failure needs to be recorded."""
+        job = RaisingJob('boom')
+        runner = JobRunner([job])
+        self.assertRaises(RaisingJobException, runner.runJob, job)
+        # Abort the transaction to confirm that the update of the job status
+        # has been committed.
+        transaction.abort()
+        self.assertEqual(JobStatus.FAILED, job.job.status)
 
 
 def test_suite():

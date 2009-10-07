@@ -28,8 +28,8 @@ a related branch.
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
-    >>> print extract_text(find_tag_by_id(
-    ...    user_browser.contents, 'mainarea'))
+    >>> print extract_text(user_browser.contents)
+    Bug #1...
     Successfully registered branch main for this bug.
     ...
     Related branches

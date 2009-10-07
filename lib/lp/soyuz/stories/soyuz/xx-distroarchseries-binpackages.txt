@@ -90,7 +90,7 @@ originated itself:
 
     >>> source_element = find_tag_by_id(browser.contents, 'source')
     >>> print extract_text(source_element)
-    mozilla-firefox 0.9 (source) in Ubuntu
+    "mozilla-firefox" 0.9 source package in Ubuntu
 
     >>> print source_element.find(name='a')['href']
     /ubuntu/+source/mozilla-firefox/0.9
@@ -184,7 +184,7 @@ able to point the user to the IDistroSeriesSourcePackageRelease which
 originated itself:
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'source'))
-    commercialpackage 1.0-1 (source) in Ubuntu
+    "commercialpackage" 1.0-1 source package in Ubuntu
 
 Also provide a section with the contained files, including respective
 librarian URL and size:

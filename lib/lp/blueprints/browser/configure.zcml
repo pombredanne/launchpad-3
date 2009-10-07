@@ -56,12 +56,16 @@
             name="+specs"
             template="../templates/hasspecifications-specs.pt"/>
         <browser:page
-            name="+assignments"
-            template="../templates/specificationtarget-assignments.pt"/>
-        <browser:page
             name="+portlet-latestspecs"
             template="../templates/specificationtarget-portlet-latestspecs.pt"/>
     </browser:pages>
+    <browser:page
+        name="+assignments"
+        for="lp.blueprints.interfaces.sprint.ISprint"
+        class="canonical.launchpad.browser.SpecificationAssignmentsView"
+        facet="specifications"
+        permission="zope.Public"
+        template="../templates/specificationtarget-assignments.pt"/>
     <browser:page
         name="+edit"
         for="lp.blueprints.interfaces.sprint.ISprint"
@@ -248,9 +252,6 @@
             for="lp.blueprints.interfaces.specification.ISpecification"
             permission="zope.Public">
             <browser:page
-                name="+deptree"
-                template="../templates/specification-deptree.pt"/>
-            <browser:page
                 name="+listing-column"
                 template="../templates/specification-listing-column.pt"/>
             <browser:page
@@ -272,6 +273,12 @@
                 name="+portlet-feedbackqueue"
                 template="../templates/specification-portlet-feedbackqueue.pt"/>
         </browser:pages>
+        <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            class="lp.blueprints.browser.specificationdependency.SpecificationDependencyTreeView"
+            permission="zope.Public"
+            name="+deptree"
+            template="../templates/specification-deptree.pt"/>
         <browser:pages
             for="lp.blueprints.interfaces.specification.ISpecification"
             permission="zope.Public"
@@ -292,7 +299,7 @@
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+subscribe"
-            class="lp.blueprints.browser.specification.SpecificationView"
+            class="lp.blueprints.browser.specification.SpecificationSubscriptionView"
             permission="launchpad.AnyPerson"
             template="../templates/specification-subscription.pt"/>
         <browser:page
@@ -376,24 +383,13 @@
             class="lp.blueprints.browser.specification.SpecificationEditMilestoneView"
             permission="launchpad.Edit"
             template="../templates/specification-edit.pt"/>
-        <browser:addform
+        <browser:page
             name="+requestfeedback"
             for="lp.blueprints.interfaces.specification.ISpecification"
-            schema="lp.blueprints.interfaces.specificationfeedback.ISpecificationFeedback"
             class="lp.blueprints.browser.specificationfeedback.SpecificationFeedbackAddView"
-            label="Request feedback on specification"
-            fields="reviewer requester queuemsg"
-            keyword_arguments="reviewer requester queuemsg"
             permission="launchpad.AnyPerson"
             template="../templates/specification-requestfeedback.pt">
-            <browser:widget
-                field="requester"
-                class="canonical.widgets.HiddenUserWidget"/>
-            <browser:widget
-                field="queuemsg"
-                class="zope.app.form.browser.TextAreaWidget"
-                height="5"/>
-        </browser:addform>
+        </browser:page>
         <browser:page
             name="+linkbug"
             for="lp.blueprints.interfaces.specification.ISpecification"
@@ -537,12 +533,15 @@
                 name="+specs"
                 template="../templates/hasspecifications-specs.pt"/>
             <browser:page
-                name="+assignments"
-                template="../templates/specificationtarget-assignments.pt"/>
-            <browser:page
                 name="+portlet-latestspecs"
                 template="../templates/specificationtarget-portlet-latestspecs.pt"/>
         </browser:pages>
+        <browser:page
+            name="+assignments"
+            for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
+            class="lp.blueprints.browser.specificationtarget.SpecificationAssignmentsView"
+            permission="zope.Public"
+            template="../templates/specificationtarget-assignments.pt"/>
         <browser:page
             name="+register-a-blueprint-button"
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationTarget"
@@ -585,12 +584,16 @@
             name="+specs"
             template="../templates/hasspecifications-specs.pt"/>
         <browser:page
-            name="+assignments"
-            template="../templates/specificationtarget-assignments.pt"/>
-        <browser:page
             name="+portlet-latestspecs"
             template="../templates/specificationtarget-portlet-latestspecs.pt"/>
     </browser:pages>
+    <browser:page
+        name="+assignments"
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.blueprints.browser.specificationtarget.SpecificationAssignmentsView"
+        facet="specifications"
+        permission="zope.Public"
+        template="../templates/specificationtarget-assignments.pt"/>
 
     <browser:page
         name="+addspec"
