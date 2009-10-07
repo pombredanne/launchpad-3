@@ -87,11 +87,11 @@ you an error.
 
 A comment can be added at any point without altering the status. The
 user simply enters the comment in the 'Message' box and clicks the
-'Add Comment' button.
+'Just Add a Comment' button.
 
     >>> support_browser.getControl('Message').value = (
     ...     "I forgot to mention, in the meantime here is a workaround...")
-    >>> support_browser.getControl('Add Comment').click()
+    >>> support_browser.getControl('Just Add a Comment').click()
 
 This appends the comment to the question and it doesn't change its
 status:
@@ -222,11 +222,11 @@ The History link should now show up.
 
 When the question is Solved, it is still possible to add comments to it.
 The user simply enters the comment in the 'Message' box and clicks the
-'Add Comment' button.
+'Just Add a Comment' button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "The example now displays correctly. Thanks.")
-    >>> owner_browser.getControl('Add Comment').click()
+    >>> owner_browser.getControl('Just Add a Comment').click()
 
 This appends the comment to the question and it doesn't change its
 status:
