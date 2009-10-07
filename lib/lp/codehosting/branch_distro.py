@@ -40,6 +40,7 @@ def make_official_branch_in_new_distro_series(db_branch, new_distroseries):
 
 def switch_branches(prefix, scheme, old_branch, new_branch):
     # What happens if this function gets interrupted?
+    # Should perhaps assert that old_branch isn't stacked?
     # move .bzr directory from old to new
     old_underlying_path = os.path.join(
         prefix, branch_id_to_path(old_branch.id))
@@ -101,13 +102,14 @@ def check_consistent_official_package_branch(branch):
             "instead)" % (branch.unique_name, package_branch.unique_name))
 
 
-def branch_distro(logger, distro_name, old_distroseries_name, new_distroseries_name):
+def branch_distro(logger, distro_name, old_distroseries_name,
+                  new_distroseries_name):
     distribution = getUtility(IDistributionSet).getByName(distro_name)
     old_distroseries = distribution.getSeries(old_distroseries_name)
     new_distroseries = distribution.getSeries(new_distroseries_name)
     branches = getUtility(IAllBranches)
     distroseries_branches = branches.inDistroSeries(old_distroseries)
-    for branch in distroseries_branches.officialBranches():
+    for branch in distroseries_branches.officialBranches().getBranches():
         try:
             logger.info("Processing %r" % branch.unique_name)
             clone_branch(branch, new_distroseries)
