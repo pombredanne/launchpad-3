@@ -9,18 +9,14 @@ import apt_pkg
 import unittest
 from lp.archiveuploader.tests import datadir
 
-class Testtagfiles(unittest.TestCase):
+from lp.archiveuploader.tagfiles import (
+    parse_tagfile, TagFile, TagFileParseError)
 
-    def testImport(self):
-        """lp.archiveuploader.tagfiles should be importable"""
-        from lp.archiveuploader.tagfiles import TagFile
-        from lp.archiveuploader.tagfiles import TagFileParseError
-        from lp.archiveuploader.tagfiles import parse_tagfile
+class Testtagfiles(unittest.TestCase):
 
     def testTagFileOnSingular(self):
         """lp.archiveuploader.tagfiles.TagFile should parse a singular stanza
         """
-        from lp.archiveuploader.tagfiles import TagFile
         f = TagFile(file(datadir("singular-stanza"), "r"))
         seenone = False
         for stanza in f:
@@ -32,7 +28,6 @@ class Testtagfiles(unittest.TestCase):
 
     def testTagFileOnSeveral(self):
         """TagFile should parse multiple stanzas."""
-        from lp.archiveuploader.tagfiles import TagFile
         f = TagFile(file(datadir("multiple-stanzas"), "r"))
         seen = 0
         for stanza in f:
@@ -46,15 +41,12 @@ class Testtagfiles(unittest.TestCase):
         """lp.archiveuploader.tagfiles.parse_tagfile should work on a good
            changes file
         """
-        from lp.archiveuploader.tagfiles import parse_tagfile
         p = parse_tagfile(datadir("good-signed-changes"))
 
     def testCheckParseBadChangesRaises(self):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on failure
         """
-        from lp.archiveuploader.tagfiles import parse_tagfile
-        from lp.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("badformat-changes"), 1)
 
@@ -62,8 +54,6 @@ class Testtagfiles(unittest.TestCase):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on empty
         """
-        from lp.archiveuploader.tagfiles import parse_tagfile
-        from lp.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("empty-file"), 1)
 
@@ -71,16 +61,12 @@ class Testtagfiles(unittest.TestCase):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on malformed signatures
         """
-        from lp.archiveuploader.tagfiles import parse_tagfile
-        from lp.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("malformed-sig-changes"), 1)
 
     def testCheckParseMalformedMultilineRaises(self):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on malformed continuation lines"""
-        from lp.archiveuploader.tagfiles import parse_tagfile
-        from lp.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("bad-multiline-changes"), 1)
 
@@ -88,8 +74,6 @@ class Testtagfiles(unittest.TestCase):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on unterminated signatures
         """
-        from lp.archiveuploader.tagfiles import parse_tagfile
-        from lp.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile,
                           datadir("unterminated-sig-changes"),
@@ -99,7 +83,6 @@ class Testtagfiles(unittest.TestCase):
         """lp.archiveuploader.tagfiles.parse_tagfile should not be vulnerable
            to tags outside of the signed portion
         """
-        from lp.archiveuploader.tagfiles import parse_tagfile
         tf = parse_tagfile(datadir("changes-with-exploit-top"))
         self.assertRaises(KeyError, tf.__getitem__, "you")
         tf = parse_tagfile(datadir("changes-with-exploit-bottom"))
@@ -116,9 +99,6 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         self.apt_pkg_parsed_version = apt_pkg.ParseTagFile(tagfile)
         self.apt_pkg_parsed_version.Step()
 
-        # Is it just because this is a very old file that test-related
-        # things are imported locally?
-        from lp.archiveuploader.tagfiles import parse_tagfile
         self.parse_tagfile_version = parse_tagfile(
             tagfile_path, allow_unsigned = True)
 
@@ -183,8 +163,6 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         See http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Description
         """
-        from lp.archiveuploader.tagfiles import parse_tagfile
-
         expected_text = (
             "Here's the single-line synopsis.\n"
             " Then there is the extended description which can\n"
