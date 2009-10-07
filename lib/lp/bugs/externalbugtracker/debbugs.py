@@ -57,6 +57,11 @@ class DebBugs(ExternalBugTracker):
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
+    # Because we keep a local copy of debbugs, we remove the batch_size
+    # limit so that all debbugs watches that need checking will be
+    # checked each time checkwatches runs.
+    batch_size = None
+
     def __init__(self, baseurl, db_location=None):
         super(DebBugs, self).__init__(baseurl)
         if db_location is None:
