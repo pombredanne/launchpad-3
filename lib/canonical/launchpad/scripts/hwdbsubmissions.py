@@ -940,10 +940,16 @@ class SubmissionParser(object):
         submission.
         """
         all_ids = set()
-        duplicates = self._findDuplicates(
-            all_ids,
-            [device['id']
-             for device in parsed_data['hardware']['hal']['devices']])
+        if 'hal' in parsed_data['hardware']:
+            duplicates = self._findDuplicates(
+                all_ids,
+                [device['id']
+                 for device in parsed_data['hardware']['hal']['devices']])
+        else:
+            duplicates = self._findDuplicates(
+                all_ids,
+                [device['P']
+                 for device in parsed_data['hardware']['udev']])
         duplicates.update(self._findDuplicates(
             all_ids,
             [processor['id']
@@ -957,9 +963,14 @@ class SubmissionParser(object):
     def _getIDMap(self, parsed_data):
         """Return a dictionary ID -> devices, processors and packages."""
         id_map = {}
-        hal_devices = parsed_data['hardware']['hal']['devices']
-        for device in hal_devices:
-            id_map[device['id']] = device
+        if 'hal' in parsed_data['hardware']:
+            hal_devices = parsed_data['hardware']['hal']['devices']
+            for device in hal_devices:
+                id_map[device['id']] = device
+        else:
+            udev_devices = parsed_data['hardware']['udev']
+            for device in udev_devices:
+                id_map[device['P']] = device
 
         for processor in parsed_data['hardware']['processors']:
             id_map[processor['id']] = processor
@@ -1118,6 +1129,18 @@ class SubmissionParser(object):
         self._removeChildren(ROOT_UDI, udi_test)
         return udi_test.keys()
 
+    def checkUdevDictsHavePathKey(self, udev_nodes):
+        """Ensure that each udev dictionary has a 'P' key.
+
+        The 'P' (path) key identifies a device.
+        """
+        for node in udev_nodes:
+            if not 'P' in node:
+                self._logError('udev node found without a "P" key',
+                               self.submission_key)
+                return False
+        return True
+
     PCI_PROPERTIES = set(
         ('PCI_CLASS', 'PCI_ID', 'PCI_SUBSYS_ID', 'PCI_SLOT_NAME'))
     pci_class_re = re.compile('^[0-9a-f]{1,6}$', re.I)
@@ -1178,6 +1201,8 @@ class SubmissionParser(object):
 
     def checkConsistentUdevDeviceData(self, udev_data):
         """Consistency checks for udev data."""
+        if not self.checkUdevDictsHavePathKey(udev_data):
+            return False
         return self.checkUdevPciProperties(udev_data)
 
     def checkConsistency(self, parsed_data):
@@ -1187,8 +1212,8 @@ class SubmissionParser(object):
         :param: parsed_data: parsed submission data, as returned by
                              parseSubmission
         """
-        if ('udev' in parsed_data['hardware'] and
-            not self.checkConsistentUdevDeviceData(
+        if ('udev' in parsed_data['hardware']
+            and not self.checkConsistentUdevDeviceData(
                 parsed_data['hardware']['udev'])):
             return False
         duplicate_ids = self.findDuplicateIDs(parsed_data)
@@ -1213,8 +1238,7 @@ class SubmissionParser(object):
                 self._logError(value, self.submission_key)
                 return False
 
-            circular = self.checkHALDevicesParentChildConsistency(
-                udi_children)
+            circular = self.checkHALDevicesParentChildConsistency(udi_children)
             if circular:
                 self._logError('Found HAL devices with circular parent/child '
                                'relationship: %s' % circular,
