@@ -3,7 +3,7 @@ Date: Fri, 15 Dec 2006 12:02:42 +0000
 Source: test75874
 Binary: test75874, anotherbinary,
  andanother, andonemore,
- lastone
+	lastone
 Architecture: all
 Version: 0.1
 Maintainer: Colin Watson <cjwatson@ubuntu.com>

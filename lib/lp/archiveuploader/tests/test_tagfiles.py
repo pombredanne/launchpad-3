@@ -129,7 +129,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         This is a regression test for bug 436182.
         Previously we,
-          1. Stripped leading spaces from subsequent lines of multiline
+          1. Stripped leading space/tab from subsequent lines of multiline
              values, and
           2. appended a trailing '\n' to the end of the value.
         """
@@ -137,7 +137,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         expected_text = (
             'test75874, anotherbinary,\n'
             ' andanother, andonemore,\n'
-            ' lastone')
+            '\tlastone')
 
         self.assertEqual(
             expected_text,
