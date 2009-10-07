@@ -112,6 +112,12 @@ class TestCloneBranch(TestCaseWithFactory):
 
         clone_branch(db_branch, new_distro_series)
 
+        new_sourcepackage = new_distro_series.getSourcePackage(
+            sourcepackage.name)
+        new_branch = new_sourcepackage.getBranch(
+            PackagePublishingPocket.RELEASE)
+
+        self.assertIsNot(new_branch, None)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
