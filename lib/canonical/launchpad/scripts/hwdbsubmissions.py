@@ -1172,32 +1172,37 @@ class SubmissionParser(object):
                 return False
             if subsystem == 'pci':
                 if existing_pci_properties != self.PCI_PROPERTIES:
+                    missing_properties = self.PCI_PROPERTIES.difference(
+                            existing_pci_properties)
+
                     self._logError(
-                        'PCI udev device without required PCI properties: %r'
-                        % self.PCI_PROPERTIES.difference(
-                            existing_pci_properties),
+                        'PCI udev device without required PCI properties: '
+                            '%r %r'
+                            % (missing_properties, device['P']),
                         self.submission_key)
                     return False
                 if self.pci_class_re.search(properties['PCI_CLASS']) is None:
                     self._logError(
-                        'Invalid udev PCI class: %r' % properties['PCI_CLASS'],
+                        'Invalid udev PCI class: %r %r'
+                            % (properties['PCI_CLASS'], device['P']),
                         self.submission_key)
                     return False
                 for pci_id in (properties['PCI_ID'],
                                properties['PCI_SUBSYS_ID']):
                     if self.pci_id_re.search(pci_id) is None:
                         self._logError(
-                            'Invalid udev PCI device ID: %r' % pci_id,
+                            'Invalid udev PCI device ID: %r %r'
+                                % (pci_id, device['P']),
                             self.submission_key)
                         return False
             else:
                 if len(existing_pci_properties) > 0:
                     self._logError(
-                        'Non-PCI udev device with PCI properties: %r'
-                        % existing_pci_properties,
+                        'Non-PCI udev device with PCI properties: %r %r'
+                            % (existing_pci_properties, device['P']),
                         self.submission_key)
                     return False
-            return True
+        return True
 
     def checkConsistentUdevDeviceData(self, udev_data):
         """Consistency checks for udev data."""
