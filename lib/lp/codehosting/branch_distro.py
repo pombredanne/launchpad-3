@@ -15,6 +15,7 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.config import config
 
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branch import BranchExists
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
@@ -100,12 +101,16 @@ def check_consistent_official_package_branch(branch):
             "instead)" % (branch.unique_name, package_branch.unique_name))
 
 
-def branch_distro(distro_name, old_distroseries_name, new_distroseries_name):
+def branch_distro(logger, distro_name, old_distroseries_name, new_distroseries_name):
     distribution = getUtility(IDistributionSet).getByName(distro_name)
     old_distroseries = distribution.getSeries(old_distroseries_name)
     new_distroseries = distribution.getSeries(new_distroseries_name)
     branches = getUtility(IAllBranches)
     distroseries_branches = branches.inDistroSeries(old_distroseries)
     for branch in distroseries_branches.officialBranches():
-        clone_branch(branch, new_distroseries)
+        try:
+            logger.info("Processing %r" % branch.unique_name)
+            clone_branch(branch, new_distroseries)
+        except BranchExists:
+            logger.info("Branch in %s already exists" % new_distroseries_name)
 

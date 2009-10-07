@@ -16,7 +16,7 @@ import transaction
 
 from canonical.testing.layers import ZopelessAppServerLayer
 
-from lp.codehosting.branch_ubuntu import clone_branch, switch_branches
+from lp.codehosting.branch_distro import clone_branch, switch_branches
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
