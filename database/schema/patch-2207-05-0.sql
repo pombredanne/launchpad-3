@@ -9,4 +9,4 @@ ALTER TABLE Archive
   ADD COLUMN external_dependencies text DEFAULT NULL;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 05, 0);

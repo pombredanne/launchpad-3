@@ -160,11 +160,9 @@ def get_sources_list_for_building(build):
 
     # Append external sources_list lines for this archive if it's
     # specified in the configuration.
-    archive_config_key = 'ppa.%s_%s' % (
-        build.archive.owner.name, build.archive.name)
     dependencies = build.archive.external_dependencies
     if dependencies is not None:
-        for archive_dep in dependencies.split(","):
+        for archive_dep in dependencies.splitlines():
             line = archive_dep % (
                 {'series': build.distroarchseries.distroseries.name})
             sources_list_lines.append(line)

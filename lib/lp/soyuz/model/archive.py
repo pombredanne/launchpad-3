@@ -174,6 +174,9 @@ class Archive(SQLBase):
     relative_build_score = IntCol(
         dbName='relative_build_score', notNull=True, default=0)
 
+    # This field is specifically and only intended for OEM migration to
+    # Launchpad and should be re-examined in October 2010 to see if it
+    # is still relevant.
     external_dependencies = StringCol(
         dbName='external_dependencies', notNull=False, default=None)
 

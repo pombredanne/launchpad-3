@@ -28,6 +28,7 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
+from urlparse import urlparse
 
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -1776,11 +1777,41 @@ class ArchiveAdminView(BaseArchiveEditView):
             self.setFieldError(
                 'private',
                 'Private teams may not have public archives.')
-
         elif data.get('buildd_secret') is not None and not data['private']:
             self.setFieldError(
                 'buildd_secret',
                 'Do not specify for non-private archives')
+
+        # Check the external_dependencies field.
+        ext_deps =  data.get('external_dependencies')
+        if ext_deps is not None:
+            errors = []
+            # The field can consist of multiple entries separated by
+            # newlines, so process each in turn.
+            for dep in ext_deps.splitlines():
+                try:
+                    deb, url, suite, components = ext_deps.split(" ", 3)
+                except ValueError:
+                    errors.append(
+                        "'%s' is not a complete and valid sources.list entry"
+                            % dep)
+                    continue
+
+                if deb != "deb":
+                    errors.append("%s: Must start with 'deb'" % dep)
+                url_components = urlparse(url)
+                if url_components[0] is None or url_components[1] is None:
+                    errors.append("%s: Invalid URL\n" % dep)
+                # We can't check for an actual valid
+                # series/pocket/component here because this is an
+                # external archive and may have custom values for those.
+                if suite is None or components is None:
+                    errors.append(
+                        "%s: No series and/or component specified" % dep)
+
+            if len(errors) != 0:
+                error_text = "\n".join(errors)
+                self.setFieldError('external_dependencies', error_text)
 
     @property
     def owner_is_private_team(self):

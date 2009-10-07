@@ -394,9 +394,24 @@ external dependencies changes that were made:
     >>> admin_browser.getControl(name="field.external_dependencies").value
     'deb http://my.spethial.repo.com/ %(series)s main'
 
+The external dependencies field is validated to make sure it looks like
+a sources.list entry.  If the field fails validation an error is displayed.
+
+    >>> admin_browser.getControl(
+    ...     name="field.external_dependencies"
+    ...     ).value = "deb not_a_url"
+    >>> admin_browser.getControl("Save").click()
+    >>> for error in get_feedback_messages(admin_browser.contents):
+    ...     print error
+    There is 1 error.
+    'deb not_a_url' is not a complete and valid sources.list entry
+
+
 When the archive is private, the buildd secret must also be set, or an
 error is issued:
 
+    >>> admin_browser.getControl(
+    ...     name="field.external_dependencies").value = ""
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = ""
     >>> admin_browser.getControl("Save").click()

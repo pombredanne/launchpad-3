@@ -449,7 +449,7 @@ There is a column on IArchive called 'external_dependencies' which can be set
 for any hosted PPA.  It is a string listing the comma-separated external
 dependencies in the debian sources_list format.
 
- deb [user:pass@]<host>[/path] %(series)s[-pocket] [components]
+ deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]
 
 The '%(series)s' part is optional and will be replaced on-the-fly with
 the series name for the build record being dispatched.
@@ -457,8 +457,8 @@ the series name for the build record being dispatched.
 We will create some dependencies for Celso's PPA.
 
     >>> cprov.archive.external_dependencies = (
-    ... "deb http://user:pass@repository zoing everything,"
-    ... "deb http://user:pass@repository %(series)s public private,"
+    ... "deb http://user:pass@repository zoing everything\n"
+    ... "deb http://user:pass@repository %(series)s public private\n"
     ... "deb http://user:pass@repository %(series)s-extra public")
 
 Now builds in Celso's PPA will use the external dependencies.

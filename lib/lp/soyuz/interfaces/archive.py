@@ -256,10 +256,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
     external_dependencies = Text(
         title=_("External dependencies"), required=False, readonly=False,
         description=_(
-            "Comma-separated list of repositories to be used to retrieve any "
-            "external build dependencies when building packages in this "
-            "archive, in the format: "
-            "deb [user:pass@]<host>[/path] %(series)s[-pocket] [components]  "
+            "Newline-separated list of repositories to be used to retrieve "
+            "any external build dependencies when building packages in this "
+            "archive, in the format:\n"
+            "deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] "
+                "[components]\n"
             "The series variable is replaced with the series name of the "
             "context build."))
 

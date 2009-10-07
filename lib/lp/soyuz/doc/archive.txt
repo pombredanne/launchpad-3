@@ -76,7 +76,7 @@ Amending it as an unprivileged user results in failure:
 
 external_dependencies is a text field that should contain a comma-separated
 list of sources.list entries in the format:
-deb [user:pass@]<host>[/path] %(series)s[-pocket] [components]
+deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]
 where the series variable is replaced with the series name of the context
 build.  This allows an admin to set external repositories as a source for
 build dependencies on the context PPA.  Its default value is None:
