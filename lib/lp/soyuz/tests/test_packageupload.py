@@ -198,6 +198,9 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertEquals(
             PackageUploadStatus.ACCEPTED, delayed_copy.status)
 
+        # Make sure no announcement email was sent at this point.
+        self.assertEquals(len(stub.test_emails), 0)
+
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
 
@@ -208,9 +211,22 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         self.layer.txn.commit()
 
-        # Make sure no announcement email was sent.
-        self.assertEquals(len(stub.test_emails), 0)
+        # Check the announcement email.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
 
+        self.assertEquals(
+            str(to_addrs), "['breezy-autotest-changes@lists.ubuntu.com']")
+        self.assertEquals(body,
+            'foocomm (1.0-2) breezy; urgency=low\n\n'
+            '  * Initial version\n\n'
+            'Date: Thu, 16 Feb 2006 15:34:09 +0000\n'
+            'Changed-By: Foo Bar <foo.bar@canonical.com>\n'
+            'Maintainer: Launchpad team <launchpad@lists.canonical.com>\n'
+            'http://launchpad.dev/ubuntutest/breezy-autotest/+source/foocomm/1.0-2\n')
+    
         self.layer.switchDbUser('launchpad')
 
         # One source and 2 binaries are pending publication. They all were

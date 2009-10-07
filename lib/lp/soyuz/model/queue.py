@@ -540,6 +540,13 @@ class PackageUpload(SQLBase):
         if self.is_delayed_copy:
             for pub_record in publishing_records:
                 pub_record.overrideFromAncestry()
+
+                # Grab the .changes file of the original source package while
+                # it's available.
+                changes_file = None
+                if ISourcePackagePublishingHistory.providedBy(pub_record):
+                    changes_file = pub_record.sourcepackagerelease.package_upload.changesfile
+
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)
@@ -549,14 +556,13 @@ class PackageUpload(SQLBase):
                     pub_record.createMissingBuilds(
                         pas_verify=pas_verify, logger=logger)
 
-            # The stanza above copied the required files from the restricted
-            # to the public librarian. We can hence safely assume that the
-            # changes file is available (from the latter) now.
-            changes_file_object = StringIO.StringIO(self.changesfile.read())
-            self.notify(
-                announce_list=self.distroseries.changeslist,
-                changes_file_object=changes_file_object, allow_unsigned=True)
-            self.syncUpdate()
+                if changes_file is not None:
+                    changes_file_object = StringIO.StringIO(changes_file.read())
+                    self.notify(
+                        announce_list=self.distroseries.changeslist,
+                        changes_file_object=changes_file_object,
+                        allow_unsigned=True)
+                    self.syncUpdate()
 
         self.setDone()
 
