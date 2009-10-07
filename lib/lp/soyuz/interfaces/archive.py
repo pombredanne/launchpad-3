@@ -262,7 +262,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] "
                 "[components]\n"
             "The series variable is replaced with the series name of the "
-            "context build."))
+            "context build.\n"
+            "NOTE: This is for migration of OEM PPAs only!"))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
