@@ -1785,33 +1785,35 @@ class ArchiveAdminView(BaseArchiveEditView):
         # Check the external_dependencies field.
         ext_deps =  data.get('external_dependencies')
         if ext_deps is not None:
-            errors = []
-            # The field can consist of multiple entries separated by
-            # newlines, so process each in turn.
-            for dep in ext_deps.splitlines():
-                try:
-                    deb, url, suite, components = ext_deps.split(" ", 3)
-                except ValueError:
-                    errors.append(
-                        "'%s' is not a complete and valid sources.list entry"
-                            % dep)
-                    continue
-
-                if deb != "deb":
-                    errors.append("%s: Must start with 'deb'" % dep)
-                url_components = urlparse(url)
-                if url_components[0] is None or url_components[1] is None:
-                    errors.append("%s: Invalid URL\n" % dep)
-                # We can't check for an actual valid
-                # series/pocket/component here because this is an
-                # external archive and may have custom values for those.
-                if suite is None or components is None:
-                    errors.append(
-                        "%s: No series and/or component specified" % dep)
-
+            errors = self.validate_external_dependencies(ext_deps)
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
+
+    def validate_external_dependencies(self, ext_deps):
+        """Validate the external_dependencies field.
+
+        :param ext_deps: The dependencies form field to check.
+        """
+        errors = []
+        # The field can consist of multiple entries separated by
+        # newlines, so process each in turn.
+        for dep in ext_deps.splitlines():
+            try:
+                deb, url, suite, components = dep.split(" ", 3)
+            except ValueError:
+                errors.append(
+                    "'%s' is not a complete and valid sources.list entry"
+                        % dep)
+                continue
+
+            if deb != "deb":
+                errors.append("%s: Must start with 'deb'" % dep)
+            url_components = urlparse(url)
+            if not url_components[0] or not url_components[1]:
+                errors.append("%s: Invalid URL" % dep)
+
+        return errors
 
     @property
     def owner_is_private_team(self):
