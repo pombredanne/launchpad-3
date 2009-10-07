@@ -12,20 +12,21 @@ Team membership breadcrumbs uses the member's displayname to create
     >>> from canonical.lazr.testing.menus import make_fake_request
     >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
 
-    >>> teamowner = factory.makePerson(name='teamowner')
-    >>> team = factory.makeTeam(name='us', owner=teamowner)
-    >>> membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
-    ...     teamowner, team)
+    >>> team_owner = factory.makePerson(name='team-owner')
+    >>> super_team = factory.makeTeam(name='us', owner=team_owner)
+    >>> membership_set = getUtility(ITeamMembershipSet)
+    >>> membership = membership_set.getByPersonAndTeam(
+    ...     team_owner, super_team)
     >>> view = create_view(membership, '+index')
 
     >>> request = make_fake_request(
-    ...     'http://launchpad.dev/~us/+member/teamowner',
-    ...     [team, membership, view])
+    ...     'http://launchpad.dev/~us/+member/team-owner',
+    ...     [super_team, membership, view])
     >>> hierarchy = create_initialized_view(
     ...     membership, '+hierarchy', request=request)
     >>> hierarchy.items
     [<TeamBreadcrumb ... text='\u201cUs\u201d team'>,
-     <TeamMembershipBreadcrumb ... text='Teamowner's membership'>]
+     <TeamMembershipBreadcrumb ... text='Team-owner's membership'>]
 
 
 +member view
@@ -36,7 +37,7 @@ state of the IPerson.
 
     >>> view = create_view(membership, '+index')
     >>> print view.label
-    Active member Teamowner
+    Active member Team-owner
 
 
 +invitations view
@@ -49,3 +50,27 @@ the ~team/+invitations page.
     >>> view = create_initialized_view(team, '+invitations')
     >>> print view.label
     Invitations for Bassists
+
+
++invitation/<team> view
+-----------------------
+
+The TeamInvitationView allows a team admin accept or decline an invitation
+to join another team. The invitation is a TeamMembership instance. The view
+is applied during the stepto traversal--it is not a named view in ZCML.
+
+    >>> from lp.registry.browser.person import TeamInvitationView
+
+    >>> login_person(team_owner)
+    >>> super_team.addMember(team, team_owner)
+    >>> membership = membership_set.getByPersonAndTeam(team, super_team)
+    >>> login_person(team.teamowner)
+    >>> view = TeamInvitationView(membership, request)
+    >>> print view.label
+    Make Bassists a member of Us
+
+The view provides page_title to create a breadcrumb that describes this
+use the TeamMembership.
+
+    >>> print view.page_title.encode('ascii', 'backslashreplace')
+    \u201cUs\u201d team invitation
