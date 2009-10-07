@@ -740,7 +740,8 @@ Make Celso's PPA private and create a private source publication.
     >>> cprov.archive.buildd_secret = 'boing'
     >>> cprov.archive.private = True
 
-    >>> private_publication = test_publisher.createSource(cprov.archive, 'foocomm', '1.0-1')
+    >>> private_publication = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-1')
 
     >>> logout()
 
@@ -907,7 +908,8 @@ In the same way we can use 'syncSources' for syncing an subsequent
 version.
 
     >>> login('foo.bar@canonical.com')
-    >>> unused = test_publisher.createSource(cprov.archive, 'foocomm', '1.0-2')
+    >>> unused = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-2')
     >>> logout()
 
     >>> print cprov_webservice.named_post(

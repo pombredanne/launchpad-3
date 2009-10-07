@@ -219,6 +219,12 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         self.assertEquals(
             str(to_addrs), "['breezy-autotest-changes@lists.ubuntu.com']")
+
+        expected_subject = (
+            '[ubuntutest/breezy-autotest-security]\n\t'
+            'dist-upgrader_20060302.0120_all.tar.gz, foocomm 1.0-2 (Accepted)')
+        self.assertEquals(msg['Subject'], expected_subject)
+
         self.assertEquals(body,
             'foocomm (1.0-2) breezy; urgency=low\n\n'
             '  * Initial version\n\n'
