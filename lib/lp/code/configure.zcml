@@ -202,7 +202,7 @@
                     registrant
                     source_branch
                     target_branch
-                    dependent_branch
+                    prerequisite_branch
                     whiteboard
                     queue_status
                     private
@@ -431,6 +431,7 @@
                     getMergeQueue
                     revisions_since
                     code_is_browseable
+                    browse_source_url
                     code_import
                     bzr_identity
                     canBeDeleted

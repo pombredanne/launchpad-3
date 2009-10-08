@@ -803,7 +803,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
-                                set_state=None, dependent_branch=None,
+                                set_state=None, prerequisite_branch=None,
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None,
                                 preview_diff=None):
@@ -812,8 +812,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             target = target_branch.target
         elif source_branch is not None:
             target = source_branch.target
-        elif dependent_branch is not None:
-            target = dependent_branch.target
+        elif prerequisite_branch is not None:
+            target = prerequisite_branch.target
         else:
             # Create a target product branch, and use that target.  This is
             # needed to make sure we get a branch target that has the needed
@@ -828,8 +828,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         if registrant is None:
             registrant = self.makePerson()
         proposal = source_branch.addLandingTarget(
-            registrant, target_branch, dependent_branch=dependent_branch,
-            review_diff=review_diff, initial_comment=initial_comment)
+            registrant, target_branch,
+            prerequisite_branch=prerequisite_branch, review_diff=review_diff,
+            initial_comment=initial_comment)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         if preview_diff is not None:

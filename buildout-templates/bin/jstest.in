@@ -48,7 +48,7 @@ test_suites = {
         'domain':    'code.launchpad.dev'
     },
     'soyuz': {
-        'suite_dir': 'lib/canonical/launchpad/windmill/tests/test_soyuz',
+        'suite_dir': 'lib/lp/soyuz/windmill',
         'domain':    'launchpad.dev'
     },
     'translations': {

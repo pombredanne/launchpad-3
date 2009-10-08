@@ -51,7 +51,8 @@ from lp.registry.model.productseries import ProductSeries
 from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
     IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
@@ -251,9 +252,16 @@ class BranchUpgradeJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchUpgradeJob`."""
-        branch = self.branch.getBzrBranch()
-        to_format = self.upgrade_format
-        upgrade(branch.base, to_format)
+        self._prepare_upgrade()
+        self._upgrade()
+
+    def _prepare_upgrade(self):
+        """Prepares the branch for upgrade."""
+        self._upgrade_branch = self.branch.getBzrBranch()
+
+    def _upgrade(self):
+        """Performs the upgrade of the branch."""
+        upgrade(self._upgrade_branch.base, self.upgrade_format)
 
     @property
     def upgrade_format(self):
@@ -508,18 +516,27 @@ class RevisionsAddedJob(BranchJobDerived):
             authors.update(revision.get_apparent_authors())
         return authors
 
-    def findRelatedBMP(self, revision_ids):
+    def findRelatedBMP(self, revision_ids, include_superseded=True):
         """Find merge proposals related to the revision-ids and branch.
 
         Only proposals whose source branch last-scanned-id is in the set of
         revision-ids and whose target_branch is the BranchJob branch are
         returned.
+
+        :param revision_ids: A list of revision-ids to look for.
+        :param include_superseded: If true, include merge proposals that are
+            superseded in the results.
         """
         store = Store.of(self.branch)
-        result = store.find(BranchMergeProposal,
-                            BranchMergeProposal.target_branch==self.branch.id,
-                            BranchMergeProposal.source_branch==Branch.id,
-                            Branch.last_scanned_id.is_in(revision_ids))
+        conditions = [
+            BranchMergeProposal.target_branch==self.branch.id,
+            BranchMergeProposal.source_branch==Branch.id,
+            Branch.last_scanned_id.is_in(revision_ids)]
+        if not include_superseded:
+            conditions.append(
+                BranchMergeProposal.queue_status !=
+                BranchMergeProposalStatus.SUPERSEDED)
+        result = store.find(BranchMergeProposal, *conditions)
         return result
 
     def getRevisionMessage(self, revision_id, revno):
@@ -553,7 +570,9 @@ class RevisionsAddedJob(BranchJobDerived):
                 if len(pretty_authors) > 5:
                     outf.write('...\n')
                 outf.write('\n')
-            bmps = list(self.findRelatedBMP(merged_revisions))
+            bmps = list(
+                self.findRelatedBMP(merged_revisions,
+                include_superseded=False))
             if len(bmps) > 0:
                 outf.write('Related merge proposals:\n')
             for bmp in bmps:
