@@ -9,11 +9,7 @@ makes it possible to test most of the links simply with getMultiAdapter().
 The check_menu_links() function is defined here to make it simple to
 test all the product menu classes below.
 
-    >>> import traceback
-    >>> import sys
-    >>> import os
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.lazr.utils import safe_hasattr
     >>> from canonical.lazr.testing.menus import make_fake_request
     >>> from canonical.launchpad.webapp.publisher import canonical_url
     >>> from lp.registry.interfaces.product import IProductSet
