@@ -1243,7 +1243,8 @@ class SubmissionParser(object):
                 self._logError(value, self.submission_key)
                 return False
 
-            circular = self.checkHALDevicesParentChildConsistency(udi_children)
+            circular = self.checkHALDevicesParentChildConsistency(
+                udi_children)
             if circular:
                 self._logError('Found HAL devices with circular parent/child '
                                'relationship: %s' % circular,
