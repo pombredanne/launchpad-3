@@ -1477,7 +1477,7 @@
         class="lp.registry.browser.product.ProductEditPeopleView">
         <browser:page
             name="+edit-people"
-            template="../templates/product-edit-people.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
     </browser:pages>
     <browser:page
         name="+edit"
@@ -1485,7 +1485,7 @@
         facet="overview"
         class="lp.registry.browser.product.ProductEditView"
         permission="launchpad.Edit"
-        template="../templates/product-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+branding"
         for="lp.registry.interfaces.product.IProduct"
@@ -1499,7 +1499,7 @@
         facet="overview"
         class="lp.registry.browser.product.ProductAdminView"
         permission="launchpad.Admin"
-        template="../templates/product-admin.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+review-license"
         for="lp.registry.interfaces.product.IProduct"
@@ -1567,7 +1567,6 @@
         classes="
             ProductActionNavigationMenu
             ProductBugsMenu
-            ProductEditNavigationMenu
             ProductFacets
             ProductNavigationMenu
             ProductOverviewMenu
