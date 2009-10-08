@@ -365,7 +365,7 @@ class cmd_land(EC2Command):
 
         if merge_proposal is None:
             (tree, bzrbranch, relpath) = (
-                BzrDir.open_containing_tree_or_branch(''))
+                BzrDir.open_containing_tree_or_branch('.'))
             mp = lander.get_merge_proposal_from_branch(bzrbranch)
         else:
             mp = lander.load_merge_proposal(merge_proposal)

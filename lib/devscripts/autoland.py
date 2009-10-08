@@ -44,14 +44,30 @@ class LaunchpadBranchLander:
             web_mp_uri.path.lstrip('/'))
         return MergeProposal(self._launchpad.load(str(api_mp_uri)))
 
+    def get_lp_branch(self, branch):
+        """Get the launchpadlib branch based on a bzr branch."""
+        # First try the public branch.
+        branch_url = branch.get_public_branch()
+        if branch_url:
+            lp_branch = self._launchpad.branches.getByUrl(
+                url=branch_url)
+            if lp_branch is not None:
+                return lp_branch
+        # If that didn't work try the push location.
+        branch_url = branch.get_push_location()
+        if branch_url:
+            lp_branch = self._launchpad.branches.getByUrl(
+                url=branch_url)
+            if lp_branch is not None:
+                return lp_branch
+        raise BzrCommandError(
+            "No public branch could be found.  Please re-run and specify "
+            "the URL for the merge proposal.")
+
     def get_merge_proposal_from_branch(self, branch):
         """Get the merge proposal from the branch."""
-        branch_url = branch.get_public_branch()
-        lp_branch = self._launchpad.branches.getByUrl(
-            url=branch_url)
-        if lp_branch is None:
-            raise BzrCommandError(
-                "No public branch at %s" % branch_url)
+
+        lp_branch = self.get_lp_branch(branch)
         proposals = lp_branch.landing_targets
         if len(proposals) == 0:
             raise BzrCommandError(
@@ -210,17 +226,24 @@ def get_reviewer_clause(reviewers):
         returned by 'get_reviews'.
     :return: A string like u'[r=foo,bar][ui=plop]'.
     """
-    code_reviewers = reviewers.get(None, [])
-    code_reviewers.extend(reviewers.get('code', []))
-    code_reviewers.extend(reviewers.get('db', []))
+    code_reviewers = []
+    ui_reviewers = []
+    rc_reviewers = []
+    for review_type, reviewer in reviewers.items():
+        if 'code' in review_type:
+            code_reviewers.extend(reviewer)
+        if 'db' in review_type:
+            code_reviewers.extend(reviewer)
+        if 'ui' in review_type:
+            ui_reviewers.extend(reviewer)
+        if 'release-critical' in review_type:
+            rc_reviewers.extend(reviewer)
     if not code_reviewers:
         raise MissingReviewError("Need approved votes in order to land.")
-    ui_reviewers = reviewers.get('ui', [])
     if ui_reviewers:
         ui_clause = _comma_separated_names(ui_reviewers)
     else:
         ui_clause = 'none'
-    rc_reviewers = reviewers.get('release-critical', [])
     if rc_reviewers:
         rc_clause = (
             '[release-critical=%s]' % _comma_separated_names(rc_reviewers))
