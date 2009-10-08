@@ -55,7 +55,7 @@ the ~team/+invitations page.
 +invitation/<team> view
 -----------------------
 
-The TeamInvitationView allows a team admin accept or decline an invitation
+The TeamInvitationView allows a team admin to accept or decline an invitation
 to join another team. The invitation is a TeamMembership instance. The view
 is applied during the stepto traversal--it is not a named view in ZCML.
 
