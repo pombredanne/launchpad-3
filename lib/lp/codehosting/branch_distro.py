@@ -5,7 +5,9 @@
 
 import os
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
+from bzrlib.errors import NotStacked
 
 import transaction
 
@@ -21,6 +23,7 @@ from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 
 __metaclass__ = type
 __all__ = []
@@ -83,7 +86,10 @@ def clone_branch(db_branch, new_distroseries):
         'lp-mirrored:///', db_branch, new_branch)
 
 
-class InconsistentOfficialPackageBranch(Exception):
+class BranchingProblem(Exception):
+    pass
+
+class InconsistentOfficialPackageBranch(BranchingProblem):
     pass
 
 
@@ -111,8 +117,55 @@ def branch_distro(logger, distro_name, old_distroseries_name,
     distroseries_branches = branches.inDistroSeries(old_distroseries)
     for branch in distroseries_branches.officialBranches().getBranches():
         try:
-            logger.info("Processing %r" % branch.unique_name)
+            check_consistent_official_package_branch(branch)
+        except InconsistentOfficialPackageBranch, e:
+            logger.warning("Problem: %s -- not processing this branch.", e)
+        try:
+            logger.debug("Processing %r" % branch.unique_name)
             clone_branch(branch, new_distroseries)
         except BranchExists:
-            logger.info("Branch in %s already exists" % new_distroseries_name)
+            logger.debug(
+                "Branch in %s already exists" % new_distroseries_name)
+            check_new_branch_ok(branch, new_distroseries)
 
+
+
+
+####
+
+def check_new_branch_ok(old_branch, new_distroseries):
+    # there is an official branch for the same package in the new distroseries
+    new_sourcepackage = getUtility(ISourcePackageFactory).new(
+        sourcepackagename=old_branch.sourcepackagename,
+        distroseries=new_distroseries)
+    new_branch = new_sourcepackage.getBranch(PackagePublishingPocket.RELEASE)
+    check_consistent_official_package_branch(new_branch)
+    if new_branch is None:
+        raise BranchingProblem(
+            "No official branch found for %s" % new_sourcepackage)
+    # for both mirrored and hosted areas:
+    for scheme in 'lp-mirrored', 'lp-hosted':
+        # the branch in the new distroseries is unstacked
+        new_bzr_branch = Branch.open(scheme + new_branch.unique_name)
+        try:
+            new_stacked_on_url = new_bzr_branch.get_stacked_on_url()
+            raise BranchingProblem(
+                "%s stacked on %s" % (new_bzr_branch, new_stacked_on_url))
+        except NotStacked:
+            pass
+        # The branch in the old distroseries is stacked on that in the new.
+        old_bzr_branch = Branch.open(scheme + old_branch.unique_name)
+        old_stacked_on_url = old_bzr_branch.get_stacked_on_url()
+        if old_stacked_on_url != '/' + new_branch.unique_name:
+            raise BranchingProblem()
+        # The branch in the old distroseries has no revisions in its
+        # repository.  This might fail if new revisions get pushed to the
+        # branch in the old distroseries, which shouldn't happen but isn't
+        # totally impossible.
+        if len(old_bzr_branch.repository.all_revision_ids()) > 0:
+            raise BranchingProblem()
+        # The branch in the old distroseries has at least some history.  (We
+        # can't check that the tips are the same because the branch in the new
+        # distroseries might have new revisons).
+        if old_bzr_branch.last_revision() == 'null:':
+            raise BranchingProblem()
