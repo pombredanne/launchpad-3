@@ -216,8 +216,11 @@ def get_reviewer_handle(reviewer):
 
 
 def _comma_separated_names(things):
-    """Return a string of comma-separated names of 'things'."""
-    return ','.join(thing.name for thing in things)
+    """Return a string of comma-separated names of 'things'.
+
+    The list is sorted before being joined.
+    """
+    return ','.join(sorted(thing.name for thing in things))
 
 
 def get_reviewer_clause(reviewers):
@@ -233,9 +236,9 @@ def get_reviewer_clause(reviewers):
     ui_reviewers = []
     rc_reviewers = []
     for review_type, reviewer in reviewers.items():
-        if 'code' in review_type:
-            code_reviewers.extend(reviewer)
-        if 'db' in review_type:
+        if review_type is None:
+            continue
+        if 'code' in review_type or 'db' in review_type:
             code_reviewers.extend(reviewer)
         if 'ui' in review_type:
             ui_reviewers.extend(reviewer)
