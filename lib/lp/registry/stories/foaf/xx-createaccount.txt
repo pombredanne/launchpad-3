@@ -35,18 +35,8 @@ the incredibly trivial math captcha.  She gets an error message.
 Jane tries again, providing a the correct captcha answer.  Her valid
 email address from before has been retained in the form.
 
-    >>> import re
-    >>> def get_captcha_answer(contents):
-    ...     expr = re.compile("(\d+ .{1} \d+) =")
-    ...     match = expr.search(contents)
-    ...     if match:
-    ...         question = match.group(1)
-    ...         answer = eval(question)
-    ...         return str(answer)
-    ...     return ''
-
-    >>> browser.getControl(name='loginpage_captcha_submission').value = (
-    ...     get_captcha_answer(browser.contents))
+    >>> from lp.testing.registration import set_captcha_answer
+    >>> set_captcha_answer(browser)
     >>> browser.getControl('Register').click()
     >>> print_feedback_messages(browser.contents)
     >>> print extract_text(find_main_content(browser.contents))
@@ -113,8 +103,7 @@ Jane tries again with a different email address.
     >>> browser.open('http://launchpad.dev/+login')
     >>> browser.getControl(name='loginpage_email', index=1).value = (
     ...     'jperson@example.com')
-    >>> browser.getControl(name='loginpage_captcha_submission').value = (
-    ...     get_captcha_answer(browser.contents))
+    >>> set_captcha_answer(browser)
     >>> browser.getControl('Register').click()
 
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
