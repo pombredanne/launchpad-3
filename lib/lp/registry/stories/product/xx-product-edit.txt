@@ -1,3 +1,4 @@
+===========================
 Product Edit and Administer
 ===========================
 
@@ -72,7 +73,7 @@ We can change this to the 1.0 series through the edit form:
 
 
 Administering Products
-----------------------
+======================
 
 Regular users can't access the 'Administer' link.
 
@@ -175,7 +176,7 @@ will be accepted because there is no product called newproductname3
 
 
 Changing Maintainer and Registrant
-----------------------------------
+==================================
 
 Administrators can change the owner of a project.
 
@@ -222,7 +223,7 @@ teams as registrants.
 
 
 Registry Experts
-----------------
+================
 
 Regular Joes can't edit any old project:
 
@@ -272,7 +273,7 @@ have zero licenses.
 
 
 Launchpad developers can use the reviewer whiteboard
-----------------------------------------------------
+====================================================
 
 A member of the Registry Experts team can use the reviewer whiteboard on
 the +review-license page for storing random notes about a project. At
@@ -379,7 +380,7 @@ Revert team memberships.
 
 
 Setting the remote project
---------------------------
+==========================
 
 The remote_product field - which stores a Product's ID on the remote bug
 tracker - can be set from the +edit page, too.
