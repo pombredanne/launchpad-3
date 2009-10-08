@@ -296,6 +296,7 @@ class StructuralSubscriptionMenuMixin:
         if IStructuralSubscriptionTarget.providedBy(self.context):
             sst = self.context
         else:
+            # self.context is a view, and the target is its context
             sst = self.context.context
 
         if sst.userHasBugSubscriptions(self.user):
