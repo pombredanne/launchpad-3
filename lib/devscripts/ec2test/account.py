@@ -149,7 +149,7 @@ class EC2Account:
                 self.log('Cannot delete; key pair not '
                          'found %r\n' % key_pair.name)
             else:
-                self.log('Deleted key pair %r.' % key_pair.name)
+                self.log('Deleted key pair %r.\n' % key_pair.name)
 
     def collect_garbage(self):
         """Remove any old keys and security groups."""
