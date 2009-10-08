@@ -1864,27 +1864,22 @@ invalid line
             "Invalid udev PCI device ID: 'not-a-subsystem-id' "
             "'/devices/pci0000:00/0000:00:1f.2'")
 
-    def _setupUdevConsistencyCheckTests(self):
-        """Prepare and return a SubmissionParser instance.
+    class UdevTestSubmissionParser(SubmissionParser):
+        """A variant of SubmissionParser that shortcuts udev related tests.
 
-        Replace udev related methods with dummies that just return True.
+        All shortcut methods return True.
         """
         def checkUdevDictsHavePathKey(self, udev_data):
+            """See `SubmissionParser`."""
             return True
 
         def checkUdevPciProperties(self, udev_data):
+            """See `SubmissionParser`."""
             return True
-
-        parser = SubmissionParser()
-        parser.checkUdevDictsHavePathKey = (
-            lambda data: checkUdevDictsHavePathKey(parser, data))
-        parser.checkUdevPciProperties = (
-            lambda data: checkUdevPciProperties(parser, data))
-        return parser
 
     def testCheckConsistentUdevDeviceData(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),"""
-        parser = self._setupUdevConsistencyCheckTests()
+        parser = self.UdevTestSubmissionParser()
         self.assertTrue(parser.checkConsistentUdevDeviceData(None))
 
     def testCheckConsistentUdevDeviceDataInvalidPathData(self):
@@ -1892,12 +1887,15 @@ invalid line
 
         Detection of invalid path data lets the check fail.
         """
-        def checkUdevDictsHavePathKey(self, udev_data):
-            return False
+        class SubmissionParserUdevPathCheckFails(
+            self.UdevTestSubmissionParser):
+            """A SubmissionPaser where checkUdevDictsHavePathKey() fails."""
 
-        parser = self._setupUdevConsistencyCheckTests()
-        parser.checkUdevDictsHavePathKey = (
-            lambda data: checkUdevDictsHavePathKey(parser, data))
+            def checkUdevDictsHavePathKey(self, udev_data):
+                """See `SubmissionParser`."""
+                return False
+
+        parser = SubmissionParserUdevPathCheckFails()
         self.assertFalse(parser.checkConsistentUdevDeviceData(None))
 
     def testCheckConsistentUdevDeviceDataInvalidPciData(self):
@@ -1905,12 +1903,15 @@ invalid line
 
         Detection of invalid PCI data lets the check fail.
         """
-        def checkUdevPciProperties(self, udev_data):
-            return False
+        class SubmissionParserUdevPciCheckFails(
+            self.UdevTestSubmissionParser):
+            """A SubmissionPaser where checkUdevPciProperties() fails."""
 
-        parser = self._setupUdevConsistencyCheckTests()
-        parser.checkUdevPciProperties = (
-            lambda data: checkUdevPciProperties(parser, data))
+            def checkUdevPciProperties(self, udev_data):
+                """See `SubmissionParser`."""
+                return False
+
+        parser = SubmissionParserUdevPciCheckFails()
         self.assertFalse(parser.checkConsistentUdevDeviceData(None))
 
     def _setupConsistencyCheckParser(self):
