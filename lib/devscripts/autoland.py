@@ -121,7 +121,8 @@ class MergeProposal:
         """
         # XXX: JonathanLange 2009-09-24: No unit tests.
         return set(
-            map(get_email, [self._mp.source_branch.owner, self._launchpad.me]))
+            map(get_email,
+                [self._mp.source_branch.owner, self._launchpad.me]))
 
     def get_reviews(self):
         """Return a dictionary of all Approved reviews.
@@ -226,7 +227,9 @@ def get_reviewer_clause(reviewers):
         returned by 'get_reviews'.
     :return: A string like u'[r=foo,bar][ui=plop]'.
     """
-    code_reviewers = []
+    # If no review type is specified it will be None and is assumed to be a
+    # code review.
+    code_reviewers = reviewers.get(None, [])
     ui_reviewers = []
     rc_reviewers = []
     for review_type, reviewer in reviewers.items():
