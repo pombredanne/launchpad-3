@@ -39,6 +39,7 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.answers.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
@@ -67,10 +68,7 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
     enable_only = ['overview', 'bugs', 'answers', 'branches']
 
 
-class DistributionSourcePackageLinksMixin:
-    def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
-
+class DistributionSourcePackageLinksMixin(StructuralSubscriptionMenuMixin):
     def publishinghistory(self):
         return Link('+publishinghistory', 'Show publishing history')
 

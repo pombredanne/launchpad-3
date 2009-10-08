@@ -326,3 +326,14 @@ class StructuralSubscriptionTargetMixin:
         else:
             raise AssertionError(
                 '%s is not a valid structural subscription target.', self)
+
+    def userHasBugSubscriptions(self, user):
+        """See `IStructuralSubscriptionTarget`."""
+        bug_subscriptions = self.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.METADATA)
+        for subscription in bug_subscriptions:
+            if (subscription.subscriber == user or
+                user.inTeam(subscription.subscriber)):
+                # The user has a bug subscription
+                return True
+        return False

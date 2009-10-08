@@ -54,6 +54,7 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser import StatusCount
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
@@ -149,7 +150,8 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
         return Link(link, text, summary=summary)
 
 
-class ProductSeriesOverviewMenu(ApplicationMenu):
+class ProductSeriesOverviewMenu(
+    ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The overview menu."""
     usedfor = IProductSeries
     facet = 'overview'
@@ -220,13 +222,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
-    def subscribe(self):
-        """Return a link to subscribe to bug mail."""
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class ProductSeriesBugsMenu(ApplicationMenu):
+class ProductSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The bugs menu."""
     usedfor = IProductSeries
     facet = 'bugs'
@@ -243,10 +240,6 @@ class ProductSeriesBugsMenu(ApplicationMenu):
     def nominations(self):
         """Return a link to review bugs nominated for this series."""
         return Link('+nominations', 'Review nominations', icon='bug')
-
-    def subscribe(self):
-        """Return a link to subscribe to bug mail."""
-        return Link('+subscribe', 'Subscribe to bug mail')
 
 
 class ProductSeriesSpecificationsMenu(NavigationMenu,
