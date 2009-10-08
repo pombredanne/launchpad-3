@@ -37,7 +37,7 @@ email address from before has been retained in the form.
 
     >>> import re
     >>> def get_captcha_answer(contents):
-    ...     expr = re.compile("What is (\d+ .{1} \d+)?")
+    ...     expr = re.compile("(\d+ .{1} \d+) =")
     ...     match = expr.search(contents)
     ...     if match:
     ...         question = match.group(1)

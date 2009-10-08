@@ -431,7 +431,7 @@ class LoginOrRegister:
         """Create the captcha challenge."""
         op1 = random.randint(1, self.captcha_answer)
         op2 = self.captcha_answer - op1
-        return 'What is %d + %d?' % (op1, op2)
+        return '%d + %d =' % (op1, op2)
 
 
 def logInPrincipal(request, principal, email):

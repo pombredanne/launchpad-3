@@ -172,7 +172,9 @@
 
               <ol class="subordinate">
                  <li>Make sure cookies are enabled in your browser.</li>
-                 <li>Enter your e-mail address.</li>
+                 <li>Enter your e-mail address and answer our random question
+                 so we know that you're human.
+                 </li>
                  <li>Follow the URL in the confirmation e-mail that Launchpad sends and you're done!</li>
              </ol>
 
@@ -199,10 +201,11 @@
                 </tr>
                 <tr>
                   <th>
-                    <label tal:content="view/captcha_problem" />
+                    <label>Random question:</label>
                   </th>
                   <td>
-                    <input type="text" size="30"
+                    <span id="problem" tal:content="view/captcha_problem" />
+                    <input type="text" size="5"
                            id="captcha_submission" value=""
                            tal:attributes="name view/captcha_submission"
                     />
