@@ -113,7 +113,7 @@ class IBranchMergeProposal(IPrivacy):
             description=_(
                 "The branch that the source branch will be merged into.")))
 
-    dependent_branch = exported(
+    prerequisite_branch = exported(
         Reference(
             title=_('Dependent Branch'),
             schema=IBranch, required=False, readonly=True,
@@ -482,11 +482,11 @@ class IBranchMergeProposal(IPrivacy):
 
     @operation_parameters(
         diff_content=Bytes(), source_revision_id=TextLine(),
-        target_revision_id=TextLine(), dependent_revision_id=TextLine(),
+        target_revision_id=TextLine(), prerequisite_revision_id=TextLine(),
         conflicts=Text())
     @export_write_operation()
     def updatePreviewDiff(diff_content, source_revision_id,
-                          target_revision_id, dependent_revision_id=None,
+                          target_revision_id, prerequisite_revision_id=None,
                           conflicts=None):
         """Update the preview diff for this proposal.
 
@@ -499,8 +499,8 @@ class IBranchMergeProposal(IPrivacy):
             source branch.
         :param target_revision_id: The revision id that was used from the
             target branch.
-        :param dependent_revision_id: The revision id that was used from the
-            dependent branch.
+        :param prerequisite_revision_id: The revision id that was used from the
+            prerequisite branch.
         :param conflicts: Text describing the conflicts if any.
         """
 

@@ -10,6 +10,7 @@ __all__ = [
     'plan_update',
     ]
 
+import optparse
 import os
 import shutil
 import sys
@@ -21,6 +22,8 @@ from bzrlib.plugin import load_plugins
 from bzrlib.trace import report_exception
 from bzrlib.transport import get_transport
 from bzrlib.workingtree import WorkingTree
+
+from devscripts import get_launchpad_root
 
 
 def parse_config_file(file_handle):
@@ -39,17 +42,23 @@ def parse_config_file(file_handle):
 
 def interpret_config_entry(entry):
     """Interpret a single parsed line from the config file."""
-    return (entry[0], (entry[1], len(entry) > 2))
+    return entry[0], entry[1], len(entry) > 2
 
 
-def interpret_config(config_entries):
+def interpret_config(config_entries, public_only):
     """Interpret a configuration stream, as parsed by 'parse_config_file'.
 
     :param configuration: A sequence of parsed configuration entries.
+    :param public_only: If true, ignore private/optional branches.
     :return: A dict mapping the names of the sourcecode dependencies to a
         2-tuple of their branches and whether or not they are optional.
     """
-    return dict(map(interpret_config_entry, config_entries))
+    config = {}
+    for entry in config_entries:
+        branch_name, branch_url, optional = interpret_config_entry(entry)
+        if not optional or not public_only:
+            config[branch_name] = (branch_url, optional)
+    return config
 
 
 def _subset_dict(d, keys):
@@ -156,21 +165,23 @@ def remove_branches(sourcecode_directory, removed_branches):
             os.unlink(destination)
 
 
-def update_sourcecode(sourcecode_directory, config_filename):
+def update_sourcecode(sourcecode_directory, config_filename, public_only,
+                      dry_run):
     """Update the sourcecode."""
     config_file = open(config_filename)
-    config = interpret_config(parse_config_file(config_file))
+    config = interpret_config(parse_config_file(config_file), public_only)
     config_file.close()
     branches = find_branches(sourcecode_directory)
     new, updated, removed = plan_update(branches, config)
     possible_transports = []
-    get_branches(sourcecode_directory, new, possible_transports)
-    update_branches(sourcecode_directory, updated, possible_transports)
-    remove_branches(sourcecode_directory, removed)
-
-
-def get_launchpad_root():
-    return os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    if dry_run:
+        print 'Branches to fetch:', new.keys()
+        print 'Branches to update:', updated.keys()
+        print 'Branches to remove:', list(removed)
+    else:
+        get_branches(sourcecode_directory, new, possible_transports)
+        update_branches(sourcecode_directory, updated, possible_transports)
+        remove_branches(sourcecode_directory, removed)
 
 
 # XXX: JonathanLange 2009-09-11: By default, the script will operate on the
@@ -185,6 +196,14 @@ def get_launchpad_root():
 
 
 def main(args):
+    parser = optparse.OptionParser("usage: %prog [options] [root [conffile]]")
+    parser.add_option(
+        '--public-only', action='store_true',
+        help='Only fetch/update the public sourcecode branches.')
+    parser.add_option(
+        '--dry-run', action='store_true',
+        help='Only fetch/update the public sourcecode branches.')
+    options, args = parser.parse_args(args)
     root = get_launchpad_root()
     if len(args) > 1:
         sourcecode_directory = args[1]
@@ -194,8 +213,12 @@ def main(args):
         config_filename = args[2]
     else:
         config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
+    if len(args) > 3:
+        parser.error("Too many arguments.")
     print 'Sourcecode: %s' % (sourcecode_directory,)
     print 'Config: %s' % (config_filename,)
     load_plugins()
-    update_sourcecode(sourcecode_directory, config_filename)
+    update_sourcecode(
+        sourcecode_directory, config_filename,
+        options.public_only, options.dry_run)
     return 0

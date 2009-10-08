@@ -15,13 +15,13 @@ First, No Privileges Person creates a new team.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.title
-    'ITest One in Launchpad'
+    >>> print browser.title
+    ITest One in Launchpad
 
 To request a mailing list, No Privileges Person navigates to the 'Configure
 mailing list' page and registers their application for a mailing list.
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink('Create a mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
 At this point, Mailman has still not created the mailing list.
@@ -56,7 +56,7 @@ for this new team.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink('Create a mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
 This time, however, the mailing list expert declines the application for a new

@@ -1,4 +1,5 @@
-= Monitoring External Bug Trackers in Malone =
+Monitoring External Bug Trackers in Launchpad Bugs
+==================================================
 
 Malone allows you to monitor bugs in external bug tracking systems. This
 document discusses the API of external bug trackers. To learn more about
@@ -97,7 +98,8 @@ longer appear in the set returned by getBugWatchesNeedingUpdate().
     Remote bug: 42   LP bug: 2
 
 
-== Auto-creating bug trackers ==
+Auto-creating bug trackers
+--------------------------
 
 The bugtracker module contains a method, make_bugtracker_name() which
 can be used to generate a bug tracker name when a bugtracker is
@@ -162,7 +164,8 @@ collide.
     u'auto-bugs.example.com-1'
 
 
-== Top Bug Trackers ==
+Top Bug Trackers
+----------------
 
 The Malone front page shows a list of the top Malone bug trackers, as
 ordered by the number of bugs being monitored by Malone in each of
@@ -175,7 +178,8 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
      (4, u'mozilla.org'), (5, u'debbugs')]
 
 
-== Getting Bug Trackers ==
+Getting Bug Trackers
+--------------------
 
 You can get a specific bug tracker from the database by querying by
 its base URL.
@@ -298,7 +302,8 @@ an alias.
     gnome-bugzilla [u'gnome-terminal', u'gnome']
 
 
-== Imported bug messages ==
+Imported bug messages
+---------------------
 
 Each BugTracker has an imported_bug_messages property that returns all
 bug messages which have been imported for a given bug tracker.
@@ -346,7 +351,8 @@ We will forge some BugMessage records before trying again:
     - message subject: You are Number 4.
 
 
-== Filing a bug on the remote tracker ==
+Filing a bug on the remote tracker
+----------------------------------
 
 The IBugTracker interface defines a method, getBugFilingAndSearchLinks(),
 which returns the URLs of the bug filing form and the bug search on the remote
@@ -519,7 +525,8 @@ summary and description correctly.
     bug_search_url: ...?product=test&short_desc=%C2%ABHi%C2%A9
 
 
-== BugTracker.multi_product ==
+BugTracker.multi_product
+------------------------
 
 As described above, some bug trackers don't need to have a remote
 product passed to `getBugFilingAndSearchLinks()` in order to be able to return a
@@ -556,7 +563,8 @@ trackers.
     bug_search_url: None
 
 
-== Custom bug tracker bug filing links ==
+Custom bug tracker bug filing links
+-----------------------------------
 
 Some bug trackers are heavily customised, so their bug filing URLs may
 be different from the default URL form for that type of bug tracker.
@@ -576,3 +584,53 @@ use the default setup.
     http://.../enter_bug.cgi?product=testproduct&short_desc=Foo&comment=Bar
     bug_search_url:
     http://.../query.cgi?product=testproduct&short_desc=Foo
+
+
+Resetting a tracker's watches
+-----------------------------
+
+It's possible to reset all the watches on a bug tracker by calling its
+resetWatches() method.
+
+    >>> from operator import attrgetter
+
+    >>> def print_tracker_watch_times(bugtracker):
+    ...     for watch in sorted(
+    ...         bugtracker.watches, key=attrgetter('id')):
+    ...         if watch.lastchecked is not None:
+    ...             print watch.bug.id, "not None"
+    ...         else:
+    ...             print watch.bug.id, watch.lastchecked
+
+    >>> print_tracker_watch_times(mozilla_bugzilla)
+    2 not None
+    1 None
+    1 not None
+    1 not None
+
+Calling resetWatches() on mozilla_bugzilla will set all its
+lastchecked times to None.
+
+    >>> mozilla_bugzilla.resetWatches()
+    >>> transaction.commit()
+    >>> print_tracker_watch_times(mozilla_bugzilla)
+    2 None
+    1 None
+    1 None
+    1 None
+
+resetWatches() also clears the last_error_type field of the watches.
+
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchErrorType
+    >>> for watch in mozilla_bugzilla.watches:
+    ...     watch.last_error_type = BugWatchErrorType.UNKNOWN
+
+    >>> txn = transaction.begin()
+    >>> mozilla_bugzilla.resetWatches()
+    >>> txn.commit()
+    >>> for watch in mozilla_bugzilla.watches:
+    ...     print watch.last_error_type
+    None
+    None
+    None
+    None

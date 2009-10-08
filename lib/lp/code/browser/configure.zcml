@@ -60,7 +60,7 @@
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+code-import-list"
       class="lp.registry.browser.productseries.ProductSeriesSourceListView"
-      template="../../../canonical/launchpad/templates/sources-list.pt"
+      template="../templates/sources-list.pt"
       permission="zope.Public"
       />
   <browser:page
@@ -959,7 +959,7 @@
         name="code"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.hasbranches.IHasBranches"
-        factory="lp.code.browser.branchlisting.HasBranchesBreadcrumb"
+        factory="lp.code.browser.branchlisting.CodeVHostBreadcrumb"
         permission="zope.Public"/>
 
     <adapter

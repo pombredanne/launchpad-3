@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_status_count',
+    'get_status_counts',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',

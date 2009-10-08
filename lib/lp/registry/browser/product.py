@@ -47,7 +47,6 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -58,13 +57,13 @@ from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from lp.app.interfaces.headings import IEditableContextTitle
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -269,7 +268,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         summary = 'Branches for %s' % self.context.displayname
         return Link('', text, summary)
 
@@ -475,32 +474,11 @@ class ProductBugsMenu(ApplicationMenu):
         return Link('+subscribe', text, icon='edit')
 
 
-class ProductSpecificationsMenu(ApplicationMenu):
-
+class ProductSpecificationsMenu(NavigationMenu,
+                                HasSpecificationsMenuMixin):
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'table', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        summary = 'Show all specifications for %s' %  self.context.title
-        return Link('+specs?show=all', text, summary, icon='info')
-
-    def doc(self):
-        text = 'List documentation'
-        summary = 'List all complete informational specifications'
-        return Link('+documentation', text, summary,
-            icon='info')
-
-    def table(self):
-        text = 'Assignments'
-        summary = 'Show the full assignment of work, drafting and approving'
-        return Link('+assignments', text, summary, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = ['listall', 'doc', 'assignments', 'new']
 
 
 def _sort_distros(a, b):
@@ -1728,8 +1706,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         old_owner = self.context.owner
         old_driver = self.context.driver
         self.updateContextFromData(data)
-        self._reassignProductDependencies(
-            self.context, old_owner, self.context.owner)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
                 "Successfully changed the maintainer to %s"
@@ -1752,22 +1728,3 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-
-    def _reassignProductDependencies(self, product, oldOwner, newOwner):
-        """Reassign ownership of objects related to this product.
-
-        Objects related to this product includes: ProductSeries,
-        ProductReleases and TranslationImportQueueEntries that are owned
-        by oldOwner of the product.
-
-        """
-        import_queue = getUtility(ITranslationImportQueue)
-        for entry in import_queue.getAllEntries(target=product):
-            if entry.importer == oldOwner:
-                removeSecurityProxy(entry).importer = newOwner
-        for series in product.serieses:
-            if series.owner == oldOwner:
-                series.owner = newOwner
-        for release in product.releases:
-            if release.owner == oldOwner:
-                release.owner = newOwner

@@ -180,7 +180,8 @@ class BranchEditMenu(NavigationMenu):
     usedfor = IBranch
     facet = 'branches'
     title = 'Edit branch'
-    links = ['delete', 'edit', 'edit_import', 'edit_whiteboard', 'reviewer']
+    links = (
+        'edit', 'reviewer', 'edit_import', 'edit_whiteboard', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -254,11 +255,12 @@ class BranchContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
-        text = 'Propose for merging into another branch'
+        text = 'Propose for merging'
         enabled = (
             self.context.target.supports_merge_proposals and
             not self.context.branch_type == BranchType.IMPORTED)
-        return Link('+register-merge', text, icon='add', enabled=enabled)
+        return Link('+register-merge', text, icon='merge-proposal',
+                    enabled=enabled)
 
     def link_bug(self):
         if self.context.linked_bugs:
@@ -302,6 +304,7 @@ class DecoratedBug:
         """Return the bugtask for the branch project, or the default bugtask.
         """
         return self.branch.target.getBugTask(self.context)
+
 
 class BranchView(LaunchpadView, FeedsMixin):
 
