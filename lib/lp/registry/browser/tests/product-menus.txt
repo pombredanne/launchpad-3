@@ -1,4 +1,6 @@
-= The product menu classes =
+========================
+The product menu classes
+========================
 
 Each link specified by menu classes for products should be accessible.
 In most cases, the context for links will be the product itself, which
