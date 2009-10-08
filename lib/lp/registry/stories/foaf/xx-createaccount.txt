@@ -22,7 +22,7 @@ She enters an invalid email address, and gets a warning message.
     again.
 
 Next she enters a valid email address but enters a wrong answer for
-the incredibly trivial match captcha.  She gets an error message.
+the incredibly trivial math captcha.  She gets an error message.
 
     >>> browser.getControl(name='loginpage_email', index=1).value = (
     ...     'jane@example.com')
