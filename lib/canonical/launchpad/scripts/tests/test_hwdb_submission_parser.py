@@ -3,7 +3,6 @@
 
 """Tests of the HWDB submissions parser."""
 
-from copy import deepcopy
 from cStringIO import StringIO
 try:
     import xml.etree.cElementTree as etree
@@ -99,6 +98,20 @@ class TestHWDBSubmissionParser(TestCase):
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
         self.handler.add(self.log.name)
+        self.udev_root_device = {
+            'P': '/devices/LNXSYSTM:00',
+            'E': {'SUBSYSTEM': 'acpi'},
+            }
+        self.udev_pci_device = {
+            'P': '/devices/pci0000:00/0000:00:1f.2',
+            'E': {
+                'SUBSYSTEM': 'pci',
+                'PCI_CLASS': '10601',
+                'PCI_ID': '8086:27C5',
+                'PCI_SUBSYS_ID': '10CF:1387',
+                'PCI_SLOT_NAME': '0000:00:1f.2',
+                }
+            }
 
     def getTimestampETreeNode(self, time_string):
         """Return an Elementtree node for an XML tag with a timestamp."""
@@ -1774,21 +1787,6 @@ invalid line
         self.assertErrorMessage(
             parser.submission_key, 'udev node found without a "P" key')
 
-    udev_root_device = {
-        'P': '/devices/LNXSYSTM:00',
-        'E': {'SUBSYSTEM': 'acpi'},
-        }
-    udev_pci_device = {
-        'P': '/devices/pci0000:00/0000:00:1f.2',
-        'E': {
-            'SUBSYSTEM': 'pci',
-            'PCI_CLASS': '10601',
-            'PCI_ID': '8086:27C5',
-            'PCI_SUBSYS_ID': '10CF:1387',
-            'PCI_SLOT_NAME': '0000:00:1f.2',
-            }
-        }
-
     def testCheckUdevPciProperties(self):
         """Test of SubmmissionParser.checkUdevPciProperties()."""
         # udev PCI devices must have the properties PCI_CLASS, PCI_ID,
@@ -1798,67 +1796,96 @@ invalid line
         self.assertTrue(parser.checkUdevPciProperties(
             [self.udev_root_device, self.udev_pci_device]))
 
-        bad_root_device = deepcopy(self.udev_root_device)
-        bad_root_device['E']['PCI_SLOT_NAME'] = '0000:00:1f.2'
+    def testCheckUdevPciPropertiesNonPciDeviceWithPciProperties(self):
+        """Test of SubmmissionParser.checkUdevPciProperties().
+
+        A non-PCI device having PCI properties makes a submission invalid.
+        """
+        self.udev_root_device['E']['PCI_SLOT_NAME'] = '0000:00:1f.2'
         parser = SubmissionParser(self.log)
         parser.submission_key = 'invalid non-PCI device'
         self.assertFalse(parser.checkUdevPciProperties(
-            [bad_root_device, self.udev_pci_device]))
+            [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
             "Non-PCI udev device with PCI properties: set(['PCI_SLOT_NAME']) "
             "'/devices/LNXSYSTM:00'")
 
-        bad_pci_device = deepcopy(self.udev_pci_device)
-        del bad_pci_device['E']['PCI_CLASS']
+    def testCheckUdevPciPropertiesPciDeviceWithoutRequiredProperties(self):
+        """Test of SubmmissionParser.checkUdevPciProperties().
+
+        A PCI device not having a required PCI property makes a submission
+        invalid.
+        """
+        del self.udev_pci_device['E']['PCI_CLASS']
         parser = SubmissionParser(self.log)
         parser.submission_key = 'invalid PCI device'
         self.assertFalse(parser.checkUdevPciProperties(
-            [self.udev_root_device, bad_pci_device]))
+            [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
             "PCI udev device without required PCI properties: "
             "set(['PCI_CLASS']) '/devices/pci0000:00/0000:00:1f.2'")
 
-        bad_pci_device = deepcopy(self.udev_pci_device)
-        bad_pci_device['E']['PCI_CLASS'] = 'not-an-integer'
+    def testCheckUdevPciPropertiesPciDeviceWithNonIntegerPciClass(self):
+        """Test of SubmmissionParser.checkUdevPciProperties().
+
+        A PCI device with a non-integer class value makes a submission
+        invalid.
+        """
+        self.udev_pci_device['E']['PCI_CLASS'] = 'not-an-integer'
         parser = SubmissionParser(self.log)
         parser.submission_key = 'invalid PCI class value'
         self.assertFalse(parser.checkUdevPciProperties(
-            [self.udev_root_device, bad_pci_device]))
+            [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
             "Invalid udev PCI class: 'not-an-integer' "
             "'/devices/pci0000:00/0000:00:1f.2'")
 
-        bad_pci_device = deepcopy(self.udev_pci_device)
-        bad_pci_device['E']['PCI_CLASS'] = '1234567'
+    def testCheckUdevPciPropertiesPciDeviceWithInvalidPciClassValue(self):
+        """Test of SubmmissionParser.checkUdevPciProperties().
+
+        A PCI device with invalid class data makes a submission
+        invalid.
+        """
+        self.udev_pci_device['E']['PCI_CLASS'] = '1234567'
         parser = SubmissionParser(self.log)
         parser.submission_key = 'too large PCI class value'
         self.assertFalse(parser.checkUdevPciProperties(
-            [self.udev_root_device, bad_pci_device]))
+            [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
             "Invalid udev PCI class: '1234567' "
             "'/devices/pci0000:00/0000:00:1f.2'")
 
-        bad_pci_device = deepcopy(self.udev_pci_device)
-        bad_pci_device['E']['PCI_ID'] = 'not-an-id'
+    def testCheckUdevPciPropertiesPciDeviceWithInvalidDeviceID(self):
+        """Test of SubmmissionParser.checkUdevPciProperties().
+
+        A PCI device with an invalid device ID makes a submission
+        invalid.
+        """
+        self.udev_pci_device['E']['PCI_ID'] = 'not-an-id'
         parser = SubmissionParser(self.log)
         parser.submission_key = 'invalid PCI ID'
         self.assertFalse(parser.checkUdevPciProperties(
-            [self.udev_root_device, bad_pci_device]))
+            [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
             "Invalid udev PCI device ID: 'not-an-id' "
             "'/devices/pci0000:00/0000:00:1f.2'")
 
-        bad_pci_device = deepcopy(self.udev_pci_device)
-        bad_pci_device['E']['PCI_SUBSYS_ID'] = 'not-a-subsystem-id'
+    def testCheckUdevPciPropertiesPciDeviceWithInvalidSubsystemID(self):
+        """Test of SubmmissionParser.checkUdevPciProperties().
+
+        A PCI device with an invalid subsystem ID makes a submission
+        invalid.
+        """
+        self.udev_pci_device['E']['PCI_SUBSYS_ID'] = 'not-a-subsystem-id'
         parser = SubmissionParser(self.log)
         parser.submission_key = 'invalid PCI subsystem ID'
         self.assertFalse(parser.checkUdevPciProperties(
-            [self.udev_root_device, bad_pci_device]))
+            [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
             "Invalid udev PCI device ID: 'not-a-subsystem-id' "
@@ -1882,7 +1909,7 @@ invalid line
         parser = self.UdevTestSubmissionParser()
         self.assertTrue(parser.checkConsistentUdevDeviceData(None))
 
-    def testCheckConsistentUdevDeviceDataInvalidPathData(self):
+    def testCheckConsistentUdevDeviceData_invalid_path_data(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),
 
         Detection of invalid path data lets the check fail.
@@ -1898,7 +1925,7 @@ invalid line
         parser = SubmissionParserUdevPathCheckFails()
         self.assertFalse(parser.checkConsistentUdevDeviceData(None))
 
-    def testCheckConsistentUdevDeviceDataInvalidPciData(self):
+    def testCheckConsistentUdevDeviceData_invalid_pci_data(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),
 
         Detection of invalid PCI data lets the check fail.
@@ -2029,7 +2056,7 @@ invalid line
                 }
             ))
 
-    def testConsistencyCheckInvalidUdevData(self):
+    def testConsistencyCheck_invalid_udev_data(self):
         """Test of SubmissionParser.checkConsistency."""
         def checkConsistentUdevDeviceData(self, udev_data):
             return False

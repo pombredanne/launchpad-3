@@ -2624,6 +2624,14 @@ class TestUdevDevice(TestCase):
             '/devices/pci0000:00/0000:00:1f.2', device.device_id,
             'Unexpected value of UdevDevice.device_id.')
 
+    def test_is_pci(self):
+        """Test of UdevDevice.is_pci."""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertTrue(device.is_pci)
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertFalse(device.is_pci)
+
     def test_pci_class_info(self):
         """Test of UdevDevice.pci_class_info"""
         device = UdevDevice(self.pci_device_data, None, None)

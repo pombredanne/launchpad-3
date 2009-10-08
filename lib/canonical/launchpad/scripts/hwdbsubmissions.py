@@ -1149,6 +1149,10 @@ class SubmissionParser(object):
     def checkUdevPciProperties(self, udev_data):
         """Validation of udev PCI devices.
 
+        :param udev_data: A list of dicitionaries describing udev
+             devices, as returned by _parseUdev()
+        :return: True if all checks pass, else False.
+
         Each PCI device must have the properties PCI_CLASS, PCI_ID,
         PCI_SUBSYS_ID, PCI_SLOT_NAME. Non-PCI devices must not have
         them.
@@ -1171,6 +1175,8 @@ class SubmissionParser(object):
                     self.submission_key)
                 return False
             if subsystem == 'pci':
+                # Check whether any of the standard pci properties were
+                # missing.
                 if existing_pci_properties != self.PCI_PROPERTIES:
                     missing_properties = self.PCI_PROPERTIES.difference(
                             existing_pci_properties)
@@ -1181,6 +1187,8 @@ class SubmissionParser(object):
                             % (missing_properties, device['P']),
                         self.submission_key)
                     return False
+                # Ensure that the pci class and ids for this device are
+                # formally valid.
                 if self.pci_class_re.search(properties['PCI_CLASS']) is None:
                     self._logError(
                         'Invalid udev PCI class: %r %r'
@@ -2237,16 +2245,23 @@ class UdevDevice(BaseDevice):
         return self.udev['P']
 
     @property
+    def is_pci(self):
+        """True, if this is a PCI device, else False."""
+        return self.udev['E'].get('SUBSYSTEM') == 'pci'
+
+    @property
     def pci_class_info(self):
         """Parse the udev property PCI_SUBSYS_ID.
 
         :return: (PCI class, PCI sub-class, version) for a PCI device
             or (None, None, None) for other devices.
         """
-        if self.udev['E'].get('SUBSYSTEM') == 'pci':
+        if self.is_pci:
             # SubmissionParser.checkConsistentUdevDeviceData() ensures
             # that PCI_CLASS is a 24 bit integer in hexadecimal
             # representation.
+            # Bits 16..23 of the number are the man PCI class,
+            # bits 8..15 are the sub-class, bits 0..7 are the version.
             class_info = int(self.udev['E']['PCI_CLASS'], 16)
             return (class_info >> 16, (class_info >> 8) & 0xFF,
                     class_info & 0xFF)
