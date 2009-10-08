@@ -487,23 +487,6 @@ milestone_edit = ContextTitle('Edit %s')
 
 milestone_delete = ContextTitle('Delete %s')
 
-announcement_add = 'Make an announcement'
-
-announcement_delete = 'Permanently delete this announcement'
-
-announcement_edit = 'Modify this announcement'
-
-def announcement_index(context, view):
-    return '%s announcement' % context.target.displayname
-
-announcement_publish = 'Publish this announcement'
-
-announcement_retarget = 'Move this announcement to a different project'
-
-announcement_retract = 'Retract this announcement'
-
-announcements_all = 'Announcements from all projects hosted in Launchpad'
-
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
 def object_driver(context, view):
