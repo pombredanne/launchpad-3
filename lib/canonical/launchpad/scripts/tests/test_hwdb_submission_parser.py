@@ -112,6 +112,25 @@ class TestHWDBSubmissionParser(TestCase):
                 'PCI_SLOT_NAME': '0000:00:1f.2',
                 }
             }
+        self.udev_usb_device = {
+            'P': '/devices/pci0000:00/0000:00:1d.1/usb3/3-2',
+            'E': {
+                'SUBSYSTEM': 'usb',
+                'DEVTYPE': 'usb_device',
+                'PRODUCT': '46d/a01/1013',
+                'TYPE': '0/0/0',
+                },
+            }
+        self.udev_usb_interface = {
+            'P': '/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1',
+            'E': {
+                'SUBSYSTEM': 'usb',
+                'DEVTYPE': 'usb_interface',
+                'PRODUCT': '46d/a01/1013',
+                'TYPE': '0/0/0',
+                'INTERFACE': '1/2/0',
+                },
+            }
 
     def getTimestampETreeNode(self, time_string):
         """Return an Elementtree node for an XML tag with a timestamp."""
@@ -1788,7 +1807,7 @@ invalid line
             parser.submission_key, 'udev node found without a "P" key')
 
     def testCheckUdevPciProperties(self):
-        """Test of SubmmissionParser.checkUdevPciProperties()."""
+        """Test of SubmissionParser.checkUdevPciProperties()."""
         # udev PCI devices must have the properties PCI_CLASS, PCI_ID,
         # PCI_SUBSYS_ID, PCI_SLOT_NAME; other devices must not have
         # these properties.
@@ -1797,7 +1816,7 @@ invalid line
             [self.udev_root_device, self.udev_pci_device]))
 
     def testCheckUdevPciPropertiesNonPciDeviceWithPciProperties(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A non-PCI device having PCI properties makes a submission invalid.
         """
@@ -1812,7 +1831,7 @@ invalid line
             "'/devices/LNXSYSTM:00'")
 
     def testCheckUdevPciPropertiesPciDeviceWithoutRequiredProperties(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device not having a required PCI property makes a submission
         invalid.
@@ -1828,7 +1847,7 @@ invalid line
             "set(['PCI_CLASS']) '/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithNonIntegerPciClass(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device with a non-integer class value makes a submission
         invalid.
@@ -1844,7 +1863,7 @@ invalid line
             "'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithInvalidPciClassValue(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device with invalid class data makes a submission
         invalid.
@@ -1860,7 +1879,7 @@ invalid line
             "'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithInvalidDeviceID(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device with an invalid device ID makes a submission
         invalid.
@@ -1876,7 +1895,7 @@ invalid line
             "'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithInvalidSubsystemID(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device with an invalid subsystem ID makes a submission
         invalid.
@@ -1891,6 +1910,110 @@ invalid line
             "Invalid udev PCI device ID: 'not-a-subsystem-id' "
             "'/devices/pci0000:00/0000:00:1f.2'")
 
+    def testCheckUdevUsbProperties(self):
+        """Test of SubmissionParser.checkUdevUsbProperties()."""
+        parser = SubmissionParser()
+        self.assertTrue(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device,
+             self.udev_usb_interface]))
+
+    def testCheckUdevUsbProperties_missing_required_property(self):
+        """Test of SubmissionParser.checkUdevUsbProperties().
+
+        A USB device that does not have a required property makes a
+        submission invalid.
+        """
+        del self.udev_usb_device['E']['DEVTYPE']
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device without DEVTYPE property'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB udev device found without required properties: "
+            "set(['DEVTYPE']) '/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+
+    def testCheckUdevUsbProperties_with_invalid_product_id(self):
+        """Test of SubmissionParser.checkUdevUsbProperties().
+
+        A USB device with an invalid product ID makes a submission
+        invalid.
+        """
+        self.udev_usb_device['E']['PRODUCT'] = 'not-a-valid-usb-product-id'
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device with invalid product ID'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB udev device found with invalid product ID: "
+            "'not-a-valid-usb-product-id' "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+
+    def testCheckUdevUsbProperties_with_invalid_type_data(self):
+        """Test of SubmmissionParser.checkUdevUsbProperties().
+
+        A USB device with invalid type data makes a submission invalid.
+        """
+        self.udev_usb_device['E']['TYPE'] = 'no-type'
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device with invalid type data'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB udev device found with invalid type data: 'no-type' "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+
+    def testCheckUdevUsbProperties_with_invalid_devtype(self):
+        """Test of SubmmissionParser.checkUdevUsbProperties().
+
+        A udev USB device must have DEVTYPE set to 'usb_device' or
+        'usb_interface'.
+        """
+        self.udev_usb_device['E']['DEVTYPE'] = 'nonsense'
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device with invalid DEVTYPE'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB udev device found with invalid udev type data: 'nonsense' "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+
+    def testCheckUdevUsbProperties_interface_without_interface_property(self):
+        """Test of SubmmissionParser.checkUdevUsbProperties().
+
+        A udev USB device for a USB interface have the property INTERFACE.
+        """
+        del self.udev_usb_interface['E']['INTERFACE']
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB interface without INTERFACE property'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_interface]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB interface udev device found without INTERFACE property: "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1'")
+
+    def testCheckUdevUsbProperties_interface_invalid_interface_property(self):
+        """Test of SubmmissionParser.checkUdevUsbProperties().
+
+        The INTERFACE proeprty of A udev USB device for a USB interface
+        must have value in the format main_class/sub_class/version
+        """
+        self.udev_usb_interface['E']['INTERFACE'] = 'nonsense'
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB interface with invalid INTERFACE data'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_interface]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB Interface udev device found with invalid INTERFACE "
+            "property: 'nonsense' "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1'")
+
+
     class UdevTestSubmissionParser(SubmissionParser):
         """A variant of SubmissionParser that shortcuts udev related tests.
 
@@ -1901,6 +2024,10 @@ invalid line
             return True
 
         def checkUdevPciProperties(self, udev_data):
+            """See `SubmissionParser`."""
+            return True
+
+        def checkUdevUsbProperties(self, udev_data):
             """See `SubmissionParser`."""
             return True
 
@@ -1939,6 +2066,22 @@ invalid line
                 return False
 
         parser = SubmissionParserUdevPciCheckFails()
+        self.assertFalse(parser.checkConsistentUdevDeviceData(None))
+
+    def testCheckConsistentUdevDeviceData_invalid_usb_data(self):
+        """Test of SubmissionParser.checkConsistentUdevDeviceData(),
+
+        Detection of invalid PCI data lets the check fail.
+        """
+        class SubmissionParserUdevUsbCheckFails(
+            self.UdevTestSubmissionParser):
+            """A SubmissionPaser where checkUdevPciProperties() fails."""
+
+            def checkUdevUsbProperties(self, udev_data):
+                """See `SubmissionParser`."""
+                return False
+
+        parser = SubmissionParserUdevUsbCheckFails()
         self.assertFalse(parser.checkConsistentUdevDeviceData(None))
 
     def _setupConsistencyCheckParser(self):
