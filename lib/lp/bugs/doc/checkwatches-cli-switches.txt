@@ -122,9 +122,9 @@ tracker option fully.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print out
-    usage: checkwatches.py [options]
+    Usage: checkwatches.py [options]
     <BLANKLINE>
-    options:
+    Options:
       ...
       -t BUG_TRACKER, --bug-tracker=BUG_TRACKER
                             Only check a given bug tracker. Specifying
