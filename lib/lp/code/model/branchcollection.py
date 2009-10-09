@@ -13,14 +13,14 @@ from storm.expr import And, Count, Desc, LeftJoin, Join, Or, Select, Union
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranch)
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Owner, Person
@@ -117,10 +117,7 @@ class GenericBranchCollection:
 
     def _getBranchIdQuery(self):
         """Return a Storm 'Select' for the branch IDs in this collection."""
-        # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
-        # decorated set, so we get at the underlying set so we can get at the
-        # private and juicy _get_select.
-        select = self.getBranches().result_set._get_select()
+        select = self.getBranches()._get_select()
         select.columns = (Branch.id,)
         return select
 
@@ -132,11 +129,7 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
         expressions = self._getBranchExpressions()
-        results = self.store.using(*tables).find(Branch, *expressions)
-        def identity(x):
-            return x
-        # Decorate the result set to work around bug 217644.
-        return DecoratedResultSet(results, identity)
+        return self.store.using(*tables).find(Branch, *expressions)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None):
@@ -246,6 +239,18 @@ class GenericBranchCollection:
              Branch.sourcepackagename == sourcepackagename],
             table=Distribution,
             join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
+
+    def officialBranches(self, pocket=None):
+        """See `IBranchCollection`"""
+        if pocket is None:
+            expressions = []
+        else:
+            expressions = [SeriesSourcePackageBranch.pocket == pocket]
+        return self._filterBy(
+            expressions,
+            table=SeriesSourcePackageBranch,
+            join=Join(SeriesSourcePackageBranch,
+                      SeriesSourcePackageBranch.branch == Branch.id))
 
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""

@@ -305,6 +305,7 @@ class DecoratedBug:
         """
         return self.branch.target.getBugTask(self.context)
 
+
 class BranchView(LaunchpadView, FeedsMixin):
 
     __used_for__ = IBranch
