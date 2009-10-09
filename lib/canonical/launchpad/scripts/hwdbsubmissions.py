@@ -94,6 +94,11 @@ DB_FORMAT_FOR_PRODUCT_ID = {
     'scsi': '%-16s',
     }
 
+UDEV_USB_DEVICE_PROPERTIES = set(('DEVTYPE', 'PRODUCT', 'TYPE'))
+UDEV_USB_PRODUCT_RE = re.compile(
+    '^[0-9a-f]{1,4}/[0-9a-f]{1,4}/[0-9a-f]{1,4}$', re.I)
+UDEV_USB_TYPE_RE = re.compile('^[0-9]{1,3}/[0-9]{1,3}/[0-9]{1,3}$')
+
 class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
 
@@ -1165,7 +1170,7 @@ class SubmissionParser(object):
         """
         for device in udev_data:
             properties = device['E']
-            property_names = set(properties.keys())
+            property_names = set(properties)
             existing_pci_properties = property_names.intersection(
                 self.PCI_PROPERTIES)
             subsystem = device['E'].get('SUBSYSTEM')
@@ -1212,11 +1217,6 @@ class SubmissionParser(object):
                     return False
         return True
 
-    USB_DEVICE_PROPERTIES = set(('DEVTYPE', 'PRODUCT', 'TYPE'))
-    usb_product_re = re.compile(
-        '^[0-9a-f]{1,4}/[0-9a-f]{1,4}/[0-9a-f]{1,4}$', re.I)
-    usb_type_re = re.compile('^[0-9]{1,3}/[0-9]{1,3}/[0-9]{1,3}$')
-
     def checkUdevUsbProperties(self, udev_data):
         """Validation of udev USB devices.
 
@@ -1234,24 +1234,24 @@ class SubmissionParser(object):
             if subsystem != 'usb':
                 continue
             properties = device['E']
-            property_names = set(properties.keys())
+            property_names = set(properties)
             existing_usb_properties = property_names.intersection(
-                self.USB_DEVICE_PROPERTIES)
-            if existing_usb_properties != self.USB_DEVICE_PROPERTIES:
+                UDEV_USB_DEVICE_PROPERTIES)
+            if existing_usb_properties != UDEV_USB_DEVICE_PROPERTIES:
+                missing_properties = UDEV_USB_DEVICE_PROPERTIES.difference(
+                    existing_usb_properties)
                 self._logError(
                     'USB udev device found without required properties: %r %r'
-                    % (self.USB_DEVICE_PROPERTIES.difference(
-                        existing_usb_properties),
-                       device['P']),
+                    % (missing_properties, device['P']),
                     self.submission_key)
                 return False
-            if self.usb_product_re.search(properties['PRODUCT']) is None:
+            if UDEV_USB_PRODUCT_RE.search(properties['PRODUCT']) is None:
                 self._logError(
                     'USB udev device found with invalid product ID: %r %r'
                     % (properties['PRODUCT'], device['P']),
                     self.submission_key)
                 return False
-            if self.usb_type_re.search(properties['TYPE']) is None:
+            if UDEV_USB_TYPE_RE.search(properties['TYPE']) is None:
                 self._logError(
                     'USB udev device found with invalid type data: %r %r'
                     % (properties['TYPE'], device['P']),
@@ -1274,7 +1274,7 @@ class SubmissionParser(object):
                         % device['P'],
                         self.submission_key)
                     return False
-                if self.usb_type_re.search(interface_type) is None:
+                if UDEV_USB_TYPE_RE.search(interface_type) is None:
                     self._logError(
                         'USB Interface udev device found with invalid '
                         'INTERFACE property: %r %r'
