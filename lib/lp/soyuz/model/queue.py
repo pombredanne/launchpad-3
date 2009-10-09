@@ -557,11 +557,14 @@ class PackageUpload(SQLBase):
                         pas_verify=pas_verify, logger=logger)
 
                 if changes_file is not None:
+                    debug(
+                        logger,
+                        "sending email to %s" % self.distroseries.changeslist)
                     changes_file_object = StringIO.StringIO(changes_file.read())
                     self.notify(
                         announce_list=self.distroseries.changeslist,
                         changes_file_object=changes_file_object,
-                        allow_unsigned=True)
+                        allow_unsigned=True, logger=logger)
                     self.syncUpdate()
 
         self.setDone()
