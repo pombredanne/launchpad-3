@@ -160,27 +160,41 @@ class TestDistroBrancher(TestCaseWithFactory):
             FakeLogger(self._log_file), db_branch.distroseries,
             new_distro_series)
 
+    def clearLogMessages(self):
+        self._log_file.seek(0, 0)
+        self._log_file.truncate()
+
     def assertLogMessages(self, patterns):
         """ """
         log_messages = self._log_file.getvalue().splitlines()
         if len(log_messages) > len(patterns):
             self.fail(
                 "More log messages (%s) than expected (%s)" %
-                (len(log_messages), len(patterns)))
+                (log_messages, patterns))
         elif len(log_messages) < len(patterns):
             self.fail(
                 "Fewer log messages (%s) than expected (%s)" %
-                (len(log_messages), len(patterns)))
+                (log_messages, patterns))
         for pattern, message in zip(patterns, log_messages):
             if not re.match(pattern, message):
                 self.fail("%r does not match %r" % (message, pattern))
+
+    def test_makeNewBranch_checks_ok(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        self.clearLogMessages()
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertLogMessages([])
+        self.assertTrue(ok)
 
     def test_checkOneBranch_no_official_branch(self):
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch)
         ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
-        self.assertLogMessages(['^WARNING No official branch found for .*$'])
+        self.assertLogMessages(
+            ['^WARNING No official branch found for .*/.*/.*$'])
 
 
 def test_suite():

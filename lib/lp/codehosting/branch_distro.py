@@ -145,17 +145,20 @@ class DistroBrancher:
             PackagePublishingPocket.RELEASE)
         if new_db_branch is None:
             self.logger.warning(
-                "No official branch found for %s" % new_sourcepackage)
+                "No official branch found for %s/%s/%s",
+                self.new_distroseries.distribution.name,
+                self.new_distroseries.name,
+                old_db_branch.sourcepackagename.name)
             return False
         ok = self.checkConsistentOfficialPackageBranch(new_db_branch)
         # for both mirrored and hosted areas:
-        for scheme in 'lp-mirrored', 'lp-hosted':
+        for scheme in 'lp-mirrored:///', 'lp-hosted:///':
             # the branch in the new distroseries is unstacked
             try:
                 new_bzr_branch = Branch.open(
                     scheme + new_db_branch.unique_name)
             except NotBranchError:
-                self.logger.warning("No bzr branch for %s", new_bzr_branch)
+                self.logger.warning("No bzr branch for %s", new_db_branch)
                 ok = False
             else:
                 try:
@@ -171,17 +174,17 @@ class DistroBrancher:
                 old_bzr_branch = Branch.open(
                     scheme + old_db_branch.unique_name)
             except NotBranchError:
-                self.logger.warning("No bzr branch for %s", new_bzr_branch)
+                self.logger.warning("No bzr branch for %s", old_db_branch)
                 ok = False
             else:
                 try:
                     old_stacked_on_url = old_bzr_branch.get_stacked_on_url()
                     # XXX next line could NameError!
-                    if old_stacked_on_url != '/' + new_bzr_branch.unique_name:
+                    if old_stacked_on_url != '/' + new_db_branch.unique_name:
                         self.logger.warning(
                             "%s is stacked on %s, should be %s",
                             old_bzr_branch, old_stacked_on_url,
-                            '/' + new_bzr_branch.unique_name)
+                            '/' + new_db_branch.unique_name)
                         ok = False
                 except NotStacked:
                     self.logger.warning("%s is not stacked", old_bzr_branch)
