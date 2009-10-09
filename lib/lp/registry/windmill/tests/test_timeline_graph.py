@@ -39,7 +39,7 @@ class TestTimelineGraph(TestCaseWithFactory):
         self.client.waits.forElementProperty(
             id=u'timeline-iframe',
             option=u'style.display|block',
-            timeout=u'7777')
+            timeout=u'8000')
         self.client.asserts.assertProperty(
             id=u'timeline-loading',
             validator=u'style.display|none')
