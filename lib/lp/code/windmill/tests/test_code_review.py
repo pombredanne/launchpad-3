@@ -12,7 +12,7 @@ from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.widgets import (
-    search_picker_widget)
+    search_and_select_picker_widget)
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import TestCaseWithFactory
 
@@ -24,8 +24,6 @@ class TestCodeReview(TestCaseWithFactory):
 
     def test_inline_request_a_reviewer(self):
         """Test inline request a reviewer."""
-        MERGE_LINK = '%s/~name12/gnome-terminal/klingon/+register-merge' % (
-            windmill.settings['TEST_URL'])
 
         client = WindmillTestClient("Code review")
 
@@ -36,7 +34,8 @@ class TestCodeReview(TestCaseWithFactory):
             '/~name12/gnome-terminal/klingon/']))
         client.waits.forPageLoad(timeout=u'10000')
 
-        client.click(xpath=u'//a[@href="%s"]' % MERGE_LINK)
+        link = u'//a[@class="menu-link-register_merge sprite merge-proposal"]'
+        client.click(xpath=link)
         client.type(text=u'~name12/gnome-terminal/main',
             id=u'field.target_branch.target_branch')
         client.click(id=u'field.actions.register')
@@ -44,9 +43,9 @@ class TestCodeReview(TestCaseWithFactory):
         client.waits.forPageLoad(timeout=u'10000')
         client.click(id=u'request-review')
 
-        search_picker_widget(client, u'mark', 1)
+        search_and_select_picker_widget(client, u'mark', 1)
 
-        client.waits.forElement(id=u'review-mark', timeout=u'10000')
+        client.waits.forElement(id=u'review-mark', timeout=u'100000')
 
 
 def test_suite():
