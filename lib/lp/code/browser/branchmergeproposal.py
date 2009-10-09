@@ -628,7 +628,10 @@ class IReviewRequest(Interface):
 
     reviewer = copy_field(ICodeReviewVoteReference['reviewer'])
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'], 
+        description=u'Lowercase keywords describing the type of review you '
+                     'would like to be performed.')
 
 
 class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
@@ -1125,7 +1128,10 @@ class IAddVote(Interface):
 
     vote = copy_field(ICodeReviewComment['vote'], required=True)
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'], 
+        description=u'Lowercase keywords describing the type of review you '
+                     'are performing.')
 
     comment = Text(title=_('Comment'), required=False)
 
