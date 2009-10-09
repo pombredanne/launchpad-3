@@ -9,7 +9,6 @@ __all__ = []
 import unittest
 
 import transaction
-from zope.security.proxy import removeSecurityProxy
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
