@@ -21,12 +21,24 @@ She enters an invalid email address, and gets a warning message.
     The email address you provided isn't valid.  Please verify it and try
     again.
 
-Jane tries again, providing a valid email address and asking to create a new
-account.
+Next she enters a valid email address but enters a wrong answer for
+the incredibly trivial math captcha.  She gets an error message.
 
     >>> browser.getControl(name='loginpage_email', index=1).value = (
     ...     'jane@example.com')
+    >>> browser.getControl(name='loginpage_captcha_submission').value = '-1'
     >>> browser.getControl('Register').click()
+    >>> print_feedback_messages(browser.contents)
+    The answer to the simple math question was incorrect or missing.
+    Please try again.
+
+Jane tries again, providing a the correct captcha answer.  Her valid
+email address from before has been retained in the form.
+
+    >>> from lp.testing.registration import set_captcha_answer
+    >>> set_captcha_answer(browser)
+    >>> browser.getControl('Register').click()
+    >>> print_feedback_messages(browser.contents)
     >>> print extract_text(find_main_content(browser.contents))
     Registration mail sent
     Instructions on completing your registration have been sent to
@@ -36,7 +48,7 @@ account.
 Launchpad sends Jane an email message containing a token she must use to
 complete the registration process.
 
-    >>> import email, re
+    >>> import email
     >>> from lp.services.mail import stub
     >>> from canonical.launchpad.ftests.logintoken import (
     ...     get_token_url_from_email)
@@ -91,6 +103,7 @@ Jane tries again with a different email address.
     >>> browser.open('http://launchpad.dev/+login')
     >>> browser.getControl(name='loginpage_email', index=1).value = (
     ...     'jperson@example.com')
+    >>> set_captcha_answer(browser)
     >>> browser.getControl('Register').click()
 
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
