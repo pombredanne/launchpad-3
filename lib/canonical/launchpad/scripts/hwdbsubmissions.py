@@ -940,10 +940,16 @@ class SubmissionParser(object):
         submission.
         """
         all_ids = set()
-        duplicates = self._findDuplicates(
-            all_ids,
-            [device['id']
-             for device in parsed_data['hardware']['hal']['devices']])
+        if 'hal' in parsed_data['hardware']:
+            duplicates = self._findDuplicates(
+                all_ids,
+                [device['id']
+                 for device in parsed_data['hardware']['hal']['devices']])
+        else:
+            duplicates = self._findDuplicates(
+                all_ids,
+                [device['P']
+                 for device in parsed_data['hardware']['udev']])
         duplicates.update(self._findDuplicates(
             all_ids,
             [processor['id']
@@ -957,9 +963,14 @@ class SubmissionParser(object):
     def _getIDMap(self, parsed_data):
         """Return a dictionary ID -> devices, processors and packages."""
         id_map = {}
-        hal_devices = parsed_data['hardware']['hal']['devices']
-        for device in hal_devices:
-            id_map[device['id']] = device
+        if 'hal' in parsed_data['hardware']:
+            hal_devices = parsed_data['hardware']['hal']['devices']
+            for device in hal_devices:
+                id_map[device['id']] = device
+        else:
+            udev_devices = parsed_data['hardware']['udev']
+            for device in udev_devices:
+                id_map[device['P']] = device
 
         for processor in parsed_data['hardware']['processors']:
             id_map[processor['id']] = processor
@@ -1118,6 +1129,95 @@ class SubmissionParser(object):
         self._removeChildren(ROOT_UDI, udi_test)
         return udi_test.keys()
 
+    def checkUdevDictsHavePathKey(self, udev_nodes):
+        """Ensure that each udev dictionary has a 'P' key.
+
+        The 'P' (path) key identifies a device.
+        """
+        for node in udev_nodes:
+            if not 'P' in node:
+                self._logError('udev node found without a "P" key',
+                               self.submission_key)
+                return False
+        return True
+
+    PCI_PROPERTIES = set(
+        ('PCI_CLASS', 'PCI_ID', 'PCI_SUBSYS_ID', 'PCI_SLOT_NAME'))
+    pci_class_re = re.compile('^[0-9a-f]{1,6}$', re.I)
+    pci_id_re = re.compile('^[0-9a-f]{4}:[0-9a-f]{4}$', re.I)
+
+    def checkUdevPciProperties(self, udev_data):
+        """Validation of udev PCI devices.
+
+        :param udev_data: A list of dicitionaries describing udev
+             devices, as returned by _parseUdev()
+        :return: True if all checks pass, else False.
+
+        Each PCI device must have the properties PCI_CLASS, PCI_ID,
+        PCI_SUBSYS_ID, PCI_SLOT_NAME. Non-PCI devices must not have
+        them.
+
+        The value of PCI class must be a 24 bit integer in
+        hexadecimal representation.
+
+        The values of PCI_ID and PCI_SUBSYS_ID must be two 16 bit
+        integers, separated by a ':'.
+        """
+        for device in udev_data:
+            properties = device['E']
+            property_names = set(properties.keys())
+            existing_pci_properties = property_names.intersection(
+                self.PCI_PROPERTIES)
+            subsystem = device['E'].get('SUBSYSTEM')
+            if subsystem is None:
+                self._logError(
+                    'udev device without SUBSYSTEM property found.',
+                    self.submission_key)
+                return False
+            if subsystem == 'pci':
+                # Check whether any of the standard pci properties were
+                # missing.
+                if existing_pci_properties != self.PCI_PROPERTIES:
+                    missing_properties = self.PCI_PROPERTIES.difference(
+                            existing_pci_properties)
+
+                    self._logError(
+                        'PCI udev device without required PCI properties: '
+                            '%r %r'
+                            % (missing_properties, device['P']),
+                        self.submission_key)
+                    return False
+                # Ensure that the pci class and ids for this device are
+                # formally valid.
+                if self.pci_class_re.search(properties['PCI_CLASS']) is None:
+                    self._logError(
+                        'Invalid udev PCI class: %r %r'
+                            % (properties['PCI_CLASS'], device['P']),
+                        self.submission_key)
+                    return False
+                for pci_id in (properties['PCI_ID'],
+                               properties['PCI_SUBSYS_ID']):
+                    if self.pci_id_re.search(pci_id) is None:
+                        self._logError(
+                            'Invalid udev PCI device ID: %r %r'
+                                % (pci_id, device['P']),
+                            self.submission_key)
+                        return False
+            else:
+                if len(existing_pci_properties) > 0:
+                    self._logError(
+                        'Non-PCI udev device with PCI properties: %r %r'
+                            % (existing_pci_properties, device['P']),
+                        self.submission_key)
+                    return False
+        return True
+
+    def checkConsistentUdevDeviceData(self, udev_data):
+        """Consistency checks for udev data."""
+        if not self.checkUdevDictsHavePathKey(udev_data):
+            return False
+        return self.checkUdevPciProperties(udev_data)
+
     def checkConsistency(self, parsed_data):
         """Run consistency checks on the submitted data.
 
@@ -1125,6 +1225,10 @@ class SubmissionParser(object):
         :param: parsed_data: parsed submission data, as returned by
                              parseSubmission
         """
+        if ('udev' in parsed_data['hardware']
+            and not self.checkConsistentUdevDeviceData(
+                parsed_data['hardware']['udev'])):
+            return False
         duplicate_ids = self.findDuplicateIDs(parsed_data)
         if duplicate_ids:
             self._logError('Duplicate IDs found: %s' % duplicate_ids,
@@ -1138,20 +1242,22 @@ class SubmissionParser(object):
                 self.submission_key)
             return False
 
-        try:
-            udi_device_map = self.getUDIDeviceMap(
-                parsed_data['hardware']['hal']['devices'])
-            udi_children = self.getUDIChildren(udi_device_map)
-        except ValueError, value:
-            self._logError(value, self.submission_key)
-            return False
+        if 'hal' in parsed_data['hardware']:
+            try:
+                udi_device_map = self.getUDIDeviceMap(
+                    parsed_data['hardware']['hal']['devices'])
+                udi_children = self.getUDIChildren(udi_device_map)
+            except ValueError, value:
+                self._logError(value, self.submission_key)
+                return False
 
-        circular = self.checkHALDevicesParentChildConsistency(udi_children)
-        if circular:
-            self._logError('Found HAL devices with circular parent/child '
-                           'relationship: %s' % circular,
-                           self.submission_key)
-            return False
+            circular = self.checkHALDevicesParentChildConsistency(
+                udi_children)
+            if circular:
+                self._logError('Found HAL devices with circular parent/child '
+                               'relationship: %s' % circular,
+                               self.submission_key)
+                return False
 
         return True
 
@@ -1281,28 +1387,94 @@ class BaseDevice:
     @property
     def device_id(self):
         """A unique ID for this device."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def pci_class(self):
         """The PCI device class of the device or None for Non-PCI devices."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def pci_subclass(self):
         """The PCI device sub-class of the device or None for Non-PCI devices.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def usb_vendor_id(self):
         """The USB vendor ID of the device or None for Non-USB devices."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def usb_product_id(self):
         """The USB product ID of the device or None for Non-USB devices."""
-        raise NotImplementedError()
+        raise NotImplementedError
+
+    @property
+    def scsi_vendor(self):
+        """The SCSI vendor name of the device or None for Non-SCSI devices."""
+        raise NotImplementedError
+
+    @property
+    def scsi_model(self):
+        """The SCSI model name of the device or None for Non-SCSI devices."""
+        raise NotImplementedError
+
+    @property
+    def vendor(self):
+        """The vendor of this device."""
+        raise NotImplementedError
+
+    @property
+    def product(self):
+        """The vendor of this device."""
+        raise NotImplementedError
+
+    @property
+    def vendor_id(self):
+        """The vendor ID of this device."""
+        raise NotImplementedError
+
+    @property
+    def product_id(self):
+        """The product ID of this device."""
+        raise NotImplementedError
+
+    @property
+    def vendor_id_for_db(self):
+        """The vendor ID in the representation needed for the HWDB tables.
+
+        USB and PCI IDs are represented in the database in hexadecimal,
+        while the IDs provided by HAL are integers.
+
+        The SCSI vendor name is right-padded with spaces to 8 bytes.
+        """
+        bus = self.raw_bus
+        format = DB_FORMAT_FOR_VENDOR_ID.get(bus)
+        if format is None:
+            return self.vendor_id
+        else:
+            return format % self.vendor_id
+
+    @property
+    def product_id_for_db(self):
+        """The product ID in the representation needed for the HWDB tables.
+
+        USB and PCI IDs are represented in the database in hexadecimal,
+        while the IDs provided by HAL are integers.
+
+        The SCSI product name is right-padded with spaces to 16 bytes.
+        """
+        bus = self.raw_bus
+        format = DB_FORMAT_FOR_PRODUCT_ID.get(bus)
+        if format is None:
+            return self.product_id
+        else:
+            return format % self.product_id
+
+    @property
+    def driver_name(self):
+        """The name of the driver contolling this device. May be None."""
 
     def translateScsiBus(self):
         """Return the real bus of a device where raw_bus=='scsi'.
@@ -1403,7 +1575,7 @@ class BaseDevice:
     @property
     def raw_bus(self):
         """Return the device bus as specified by HAL or udev."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def real_bus(self):
@@ -1734,88 +1906,6 @@ class BaseDevice:
             return False
         return True
 
-
-class HALDevice(BaseDevice):
-    """The representation of a HAL device node."""
-
-    def __init__(self, id, udi, properties, parser):
-        """HALDevice constructor.
-
-        :param id: The ID of the HAL device in the submission data as
-            specified in <device id=...>.
-        :type id: int
-        :param udi: The UDI of the HAL device.
-        :type udi: string
-        :param properties: The HAL properties of the device.
-        :type properties: dict
-        :param parser: The parser processing a submission.
-        :type parser: SubmissionParser
-        """
-        super(HALDevice, self).__init__(parser)
-        self.id = id
-        self.udi = udi
-        self.properties = properties
-
-    def getProperty(self, property_name):
-        """Return the HAL property property_name.
-
-        Note that there is no check of the property type.
-        """
-        if property_name not in self.properties:
-            return None
-        name, type_ = self.properties[property_name]
-        return name
-
-    @property
-    def parent_udi(self):
-        """The UDI of the parent device."""
-        return self.getProperty('info.parent')
-
-    @property
-    def device_id(self):
-        """See `BaseDevice`."""
-        return self.udi
-
-    @property
-    def pci_class(self):
-        """See `BaseDevice`."""
-        return self.getProperty('pci.device_class')
-
-    @property
-    def pci_subclass(self):
-        """The PCI device sub-class of the device or None for Non-PCI devices.
-        """
-        return self.getProperty('pci.device_subclass')
-
-    @property
-    def usb_vendor_id(self):
-        """See `BaseDevice`."""
-        return self.getProperty('usb_device.vendor_id')
-
-    @property
-    def usb_product_id(self):
-        """See `BaseDevice`."""
-        return self.getProperty('usb_device.product_id')
-
-    @property
-    def raw_bus(self):
-        """See `BaseDevice`."""
-        # Older versions of HAL stored this value in the property
-        # info.bus; newer versions store it in info.subsystem.
-        #
-        # Note that info.bus is gone for all devices except the
-        # USB bus. For USB devices, the property info.bus returns more
-        # detailed data: info.subsystem has the value 'usb' for all
-        # HAL nodes belonging to USB devices, while info.bus has the
-        # value 'usb_device' for the root node of a USB device, and the
-        # value 'usb' for sub-nodes of a USB device. We use these
-        # different value to to find the root USB device node, hence
-        # try to read info.bus first.
-        result = self.getProperty('info.bus')
-        if result is not None:
-            return result
-        return self.getProperty('info.subsystem')
-
     def getScsiVendorAndModelName(self):
         """Separate vendor and model name of SCSI decvices.
 
@@ -1839,132 +1929,17 @@ class HALDevice(BaseDevice):
 
         In all other cases, vendor and model name are returned unmodified.
         """
-        vendor = self.getProperty('scsi.vendor')
+        vendor = self.scsi_vendor
         if vendor == 'ATA':
             # The assumption below that the vendor name does not
             # contain any spaces is not necessarily correct, but
             # it is hard to find a better heuristic to separate
             # the vendor name from the product name.
-            splitted_name = self.getProperty('scsi.model').split(' ', 1)
+            splitted_name = self.scsi_model.split(' ', 1)
             if len(splitted_name) < 2:
                 return 'ATA', splitted_name[0]
             return splitted_name
-        return (vendor, self.getProperty('scsi.model'))
-
-    def getVendorOrProduct(self, type_):
-        """Return the vendor or product of this device.
-
-        :return: The vendor or product data for this device.
-        :param type_: 'vendor' or 'product'
-        """
-        # HAL does not store vendor data very consistently. Try to find
-        # the data in several places.
-        assert type_ in ('vendor', 'product'), (
-            'Unexpected value of type_: %r' % type_)
-
-        bus = self.raw_bus
-        if self.udi == ROOT_UDI:
-            # HAL sets info.product to "Computer", provides no property
-            # info.vendor and raw_bus is "unknown", hence the logic
-            # below does not work properly.
-            return self.getProperty('system.hardware.' + type_)
-        elif bus == 'scsi':
-            vendor, product = self.getScsiVendorAndModelName()
-            if type_ == 'vendor':
-                return vendor
-            else:
-                return product
-        else:
-            result = self.getProperty('info.' + type_)
-            if result is None:
-                if bus is None:
-                    return None
-                else:
-                    return self.getProperty('%s.%s' % (bus, type_))
-            else:
-                return result
-
-    @property
-    def vendor(self):
-        """The vendor of this device."""
-        return self.getVendorOrProduct('vendor')
-
-    @property
-    def product(self):
-        """The vendor of this device."""
-        return self.getVendorOrProduct('product')
-
-    def getVendorOrProductID(self, type_):
-        """Return the vendor or product ID for this device.
-
-        :return: The vendor or product ID for this device.
-        :param type_: 'vendor' or 'product'
-        """
-        assert type_ in ('vendor', 'product'), (
-            'Unexpected value of type_: %r' % type_)
-        bus = self.raw_bus
-        if self.udi == ROOT_UDI:
-            # HAL does not provide IDs for a system itself, we use the
-            # vendor resp. product name instead.
-            return self.getVendorOrProduct(type_)
-        elif bus is None:
-            return None
-        elif bus == 'scsi' or self.udi == ROOT_UDI:
-            # The SCSI specification does not distinguish between a
-            # vendor/model ID and vendor/model name: the SCSI INQUIRY
-            # command returns an 8 byte string as the vendor name and
-            # a 16 byte string as the model name. We use these strings
-            # as the vendor/product name as well as the vendor/product
-            # ID.
-            #
-            # Similary, HAL does not provide a vendor or product ID
-            # for the host system itself, so we use the vendor resp.
-            # product name as the vendor/product ID for systems too.
-            return self.getVendorOrProduct(type_)
-        else:
-            return self.getProperty('%s.%s_id' % (bus, type_))
-
-    @property
-    def vendor_id(self):
-        """The vendor ID of this device."""
-        return self.getVendorOrProductID('vendor')
-
-    @property
-    def product_id(self):
-        """The product ID of this device."""
-        return self.getVendorOrProductID('product')
-
-    @property
-    def vendor_id_for_db(self):
-        """The vendor ID in the representation needed for the HWDB tables.
-
-        USB and PCI IDs are represented in the database in hexadecimal,
-        while the IDs provided by HAL are integers.
-
-        The SCSI vendor name is right-padded with spaces to 8 bytes.
-        """
-        bus = self.raw_bus
-        format = DB_FORMAT_FOR_VENDOR_ID.get(bus)
-        if format is None:
-            return self.vendor_id
-        else:
-            return format % self.vendor_id
-
-    @property
-    def product_id_for_db(self):
-        """The product ID in the representation needed for the HWDB tables.
-
-        USB and PCI IDs are represented in the database in hexadecimal,
-        while the IDs provided by HAL are integers.
-
-        The SCSI product name is right-padded with spaces to 16 bytes.
-        """
-        bus = self.raw_bus
-        format = DB_FORMAT_FOR_PRODUCT_ID.get(bus)
-        if format is None:
-            return self.product_id
-        else:
-            return format % self.product_id
+        return (vendor, self.scsi_model)
 
     def getDriver(self):
         """Return the HWDriver instance associated with this device.
@@ -1974,11 +1949,11 @@ class HALDevice(BaseDevice):
         # HAL and the HWDB client know at present only about kernel
         # drivers, so there is currently no need to search for
         # for user space printer drivers, for example.
-        driver_name = self.getProperty('info.linux.driver')
-        if driver_name is not None:
+        if self.driver_name is not None:
             kernel_package_name = self.parser.getKernelPackageName()
             db_driver_set = getUtility(IHWDriverSet)
-            return db_driver_set.getOrCreate(kernel_package_name, driver_name)
+            return db_driver_set.getOrCreate(
+                kernel_package_name, self.driver_name)
         else:
             return None
 
@@ -2067,6 +2042,241 @@ class HALDevice(BaseDevice):
             else:
                 sub_device.createDBDriverData(submission, db_device,
                                               submission_device)
+
+
+class HALDevice(BaseDevice):
+    """The representation of a HAL device node."""
+
+    def __init__(self, id, udi, properties, parser):
+        """HALDevice constructor.
+
+        :param id: The ID of the HAL device in the submission data as
+            specified in <device id=...>.
+        :type id: int
+        :param udi: The UDI of the HAL device.
+        :type udi: string
+        :param properties: The HAL properties of the device.
+        :type properties: dict
+        :param parser: The parser processing a submission.
+        :type parser: SubmissionParser
+        """
+        super(HALDevice, self).__init__(parser)
+        self.id = id
+        self.udi = udi
+        self.properties = properties
+
+    def getProperty(self, property_name):
+        """Return the HAL property property_name.
+
+        Note that there is no check of the property type.
+        """
+        if property_name not in self.properties:
+            return None
+        name, type_ = self.properties[property_name]
+        return name
+
+    @property
+    def parent_udi(self):
+        """The UDI of the parent device."""
+        return self.getProperty('info.parent')
+
+    @property
+    def device_id(self):
+        """See `BaseDevice`."""
+        return self.udi
+
+    @property
+    def pci_class(self):
+        """See `BaseDevice`."""
+        return self.getProperty('pci.device_class')
+
+    @property
+    def pci_subclass(self):
+        """The PCI device sub-class of the device or None for Non-PCI devices.
+        """
+        return self.getProperty('pci.device_subclass')
+
+    @property
+    def usb_vendor_id(self):
+        """See `BaseDevice`."""
+        return self.getProperty('usb_device.vendor_id')
+
+    @property
+    def usb_product_id(self):
+        """See `BaseDevice`."""
+        return self.getProperty('usb_device.product_id')
+
+    @property
+    def scsi_vendor(self):
+        """See `BaseDevice`."""
+        return self.getProperty('scsi.vendor')
+
+    @property
+    def scsi_model(self):
+        """See `BaseDevice`."""
+        return self.getProperty('scsi.model')
+
+    @property
+    def driver_name(self):
+        """See `BaseDevice`."""
+        return self.getProperty('info.linux.driver')
+
+    @property
+    def raw_bus(self):
+        """See `BaseDevice`."""
+        # Older versions of HAL stored this value in the property
+        # info.bus; newer versions store it in info.subsystem.
+        #
+        # Note that info.bus is gone for all devices except the
+        # USB bus. For USB devices, the property info.bus returns more
+        # detailed data: info.subsystem has the value 'usb' for all
+        # HAL nodes belonging to USB devices, while info.bus has the
+        # value 'usb_device' for the root node of a USB device, and the
+        # value 'usb' for sub-nodes of a USB device. We use these
+        # different value to to find the root USB device node, hence
+        # try to read info.bus first.
+        result = self.getProperty('info.bus')
+        if result is not None:
+            return result
+        return self.getProperty('info.subsystem')
+
+    def getVendorOrProduct(self, type_):
+        """Return the vendor or product of this device.
+
+        :return: The vendor or product data for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        # HAL does not store vendor data very consistently. Try to find
+        # the data in several places.
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+
+        bus = self.raw_bus
+        if self.udi == ROOT_UDI:
+            # HAL sets info.product to "Computer", provides no property
+            # info.vendor and raw_bus is "unknown", hence the logic
+            # below does not work properly.
+            return self.getProperty('system.hardware.' + type_)
+        elif bus == 'scsi':
+            vendor, product = self.getScsiVendorAndModelName()
+            if type_ == 'vendor':
+                return vendor
+            else:
+                return product
+        else:
+            result = self.getProperty('info.' + type_)
+            if result is None:
+                if bus is None:
+                    return None
+                else:
+                    return self.getProperty('%s.%s' % (bus, type_))
+            else:
+                return result
+
+    @property
+    def vendor(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProduct('vendor')
+
+    @property
+    def product(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProduct('product')
+
+    def getVendorOrProductID(self, type_):
+        """Return the vendor or product ID for this device.
+
+        :return: The vendor or product ID for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+        bus = self.raw_bus
+        if self.udi == ROOT_UDI:
+            # HAL does not provide IDs for a system itself, we use the
+            # vendor resp. product name instead.
+            return self.getVendorOrProduct(type_)
+        elif bus is None:
+            return None
+        elif bus == 'scsi' or self.udi == ROOT_UDI:
+            # The SCSI specification does not distinguish between a
+            # vendor/model ID and vendor/model name: the SCSI INQUIRY
+            # command returns an 8 byte string as the vendor name and
+            # a 16 byte string as the model name. We use these strings
+            # as the vendor/product name as well as the vendor/product
+            # ID.
+            #
+            # Similary, HAL does not provide a vendor or product ID
+            # for the host system itself, so we use the vendor resp.
+            # product name as the vendor/product ID for systems too.
+            return self.getVendorOrProduct(type_)
+        else:
+            return self.getProperty('%s.%s_id' % (bus, type_))
+
+    @property
+    def vendor_id(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProductID('vendor')
+
+    @property
+    def product_id(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProductID('product')
+
+
+class UdevDevice(BaseDevice):
+    """The representation of a udev device node."""
+
+    def __init__(self, udev_data, sysfs_data, parser):
+        """HALDevice constructor.
+
+        :param udevdata: The udev data for this device
+        :param sysfs_data: sysfs data for this device.
+        :param parser: The parser processing a submission.
+        :type parser: SubmissionParser
+        """
+        super(UdevDevice, self).__init__(parser)
+        self.udev = udev_data
+        self.sysfs = sysfs_data
+
+    @property
+    def device_id(self):
+        """See `BaseDevice`."""
+        return self.udev['P']
+
+    @property
+    def is_pci(self):
+        """True, if this is a PCI device, else False."""
+        return self.udev['E'].get('SUBSYSTEM') == 'pci'
+
+    @property
+    def pci_class_info(self):
+        """Parse the udev property PCI_SUBSYS_ID.
+
+        :return: (PCI class, PCI sub-class, version) for a PCI device
+            or (None, None, None) for other devices.
+        """
+        if self.is_pci:
+            # SubmissionParser.checkConsistentUdevDeviceData() ensures
+            # that PCI_CLASS is a 24 bit integer in hexadecimal
+            # representation.
+            # Bits 16..23 of the number are the man PCI class,
+            # bits 8..15 are the sub-class, bits 0..7 are the version.
+            class_info = int(self.udev['E']['PCI_CLASS'], 16)
+            return (class_info >> 16, (class_info >> 8) & 0xFF,
+                    class_info & 0xFF)
+        else:
+            return (None, None, None)
+
+    @property
+    def pci_class(self):
+        """See `BaseDevice`."""
+        return self.pci_class_info[0]
+
+    @property
+    def pci_subclass(self):
+        """See `BaseDevice`."""
+        return self.pci_class_info[1]
 
 
 class ProcessingLoop(object):
