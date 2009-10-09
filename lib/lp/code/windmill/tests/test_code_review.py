@@ -45,7 +45,7 @@ class TestCodeReview(TestCaseWithFactory):
 
         search_and_select_picker_widget(client, u'mark', 1)
 
-        client.waits.forElement(id=u'review-mark', timeout=u'100000')
+        client.waits.forElement(id=u'review-mark', timeout=u'10000')
 
 
 def test_suite():
