@@ -154,20 +154,20 @@ class DistroBrancher:
         # for both mirrored and hosted areas:
         for scheme in 'lp-mirrored:///', 'lp-hosted:///':
             # the branch in the new distroseries is unstacked
+            new_location = scheme + new_db_branch.unique_name
             try:
-                new_bzr_branch = Branch.open(
-                    scheme + new_db_branch.unique_name)
+                new_bzr_branch = Branch.open(new_location)
             except NotBranchError:
                 self.logger.warning(
-                    "No bzr branch at new location %s",
-                    scheme + new_db_branch.unique_name)
+                    "No bzr branch at new location %s", new_location)
                 ok = False
             else:
                 try:
                     new_stacked_on_url = new_bzr_branch.get_stacked_on_url()
+                    ok = False
                     self.logger.warning(
                         "New branch at %s is stacked on %s, should be "
-                        "unstacked.", new_bzr_branch, new_stacked_on_url)
+                        "unstacked.", new_location, new_stacked_on_url)
                 except NotStacked:
                     pass
             # The branch in the old distroseries is stacked on that in the
@@ -185,12 +185,13 @@ class DistroBrancher:
                     old_stacked_on_url = old_bzr_branch.get_stacked_on_url()
                     # XXX next line could NameError!
                     if old_stacked_on_url != '/' + new_db_branch.unique_name:
-                        self.logger.warning(
+                        self.logger.warning( # XXX untested
                             "%s is stacked on %s, should be %s",
                             old_db_branch.unique_name, old_stacked_on_url,
                             '/' + new_db_branch.unique_name)
                         ok = False
                 except NotStacked:
+                    # XXX untested
                     self.logger.warning("%s is not stacked", old_bzr_branch)
                     ok = False
                     # The branch in the old distroseries has no revisions in
@@ -198,6 +199,7 @@ class DistroBrancher:
                     # pushed to the branch in the old distroseries, which
                     # shouldn't happen but isn't totally impossible.
                     if len(old_bzr_branch.repository.all_revision_ids()) > 0:
+                        # XXX untested
                         self.logger.warning("XXX")
                         ok = False
                     # The branch in the old distroseries has at least some
@@ -205,6 +207,7 @@ class DistroBrancher:
                     # because the branch in the new distroseries might have
                     # new revisons).
                     if old_bzr_branch.last_revision() == 'null:':
+                        # XXX untested
                         self.logger.warning("XXX")
                         ok = False
         return ok

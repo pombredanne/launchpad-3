@@ -9,6 +9,7 @@ import re
 from StringIO import StringIO
 import unittest
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NotStacked
 from bzrlib.tests import TestCaseWithTransport
@@ -251,6 +252,36 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertLogMessages([
             '^WARNING No bzr branch at old location '
             'lp-mirrored:///.*/.*/.*/.*$',
+            ])
+
+    def test_checkOneBranch_new_hosted_stacked(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        new_db_branch = brancher.makeOneNewBranch(db_branch)
+        b, _ = self.create_branch_and_tree(
+            self.factory.getUniqueString(), hosted=True)
+        Branch.open(new_db_branch.getPullURL()).set_stacked_on_url(
+            '/' + b.unique_name)
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertFalse(ok)
+        self.assertLogMessages([
+            '^WARNING New branch at lp-hosted:///.*/.*/.*/.* is stacked on '
+            '/.*/.*/.*, should be unstacked.$',
+            ])
+
+    def test_checkOneBranch_new_mirrored_stacked(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        new_db_branch = brancher.makeOneNewBranch(db_branch)
+        b, _ = self.create_branch_and_tree(
+            self.factory.getUniqueString(), hosted=False)
+        Branch.open(new_db_branch.warehouse_url).set_stacked_on_url(
+            '/' + b.unique_name)
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertFalse(ok)
+        self.assertLogMessages([
+            '^WARNING New branch at lp-mirrored:///.*/.*/.*/.* is stacked on '
+            '/.*/.*/.*, should be unstacked.$',
             ])
 
 
