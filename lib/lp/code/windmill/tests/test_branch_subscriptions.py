@@ -26,7 +26,7 @@ class TestBranchSubscriptions(TestCaseWithFactory):
 
     layer = CodeWindmillLayer
 
-    def test_branch_subscription_ajax_load():
+    def test_branch_subscription_ajax_load(self):
         """Test branch subscriptions loaded via ajax.
         """
 
@@ -66,7 +66,7 @@ class TestBranchSubscriptions(TestCaseWithFactory):
         client.asserts.assertText(id=u'none-subscribers',
             validator=u'No subscribers.')
 
-    def test_team_edit_subscription_ajax_load():
+    def test_team_edit_subscription_ajax_load(self):
         """Test that team subscriptions are editable through the ajax portlet.
         """
 
