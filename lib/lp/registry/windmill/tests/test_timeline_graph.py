@@ -16,9 +16,6 @@ class TestTimelineGraph(TestCaseWithFactory):
     def setUp(self):
         self.client = WindmillTestClient('TimelineGraph')
 
-    def tearDown(self):
-        self.client.waits.sleep(milliseconds=u'9000')
-
     def test_timeline_graph(self):
         """Test timeline graph on /$project/+timeline-graph page."""
 
@@ -29,8 +26,8 @@ class TestTimelineGraph(TestCaseWithFactory):
             option=u'style.display|none',
             timeout=u'8000')
         link_xpath = '//div/a[@href="/firefox/trunk"]'
-        self.client.waits.sleep(milliseconds=u'5000')
-        self.client.waits.forElement(xpath=link_xpath, timeout=u'20000')
+        for i in range(0, 5):
+            self.client.waits.forElement(xpath=link_xpath)
         self.client.asserts.assertNode(xpath=link_xpath)
 
     def test_project_timeline_graph(self):
@@ -42,7 +39,7 @@ class TestTimelineGraph(TestCaseWithFactory):
         self.client.waits.forElementProperty(
             id=u'timeline-iframe',
             option=u'style.display|block',
-            timeout=u'8000')
+            timeout=u'7777')
         self.client.asserts.assertProperty(
             id=u'timeline-loading',
             validator=u'style.display|none')
@@ -56,8 +53,11 @@ class TestTimelineGraph(TestCaseWithFactory):
             id=u'timeline-iframe',
             option=u'style.display|block',
             timeout=u'8000')
-        self.client.waits.sleep(milliseconds=u'5000')
         self.client.waits.forElement(id=u'timeline-loading', timeout=u'20000')
+        for i in range(0, 5):
+            self.client.waits.forElementProperty(
+                id=u'timeline-loading',
+                option=u'style.display|none')
         self.client.asserts.assertProperty(
             id=u'timeline-loading',
             validator=u'style.display|none')
