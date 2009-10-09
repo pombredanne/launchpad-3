@@ -399,8 +399,8 @@
         <require
             permission="launchpad.Commercial"
             set_attributes="authorized_size buildd_secret
-                            enabled private require_virtualized
-                            relative_build_score"/>
+                            enabled external_dependencies private
+                            require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
             set_attributes="distribution name signing_key"/>
