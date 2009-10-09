@@ -89,7 +89,7 @@ class DistroBrancher:
     def _existingOfficialBranches(self):
         """XXX."""
         branches = getUtility(IAllBranches)
-        distroseries_branches = branches.inDistroSeries(self.old_distribution)
+        distroseries_branches = branches.inDistroSeries(self.old_distroseries)
         return distroseries_branches.officialBranches().getBranches()
 
     def makeNewBranches(self):

@@ -15,10 +15,10 @@ from bzrlib.transport.chroot import ChrootServer
 import transaction
 
 from canonical.testing.layers import ZopelessAppServerLayer
-from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
 
 from lp.codehosting.branch_distro import (
-    branch_distro, clone_branch, switch_branches)
+    DistroBrancher, switch_branches)
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
@@ -83,21 +83,41 @@ class TestCloneBranch(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
 
-    def test_clone_branch(self):
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.useBzrBranches(real_server=True)
 
-        db_branch = self.factory.makePackageBranch()
+    def makeOfficialPackageBranch(self, distroseries=None):
+        """Make an official package branch with an underlying bzr branch.
+
+        XXX.
+        """
+        db_branch = self.factory.makePackageBranch(distroseries=distroseries)
         db_branch.sourcepackage.setBranch(
             PackagePublishingPocket.RELEASE, db_branch, db_branch.owner)
-        new_distro_series = self.factory.makeDistroRelease(
-            distribution=db_branch.distribution)
 
         transaction.commit()
 
-        self.useBzrBranches(real_server=True)
-        self.createBranchAtURL('lp-hosted:///' + db_branch.unique_name)
-        self.createBranchAtURL('lp-mirrored:///' + db_branch.unique_name)
+        _, tree = self.create_branch_and_tree(
+            tree_location=self.factory.getUniqueString(), db_branch=db_branch,
+            hosted=True)
+        tree.commit('')
+        mirrored_branch = BzrDir.create_branch_convenience(
+            db_branch.warehouse_url)
+        mirrored_branch.pull(tree.branch)
 
-        clone_branch(db_branch, new_distro_series)
+        return db_branch
+
+    def test_clone_branch(self):
+
+        db_branch = self.makeOfficialPackageBranch()
+
+        new_distro_series = self.factory.makeDistroRelease(
+            distribution=db_branch.distribution)
+
+        brancher = DistroBrancher(
+            QuietFakeLogger(), db_branch.distroseries, new_distro_series)
+        brancher.makeOneNewBranch(db_branch)
 
         new_sourcepackage = new_distro_series.getSourcePackage(
             db_branch.sourcepackage.name)
@@ -108,34 +128,29 @@ class TestCloneBranch(TestCaseWithFactory):
 
     def test_branch_distro(self):
 
-        db_branch = self.factory.makePackageBranch()
-        db_branch2 = self.factory.makePackageBranch(
+        db_branch = self.makeOfficialPackageBranch()
+        db_branch2 = self.makeOfficialPackageBranch(
             distroseries=db_branch.distroseries)
-        db_branch.sourcepackage.setBranch(
-            PackagePublishingPocket.RELEASE, db_branch, db_branch.owner)
-        db_branch2.sourcepackage.setBranch(
-            PackagePublishingPocket.RELEASE, db_branch2, db_branch2.owner)
+
         new_distro_series = self.factory.makeDistroRelease(
             distribution=db_branch.distribution)
 
-        transaction.commit()
+        brancher = DistroBrancher(
+            QuietFakeLogger(), db_branch.distroseries, new_distro_series)
 
-        self.useBzrBranches(real_server=True)
-        self.createBranchAtURL('lp-hosted:///' + db_branch.unique_name)
-        self.createBranchAtURL('lp-mirrored:///' + db_branch.unique_name)
-        self.createBranchAtURL('lp-hosted:///' + db_branch2.unique_name)
-        self.createBranchAtURL('lp-mirrored:///' + db_branch2.unique_name)
-
-        branch_distro(
-            QuietFakeLogger(), db_branch.distribution.name,
-            db_branch.distroseries.name, new_distro_series.name)
+        brancher.makeNewBranches()
 
         new_sourcepackage = new_distro_series.getSourcePackage(
             db_branch.sourcepackage.name)
         new_branch = new_sourcepackage.getBranch(
             PackagePublishingPocket.RELEASE)
+        new_sourcepackage2 = new_distro_series.getSourcePackage(
+            db_branch2.sourcepackage.name)
+        new_branch2 = new_sourcepackage2.getBranch(
+            PackagePublishingPocket.RELEASE)
 
         self.assertIsNot(new_branch, None)
+        self.assertIsNot(new_branch2, None)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
