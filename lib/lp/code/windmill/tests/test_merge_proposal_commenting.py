@@ -10,13 +10,11 @@ import unittest
 
 import transaction
 from zope.security.proxy import removeSecurityProxy
-import windmill
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.uuid import generate_uuid
-from lp.code.windmill.testing import CodeWindmillLayer
+from lp.code.windmill.testing import canonical_url, CodeWindmillLayer
 from lp.testing import TestCaseWithFactory
 
 WAIT_PAGELOAD = u'30000'
@@ -30,13 +28,6 @@ class TestMergeProposalCommenting(TestCaseWithFactory):
 
     layer = CodeWindmillLayer
 
-    @staticmethod
-    def canonical_url(lp_object):
-        url = canonical_url(lp_object)
-        url = url.replace(
-            'http://code.launchpad.dev', windmill.settings['TEST_URL'])
-        assert url.startswith(windmill.settings['TEST_URL'])
-        return url
 
     def test_merge_proposal_commenting(self):
         """Test commenting on bugs."""
@@ -45,8 +36,7 @@ class TestMergeProposalCommenting(TestCaseWithFactory):
 
         proposal = self.factory.makeBranchMergeProposal()
         transaction.commit()
-        #raise Exception(repr(url))
-        client.open(url=self.canonical_url(proposal))
+        client.open(url=canonical_url(proposal))
         client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
         client.waits.forElement(xpath=ADD_COMMENT_BUTTON)
 
