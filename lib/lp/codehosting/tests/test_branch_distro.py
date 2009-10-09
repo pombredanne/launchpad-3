@@ -157,7 +157,7 @@ class TestDistroBrancher(TestCaseWithFactory):
     def makeNewSeriesAndBrancher(self, db_branch):
         self._log_file = StringIO()
         new_distro_series = self.factory.makeDistroRelease(
-            distribution=db_branch.distribution)
+            distribution=db_branch.distribution, name='new')
         return DistroBrancher(
             FakeLogger(self._log_file), db_branch.distroseries,
             new_distro_series)
@@ -283,6 +283,93 @@ class TestDistroBrancher(TestCaseWithFactory):
             '^WARNING New branch at lp-mirrored:///.*/.*/.*/.* is stacked on '
             '/.*/.*/.*, should be unstacked.$',
             ])
+
+    def test_checkOneBranch_old_hosted_unstacked(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        old_hosted_bzr_branch = Branch.open(db_branch.getPullURL())
+        old_hosted_bzr_branch.set_stacked_on_url(None)
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertLogMessages([
+            '^WARNING Old branch at lp-hosted:///.*/.*/.*/.* is not '
+            'stacked, should be stacked on /.*/.*/.*.$',
+            '^.*has .* revisions.*$',
+            ])
+        self.assertFalse(ok)
+
+    def test_checkOneBranch_old_mirrored_unstacked(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        old_hosted_bzr_branch = Branch.open(db_branch.warehouse_url)
+        old_hosted_bzr_branch.set_stacked_on_url(None)
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertLogMessages([
+            '^WARNING Old branch at lp-mirrored:///.*/.*/.*/.* is not '
+            'stacked, should be stacked on /.*/.*/.*.$',
+            '^.*has .* revisions.*$',
+            ])
+        self.assertFalse(ok)
+
+    def test_checkOneBranch_old_hosted_misstacked(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        b, _ = self.create_branch_and_tree(
+            self.factory.getUniqueString(), hosted=True)
+        Branch.open(db_branch.getPullURL()).set_stacked_on_url(
+            '/' + b.unique_name)
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertLogMessages([
+            '^WARNING Old branch at lp-hosted:///.*/.*/.*/.* is stacked on '
+            '/.*/.*/.*, should be stacked on /.*/.*/.*.$',
+            ])
+        self.assertFalse(ok)
+
+    def test_checkOneBranch_old_mirrored_misstacked(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        b, _ = self.create_branch_and_tree(
+            self.factory.getUniqueString(), hosted=False)
+        Branch.open(db_branch.warehouse_url).set_stacked_on_url(
+            '/' + b.unique_name)
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertLogMessages([
+            '^WARNING Old branch at lp-mirrored:///.*/.*/.*/.* is stacked on '
+            '/.*/.*/.*, should be stacked on /.*/.*/.*.$',
+            ])
+        self.assertFalse(ok)
+
+    def test_checkOneBranch_old_hosted_has_revisions(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        old_hosted_bzr_branch = Branch.open(db_branch.getPullURL())
+        old_hosted_bzr_branch.set_stacked_on_url(None)
+        old_hosted_bzr_branch.create_checkout(
+            self.factory.getUniqueString()).commit('')
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertLogMessages([
+            '^WARNING Repository at lp-hosted:///.*/.*/.*/.* has 1 revisions.'
+            ])
+        self.assertFalse(ok)
+
+    def test_checkOneBranch_old_mirrored_has_revisions(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        old_hosted_bzr_branch = Branch.open(db_branch.warehouse_url)
+        old_hosted_bzr_branch.set_stacked_on_url(None)
+        old_hosted_bzr_branch.create_checkout(
+            self.factory.getUniqueString()).commit('')
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertLogMessages([
+            '^WARNING Repository at lp-mirrored:///.*/.*/.*/.* has 1 '
+            'revisions.'
+            ])
+        self.assertFalse(ok)
 
 
 def test_suite():
