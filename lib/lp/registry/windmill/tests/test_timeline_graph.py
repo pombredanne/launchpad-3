@@ -26,7 +26,11 @@ class TestTimelineGraph(TestCaseWithFactory):
             option=u'style.display|none',
             timeout=u'8000')
         link_xpath = '//div/a[@href="/firefox/trunk"]'
-        for i in range(0, 5):
+
+        # waits.forElement() is called multiple times because there
+        # were sporadic errors where waits.forElement() would succeed but
+        # the following assertNode() would fail 5% of the time.
+        for i in range(5):
             self.client.waits.forElement(xpath=link_xpath)
         self.client.asserts.assertNode(xpath=link_xpath)
 
@@ -54,7 +58,11 @@ class TestTimelineGraph(TestCaseWithFactory):
             option=u'style.display|block',
             timeout=u'8000')
         self.client.waits.forElement(id=u'timeline-loading', timeout=u'20000')
-        for i in range(0, 5):
+
+        # waits.forElementProperty() is called multiple times because there
+        # were sporadic errors where waits.forElement() would succeed but
+        # the following assertProperty() would fail 5% of the time.
+        for i in range(5):
             self.client.waits.forElementProperty(
                 id=u'timeline-loading',
                 option=u'style.display|none')
