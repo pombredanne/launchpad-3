@@ -59,7 +59,7 @@ class ICodeReviewVoteReference(Interface):
             title=_('Review type'), required=False,
             description=_(
                 "Lowercase keywords describing the type of review you are "
-                "performing or would like to be performed.")))
+                 "performing or would like to be performed.")))
 
     comment = exported(
         Reference(
