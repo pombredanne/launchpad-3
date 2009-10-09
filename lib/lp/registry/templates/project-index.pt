@@ -7,6 +7,12 @@
   i18n:domain="launchpad"
 >
   <body>
+    <tal:registering metal:fill-slot="registering">
+      Registered
+      <tal:created replace="context/datecreated/fmt:approximatedate" />
+      by
+      <tal:registrant replace="structure context/registrant/fmt:link" />
+    </tal:registering>
 
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="context/title">Mozilla</h1>
@@ -65,20 +71,27 @@
       <div class="yui-u first">
         <tal:details replace="structure context/@@+details" />
 
-        <tal:faqs content="structure context/@@+portlet-listfaqs" />
+        <tal:faqs content="structure context/@@+portlet-listfaqs"
+          condition="context/@@+get-involved/official_answers" />
 
-        <tal:questions content="structure context/@@+portlet-latestquestions"
-          condition="view/has_many_projects" />
+        <tal:has-many-project condition="view/has_many_projects">
+          <tal:questions content="structure context/@@+portlet-latestquestions"
+            condition="context/@@+get-involved/official_answers" />
+        </tal:has-many-project>
 
-        <tal:bugs content="structure context/@@+portlet-latestbugs" />
+        <tal:bugs content="structure context/@@+portlet-latestbugs"
+          condition="context/@@+get-involved/official_malone" />
 
-        <tal:specs content="structure context/@@+portlet-latestspecs"
-          condition="view/has_many_projects" />
+        <tal:has-many-project condition="view/has_many_projects">
+          <tal:specs content="structure context/@@+portlet-latestspecs"
+            condition="context/@@+get-involved/official_blueprints" />
+        </tal:has-many-project>
 
         <tal:contributors content="structure context/@@+portlet-top-contributors"/>
 
-        <tal:sprints content="structure context/@@+portlet-coming-sprints"
-          condition="view/has_many_projects" />
+        <tal:has-many-project condition="view/has_many_projects">
+          <tal:sprints content="structure context/@@+portlet-coming-sprints" />
+        </tal:has-many-project>
       </div>
 
       <div class="yui-u" id="products">
@@ -120,14 +133,15 @@
           </ul>
         </div>
 
-        <tal:questions content="structure context/@@+portlet-latestquestions"
-          condition="not: view/has_many_projects" />
+        <tal:has-few-project condition="not: view/has_many_projects">
+          <tal:questions content="structure context/@@+portlet-latestquestions"
+            condition="context/@@+get-involved/official_answers" />
 
-        <tal:specs content="structure context/@@+portlet-latestspecs"
-          condition="not: view/has_many_projects" />
+          <tal:specs content="structure context/@@+portlet-latestspecs"
+            condition="context/@@+get-involved/official_blueprints" />
 
-        <tal:sprints content="structure context/@@+portlet-coming-sprints"
-          condition="not: view/has_many_projects" />
+          <tal:sprints content="structure context/@@+portlet-coming-sprints" />
+        </tal:has-few-project>
       </div>
     </div>
     </tal:main>

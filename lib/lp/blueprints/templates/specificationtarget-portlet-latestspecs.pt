@@ -15,7 +15,9 @@
   <ul>
     <li tal:repeat="spec specs">
       <a tal:replace="structure spec/fmt:link" />
-      <br />Registered <tal:when replace="spec/datecreated/fmt:displaydate" />
+      <br /><span class="registered">
+        Registered <tal:when replace="spec/datecreated/fmt:displaydate" />
+      </span>
     </li>
   </ul>
 </div>

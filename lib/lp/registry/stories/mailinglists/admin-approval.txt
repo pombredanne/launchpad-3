@@ -1,4 +1,6 @@
-= Launchpad administrator approval =
+================================
+Launchpad administrator approval
+================================
 
 When a team requests a mailing list, this request must be approved by a
 Launchpad administrator before the mailing list will be created.
@@ -48,7 +50,8 @@ For convenience, let's use the mailing list expert's browser.
     >>> browser = sample_browser
 
 
-== When there's nothing to do ==
+When there's nothing to do
+==========================
 
 When there are no pending mailing list requests, the page contains just a
 helpful message and no form.
@@ -62,7 +65,8 @@ helpful message and no form.
     LookupError: label 'Submit'
 
 
-== When there is something to do ==
+When there is something to do
+=============================
 
 Now the No Privileges Person creates a team, and then requests a mailing list
 for that team.  This mailing list will not be created until the Launchpad
@@ -94,7 +98,8 @@ mailing list.  The pending requests administration page shows them both.
     ( ) ( ) (*) Test Two <.../~test-two> No Privileges Person <.../~no-priv>
 
 
-== Deferring decisions ==
+Deferring decisions
+===================
 
 The Launchpad administrator defers until later the decisions about whether to
 approve or decline the mailing list requests.  This is called 'holding' the
@@ -108,7 +113,8 @@ really means that nothing happens.
     ( ) ( ) (*) Test Two <.../~test-two> No Privileges Person <.../~no-priv>
 
 
-== Approving lists ==
+Approving lists
+===============
 
 The Launchpad administrator decides that the Test One mailing list is a good
 idea, so she goes ahead and approves that list's creation.  She defers the
@@ -131,7 +137,8 @@ though we won't wait for Mailman to act <wink>.
     Test One mailing list was approved
 
 
-== Declining lists ==
+Declining lists
+===============
 
 The Launchpad administrator decides that the Test Two mailing list is a bad
 idea, so she goes ahead and declines that list's creation.
@@ -150,13 +157,15 @@ mailing list.
 The Test Two mailing list has been declined so Mailman will not create it.
 
     >>> user_browser.open('http://launchpad.dev/~test-two/+mailinglist')
-    >>> print extract_text(find_main_content(user_browser.contents))
-    Mailing list configuration
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents,
+    ...                    'mailing_list_status_message'))
     The application for this team's mailing list has been declined.
     Please contact a Launchpad administrator for further assistance.
 
 
-== Multiple actions ==
+Multiple actions
+================
 
 The Launchpad administrator neglects to check for pending requests for a
 little while, and in the meantime, three new requests have appeared.
@@ -186,7 +195,8 @@ The Launchpad administrator can approve them all at once.
     Test Three mailing list was approved
 
 
-== Private membership teams ==
+Private membership teams
+========================
 
 When there is a private membership team that needs approval, a mailing list
 expert can perform this action even if they are not members of the team and

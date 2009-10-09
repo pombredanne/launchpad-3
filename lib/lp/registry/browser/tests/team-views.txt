@@ -5,7 +5,6 @@
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, ITeamMembershipSet)
     >>> from zope.component import getMultiAdapter
-    >>> from zope.publisher.browser import TestRequest
     >>> person_set = getUtility(IPersonSet)
 
 On a team home page, we show up to the latest five members who were approved
@@ -229,4 +228,4 @@ because bart is not a member of the team.
     >>> print view.contact_link_title
     Send an email to this team's owner through Launchpad
     >>> print view.specific_contact_text
-    Contact this team
+    Contact this team's owner

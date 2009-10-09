@@ -41,7 +41,7 @@ For Distribution, it's possible to filter build results by state and name:
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Builds").click()
     >>> print anon_browser.title
-    Ubuntu Linux builds
+    Ubuntu Linux builds...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -51,7 +51,7 @@ For DistroSeries, an architecture filter is also presented:
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    The Hoary Hedgehog Release builds
+    The Hoary Hedgehog Release builds...
 
     >>> print check_builds_options(anon_browser.contents)
     State, Arch and Name present
@@ -61,7 +61,7 @@ For DistroArchSeries, same as Distribution:
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary/i386")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    The Hoary Hedgehog Release for i386 (x86) builds
+    The Hoary Hedgehog Release for i386 (x86) builds...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -71,17 +71,18 @@ For Builder, same as Distribution:
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
     >>> anon_browser.getLink("View full history").click()
     >>> print anon_browser.title
-    Build history for ...Bob The Builder...
+    Build history for “Bob...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
 For Archive (PPA), same as Distribution:
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> anon_browser.getLink("View build records").click()
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/+packages")
+    >>> anon_browser.getLink("View all builds").click()
     >>> print anon_browser.title
-    Builds for PPA for Celso Providelo
+    Builds for PPA for Celso Providelo...
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -92,7 +93,7 @@ For SourcePackage, it's only possible to filter by state.
     ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    Builds for pmount in Ubuntu Hoary
+    Builds for ...pmount... in Hoary :...
 
     >>> print check_builds_options(anon_browser.contents)
     State present, Name not present
@@ -480,8 +481,9 @@ And also on the distro series builds page:
 == Upload status ==
 
 A (distro) source package release page shows any builds for that source and
-the status of the build.  If the build has been uploaded, then an upload
-status is shown in parentheses after the build status.
+the status of the build.  If the build has been uploaded but not yet
+processed, the upload 'status' is shown in parentheses after the build
+link.
 
     # Create testing source publications.
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -505,19 +507,9 @@ Such feature is visible when anonymous user access the
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/testing/1.0")
-
-    >>> print_tag_with_id(anon_browser.contents, 'portlet-builds')
+    >>> print extract_text(find_portlet(anon_browser.contents, 'Builds'))
     Builds
-    warty    i386  Successfully built  (DONE)
-    warty    hppa  Successfully built  (DONE)
-
-More important than seeing '(DONE)' for builds with published
-binaries, the build upload status is useful to spot buildd which have
-binaries waiting for manual approval in the distroseries queue.
-
-We can simulate this scenario for the current build, so when the page
-is reloaded the user can see that the 'i386' build marked as
-'UNAPPROVED'.
+    Warty: hppa i386
 
     # Update the upload record for the i386 build so it looks like
     # it is pending approval.
@@ -528,7 +520,6 @@ is reloaded the user can see that the 'i386' build marked as
     >>> logout()
 
     >>> anon_browser.reload()
-    >>> print_tag_with_id(anon_browser.contents, 'portlet-builds')
+    >>> print extract_text(find_portlet(anon_browser.contents, 'Builds'))
     Builds
-    warty    i386  Successfully built  (UNAPPROVED)
-    warty    hppa  Successfully built  (DONE)
+    Warty: hppa i386 (Unapproved)

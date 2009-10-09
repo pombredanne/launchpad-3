@@ -78,7 +78,7 @@ https one, depending on a config value.
 
     >>> from textwrap import dedent
     >>> test_data = dedent("""
-    ...     [vhosts]
+    ...     [librarian]
     ...     use_https: true
     ...     """)
     >>> config.push('test', test_data)
@@ -689,8 +689,8 @@ If the hit happened on a different day, a separate entry would be created.
 
 == Time to last download ==
 
-The .last_downloaded property gives us the time delta from today to the day 
-that file was last downloaded, or None if it's never been downloaded. 
+The .last_downloaded property gives us the time delta from today to the day
+that file was last downloaded, or None if it's never been downloaded.
 
     >>> today = datetime.now(utc).date()
     >>> public_file.last_downloaded == today - last_downloaded_date

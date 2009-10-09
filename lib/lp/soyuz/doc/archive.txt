@@ -58,11 +58,11 @@ records to disk, including configuration and indexes.
     >>> cprov_archive.failed_count
     1
 
-relative_build_score is a property that can be set only by LP admins and read
-by anyone.  It is a signed integer that represents a delta to all the build
-scores for builds done in the archive.
+relative_build_score and external_dependencies are properties that can be set
+only by LP admins and read by anyone.
 
-The default value is zero:
+relative_build_score is a signed integer that represents a delta to all the
+build scores for builds done in the archive.  The default value is zero:
 
     >>> cprov_archive.relative_build_score
     0
@@ -74,10 +74,28 @@ Amending it as an unprivileged user results in failure:
     ...
     Unauthorized: (..., 'relative_build_score', 'launchpad.Commercial')
 
-As a Launchpad admin, it will work.
+external_dependencies is a text field that should contain a comma-separated
+list of sources.list entries in the format:
+deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]
+where the series variable is replaced with the series name of the context
+build.  This allows an admin to set external repositories as a source for
+build dependencies on the context PPA.  Its default value is None:
+
+    >>> print cprov_archive.external_dependencies
+    None
+
+Amending it as an unprivileged user results in failure:
+
+    >>> cprov_archive.external_dependencies = "test"
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'external_dependencies', 'launchpad.Commercial')
+
+As a Launchpad admin, setting these properties will work.
 
     >>> login("admin@canonical.com")
     >>> cprov_archive.relative_build_score = 100
+    >>> cprov_archive.external_dependencies = "test"
 
 The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
@@ -305,7 +323,8 @@ Using 'version' filter:
     ...     version='1.0')
     Traceback (most recent call last):
     ...
-    AssertionError: 'version' can be only used when name is set
+    VersionRequiresName: The 'version' parameter can be used only together
+    with the 'name' parameter.
 
     >>> ice_version_lookup = cprov_archive.getPublishedSources(
     ...     name='ice', version='1.0')
@@ -348,7 +367,7 @@ Using 'distroseries' filter:
 
 Using 'pocket' filter:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> cprov_archive.getPublishedSources(
     ...     distroseries=warty,
     ...     pocket=PackagePublishingPocket.RELEASE).count()
@@ -492,13 +511,15 @@ filter is not passed too.
     ...     version='1.0')
     Traceback (most recent call last):
     ...
-    AssertionError: 'version' can be only used when name is set
+    VersionRequiresName: The 'version' parameter can be used only together
+    with the 'name' parameter.
 
     >>> moz_version_lookup = cprov_archive.getPublishedOnDiskBinaries(
     ...     version='1.0')
     Traceback (most recent call last):
     ...
-    AssertionError: 'version' can be only used when name is set
+    VersionRequiresName: The 'version' parameter can be used only together
+    with the 'name' parameter.
 
 Both methods support 'status' filter:
 
@@ -886,6 +907,25 @@ decreases.
 
     >>> cprov_archive.number_of_binaries
     2
+
+
+== Getting an Archive's source-package releases ==
+
+The method getSourcePackageReleases() is provided to return the unique
+source-package releases for the archive. By default, all releases will
+be returned, but you can also ask for releases with builds in a certain
+state.
+
+    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> releases = cprov_archive.getSourcePackageReleases(
+    ...     build_status=BuildStatus.FULLYBUILT)
+    >>> for release in releases:
+    ...     print release.title
+    mozilla-firefox - 0.9
+    pmount - 0.1-1
+    iceweasel - 1.0
+
+For further details see the `TestGetSourcePackageReleases` unit-test.
 
 
 == Sources available for deletions ==

@@ -297,7 +297,6 @@ files in the respective PPA location.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Don't verify signer ACL for PPA
   DEBUG: Finished checking upload.
 
   >>> success = ppa_upload.do_accept()

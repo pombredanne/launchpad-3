@@ -268,7 +268,7 @@ address set to an explicit address.
 
 === Non-member to team ===
 
-Non-members cannot are may only contact the team owner.
+Non-members may only contact the team owner.
 
     >>> guadamen = person_set.getByName('guadamen')
     >>> bart = factory.makePerson(email='bart@example.com', name='bart')

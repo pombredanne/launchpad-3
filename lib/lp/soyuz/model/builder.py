@@ -37,6 +37,7 @@ from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces._schema_circular_imports import (
     IHasBuildRecords)
@@ -50,7 +51,7 @@ from lp.soyuz.interfaces.builder import (
     IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingStatus)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.utils import copy_and_close
 
@@ -114,7 +115,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    _defaultOrder = ['processor', 'virtualized', 'name']
+    _defaultOrder = ['id']
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
@@ -698,7 +699,8 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
-        return Builder.selectBy(active=True)
+        return Builder.selectBy(
+            active=True, orderBy=['virtualized', 'processor', 'name'])
 
     def getBuildersByArch(self, arch):
         """See IBuilderSet."""
@@ -736,7 +738,7 @@ class BuilderSet(object):
             Archive.require_virtualized == virtualized,
             )
 
-        return queue.count()
+        return (queue.count(), queue.sum(Build.estimated_build_duration))
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""

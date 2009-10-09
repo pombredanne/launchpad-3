@@ -54,23 +54,61 @@ class Bugzilla(ExternalBugTracker):
         self.remote_bug_status = {}
         self.remote_bug_product = {}
 
-    def getExternalBugTrackerToUse(self):
-        """Return the correct `Bugzilla` subclass for the current bugtracker.
+    def _remoteSystemHasBugzillaAPI(self):
+        """Return True if the remote host offers the Bugzilla API.
 
-        See `IExternalBugTracker`.
+        :return: True if the remote host offers an XML-RPC API and its
+            version is > 3.4. Return False otherwise.
+        """
+        api = BugzillaAPI(self.baseurl)
+        if self._test_xmlrpc_proxy is not None:
+            proxy = self._test_xmlrpc_proxy
+        else:
+            proxy = api.xmlrpc_proxy
+
+        try:
+            # We try calling Bugzilla.version() on the remote
+            # server because it's the most lightweight method there is.
+            remote_version_dict = proxy.Bugzilla.version()
+        except xmlrpclib.Fault, fault:
+            if fault.faultCode == 'Client':
+                return False
+            else:
+                raise
+        except xmlrpclib.ProtocolError, error:
+            # We catch 404s, which occur when xmlrpc.cgi doesn't exist
+            # on the remote server, and 500s, which sometimes occur when
+            # an invalid request is made to the remote server. We allow
+            # any other error types to propagate upward.
+            if error.errcode in (404, 500):
+                return False
+            else:
+                raise
+        except xmlrpclib.ResponseError:
+            # The server returned an unparsable response.
+            return False
+        else:
+            if remote_version_dict['version'] >= '3.4':
+                return True
+            else:
+                return False
+
+    def _remoteSystemHasPluginAPI(self):
+        """Return True if the remote host has the Launchpad plugin installed.
         """
         plugin = BugzillaLPPlugin(self.baseurl)
+        if self._test_xmlrpc_proxy is not None:
+            proxy = self._test_xmlrpc_proxy
+        else:
+            proxy = plugin.xmlrpc_proxy
+
         try:
             # We try calling Launchpad.plugin_version() on the remote
             # server because it's the most lightweight method there is.
-            if self._test_xmlrpc_proxy is not None:
-                proxy = self._test_xmlrpc_proxy
-            else:
-                proxy = plugin.xmlrpc_proxy
             proxy.Launchpad.plugin_version()
         except xmlrpclib.Fault, fault:
             if fault.faultCode == 'Client':
-                return self
+                return False
             else:
                 raise
         except xmlrpclib.ProtocolError, error:
@@ -80,14 +118,26 @@ class Bugzilla(ExternalBugTracker):
             # can consider to be a problem, so we let it travel up the
             # stack for the error log.
             if error.errcode in (404, 500):
-                return self
+                return False
             else:
                 raise
         except xmlrpclib.ResponseError:
             # The server returned an unparsable response.
-            return self
+            return False
         else:
-            return plugin
+            return True
+
+    def getExternalBugTrackerToUse(self):
+        """Return the correct `Bugzilla` subclass for the current bugtracker.
+
+        See `IExternalBugTracker`.
+        """
+        if self._remoteSystemHasPluginAPI():
+            return BugzillaLPPlugin(self.baseurl)
+        elif self._remoteSystemHasBugzillaAPI():
+            return BugzillaAPI(self.baseurl)
+        else:
+            return self
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -375,7 +425,7 @@ def needs_authentication(func):
 class BugzillaAPI(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -558,7 +608,10 @@ class BugzillaAPI(Bugzilla):
 
         # Store the bugs we've imported and return only their IDs.
         self._storeBugs(remote_bugs)
-        bug_ids = [remote_bug['id'] for remote_bug in remote_bugs]
+
+        # Marshal the bug IDs into strings before returning them since
+        # the remote Bugzilla may return ints rather than strings.
+        bug_ids = [str(remote_bug['id']) for remote_bug in remote_bugs]
 
         return bug_ids
 
@@ -602,14 +655,16 @@ class BugzillaAPI(Bugzilla):
 
         # Get only the remote comment IDs and store them in the
         # 'comments' field of the bug.
-        bug_comments_dict = self.xmlrpc_proxy.Bug.comments({
+        return_dict = self.xmlrpc_proxy.Bug.comments({
             'ids': [actual_bug_id],
             'include_fields': ['id'],
             })
 
         # We need to convert bug and comment ids to strings (see bugs
         # 248662 amd 248938).
-        bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
+        bug_comments_dict = return_dict['bugs']
+        bug_comments = bug_comments_dict[str(actual_bug_id)]['comments']
+
         return [str(comment['id']) for comment in bug_comments]
 
     def fetchComments(self, bug_watch, comment_ids):
@@ -633,7 +688,10 @@ class BugzillaAPI(Bugzilla):
             if int(comment['bug_id']) != actual_bug_id:
                 del comments[comment_id]
 
-        self._bugs[actual_bug_id]['comments'] = return_dict['comments']
+        # Ensure that comment IDs are converted to ints.
+        comments_with_int_ids = dict(
+            (int(id), comments[id]) for id in comments)
+        self._bugs[actual_bug_id]['comments'] = comments_with_int_ids
 
     def getPosterForComment(self, bug_watch, comment_id):
         """See `ISupportsCommentImport`."""
@@ -679,6 +737,24 @@ class BugzillaAPI(Bugzilla):
             datecreated=comment_datetime)
 
         return message
+
+    @needs_authentication
+    def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
+        """Add a comment to the remote bugtracker.
+
+        See `ISupportsCommentPushing`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
+        request_params = {
+            'id': actual_bug_id,
+            'comment': comment_body,
+            }
+        return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
+
+        # We cast the return value to string, since that's what
+        # BugWatchUpdater will expect (see bug 248938).
+        return str(return_dict['id'])
 
 
 class BugzillaLPPlugin(BugzillaAPI):

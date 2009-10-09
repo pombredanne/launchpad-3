@@ -88,6 +88,13 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase):
         self.committer.commit('')
         self.assertEqual({'file.txt': 'contents'}, self._getContents())
 
+    def test_commit_returns_revision_id(self):
+        # DirectBranchCommit.commit returns the new revision_id.
+        self.committer.writeFile('file.txt', 'contents')
+        revision_id = self.committer.commit('')
+        branch_revision_id = self.committer.bzrbranch.last_revision()
+        self.assertEqual(branch_revision_id, revision_id)
+
     def test_DirectBranchCommit_aborts_cleanly(self):
         # If a DirectBranchCommit is not committed, its changes do not
         # go into the branch.
@@ -221,6 +228,24 @@ class TestDirectBranchCommit_getDir(DirectBranchCommitTestCase):
         # If a directory was newly created, _getDir will reuse its id.
         dir_id = self.committer._getDir('foo/bar')
         self.assertEqual(dir_id, self.committer._getDir('foo/bar'))
+
+
+class TestDirectBranchCommitMirror(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_direct_branch_commit_respects_to_mirror(self):
+        # The "to_mirror" argument causes the commit to apply to the mirrored
+        # copy of the branch.
+        self.useBzrBranches()
+        branch = self.factory.makeBranch()
+        bzr_branch = self.createBzrBranch(branch)
+        dbc = DirectBranchCommit(branch, to_mirror=True)
+        try:
+            dbc.writeFile('path', 'contents')
+            dbc.commit('making commit to mirrored area.')
+        finally:
+            dbc.unlock()
 
 
 def test_suite():

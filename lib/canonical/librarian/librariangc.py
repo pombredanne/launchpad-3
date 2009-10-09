@@ -542,6 +542,7 @@ def delete_unwanted_files(con):
                 dirnames.remove(dirname)
                 log.error(
                     "Ignoring directory %s that shouldn't be here" % dirname)
+                continue
             try:
                 int(dirname, 16)
             except ValueError:
@@ -577,6 +578,7 @@ def delete_unwanted_files(con):
                 next_wanted_content_id = get_next_wanted_content_id()
 
                 if (config.librarian_server.upstream_host is None
+                        and next_wanted_content_id is not None
                         and next_wanted_content_id < content_id):
                     log.error(
                         "LibraryFileContent %d exists in the database but "

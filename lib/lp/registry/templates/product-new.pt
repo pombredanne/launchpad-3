@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
 >
 <body>
   <div metal:fill-slot="main">
@@ -256,11 +253,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
     <div metal:use-macro="context/@@launchpad_form/form">
       <metal:step fill-slot="extra_info">
       <div style="text-align: right;">Not sure what to do?
-        <tal:comment condition="nothing">
-          XXX BarryWarsaw 28-Apr-2009 bug 368910
-          REMOVE THE FOLLOWING BEFORE 2.2.5 PRODUCTION ROLLOUT
-        </tal:comment>
-        <a href="mailto:feedback@launchpad.net">Contact us</a>
+        <a href="https://help.launchpad.net/Feedback">Contact us</a>
       </div>
       <h2 class="legend" id="step-title">Step
           <tal:step_number tal:replace="view/step_number"/>

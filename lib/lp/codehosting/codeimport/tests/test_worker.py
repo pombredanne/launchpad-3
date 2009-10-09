@@ -108,7 +108,9 @@ class TestBazaarBranchStore(WorkerTest):
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
 
-    def test_pullUpgradesFormat(self):
+    # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
+    # branches disabled.  Need an orderly upgrade process.
+    def disabled_test_pullUpgradesFormat(self):
         # A branch should always be in the most up-to-date format before a
         # pull is performed.
         store = self.makeBranchStore()
@@ -128,7 +130,9 @@ class TestBazaarBranchStore(WorkerTest):
         self.assertEqual(
             default_format.get_branch_format(), new_branch._format)
 
-    def test_pullUpgradesFormatWithBackupDirPresent(self):
+    # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
+    # branches disabled.  Need an orderly upgrade process.
+    def disabled_test_pullUpgradesFormatWithBackupDirPresent(self):
         # pull can upgrade the remote branch even if there is a backup.bzr
         # directory from a previous upgrade.
         store = self.makeBranchStore()
@@ -161,6 +165,15 @@ class TestBazaarBranchStore(WorkerTest):
             self.arbitrary_branch_id, self.temp_dir, default_format)
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
+
+    def test_push_divergant_branches(self):
+        # push() uses overwrite=True, so divergent branches (rebased) can be
+        # pushed.
+        store = self.makeBranchStore()
+        tree = create_branch_with_one_revision('original')
+        store.push(self.arbitrary_branch_id, tree, default_format)
+        tree = create_branch_with_one_revision('divergant')
+        store.push(self.arbitrary_branch_id, tree, default_format)
 
     def fetchBranch(self, from_url, target_path):
         """Pull a branch from `from_url` to `target_path`.

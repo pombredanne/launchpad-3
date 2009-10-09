@@ -107,6 +107,12 @@ class IRunnableJob(IJob):
         :param oops: The oops produced by this Job.
         """
 
+    def getOopsVars():
+        """Return a list of variables to appear in the OOPS.
+
+        These vars should help determine why the jobs OOPsed.
+        """
+
     user_error_types = Attribute(
         'A tuple of exception classes which result from user error.')
 

@@ -13,11 +13,13 @@ from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.pofile import IPOFileSet
+from lp.translations.interfaces.translatablemessage import (
+    ITranslatableMessage)
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, verifyObject
 from canonical.testing import ZopelessDatabaseLayer
 from canonical.launchpad.webapp.publisher import canonical_url
 
@@ -1443,6 +1445,27 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.pofile.updateStatistics()
         self.assertEquals(self.pofile.newCount(), 0)
         self.assertEquals(self.pofile.updatesCount(), 1)
+
+
+class TestPOFile(TestCaseWithFactory):
+    """Test PO file methods."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        # Create a POFile to calculate statistics on.
+        super(TestPOFile, self).setUp()
+        self.pofile = self.factory.makePOFile('sr')
+        self.potemplate = self.pofile.potemplate
+
+        # Create a single POTMsgSet that is used across all tests.
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
+                                                    sequence=1)
+
+    def test_makeTranslatableMessage(self):
+        # TranslatableMessages can be created from the PO file
+        message = self.pofile.makeTranslatableMessage(self.potmsgset)
+        verifyObject(ITranslatableMessage, message)
 
 
 def test_suite():

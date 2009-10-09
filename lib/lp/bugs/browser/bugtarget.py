@@ -6,17 +6,16 @@
 __metaclass__ = type
 
 __all__ = [
+    "BugsVHostBreadcrumb",
     "BugTargetBugListingView",
-    "BugTargetBugsView",
     "BugTargetBugTagsView",
-    "FileBugViewBase",
+    "BugTargetBugsView",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FrontPageFileBugAdvancedView",
+    "FileBugViewBase",
     "FrontPageFileBugGuidedView",
     "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
-    "ProjectFileBugAdvancedView",
     ]
 
 import cgi
@@ -39,6 +38,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
@@ -53,6 +53,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces._schema_circular_imports import (
     IBug, IDistribution)
+from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
@@ -66,6 +67,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct, IProject
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action)
@@ -155,6 +157,10 @@ class FileBugDataParser:
         if 'Subscribers' in headers:
             subscribers_string = unicode(headers['Subscribers'])
             data.subscribers = subscribers_string.lower().split()
+        if 'HWDB-Submission' in headers:
+            submission_string = unicode(headers['HWDB-Submission'])
+            data.hwdb_submission_keys = (
+                part.strip() for part in submission_string.split(','))
 
     def parse(self):
         """Parse the message and  return a FileBugData instance.
@@ -243,6 +249,7 @@ class FileBugData:
         self.extra_description = None
         self.comments = []
         self.attachments = []
+        self.hwdb_submission_keys = []
 
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
@@ -266,6 +273,16 @@ class FileBugViewBase(LaunchpadFormView):
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
+
+        if (config.malone.ubuntu_disable_filebug and
+            self.targetIsUbuntu() and
+            self.extra_data_token is None and
+            not self.no_ubuntu_redirect):
+            # The user is trying to file a new Ubuntu bug via the web
+            # interface and without using apport. Redirect to a page
+            # explaining the preferred bug-filing procedure.
+            self.request.response.redirect(
+                config.malone.ubuntu_bug_filing_url)
         if self.extra_data_token is not None:
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
@@ -322,6 +339,29 @@ class FileBugViewBase(LaunchpadFormView):
 
     def contextIsProject(self):
         return IProject.providedBy(self.context)
+
+    def targetIsUbuntu(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return (self.context == ubuntu or
+                (IMaloneApplication.providedBy(self.context) and
+                 self.request.form.get('field.bugtarget.distribution') ==
+                 ubuntu.name) or
+                (IDistributionSourcePackage.providedBy(self.context) and
+                 self.context.distribution == ubuntu))
+
+    @property
+    def no_ubuntu_redirect(self):
+        if IDistribution.providedBy(self.context):
+            bug_supervisor = self.context.bug_supervisor
+        elif (IDistributionSourcePackage.providedBy(self.context) or
+              ISourcePackage.providedBy(self.context)):
+            bug_supervisor = self.context.distribution.bug_supervisor
+
+        return (
+            self.request.form.get('no-redirect') is not None or
+            [key for key in self.request.form.keys()
+            if 'field.actions' in key] != [] or
+            self.user.inTeam(bug_supervisor))
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -383,7 +423,7 @@ class FileBugViewBase(LaunchpadFormView):
                                 packagename, distribution.displayname))
                         self.setFieldError("packagename", packagename_error)
             else:
-                self.setFieldError("packagename", 
+                self.setFieldError("packagename",
                                    "Please enter a package name")
 
         # If we've been called from the frontpage filebug forms we must check
@@ -606,6 +646,13 @@ class FileBugViewBase(LaunchpadFormView):
                         '%s has been subscribed to this bug.' %
                         person.displayname)
 
+        submission_set = getUtility(IHWSubmissionSet)
+        for submission_key in extra_data.hwdb_submission_keys:
+            submission = submission_set.getBySubmissionKey(
+                submission_key, self.user)
+            if submission is not None:
+                bug.linkHWSubmission(submission)
+
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
             self.request.response.addNotification(notification)
@@ -796,8 +843,8 @@ class FileBugAdvancedView(FileBugViewBase):
     def initialize(self):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
-        self.request.response.redirect(filebug_url,
-        status=HTTP_MOVED_PERMANENTLY)
+        self.request.response.redirect(
+            filebug_url, status=HTTP_MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -856,7 +903,7 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
     # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
     # hack to make the action decorator Just Work across inheritance.
     actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('title', TextWidget, displayWidth=65)
     custom_widget('tags', BugTagsWidget)
 
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
@@ -1088,14 +1135,7 @@ class BugTargetBugListingView:
     """Helper methods for rendering bug listings."""
 
     @property
-    def series_buglistings(self):
-        """Return a buglisting for each series.
-
-        The list is sorted newest series to oldest.
-
-        The count only considers bugs that the user would actually be
-        able to see in a listing.
-        """
+    def series_list(self):
         if IDistribution(self.context, None):
             serieses = self.context.serieses
         elif IProduct(self.context, None):
@@ -1105,20 +1145,46 @@ class BugTargetBugListingView:
         elif IProductSeries(self.context, None):
             serieses = self.context.product.serieses
         else:
-            raise AssertionError, ("series_bug_counts called with "
-                                   "illegal context")
+            raise AssertionError("series_list called with illegal context")
+        return serieses
 
+    @property
+    def series_buglistings(self):
+        """Return a buglisting for each series.
+
+        The list is sorted newest series to oldest.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
         series_buglistings = []
-        for series in serieses:
+        for series in self.series_list:
             series_bug_count = series.open_bugtasks.count()
             if series_bug_count > 0:
                 series_buglistings.append(
                     dict(
                         title=series.name,
                         url=canonical_url(series) + "/+bugs",
-                        count=series_bug_count))
+                        count=series_bug_count,
+                        ))
 
         return series_buglistings
+
+    @property
+    def milestone_buglistings(self):
+        """Return a buglisting for each milestone."""
+        milestone_buglistings = []
+        for series in self.series_list:
+            for milestone in series.milestones:
+                milestone_bug_count = milestone.open_bugtasks.count()
+                if milestone_bug_count > 0:
+                    milestone_buglistings.append(
+                        dict(
+                            title=milestone.name,
+                            url=canonical_url(milestone),
+                            count=milestone_bug_count,
+                            ))
+        return milestone_buglistings
 
 
 class BugCountDataItem:
@@ -1163,6 +1229,13 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         BugTaskStatus.UNKNOWN: 'purple',
     }
 
+    override_title_breadcrumbs = True
+
+    @property
+    def label(self):
+        """The display label for the view."""
+        return 'Bugs in %s' % self.context.title
+
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
@@ -1173,39 +1246,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         self.bug_count_items = [
             BugCountDataItem(status.title, count, self.status_color[status])
             for status, count in bug_counts]
-
-    def getChartJavascript(self):
-        """Return a snippet of Javascript that draws a pie chart."""
-        # XXX: Bjorn Tillenius 2007-02-13:
-        #      This snippet doesn't work in IE, since (I think) there
-        #      has to be a delay between creating the canvas element and
-        #      using it to draw the chart.
-        js_template = """
-            function drawGraph() {
-                var options = {
-                  "drawBackground": false,
-                  "colorScheme": [%(color_list)s],
-                  "xTicks": [%(label_list)s]};
-                var data = [%(data_list)s];
-                var plotter = PlotKit.EasyPlot(
-                    "pie", options, $("bugs-chart"), [data]);
-            }
-            registerLaunchpadFunction(drawGraph);
-            """
-        # The color list should inlude only colors for slices that will
-        # be drawn in the pie chart, so colors that don't have any bugs
-        # associated with them.
-        color_list = ', '.join(
-            data_item.color for data_item in self.bug_count_items
-            if data_item.count > 0)
-        label_list = ', '.join([
-            '{v:%i, label:"%s"}' % (index, data_item.label)
-            for index, data_item in enumerate(self.bug_count_items)])
-        data_list = ', '.join([
-            '[%i, %i]' % (index, data_item.count)
-            for index, data_item in enumerate(self.bug_count_items)])
-        return js_template % dict(
-            color_list=color_list, label_list=label_list, data_list=data_list)
 
     @property
     def uses_launchpad_bugtracker(self):
@@ -1280,6 +1320,35 @@ class BugTargetBugTagsView(LaunchpadView):
         return tags[:10]
 
     @property
+    def tags_cloud_data(self):
+        """The data for rendering a tags cloud"""
+        official_tags = self.context.official_bug_tags
+        tags = self.getUsedBugTagsWithURLs()
+        other_tags = [tag for tag in tags if tag['tag'] not in official_tags]
+        popular_tags = [tag['tag'] for tag in sorted(
+            other_tags, key=itemgetter('count'))[:10]]
+        tags = [
+            tag for tag in tags
+            if tag['tag'] in official_tags + popular_tags]
+        all_tag_dicts = [tag['tag'] for tag in tags]
+        for official_tag in official_tags:
+            if official_tag not in all_tag_dicts:
+                tags.append({
+                    'tag': official_tag,
+                    'count': 0,
+                    'url': "+bugs?field.tag=%s" % urllib.quote(official_tag)})
+        max_count = float(max([1] + [tag['count'] for tag in tags]))
+        for tag in tags:
+            if tag['tag'] in official_tags:
+                if tag['count'] == 0:
+                    tag['factor'] = 1.5
+                else:
+                    tag['factor'] = 1.5 + (tag['count'] / max_count)
+            else:
+                tag['factor'] = 1 + (tag['count'] / max_count)
+        return sorted(tags, key=itemgetter('tag'))
+
+    @property
     def show_manage_tags_link(self):
         """Should a link to a "manage official tags" page be shown?"""
         return (IOfficialBugTagTargetRestricted.providedBy(self.context) and
@@ -1291,6 +1360,16 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
 
     schema = IOfficialBugTagTargetPublic
     custom_widget('official_bug_tags', LargeBugTagsWidget)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Manage official bug tags for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @action('Save', name='save')
     def save_action(self, action, data):
@@ -1319,9 +1398,6 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BugTargetOnBugsVHostBreadcrumb(Breadcrumb):
+class BugsVHostBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
-
-    @property
-    def text(self):
-        return 'Bugs on %s' % self.context.name
+    text = 'Bugs'

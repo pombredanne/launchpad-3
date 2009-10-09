@@ -1,4 +1,6 @@
-= Validating an email address =
+===========================
+Validating an email address
+===========================
 
 The user 'salgado' has an unvalidated email address that was probably
 added by gina. Now he wants to validate it.
@@ -10,7 +12,7 @@ added by gina. Now he wants to validate it.
     >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
     >>> browser.open('http://launchpad.dev/~salgado/+editemails')
     >>> print browser.title
-    Guilherme Salgado's e-mail addresses
+    Change your e-mail settings...
 
     >>> browser.getControl(name="field.UNVALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com').selected = True
@@ -40,7 +42,8 @@ Visit the token URL mentioned in the email, and get redirected to
     >>> print browser.title
     Confirm e-mail address
 
-    >>> print find_main_content(browser.contents)
+    >>> print extract_text(find_main_content(browser.contents))
+
     <div...Confirm e-mail address...salgado@ubuntu.com...
 
     >>> browser.getControl('Continue').click()
@@ -49,8 +52,7 @@ Visit the token URL mentioned in the email, and get redirected to
 
 Check that the email address now shows up as validated.
 
-    >>> browser.getLink('Change details').click()
-    >>> browser.getLink('E-mail Settings').click()
+    >>> browser.getLink(url='+editemails').click()
     >>> browser.getControl(name="field.VALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com')
     <ItemControl...optionValue='salgado@ubuntu.com'...>
@@ -78,7 +80,8 @@ added by gina.
     An e-mail message was sent to 'salgado@example.com'...
 
 
-== Validating the email address string ==
+Validating the email address string
+===================================
 
 Leaving the email address field blank and hitting the 'Add' button
 should display an error message.
@@ -87,8 +90,8 @@ should display an error message.
     ''
 
     >>> browser.getControl('Add', index=1).click()
-    >>> browser.title
-    "Guilherme Salgado's e-mail addresses"
+    >>> print browser.title
+    Change your e-mail settings...
 
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
@@ -98,13 +101,13 @@ should display an error message.
 Entering a string that does not look like an email address causes an
 error to be displayed.
 
-    >>> browser.title
-    "Guilherme Salgado's e-mail addresses"
+    >>> print browser.title
+    Change your e-mail settings...
 
     >>> browser.getControl('Add a new address').value = 'foo'
     >>> browser.getControl('Add', index=1).click()
-    >>> browser.title
-    "Guilherme Salgado's e-mail addresses"
+    >>> print browser.title
+    Change your e-mail settings...
 
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
@@ -116,8 +119,8 @@ be interpreted by the browser. Scripts that are embedded in the address
 will not run. A malicious hacker cannot use a XSS vulnerability to gain
 information about Launchpad users.
 
-    >>> browser.title
-    "Guilherme Salgado's e-mail addresses"
+    >>> print browser.title
+    Change your e-mail settings...
 
     >>> browser.getControl('Add a new address').value = (
     ...     "salgado@example.com<br/><script>window.alert('XSS')</script>")
@@ -129,7 +132,8 @@ information about Launchpad users.
     doesn't seem to be a valid email address.
 
 
-== +editemails for teams ==
++editemails for teams
+=====================
 
 Because people and teams share the same namespace, it used to be possible to
 hack the url to get to a team's +editemails page.  This makes no sense, and

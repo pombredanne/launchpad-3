@@ -10,6 +10,7 @@ __all__ = [
     'BugListingBatchNavigator',
     'BugListingPortletView',
     'BugNominationsView',
+    'bugtarget_renderer',
     'BugTargetTraversalMixin',
     'BugTargetView',
     'BugTaskContextMenu',
@@ -58,7 +59,7 @@ from zope.component import (
     ComponentLookupError, getAdapter, getUtility, getMultiAdapter)
 from zope.event import notify
 from zope import formlib
-from zope.interface import implementer, implements, providedBy
+from zope.interface import implementer, implements, Interface, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
 from zope.schema.vocabulary import (
@@ -76,7 +77,8 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IReferenceChoice, IWebServiceClientRequest)
+    IFieldHTMLRenderer, IReference, IReferenceChoice,
+    IWebServiceClientRequest)
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -86,10 +88,12 @@ from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action, custom_widget, canonical_url, GetitemNavigation,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
-    redirection, stepthrough)
+    action, custom_widget, canonical_url, enabled_with_permission,
+    GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, NavigationMenu, redirection, stepthrough)
+from canonical.lazr.utils import smartquote
 from lazr.uri import URI
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from lp.bugs.interfaces.bugactivity import IBugActivity
@@ -111,7 +115,8 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IStructuralObjectPresentation)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -137,7 +142,8 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI, FormattersAPI
+from canonical.launchpad.webapp.tales import (
+    FormattersAPI, ObjectImageDisplayAPI, PersonFormatterAPI)
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -149,8 +155,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, TextAreaEditorWidget,
-    TextLineEditorWidget, vocabulary_to_choice_edit_items)
+    TextAreaEditorWidget, TextLineEditorWidget,
+    vocabulary_to_choice_edit_items)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -161,7 +167,26 @@ from lp.registry.vocabularies import MilestoneVocabulary
 def assignee_renderer(context, field, request):
     """Render a bugtask assignee as a link."""
     def render(value):
-        return PersonFormatterAPI(context.assignee).link('+assignedbugs')
+        if context.assignee is None:
+            return ''
+        else:
+            return (
+                '<span>%s</span>' %
+                PersonFormatterAPI(context.assignee).link(None))
+    return render
+
+@component.adapter(IBugTask, IReference, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def bugtarget_renderer(context, field, request):
+    """Render a bugtarget as a link."""
+    def render(value):
+        html = """<span>
+          <a href="%(href)s" class="%(class)s">%(displayname)s</a>
+        </span>""" % {
+            'href': canonical_url(context.target),
+            'class': ObjectImageDisplayAPI(context.target).sprite_css(),
+            'displayname': cgi.escape(context.bugtargetdisplayname)}
+        return html
     return render
 
 def unique_title(title):
@@ -469,6 +494,8 @@ class BugTaskTextView(LaunchpadView):
 class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
+    override_title_breadcrumbs = True
+
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
 
@@ -479,6 +506,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
+
+    @property
+    def page_title(self):
+        return smartquote('%s: "%s"') % (
+            IStructuralObjectPresentation(self.context).getMainHeading(),
+            self.context.bug.title)
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -1229,7 +1262,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                 title=self.schema['milestone'].title,
                 source=milestone_source, required=False)
         else:
-            milestone_field = copy_field(IBugTask['milestone'], readonly=False)
+            milestone_field = copy_field(
+                IBugTask['milestone'], readonly=False)
 
         self.form_fields = self.form_fields.omit('milestone')
         self.form_fields += formlib.form.Fields(milestone_field)
@@ -1773,6 +1807,13 @@ class BugTaskListingItem:
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
 
+    @property
+    def last_significant_change_date(self):
+        """The date of the last significant change."""
+        return (self.bugtask.date_closed or self.bugtask.date_fix_committed or
+                self.bugtask.date_inprogress or self.bugtask.date_left_new or
+                self.bugtask.datecreated)
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
@@ -1865,8 +1906,75 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         return bugtask_listing_item
 
 
+class IBugTaskSearchListingMenu(Interface):
+    """A marker interface for the search listing navigation menu."""
+
+
+class BugTaskSearchListingMenu(NavigationMenu):
+    """The search listing navigation menu."""
+    usedfor = IBugTaskSearchListingMenu
+    facet = 'bugs'
+
+    @property
+    def links(self):
+        bug_target = self.context.context
+        if IDistribution.providedBy(bug_target):
+            return (
+                'bugsupervisor',
+                'securitycontact',
+                'cve',
+                'subscribe',
+                )
+        elif IDistroSeries.providedBy(bug_target):
+            return (
+                'cve',
+                'nominations',
+                'subscribe',
+                )
+        elif IDistributionSourcePackage.providedBy(bug_target):
+            return (
+                'subscribe',
+                )
+        elif IProduct.providedBy(bug_target):
+            return (
+                'bugsupervisor',
+                'securitycontact',
+                'cve',
+                'subscribe'
+                )
+        elif IProductSeries.providedBy(bug_target):
+            return (
+                'nominations',
+                'subscribe',
+                )
+        elif IProject.providedBy(bug_target):
+            return ()
+        else:
+            return ()
+
+    def cve(self):
+        return Link('+cve', 'CVE reports', icon='cve')
+
+    @enabled_with_permission('launchpad.Edit')
+    def bugsupervisor(self):
+        return Link('+bugsupervisor', 'Change bug supervisor', icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        return Link(
+            '+securitycontact', 'Change security contact', icon='edit')
+
+    def subscribe(self):
+        return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
+
+    def nominations(self):
+        return Link('+nominations', 'Review nominations', icon='bug')
+
+
 class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
     """View that renders a list of bugs for a given set of search criteria."""
+
+    implements(IBugTaskSearchListingMenu)
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
@@ -2587,6 +2695,63 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         url = "%s/+expirable-bugs" % canonical_url(self.context)
         return dict(count=count, url=url, label=label)
 
+    @property
+    def new_bugs_info(self):
+        """Return a dict with new bugs info."""
+        return dict(
+            count=self.context.new_bugtasks.count,
+            url=get_buglisting_search_filter_url(
+                status=BugTaskStatus.NEW.title))
+
+    @property
+    def open_bugs_info(self):
+        """Return a dict with open bugs info."""
+        return dict(
+            count=self.context.open_bugtasks.count,
+            url=canonical_url(
+                self.context, rootsite='bugs', view_name='+bugs'))
+
+    @property
+    def critical_bugs_info(self):
+        """Return a dict with critical bugs info."""
+        return dict(
+            count=self.context.critical_bugtasks.count,
+            url=get_buglisting_search_filter_url(
+                status=[status.title for status
+                        in UNRESOLVED_BUGTASK_STATUSES],
+                importance=BugTaskImportance.CRITICAL.title))
+
+    @property
+    def my_bugs_info(self):
+        """Return a dict with info on bugs assigned to the user, or None."""
+        if self.user:
+            return dict(
+                count=self.context.searchTasks(
+                    BugTaskSearchParams(
+                        user=self.user, assignee=self.user,
+                        status=any(*UNRESOLVED_BUGTASK_STATUSES),
+                        omit_dupes=True)).count(),
+                url=get_buglisting_search_filter_url(assignee=self.user.name))
+        else:
+            return None
+
+    @property
+    def hot_bugtasks(self):
+        """Return the 10 most recently updated bugtasks for this target."""
+        params = BugTaskSearchParams(
+            orderby="-date_last_updated", omit_dupes=True, user=self.user)
+        return list(self.context.searchTasks(params)[:10])
+
+    @property
+    def addquestion_url(self):
+        """Return the URL for the +addquestion view for the context."""
+        if IQuestionTarget.providedBy(self.context):
+            return canonical_url(
+                self.context, rootsite='answers', view_name='+addquestion')
+        else:
+            return None
+
+
 
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
@@ -2783,6 +2948,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Cache some values, so that we don't have to recalculate them
         # for each bug task.
         self.bugtasks = list(self.context.bugtasks)
+        self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
         distro_packages = {}
@@ -2847,6 +3013,8 @@ class BugTasksAndNominationsView(LaunchpadView):
             (context, self.request), name='+edit-form')
         view.edit_view.milestone_source = self.cached_milestone_source
         view.edit_view.user_is_subscribed = self.user_is_subscribed
+        # Hint to optimize when there are many bugtasks.
+        view.many_bugtasks = self.many_bugtasks
         return view
 
     def getBugTaskAndNominationViews(self):
@@ -2958,6 +3126,7 @@ class BugTaskTableRowView(LaunchpadView):
     is_conjoined_slave = None
     is_converted_to_question = None
     target_link_title = None
+    many_bugtasks = False
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
@@ -3108,27 +3277,6 @@ class BugTaskTableRowView(LaunchpadView):
         return canonical_url(self.context)
 
     @property
-    def assignee_picker_widget(self):
-        assignee_content_id = 'assignee-content-box-%s' % self.context.id
-        null_display_value = 'Nobody'
-        if self.context.assignee is None:
-            assignee_html = null_display_value
-        else:
-            assignee_html = PersonFormatterAPI(self.context.assignee).link(
-                '+assignedbugs')
-
-        return InlineEditPickerWidget(
-            context=self.context,
-            request=self.request,
-            interface_attribute=IBugTask['assignee'],
-            default_html=assignee_html,
-            id=assignee_content_id,
-            header='Change assignee',
-            step_title='Search for people or teams',
-            remove_button_text='Remove Assignee',
-            null_display_value=null_display_value)
-
-    @property
     def user_can_edit_importance(self):
         """Can the user edit the Importance field?
 
@@ -3151,6 +3299,7 @@ class BugTaskTableRowView(LaunchpadView):
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'target_is_product': IProduct.providedBy(self.context.target),
             'status_widget_items': self.status_widget_items,
             'status_value': self.context.status.title,
             'importance_widget_items': self.importance_widget_items,
@@ -3176,6 +3325,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
                        "importance", "status"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
+    page_title = 'Search'
 
     def initialize(self):
         """Initialize the view for the request."""
@@ -3208,6 +3358,10 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
+
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
 
 
 class BugTaskPrivacyAdapter:
@@ -3292,6 +3446,10 @@ class BugTaskCreateQuestionView(LaunchpadFormView):
         comment = data.get('comment', None)
         self.context.bug.convertToQuestion(self.user, comment=comment)
 
+    label = 'Convert this bug to a question'
+
+    page_title = label
+
 
 class BugTaskRemoveQuestionView(LaunchpadFormView):
     """View for creating a question from a bug."""
@@ -3348,6 +3506,13 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
                 subject=self.context.bug.followup_subject(),
                 content=comment)
 
+    @property
+    def label(self):
+        return ('Bug #%i - Convert this question back to a bug'
+                % self.context.bug.id)
+
+    page_title = label
+
 
 class BugTaskExpirableListingView(LaunchpadView):
     """View for listing Incomplete bugs that can expire."""
@@ -3379,6 +3544,10 @@ class BugTaskExpirableListingView(LaunchpadView):
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
+
+    @property
+    def page_title(self):
+        return "Bugs that can expire in %s" % self.context.title
 
 
 class BugActivityItem:

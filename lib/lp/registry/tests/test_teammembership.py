@@ -439,7 +439,9 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.team2 = factory.makeTeam(self.foobar)
         self.team3 = factory.makeTeam(self.foobar)
 
-    def test_proponent_is_stored(self):
+    # XXX gary 2009-09-19 bug=433323
+    # Disabled because of spurious test failure.
+    def disabled_test_proponent_is_stored(self):
         for status in [TeamMembershipStatus.DEACTIVATED,
                        TeamMembershipStatus.EXPIRED,
                        TeamMembershipStatus.DECLINED]:

@@ -23,7 +23,6 @@ from zope.schema import Choice, TextLine
 from canonical.cachedproperty import cachedproperty
 
 from lp.registry.interfaces.announcement import IAnnouncement
-from lp.registry.interfaces.distribution import IDistribution
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
@@ -77,27 +76,13 @@ class AnnouncementMenuMixin:
         return Link('+announce', text, summary, icon='add')
 
 
-class IAnnouncementEditMenu(Interface):
-    """A marker interface for modify announcement navigation menu."""
-
-
 class AnnouncementEditNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
     """A sub-menu for different aspects of modifying an announcement."""
 
-    usedfor = IAnnouncementEditMenu
+    usedfor = IAnnouncement
     facet = 'overview'
     title = 'Change announcement'
     links = ['edit', 'retarget', 'publish', 'retract', 'delete']
-
-    def __init__(self, context):
-        super(AnnouncementEditNavigationMenu, self).__init__(context)
-        # Links always expect the context if be a model object, not a view.
-        if isinstance(self.context, LaunchpadView):
-            self.view = context
-            self.context = context.context
-        else:
-            self.view = None
-            self.context = context
 
 
 class IAnnouncementCreateMenu(Interface):
@@ -112,22 +97,13 @@ class AnnouncementCreateNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
     title = 'Create announcement'
     links = ['announce']
 
-    # XXX: BradCrittenden 2009-08-19 bug=410491: When the distribution index
-    # page is updated to UI 3.0 the logic to remove the 'announce' link
-    # can/must be removed.  This navigation menu simply does not play well
-    # with the pre-3.0 page structure.
-    def __init__(self, *args, **kwargs):
-        super(AnnouncementCreateNavigationMenu, self).__init__(*args, **kwargs)
-        if IDistribution.providedBy(self.context.context):
-            self.links = []
 
 class AnnouncementFormMixin:
     """A mixin to provide the common form features."""
 
     @property
-    def page_title(self):
-        """The html page title."""
-        return self.label
+    def label(self):
+        return self.context.title
 
     @property
     def cancel_url(self):
@@ -150,6 +126,7 @@ class AnnouncementAddView(LaunchpadFormView):
 
     schema = AddAnnouncementForm
     label = "Make an announcement"
+    page_title = label
 
     custom_widget('publication_date', AnnouncementDateWidget)
 
@@ -177,11 +154,10 @@ class AnnouncementAddView(LaunchpadFormView):
 
 class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
     """A view which allows you to edit the announcement."""
-    implements(IAnnouncementEditMenu)
 
     schema = AddAnnouncementForm
     field_names = ['title', 'summary', 'url', ]
-    label = _('Modify this announcement')
+    page_title = 'Modify announcement'
 
     @property
     def initial_values(self):
@@ -210,11 +186,10 @@ class AnnouncementRetargetForm(Interface):
 
 class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to move an annoucement to another project."""
-    implements(IAnnouncementEditMenu)
 
     schema = AnnouncementRetargetForm
     field_names = ['target']
-    label = _('Move this announcement to a different project')
+    page_title = 'Move announcement'
 
     def validate(self, data):
         """Ensure that the person can publish announcement at the new
@@ -246,11 +221,10 @@ class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to publish an annoucement."""
-    implements(IAnnouncementEditMenu)
 
     schema = AddAnnouncementForm
     field_names = ['publication_date']
-    label = _('Publish this announcement')
+    page_title = 'Publish announcement'
 
     custom_widget('publication_date', AnnouncementDateWidget)
 
@@ -263,10 +237,9 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to unpublish an announcement."""
-    implements(IAnnouncementEditMenu)
 
     schema = IAnnouncement
-    label = _('Retract this announcement')
+    page_title = 'Retract announcement'
 
     @action(_('Retract'), name='retract')
     def retract_action(self, action, data):
@@ -276,10 +249,9 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to delete an annoucement."""
-    implements(IAnnouncementEditMenu)
 
     schema = IAnnouncement
-    label = _('Delete this announcement')
+    page_title = 'Delete announcement'
 
     @action(_("Delete"), name="delete", validator='validate_cancel')
     def action_delete(self, action, data):
@@ -337,7 +309,13 @@ class AnnouncementSetView(HasAnnouncementsView):
         RootAnnouncementsFeedLink,
         )
 
+    page_title = 'Announcements from all projects hosted in Launchpad'
+    label = page_title
+
 
 class AnnouncementView(LaunchpadView):
     """A view class for a single announcement."""
-    implements(IAnnouncementEditMenu)
+
+    @property
+    def label(self):
+        return self.context.title

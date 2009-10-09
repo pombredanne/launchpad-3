@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'POTemplateAdminView',
+    'POTemplateBreadcrumb',
     'POTemplateEditView',
     'POTemplateFacets',
     'POTemplateExportView',
@@ -17,6 +18,7 @@ __all__ = [
     'POTemplateSubsetURL',
     'POTemplateSubsetView',
     'POTemplateURL',
+    'POTemplateUploadView',
     'POTemplateView',
     'POTemplateViewPreferred',
     ]
@@ -30,12 +32,15 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
+from canonical.lazr.utils import smartquote
+
 from canonical.launchpad import helpers, _
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.translations.browser.translations import TranslationsMixin
 from lp.registry.browser.sourcepackage import SourcePackageFacets
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -139,11 +144,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         specifications_link.target = self.target
         return specifications_link
 
-    def bounties(self):
-        bounties_link = self.target_facets.bounties()
-        bounties_link.target = self.target
-        return bounties_link
-
     def calendar(self):
         calendar_link = self.target_facets.calendar()
         calendar_link.target = self.target
@@ -202,10 +202,13 @@ class POTemplateSubsetView:
 
 class POTemplateView(LaunchpadView, TranslationsMixin):
 
+    SHOW_RELATED_TEMPLATES = 4
+
+    label = "Translation status"
+
     def initialize(self):
         """Get the requested languages and submit the form."""
         self.description = self.context.description
-        self.submitForm()
 
     def requestPoFiles(self):
         """Yield a POFile or DummyPOFile for each of the languages in the
@@ -251,6 +254,49 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             yield pofileview
 
     @property
+    def group_parent(self):
+        """Return a parent object implementing `IHasTranslationGroups`."""
+        if self.context.productseries is not None:
+            return self.context.productseries.product
+        else:
+            return self.context.distroseries.distribution
+
+    @property
+    def has_translation_documentation(self):
+        """Are there translation instructions for this project."""
+        translation_group = self.group_parent.translationgroup
+        return (translation_group is not None and
+                translation_group.translation_guide_url is not None)
+
+    @property
+    def has_related_templates(self):
+        by_source = self.context.relatives_by_source
+        by_name = self.context.relatives_by_name
+        return bool(by_source) or bool(by_name)
+
+    @property
+    def related_templates_by_source(self):
+        by_source = list(
+            self.context.relatives_by_source[:self.SHOW_RELATED_TEMPLATES])
+        return by_source
+
+    @property
+    def has_more_templates_by_source(self):
+        by_source_count = self.context.relatives_by_source.count()
+        return by_source_count > self.SHOW_RELATED_TEMPLATES
+
+    @property
+    def related_templates_by_name(self):
+        by_name = list(
+            self.context.relatives_by_name[:self.SHOW_RELATED_TEMPLATES])
+        return by_name
+
+    @property
+    def has_more_templates_by_name(self):
+        by_name_count = self.context.relatives_by_name.count()
+        return by_name_count > self.SHOW_RELATED_TEMPLATES
+
+    @property
     def has_pofiles(self):
         languages = set(
             self.context.languages()).union(self.translatable_languages)
@@ -266,9 +312,23 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             pofile = pofileset.getDummy(self.context, language)
         return pofile
 
+
+class POTemplateUploadView(LaunchpadView, TranslationsMixin):
+    """Upload translations and updated template."""
+
+    label = "Upload translations"
+    page_title = "Upload translations"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    def initialize(self):
+        """Get the requested languages and submit the form."""
+        self.submitForm()
+
     def submitForm(self):
-        """Called from the page template to do any processing needed if a form
-        was submitted with the request."""
+        """Process any uploaded files."""
 
         if self.request.method == 'POST':
             if 'UPLOAD' in self.request.form:
@@ -429,7 +489,8 @@ class POTemplateEditView(LaunchpadEditFormView):
 
     schema = IPOTemplate
     field_names = ['description', 'priority', 'owner']
-    label = 'Change PO template information'
+    label = 'Edit translation template details'
+    page_title = 'Edit details'
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -449,7 +510,13 @@ class POTemplateEditView(LaunchpadEditFormView):
             UTC = pytz.timezone('UTC')
             context.date_last_updated = datetime.datetime.now(UTC)
 
-        self.next_url = canonical_url(self.context)
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class POTemplateAdminView(POTemplateEditView):
@@ -460,9 +527,19 @@ class POTemplateAdminView(POTemplateEditView):
         'from_sourcepackagename', 'sourcepackageversion', 'binarypackagename',
         'languagepack', 'path', 'source_file_format', 'priority',
         'date_last_updated']
+    label = 'Administer translation template'
+    page_title = "Administer"
 
 
 class POTemplateExportView(BaseExportView):
+    """Request downloads of a `POTemplate` and its translations."""
+
+    label = "Download translations"
+    page_title = "Download translations"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def processForm(self):
         """Process a form submission requesting a translation export."""
@@ -553,7 +630,7 @@ class POTemplateSubsetURL:
 class POTemplateURL:
     implements(ICanonicalUrlData)
 
-    rootsite = None
+    rootsite = 'translations'
 
     def __init__(self, context):
         self.context = context
@@ -617,3 +694,10 @@ class POTemplateSubsetNavigation(Navigation):
             return potemplate
         else:
             raise NotFoundError(name)
+
+
+class POTemplateBreadcrumb(Breadcrumb):
+    """Breadcrumb for `IPOTemplate`."""
+    @property
+    def text(self):
+        return smartquote('Template "%s"' % self.context.name)

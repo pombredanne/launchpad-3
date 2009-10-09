@@ -19,11 +19,11 @@ import calendar
 import pytz
 import sets
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
-    StringCol)
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from storm.locals import And, Desc, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from lazr.delegates import delegates
@@ -60,7 +60,6 @@ from lp.registry.model.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.person import Person
-from canonical.launchpad.database.productbounty import ProductBounty
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
@@ -71,7 +70,7 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
+    HasTranslationImportsMixin, ITranslationImportQueue)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
@@ -179,7 +178,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
-    owner = ForeignKey(
+    _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,
         notNull=True)
@@ -492,6 +491,32 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     licenses = property(_getLicenses, _setLicenses)
 
+    def _getOwner(self):
+        """Get the owner."""
+        return self._owner
+
+    def _setOwner(self, new_owner):
+        """Set the owner.
+
+        Change the owner and change the ownership of related artifacts.
+        """
+        old_owner = self._owner
+        self._owner = new_owner
+        if old_owner is not None:
+            import_queue = getUtility(ITranslationImportQueue)
+            for entry in import_queue.getAllEntries(target=self):
+                if entry.importer == old_owner:
+                    removeSecurityProxy(entry).importer = new_owner
+            for series in self.serieses:
+                if series.owner == old_owner:
+                    series.owner = new_owner
+            for release in self.releases:
+                if release.owner == old_owner:
+                    release.owner = new_owner
+            Store.of(self).flush()
+
+    owner = property(_getOwner, _setOwner)
+
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
         return "BugTask.product = %d" % self.id
@@ -556,10 +581,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             else:
                 drivers.add(self.owner)
         return sorted(drivers, key=lambda driver: driver.displayname)
-
-    bounties = SQLRelatedJoin(
-        'Bounty', joinColumn='product', otherColumn='bounty',
-        intermediateTable='ProductBounty')
 
     @property
     def sourcepackages(self):
@@ -937,14 +958,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.distributionID == Distribution.id
             ).config(distinct=True).order_by(Distribution.name)
 
-    def ensureRelatedBounty(self, bounty):
-        """See `IProduct`."""
-        for curr_bounty in self.bounties:
-            if bounty.id == curr_bounty.id:
-                return None
-        ProductBounty(product=self, bounty=bounty)
-        return None
-
     def setBugSupervisor(self, bug_supervisor, user):
         """See `IHasBugSupervisor`."""
         self.bug_supervisor = bug_supervisor
@@ -1020,7 +1033,7 @@ class ProductSet:
         results = Product.selectBy(
             active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it.
-        return results.prejoin(["owner"])
+        return results.prejoin(["_owner"])
 
     def get(self, productid):
         """See `IProductSet`."""
@@ -1113,37 +1126,61 @@ class ProductSet:
             conditions.append(SQL(
                 'Product.fti @@ ftq(%s)' % sqlvalues(search_text)))
 
+        def dateToDatetime(date):
+            """Convert a datetime.date to a datetime.datetime
+
+            The returned time will have a zero time component and be based on
+            UTC.
+            """
+            return datetime.datetime.combine(
+                date, datetime.time(tzinfo=pytz.UTC))
+
         if created_after is not None:
             if not isinstance(created_after, datetime.datetime):
+                created_after = dateToDatetime(created_after)
                 created_after = datetime.datetime(
                     created_after.year, created_after.month,
                     created_after.day, tzinfo=pytz.utc)
             conditions.append(Product.datecreated >= created_after)
+
         if created_before is not None:
             if not isinstance(created_before, datetime.datetime):
-                created_before = datetime.datetime(
-                    created_before.year, created_before.month,
-                    created_before.day, tzinfo=pytz.utc)
+                created_before = dateToDatetime(created_before)
             conditions.append(Product.datecreated <= created_before)
 
         needs_join = False
+
         if subscription_expires_after is not None:
+            if not isinstance(subscription_expires_after, datetime.datetime):
+                subscription_expires_after = (
+                    dateToDatetime(subscription_expires_after))
             conditions.append(
                 CommercialSubscription.date_expires >=
                     subscription_expires_after)
             needs_join = True
+
         if subscription_expires_before is not None:
+            if not isinstance(subscription_expires_before, datetime.datetime):
+                subscription_expires_before = (
+                    dateToDatetime(subscription_expires_before))
             conditions.append(
                 CommercialSubscription.date_expires <=
                     subscription_expires_before)
             needs_join = True
 
         if subscription_modified_after is not None:
+            if not isinstance(subscription_modified_after, datetime.datetime):
+                subscription_modified_after = (
+                    dateToDatetime(subscription_modified_after))
             conditions.append(
                 CommercialSubscription.date_last_modified >=
                     subscription_modified_after)
             needs_join = True
         if subscription_modified_before is not None:
+            if not isinstance(subscription_modified_before,
+                              datetime.datetime):
+                subscription_modified_before = (
+                    dateToDatetime(subscription_modified_before))
             conditions.append(
                 CommercialSubscription.date_last_modified <=
                     subscription_modified_before)
@@ -1237,7 +1274,7 @@ class ProductSet:
             queries.append('Product.active IS TRUE')
         query = " AND ".join(queries)
         return Product.select(query, distinct=True,
-                              prejoins=["owner"],
+                              prejoins=["_owner"],
                               clauseTables=clauseTables)
 
     def getTranslatables(self):
@@ -1248,7 +1285,7 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product.ownerID
+            Person.id == Product._ownerID
             ).config(distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate

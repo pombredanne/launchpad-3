@@ -197,6 +197,9 @@ class QuestionSetView(LaunchpadFormView):
     schema = IAnswersFrontPageSearchForm
     custom_widget('scope', ProjectScopeWidget)
 
+    page_title = 'Launchpad Answers'
+    label = 'Questions and Answers'
+
     @property
     def scope_css_class(self):
         """The CSS class for used in the scope widget."""
@@ -636,7 +639,12 @@ class QuestionChangeStatusView(LaunchpadFormView):
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
             _('Question status updated.'))
-        self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
@@ -675,11 +683,16 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
                 editable_fields.append(field.__name__)
         self.form_fields = self.form_fields.select(*editable_fields)
 
-    @action(u"Continue", name="change")
+    @action(_("Save Changes"), name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
         self.updateContextFromData(data)
-        self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class QuestionRejectView(LaunchpadFormView):
@@ -698,15 +711,12 @@ class QuestionRejectView(LaunchpadFormView):
             self.setFieldError(
                 'message', _('You must provide an explanation message.'))
 
-    @action(_('Reject'))
+    @action(_('Reject Question'), name="reject")
     def reject_action(self, action, data):
         """Reject the Question."""
         self.context.reject(self.user, data['message'])
         self.request.response.addNotification(
             _('You have rejected this question.'))
-        self.request.response.redirect(canonical_url(self.context))
-        return ''
-
 
     def initialize(self):
         """See `LaunchpadFormView`.
@@ -721,8 +731,34 @@ class QuestionRejectView(LaunchpadFormView):
 
         LaunchpadFormView.initialize(self)
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
-class QuestionWorkflowView(LaunchpadFormView):
+    cancel_url = next_url
+
+
+class LinkFAQMixin:
+    """Mixin that contains common functionality for views linking a FAQ."""
+
+    @cachedproperty
+    def faq_target(self):
+        """Return the `IFAQTarget` that should be use for this question."""
+        return IFAQTarget(self.context)
+
+    @property
+    def default_message(self):
+        """The default link message to use."""
+        return '%s suggests this article as an answer to your question:' % (
+            self.user.displayname)
+
+
+    def getFAQMessageReference(self, faq):
+        """Return the reference for the FAQ to use in the linking message."""
+        return smartquote('FAQ #%s: "%s".' % (faq.id, faq.title))
+
+
+class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     """View managing the question workflow action, i.e. action changing
     its status.
     """
@@ -730,6 +766,10 @@ class QuestionWorkflowView(LaunchpadFormView):
 
     # Do not autofocus the message widget.
     initial_focus_widget = None
+
+    @property
+    def label(self):
+        return self.context.title
 
     @property
     def page_title(self):
@@ -787,14 +827,12 @@ class QuestionWorkflowView(LaunchpadFormView):
     def canAddComment(self, action):
         """Return whether the comment action should be displayed.
 
-        Comments (message without a status change) can be added when the
-        question is solved or invalid
+        Comments (message without a status change) can be added at any
+        time by any logged-in user.
         """
-        return (self.user is not None and
-                self.context.status in [
-                    QuestionStatus.SOLVED, QuestionStatus.INVALID])
+        return self.user is not None
 
-    @action(_('Add Comment'), name='comment', condition=canAddComment)
+    @action(_('Just Add a Comment'), name='comment', condition=canAddComment)
     def comment_action(self, action, data):
         """Add a comment to a resolved question."""
         self.context.addComment(self.user, data['message'])
@@ -1059,31 +1097,10 @@ class SearchAllQuestionsView(SearchQuestionsView):
                 self.request.response.redirect(canonical_url(question))
 
 
-class LinkFAQMixin:
-    """Mixin that contains common functionality for views linking a FAQ."""
-
-    @cachedproperty
-    def faq_target(self):
-        """Return the `IFAQTarget` that should be use for this question."""
-        return IFAQTarget(self.context)
-
-    @property
-    def default_message(self):
-        """The default link message to use."""
-        return '%s suggests this article as an answer to your question:' % (
-            self.user.displayname)
-
-
-    def getFAQMessageReference(self, faq):
-        """Return the reference for the FAQ to use in the linking message."""
-        return smartquote('FAQ #%s: "%s".' % (faq.id, faq.title))
-
-
 class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
     """View to create a new FAQ."""
 
     schema = IFAQ
-
     label = _('Create a new FAQ')
 
     @property
@@ -1295,10 +1312,15 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
         if self.context.faq == data.get('faq'):
             self.setFieldError('faq', _("You didn't modify the linked FAQ."))
 
-    @action(_('Link FAQ'), name="link")
+    @action(_('Link to FAQ'), name="link")
     def link_action(self, action, data):
         """Link the selected FAQ to the question."""
         if data['faq'] is not None:
             data['message'] += '\n' + self.getFAQMessageReference(data['faq'])
         self.context.linkFAQ(self.user, data['faq'], data['message'])
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url

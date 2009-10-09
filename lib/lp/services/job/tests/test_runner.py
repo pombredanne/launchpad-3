@@ -42,11 +42,25 @@ class NullJob(BaseRunnableJob):
     def getOopsRecipients(self):
         return self.oops_recipients
 
+    def getOopsVars(self):
+        return [('foo', 'bar')]
+
     def getErrorRecipients(self):
         return self.error_recipients
 
     def getOperationDescription(self):
         return 'appending a string to a list'
+
+
+class RaisingJobException(Exception):
+    """Raised by the RaisingJob when run."""
+
+
+class RaisingJob(NullJob):
+    """A job that raises when it runs."""
+
+    def run(self):
+        raise RaisingJobException(self.message)
 
 
 class TestJobRunner(TestCaseWithFactory):
@@ -111,6 +125,7 @@ class TestJobRunner(TestCaseWithFactory):
         reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
+        self.assertEqual([('foo', 'bar')], oops.req_vars)
 
     def test_runAll_aborts_transaction_on_error(self):
         """runAll should abort the transaction on oops."""
@@ -197,6 +212,16 @@ class TestJobRunner(TestCaseWithFactory):
             implements(IRunnableJob)
         runner = JobRunner([Runnable()])
         self.assertRaises(AttributeError, runner.runAll)
+
+    def test_runJob_records_failure(self):
+        """When a job fails, the failure needs to be recorded."""
+        job = RaisingJob('boom')
+        runner = JobRunner([job])
+        self.assertRaises(RaisingJobException, runner.runJob, job)
+        # Abort the transaction to confirm that the update of the job status
+        # has been committed.
+        transaction.abort()
+        self.assertEqual(JobStatus.FAILED, job.job.status)
 
 
 def test_suite():

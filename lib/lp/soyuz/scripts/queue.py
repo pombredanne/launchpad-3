@@ -116,7 +116,7 @@ class QueueAction:
 
         # Avoid circular imports.
         from lp.registry.interfaces.distribution import IDistributionSet
-        from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+        from lp.registry.interfaces.pocket import PackagePublishingPocket
 
         distroset = getUtility(IDistributionSet)
         try:

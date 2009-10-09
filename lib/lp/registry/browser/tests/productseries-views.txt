@@ -22,11 +22,12 @@ update the milestones and releases table.
         YUI().use(... 'lp.milestoneoverlay', 'lp.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
-            var milestone_row_uri_template =
+            var milestone_row_uri =
                 '/app/+milestone/{name}/+productseries-table-row';
             var milestone_rows_id = '#milestone-rows';...
             Y.on('domready', function () {
-                var create_milestone_link = Y.get('.menu-link-create_milestone');
+                var create_milestone_link = Y.get(
+                    '.menu-link-create_milestone');
                 create_milestone_link.addClass('js-action');...
                 Y.lp.milestoneoverlay.attach_widget(config);...
                 Y.lp.milestonetable.setup(table_config);...
@@ -71,6 +72,20 @@ to display.
     >>> view = create_view(series, '+index')
     >>> view.is_obsolete
     True
+
+The view provides access to the latest release if it has one.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+
+    >>> print view.latest_release_with_download_files
+    None
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> #login_person(firefox.owner)
+    >>> series_with_downloads = firefox.getSeries('trunk')
+    >>> view = create_initialized_view(series_with_downloads, name='+index')
+    >>> print view.latest_release_with_download_files.version
+    0.9.2
 
 
 Edit ProductSeries
@@ -214,6 +229,8 @@ deleted are available.
     []
     >>> view.product_release_files
     []
+    >>> view.has_linked_branch
+    False
 
 Most series that are deleted do not have any related objects, but a small
 portion do.
@@ -229,18 +246,38 @@ portion do.
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone_two
 
+    >>> owner = product.owner
+    >>> series_specification = factory.makeSpecification(product=product)
+    >>> series_specification.proposeGoal(productseries, owner)
+    >>> series_bugtask = factory.makeBugTask(bug=bug, target=productseries)
+    >>> subscription = productseries.addSubscription(owner, owner)
+    >>> productseries.branch = factory.makeBranch()
+
     >>> view = create_view(productseries, name='+delete')
     >>> [milestone.name for milestone in view.milestones]
     [u'0.2', u'0.1']
     >>> view.has_bugtasks_and_specifications
     True
-    >>> [bugtask.milestone.name for bugtask in view.bugtasks]
-    [u'0.2']
-    >>> [spec.milestone.name for spec in view.specifications]
-    [u'0.1']
+    >>> for bugtask in view.bugtasks:
+    ...     if bugtask.milestone is not None:
+    ...         print bugtask.milestone.name
+    ...     else:
+    ...         print bugtask.target.name
+    rabbit
+    0.2
+    >>> for spec in view.specifications:
+    ...     if spec.milestone is not None:
+    ...         print spec.milestone.name
+    ...     else:
+    ...         print spec.goal.name
+    rabbit
+    0.1
 
-    # Listing and deleting product release files is done in the story
-    # because they require the Librarian to be running.
+    >>> view.has_linked_branch
+    True
+
+    # Listing and deleting product release files is done in
+    # product-release-views because they require the Librarian to be running.
 
 Series that are the active focus of development cannot be deleted. The
 view's can_delete property checks this rule.
@@ -276,7 +313,8 @@ development.
 Calling the view's delete action on a series that can be deleted will
 untarget the bugtasks and specifications that are targeted to the
 series' milestones. The milestones, releases, and release files are
-deleted.
+deleted. Bugs and blueprints targeted to the series are unassigned.
+Series structural subscriptions are removed. Branch links are removed.
 
     >>> view = create_initialized_view(productseries, '+delete', form=form)
     >>> for notification in view.request.response.notifications:
@@ -293,11 +331,17 @@ deleted.
     None
     >>> print bugtask.milestone
     None
+    >>> bugtask.related_tasks
+    []
+    >>> print series_specification.milestone
+    None
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    []
 
 The series was not actually deleted because there are problematic objects
 like translations. The series are assigned to the Obsolete Junk project.
 The series name is changed to 'product_name-series_name-date_created' to
-avoid conflicts.
+avoid conflicts. The linked branch is removed.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
@@ -308,7 +352,8 @@ avoid conflicts.
     True
     >>> print productseries.name
     field-rabbit-20090501-193424
-
+    >>> print productseries.branch
+    None
 
 Linking packages
 ----------------
@@ -332,7 +377,10 @@ and a packaging contents.
 
     >>> view = create_view(productseries, '+addpackage')
     >>> print view.label
-    Add distribution packaging record
+    Packaging of hotter in distributions
+
+    >>> print view.page_title
+    Packaging of hotter in distributions
 
     >>> print view.field_names
     ['distroseries', 'sourcepackagename', 'packaging']

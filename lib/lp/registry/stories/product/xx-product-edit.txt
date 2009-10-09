@@ -10,7 +10,7 @@ Page to edit a product - does the page load as the product owner?
     http://launchpad.dev/firefox/+edit
 
     >>> print browser.title
-    Change Mozilla Firefox's details
+    Change Mozilla Firefox's details...
 
 We try to change the project related to that product. First with a
 invalid project.
@@ -98,7 +98,7 @@ But administrators can access the page:
     'http://launchpad.dev/firefox/+admin'
 
     >>> print admin_browser.title
-    Administer Mozilla Firefox
+    Administer Mozilla Firefox...
 
 And in that page they can set aliases to the product.
 
@@ -198,7 +198,7 @@ is created but we allow admins to change it to correct data.
     >>> admin_browser.open(
     ...     'http://launchpad.dev/newproductname3')
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
+    ...     find_tag_by_id(admin_browser.contents, 'registration'))
     Registered ... by No Privileges Person
 
     >>> admin_browser.open(
@@ -206,7 +206,7 @@ is created but we allow admins to change it to correct data.
     >>> admin_browser.getControl('Registrant').value = 'cprov'
     >>> admin_browser.getControl(name='field.actions.change').click()
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
+    ...     find_tag_by_id(admin_browser.contents, 'registration'))
     Registered ... by Celso Providelo
 
 The registrant really should only be a person, not a team, but that
@@ -217,7 +217,7 @@ teams as registrants.
     >>> admin_browser.getControl('Registrant').value = 'registry'
     >>> admin_browser.getControl('Change').click()
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
+    ...     find_tag_by_id(admin_browser.contents, 'registration'))
     Registered ... by Registry Administrators
 
 

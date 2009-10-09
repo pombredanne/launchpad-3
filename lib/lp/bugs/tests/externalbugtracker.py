@@ -469,8 +469,15 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get(
-            'example.com', {}).get('', {}).get('Bugzilla_logincookie')
+
+        assert len(cookies) < 2, (
+            "There should only be cookies for one domain.")
+
+        if len(cookies) == 1:
+            [(domain, domain_cookies)] = cookies.items()
+            return domain_cookies.get('', {}).get('Bugzilla_logincookie')
+        else:
+            return None
 
     @property
     def has_valid_auth_cookie(self):
@@ -694,7 +701,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         assert 'id' in arguments, (
             "Bug.add_comment() must always be called with an id parameter.")
         assert 'comment' in arguments, (
-            "Bug.add_comment() must always be called with an comment "
+            "Bug.add_comment() must always be called with a comment "
             "parameter.")
 
         bug_id = arguments['id']
@@ -762,6 +769,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
     # Map namespaces onto method names.
     methods = {
         'Bug': [
+            'add_comment',
             'comments',
             'get',
             'search',
@@ -776,6 +784,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
 
     # Methods that require authentication.
     auth_required_methods = [
+        'add_comment',
         'login_required',
         ]
 
@@ -907,8 +916,17 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             # different when passed to TestBugzillaXMLRPCTransport.comments.
             del comments_args['ids']
             comments_args['bug_ids'] = arguments['ids']
-            [return_dict] = TestBugzillaXMLRPCTransport.comments(
+            [returned_dict] = TestBugzillaXMLRPCTransport.comments(
                 self, comments_args)
+
+            # We need to move the comments for each bug in to a
+            # 'comments' dict.
+            bugs_dict = returned_dict['bugs']
+            bug_comments_dict = {}
+            for bug_id, comment_list in bugs_dict.items():
+                bug_comments_dict[bug_id] = {'comments': comment_list}
+
+            return_dict = {'bugs': bug_comments_dict}
         else:
             return_dict = {'bugs': {}}
 
@@ -926,6 +944,53 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         # Stop xmlrpclib:1387 from throwing a wobbler at having a
         # length-1 dict to deal with.
         return [return_dict]
+
+    def add_comment(self, arguments):
+        """Add a comment to a bug."""
+        assert 'id' in arguments, (
+            "Bug.add_comment() must always be called with an id parameter.")
+        assert 'comment' in arguments, (
+            "Bug.add_comment() must always be called with an comment "
+            "parameter.")
+
+        bug_id = arguments['id']
+        comment = arguments['comment']
+
+        # If the bug doesn't exist, raise a fault.
+        if int(bug_id) not in self.bugs:
+            raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+        # If we don't have comments for the bug already, create an empty
+        # comment dict.
+        if bug_id not in self.bug_comments:
+            self.bug_comments[bug_id] = {}
+
+        # Work out the number for the new comment on that bug.
+        if len(self.bug_comments[bug_id]) == 0:
+            comment_number = 1
+        else:
+            comment_numbers = sorted(self.bug_comments[bug_id].keys())
+            latest_comment_number = comment_numbers[-1]
+            comment_number = latest_comment_number + 1
+
+        # Add the comment to the bug.
+        comment_id = self.comment_id_index + 1
+        comment_dict = {
+            'author': 'launchpad',
+            'bug_id': bug_id,
+            'id': comment_id,
+            'is_private': False,
+            'time': self.new_comment_time,
+            'text': comment,
+            }
+        self.bug_comments[bug_id][comment_number] = comment_dict
+
+        self.comment_id_index = comment_id
+
+        # We have to return a list here because xmlrpclib will try to
+        # expand sequences of length 1. Trying to do that on a dict will
+        # cause it to explode.
+        return [{'id': comment_id}]
 
 
 class TestMantis(Mantis):

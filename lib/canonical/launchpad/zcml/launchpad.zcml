@@ -256,6 +256,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+graphics"
+      class="canonical.launchpad.browser.launchpad.LaunchpadGraphics"
       template="../templates/launchpad-graphics.pt"
       permission="zope.Public"
       />
@@ -322,11 +323,6 @@
       classes="LaunchpadRootFacets"
       />
 
-  <browser:menus
-      module="lp.bugs.browser.malone"
-      classes="MaloneContextMenu"
-      />
-
   <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
   <browser:page
       for="*"
@@ -370,15 +366,6 @@
       name="+inline-icon"
       class="canonical.launchpad.browser.launchpad.LinkView"
       template="../templates/launchpad-inline-icon-link.pt"
-      permission="zope.Public"
-      />
-
-  <!-- hierarchy -->
-  <browser:page
-      for="zope.interface.Interface"
-      name="+hierarchy"
-      class="canonical.launchpad.browser.launchpad.Hierarchy"
-      attribute="__call__"
       permission="zope.Public"
       />
 

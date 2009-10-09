@@ -27,8 +27,8 @@ from canonical.librarian.interfaces import LibrarianServerError
 from canonical.launchpad.scripts.hwdbsubmissions import (
     HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
     PCI_CLASS_STORAGE, PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
-    PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA, SubmissionParser,
-    process_pending_submissions)
+    PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA,
+    process_pending_submissions, SubmissionParser, UdevDevice)
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import BaseLayer, LaunchpadZopelessLayer
 
@@ -379,6 +379,142 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.assertEqual(device.parent_udi, None,
                          'Unexpected value of HALDevice.parent_udi, '
                          'when no parent information available.')
+
+    def testHALDeviceDeviceId(self):
+        """Test of HALDevice.device_id."""
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+            '/some/udi/path', device.device_id,
+            'Unexpected value of HALDevice.device_id')
+
+    def testHALDevicePciClass(self):
+        """Test of HALDevice.pci_class."""
+        properties = {
+            'pci.device_class': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             1, device.pci_class,
+            'Unexpected value of HALDevice.pci_class.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+            None, device.pci_class,
+            'Unexpected value of HALDevice.pci_class for Non-PCI device.')
+
+    def testHALDevicePciSubClass(self):
+        """Test of HALDevice.pci_subclass."""
+        properties = {
+            'pci.device_subclass': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             1, device.pci_subclass,
+            'Unexpected value of HALDevice.pci_subclass.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.pci_subclass,
+            'Unexpected value of HALDevice.pci_sub_class for Non-PCI device.')
+
+    def testHALDeviceUsbVendorId(self):
+        """Test of HALDevice.usb_vendor_id."""
+        properties = {
+            'usb_device.vendor_id': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             1, device.usb_vendor_id,
+            'Unexpected value of HALDevice.usb_vendor_id.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.usb_vendor_id,
+            'Unexpected value of HALDevice.usb_vendor_id for Non-USB device.')
+
+    def testHALDeviceUsbProductId(self):
+        """Test of HALDevice.usb_product_id."""
+        properties = {
+            'usb_device.product_id': (1, 'int'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             1, device.usb_product_id,
+            'Unexpected value of HALDevice.usb_product_id.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.usb_product_id,
+            'Unexpected value of HALDevice.usb_product_id for Non-USB '
+            'device.')
+
+    def testHALDeviceScsiVendor(self):
+        """Test of HALDevice.scsi_vendor."""
+        properties = {
+            'scsi.vendor': ('SEAGATE', 'string'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             'SEAGATE', device.scsi_vendor,
+            'Unexpected value of HALDevice.scsi_vendor.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.scsi_vendor,
+            'Unexpected value of HALDevice.scsi_vendor for Non-SCSI device.')
+
+    def testHALDeviceScsiModel(self):
+        """Test of HALDevice.scsi_model."""
+        properties = {
+            'scsi.model': ('ST1234567', 'string'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             'ST1234567', device.scsi_model,
+            'Unexpected value of HALDevice.scsi_model.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.scsi_model,
+            'Unexpected value of HALDevice.scsi_model for Non-SCSI device.')
+
+    def testHALDeviceDriverName(self):
+        """Test of HALDevice.driver_name."""
+        properties = {
+            'info.linux.driver': ('ahci', 'string'),
+            }
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             'ahci', device.driver_name,
+            'Unexpected value of HALDevice.driver_name.')
+
+        properties = {}
+        parser = SubmissionParser(self.log)
+        device = HALDevice(1, '/some/udi/path', properties, parser)
+        self.assertEqual(
+             None, device.driver_name,
+            'Unexpected value of HALDevice.driver_name for Non-SCSI device.')
 
     def testHalDeviceRawBus(self):
         """test of HALDevice.raw_bus."""
@@ -2453,6 +2589,84 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
             device.is_real_device,
             'Testing info.subsystem property: Device with existing info.bus '
             'property not treated as a real device.')
+
+
+class TestUdevDevice(TestCase):
+    """Tests of class UdevDevice."""
+
+    layer = BaseLayer
+
+    root_device = {
+        'P': '/devices/LNXSYSTM:00',
+        'E': {
+            'UDEV_LOG': '3',
+            'DEVPATH': '/devices/LNXSYSTM:00',
+            'MODALIAS': 'acpi:LNXSYSTM:',
+            'SUBSYSTEM': 'acpi',
+            }
+        }
+
+    pci_device_data = {
+        'P': '/devices/pci0000:00/0000:00:1f.2',
+        'E': {
+            'PCI_CLASS': '10602',
+            'PCI_ID': '8086:27C5',
+            'PCI_SUBSYS_ID': '10CF:1387',
+            'PCI_SLOT_NAME': '0000:00:1f.2',
+            'SUBSYSTEM': 'pci',
+            }
+        }
+
+    def test_device_id(self):
+        """Test of UdevDevice.device_id."""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertEqual(
+            '/devices/pci0000:00/0000:00:1f.2', device.device_id,
+            'Unexpected value of UdevDevice.device_id.')
+
+    def test_is_pci(self):
+        """Test of UdevDevice.is_pci."""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertTrue(device.is_pci)
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertFalse(device.is_pci)
+
+    def test_pci_class_info(self):
+        """Test of UdevDevice.pci_class_info"""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertEqual(
+            (1, 6, 2), device.pci_class_info,
+            'Invalid value of UdevDevice.pci_class_info for PCI device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            (None, None, None), device.pci_class_info,
+            'Invalid value of UdevDevice.pci_class_info for Non-PCI device.')
+
+    def test_pci_class(self):
+        """Test of UdevDevice.pci_class"""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertEqual(
+            1, device.pci_class,
+            'Invalid value of UdevDevice.pci_class for PCI device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            None, device.pci_class,
+            'Invalid value of UdevDevice.pci_class for Non-PCI device.')
+
+    def test_pci_subclass(self):
+        """Test of UdevDevice.pci_subclass"""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertEqual(
+            6, device.pci_subclass,
+            'Invalid value of UdevDevice.pci_class for PCI device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            None, device.pci_class,
+            'Invalid value of UdevDevice.pci_class for Non-PCI device.')
 
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):

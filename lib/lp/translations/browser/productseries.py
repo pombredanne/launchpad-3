@@ -1,11 +1,13 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=E1002
 
 """View classes for `IProductSeries`."""
 
 __metaclass__ = type
 
 __all__ = [
+    'LinkTranslationsBranchView',
     'ProductSeriesTemplatesView',
     'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
@@ -104,10 +106,23 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     Only complete downloads are supported for now; there is no option to
     select languages, and templates are always included.
     """
-    pass
+
+    label = "Download translations"
+    page_title = "Download"
+
+    @property
+    def download_description(self):
+        """Current context description used inline in paragraphs."""
+        return "%s %s series" % (
+            self.context.product.displayname,
+            self.context.name)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
-class ProductSeriesTranslationsMixin(object):
+class ProductSeriesTranslationsMixin(TranslationsMixin):
     """Common properties for all ProductSeriesTranslations*View classes."""
 
     @property
@@ -148,10 +163,18 @@ class ProductSeriesTranslationsMixin(object):
 
 class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
     """A view for uploading translations into productseries."""
+
+    label = "Upload translation files"
+    page_title = "Upload"
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         self.form = self.request.form
         self.processForm()
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def processForm(self):
         """Process a form if it was submitted."""
@@ -167,7 +190,7 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         and uploader (importer) in the queue and the new upload cannot be
         safely matched to any of them.  The user will be informed about the
         failure with a warning message."""
-        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # XXX henninge 2008-12-03 bug=192925: This code is duplicated for
         # potemplate and pofile and should be unified.
 
         file = self.request.form['file']
@@ -301,13 +324,23 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                 " recognised as a file that can be imported.")
 
 
-class ProductSeriesView(LaunchpadView, TranslationsMixin):
+class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     """A view to show a series with translations."""
+
+    label = "Translation status by language"
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         # Whether there is more than one PO template.
         self.has_multiple_templates = (
             self.context.getCurrentTranslationTemplates().count() > 1)
+
+        self.has_exports_enabled = (
+            self.context.translations_branch is not None)
+
+        self.uses_bzr_sync = (
+            (self.context.branch is not None and self.has_imports_enabled) or
+            self.has_exports_enabled)
 
     @property
     def productserieslanguages(self):
@@ -377,6 +410,10 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
     """Edit settings for translations import and export."""
 
     schema = IProductSeries
+
+    label = "Translations synchronization settings"
+    page_title = "Settings"
+
     field_names = ['translations_autoimport_mode']
     settings_widget = custom_widget('translations_autoimport_mode',
                   SettingsRadioWidget)
@@ -409,6 +446,13 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
     schema = IProductSeries
     field_names = []
 
+    label = "Request one-time import of translations"
+    page_title = "Import translations from a branch"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
     def __init__(self, context, request):
         super(ProductSeriesTranslationsBzrImportView, self).__init__(
             context, request)
@@ -437,6 +481,8 @@ class ProductSeriesTemplatesView(LaunchpadView):
     """Show a list of all templates for the ProductSeries."""
 
     is_distroseries = False
+    label = "Translation templates"
+    page_title = "All templates"
 
     def iter_templates(self):
         """Return an iterator of all `IPOTemplates` for the series."""
@@ -446,3 +492,27 @@ class ProductSeriesTemplatesView(LaunchpadView):
     def can_administer(self, template):
         """Can the user administer the template?"""
         return check_permission('launchpad.Admin', template)
+
+
+class LinkTranslationsBranchView(LaunchpadEditFormView):
+    """View to set the series' translations export branch."""
+
+    schema = IProductSeries
+    field_names = ['translations_branch']
+
+    label = "Set translations export branch"
+    page_title = "Export to branch"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Translations export branch updated.')

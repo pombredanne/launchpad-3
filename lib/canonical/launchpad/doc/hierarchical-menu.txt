@@ -74,7 +74,7 @@ The hierarchy's list of breadcrumbs is empty since none of the objects
 have an IBreadcrumb adapter.
 
     >>> hierarchy = getMultiAdapter((recipe, request), name='+hierarchy')
-    >>> hierarchy.items()
+    >>> hierarchy.items
     []
 
 The ICookbook and IRecipe breadcrumb objects show up in the hierarchy after
@@ -82,6 +82,13 @@ IBreadcrumb adapters are registered for them.  The hierarchy builds a list of
 breadcrumbs starting with the breadcrumb closest to the hierarchy root.
 
     >>> from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+    >>> from canonical.launchpad.browser.launchpad import Hierarchy
+
+    # Monkey patch Hierarchy.makeBreadcrumbForRequestedPage so that we don't
+    # have to create fake views and other stuff to test breadcrumbs here. The
+    # functionality provided by that method is tested in
+    # webapp/tests/test_breadcrumbs.py.
+    >>> Hierarchy.makeBreadcrumbForRequestedPage = lambda self: None
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
     # give it a valid .text attribute.
@@ -95,7 +102,8 @@ breadcrumbs starting with the breadcrumb closest to the hierarchy root.
     >>> provideAdapter(TextualBreadcrumb, [ICookbook], IBreadcrumb)
     >>> provideAdapter(TextualBreadcrumb, [IRecipe], IBreadcrumb)
 
-    >>> hierarchy.items()
+    >>> hierarchy = getMultiAdapter((recipe, request), name='+hierarchy')
+    >>> hierarchy.items
     [<TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>,
@@ -115,8 +123,44 @@ domains. The `Hierarchy` model copes fine with objects like that.
 
     >>> cooker_hierarchy = getMultiAdapter(
     ...     (cooker, cooker_request), name='+hierarchy')
-    >>> cooker_hierarchy.items()
+    >>> cooker_hierarchy.items
     [<TextualBreadcrumb url='http://launchpad.dev/+cooker/jamie' text='Jamie'>]
+
+
+== Displaying breadcrumbs ==
+
+Breadcrumbs are only displayed if there is more than one breadcrumb, as
+otherwise the breadcrumb will simply replicate the context.title heading
+above it.
+
+    >>> len(hierarchy.items)
+    2
+    >>> hierarchy.display_breadcrumbs
+    True
+
+    >>> len(cooker_hierarchy.items)
+    1
+    >>> cooker_hierarchy.display_breadcrumbs
+    False
+
+Additionally, if the view implements IMajorHeadingView then the breadcrumbs
+will not be displayed.
+
+    >>> ham_recipe = Recipe('ham', cookbook)
+    >>> ham_request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/ham',
+    ...     [root, cookbook, ham_recipe])
+
+    >>> ham_hierarchy = getMultiAdapter(
+    ...     (ham_recipe, ham_request), name='+hierarchy')
+    >>> hierarchy.display_breadcrumbs
+    True
+
+    >>> from zope.interface import alsoProvides
+    >>> from lp.app.interfaces.headings import IMajorHeadingView
+    >>> alsoProvides(ham_recipe, IMajorHeadingView)
+    >>> ham_hierarchy.display_breadcrumbs
+    False
 
 
 == Building IBreadcrumb objects ==
@@ -152,46 +196,6 @@ and Python properties.
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
 
-Breadcrumbs may have icons.  The icon is only set for a breadcrumb if
-the builder's context has an IPathAdapter registration.
-
-    >>> from zope.traversing.interfaces import IPathAdapter
-    >>> from canonical.launchpad.webapp.tales import (
-    ...     ObjectImageDisplayAPI)
-
-    # We need a custom image display adapter that overrides the
-    # the icon() method and returns an <img> tag.
-    >>> class RecipeImageDisplayAPI(ObjectImageDisplayAPI):
-    ...     def icon(self):
-    ...         return '<img src="/@@/recipe"/>'
-
-    >>> provideAdapter(
-    ...     RecipeImageDisplayAPI, [IRecipe], IPathAdapter, 'image')
-
-    >>> breadcrumb = DynamicBreadcrumb(recipe)
-    >>> breadcrumb
-    <DynamicBreadcrumb
-        url='http://launchpad.dev/joy-of-cooking/spam'
-        text='Spam'
-        icon='<img src="/@@/recipe"/>'>
-
-The icon is not set if the default image adapter can not find an
-icon for the object.
-
-    # We'll use the default image adapter, which doesn't know about
-    # ICookbook objects.
-    >>> provideAdapter(
-    ...     ObjectImageDisplayAPI, [ICookbook], IPathAdapter, 'image')
-
-    >>> print queryAdapter(cookbook, IPathAdapter, name='image').icon()
-    None
-
-    >>> breadcrumb = DynamicBreadcrumb(cookbook)
-    >>> breadcrumb
-    <DynamicBreadcrumb
-        url='http://launchpad.dev/joy-of-cooking'
-        text='Joy of cooking'>
-
 
 == Customizing the hierarchy ==
 
@@ -202,18 +206,16 @@ The Hierarchy object should *not* construct the Breadcrumb objects
 itself.  It should let the IBreadcrumbBuilder handle it: this ensures
 consistency across the site.
 
-    >>> from canonical.launchpad.browser.launchpad import Hierarchy
     >>> class CustomHierarchy(Hierarchy):
     ...     @property
     ...     def objects(self):
     ...         return [recipe]
 
     >>> spammy_hierarchy = CustomHierarchy(root, request)
-    >>> spammy_hierarchy.items()
+    >>> spammy_hierarchy.items
     [<TextualBreadcrumb
         url='http://launchpad.dev/joy-of-cooking/spam'
-        text='Spam'
-        icon='<img src="/@@/recipe"/>'>]
+        text='Spam'>]
 
 
 == Rendering the list ==
@@ -227,12 +229,11 @@ location bar.
     # Borrowed from launchpad.testing.pages.print_location()
     >>> def print_hierarchy(html):
     ...     soup = BeautifulSoup(html)
-    ...     hierarchy = soup.find(attrs={'id': 'lp-hierarchy'}).findAll(
+    ...     hierarchy = soup.find(attrs={'class': 'breadcrumbs'}).findAll(
     ...         recursive=False)
     ...     segments = [extract_text(step).encode('us-ascii', 'replace')
-    ...                 for step in hierarchy
-    ...                 if step.name != 'small']
-    ...     print 'Location:', ' > '.join(segments[2:])
+    ...                 for step in hierarchy]
+    ...     print 'Location:', ' > '.join(segments)
 
     >>> print_hierarchy(hierarchy.render())
     Location: Joy of cooking > Spam
@@ -245,30 +246,8 @@ considered to be on the home page if there are no breadcrumbs.
     >>> homepage_hierarchy = getMultiAdapter(
     ...     (root, request), name='+hierarchy')
 
-    >>> homepage_hierarchy.items()
+    >>> homepage_hierarchy.items
     []
 
     >>> print_hierarchy(homepage_hierarchy.render())
     Location:
-
-Breadcrumbs in the hierarchy that have icons are rendered with an <img>
-tag.  Breadcrumbs without icons are not.
-
-    >>> breadcrumb_no_icon, breadcrumb_with_icon = hierarchy.items()
-
-    >>> breadcrumb_no_icon
-    <TextualBreadcrumb
-        url='http://launchpad.dev/joy-of-cooking'
-        text='Joy of cooking'>
-
-    >>> 'img' in hierarchy.getHtmlForBreadcrumb(breadcrumb_no_icon)
-    False
-
-    >>> breadcrumb_with_icon
-    <TextualBreadcrumb
-        url='http://launchpad.dev/joy-of-cooking/spam'
-        text='Spam'
-        icon='<img src="/@@/recipe"/>'>
-
-    >>> print hierarchy.getHtmlForBreadcrumb(breadcrumb_with_icon)
-    <span ...><a ...><img src="/@@/recipe"/> Spam</a></span>
