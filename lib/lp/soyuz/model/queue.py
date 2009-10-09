@@ -488,7 +488,7 @@ class PackageUpload(SQLBase):
             return None
 
     @property
-    def mySourcePackageRelease(self):
+    def my_source_package_release(self):
         """The source package release related to this queue item.
 
         al-maisan, Wed, 30 Sep 2009 17:58:31 +0200:
@@ -736,7 +736,7 @@ class PackageUpload(SQLBase):
             message.ORIGIN = '\nOrigin: %s' % changes['origin']
 
         if self.sources or self.builds:
-            message.SPR_URL = canonical_url(self.mySourcePackageRelease)
+            message.SPR_URL = canonical_url(self.my_source_package_release)
 
     def _sendRejectionNotification(
         self, recipients, changes_lines, changes, summary_text, dry_run,
@@ -1133,7 +1133,7 @@ class PackageUpload(SQLBase):
         # the section of the source package uploaded in order to facilitate
         # filtering on the part of the email recipients.
         if self.sources:
-            spr = self.mySourcePackageRelease
+            spr = self.my_source_package_release
             xlp_component_header = 'component=%s, section=%s' % (
                 spr.component.name, spr.section.name)
             extra_headers['X-Launchpad-Component'] = xlp_component_header

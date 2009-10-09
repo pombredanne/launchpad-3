@@ -232,7 +232,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             'Changed-By: Foo Bar <foo.bar@canonical.com>\n'
             'Maintainer: Launchpad team <launchpad@lists.canonical.com>\n'
             'http://launchpad.dev/ubuntutest/breezy-autotest/+source/foocomm/1.0-2\n')
-    
+
         self.layer.switchDbUser('launchpad')
 
         # One source and 2 binaries are pending publication. They all were

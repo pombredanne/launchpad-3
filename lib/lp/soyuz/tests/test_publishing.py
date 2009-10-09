@@ -385,7 +385,7 @@ class SoyuzTestPublisher:
         return [BinaryPackagePublishingHistory.get(pub.id)
                 for pub in secure_pub_binaries]
 
-    def _findFile(self, top, name_fragment):
+    def _findChangesFile(self, top, name_fragment):
         """File with given name fragment in directory tree starting at top."""
         for root, dirs, files in os.walk(top, topdown=False):
             for name in files:
@@ -399,8 +399,8 @@ class SoyuzTestPublisher:
         """Create source with meaningful '.changes' file."""
         top = 'lib/lp/archiveuploader/tests/data/suite'
         name_fragment = '%s_%s' % (sourcename, version)
-        changesfile_path = self._findFile(top, name_fragment)
-    
+        changesfile_path = self._findChangesFile(top, name_fragment)
+
         source = None
 
         if changesfile_path is not None:
@@ -412,12 +412,12 @@ class SoyuzTestPublisher:
                 changesfile_content = handle.read()
             finally:
                 handle.close()
-        
+
             source = self.getPubSource(
                 sourcename=sourcename, archive=archive, version=new_version,
                 changes_file_content=changesfile_content,
                 distroseries=distroseries)
-    
+
         return source
 
 
