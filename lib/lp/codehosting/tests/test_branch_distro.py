@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import re
+from StringIO import StringIO
 import unittest
 
 from bzrlib.bzrdir import BzrDir
@@ -22,6 +24,8 @@ from lp.codehosting.branch_distro import (
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
+
+RELEASE = PackagePublishingPocket.RELEASE
 
 
 class FakeBranch:
@@ -79,7 +83,7 @@ class TestSwitchBranches(TestCaseWithTransport):
             new_location_branch.last_revision())
 
 
-class TestCloneBranch(TestCaseWithFactory):
+class TestDistroBrancher(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
 
@@ -93,8 +97,7 @@ class TestCloneBranch(TestCaseWithFactory):
         XXX.
         """
         db_branch = self.factory.makePackageBranch(distroseries=distroseries)
-        db_branch.sourcepackage.setBranch(
-            PackagePublishingPocket.RELEASE, db_branch, db_branch.owner)
+        db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
 
         transaction.commit()
 
@@ -121,8 +124,7 @@ class TestCloneBranch(TestCaseWithFactory):
 
         new_sourcepackage = new_distro_series.getSourcePackage(
             db_branch.sourcepackage.name)
-        new_branch = new_sourcepackage.getBranch(
-            PackagePublishingPocket.RELEASE)
+        new_branch = new_sourcepackage.getBranch(RELEASE)
 
         self.assertIsNot(new_branch, None)
 
@@ -142,15 +144,44 @@ class TestCloneBranch(TestCaseWithFactory):
 
         new_sourcepackage = new_distro_series.getSourcePackage(
             db_branch.sourcepackage.name)
-        new_branch = new_sourcepackage.getBranch(
-            PackagePublishingPocket.RELEASE)
+        new_branch = new_sourcepackage.getBranch(RELEASE)
         new_sourcepackage2 = new_distro_series.getSourcePackage(
             db_branch2.sourcepackage.name)
-        new_branch2 = new_sourcepackage2.getBranch(
-            PackagePublishingPocket.RELEASE)
+        new_branch2 = new_sourcepackage2.getBranch(RELEASE)
 
         self.assertIsNot(new_branch, None)
         self.assertIsNot(new_branch2, None)
+
+    def makeNewSeriesAndBrancher(self, db_branch):
+        self._log_file = StringIO()
+        new_distro_series = self.factory.makeDistroRelease(
+            distribution=db_branch.distribution)
+        return DistroBrancher(
+            FakeLogger(self._log_file), db_branch.distroseries,
+            new_distro_series)
+
+    def assertLogMessages(self, patterns):
+        """ """
+        log_messages = self._log_file.getvalue().splitlines()
+        if len(log_messages) > len(patterns):
+            self.fail(
+                "More log messages (%s) than expected (%s)" %
+                (len(log_messages), len(patterns)))
+        elif len(log_messages) < len(patterns):
+            self.fail(
+                "Fewer log messages (%s) than expected (%s)" %
+                (len(log_messages), len(patterns)))
+        for pattern, message in zip(patterns, log_messages):
+            if not re.match(pattern, message):
+                self.fail("%r does not match %r" % (message, pattern))
+
+    def test_checkOneBranch_no_official_branch(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertFalse(ok)
+        self.assertLogMessages(['^WARNING No official branch found for .*$'])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
