@@ -89,6 +89,10 @@ class ReuploadPackageTranslations(LaunchpadScript):
 
     def _processPackage(self, package):
         """Get translations for `package` re-uploaded."""
+        # Avoid circular imports.
+        from lp.soyuz.model.sourcepackagerelease import (
+            _filter_ubuntu_translation_file)
+
         self.logger.info("Processing %s" % package.displayname)
         tarball_aliases = package.getLatestTranslationsUploads()
         queue = getUtility(ITranslationImportQueue)
@@ -102,7 +106,8 @@ class ReuploadPackageTranslations(LaunchpadScript):
             queue.addOrUpdateEntriesFromTarball(
                 alias.read(), True, rosetta_team,
                 sourcepackagename=package.sourcepackagename,
-                distroseries=self.distroseries)
+                distroseries=self.distroseries,
+                filename_filter=_filter_ubuntu_translation_file)
 
         if not have_uploads:
             self.logger.warn(
