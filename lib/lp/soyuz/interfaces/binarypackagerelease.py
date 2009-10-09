@@ -14,7 +14,7 @@ __all__ = [
     'IBinaryPackageReleaseSet',
     ]
 
-from zope.schema import Bool, Int, Text, TextLine, Datetime
+from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -49,6 +49,10 @@ class IBinaryPackageRelease(Interface):
     installedsize = Int(required=False)
     architecturespecific = Bool(required=True)
     datecreated = Datetime(required=True, readonly=True)
+    ddeb_package = Object(
+        title=_("DDEB package"), schema=Interface, required=False,
+        description=_("The corresponding DDEB containing debug symbols "
+                      "for this binary."))
 
     files = Attribute("Related list of IBinaryPackageFile entries")
 
