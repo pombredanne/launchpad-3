@@ -627,15 +627,16 @@ class TestBranchDeletion(TestCaseWithFactory):
                          " deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
-    def test_dependentBranchDisablesDeletion(self):
-        """A branch that is a dependent branch cannot be deleted."""
+    def test_prerequisiteBranchDisablesDeletion(self):
+        """A branch that is a prerequisite branch cannot be deleted."""
         source_branch = self.factory.makeProductBranch(
             name='landing-candidate', owner=self.user, product=self.product)
         target_branch = self.factory.makeProductBranch(
             name='landing-target', owner=self.user, product=self.product)
         source_branch.addLandingTarget(self.user, target_branch, self.branch)
         self.assertEqual(self.branch.canBeDeleted(), False,
-                         "A branch with a dependent target is not deletable.")
+                         "A branch with a prerequisite target is not "
+                         "deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_relatedBranchJobsDeleted(self):
@@ -684,19 +685,19 @@ class TestBranchDeletionConsequences(TestCase):
         """Produce a merge proposal for testing purposes."""
         target_branch = self.factory.makeProductBranch(
             product=self.branch.product)
-        dependent_branch = self.factory.makeProductBranch(
+        prerequisite_branch = self.factory.makeProductBranch(
             product=self.branch.product)
         # Remove the implicit subscriptions.
         target_branch.unsubscribe(target_branch.owner)
-        dependent_branch.unsubscribe(dependent_branch.owner)
+        prerequisite_branch.unsubscribe(prerequisite_branch.owner)
         merge_proposal1 = self.branch.addLandingTarget(
-            self.branch.owner, target_branch, dependent_branch)
+            self.branch.owner, target_branch, prerequisite_branch)
         # Disable this merge proposal, to allow creating a new identical one
         lp_admins = getUtility(ILaunchpadCelebrities).admin
         merge_proposal1.rejectBranch(lp_admins, 'null:')
         syncUpdate(merge_proposal1)
         merge_proposal2 = self.branch.addLandingTarget(
-            self.branch.owner, target_branch, dependent_branch)
+            self.branch.owner, target_branch, prerequisite_branch)
         return merge_proposal1, merge_proposal2
 
     def test_branchWithMergeProposal(self):
@@ -724,12 +725,12 @@ class TestBranchDeletionConsequences(TestCase):
             merge_proposal1.target_branch.deletionRequirements())
         self.assertEqual({
             merge_proposal1:
-            ('alter', _('This branch is the dependent branch of this merge'
+            ('alter', _('This branch is the prerequisite branch of this merge'
              ' proposal.')),
             merge_proposal2:
-            ('alter', _('This branch is the dependent branch of this merge'
+            ('alter', _('This branch is the prerequisite branch of this merge'
              ' proposal.'))},
-            merge_proposal1.dependent_branch.deletionRequirements())
+            merge_proposal1.prerequisite_branch.deletionRequirements())
 
     def test_deleteMergeProposalSource(self):
         """Merge proposal source branches can be deleted with break_links."""
@@ -752,8 +753,8 @@ class TestBranchDeletionConsequences(TestCase):
     def test_deleteMergeProposalDependent(self):
         """break_links enables deleting merge proposal dependant branches."""
         merge_proposal1, merge_proposal2 = self.makeMergeProposals()
-        merge_proposal1.dependent_branch.destroySelf(break_references=True)
-        self.assertEqual(None, merge_proposal1.dependent_branch)
+        merge_proposal1.prerequisite_branch.destroySelf(break_references=True)
+        self.assertEqual(None, merge_proposal1.prerequisite_branch)
 
     def test_deleteSourceCodeReviewComment(self):
         """Deletion of branches that have CodeReviewComments works."""
@@ -896,10 +897,10 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal.target_branch.destroySelf(break_references=True)
 
     def test_ClearDependentBranch(self):
-        """ClearDependent.__call__ must clear the dependent branch."""
+        """ClearDependent.__call__ must clear the prerequisite branch."""
         merge_proposal = removeSecurityProxy(self.makeMergeProposals()[0])
         ClearDependentBranch(merge_proposal)()
-        self.assertEqual(None, merge_proposal.dependent_branch)
+        self.assertEqual(None, merge_proposal.prerequisite_branch)
 
     def test_ClearOfficialPackageBranch(self):
         # ClearOfficialPackageBranch.__call__ clears the official package
@@ -1062,8 +1063,8 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             name='source-branch', owner=self.user, product=self.product)
         self.target = self.factory.makeProductBranch(
             name='target-branch', owner=self.user, product=self.product)
-        self.dependent = self.factory.makeProductBranch(
-            name='dependent-branch', owner=self.user, product=self.product)
+        self.prerequisite = self.factory.makeProductBranch(
+            name='prerequisite-branch', owner=self.user, product=self.product)
 
     def tearDown(self):
         logout()
@@ -1096,27 +1097,28 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.source)
 
-    def test_dependentBranchSameProduct(self):
-        """The dependent branch, if it is there, must be for the same product.
+    def test_prerequisiteBranchSameProduct(self):
+        """The prerequisite branch, if any, must be for the same product.
         """
-        self.dependent.setTarget(user=self.dependent.owner)
+        self.prerequisite.setTarget(user=self.prerequisite.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
-            self.user, self.target, self.dependent)
+            self.user, self.target, self.prerequisite)
 
         project = self.factory.makeProduct()
-        self.dependent.setTarget(user=self.dependent.owner, project=project)
+        self.prerequisite.setTarget(
+            user=self.prerequisite.owner, project=project)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
-            self.user, self.target, self.dependent)
+            self.user, self.target, self.prerequisite)
 
-    def test_dependentMustNotBeTheSource(self):
+    def test_prerequisiteMustNotBeTheSource(self):
         """The target and source branch cannot be the same."""
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target, self.source)
 
-    def test_dependentMustNotBeTheTarget(self):
+    def test_prerequisiteMustNotBeTheTarget(self):
         """The target and source branch cannot be the same."""
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
@@ -1127,11 +1129,12 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         branch pair, then another landing target specifying the same pair
         raises.
         """
-        self.source.addLandingTarget(self.user, self.target, self.dependent)
+        self.source.addLandingTarget(
+            self.user, self.target, self.prerequisite)
 
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
-            self.user, self.target, self.dependent)
+            self.user, self.target, self.prerequisite)
 
     def test_existingRejectedMergeProposal(self):
         """If there is an existing rejected merge proposal for the source and
@@ -1139,20 +1142,21 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         pair is fine.
         """
         proposal = self.source.addLandingTarget(
-            self.user, self.target, self.dependent)
+            self.user, self.target, self.prerequisite)
         proposal.rejectBranch(self.user, 'some_revision')
         syncUpdate(proposal)
-        self.source.addLandingTarget(self.user, self.target, self.dependent)
+        self.source.addLandingTarget(
+            self.user, self.target, self.prerequisite)
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
         whiteboard = u"Some whiteboard"
         proposal = self.source.addLandingTarget(
-            self.user, self.target, self.dependent, whiteboard)
+            self.user, self.target, self.prerequisite, whiteboard)
         self.assertEqual(proposal.registrant, self.user)
         self.assertEqual(proposal.source_branch, self.source)
         self.assertEqual(proposal.target_branch, self.target)
-        self.assertEqual(proposal.dependent_branch, self.dependent)
+        self.assertEqual(proposal.prerequisite_branch, self.prerequisite)
         self.assertEqual(proposal.whiteboard, whiteboard)
 
 
@@ -1328,6 +1332,13 @@ class TestCodebrowseURL(TestCaseWithFactory):
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
             branch.codebrowse_url('a', 'b'))
+
+    def test_source_code_url(self):
+        # The source code URL points to the codebrowse URL where you can
+        # actually browse the source code.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            branch.browse_source_url, branch.codebrowse_url('files'))
 
 
 class TestBranchNamespace(TestCaseWithFactory):

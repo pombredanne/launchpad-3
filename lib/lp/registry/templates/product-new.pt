@@ -253,7 +253,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
     <div metal:use-macro="context/@@launchpad_form/form">
       <metal:step fill-slot="extra_info">
       <div style="text-align: right;">Not sure what to do?
-        <a href="mailto:feedback@launchpad.net">Contact us</a>
+        <a href="https://help.launchpad.net/Feedback">Contact us</a>
       </div>
       <h2 class="legend" id="step-title">Step
           <tal:step_number tal:replace="view/step_number"/>

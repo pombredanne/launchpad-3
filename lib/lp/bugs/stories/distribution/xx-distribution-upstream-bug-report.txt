@@ -193,8 +193,8 @@ link them):
     'Projects registered in Launchpad'
     >>> user_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> user_browser.getLink('link').click()
-    >>> user_browser.title
-    'Define upstream link for...
+    >>> print user_browser.title
+    Define upstream link : ...
 
 If you are logged in and can edit the upstream project, you can also set
 a bug tracker and a bug supervisor. Let's first fix Firefox to stop using

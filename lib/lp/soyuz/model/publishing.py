@@ -22,6 +22,7 @@ from datetime import datetime
 import operator
 import os
 import pytz
+import re
 from warnings import warn
 
 from zope.component import getUtility
@@ -436,9 +437,28 @@ class IndexStanzaFields:
         for name, value in self.fields:
             if not value:
                 continue
+
             # do not add separation space for the special field 'Files'
             if name != 'Files':
                 value = ' %s' % value
+
+            # XXX Michael Nelson 20090930 bug=436182. We have an issue
+            # in the upload parser that has
+            #   1. introduced '\n' at the end of multiple-line-spanning
+            #      fields, such as dsc_binaries, but potentially others,
+            #   2. stripped the leading space from each subsequent line
+            #      of dsc_binaries values that span multiple lines.
+            # This is causing *incorrect* Source indexes to be created.
+            # This work-around can be removed once the fix for bug 436182
+            # is in place and the tainted data has been cleaned.
+            # First, remove any trailing \n or spaces.
+            value = value.rstrip()
+
+            # Second, as we have corrupt data where subsequent lines
+            # of values spanning multiple lines are not preceded by a
+            # space, we ensure that any \n in the value that is *not*
+            # followed by a white-space character has a space inserted.
+            value = re.sub(r"\n(\S)", r"\n \1", value)
 
             output_lines.append('%s:%s' % (name, value))
 
