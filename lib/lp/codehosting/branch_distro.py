@@ -158,14 +158,16 @@ class DistroBrancher:
                 new_bzr_branch = Branch.open(
                     scheme + new_db_branch.unique_name)
             except NotBranchError:
-                self.logger.warning("No bzr branch for %s", new_db_branch)
+                self.logger.warning(
+                    "No bzr branch at new location %s",
+                    scheme + new_db_branch.unique_name)
                 ok = False
             else:
                 try:
                     new_stacked_on_url = new_bzr_branch.get_stacked_on_url()
                     self.logger.warning(
-                        "%s is stacked on %s", new_bzr_branch,
-                        new_stacked_on_url)
+                        "New branch at %s is stacked on %s, should be "
+                        "unstacked.", new_bzr_branch, new_stacked_on_url)
                 except NotStacked:
                     pass
             # The branch in the old distroseries is stacked on that in the
@@ -174,7 +176,9 @@ class DistroBrancher:
                 old_bzr_branch = Branch.open(
                     scheme + old_db_branch.unique_name)
             except NotBranchError:
-                self.logger.warning("No bzr branch for %s", old_db_branch)
+                self.logger.warning(
+                    "No bzr branch at old location %s",
+                    scheme + old_db_branch.unique_name)
                 ok = False
             else:
                 try:
@@ -183,7 +187,7 @@ class DistroBrancher:
                     if old_stacked_on_url != '/' + new_db_branch.unique_name:
                         self.logger.warning(
                             "%s is stacked on %s, should be %s",
-                            old_bzr_branch, old_stacked_on_url,
+                            old_db_branch.unique_name, old_stacked_on_url,
                             '/' + new_db_branch.unique_name)
                         ok = False
                 except NotStacked:
@@ -227,3 +231,4 @@ class DistroBrancher:
         switch_branches(
             config.codehosting.mirrored_branches_root,
             'lp-mirrored:///', old_db_branch, new_db_branch)
+        return new_db_branch

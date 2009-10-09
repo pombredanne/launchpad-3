@@ -12,6 +12,7 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NotStacked
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.transport import get_transport
 from bzrlib.transport.chroot import ChrootServer
 
 import transaction
@@ -177,7 +178,7 @@ class TestDistroBrancher(TestCaseWithFactory):
                 (log_messages, patterns))
         for pattern, message in zip(patterns, log_messages):
             if not re.match(pattern, message):
-                self.fail("%r does not match %r" % (message, pattern))
+                self.fail("%r does not match %r" % (pattern, message))
 
     def test_makeNewBranch_checks_ok(self):
         db_branch = self.makeOfficialPackageBranch()
@@ -195,6 +196,62 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
         self.assertLogMessages(
             ['^WARNING No official branch found for .*/.*/.*$'])
+
+    def test_checkOneBranch_new_hosted_branch_missing(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        new_db_branch = brancher.makeOneNewBranch(db_branch)
+        get_transport(new_db_branch.getPullURL()).delete_tree('.bzr')
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertFalse(ok)
+        # Deleting the new hosted branch will break the old branch, as that's
+        # stacked on the new one.
+        self.assertLogMessages([
+            '^WARNING No bzr branch at new location '
+            'lp-hosted:///.*/.*/.*/.*$',
+            '^WARNING No bzr branch at old location '
+            'lp-hosted:///.*/.*/.*/.*$',
+            ])
+
+    def test_checkOneBranch_new_mirrored_branch_missing(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        new_db_branch = brancher.makeOneNewBranch(db_branch)
+        get_transport(new_db_branch.warehouse_url).delete_tree('.bzr')
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertFalse(ok)
+        # Deleting the new mirrored branch will break the old branch, as that's
+        # stacked on the new one.
+        self.assertLogMessages([
+            '^WARNING No bzr branch at new location '
+            'lp-mirrored:///.*/.*/.*/.*$',
+            '^WARNING No bzr branch at old location '
+            'lp-mirrored:///.*/.*/.*/.*$',
+            ])
+
+    def test_checkOneBranch_old_hosted_branch_missing(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        get_transport(db_branch.getPullURL()).delete_tree('.bzr')
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertFalse(ok)
+        self.assertLogMessages([
+            '^WARNING No bzr branch at old location '
+            'lp-hosted:///.*/.*/.*/.*$',
+            ])
+
+    def test_checkOneBranch_old_mirrored_branch_missing(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        get_transport(db_branch.warehouse_url).delete_tree('.bzr')
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertFalse(ok)
+        self.assertLogMessages([
+            '^WARNING No bzr branch at old location '
+            'lp-mirrored:///.*/.*/.*/.*$',
+            ])
 
 
 def test_suite():
