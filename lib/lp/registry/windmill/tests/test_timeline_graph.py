@@ -5,7 +5,6 @@ import unittest
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import lpuser
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import TestCaseWithFactory
 
@@ -19,7 +18,8 @@ class TestTimelineGraph(TestCaseWithFactory):
     def test_timeline_graph(self):
         """Test timeline graph on /$project/+timeline-graph page."""
 
-        self.client.open(url=u'http://launchpad.dev:8085/firefox/+timeline-graph')
+        self.client.open(
+            url=u'http://launchpad.dev:8085/firefox/+timeline-graph')
         self.client.waits.forElement(id=u'spinner', timeout=u'20000')
         self.client.waits.forElementProperty(
             id=u'spinner',
