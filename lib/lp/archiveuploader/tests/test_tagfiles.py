@@ -135,9 +135,6 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         Note: in the past, our parse_tagfile function left the leading
         '\n' in the parsed value, whereas it should not have.
 
-        XXX check where this value is used and ensure it won't be affected
-        (ie. skipping the first value prior to the first \n for example.)
-
         For an example,
         see http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Files
         """
@@ -158,8 +155,8 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
             self.parse_tagfile_version['files'])
 
     def test_parse_description_field(self):
-        """Apt-pkg preserves the blank-line indicator and not strip leading
-        spaces.
+        """Apt-pkg preserves the blank-line indicator and does not strip
+        leading spaces.
 
         See http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Description
         """
@@ -168,11 +165,10 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
             " Then there is the extended description which can\n"
             " span multiple lines, and even include blank-lines like this:\n"
             " .\n"
-            " There you go. If a line contains more than two spaces,"
-            " it should not\n"
-            " be stripped at all and be displayed verbatim. Like this one:\n"
-            "  Don't strip me.\n"
-            "    Or me.\n"
+            " There you go. If a line starts with two or more spaces,\n"
+            " it will be displayed verbatim. Like this one:\n"
+            "  Example verbatim line.\n"
+            "    Another verbatim line.\n"
             " OK, back to normal.")
 
         self.assertEqual(

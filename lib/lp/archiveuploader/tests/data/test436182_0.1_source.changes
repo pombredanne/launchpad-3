@@ -11,10 +11,10 @@ Description: Here's the single-line synopsis.
  Then there is the extended description which can
  span multiple lines, and even include blank-lines like this:
  .
- There you go. If a line contains more than two spaces, it should not
- be stripped at all and be displayed verbatim. Like this one:
-  Don't strip me.
-    Or me.
+ There you go. If a line starts with two or more spaces,
+ it will be displayed verbatim. Like this one:
+  Example verbatim line.
+    Another verbatim line.
  OK, back to normal.
 Files: 
  f26bb9b29b1108e53139da3584a4dc92 1511 test75874_0.1.tar.gz
