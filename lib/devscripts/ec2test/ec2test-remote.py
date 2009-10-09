@@ -17,6 +17,8 @@ import textwrap
 import time
 import traceback
 
+from xml.sax.saxutils import escape
+
 import bzrlib.branch
 import bzrlib.config
 import bzrlib.email_message
@@ -300,7 +302,7 @@ class WebTestLogger:
             'trunk_revno': branch.revno()}
         index_file.write(textwrap.dedent('''\
             <p><strong>%s</strong></p>
-            ''' % (msg,)))
+            ''' % (escape(msg),)))
         write(msg)
         tree = bzrlib.workingtree.WorkingTree.open(self.test_dir)
         parent_ids = tree.get_parent_ids()
@@ -319,7 +321,7 @@ class WebTestLogger:
                    '(commit message: %(commit)s)\n' % data)
             index_file.write(textwrap.dedent('''\
                <p>Merged with<br />%(msg)s</p>
-               ''' % {'msg': msg}))
+               ''' % {'msg': escape(msg)}))
             write("Merged with")
             write(msg)
 
@@ -337,11 +339,13 @@ class WebTestLogger:
                         'revno': branch.revno()}
                 write(
                     '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
+                escaped_data = dict(
+                    (key, escape(value)) for (key, value) in data.iteritems())
                 index_file.write(textwrap.dedent('''\
                     <dt>%(name)s</dt>
                       <dd>%(branch)s</dd>
                       <dd>%(revno)s</dd>
-                    ''' % data))
+                    ''' % escaped_data))
         index_file.write(textwrap.dedent('''\
                 </dl>
               </body>
