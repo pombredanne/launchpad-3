@@ -339,8 +339,9 @@ class WebTestLogger:
                         'revno': branch.revno()}
                 write(
                     '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
-                escaped_data = dict(
-                    (key, escape(value)) for (key, value) in data.iteritems())
+                escaped_data = {'name': escape(name),
+                                'branch': escape(branch.get_parent()),
+                                'revno': branch.revno()}
                 index_file.write(textwrap.dedent('''\
                     <dt>%(name)s</dt>
                       <dd>%(branch)s</dd>
