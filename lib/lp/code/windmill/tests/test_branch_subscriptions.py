@@ -37,7 +37,7 @@ class TestBranchSubscriptions(TestCaseWithFactory):
         client.open(url=(
             windmill.settings['TEST_URL'] + '/~mark/firefox/release--0.9.1'))
         client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
-        client.asserts.assertText(id=u'selfsubscription',
+        client.asserts.assertText(xpath=u'//a[@id="selfsubscription"]',
             validator='Subscribe yourself')
         client.asserts.assertText(id=u'none-subscribers',
             validator=u'No subscribers.')
@@ -50,8 +50,6 @@ class TestBranchSubscriptions(TestCaseWithFactory):
             timeout=u'10000')
         client.asserts.assertText(id=u'subscriber-name16',
             validator=u'Foo Bar')
-        client.asserts.assertText(id=u'selfsubscription',
-            validator=u'Edit your subscription')
 
         # And now to unsubscribe
         client.click(id=u'editsubscription-icon-name16')
@@ -60,7 +58,7 @@ class TestBranchSubscriptions(TestCaseWithFactory):
         client.click(id=u'field.actions.unsubscribe')
 
         client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
-        client.asserts.assertText(id=u'selfsubscription',
+        client.asserts.assertText(xpath=u'//a[@id="selfsubscription"]',
             validator='Subscribe yourself')
         client.asserts.assertText(id=u'none-subscribers',
             validator=u'No subscribers.')
