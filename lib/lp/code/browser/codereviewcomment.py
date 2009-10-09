@@ -194,8 +194,8 @@ class IEditCodeReviewComment(Interface):
 
     review_type = copy_field(
         ICodeReviewVoteReference['review_type'],
-        description=u'Lowercase keywords describing the type of review you are '
-                     'performing.')
+        description=u'Lowercase keywords describing the type of review you '
+                     'are performing.')
 
     comment = Text(title=_('Comment'), required=False)
 
