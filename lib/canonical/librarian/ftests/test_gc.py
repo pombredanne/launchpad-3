@@ -31,12 +31,17 @@ from canonical.testing import LaunchpadZopelessLayer
 
 
 class MockLogger:
-    def __init__(self, fail_on_error=True):
+    def __init__(self, fail_on_error=True, fail_on_warning=True):
         self.fail_on_error = fail_on_error
+        self.fail_on_warning = fail_on_warning
 
     def error(self, *args, **kw):
         if self.fail_on_error:
             raise RuntimeError("An error was indicated: %r %r" % (args, kw))
+
+    def warning(self, *args, **kw):
+        if self.fail_on_warning:
+            raise RuntimeError("A warning was indicated: %r %r" % (args, kw))
 
     def debug(self, *args, **kw):
         #print '%r %r' % (args, kw)
@@ -517,10 +522,10 @@ class TestLibrarianGarbageCollection(TestCase):
             self.failUnless(os.path.exists(path))
 
     def test_deleteUnwantedFilesIgnoresNoise(self):
-        # Directories with invalid names in the storage area are ignored.
-        # They are reported as errors though, so don't let errors fail
-        # this test.
-        librariangc.log = MockLogger(fail_on_error=False)
+        # Directories with invalid names in the storage area are
+        # ignored. They are reported as warnings though, so don't let
+        # warnings fail this test.
+        librariangc.log = MockLogger(fail_on_warning=False)
 
         # Not a hexidecimal number.
         noisedir1_path = os.path.join(config.librarian_server.root, 'zz')
@@ -574,7 +579,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # There was a bug where delete_unwanted_files() would die
         # if the last file found on disk was unwanted.
         self.layer.switchDbUser(dbuser='testadmin')
-        content='foo'
+        content = 'foo'
         self.client.addFile(
             'foo.txt', len(content), StringIO(content), 'text/plain')
         # Roll back the database changes, leaving the file on disk.

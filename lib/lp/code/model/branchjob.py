@@ -252,9 +252,16 @@ class BranchUpgradeJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchUpgradeJob`."""
-        branch = self.branch.getBzrBranch()
-        to_format = self.upgrade_format
-        upgrade(branch.base, to_format)
+        self._prepare_upgrade()
+        self._upgrade()
+
+    def _prepare_upgrade(self):
+        """Prepares the branch for upgrade."""
+        self._upgrade_branch = self.branch.getBzrBranch()
+
+    def _upgrade(self):
+        """Performs the upgrade of the branch."""
+        upgrade(self._upgrade_branch.base, self.upgrade_format)
 
     @property
     def upgrade_format(self):

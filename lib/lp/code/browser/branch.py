@@ -305,6 +305,7 @@ class DecoratedBug:
         """
         return self.branch.target.getBugTask(self.context)
 
+
 class BranchView(LaunchpadView, FeedsMixin):
 
     __used_for__ = IBranch
@@ -1132,7 +1133,10 @@ class RegisterProposalSchema(Interface):
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'],
+        description=u'Lowercase keywords describing the type of review you '
+                     'would like to be performed.')
 
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):
