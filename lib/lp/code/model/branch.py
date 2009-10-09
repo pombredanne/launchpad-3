@@ -435,6 +435,10 @@ class Branch(SQLBase):
         return urlutils.join(root, self.unique_name, *extras)
 
     @property
+    def browse_source_url(self):
+        return self.codebrowse_url('files')
+
+    @property
     def bzr_identity(self):
         """See `IBranch`."""
         # XXX: JonathanLange 2009-03-19 spec=package-branches bug=345740: This
