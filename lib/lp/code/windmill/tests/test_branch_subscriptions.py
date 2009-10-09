@@ -53,7 +53,6 @@ class TestBranchSubscriptions(TestCaseWithFactory):
         client.asserts.assertText(id=u'selfsubscription',
             validator=u'Edit your subscription')
 
-
         # And now to unsubscribe
         client.click(id=u'editsubscription-icon-name16')
 
@@ -74,11 +73,13 @@ class TestBranchSubscriptions(TestCaseWithFactory):
 
         lpuser.SAMPLE_PERSON.ensure_login(client)
 
-        client.open(
-            url=windmill.settings['TEST_URL'] + '/~name12/landscape/feature-x/')
+        client.open(url=''.join([
+            windmill.settings['TEST_URL'],
+            '/~name12/landscape/feature-x/']))
         client.waits.forPageLoad(timeout=u'10000')
 
-        client.waits.forElement(id=u'editsubscription-icon-landscape-developers',
+        client.waits.forElement(
+            id=u'editsubscription-icon-landscape-developers',
             timeout=u'10000')
         client.asserts.assertText(id=u'subscriber-landscape-developers',
             validator=u'Landscape Developers')

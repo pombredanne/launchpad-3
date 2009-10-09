@@ -17,7 +17,6 @@ from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import TestCaseWithFactory
 
 
-
 class TestCodeReview(TestCaseWithFactory):
     """Test the javascript functions of code review."""
 
@@ -32,8 +31,9 @@ class TestCodeReview(TestCaseWithFactory):
 
         lpuser.FOO_BAR.ensure_login(client)
 
-        client.open(
-            url=windmill.settings['TEST_URL'] + '/~name12/gnome-terminal/klingon/')
+        client.open(url=''.join([
+            windmill.settings['TEST_URL'],
+            '/~name12/gnome-terminal/klingon/']))
         client.waits.forPageLoad(timeout=u'10000')
 
         client.click(xpath=u'//a[@href="%s"]' % MERGE_LINK)
