@@ -183,7 +183,6 @@ class DistroBrancher:
             else:
                 try:
                     old_stacked_on_url = old_bzr_branch.get_stacked_on_url()
-                    # XXX next line could NameError!
                     if old_stacked_on_url != '/' + new_db_branch.unique_name:
                         self.logger.warning(
                             "Old branch at %s is stacked on %s, should be "
@@ -212,8 +211,9 @@ class DistroBrancher:
                 # history.  (We can't check that the tips are the same because
                 # the branch in the new distroseries might have new revisons).
                 if old_bzr_branch.last_revision() == 'null:':
-                    # XXX untested
-                    self.logger.warning("XXX null tip")
+                    self.logger.warning(
+                        "Old branch at %s has null tip revision.",
+                        old_location)
                     ok = False
         return ok
 

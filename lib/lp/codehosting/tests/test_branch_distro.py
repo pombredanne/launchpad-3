@@ -302,8 +302,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch)
         brancher.makeOneNewBranch(db_branch)
-        old_hosted_bzr_branch = Branch.open(db_branch.warehouse_url)
-        old_hosted_bzr_branch.set_stacked_on_url(None)
+        old_mirrored_bzr_branch = Branch.open(db_branch.warehouse_url)
+        old_mirrored_bzr_branch.set_stacked_on_url(None)
         ok = brancher.checkOneBranch(db_branch)
         self.assertLogMessages([
             '^WARNING Old branch at lp-mirrored:///.*/.*/.*/.* is not '
@@ -360,14 +360,40 @@ class TestDistroBrancher(TestCaseWithFactory):
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch)
         brancher.makeOneNewBranch(db_branch)
-        old_hosted_bzr_branch = Branch.open(db_branch.warehouse_url)
-        old_hosted_bzr_branch.set_stacked_on_url(None)
-        old_hosted_bzr_branch.create_checkout(
+        old_mirrored_bzr_branch = Branch.open(db_branch.warehouse_url)
+        old_mirrored_bzr_branch.set_stacked_on_url(None)
+        old_mirrored_bzr_branch.create_checkout(
             self.factory.getUniqueString()).commit('')
         ok = brancher.checkOneBranch(db_branch)
         self.assertLogMessages([
             '^WARNING Repository at lp-mirrored:///.*/.*/.*/.* has 1 '
             'revisions.'
+            ])
+        self.assertFalse(ok)
+
+    def test_checkOneBranch_old_hosted_has_null_tip(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        old_hosted_bzr_branch = Branch.open(db_branch.getPullURL())
+        old_hosted_bzr_branch.set_last_revision_info(0, 'null:')
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertLogMessages([
+            '^WARNING Old branch at lp-hosted:///.*/.*/.*/.* has null tip '
+            'revision.'
+            ])
+        self.assertFalse(ok)
+
+    def test_checkOneBranch_old_mirrored_has_null_tip(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch)
+        brancher.makeOneNewBranch(db_branch)
+        old_mirrored_bzr_branch = Branch.open(db_branch.warehouse_url)
+        old_mirrored_bzr_branch.set_last_revision_info(0, 'null:')
+        ok = brancher.checkOneBranch(db_branch)
+        self.assertLogMessages([
+            '^WARNING Old branch at lp-mirrored:///.*/.*/.*/.* has null tip '
+            'revision.'
             ])
         self.assertFalse(ok)
 
