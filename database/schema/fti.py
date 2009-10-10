@@ -13,6 +13,7 @@ __metaclass__ = type
 
 import _pythonpath
 
+from distutils.version import LooseVersion
 import sys
 import os.path
 from optparse import OptionParser
@@ -287,9 +288,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
     """Setup and install tsearch2 if isn't already"""
 
     # tsearch2 is out-of-the-box in 8.3+
-    v83 = get_pgversion(con).startswith('8.3')
-
-    assert v83, 'This script only supports PostgreSQL 8.3'
+    required = LooseVersion('8.3.0')
+    assert get_pgversion(con) >= required, (
+        'This script only supports PostgreSQL 8.3+')
 
     schema_exists = bool(execute(
         con, "SELECT COUNT(*) FROM pg_namespace WHERE nspname='ts2'",
@@ -608,18 +609,13 @@ def needs_refresh(con, table, columns):
 
 def get_pgversion(con):
     rows = execute(con, r"show server_version", results=True)
-    return rows[0][0]
+    return LooseVersion(rows[0][0])
 
 
 def get_tsearch2_sql_path(con):
-    pgversion = get_pgversion(con)
-    if pgversion.startswith('8.2.'):
-        path = os.path.join(PGSQL_BASE, '8.2', 'contrib', 'tsearch2.sql')
-    elif pgversion.startswith('8.3.'):
-        path = os.path.join(PGSQL_BASE, '8.3', 'contrib', 'tsearch2.sql')
-    else:
-        raise RuntimeError('Unknown version %s' % pgversion)
-
+    major, minor = get_pgversion(con).version[:2]
+    path = os.path.join(
+        PGSQL_BASE, '%d.%d' % (major, minor), 'contrib', 'tsearch2.sql')
     assert os.path.exists(path), '%s does not exist' % path
     return path
 
