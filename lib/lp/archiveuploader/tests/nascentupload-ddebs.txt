@@ -11,8 +11,8 @@ feature.
 
 First we will create a source and a corresponding binary publication
 in the database, 'debug' and 'debug-bin' version '0.9', which will be
-an ancestor for the subsequent upload containing a 'debug-dbg' DDEB.
-This is done using `SoyuzTestPublisher`.
+an ancestor for the subsequent upload containing a 'debug-bin-dbgsym'
+DDEB. This is done using `SoyuzTestPublisher`.
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
@@ -92,7 +92,7 @@ Now, both, binary and debug-symbol packages are pending publication.
     ...         bin_pub.displayname, bin_pub.status.name,
     ...         bin_pub.archive.purpose.name)
     debug-bin 1.0 in hoary i386 PENDING PRIMARY
-    debug-dbg 1.0 in hoary i386 PENDING DEBUG
+    debug-bin-dbgsym 1.0 in hoary i386 PENDING DEBUG
 
 DEBs and DDEBs are uploaded to separate archives, because the size
 impact of uploading them to a single archive on mirrors would be
@@ -104,7 +104,7 @@ The DDEB is stored appropriately in the database.
     >>> ddeb = ddeb_pub.binarypackagerelease
 
     >>> print ddeb.title
-    debug-dbg-1.0
+    debug-bin-dbgsym-1.0
 
 The corresponding `BinaryPackageRelease` is recorded with DDEB format.
 
@@ -115,7 +115,7 @@ And its corresponding file is also stored as DDEB filetype.
 
     >>> for bin_file in ddeb.files:
     ...     print bin_file.libraryfile.filename, bin_file.filetype.name
-    debug-dbg_1.0_i386.ddeb DDEB
+    debug-bin-dbgsym_1.0_i386.ddeb DDEB
 
 
 == DDEBs in other archives ==
@@ -176,5 +176,5 @@ the ones in the primary archive.
     ...         bin_pub.displayname, bin_pub.status.name,
     ...         bin_pub.archive.purpose.name)
     debug-bin 1.0 in hoary i386 PENDING COPY
-    debug-dbg 1.0 in hoary i386 PENDING COPY
+    debug-bin-dbgsym 1.0 in hoary i386 PENDING COPY
 
