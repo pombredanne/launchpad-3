@@ -1,3 +1,4 @@
+===========================
 Product Edit and Administer
 ===========================
 
@@ -39,7 +40,7 @@ Now we test if we edited it successfully.
 
 
 Setting Development Focus
--------------------------
+=========================
 
 The Firefox product's trunk series is set as the development focus:
 
@@ -72,7 +73,7 @@ We can change this to the 1.0 series through the edit form:
 
 
 Administering Products
-----------------------
+======================
 
 Regular users can't access the 'Administer' link.
 
@@ -114,7 +115,7 @@ And in that page they can set aliases to the product.
 
 
 Renaming Products
------------------
+=================
 
 First a user adds a product named newproductname.
 
@@ -175,7 +176,7 @@ will be accepted because there is no product called newproductname3
 
 
 Changing Maintainer and Registrant
-----------------------------------
+==================================
 
 Administrators can change the owner of a project.
 
@@ -183,6 +184,7 @@ Administrators can change the owner of a project.
     ...     'http://launchpad.dev/newproductname3')
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'owner'))
     Maintainer: No Privileges Person
+    ...
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/newproductname3/+admin')
@@ -190,6 +192,7 @@ Administrators can change the owner of a project.
     >>> admin_browser.getControl(name='field.actions.change').click()
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'owner'))
     Maintainer: Celso Providelo
+    ...
 
 And the registrant can also be changed, even though this should rarely
 happen. The registrant is a read-only field that is set when the product
@@ -222,7 +225,7 @@ teams as registrants.
 
 
 Registry Experts
-----------------
+================
 
 Regular Joes can't edit any old project:
 
@@ -254,7 +257,7 @@ And they still can't access +admin.
 
 
 Display error when trying to remove all licenses
-------------------------------------------------
+================================================
 
 After a product has one or more licenses selected, it can never again
 have zero licenses.
@@ -272,7 +275,7 @@ have zero licenses.
 
 
 Launchpad developers can use the reviewer whiteboard
-----------------------------------------------------
+====================================================
 
 A member of the Registry Experts team can use the reviewer whiteboard on
 the +review-license page for storing random notes about a project. At
@@ -325,7 +328,7 @@ Admin, and so cannot see the reviewer whiteboard.
 
 
 Deactivate a product
---------------------
+====================
 
 The Admins and Registry Experts can deactivate a project.
 
@@ -379,7 +382,7 @@ Revert team memberships.
 
 
 Setting the remote project
---------------------------
+==========================
 
 The remote_product field - which stores a Product's ID on the remote bug
 tracker - can be set from the +edit page, too.
@@ -391,4 +394,3 @@ tracker - can be set from the +edit page, too.
     >>> user_browser.open('http://launchpad.dev/thunderbird/+edit')
     >>> print user_browser.getControl('Remote project').value
     Thunderbird
-

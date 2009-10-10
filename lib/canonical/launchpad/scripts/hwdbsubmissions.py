@@ -94,6 +94,11 @@ DB_FORMAT_FOR_PRODUCT_ID = {
     'scsi': '%-16s',
     }
 
+UDEV_USB_DEVICE_PROPERTIES = set(('DEVTYPE', 'PRODUCT', 'TYPE'))
+UDEV_USB_PRODUCT_RE = re.compile(
+    '^[0-9a-f]{1,4}/[0-9a-f]{1,4}/[0-9a-f]{1,4}$', re.I)
+UDEV_USB_TYPE_RE = re.compile('^[0-9]{1,3}/[0-9]{1,3}/[0-9]{1,3}$')
+
 class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
 
@@ -1165,7 +1170,7 @@ class SubmissionParser(object):
         """
         for device in udev_data:
             properties = device['E']
-            property_names = set(properties.keys())
+            property_names = set(properties)
             existing_pci_properties = property_names.intersection(
                 self.PCI_PROPERTIES)
             subsystem = device['E'].get('SUBSYSTEM')
@@ -1212,11 +1217,78 @@ class SubmissionParser(object):
                     return False
         return True
 
+    def checkUdevUsbProperties(self, udev_data):
+        """Validation of udev USB devices.
+
+        USB devices must have the properties DEVTYPE (value
+        'usb_device' or 'usb_interface'), PRODUCT and TYPE. PRODUCT
+        must be a tuple of three integers in hexadecimal
+        representation, separates by '/'. TYPE must be a a tuple of
+        three integers in decimal representation, separated by '/'.
+        usb_interface nodes must additionally have a property
+        INTERFACE, containing three integers in the same format as
+        TYPE.
+        """
+        for device in udev_data:
+            subsystem = device['E'].get('SUBSYSTEM')
+            if subsystem != 'usb':
+                continue
+            properties = device['E']
+            property_names = set(properties)
+            existing_usb_properties = property_names.intersection(
+                UDEV_USB_DEVICE_PROPERTIES)
+            if existing_usb_properties != UDEV_USB_DEVICE_PROPERTIES:
+                missing_properties = UDEV_USB_DEVICE_PROPERTIES.difference(
+                    existing_usb_properties)
+                self._logError(
+                    'USB udev device found without required properties: %r %r'
+                    % (missing_properties, device['P']),
+                    self.submission_key)
+                return False
+            if UDEV_USB_PRODUCT_RE.search(properties['PRODUCT']) is None:
+                self._logError(
+                    'USB udev device found with invalid product ID: %r %r'
+                    % (properties['PRODUCT'], device['P']),
+                    self.submission_key)
+                return False
+            if UDEV_USB_TYPE_RE.search(properties['TYPE']) is None:
+                self._logError(
+                    'USB udev device found with invalid type data: %r %r'
+                    % (properties['TYPE'], device['P']),
+                    self.submission_key)
+                return False
+
+            device_type = properties['DEVTYPE']
+            if device_type not in ('usb_device', 'usb_interface'):
+                self._logError(
+                    'USB udev device found with invalid udev type data: %r %r'
+                    % (device_type, device['P']),
+                    self.submission_key)
+                return False
+            if device_type == 'usb_interface':
+                interface_type = properties.get('INTERFACE')
+                if interface_type is None:
+                    self._logError(
+                        'USB interface udev device found without INTERFACE '
+                        'property: %r'
+                        % device['P'],
+                        self.submission_key)
+                    return False
+                if UDEV_USB_TYPE_RE.search(interface_type) is None:
+                    self._logError(
+                        'USB Interface udev device found with invalid '
+                        'INTERFACE property: %r %r'
+                        % (interface_type, device['P']),
+                        self.submission_key)
+                    return False
+        return True
+
     def checkConsistentUdevDeviceData(self, udev_data):
         """Consistency checks for udev data."""
-        if not self.checkUdevDictsHavePathKey(udev_data):
-            return False
-        return self.checkUdevPciProperties(udev_data)
+        return (
+            self.checkUdevDictsHavePathKey(udev_data) and
+            self.checkUdevPciProperties(udev_data) and
+            self.checkUdevUsbProperties(udev_data))
 
     def checkConsistency(self, parsed_data):
         """Run consistency checks on the submitted data.
@@ -2277,6 +2349,39 @@ class UdevDevice(BaseDevice):
     def pci_subclass(self):
         """See `BaseDevice`."""
         return self.pci_class_info[1]
+
+    @property
+    def is_usb(self):
+        """True, if this is a USB device, else False."""
+        return self.udev['E'].get('SUBSYSTEM') == 'usb'
+
+    @property
+    def usb_ids(self):
+        """The vendor ID, product ID, product version for USB devices.
+
+        :return: [vendor_id, product_id, version] for USB devices
+            or [None, None, None] for other devices.
+        """
+        if self.is_usb:
+            # udev represents USB device IDs as strings
+            # vendor_id/prodct_id/version, where each part is
+            # as a hexdecimal number.
+            # SubmissionParser.checkUdevUsbProperties() ensures that
+            # the string PRODUCT is in the format required below.
+            product_info = self.udev['E']['PRODUCT'].split('/')
+            return [int(part, 16) for part in product_info]
+        else:
+            return [None, None, None]
+
+    @property
+    def usb_vendor_id(self):
+        """See `BaseDevice`."""
+        return self.usb_ids[0]
+
+    @property
+    def usb_product_id(self):
+        """See `BaseDevice`."""
+        return self.usb_ids[1]
 
 
 class ProcessingLoop(object):
