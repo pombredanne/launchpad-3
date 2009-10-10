@@ -209,6 +209,7 @@ First, update the cache tables for Celso's PPA:
 
   >>> ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn, log=TestLog())
+  DEBUG: ...
   DEBUG: Considering source 'pmount'
   ...
 

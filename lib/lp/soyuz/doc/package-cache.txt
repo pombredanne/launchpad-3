@@ -163,10 +163,11 @@ We can invoke the cache updater directly on IDistroSeries:
 
   >>> updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
-  DEBUG: Considering source 'mozilla-firefox'
-  ...
+  DEBUG: ...
   DEBUG: Considering source 'cdrkit'
   DEBUG: Creating new source cache entry.
+  ...
+  DEBUG: Considering source 'mozilla-firefox'
   ...
 
   >>> print updates
@@ -355,6 +356,7 @@ same queries work, pointing to Celso's PPA.
 
   >>> source_updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=transaction, log=TestLog())
+  DEBUG: ...
   DEBUG: Considering source 'pmount'
   ...
 
