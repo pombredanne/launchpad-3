@@ -2617,6 +2617,16 @@ class TestUdevDevice(TestCase):
             }
         }
 
+    usb_device_data = {
+        'P': '/devices/pci0000:00/0000:00:1d.1/usb3/3-2',
+        'E': {
+            'SUBSYSTEM': 'usb',
+            'DEVTYPE': 'usb_device',
+            'PRODUCT': '46d/a01/1013',
+            'TYPE': '0/0/0',
+            },
+        }
+
     def test_device_id(self):
         """Test of UdevDevice.device_id."""
         device = UdevDevice(self.pci_device_data, None, None)
@@ -2667,6 +2677,50 @@ class TestUdevDevice(TestCase):
         self.assertEqual(
             None, device.pci_class,
             'Invalid value of UdevDevice.pci_class for Non-PCI device.')
+
+    def test_is_usb(self):
+        """Test of UdevDevice.is_usb"""
+        device = UdevDevice(self.usb_device_data, None, None)
+        self.assertTrue(device.is_usb)
+
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertFalse(device.is_usb)
+
+    def test_usb_ids(self):
+        """Test of UdevDevice.usb_ids"""
+        device = UdevDevice(self.usb_device_data, None, None)
+        self.assertEqual(
+            [0x46d, 0xa01, 0x1013], device.usb_ids,
+            'Invalid value of UdevDevice.usb_ids for USB device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            [None, None, None], device.usb_ids,
+            'Invalid value of UdevDevice.usb_ids for Non-USB device.')
+
+    def test_usb_vendor_id(self):
+        """Test of UdevDevice.usb_vendor_id"""
+        device = UdevDevice(self.usb_device_data, None, None)
+        self.assertEqual(
+            0x46d, device.usb_vendor_id,
+            'Invalid value of UdevDevice.usb_vendor_id for USB device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            None, device.usb_vendor_id,
+            'Invalid value of UdevDevice.usb_vendor_id for Non-USB device.')
+
+    def test_usb_product_id(self):
+        """Test of UdevDevice.usb_product_id"""
+        device = UdevDevice(self.usb_device_data, None, None)
+        self.assertEqual(
+            0xa01, device.usb_product_id,
+            'Invalid value of UdevDevice.usb_product_id for USB device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            None, device.usb_product_id,
+            'Invalid value of UdevDevice.usb_product_id for Non-USB device.')
 
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):

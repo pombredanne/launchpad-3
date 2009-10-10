@@ -265,6 +265,7 @@ class Archive(SQLBase):
         archive_postfixes = {
             ArchivePurpose.PRIMARY : '',
             ArchivePurpose.PARTNER : '-partner',
+            ArchivePurpose.DEBUG : '-debug',
         }
 
         if self.is_ppa:

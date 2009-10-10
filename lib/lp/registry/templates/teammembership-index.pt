@@ -289,7 +289,7 @@
       </div>
 
       <div tal:condition="view/isInvited">
-        <p>
+        <p id="not-responded">
           <metal:person use-macro="template/macros/person" />
           has been invited to join this team, but hasn't responded to the
           invitation yet.
