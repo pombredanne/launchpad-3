@@ -26,8 +26,7 @@ class ISpecificationSubscription(Interface):
             vocabulary='ValidPersonOrTeam', readonly=True,
             description=_(
             'The person you would like to subscribe to this blueprint. '
-            'They will be notified of the subscription by e-mail, if they '
-            'have an active Launchpad account.')
+            'They will be notified of the subscription by e-mail.')
             )
     specification = Int(title=_('Specification'), required=True,
         readonly=True)
