@@ -347,7 +347,6 @@ class TestDistroBrancher(TestCaseWithFactory):
         brancher = self.makeNewSeriesAndBrancher(db_branch)
         brancher.makeOneNewBranch(db_branch)
         old_hosted_bzr_branch = Branch.open(db_branch.getPullURL())
-        old_hosted_bzr_branch.set_stacked_on_url(None)
         old_hosted_bzr_branch.create_checkout(
             self.factory.getUniqueString()).commit('')
         ok = brancher.checkOneBranch(db_branch)
@@ -361,7 +360,6 @@ class TestDistroBrancher(TestCaseWithFactory):
         brancher = self.makeNewSeriesAndBrancher(db_branch)
         brancher.makeOneNewBranch(db_branch)
         old_mirrored_bzr_branch = Branch.open(db_branch.warehouse_url)
-        old_mirrored_bzr_branch.set_stacked_on_url(None)
         old_mirrored_bzr_branch.create_checkout(
             self.factory.getUniqueString()).commit('')
         ok = brancher.checkOneBranch(db_branch)

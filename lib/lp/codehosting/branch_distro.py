@@ -45,7 +45,7 @@ def switch_branches(prefix, scheme, old_db_branch, new_db_branch):
     :param old_db_branch: The new trunk branch.  This should not have any
         presence on disk yet.
     """
-    # Move .bzr directory from old to new locations, crashing through the
+    # Move .bzr directory from old to new location, crashing through the
     # abstraction we usually hide our branch locations behind.
     old_underlying_path = os.path.join(
         prefix, branch_id_to_path(old_db_branch.id))
