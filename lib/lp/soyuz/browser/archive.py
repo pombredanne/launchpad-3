@@ -1630,6 +1630,15 @@ class ArchiveActivateView(LaunchpadFormView):
     def ubuntu(self):
         return getUtility(ILaunchpadCelebrities).ubuntu
 
+    @property
+    def initial_values(self):
+        """Set up default values for form fields."""
+        # Suggest a default value of "ppa" for the name for the
+        # first PPA activation.
+        if self.context.archive is None:
+            return {'name': 'ppa'}
+        return {}
+
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 

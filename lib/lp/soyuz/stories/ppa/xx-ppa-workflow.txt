@@ -54,14 +54,17 @@ the context launchpad user.
     Activating this PPA will block future renaming of Sample Person
     ...
 
-'PPA name' and 'Displayname' are required.
+'PPA name' and 'Displayname' are required fields.  For the first activated
+PPA, the name is pre-filled with a suggestion of "ppa":
+
+    >>> print sample_browser.getControl(name="field.name").value
+    ppa
 
     >>> sample_browser.getControl("Activate").click()
 
     >>> for error in get_feedback_messages(sample_browser.contents):
     ...     print error
-    There are 2 errors.
-    Required input is missing.
+    There is 1 error.
     Required input is missing.
 
 By submitting the form without acknowledging the PPA-ToS results in a
@@ -550,9 +553,11 @@ all his PPAs.
     >>> print extract_text(
     ...     first_tag_by_class(cprov_browser.contents, 'form'))
     PPA name:
-      A unique name used to identify this PPA.
+      A unique name used to identify this PPA. It will form part of the URL to
+      the archive repository.
     Displayname:
-      Displayname for this PPA.
+      Displayname for this PPA. It Will be used in the signing key's
+      description if this is the first archive for a person.
     PPA contents description: (Optional)
       A short description of this PPA. URLs are allowed and will be
       rendered as links.
@@ -566,7 +571,11 @@ known aspect.
     ...     first_tag_by_class(cprov_browser.contents, 'actions'))
     or Cancel
 
-If Celso does not fill 'PPA name' an error is raised.
+The 'PPA name' field is not pre-filled and if Celso does not fill it then
+an error is raised.
+
+    >>> print cprov_browser.getControl(name="field.name").value
+    <BLANKLINE>
 
     >>> cprov_browser.getControl(
     ...     name="field.displayname").value = 'Edge PPA'
