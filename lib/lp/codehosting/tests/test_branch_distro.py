@@ -230,6 +230,16 @@ class TestDistroBrancher(TestCaseWithFactory):
              'sourcepackage \(.*/.*/.* is instead\)$'])
         self.assertFalse(ok)
 
+    def test_checkConsistentOfficialPackageBranch_official_twice(self):
+        db_branch = self.factory.makePackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
+        self.factory.makeSourcePackage().setBranch(
+            RELEASE, db_branch, db_branch.owner)
+        ok = brancher.checkConsistentOfficialPackageBranch(db_branch)
+        self.assertLogMessages(['^WARNING .*/.*/.* is official for 2 series'])
+        self.assertFalse(ok)
+
     def test_checkConsistentOfficialPackageBranch_ok(self):
         db_branch = self.factory.makePackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
@@ -241,15 +251,27 @@ class TestDistroBrancher(TestCaseWithFactory):
     def test_checkOneBranch_no_official_branch(self):
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        ok = brancher.checkOneBranch(
+            self.factory.makePackageBranch(
+                sourcepackage=db_branch.sourcepackage))
+        self.assertFalse(ok)
+        self.assertLogMessages(
+            ['^WARNING No official branch found for .*/.*/.*$'])
+
+    def test_checkOneBranch_inconsistent_old_package_branch(self):
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
         self.assertLogMessages(
             ['^WARNING No official branch found for .*/.*/.*$'])
 
-    def test_checkOneBranch_inconsistent_package_branch(self):
+    def test_checkOneBranch_inconsistent_new_package_branch(self):
         db_branch = self.makeOfficialPackageBranch()
-        XXX
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        new_db_branch = brancher.makeOneNewBranch(db_branch)
+        new_db_branch.sourcepackage.setBranch(
+            RELEASE, db_branch, db_branch.owner)
         ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
         self.assertLogMessages(

@@ -19,6 +19,8 @@ from canonical.config import config
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branch import BranchExists
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks)
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -114,18 +116,23 @@ class DistroBrancher:
                 "Encountered unexpected personal branch %s",
                 db_branch.unique_name)
             return False
-        package_branch = db_branch.sourcepackage.getBranch(
-            PackagePublishingPocket.RELEASE)
-        if package_branch != db_branch:
-            if package_branch is not None:
-                self.logger.warning(
-                    "%s is not the official branch for its sourcepackage (%s"
-                    " is instead)", db_branch.unique_name,
-                    package_branch.unique_name)
-            else:
-                self.logger.warning(
-                    "There is no official branch for %s's source package",
-                    db_branch.unique_name)
+        find_branch_links = getUtility(IFindOfficialBranchLinks)
+        links = list(find_branch_links.findForBranch(db_branch))
+        if len(links) == 0:
+            self.logger.warning(
+                "There is no official branch for %s's source package",
+                db_branch.unique_name)
+            return False
+        elif len(links) > 1:
+            self.logger.warning(
+                "%s is official for %s series",
+                db_branch.unique_name, len(links))
+            return False
+        elif links[0].branch != db_branch:
+            self.logger.warning(
+                "%s is not the official branch for its sourcepackage (%s"
+                " is instead)", db_branch.unique_name,
+                links[0].branch.unique_name)
             return False
         return True
 
@@ -143,6 +150,9 @@ class DistroBrancher:
 
     def checkOneBranch(self, old_db_branch):
         """XXX."""
+        ok = self.checkConsistentOfficialPackageBranch(old_db_branch)
+        if not ok:
+            return ok
         new_sourcepackage = getUtility(ISourcePackageFactory).new(
             sourcepackagename=old_db_branch.sourcepackagename,
             distroseries=self.new_distroseries)
@@ -156,6 +166,8 @@ class DistroBrancher:
                 old_db_branch.sourcepackagename.name)
             return False
         ok = self.checkConsistentOfficialPackageBranch(new_db_branch)
+        if not ok:
+            return ok
         # for both mirrored and hosted areas:
         for scheme in 'lp-mirrored:///', 'lp-hosted:///':
             # the branch in the new distroseries is unstacked
