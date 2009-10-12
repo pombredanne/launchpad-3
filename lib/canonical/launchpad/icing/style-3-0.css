@@ -941,3 +941,28 @@ table.translation-stats tfoot td {
     margin-top: 2em;
     clear: both;
 }
+
+.grid {
+        margin: 0.0em;
+        padding: 0.0em;
+}
+
+.grid ul {
+        margin: 0.5em 0.0em 0.5em 0.0em;
+        padding: 0.5em 0.0em 0.0em 0.0em;
+}
+
+.grid li {
+        display: inline;
+        margin: 0.0em;
+        padding: 0.2em;
+}
+
+.grid li span {
+        display: table-cell;
+        display: inline-table;
+        display: inline-block;
+        width: 132px;
+        text-align: center;
+        vertical-align: middle;
+}

@@ -168,10 +168,17 @@ will even show the path from the user to the team.
 
 It is also possible to view the set of mugshots of the people in the team.
 
-    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+mugshots')
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/')
+    >>> anon_browser.getLink('Show member photos').click()
     >>> print find_main_content(anon_browser.contents)
     <...
     <h1>Who's in this team?</h1>
+    ...
+
+The display of mugshots is batched.
+
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'mugshots'))
+    1...5 of 10 results
     ...
 
 == Team admins ==
