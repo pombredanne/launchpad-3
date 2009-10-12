@@ -111,16 +111,21 @@ class DistroBrancher:
             return False
         if not db_branch.distroseries:
             self.logger.warning(
-                "Encountered unexpected personal branch %r",
+                "Encountered unexpected personal branch %s",
                 db_branch.unique_name)
             return False
         package_branch = db_branch.sourcepackage.getBranch(
             PackagePublishingPocket.RELEASE)
         if package_branch != db_branch:
-            self.logger.warning(
-                "%r is not the official branch for its sourcepackage (%r"
-                " is instead)", db_branch.unique_name,
-                package_branch.unique_name)
+            if package_branch is not None:
+                self.logger.warning(
+                    "%s is not the official branch for its sourcepackage (%s"
+                    " is instead)", db_branch.unique_name,
+                    package_branch.unique_name)
+            else:
+                self.logger.warning(
+                    "There is no official branch for %s's source package",
+                    db_branch.unique_name)
             return False
         return True
 
