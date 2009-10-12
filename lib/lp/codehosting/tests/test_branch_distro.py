@@ -1,7 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""XXX write me."""
+"""Tests for the code to make new source packages just after a disto release.
+"""
 
 __metaclass__ = type
 
@@ -27,12 +28,18 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 
+
+# We say "RELEASE" often enough to not want to say "PackagePublishingPocket."
+# each time.
 RELEASE = PackagePublishingPocket.RELEASE
 
 
 class FakeBranch:
+    """Just enough of a Branch to pass `test_switch_branches`."""
+
     def __init__(self, id):
         self.id = id
+
     @property
     def unique_name(self):
         return branch_id_to_path(self.id)
@@ -42,6 +49,7 @@ class TestSwitchBranches(TestCaseWithTransport):
     """XXX."""
 
     def test_switch_branches(self):
+        # 
 
         chroot_server = ChrootServer(self.get_transport())
         chroot_server.setUp()
@@ -142,21 +150,30 @@ class TestDistroBrancher(TestCaseWithFactory):
                 self.fail("%r does not match %r" % (pattern, message))
 
     def test_makeOneNewBranch(self):
+        # 
+        db_branch = self.makeOfficialPackageBranch()
+
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
+
+        new_branch = brancher.new_distroseries.getSourcePackage(
+            db_branch.sourcepackage.name).getBranch(RELEASE)
+
+        self.assertIsNot(new_branch, None)
+
+    def test_makeOneNewBranch_inconsistent_branch(self):
 
         db_branch = self.makeOfficialPackageBranch()
 
-        new_distro_series = self.factory.makeDistroRelease(
-            distribution=db_branch.distribution)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(
+            self.factory.makePackageBranch(db_branch.sourcepackage))
 
-        brancher = DistroBrancher(
-            QuietFakeLogger(), db_branch.distroseries, new_distro_series)
-        brancher.makeOneNewBranch(db_branch)
-
-        new_sourcepackage = new_distro_series.getSourcePackage(
-            db_branch.sourcepackage.name)
-        new_branch = new_sourcepackage.getBranch(RELEASE)
-
-        self.assertIsNot(new_branch, None)
+        new_branch = brancher.new_distroseries.getSourcePackage(
+            db_branch.sourcepackage.name).getBranch(RELEASE)
+        self.assertIs(new_branch, None)
+        self.assertLogMessages(
+            ['^WARNING .*'])
 
     def test_makeNewBranches(self):
 
@@ -181,6 +198,19 @@ class TestDistroBrancher(TestCaseWithFactory):
 
         self.assertIsNot(new_branch, None)
         self.assertIsNot(new_branch2, None)
+
+    def test_makeOneNewBranches_idempotent(self):
+        # 
+        db_branch = self.makeOfficialPackageBranch()
+
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeNewBranches()
+        brancher.makeNewBranches()
+
+        new_branch = brancher.new_distroseries.getSourcePackage(
+            db_branch.sourcepackage.name).getBranch(RELEASE)
+
+        self.assertIsNot(new_branch, None)
 
     def test_makeNewBranch_checks_ok(self):
         db_branch = self.makeOfficialPackageBranch()
@@ -212,8 +242,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         ok = brancher.checkConsistentOfficialPackageBranch(db_branch)
         self.assertLogMessages(
-            ['^WARNING There is no official branch for .*/.*/.* source '
-             'package$'])
+            ['^WARNING .*/.*/.*\ is not an official branch$'])
         self.assertFalse(ok)
 
     def test_checkConsistentOfficialPackageBranch_not_official_branch(self):
@@ -226,8 +255,18 @@ class TestDistroBrancher(TestCaseWithFactory):
             RELEASE, official_branch, official_branch.owner)
         ok = brancher.checkConsistentOfficialPackageBranch(unofficial_branch)
         self.assertLogMessages(
-            ['^WARNING .*/.*/.* is not the official branch for its '
-             'sourcepackage \(.*/.*/.* is instead\)$'])
+            ['^WARNING .*/.*/.* is not an official branch$'])
+        self.assertFalse(ok)
+
+    def test_checkConsistentOfficialPackageBranch_official_elsewhere(self):
+        db_branch = self.factory.makePackageBranch()
+        self.factory.makeSourcePackage().setBranch(
+            RELEASE, db_branch, db_branch.owner)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        ok = brancher.checkConsistentOfficialPackageBranch(db_branch)
+        self.assertLogMessages(
+            ['^WARNING .*/.*/.* is the official branch for .*/.*/.* but not '
+             'its sourcepackage$'])
         self.assertFalse(ok)
 
     def test_checkConsistentOfficialPackageBranch_official_twice(self):
@@ -248,17 +287,15 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertLogMessages([])
         self.assertTrue(ok)
 
-    def test_checkOneBranch_no_official_branch(self):
-        db_branch = self.makeOfficialPackageBranch()
-        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        ok = brancher.checkOneBranch(
-            self.factory.makePackageBranch(
-                sourcepackage=db_branch.sourcepackage))
+    def test_checkOneBranch_inconsistent_old_package_branch(self):
+        brancher = self.makeNewSeriesAndBrancher()
+        db_branch = self.factory.makePackageBranch()
+        ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
         self.assertLogMessages(
-            ['^WARNING No official branch found for .*/.*/.*$'])
+            ['^WARNING .*/.*/.* is not an official branch$'])
 
-    def test_checkOneBranch_inconsistent_old_package_branch(self):
+    def test_checkOneBranch_no_new_official_branch(self):
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         ok = brancher.checkOneBranch(db_branch)
@@ -270,12 +307,14 @@ class TestDistroBrancher(TestCaseWithFactory):
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
-        new_db_branch.sourcepackage.setBranch(
-            RELEASE, db_branch, db_branch.owner)
-        ok = brancher.checkOneBranch(db_branch)
+        new_db_branch.setTarget(
+            new_db_branch.owner,
+            source_package=self.factory.makeSourcePackage())
+        ok = brancher.checkOneBranch(new_db_branch)
         self.assertFalse(ok)
         self.assertLogMessages(
-            ['^WARNING No official branch found for .*/.*/.*$'])
+            ['^WARNING .*/.*/.* is the official branch for .*/.*/.* but not '
+             'its sourcepackage$'])
 
     def test_checkOneBranch_new_hosted_branch_missing(self):
         db_branch = self.makeOfficialPackageBranch()

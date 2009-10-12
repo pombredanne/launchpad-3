@@ -120,19 +120,20 @@ class DistroBrancher:
         links = list(find_branch_links.findForBranch(db_branch))
         if len(links) == 0:
             self.logger.warning(
-                "There is no official branch for %s's source package",
-                db_branch.unique_name)
+                "%s is not an official branch", db_branch.unique_name)
             return False
         elif len(links) > 1:
             self.logger.warning(
                 "%s is official for %s series",
                 db_branch.unique_name, len(links))
             return False
-        elif links[0].branch != db_branch:
+        elif links[0].sourcepackage != db_branch.sourcepackage:
             self.logger.warning(
-                "%s is not the official branch for its sourcepackage (%s"
-                " is instead)", db_branch.unique_name,
-                links[0].branch.unique_name)
+                "%s is the official branch for %s/%s/%s but not its "
+                "sourcepackage", db_branch.unique_name,
+                links[0].sourcepackage.distribution.name,
+                links[0].sourcepackage.distroseries.name,
+                links[0].sourcepackage.name)
             return False
         return True
 
@@ -236,6 +237,8 @@ class DistroBrancher:
 
     def makeOneNewBranch(self, old_db_branch):
         """XXX."""
+        if not self.checkConsistentOfficialPackageBranch(old_db_branch):
+            return
         new_namespace = getUtility(IBranchNamespaceSet).get(
             person=old_db_branch.owner, product=None,
             distroseries=self.new_distroseries,
