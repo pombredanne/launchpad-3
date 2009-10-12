@@ -2627,6 +2627,20 @@ class TestUdevDevice(TestCase):
             },
         }
 
+    scsi_device_data = {
+        'P': '/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0',
+        'E': {
+            'SUBSYSTEM': 'scsi',
+            'DEVTYPE': 'scsi_device',
+            },
+        }
+
+    scsi_device_sysfs_data = {
+        'vendor': 'MATSHITA',
+        'model': 'DVD-RAM UJ-841S',
+        'type': '5',
+        }
+
     def test_device_id(self):
         """Test of UdevDevice.device_id."""
         device = UdevDevice(self.pci_device_data, None, None)
@@ -2722,6 +2736,31 @@ class TestUdevDevice(TestCase):
             None, device.usb_product_id,
             'Invalid value of UdevDevice.usb_product_id for Non-USB device.')
 
+    def test_is_scsi_device(self):
+        """Test of UdevDevice.is_scsi_device."""
+        device = UdevDevice(
+            self.scsi_device_data, self.scsi_device_sysfs_data, None)
+        self.assertTrue(device.is_scsi_device)
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertFalse(device.is_scsi_device)
+
+    def test_scsi_vendor(self):
+        """Test of UdevDevice.scsi_vendor."""
+        device = UdevDevice(
+            self.scsi_device_data, self.scsi_device_sysfs_data, None)
+        self.assertEqual('MATSHITA', device.scsi_vendor)
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(None, device.scsi_vendor)
+
+    def test_scsi_model(self):
+        """Test of UdevDevice.scsi_model."""
+        device = UdevDevice(
+            self.scsi_device_data, self.scsi_device_sysfs_data, None)
+        self.assertEqual('DVD-RAM UJ-841S', device.scsi_model)
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(None, device.scsi_model)
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
     """Tests of the HWDB popoluation with submitted data."""
