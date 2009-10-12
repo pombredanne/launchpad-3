@@ -22,7 +22,7 @@ import transaction
 from canonical.testing.layers import ZopelessAppServerLayer
 from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
 
-from lp.codehosting.branch_distro import (
+from lp.codehosting.branchdistro import (
     DistroBrancher, switch_branches)
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
