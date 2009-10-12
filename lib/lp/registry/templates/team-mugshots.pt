@@ -24,7 +24,7 @@
         <span>
           <a tal:attributes="href member/fmt:url;
                              title member/displayname">
-            <img tal:replace="structure member/image:mugshot">
+            <img tal:replace="structure member/image:mugshot" />
             <div tal:content="member/displayname" />
           </a>
         </span>
