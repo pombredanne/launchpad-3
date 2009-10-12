@@ -81,22 +81,20 @@
                     # __len__ method returns 0.
                   </tal:XXX>
                   <td tal:condition="entry/import_into/title|nothing" rowspan="3">
-                    <img alt="" src="/@@/download" />
+                    <span class="download sprite"></span>
                   </td>
                   <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
-                    <img alt="" src="/@@/download" />
+                    <span class="download sprite"></span>
                   </td>
                   <td>
                     <a tal:attributes="href entry/content/http_url"
                        tal:content="entry/path">po/foo.pot</a> in
                     <a tal:condition="entry/sourcepackage"
-                       tal:content="entry/sourcepackage/title"
-                       tal:attributes="href entry/sourcepackage/fmt:url"
-                       >evolution in Ubuntu Hoary</a>
+                       tal:replace="structure entry/sourcepackage/fmt:link">
+                       evolution in Ubuntu Hoary</a>
                     <a tal:condition="entry/productseries"
-                       tal:content="entry/productseries/title"
-                       tal:attributes="href entry/productseries/fmt:url"
-                       >Evolution Series: MAIN</a>
+                       tal:replace="structure entry/productseries/fmt:link">
+                       Evolution Series: MAIN</a>
                   </td>
                   <td tal:condition="entry/required:launchpad.Edit">
                     <tal:status define="name string:status_${entry/id}"
@@ -107,8 +105,8 @@
                   </td>
                   <td>
                     <tal:block condition="entry/required:launchpad.Admin">
-                      <a tal:attributes="href entry/fmt:url">
-                        <img src="/@@/edit" title="Change this entry" />
+                      <a class="sprite edit" tal:attributes="href entry/fmt:url">
+                        <span class="invisible-link">Change this entry</span>
                       </a>
                     </tal:block>
                   </td>
@@ -128,9 +126,9 @@
                 <tr class="discreet secondary">
                   <td colspan="3">
                     Uploaded by 
-                    <a tal:content="entry/importer/displayname"
-                       tal:attributes="href entry/importer/fmt:url"
-                       >Mark Shuttleworth</a>
+                    <a tal:replace="structure entry/importer/fmt:link">
+                      Mark Shuttleworth
+                    </a>
                     on <span tal:content="entry/dateimported/fmt:datetime">date</span>
                   </td>
                 </tr>
@@ -167,6 +165,7 @@
           </form>
         </tal:block>
       </div>
+      <div id="spinner-loader"></div>
     </metal:translation-import-queue>
 </body>
 </html>

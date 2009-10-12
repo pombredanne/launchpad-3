@@ -3,8 +3,6 @@ Start out by verifying the members page is sane.
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+members')
     >>> 'Ubuntu Team' in browser.contents
     True
-    >>> 'Mark Shuttleworth' in browser.contents
-    True
 
 Let's take a look at Colin's subscription page. Colin is an
 administrator and his subscription never expires.
@@ -14,8 +12,8 @@ administrator and his subscription never expires.
     >>> url = '/~ubuntu-team/+member/kamion'
     >>> browser.getLink(url=url).click()
 
-    >>> "Colin Watson's membership status in Ubuntu Team" in browser.contents
-    True
+    >>> print browser.title
+    Colin Watson's membership : ...Ubuntu Team... team
     >>> "Active member" in browser.contents
     True
     >>> browser.getControl(name='admin').value
@@ -111,8 +109,8 @@ the administrator control on the membership page.
     >>> url = '/~ubuntu-team/+member/jdub'
     >>> jdub_browser.getLink(url=url).click()
 
-    >>> "Jeff Waugh's membership status in Ubuntu Team" in jdub_browser.contents
-    True
+    >>> print jdub_browser.title
+    Jeff Waugh's membership : ...Ubuntu Team... team
     >>> "Active member" in jdub_browser.contents
     True
 
@@ -240,4 +238,3 @@ The Ubuntu Team is only a direct member of other teams:
     >>> indirect = find_portlet(browser.contents, 'Indirect membership')
     >>> print indirect
     None
-

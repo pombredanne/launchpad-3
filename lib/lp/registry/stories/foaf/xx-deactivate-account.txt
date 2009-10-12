@@ -84,8 +84,9 @@ assignee.
     >>> browser.open('http://launchpad.dev/debian/+source/'
     ...     'mozilla-firefox/+bug/3/+viewstatus')
     >>> print extract_text(find_main_content(browser.contents))
-    Bug #3:
-    ...To change this information, you must be logged in...
+    Debian
+    ...
+    Bug #3
     ...Assigned to unknown...
 
 And now the Launchpad page for that person will clearly say (s)he does not use
@@ -94,7 +95,6 @@ Launchpad.
     >>> browser.open('http://launchpad.dev/~name12-deactivatedaccount')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'not-lp-user-or-team'))
-    Sample Person
     Sample Person does not use Launchpad.
 
 Although teams have NOACCOUNT as their account_status, they are teams and so

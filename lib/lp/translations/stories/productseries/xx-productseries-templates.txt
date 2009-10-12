@@ -11,7 +11,7 @@ The view is only visible to the owner of the ProductSeries and administrators.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('Templates')
+    >>> user_browser.getLink('full list of templates')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -19,7 +19,7 @@ The view is only visible to the owner of the ProductSeries and administrators.
     >>> browser = setupBrowser('Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk')
-    >>> browser.getLink('Templates').click()
+    >>> browser.getLink('full list of templates').click()
     >>> print browser.url
     http://translations.launchpad.dev/evolution/trunk/+templates
 

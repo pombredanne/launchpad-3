@@ -1,45 +1,62 @@
-<tal:root
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
-
-<tal:do-this-first replace="view/setUpTokenAndVotes" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/team/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-options" />
-</metal:rightportlets>
+<tal:heading metal:fill-slot="heading">
+  <h1 tal:content="context/title">Mozilla</h1>
+</tal:heading>
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/title" />
-      <div
-        class="highlighted"
-        tal:content="structure context/proposition/fmt:text-to-html"
-      />
+  <tal:do-this-first replace="view/setUpTokenAndVotes" />
+
+  <div
+    class="highlighted"
+    tal:content="structure context/proposition/fmt:text-to-html"
+  />
+  <br />
 
   <p tal:condition="not: context/getActiveOptions">
     This poll does not yet have any voting options. Please <a
     href="+newoption">add an option</a>. Note, you need more than one option
     for a real poll, of course :-)
   </p>
+
+  <div class="two-column-list">
+    <dl>
+      <dt>Opens:</dt>
+      <dd
+        tal:attributes="title context/dateopens/fmt:datetime"
+        tal:content="context/dateopens/fmt:approximatedate" />
+    </dl>
+
+    <dl>
+      <dt>Type:</dt>
+      <dd tal:content="context/type/title" />
+    </dl>
+
+    <dl>
+      <dt>Closes:</dt>
+      <dd
+        tal:attributes="title context/datecloses/fmt:datetime"
+        tal:content="context/datecloses/fmt:approximatedate" />
+    </dl>
+
+    <dl>
+      <dt>Secrecy:</dt>
+      <dd tal:content="context/secrecy/title" />
+    </dl>
+  </div>
+  <br />
+
+  <tal:details replace="structure context/@@+portlet-options" />
+  <br />
 
   <tal:is_open condition="context/isOpen">
     <p tal:condition="not: request/lp:person">
@@ -180,6 +197,11 @@
 
 </div>
 
+<div metal:fill-slot="side">
+  <div id="object-actions" class="top-portlet">
+    <tal:menu replace="structure view/@@+global-actions" />
+  </div>
+</div>
+
 </body>
 </html>
-</tal:root>

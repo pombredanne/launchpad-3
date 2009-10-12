@@ -68,8 +68,9 @@ are no subscribers so there whould be no emails.
     http://code.launchpad.dev/~name12/gnome-terminal/klingon
 
     >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'branch-details-table').tbody)
-    Project: GNOME Terminal (Unspecified)
+    ...     browser.contents, 'branch-info'))
+    Branch information...
+    Project: GNOME Terminal (Unspecified)...
     Status: Experimental
     Location: http://trekkies.example.com/gnome-terminal/klingon
     Last mirrored: ...
@@ -106,7 +107,7 @@ The branch page is displayed with the new status:
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
     >>> contents = browser.contents
     >>> status_tag = find_tag_by_id(contents, 'branch-details-status-value')
-    >>> print status_tag.renderContents()
+    >>> print extract_text(status_tag)
     Merged
 
 Set the branch status back to its initial state.
@@ -296,7 +297,7 @@ to any valid person or team.
 
     >>> admin_browser.open('http://launchpad.dev/~name12/firefox/main')
     >>> admin_browser.getLink('Change branch details').click()
-    >>> admin_browser.getControl('Owner').value = 'sabdfl'
+    >>> admin_browser.getControl('Owner').value = 'mark'
     >>> admin_browser.getControl('Change Branch').click()
     >>> print admin_browser.url
-    http://code.launchpad.dev/~sabdfl/firefox/main
+    http://code.launchpad.dev/~mark/firefox/main

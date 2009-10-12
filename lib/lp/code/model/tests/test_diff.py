@@ -7,20 +7,63 @@ __metaclass__ = type
 
 
 from cStringIO import StringIO
+from difflib import unified_diff
 from unittest import TestLoader
 
+from bzrlib.branch import Branch
 import transaction
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
-from lp.code.model.diff import Diff, StaticDiff
+from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
+from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
 
 
-class TestDiff(TestCaseWithFactory):
+class DiffTestCase(TestCaseWithFactory):
+
+    @staticmethod
+    def commitFile(branch, path, contents):
+        """Create a commit that updates a file to specified contents.
+
+        This will create or modify the file, as needed.
+        """
+        committer = DirectBranchCommit(branch, to_mirror=True)
+        committer.writeFile(path, contents)
+        try:
+            return committer.commit('committing')
+        finally:
+            committer.unlock()
+
+    def createExampleMerge(self):
+        """Create a merge proposal with conflicts and updates."""
+        self.useBzrBranches()
+        bmp = self.factory.makeBranchMergeProposal()
+        bzr_target = self.createBzrBranch(bmp.target_branch)
+        self.commitFile(bmp.target_branch, 'foo', 'a\n')
+        self.createBzrBranch(bmp.source_branch, bzr_target)
+        source_rev_id = self.commitFile(bmp.source_branch, 'foo', 'd\na\nb\n')
+        target_rev_id = self.commitFile(bmp.target_branch, 'foo', 'c\na\n')
+        return bmp, source_rev_id, target_rev_id
+
+    def checkExampleMerge(self, diff_text):
+        """Ensure the diff text matches the values for ExampleMerge."""
+        # The source branch added a line "b".
+        self.assertIn('+b\n', diff_text)
+        # The line "a" was present before any changes were made, so it's not
+        # considered added.
+        self.assertNotIn('+a\n', diff_text)
+        # There's a conflict because the source branch added a line "d", but
+        # the target branch added the line "c" in the same place.
+        self.assertIn(
+            '+<<<''<<<< TREE\n c\n+=======\n+d\n+>>>>>''>> MERGE-SOURCE\n',
+            diff_text)
+
+
+class TestDiff(DiffTestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -41,13 +84,13 @@ class TestDiff(TestCaseWithFactory):
     def test_text_reads_librarian_content(self):
         # IDiff.text will read at most config.diff.max_read_size bytes from
         # the librarian.
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertEqual(content, diff.text)
 
     def test_oversized_normal(self):
         # A diff smaller than config.diff.max_read_size is not oversized.
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertFalse(diff.oversized)
 
@@ -55,16 +98,97 @@ class TestDiff(TestCaseWithFactory):
         # IDiff.text will read at most config.diff.max_read_size bytes from
         # the librarian.
         self.pushConfig("diff", max_read_size=25)
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertEqual(content[:25], diff.text)
 
     def test_oversized_for_big_diff(self):
         # A diff larger than config.diff.max_read_size is oversized.
         self.pushConfig("diff", max_read_size=25)
-        content = "1234567890" * 10
+        content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
+
+    def test_mergePreviewFromBranches(self):
+        # mergePreviewFromBranches generates the correct diff.
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        source_branch = Branch.open(bmp.source_branch.warehouse_url)
+        target_branch = Branch.open(bmp.target_branch.warehouse_url)
+        diff = Diff.mergePreviewFromBranches(
+            source_branch, source_rev_id, target_branch)
+        transaction.commit()
+        self.checkExampleMerge(diff.text)
+
+    diff_bytes = (
+        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "@@ -1,3 +0,0 @@\n"
+        "-a\n"
+        "-b\n"
+        "-c\n"
+        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "@@ -0,0 +1,2 @@\n"
+        "+a\n"
+        "+b\n"
+        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "@@ -1,3 +1,4 @@\n"
+        " a\n"
+        "-b\n"
+        " c\n"
+        "+d\n"
+        "+e\n")
+
+    diff_bytes_2 = (
+        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "@@ -1,3 +0,0 @@\n"
+        "-a\n"
+        "-b\n"
+        "-c\n"
+        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "@@ -0,0 +1,2 @@\n"
+        "+a\n"
+        "+b\n"
+        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "@@ -1,3 +1,5 @@\n"
+        " a\n"
+        "-b\n"
+        " c\n"
+        "+d\n"
+        "+e\n"
+        "+f\n")
+
+    def test_generateDiffstat(self):
+        self.assertEqual(
+            {'foo': (2, 1), 'bar': (0, 3), 'baz': (2, 0)},
+            Diff.generateDiffstat(self.diff_bytes))
+
+    def test_fromFileSetsDiffstat(self):
+        diff = Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
+        self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
+                         diff.diffstat)
+
+    def test_fromFileSets_added_removed(self):
+        """fromFile sets added_lines_count, removed_lines_count."""
+        diff = Diff.fromFile(
+            StringIO(self.diff_bytes_2), len(self.diff_bytes_2))
+        self.assertEqual(5, diff.added_lines_count)
+        self.assertEqual(4, diff.removed_lines_count)
+
+    def test_fromFile_withError(self):
+        # If the diff is formatted such that generating the diffstat fails, we
+        # want to record an oops but continue.
+        last_oops_id = errorlog.globalErrorUtility.lastid
+        diff_bytes = "not a real diff"
+        diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
+        self.assertNotEqual(last_oops_id, errorlog.globalErrorUtility.lastid)
+        self.assertIs(None, diff.diffstat)
+        self.assertIs(None, diff.added_lines_count)
+        self.assertIs(None, diff.removed_lines_count)
 
 
 class TestStaticDiff(TestCaseWithFactory):
@@ -114,12 +238,14 @@ class TestStaticDiff(TestCaseWithFactory):
         It creates a new object if there is none, but uses the existing one
         if possible.
         """
-        diff_a = 'a'
-        diff_b = 'b'
-        static_diff = StaticDiff.acquireFromText('rev1', 'rev2', diff_a)
+        diff_a = ''.join(unified_diff('', 'a'))
+        diff_b = ''.join(unified_diff('', 'b'))
+        static_diff = StaticDiff.acquireFromText(
+            'rev1', 'rev2', diff_a)
         self.assertEqual('rev1', static_diff.from_revision_id)
         self.assertEqual('rev2', static_diff.to_revision_id)
-        static_diff2 = StaticDiff.acquireFromText('rev1', 'rev2', diff_b)
+        static_diff2 = StaticDiff.acquireFromText(
+            'rev1', 'rev2', diff_b)
         self.assertIs(static_diff, static_diff2)
 
     def test_acquireFromTextEmpty(self):
@@ -127,29 +253,33 @@ class TestStaticDiff(TestCaseWithFactory):
         self.assertEqual('', static_diff.diff.text)
 
     def test_acquireFromTextNonEmpty(self):
-        static_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'abc')
+        diff_bytes = ''.join(unified_diff('', 'abc'))
+        static_diff = StaticDiff.acquireFromText(
+            'rev1', 'rev2', diff_bytes)
         transaction.commit()
-        self.assertEqual('abc', static_diff.diff.text)
+        self.assertEqual(diff_bytes, static_diff.diff.text)
 
 
-class TestPreviewDiff(TestCaseWithFactory):
+class TestPreviewDiff(DiffTestCase):
     """Test that PreviewDiff objects work."""
 
     layer = LaunchpadFunctionalLayer
 
-    def _createProposalWithPreviewDiff(self, dependent_branch=None,
-                                       content='content'):
+    def _createProposalWithPreviewDiff(self, prerequisite_branch=None,
+                                       content=None):
         # Create and return a preview diff.
         mp = self.factory.makeBranchMergeProposal(
-            dependent_branch=dependent_branch)
+            prerequisite_branch=prerequisite_branch)
         login_person(mp.registrant)
-        if dependent_branch is None:
-            dependent_revision_id = None
+        if prerequisite_branch is None:
+            prerequisite_revision_id = None
         else:
-            dependent_revision_id = u'rev-c'
+            prerequisite_revision_id = u'rev-c'
+        if content is None:
+            content = ''.join(unified_diff('', 'content'))
         mp.updatePreviewDiff(
-            content, u'stat', u'rev-a', u'rev-b',
-            dependent_revision_id=dependent_revision_id)
+            content, u'rev-a', u'rev-b',
+            prerequisite_revision_id=prerequisite_revision_id)
         # Make sure the librarian file is written.
         transaction.commit()
         return mp
@@ -171,7 +301,7 @@ class TestPreviewDiff(TestCaseWithFactory):
     def test_empty_diff(self):
         # Once the source is merged into the target, the diff between the
         # branches will be empty.
-        mp = self._createProposalWithPreviewDiff(content=None)
+        mp = self._createProposalWithPreviewDiff(content='')
         preview = mp.preview_diff
         self.assertIs(None, preview.diff_text)
         self.assertEqual(0, preview.diff_lines_count)
@@ -205,9 +335,9 @@ class TestPreviewDiff(TestCaseWithFactory):
         mp.target_branch.last_scanned_id = 'rev-d'
         self.assertEqual(True, mp.preview_diff.stale)
 
-    def test_stale_dependentBranch(self):
-        # If the merge proposal has a dependent branch, then the tip revision
-        # id of the dependent branch is also checked.
+    def test_stale_prerequisiteBranch(self):
+        # If the merge proposal has a prerequisite branch, then the tip
+        # revision id of the prerequisite branch is also checked.
         dep_branch = self.factory.makeProductBranch()
         mp = self._createProposalWithPreviewDiff(dep_branch)
         # Log in an admin to avoid the launchpad.Edit needs for last_scanned.
@@ -218,6 +348,16 @@ class TestPreviewDiff(TestCaseWithFactory):
         self.assertEqual(False, mp.preview_diff.stale)
         dep_branch.last_scanned_id = 'rev-d'
         self.assertEqual(True, mp.preview_diff.stale)
+
+    def test_fromBranchMergeProposal(self):
+        # Correctly generates a PreviewDiff from a BranchMergeProposal.
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        preview = PreviewDiff.fromBranchMergeProposal(bmp)
+        self.assertEqual(source_rev_id, preview.source_revision_id)
+        self.assertEqual(target_rev_id, preview.target_revision_id)
+        transaction.commit()
+        self.checkExampleMerge(preview.text)
+        self.assertEqual({'foo': (5, 0)}, preview.diffstat)
 
 
 def test_suite():

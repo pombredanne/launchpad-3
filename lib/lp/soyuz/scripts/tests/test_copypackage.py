@@ -25,6 +25,7 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy)
@@ -33,8 +34,7 @@ from lp.soyuz.interfaces.build import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingPocket, PackagePublishingStatus,
-    active_publishing_status)
+    PackagePublishingStatus, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
     PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.model.publishing import (
@@ -48,6 +48,24 @@ from lp.soyuz.scripts.packagecopier import (
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     TestCase, TestCaseWithFactory)
+
+
+def _create_source(test_publisher, archive):
+    """Create source with meaningful '.changes' file."""
+    changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes'
+
+    changesfile_content = ''
+    handle = open(changesfile_path, 'r')
+    try:
+        changesfile_content = handle.read()
+    finally:
+        handle.close()
+
+    source = test_publisher.getPubSource(
+        sourcename='foocomm', archive=archive, version='1.0-2',
+        changes_file_content=changesfile_content)
+
+    return source
 
 
 class ReUploadFileTestCase(TestCaseWithFactory):
@@ -132,6 +150,22 @@ class ReUploadFileTestCase(TestCaseWithFactory):
             private_file.restricted, 'New file still public')
         self.assertSameContent(public_file, private_file)
         self.assertFileIsReset(private_file)
+
+    def test_re_upload_file_does_not_leak_file_descriptors(self):
+        # Reuploading a library file doesn't leak file descriptors. The
+        # only extra file opened by the end of the process is the socket
+        # with the librarian server.
+        private_file = self.factory.makeLibraryFileAlias(restricted=True)
+        transaction.commit()
+
+        def number_of_open_files():
+            return len(os.listdir('/proc/%d/fd/' % os.getpid()))
+        previously_open_files = number_of_open_files()
+
+        public_file = re_upload_file(private_file)
+
+        open_files = number_of_open_files() - previously_open_files
+        self.assertEqual(1, open_files)
 
 
 class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
@@ -754,7 +788,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA)
         private_archive.buildd_secret = 'x'
         private_archive.private = True
-        source = self.test_publisher.getPubSource(archive=private_archive)
+        source = _create_source(self.test_publisher, private_archive)
 
         archive = self.test_publisher.ubuntutest.main_archive
         series = source.distroseries
@@ -883,7 +917,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         ppa.buildd_secret = 'x'
         ppa.private = True
 
-        source = self.test_publisher.getPubSource(archive=ppa)
+        source = _create_source(self.test_publisher, ppa)
         self.test_publisher.getPubBinaries(pub_source=source)
 
         [build] = source.getBuilds()
@@ -928,7 +962,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # The returned object has a more descriptive 'displayname'
         # attribute than plain `IPackageUpload` instances.
         self.assertEquals(
-            'Delayed copy of foo - 666 (source, i386, raw-dist-upgrader)',
+            'Delayed copy of foocomm - 1.0-2 (source, i386, raw-dist-upgrader)',
             delayed_copy.displayname)
 
         # It is targeted to the right publishing context.
@@ -1317,7 +1351,7 @@ class CopyPackageTestCase(TestCase):
         # Repeating the copy of source and it's binaries.
         copy_helper = self.getCopier(
             sourcename='foo', from_suite='hoary', to_suite='hoary',
-            to_ppa='sabdfl')
+            to_ppa='mark')
         copied = copy_helper.mainTask()
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 3)
@@ -1810,7 +1844,7 @@ class CopyPackageTestCase(TestCase):
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
-            from_suite='warty', to_suite='hoary', to_ppa='sabdfl')
+            from_suite='warty', to_suite='hoary', to_ppa='mark')
         copied = copy_helper.mainTask()
 
         self.assertEqual(
@@ -1818,7 +1852,7 @@ class CopyPackageTestCase(TestCase):
             'cprov: warty-RELEASE')
         self.assertEqual(
             str(copy_helper.destination),
-            'sabdfl: hoary-RELEASE')
+            'mark: hoary-RELEASE')
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)

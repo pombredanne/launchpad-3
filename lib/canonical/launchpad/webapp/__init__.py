@@ -121,15 +121,9 @@ class StandardLaunchpadFacets(FacetMenu):
         summary = 'Blueprints and specifications'
         return Link('', text, summary)
 
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'View related bounty offers'
-        return Link(target, text, summary)
-
     def branches(self):
         # this is disabled by default, because relatively few objects have
         # branch views
-        text = 'Code'
+        text = 'Branches'
         summary = 'View related branches of code'
         return Link('', text, summary=summary)

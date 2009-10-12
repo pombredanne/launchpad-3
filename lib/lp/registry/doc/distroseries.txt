@@ -126,7 +126,7 @@ not, according the distroseries status and the upload target pocket.
    >>> breezy_autotest = ubuntu['breezy-autotest']
    >>> hoary = ubuntu['hoary']
 
-   >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
 
    >>> warty.status.name
@@ -493,8 +493,8 @@ an ILibraryFileAlias:
 
    >>> firefox_srcrel =  warty.getSourcePackage(
    ...    'mozilla-firefox').currentrelease
-   >>> firefox_srcrel.title
-   u'mozilla-firefox 0.9 (source) in ubuntu warty'
+   >>> print firefox_srcrel.title
+   "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
    >>> firefox_srcrel.changesfile
    <LibraryFileAlias at ...>
@@ -557,7 +557,7 @@ the future.
    >>> hoary = ubuntu['hoary']
 
    >>> from canonical.launchpad.interfaces import (
-   ...    PackagePublishingPocket, PackagePublishingStatus)
+   ...    PackagePublishingStatus)
 
    >>> hoary_pub_sources = hoary.getSourcePackagePublishing(
    ...     PackagePublishingStatus.PUBLISHED,
@@ -959,14 +959,14 @@ the distribution.
     >>> print debian.driver
     None
     >>> print debian.owner.name
-    sabdfl
+    mark
     >>> sarge = debian.getSeries('sarge')
     >>> print sarge.driver.name
     jdub
     >>> for d in sarge.drivers:
     ...     print d.name
     jdub
-    sabdfl
+    mark
 
 
 Now, a release where there is no driver on the release but there is a driver
@@ -990,7 +990,7 @@ driver. Here, we expect the driver to be the owner of the distribution
     >>> print debian.driver
     None
     >>> print debian.owner.name
-    sabdfl
+    mark
     >>> print sid.driver
     None
     >>> print sid.owner.name
@@ -998,7 +998,7 @@ driver. Here, we expect the driver to be the owner of the distribution
 
     >>> for d in sid.drivers:
     ...     print d.name
-    sabdfl
+    mark
 
 
 == Lastest Uploads ==
@@ -1014,7 +1014,7 @@ Each element is an IDistroSeriesSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
     ...     print upload.title
-    mozilla-firefox 0.9 (source) in ubuntu warty
+    "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:

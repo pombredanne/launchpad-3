@@ -54,8 +54,8 @@ class TestPPABinaryExpiry(unittest.TestCase):
         # Prepare two PPAs for the tests to use.
         cprov = getUtility(IPersonSet).getByName('cprov')
         self.ppa = cprov.archive
-        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-        self.ppa2 = sabdfl.archive
+        mark = getUtility(IPersonSet).getByName('mark')
+        self.ppa2 = mark.archive
 
     def getScript(self, test_args=None):
         """Return a PPABinaryExpirer instance."""

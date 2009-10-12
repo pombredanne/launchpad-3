@@ -9,8 +9,6 @@ import transaction
 
 from textwrap import dedent
 
-from bzrlib.branch import Branch
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.tests import run_script
@@ -22,6 +20,12 @@ from lp.testing import map_branch_contents, TestCaseWithFactory
 class TestExportTranslationsToBranch(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
+
+    def _filterOutput(self, output):
+        """Remove DEBUG lines from output."""
+        return '\n'.join([
+            line for line in output.splitlines()
+            if not line.startswith('DEBUG')])
 
     def test_translations_export_to_branch(self):
         # End-to-end test of the script doing its work.
@@ -60,15 +64,16 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         # Run The Script.
         retcode, stdout, stderr = run_script(
-            'cronscripts/translations-export-to-branch.py', [])
+            'cronscripts/translations-export-to-branch.py', ['-vvv'])
 
         self.assertEqual('', stdout)
         self.assertEqual(
             'INFO    creating lockfile\n'
             'INFO    Exporting to translations branches.\n'
             'INFO    Exporting Committobranch trunk series.\n'
-            'INFO    Processed 1 item(s); 0 failure(s).\n',
-            stderr)
+            'INFO    Processed 1 item(s); 0 failure(s).',
+            self._filterOutput(stderr))
+        self.assertIn('No previous translations commit found.', stderr)
         self.assertEqual(0, retcode)
 
         # The branch now contains a snapshot of the translation.  (Only
@@ -101,6 +106,18 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             pattern = dedent(expected.lstrip('\n'))
             if not re.match(pattern, contents, re.MULTILINE):
                 self.assertEqual(pattern, contents)
+
+        # If we run the script again at this point, it won't export
+        # anything because it sees that the POFile has not been changed
+        # since the last export.
+        retcode, stdout, stderr = run_script(
+            'cronscripts/translations-export-to-branch.py',
+            ['-vvv', '--no-fudge'])
+        self.assertEqual(0, retcode)
+        self.assertIn('Last commit was at', stderr)
+        self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
+        self.assertEqual(
+            None, re.search("INFO\s+Committed [0-9]+ file", stderr))
 
 
 def test_suite():

@@ -113,14 +113,14 @@ SourcePackage context will be reachable.
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
-    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
-    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+    "pmount" 0.1-1 source package in Ubuntu SUPERSEDED
+    "pmount" 0.1-2 source package in Ubuntu PUBLISHED
 
     >>> print pmount_hoary['0.1-1'].title
-    pmount 0.1-1 (source) in ubuntu hoary
+    "pmount" 0.1-1 source package in The Hoary Hedgehog Release
 
     >>> print pmount_hoary['0.1-2'].title
-    pmount 0.1-2 (source) in ubuntu hoary
+    "pmount" 0.1-2 source package in The Hoary Hedgehog Release
 
     >>> len(list(pmount_hoary.distinctreleases))
     2
@@ -143,11 +143,11 @@ reachable. See bug #179028 for further information.
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
-    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
-    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+    "pmount" 0.1-1 source package in Ubuntu SUPERSEDED
+    "pmount" 0.1-2 source package in Ubuntu PUBLISHED
 
     >>> print pmount_hoary['0.1-1'].title
-    pmount 0.1-1 (source) in ubuntu hoary
+    "pmount" 0.1-1 source package in The Hoary Hedgehog Release
 
     >>> len(list(pmount_hoary.distinctreleases))
     2
@@ -371,6 +371,11 @@ Zero or more spaces may appear between the ":" and the "#".
     >>> spr_view._linkify_bug_numbers("LP: #10 LP: #10")
     u'LP: <a href="/bugs/10" title="another test bug">#10</a>
       LP: <a href="/bugs/10" title="another test bug">#10</a>'
+
+The regex is case-insensitive, so "lp: #nnn" also works.
+
+    >>> spr_view._linkify_bug_numbers("lp: #10")
+    u'lp: <a href="/bugs/10" title="another test bug">#10</a>'
 
 
 == Comparing Sourcepackages ==

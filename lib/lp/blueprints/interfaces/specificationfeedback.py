@@ -24,8 +24,8 @@ class ISpecificationFeedback(Interface):
     from the person who put it in their queue."""
 
     reviewer = PublicPersonChoice(
-        title=_('Feedback From?'), required=True,
-        vocabulary='ValidPersonOrTeam', readonly=True,
+        title=_('Feedback From'), required=True,
+        vocabulary='ValidPersonOrTeam', readonly=False,
         description=_("Select the person who you would like to give you "
         "some feedback on this specification."))
     requester = PublicPersonChoice(

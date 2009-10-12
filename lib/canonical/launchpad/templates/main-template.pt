@@ -27,6 +27,7 @@
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
       is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+      site_message modules/canonical.config/config/launchpad/site_message;
       CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
 >
@@ -97,7 +98,6 @@
         <input type="search" id="search-text" name="field.text" />
       </form>
       <tal:hierarchy replace="structure context/@@+hierarchy" />
-
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu view/menu:facet"
@@ -233,6 +233,10 @@
           <a tal:condition="request/lp:person" href="/feedback"
           >Contact us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
         </div>
+
+        <metal:site-message
+          use-macro="context/@@+base-layout-macros/site-message"/>
+
         <div id="lp-arcana">
             &copy;&nbsp;2004-2009&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>

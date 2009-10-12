@@ -1,0 +1,130 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div id="membership" class="portlet">
+  <h2>
+    <span class="see-all">
+      <a tal:attributes="href context/menu:overview/members/fmt:url">
+        All members
+      </a>
+    </span>
+  </h2>
+
+  <div id="membership-summary" class="portletBody portletContent"
+    style="margin-bottom: 1.5em;">
+    <div id="membership-summary">
+      <div>
+        <img src="/@@/team" alt="team" />
+        <strong><tal:active content="context/all_member_count" /></strong>
+        <a tal:attributes="href string:${context/fmt:url/+members}#active"
+          >active members</a><tal:invited
+            define="invited_member_count context/invited_member_count"
+            condition="invited_member_count">,
+          <strong>
+            <tal:invited_count content="context/invited_member_count" />
+          </strong>
+          <a tal:attributes="href string:${context/fmt:url/+members}#invited"
+            >invited members</a></tal:invited><tal:proposed
+              define="proposed_member_count context/proposed_member_count"
+              condition="proposed_member_count">,
+          <strong>
+            <tal:proposed_count content="proposed_member_count" />
+          </strong>
+          <a tal:attributes="href string:${context/fmt:url/+members}#proposed"
+            >proposed members</a>
+        </tal:proposed>
+      </div>
+    </div>
+
+    <p id="your-involvement" tal:condition="not: request/lp:person">
+      You must <a href="+login">log in</a>
+      to join or leave this team.
+    </p>
+
+    <div id="your-involvement" tal:condition="request/lp:person">
+      <tal:is-owner condition="view/userIsOwner">
+          <tal:team condition="context/teamowner/is_team">
+            You are a member of the team that owns this team.
+          </tal:team>
+          <tal:user condition="not: context/teamowner/is_team">
+            You are the owner of this team.
+          </tal:user>
+          <tal:absentee-owner condition="not: view/user_is_active_member">
+            You are not currently an active member.
+          </tal:absentee-owner>
+      </tal:is-owner>
+
+      <tal:not-owner condition="not: view/userIsOwner">
+        <tal:active-member tal:condition="view/user_is_active_member">
+          <tal:can-leave condition="view/user_can_request_to_leave">
+            You are a member of this team.
+          </tal:can-leave>
+        </tal:active-member>
+        <tal:not-active-member tal:condition="not: view/user_is_active_member">
+          <div condition="not: view/userIsParticipant"
+               style="margin-top: 1.5em">
+            <a tal:define="link context/menu:overview/join"
+               tal:condition="link/enabled"
+               tal:replace="structure link/fmt:link"></a>
+            <br/>
+            You are not a member of this team.
+          </div>
+          <tal:participant condition="view/userIsParticipant">
+            You are an indirect member of this team:
+            <br />
+            <a tal:replace="structure view/user/fmt:link"
+              >Guilherme Salgado</a>
+            <tal:path repeat="team view/findUserPathToTeam">
+              &rarr;
+              <a tal:replace="structure team/fmt:link"
+                >Launchpad Developers</a>
+            </tal:path>
+          </tal:participant>
+        </tal:not-active-member>
+      </tal:not-owner>
+    </div>
+  </div>
+  <tal:can-view
+    condition="context/@@+restricted-membership/userCanViewMembership"
+    define="overview_menu context/menu:overview">
+  <table style="margin: 0px 0px .5em 0px;"
+    tal:condition="view/has_recent_approved_or_proposed_members">
+    <tr>
+      <td style="padding: 0px 0px 1em 0px;"
+          tal:define="link context/menu:overview/mugshots">
+        <tal:mugshots replace="structure link/fmt:link-icon" />
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 3px 3em 0px 0px;" id="recently-approved"
+        tal:condition="view/recently_approved_members">
+        <h3 style="color:black; font-weight:bold; margin: 0px">
+          Recently approved
+        </h3>
+        <ul tal:condition="view/recently_approved_members">
+          <li tal:repeat="person view/recently_approved_members"
+              tal:content="structure person/fmt:link" />
+        </ul>
+      </td>
+      <td style="padding: 0px;" id="recently-applied"
+        tal:condition="view/recently_proposed_members">
+        <h3 style="color:black; font-weight:bold; margin: 0px">
+          Pending approval
+        </h3>
+        <ul>
+          <li tal:repeat="person view/recently_proposed_members"
+              tal:content="structure person/fmt:link" />
+        </ul>
+        <div style="margin-top: 3px;"
+          tal:condition="overview_menu/proposed_members/enabled"
+          tal:content="structure overview_menu/proposed_members/fmt:icon-link">
+        </div>
+      </td>
+    </tr>
+  </table>
+  </tal:can-view>
+</div>
+</tal:root>

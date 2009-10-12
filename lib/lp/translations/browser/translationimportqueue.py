@@ -111,10 +111,36 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         return field_values
 
     @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        referrer = self.referrer_url
+        if referrer is None:
+            translationimportqueue_set = getUtility(ITranslationImportQueue)
+            return canonical_url(translationimportqueue_set)
+        else:
+            return referrer
+
+    @property
+    def referrer_url(self):
+        referrer = self.request.getHeader('referer')
+        if referrer != canonical_url(self.context):
+            return referrer
+        else:
+            return None
+
+    @property
     def next_url(self):
-        """Return the URL of the main import queue at 'rosetta/imports'."""
-        translationimportqueue_set = getUtility(ITranslationImportQueue)
-        return canonical_url(translationimportqueue_set)
+        """See `LaunchpadFormView`."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('next_url')
+
+        if (referrer is not None
+            and referrer.startswith(self.request.getApplicationURL())):
+            return referrer
+        else:
+            translationimportqueue_set = getUtility(ITranslationImportQueue)
+            return canonical_url(translationimportqueue_set)
 
     def initialize(self):
         """Remove some fields based on the entry handled."""
@@ -397,13 +423,13 @@ class TranslationImportQueueNavigation(GetitemNavigation):
 
 
 class TranslationImportQueueView(HasTranslationImportsView):
-    """View class used for Translation Import Queue management."""
-    label = 'Translation files waiting to be imported.'
+    """The global Translation Import Queue."""
+
+    label = "Translation import queue"
 
     def initialize(self):
         """Useful initialization for this view class."""
-        self._initial_values = {}
-        LaunchpadFormView.initialize(self)
+        super(TranslationImportQueueView, self).initialize()
         target_filter = self.widgets['filter_target']
         if target_filter.hasInput() and not target_filter.hasValidInput():
             raise UnexpectedFormData("Unknown target.")

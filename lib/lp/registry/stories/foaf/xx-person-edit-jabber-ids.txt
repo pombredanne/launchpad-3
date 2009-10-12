@@ -11,7 +11,7 @@ profile page and uses the 'Update Jabber IDs' link.
     >>> user_browser.getLink('Change details').click()
     >>> user_browser.getLink('Update Jabber IDs').click()
     >>> print user_browser.title
-    No Privileges Person's Jabber IDs
+    No Privileges Person's Jabber IDs...
 
 The user enters the Jabber ID in the text field and clicks on the
 'Save Changes' button.

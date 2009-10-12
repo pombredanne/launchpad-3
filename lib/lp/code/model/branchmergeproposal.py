@@ -34,7 +34,7 @@ from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
-from lp.code.model.diff import Diff, PreviewDiff
+from lp.code.model.diff import PreviewDiff
 from lp.registry.model.person import Person
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
@@ -108,7 +108,7 @@ class BranchMergeProposal(SQLBase):
     target_branch = ForeignKey(
         dbName='target_branch', foreignKey='Branch', notNull=True)
 
-    dependent_branch = ForeignKey(
+    prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
     whiteboard = StringCol(default=None)
@@ -116,6 +116,13 @@ class BranchMergeProposal(SQLBase):
     queue_status = EnumCol(
         enum=BranchMergeProposalStatus, notNull=True,
         default=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+    @property
+    def private(self):
+        return (
+            self.source_branch.private or self.target_branch.private or
+            (self.prerequisite_branch is not None and
+             self.prerequisite_branch.private))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
@@ -146,6 +153,15 @@ class BranchMergeProposal(SQLBase):
         dbName='merge_reporter', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
         default=None)
+
+    @property
+    def related_bugs(self):
+        """Bugs which are linked to the source but not the target.
+
+        Implies that these bugs would be fixed, in the target, by the merge.
+        """
+        return (bug for bug in self.source_branch.linked_bugs
+                if bug not in self.target_branch.linked_bugs)
 
     @property
     def address(self):
@@ -222,11 +238,16 @@ class BranchMergeProposal(SQLBase):
             self.target_branch: self.target_branch.bzr_identity,
             }
         branches = [self.source_branch, self.target_branch]
-        if self.dependent_branch is not None:
-            branches.append(self.dependent_branch)
+        if self.prerequisite_branch is not None:
+            branches.append(self.prerequisite_branch)
         for branch in branches:
             branch_recipients = branch.getNotificationRecipients()
             for recipient in branch_recipients:
+                # If the recipient cannot see either of the branches, skip
+                # them.
+                if (not self.source_branch.visibleByUser(recipient) or
+                    not self.target_branch.visibleByUser(recipient)):
+                    continue
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
                 if (subscription.review_level < min_level):
@@ -320,13 +341,19 @@ class BranchMergeProposal(SQLBase):
         self.date_reviewed = None
         self.reviewed_revision_id = None
 
-    def requestReview(self):
-        """See `IBranchMergeProposal`."""
+    def requestReview(self, _date_requested=None):
+        """See `IBranchMergeProposal`.
+
+        :param _date_requested: used only for testing purposes to override
+            the normal UTC_NOW for when the review was requested.
+        """
         # Don't reset the date_review_requested if we are already in the
         # review state.
+        if _date_requested is None:
+            _date_requested = UTC_NOW
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
-            self.date_review_requested = UTC_NOW
+            self.date_review_requested = _date_requested
 
     def isMergable(self):
         """See `IBranchMergeProposal`."""
@@ -455,12 +482,14 @@ class BranchMergeProposal(SQLBase):
         # a database query to identify if there are any active proposals
         # with the same source and target branches.
         self.syncUpdate()
+        review_requests = set(
+            (vote.reviewer, vote.review_type) for vote in self.votes)
         proposal = self.source_branch.addLandingTarget(
             registrant=registrant,
             target_branch=self.target_branch,
-            dependent_branch=self.dependent_branch,
+            prerequisite_branch=self.prerequisite_branch,
             whiteboard=self.whiteboard,
-            needs_review=True)
+            needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
         # properties of supersedes and superseded_by are visible to
@@ -645,19 +674,14 @@ class BranchMergeProposal(SQLBase):
                     code_review_message, original_email))
         return code_review_message
 
-    def updatePreviewDiff(self, diff_content, diff_stat,
-                          source_revision_id, target_revision_id,
-                          dependent_revision_id=None, conflicts=None):
+    def updatePreviewDiff(self, diff_content, source_revision_id,
+                          target_revision_id, prerequisite_revision_id=None,
+                          conflicts=None):
         """See `IBranchMergeProposal`."""
-        if self.preview_diff is None:
-            # Create the PreviewDiff.
-            preview = PreviewDiff()
-            preview.diff = Diff()
-            self.preview_diff = preview
-
-        self.preview_diff.update(
-            diff_content, diff_stat, source_revision_id, target_revision_id,
-            dependent_revision_id, conflicts)
+        # Create the PreviewDiff.
+        self.preview_diff = PreviewDiff.create(
+            diff_content, source_revision_id, target_revision_id,
+            prerequisite_revision_id, conflicts)
 
         # XXX: TimPenhey 2009-02-19 bug 324724
         # Since the branch_merge_proposal attribute of the preview_diff

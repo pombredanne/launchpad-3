@@ -10,6 +10,8 @@ __all__ = [
     'TranslationGroupEditView',
     'TranslationGroupNavigation',
     'TranslationGroupReassignmentView',
+    'TranslationGroupSetBreadcrumb',
+    'TranslationGroupSetView',
     'TranslationGroupSetNavigation',
     'TranslationGroupView',
     ]
@@ -29,6 +31,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView
     )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -41,6 +44,17 @@ class TranslationGroupSetNavigation(GetitemNavigation):
     usedfor = ITranslationGroupSet
 
 
+class TranslationGroupSetBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `ITranslationGroupSet`."""
+    text = u"Translation groups"
+
+
+class TranslationGroupSetView:
+    """Translation groups overview."""
+    page_title = "Translation groups"
+    label = page_title
+
+
 class TranslationGroupView:
 
     def __init__(self, context, request):
@@ -49,14 +63,24 @@ class TranslationGroupView:
         self.translation_groups = getUtility(ITranslationGroupSet)
 
     @property
+    def label(self):
+        return "%s translation group" % self.context.title
+
+    @property
+    def page_title(self):
+        return self.context.title
+
+    @property
     def translator_list(self):
         result = []
         for item in self.context.translators:
             result.append({'lang': item.language.englishname,
                            'person': item.translator,
                            'code': item.language.code,
+                           'language' : item.language,
                            'datecreated': item.datecreated,
                            'style_guide_url': item.style_guide_url,
+                           'context' : item,
                            })
         result.sort(key=operator.itemgetter('lang'))
         return result
@@ -68,8 +92,8 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
     schema = ITranslator
     field_names = ['language', 'translator', 'style_guide_url']
 
-    @action("Add", name="add")
-    def add_action(self, action, data):
+    @action("Appoint", name="appoint")
+    def appoint_action(self, action, data):
         """Appoint a translator to do translations for given language.
 
         Create a translator who, within this group, will be responsible for
@@ -91,8 +115,18 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
                 "There is already a translator for this language")
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    label = "Appoint a translation team"
+
+    @property
+    def page_title(self):
+        return self.label
 
 
 class TranslationGroupEditView(LaunchpadEditFormView):
@@ -100,6 +134,8 @@ class TranslationGroupEditView(LaunchpadEditFormView):
 
     schema = ITranslationGroup
     field_names = ['name', 'title', 'summary', 'translation_guide_url']
+
+    page_title = "Change details"
 
     @action("Change")
     def change_action(self, action, data):
@@ -122,8 +158,16 @@ class TranslationGroupEditView(LaunchpadEditFormView):
                 "There is already a translation group with this name")
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    @property
+    def label(self):
+        return "Change %s details" % self.context.title
 
 
 class TranslationGroupAddView(LaunchpadFormView):
@@ -131,9 +175,11 @@ class TranslationGroupAddView(LaunchpadFormView):
 
     schema = ITranslationGroup
     field_names = ['name', 'title', 'summary', 'translation_guide_url']
+    label = "Create a new translation group"
+    page_title = label
 
-    @action("Add", name="add")
-    def add_action(self, action, data):
+    @action("Create", name="create")
+    def create_action(self, action, data):
         """Add a new translation group to Launchpad."""
         name = data.get('name')
         title = data.get('title')
@@ -158,9 +204,19 @@ class TranslationGroupAddView(LaunchpadFormView):
         self.setFieldError('name',
             "There is already a translation group with such name")
 
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(ITranslationGroupSet))
+
 
 class TranslationGroupReassignmentView(ObjectReassignmentView):
     """View class for changing translation group owner."""
+
+    page_title = "Change owner"
+
+    @property
+    def label(self):
+        return "Change the owner of %s" % self.contextName
 
     @property
     def contextName(self):

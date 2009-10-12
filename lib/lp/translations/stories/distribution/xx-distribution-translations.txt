@@ -7,9 +7,9 @@ given distribution.
 We can reach it from the main distribution page:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> browser.getLink('Overview').click()
+    >>> browser.getLink('Translations').click()
     >>> print browser.title
-    Translating Ubuntu
+    Translations : Ubuntu
 
 Check that there aren't disabled languages shown here:
 
@@ -122,12 +122,12 @@ Administrator can change the translation focus for a distribution.
     >>> editor_browser = setupBrowser(
     ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> editor_browser.open('http://launchpad.dev/ubuntu')
-    >>> editor_browser.getLink('Change distribution details').click()
+    >>> editor_browser.getLink('Change details').click()
     >>> editor_browser.getControl('Translation Focus').displayValue
     ['ubuntu hoary']
     >>> editor_browser.getControl('Translation Focus').displayValue = [
     ...     'ubuntu grumpy']
     >>> editor_browser.getControl('Change', index=3).click()
-    >>> editor_browser.getLink('Change distribution details').click()
+    >>> editor_browser.getLink('Change details').click()
     >>> editor_browser.getControl('Translation Focus').displayValue
     ['ubuntu grumpy']

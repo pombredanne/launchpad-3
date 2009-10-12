@@ -106,21 +106,104 @@ class BuildContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def retry(self):
         """Only enabled for build records that are active."""
-        text = 'Retry build'
-        return Link('+retry', text, icon='edit',
-                    enabled=self.context.can_be_retried)
+        text = 'Retry this build'
+        return Link(
+            '+retry', text, icon='retry',
+            enabled=self.context.can_be_retried)
 
     @enabled_with_permission('launchpad.Admin')
     def rescore(self):
         """Only enabled for pending build records."""
         text = 'Rescore build'
-        return Link('+rescore', text, icon='edit',
-                    enabled=self.context.can_be_rescored)
+        return Link(
+            '+rescore', text, icon='edit',
+            enabled=self.context.can_be_rescored)
 
 
 class BuildView(LaunchpadView):
     """Auxiliary view class for IBuild"""
     __used_for__ = IBuild
+
+    @property
+    def label(self):
+        return self.context.title
+
+    @property
+    def user_can_retry_build(self):
+        """Return True if the user is permitted to Retry Build.
+
+        The build must be re-tryable.
+        """
+        return (check_permission('launchpad.Edit', self.context)
+            and self.context.can_be_retried)
+
+    @cachedproperty
+    def package_upload(self):
+        """Return the corresponding package upload for this build."""
+        return self.context.package_upload
+
+    @cachedproperty
+    def has_published_binaries(self):
+        """Whether or not binaries were already published for this build."""
+        # Binaries imported by gina (missing `PackageUpload` record)
+        # are always published.
+        imported_binaries = (
+            self.package_upload is None and
+            self.context.binarypackages.count() > 0)
+        # Binaries uploaded from the buildds are published when the
+        # corresponding `PackageUpload` status is DONE.
+        uploaded_binaries = (
+            self.package_upload is not None and
+            self.package_upload.status == PackageUploadStatus.DONE)
+
+        if imported_binaries or uploaded_binaries:
+            return True
+
+        return False
+
+    @property
+    def changesfile(self):
+        """Return a `ProxiedLibraryFileAlias` for the Build changesfile."""
+        changesfile = self.context.upload_changesfile
+        if changesfile is None:
+            return None
+
+        return ProxiedLibraryFileAlias(changesfile, self.context)
+
+    @cachedproperty
+    def is_ppa(self):
+        return self.context.archive.is_ppa
+
+    @cachedproperty
+    def buildqueue(self):
+        return self.context.buildqueue_record
+
+    @cachedproperty
+    def component(self):
+        return self.context.current_component
+
+    @cachedproperty
+    def files(self):
+        """Return `LibraryFileAlias`es for files produced by this build."""
+        if not self.context.was_built:
+            return None
+
+        files = []
+        for package in self.context.binarypackages:
+            for file in package.files:
+                files.append(
+                    ProxiedLibraryFileAlias(file.libraryfile, self.context))
+
+        return files
+
+class BuildRetryView(BuildView):
+    """View class for retrying `IBuild`s"""
+
+    __used_for__ = IBuild
+
+    @property
+    def label(self):
+        return 'Retry %s' % self.context.title
 
     def retry_build(self):
         """Check user confirmation and perform the build record retry."""
@@ -139,56 +222,15 @@ class BuildView(LaunchpadView):
 
         self.request.response.redirect(canonical_url(self.context))
 
-    @property
-    def user_can_retry_build(self):
-        """Return True if the user is permitted to Retry Build.
-
-        The build must be re-tryable.
-        """
-        return (check_permission('launchpad.Edit', self.context)
-            and self.context.can_be_retried)
-
-    @property
-    def has_done_upload(self):
-        """Return True if this build's package upload is done."""
-        package_upload = self.context.package_upload
-
-        if package_upload is None:
-            return False
-
-        if package_upload.status == PackageUploadStatus.DONE:
-            return True
-
-        return False
-
-    @property
-    def changesfile(self):
-        """Return a `ProxiedLibraryFileAlias` for the Build changesfile."""
-        changesfile = self.context.upload_changesfile
-        if changesfile is None:
-            return None
-
-        return ProxiedLibraryFileAlias(changesfile, self.context)
-
-    @cachedproperty
-    def files(self):
-        """Return `LibraryFileAlias`es for files produced by this build."""
-        if not self.context.was_built:
-            return None
-
-        files = []
-        for package in self.context.binarypackages:
-            for file in package.files:
-                files.append(
-                    ProxiedLibraryFileAlias(file.libraryfile, self.context))
-
-        return files
-
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""
 
     schema = IBuildRescoreForm
+
+    @property
+    def label(self):
+        return 'Rescore %s' % self.context.title
 
     def initialize(self):
         """See `ILaunchpadFormView`.

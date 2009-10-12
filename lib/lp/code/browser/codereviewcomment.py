@@ -108,6 +108,8 @@ class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
     __used_for__ = ICodeReviewComment
 
+    page_title = "Code review comment"
+
     @cachedproperty
     def comment(self):
         """The decorated code review comment."""
@@ -190,7 +192,10 @@ class IEditCodeReviewComment(Interface):
 
     vote = copy_field(ICodeReviewComment['vote'], required=False)
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'],
+        description=u'Lowercase keywords describing the type of review you '
+                     'are performing.')
 
     comment = Text(title=_('Comment'), required=False)
 
@@ -207,6 +212,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
     custom_widget('vote', MyDropWidget)
 
+    page_title = 'Reply to code review comment'
 
     @property
     def initial_values(self):

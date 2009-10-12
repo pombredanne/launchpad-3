@@ -35,8 +35,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -93,7 +91,7 @@ class HasMilestonesMixin:
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
-    implements(IHasBugs, IMilestone, IStructuralSubscriptionTarget)
+    implements(IHasBugs, IMilestone)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
@@ -178,7 +176,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         if self.product_release is not None:
             raise AssertionError(
-                'A milestone can only have one Productrelease.')
+                'A milestone can only have one ProductRelease.')
         return ProductRelease(
             owner=owner,
             changelog=changelog,
@@ -303,4 +301,3 @@ class ProjectMilestone(HasBugsBase):
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.target.official_bug_tags
-

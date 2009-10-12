@@ -15,7 +15,7 @@ import datetime
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In, Sum
+from storm.expr import Sum
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -59,13 +59,9 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -87,9 +83,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(
-        IProductSeries, IHasTranslationTemplates,
-        IStructuralSubscriptionTarget)
+    implements(IProductSeries, IHasTranslationTemplates)
 
     _table = 'ProductSeries'
 
@@ -575,6 +569,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
+            status=self.status.title,
             uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks)
 
@@ -597,52 +592,3 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
-
-    def composeQueryString(self, text=None, importstatus=None):
-        """Build SQL "where" clause for `ProductSeries` search.
-
-        :param text: Text to search for in the product and project titles and
-            descriptions.
-        :param importstatus: If specified, limit the list to series which have
-            the given import status; if not specified or None, limit to series
-            with non-NULL import status.
-        """
-        conditions = ["ProductSeries.product = Product.id"]
-        if text == u'':
-            text = None
-
-        # First filter on text, if supplied.
-        if text is not None:
-            conditions.append("""
-                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
-                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
-
-        # Exclude deactivated products.
-        conditions.append('Product.active IS TRUE')
-
-        # Exclude deactivated projects, too.
-        conditions.append(
-            "((Product.project = Project.id AND Project.active) OR"
-            " Product.project IS NULL)")
-
-        # Now just add the filter on import status.
-        if importstatus is None:
-            conditions.append('ProductSeries.importstatus IS NOT NULL')
-        else:
-            conditions.append('ProductSeries.importstatus = %s'
-                              % sqlvalues(importstatus))
-
-        # And build the query.
-        query = " AND ".join(conditions)
-        return """productseries.id IN
-            (SELECT productseries.id FROM productseries, product, project
-             WHERE %s) AND productseries.product = product.id""" % query
-
-    def getSeriesForBranches(self, branches):
-        """See `IProductSeriesSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        branch_ids = [branch.id for branch in branches]
-        return store.find(
-            ProductSeries,
-            In(ProductSeries.branchID, branch_ids)).order_by(
-            ProductSeries.name)

@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# -*- encoding: utf-8 -*-
-
 """Utilities for Windmill tests written in Python."""
 
 __metaclass__ = type
@@ -55,6 +53,13 @@ class AnonymousUser:
         client.waits.forPageLoad(timeout=u'100000')
 
 
+def login_person(person, password, client):
+    """Create a LaunchpadUser for a person and password."""
+    user = LaunchpadUser(
+        person.displayname, person.preferredemail.email, password)
+    user.ensure_login(client)
+
+
 # Well Known Users
 ANONYMOUS = AnonymousUser()
 
@@ -68,4 +73,4 @@ NO_PRIV = LaunchpadUser(
     'No Privileges User', 'no-priv@canonical.com', 'test')
 
 TRANSLATIONS_ADMIN = LaunchpadUser(
-    u'Carlos Perelló Marín', 'carlos@canonical.com', 'test')
+    u'Carlos Perell\xf3 Mar\xedn', 'carlos@canonical.com', 'test')

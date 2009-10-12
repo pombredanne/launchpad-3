@@ -40,7 +40,7 @@ from zope.event import notify
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    SQLRelatedJoin, StringCol)
+    StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
 from storm.expr import And, In, Join, Lower, Not, Or, SQL
@@ -383,18 +383,6 @@ class Person(
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
-    ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
-        orderBy='id')
-    reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
-        orderBy='id')
-    # XXX: matsubara 2006-03-06 bug=33935:
-    # Is this really needed? There's no attribute 'claimant' in the Bounty
-    # database class or interface, but the column exists in the database.
-    claimedBounties = SQLMultipleJoin('Bounty', joinColumn='claimant',
-        orderBy='id')
-    subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
-        otherColumn='bounty', intermediateTable='BountySubscription',
-        orderBy='id')
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -490,18 +478,20 @@ class Person(
     @property
     def oauth_access_tokens(self):
         """See `IPerson`."""
-        return OAuthAccessToken.select("""
-            person = %s
-            AND (date_expires IS NULL OR date_expires > %s)
-            """ % sqlvalues(self, UTC_NOW))
+        return Store.of(self).find(
+            OAuthAccessToken,
+            OAuthAccessToken.person == self,
+            Or(OAuthAccessToken.date_expires == None,
+               OAuthAccessToken.date_expires > UTC_NOW))
 
     @property
     def oauth_request_tokens(self):
         """See `IPerson`."""
-        return OAuthRequestToken.select("""
-            person = %s
-            AND (date_expires IS NULL OR date_expires > %s)
-            """ % sqlvalues(self, UTC_NOW))
+        return Store.of(self).find(
+            OAuthRequestToken,
+            OAuthRequestToken.person == self,
+            Or(OAuthRequestToken.date_expires == None,
+               OAuthRequestToken.date_expires > UTC_NOW))
 
     @cachedproperty('_location')
     def location(self):
@@ -1736,7 +1726,6 @@ class Person(
 
         # Nuke all subscriptions of this person.
         removals = [
-            ('BountySubscription', 'person'),
             ('BranchSubscription', 'person'),
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
@@ -2502,13 +2491,55 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        person = self.getByEmail(email)
-        if person:
+        # Start by checking if there is an `EmailAddress` for the given
+        # text address.  There are many cases where an email address can be
+        # created without an associated `Person`. For instance, we created
+        # an account linked to the address through an external system such
+        # SSO or ShipIt.
+        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+
+        # There is no `EmailAddress` for this text address, so we need to
+        # create both the `Person` and `EmailAddress` here and we are done.
+        if email_address is None:
+            person, email_address = self.createPersonAndEmail(
+                email, rationale, comment=comment, displayname=displayname,
+                registrant=registrant, hide_email_addresses=True)
             return person
-        person, dummy = self.createPersonAndEmail(
-            email, rationale, comment=comment, displayname=displayname,
-            registrant=registrant)
-        return person
+
+        # There is an `EmailAddress` for this text address, but no
+        # associated `Person`.
+        if email_address.person is None:
+            assert email_address.accountID is not None, (
+                '%s is not associated to a person or account'
+                % email_address.email)
+            account = IMasterStore(Account).get(
+                Account, email_address.accountID)
+            account_person = self.getByAccount(account)
+            # There is a `Person` linked to the `Account`, link the
+            # `EmailAddress` to this `Person` and return it.
+            if account_person is not None:
+                master_email = IMasterStore(EmailAddress).get(
+                    EmailAddress, email_address.id)
+                master_email.personID = account_person.id
+                # Populate the previously empty 'preferredemail' cached
+                # property, so the Person record is up-to-date.
+                if master_email.status == EmailAddressStatus.PREFERRED:
+                    account_person._preferredemail_cached = master_email
+                return account_person
+            # There is no associated `Person` to the email `Account`.
+            # This is probably because the account was created externally
+            # to Launchpad. Create just the `Person`, associate it with
+            # the `EmailAddress` and return it.
+            name = generate_nick(email)
+            person = self._newPerson(
+                name, displayname, hide_email_addresses=True,
+                rationale=rationale, comment=comment, registrant=registrant,
+                account=email_address.account)
+            return person
+
+        # Easy, return the `Person` associated with the existing
+        # `EmailAddress`.
+        return IMasterStore(Person).get(Person, email_address.personID)
 
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""
@@ -2872,6 +2903,11 @@ class PersonSet:
             ''' % vars())
 
     def _mergeBountySubscriptions(self, cur, from_id, to_id):
+        # XXX: JonathanLange 2009-08-31: Even though all of the other bounty
+        # code has been removed from Launchpad, the merging code has to stay
+        # until the tables themselves are removed. Otherwise, the person
+        # merging code raises consistency errors (and rightly so).
+        #
         # Update only the BountySubscriptions that will not conflict.
         cur.execute('''
             UPDATE BountySubscription
@@ -3303,7 +3339,7 @@ class PersonSet:
 
         # These rows are in a UNIQUE index, and we can only move them
         # to the new Person if there is not already an entry. eg. if
-        # the destination and source persons are both subscribed to a bounty,
+        # the destination and source persons are both subscribed to a bug,
         # we cannot change the source persons subscription. We just leave them
         # as noise for the time being.
 
@@ -3333,11 +3369,11 @@ class PersonSet:
         self._mergeBranchSubscription(cur, from_id, to_id)
         skip.append(('branchsubscription', 'person'))
 
-        self._mergeBountySubscriptions(cur, from_id, to_id)
-        skip.append(('bountysubscription', 'person'))
-
         self._mergeBugAffectsPerson(cur, from_id, to_id)
         skip.append(('bugaffectsperson', 'person'))
+
+        self._mergeBountySubscriptions(cur, from_id, to_id)
+        skip.append(('bountysubscription', 'person'))
 
         self._mergeAnswerContact(cur, from_id, to_id)
         skip.append(('answercontact', 'person'))

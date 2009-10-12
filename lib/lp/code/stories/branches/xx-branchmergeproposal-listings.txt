@@ -1,11 +1,14 @@
-= Listings of branch merge proposals =
+==================================
+Listings of branch merge proposals
+==================================
 
 From both the main code page for a person or team, or a product, it is
 possible to go to a listing of merge proposals that are either needing a
 review, or have been approved for landing.
 
 
-== Create a new product and merge proposals for it ==
+Create a new product and merge proposals for it
+===============================================
 
 Log-in an administrator to avoid permission problems.
 
@@ -52,48 +55,38 @@ Make two proposals for bob, one needing review, and one approved.
     >>> transaction.commit()
 
 
-== Listings from the main product code page ==
+Listings from the main product code page
+========================================
 
 Below the branch counts in the main content, there is a paragraph that lists
 the number of active reviews and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/fooix')
     >>> print_tag_with_id(browser.contents, 'merge-counts')
-    2 pending proposals, 1 unmerged proposal
+    3 active reviews or unmerged proposals
 
-The 'active reviews' and 'approved merge' text are links to the listing pages
-for these.
+The 'active reviews or unmerged proposals' text links to the active reviews page.
 
-    >>> browser.getLink('pending proposals').click()
+    >>> browser.getLink('active reviews or unmerged proposals').click()
     >>> print browser.title
-    Pending proposals for Fooix
+    Active code reviews for Fooix...
 
 The proposals are listed in a table that shows the source and target branches,
 who requested the merge, the date the review was requested, and the vote
 summary.
 
     >>> print_tag_with_id(browser.contents, "proposals")
+    Approved reviews ready to land
     Branch Merge Proposal   Requested By          Activity
-    lp://dev/~bob/fooix/review  &rArr; lp://dev/fooix
-            Bob           ...                     None
-    lp://dev/~albert/fooix/review &rArr; lp://dev/fooix
-            Albert        ...                     None
-
-We go back to the proposals listing, and check the approved merges has
-the date the merge was approved.
-
-    >>> browser.open('http://code.launchpad.dev/fooix')
-    >>> browser.getLink('unmerged proposal').click()
-    >>> print browser.title
-    Approved merges for Fooix
-
-    >>> print_tag_with_id(browser.contents, 'proposal-listing')
-    Branch Merge Proposal     Requested By     Date Reviewed
     lp://dev/~bob/fooix/approved &rArr; lp://dev/fooix
-            Bob ...
+            Bob                                   None
+    Reviews requested or in progress
+    Branch Merge Proposal   Requested By          Activity
+    ...
 
 
-== Listings from the main person code page ==
+Listings from the main person code page
+=======================================
 
 The summary before the branch listings also shows the number of active reviews
 and approved merges.
@@ -101,26 +94,16 @@ and approved merges.
     >>> browser.open('http://code.launchpad.dev/~albert')
     >>> print_tag_with_id(browser.contents, 'page-summary')
     1 owned branch, 1 registered branch, 1 subscribed branch
-    1 active proposal, 0 approved merges, 0 requested reviews
+    1 active review or unmerged proposal
 
-    >>> browser.getLink('approved merges').click()
-    >>> print_tag_with_id(browser.contents, 'no-proposals')
-    Albert has no approved merges.
+The person's active reviews also lists all of their currently requested
+reviews.
 
-
-== Listings for person's requested reviews ==
-
-A person can also list all of their currently requested reviews, and the status
-of their reviews
-
-    >>> browser.open('http://code.launchpad.dev/~robert/+requestedreviews')
-    >>> print_tag_with_id(browser.contents, 'page-summary')
-    0 owned branches, 0 registered branches, 0 subscribed branches
-    0 active proposals, 0 approved merges, 1 requested review
-
-    >>> print_tag_with_id(browser.contents, 'proposal-listing')
-    Branch Merge Proposal             Requested By    Review
-    lp://dev/~albert/fooix/review ... Albert ...      Pending ui
+    >>> browser.open('http://code.launchpad.dev/~robert/+activereviews')
+    >>> print_tag_with_id(browser.contents, 'proposals')
+    Reviews Robert has to do
+    Branch Merge Proposal             Requested By    Activity
+    lp://dev/~albert/fooix/review ... Albert ...      None
 
 The requested reviews for a team will only ever show pending reviews, as a
 team cannot approve a review, only a person can.
@@ -138,8 +121,11 @@ team cannot approve a review, only a person can.
     >>> browser.getControl('Review type').value = 'tag'
     >>> browser.getControl('Request Review').click()
 
+Since Albert is in the A-Team, he can do the pending review.
+
     >>> browser.open('http://code.launchpad.dev/~a-team')
-    >>> browser.getLink('requested review').click()
-    >>> print_tag_with_id(browser.contents, 'proposal-listing')
-    Branch Merge Proposal             Requested By    Review
-    lp://dev/~albert/fooix/review ... Albert ...      Pending
+    >>> browser.getLink('active review').click()
+    >>> print_tag_with_id(browser.contents, 'proposals')
+    Requested reviews I can do
+    Branch Merge Proposal             Requested By    Activity
+    lp://dev/~albert/fooix/review ... Albert ...      None

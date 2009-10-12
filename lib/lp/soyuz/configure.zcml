@@ -373,6 +373,12 @@
         <allow
             interface="lp.soyuz.interfaces.processor.IProcessorFamilySet"/>
     </securedutility>
+    <adapter
+        for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        factory="lp.soyuz.browser.distroarchseriesbinarypackagerelease.DistroArchSeriesBinaryPackageReleaseBreadcrumb"
+        permission="zope.Public" />
+
 
     <!-- Archive -->
 
@@ -388,6 +394,7 @@
             interface="lp.soyuz.interfaces.archive.IArchiveAppend"/>
         <require
             permission="launchpad.Edit"
+            interface="lp.soyuz.interfaces.archive.IArchiveEdit"
             set_attributes="description displayname"/>
         <require
             permission="launchpad.Commercial"
@@ -408,9 +415,9 @@
         factory="lp.soyuz.browser.archive.ArchiveBadges"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.archive.IArchive"
-        factory="lp.soyuz.browser.archive.ArchiveBreadcrumbBuilder"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
 
     <!-- ArchiveSet -->
@@ -459,16 +466,16 @@
                 packagesetsForUploader
                 packagesetsForSource
                 packagesetsForSourceUploader
-                isSourceUploadAllowed"/>
-        <require
-            permission="launchpad.Edit"
-            attributes="
+                isSourceUploadAllowed
                 newPackageUploader
                 newComponentUploader
                 newQueueAdmin
                 deletePackageUploader
                 deleteComponentUploader
-                deleteQueueAdmin
+                deleteQueueAdmin"/>
+        <require
+            permission="launchpad.Edit"
+            attributes="
                 newPackagesetUploader
                 deletePackagesetUploader"/>
     </securedutility>
@@ -514,14 +521,14 @@
             interface="lp.soyuz.interfaces.builder.IBuilderSet"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.builder.IBuilder"
-        factory="lp.soyuz.browser.builder.BuilderBreadcrumbBuilder"
+        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.builder.IBuilderSet"
-        factory="lp.soyuz.browser.builder.BuilderSetBreadcrumbBuilder"
+        factory="lp.soyuz.browser.builder.BuilderSetBreadcrumb"
         permission="zope.Public"/>
 
     <!-- Builder -->
@@ -572,6 +579,11 @@
         <allow
             interface="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"/>
     </class>
+    <adapter
+        for="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+        permission="zope.Public" />
 
     <!-- PublishedPackage -->
 
@@ -635,6 +647,11 @@
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber"
         provides="lp.soyuz.browser.archivesubscription.IArchiveSubscriberUI"
         factory="lp.soyuz.browser.archivesubscription.archive_subscription_ui_adapter"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        permission="zope.Public"/>
     <subscriber
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber
              lazr.lifecycle.interfaces.IObjectCreatedEvent"
@@ -656,9 +673,9 @@
             interface="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"/>
     </class>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
-        factory="lp.soyuz.browser.distroseriesbinarypackage.DistroSeriesBinaryPackageBreadcrumbBuilder"
+        factory="lp.soyuz.browser.distroseriesbinarypackage.DistroSeriesBinaryPackageBreadcrumb"
         permission="zope.Public"/>
 
     <facet
@@ -678,6 +695,11 @@
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
         </class>
+        <adapter
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            factory="lp.soyuz.browser.distroarchseries.DistroArchSeriesBreadcrumb"
+            permission="zope.Public" />
     </facet>
 
     <!-- DistroArchSeriesSet -->

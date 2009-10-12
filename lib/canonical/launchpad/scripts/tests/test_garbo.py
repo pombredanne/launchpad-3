@@ -507,7 +507,7 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(log_output.find(error_message_1), -1)
         error_message_2 = (
             "ERROR Corruption - "
-            "'mark@hbd.com' and 'sabdfl' reference different Accounts")
+            "'mark@example.com' and 'mark' reference different Accounts")
         self.assertNotEqual(log_output.find(error_message_2), -1)
 
 

@@ -20,6 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
+from lp.app.interfaces.headings import IRootContext
 from lp.code.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
     BranchSparkView, BranchView)
@@ -444,25 +445,49 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.landing_candidates)
 
-    def test_dependent_public(self):
-        # If the branch is a dependent branch for a public proposals, then
+    def test_prerequisite_public(self):
+        # If the branch is a prerequisite branch for a public proposals, then
         # there are merges.
         branch = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertFalse(view.no_merges)
         [proposal] = view.dependent_branches
         self.assertEqual(bmp, proposal)
 
-    def test_dependent_private(self):
-        # If the branch is a dependent branch where either the source or the
-        # target is private, then the dependent_branches are not shown.
+    def test_prerequisite_private(self):
+        # If the branch is a prerequisite branch where either the source or
+        # the target is private, then the dependent_branches are not shown.
         branch = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
         removeSecurityProxy(bmp.source_branch).private = True
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.dependent_branches)
+
+
+class TestBranchRootContext(TestCaseWithFactory):
+    """Test the adaptation of IBranch to IRootContext."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_personal_branch(self):
+        # The root context of a personal branch is the person.
+        branch = self.factory.makePersonalBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.owner, root_context)
+
+    def test_package_branch(self):
+        # The root context of a package branch is the distribution.
+        branch = self.factory.makePackageBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.distroseries.distribution, root_context)
+
+    def test_product_branch(self):
+        # The root context of a product branch is the product.
+        branch = self.factory.makeProductBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.product, root_context)
 
 
 def test_suite():

@@ -53,7 +53,7 @@ in the context of the bug page.
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/')
   >>> browser.getLink('Unsubscribe').click()
   >>> print browser.title
-  Bug #1 - Subscription options
+  Bug #1...
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+subscribe'
 
@@ -81,7 +81,7 @@ first subscribing one of Foo Bar's teams.
   'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
 
   >>> browser.getControl('Person').value = 'launchpad'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Subscribe user').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
 
@@ -162,7 +162,7 @@ they are a member of) display first in the list, before all other subscriptions.
 
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
   >>> browser.getControl('Person').value = 'testing-spanish-team'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Subscribe user').click()
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
   >>> print_direct_subscribers(browser.contents)
@@ -292,7 +292,7 @@ include that team.
   >>> foobar_browser.open("http://launchpad.dev/bugs/2")
   >>> foobar_browser.getLink('Subscribe someone else').click()
   >>> foobar_browser.getControl("Person").value = "ubuntu-team"
-  >>> foobar_browser.getControl("Add").click()
+  >>> foobar_browser.getControl("Subscribe user").click()
 
   >>> foobar_browser.open(
   ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
@@ -345,7 +345,7 @@ also trimmed to 20 characters, so that they fit alongside the unsubscribe icon.
   >>> logout()
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
   >>> browser.getControl('Person').value = 'abuser'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Subscribe user').click()
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
   >>> subscriber_list = find_tag_by_id(
