@@ -135,18 +135,21 @@ here. The filter is applied during creation by specifying the filter value
 as an extra parameter. The default value is "None" which disables the filter
 and both current and disabled templates are returned.
 
-For getPOTemplateByTranslationDomain, this case is an error because only one
-template per translation domain is allowed.
+For getPOTemplateByTranslationDomain, this case is an error.  The
+approver needs a unique domain to identify the right template to upload
+to.
 
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=productseries)
     >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
     ...     'foodomain')
-    WARNING:lp.translations.model.potemplate:Found...
-    multiple templates with translation domain 'foodomain'...
-    There should be only one.
-    >>> potemplate is None
-    True
+    WARNING:lp.translations.model.potemplate:Found 2 competing templates
+    with translation domain 'foodomain':
+    "current-template in Fooproduct fooseries";
+    "disabled-template in Fooproduct fooseries".
+
+    >>> print potemplate
+    None
 
 Setting the filter to "True" will only return current (enabled) templates.
 
