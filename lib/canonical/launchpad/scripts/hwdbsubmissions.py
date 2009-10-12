@@ -2444,8 +2444,7 @@ class UdevDevice(BaseDevice):
 
     @property
     def is_scsi_device(self):
-        """True, if this is a SCSI device, else False.
-        """
+        """True, if this is a SCSI device, else False."""
         # udev sets the property SUBSYSTEM to "scsi" for a number of
         # different nodes: SCSI hosts, SCSI targets and SCSI devices.
         # They are distiguished by the property DEVTYPE.
