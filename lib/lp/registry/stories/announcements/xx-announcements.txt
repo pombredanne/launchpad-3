@@ -450,12 +450,26 @@ hosted in Launchpad:
     >>> anon_browser.open('http://launchpad.dev/+announcements')
     >>> 'Announcements from all projects' in anon_browser.title
     True
-    >>> 'Tomcat announcement ' in announcements(anon_browser.contents)
+    >>> 'Kubuntu announcement' in announcements(anon_browser.contents)
+    True
+    >>> 'RedHat announcement ' in announcements(anon_browser.contents)
+    True
+    >>> 'Derby announcement ' in announcements(anon_browser.contents)
     True
     >>> 'Apache announcement ' in announcements(anon_browser.contents)
     True
-    >>> 'Kubuntu announcement' in announcements(anon_browser.contents)
-    True
+
+The announcements are batched so only the latest four are shown,
+leaving Tomcat out:
+
+    >>> print extract_text(anon_browser.contents)
+    Announcements from all projects hosted in Launchpad
+    ...
+    1...4 of 25 results
+    ...
+
+    >>> 'Tomcat announcement ' in announcements(anon_browser.contents)
+    False
 
 It excludes future announcements too:
 
