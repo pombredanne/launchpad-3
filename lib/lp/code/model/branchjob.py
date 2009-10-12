@@ -11,6 +11,7 @@ __all__ = [
 import os
 import shutil
 from StringIO import StringIO
+import tempfile
 
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
@@ -257,7 +258,10 @@ class BranchUpgradeJob(BranchJobDerived):
 
     def _prepare_upgrade(self):
         """Prepares the branch for upgrade."""
-        self._upgrade_branch = self.branch.getBzrBranch()
+        self._upgrade_branch_path = tempfile.mkdtemp()
+        source_branch = self.branch.getBzrBranch()
+        bzr_dir = source_branch.bzrdir.sprout(self._upgrade_branch_path)
+        self._upgrade_branch = bzr_dir.open_branch()
 
     def _upgrade(self):
         """Performs the upgrade of the branch."""
