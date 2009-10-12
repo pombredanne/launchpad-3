@@ -4663,16 +4663,16 @@ class TeamMugshotView(LaunchpadView):
     """A view for the team mugshot (team photo) page"""
 
     label = "Who's in this team?"
-    batch_size = 90
+    batch_size = config.launchpad.mugshot_batch_size
 
     def initialize(self):
         """Cache images to avoid dying from a million cuts."""
         getUtility(IPersonSet).cacheBrandingForPeople(
-            self.allmembers.currentBatch())
+            self.members.currentBatch())
 
     @cachedproperty
-    def allmembers(self):
-        #return list(self.context.allmembers)
+    def members(self):
+        """Get a batch of all members in the team."""
         batch_nav = BatchNavigator(
             self.context.allmembers, self.request, size=self.batch_size)
         return batch_nav

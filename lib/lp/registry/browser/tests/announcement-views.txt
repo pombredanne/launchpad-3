@@ -45,3 +45,22 @@ announcements. The product implements IHasAnnouncements.
 
     >>> check_menu_links(AnnouncementCreateNavigationMenu(product))
     True
+
+
+Batching
+--------
+
+Announcements are presented in batches.  For launchpad.dev the batch size is
+smaller than in production to ease testing.
+
+    >>> from lp.registry.interfaces.announcement import IAnnouncementSet
+    >>> announcement_set = getUtility(IAnnouncementSet)
+    >>> view = create_initialized_view(
+    ...     announcement_set, '+announcements')
+    >>> print len(list(view.announcements))
+    20
+    >>> print view.batch_size
+    4
+    >>> batch = view.announcement_nav.currentBatch()
+    >>> print len(list(batch))
+    4

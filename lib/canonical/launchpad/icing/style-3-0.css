@@ -942,27 +942,27 @@ table.translation-stats tfoot td {
     clear: both;
 }
 
-.grid {
+.gridflow {
         margin: 0.0em;
         padding: 0.0em;
 }
 
-.grid ul {
+.gridflow ul {
         margin: 0.5em 0.0em 0.5em 0.0em;
         padding: 0.5em 0.0em 0.0em 0.0em;
 }
 
-.grid li {
+.gridflow li {
         display: inline;
         margin: 0.0em;
         padding: 0.2em;
 }
 
-.grid li span {
+.gridflow li span {
         display: table-cell;
         display: inline-table;
         display: inline-block;
-        width: 132px;
+        width: 192px;
         text-align: center;
         vertical-align: middle;
 }

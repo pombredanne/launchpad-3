@@ -229,3 +229,30 @@ because bart is not a member of the team.
     Send an email to this team's owner through Launchpad
     >>> print view.specific_contact_text
     Contact this team's owner
+
+
+== Mugshots ==
+
+The mugshots for all members of a team can be seen on the +mugshots
+page.  The display of mugshots is batched.
+
+    >>> ubuntu = person_set.getByName('ubuntu-team')
+    >>> view = create_initialized_view(ubuntu, '+mugshots')
+    >>> batch = view.members.currentBatch()
+    >>> print len(list(ubuntu.allmembers))
+    10
+    >>> print view.batch_size
+    8
+    >>> print len(list(batch))
+    8
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> for person in list(batch):
+    ...     print removeSecurityProxy(person)
+    <Person at ... limi (Alexander Limi)>
+    <Person at ... cprov (Celso Providelo)>
+    <Person at ... kamion (Colin Watson)>
+    <Person at ... kinnison (Daniel Silverstone)>
+    <Person at ... edgar (Edgar Bursic)>
+    <Person at ... name16 (Foo Bar)>
+    <Person at ... jdub (Jeff Waugh)>
+    <Person at ... mark (Mark Shuttleworth)>
