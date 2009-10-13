@@ -24,7 +24,7 @@ count:len gives you a number which is len(thing).
     >>> test_tales('foo/count:len', foo=object())
     Traceback (most recent call last):
     ...
-    TypeError: len() of unsized object
+    TypeError: object of type 'object' has no len()
 
 
 The image: namespace to get image elements
