@@ -163,7 +163,7 @@ class DistroBrancher:
             series_text = ', '.join([
                 link.sourcepackage.path for link in links])
             self.logger.warning(
-                "%s is official for mulitple series: %s",
+                "%s is official for multiple series: %s",
                 db_branch.unique_name, series_text)
             return False
         elif links[0].sourcepackage != db_branch.sourcepackage:

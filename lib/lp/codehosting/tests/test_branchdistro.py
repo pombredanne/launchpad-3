@@ -99,6 +99,7 @@ class TestSwitchBranches(TestCaseWithTransport):
 
 
 class TestDistroBrancher(TestCaseWithFactory):
+    """Tests for `DistroBrancher`."""
 
     layer = ZopelessAppServerLayer
 
@@ -138,11 +139,17 @@ class TestDistroBrancher(TestCaseWithFactory):
             FakeLogger(self._log_file), distroseries, new_distro_series)
 
     def clearLogMessages(self):
+        """Forget about all logged messages seen so far."""
         self._log_file.seek(0, 0)
         self._log_file.truncate()
 
     def assertLogMessages(self, patterns):
-        """ """
+        """Assert that the messages logged meet expectations.
+
+        :param patterns: A list of regular expressions.  The length must match
+            the number of messages logged, and then each pattern must match
+            the messages logged in order.
+        """
         log_messages = self._log_file.getvalue().splitlines()
         if len(log_messages) > len(patterns):
             self.fail(
@@ -156,8 +163,14 @@ class TestDistroBrancher(TestCaseWithFactory):
             if not re.match(pattern, message):
                 self.fail("%r does not match %r" % (pattern, message))
 
+    # A word on testing strategy: we don't directly test the post conditions
+    # of makeOneNewBranch, but we do test that it satisfies checkOneBranch and
+    # the tests for checkOneBranch verify that this function rejects various
+    # ways in which makeOneNewBranch could conceivably fail.
+
     def test_makeOneNewBranch(self):
-        # 
+        # makeOneNewBranch creates an official package branch in the new
+        # distroseries.
         db_branch = self.makeOfficialPackageBranch()
 
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
@@ -169,7 +182,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertIsNot(new_branch, None)
 
     def test_makeOneNewBranch_inconsistent_branch(self):
-
+        # makeOneNewBranch skips over an inconsistent official package branch
+        # (see `checkConsistentOfficialPackageBranch` for precisely what an
+        # "inconsistent official package branch" is).
         db_branch = self.makeOfficialPackageBranch()
 
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
@@ -184,7 +199,8 @@ class TestDistroBrancher(TestCaseWithFactory):
              '^WARNING Skipping branch'])
 
     def test_makeNewBranches(self):
-
+        # makeNewBranches calls makeOneNewBranch for each official branch in
+        # the old distroseries.
         db_branch = self.makeOfficialPackageBranch()
         db_branch2 = self.makeOfficialPackageBranch(
             distroseries=db_branch.distroseries)
@@ -208,7 +224,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertIsNot(new_branch2, None)
 
     def test_makeNewBranches_idempotent(self):
-        # 
+        # makeNewBranches is idempotent in the sense that if a branch in the
+        # old distroseries already has a counterpart in the new distroseries,
+        # it is silently ignored.
         db_branch = self.makeOfficialPackageBranch()
 
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
@@ -220,7 +238,9 @@ class TestDistroBrancher(TestCaseWithFactory):
 
         self.assertIsNot(new_branch, None)
 
-    def test_makeNewBranch_checks_ok(self):
+    def test_makeOneNewBranch_checks_ok(self):
+        # After calling makeOneNewBranch for a branch, calling checkOneBranch
+        # returns True for that branch.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -230,6 +250,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertTrue(ok)
 
     def test_checkConsistentOfficialPackageBranch_product_branch(self):
+        # checkConsistentOfficialPackageBranch returns False when passed a
+        # product branch.
         db_branch = self.factory.makeProductBranch()
         brancher = self.makeNewSeriesAndBrancher()
         ok = brancher.checkConsistentOfficialPackageBranch(db_branch)
@@ -238,6 +260,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkConsistentOfficialPackageBranch_personal_branch(self):
+        # checkConsistentOfficialPackageBranch returns False when passed a
+        # personal branch.
         db_branch = self.factory.makePersonalBranch()
         brancher = self.makeNewSeriesAndBrancher()
         ok = brancher.checkConsistentOfficialPackageBranch(db_branch)
@@ -246,6 +270,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkConsistentOfficialPackageBranch_no_official_branch(self):
+        # checkConsistentOfficialPackageBranch returns False when passed a
+        # branch which is not official for any package.
         db_branch = self.factory.makePackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         ok = brancher.checkConsistentOfficialPackageBranch(db_branch)
@@ -253,20 +279,10 @@ class TestDistroBrancher(TestCaseWithFactory):
             ['^WARNING .*/.*/.*\ is not an official branch$'])
         self.assertFalse(ok)
 
-    def test_checkConsistentOfficialPackageBranch_not_official_branch(self):
-        unofficial_branch = self.factory.makePackageBranch()
-        brancher = self.makeNewSeriesAndBrancher(
-            unofficial_branch.distroseries)
-        official_branch = self.factory.makePackageBranch(
-            sourcepackage=unofficial_branch.sourcepackage)
-        official_branch.sourcepackage.setBranch(
-            RELEASE, official_branch, official_branch.owner)
-        ok = brancher.checkConsistentOfficialPackageBranch(unofficial_branch)
-        self.assertLogMessages(
-            ['^WARNING .*/.*/.* is not an official branch$'])
-        self.assertFalse(ok)
-
     def test_checkConsistentOfficialPackageBranch_official_elsewhere(self):
+        # checkConsistentOfficialPackageBranch returns False when passed a
+        # branch which is official for a sourcepackage that it is not a branch
+        # for.
         db_branch = self.factory.makePackageBranch()
         self.factory.makeSourcePackage().setBranch(
             RELEASE, db_branch, db_branch.owner)
@@ -278,16 +294,22 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkConsistentOfficialPackageBranch_official_twice(self):
+        # checkConsistentOfficialPackageBranch returns False when passed a
+        # branch that is official for two sourcepackages.
         db_branch = self.factory.makePackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
         self.factory.makeSourcePackage().setBranch(
             RELEASE, db_branch, db_branch.owner)
         ok = brancher.checkConsistentOfficialPackageBranch(db_branch)
-        self.assertLogMessages(['^WARNING .*/.*/.* is official for 2 series'])
+        self.assertLogMessages([
+            '^WARNING .*/.*/.* is official for multiple series: .*/.*/.*, '
+            '.*/.*/.*$'])
         self.assertFalse(ok)
 
     def test_checkConsistentOfficialPackageBranch_ok(self):
+        # checkConsistentOfficialPackageBranch returns True when passed a
+        # branch that is official for its sourcepackage and no other.
         db_branch = self.factory.makePackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
@@ -296,6 +318,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertTrue(ok)
 
     def test_checkOneBranch_inconsistent_old_package_branch(self):
+        # checkOneBranch returns False when passed a branch that is not a
+        # consistent official package branch.
         brancher = self.makeNewSeriesAndBrancher()
         db_branch = self.factory.makePackageBranch()
         ok = brancher.checkOneBranch(db_branch)
@@ -304,6 +328,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             ['^WARNING .*/.*/.* is not an official branch$'])
 
     def test_checkOneBranch_no_new_official_branch(self):
+        # checkOneBranch returns False when there is no corresponding official
+        # package branch in the new distroseries.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         ok = brancher.checkOneBranch(db_branch)
@@ -312,6 +338,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             ['^WARNING No official branch found for .*/.*/.*$'])
 
     def test_checkOneBranch_inconsistent_new_package_branch(self):
+        # checkOneBranch returns False when the corresponding official package
+        # branch in the new distroseries is not consistent.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
@@ -324,7 +352,13 @@ class TestDistroBrancher(TestCaseWithFactory):
             ['^WARNING .*/.*/.* is the official branch for .*/.*/.* but not '
              'its sourcepackage$'])
 
+    # All these hosted/mirrored tests are very repetitive, perhaps some meta
+    # programming would reduce LOC count, but maybe make things harder to
+    # understand.
+
     def test_checkOneBranch_new_hosted_branch_missing(self):
+        # checkOneBranch returns False when there is no bzr branch in the
+        # hosted area for the database branch in the new distroseries.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
@@ -341,6 +375,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             ])
 
     def test_checkOneBranch_new_mirrored_branch_missing(self):
+        # checkOneBranch returns False when there is no bzr branch in the
+        # mirrored area for the database branch in the new distroseries.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
@@ -357,6 +393,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             ])
 
     def test_checkOneBranch_old_hosted_branch_missing(self):
+        # checkOneBranch returns False when there is no bzr branch in the
+        # hosted area for the database branch in old distroseries.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -369,6 +407,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             ])
 
     def test_checkOneBranch_old_mirrored_branch_missing(self):
+        # checkOneBranch returns False when there is no bzr branch in the
+        # mirrored area for the database branch in old distroseries.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -381,6 +421,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             ])
 
     def test_checkOneBranch_new_hosted_stacked(self):
+        # checkOneBranch returns False when the bzr branch in the hosted area
+        # for the database branch in new distroseries is stacked.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
@@ -396,6 +438,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             ])
 
     def test_checkOneBranch_new_mirrored_stacked(self):
+        # checkOneBranch returns False when the bzr branch in the mirrored
+        # area for the database branch in new distroseries is stacked.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
@@ -411,6 +455,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             ])
 
     def test_checkOneBranch_old_hosted_unstacked(self):
+        # checkOneBranch returns False when the bzr branch in the hosted area
+        # for the database branch in old distroseries is not stacked.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -425,6 +471,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkOneBranch_old_mirrored_unstacked(self):
+        # checkOneBranch returns False when the bzr branch in the mirrored area
+        # for the database branch in old distroseries is not stacked.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -439,6 +487,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkOneBranch_old_hosted_misstacked(self):
+        # checkOneBranch returns False when the bzr branch in the hosted area
+        # for the database branch in old distroseries stacked on some other
+        # branch than the branch in the new distroseries.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -454,6 +505,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkOneBranch_old_mirrored_misstacked(self):
+        # checkOneBranch returns False when the bzr branch in the mirrored
+        # area for the database branch in old distroseries stacked on some
+        # other branch than the branch in the new distroseries.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -469,6 +523,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkOneBranch_old_hosted_has_revisions(self):
+        # checkOneBranch returns False when the bzr branch in the hosted area
+        # for the database branch in old distroseries has a repository that
+        # contains revisions.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -482,6 +539,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkOneBranch_old_mirrored_has_revisions(self):
+        # checkOneBranch returns False when the bzr branch in the mirrored
+        # area for the database branch in old distroseries has a repository
+        # that contains revisions.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -496,6 +556,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkOneBranch_old_hosted_has_null_tip(self):
+        # checkOneBranch returns False when the bzr branch in the hosted area
+        # for the database branch in old distroseries has tip revision of
+        # 'null:'.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -509,6 +572,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkOneBranch_old_mirrored_has_null_tip(self):
+        # checkOneBranch returns False when the bzr branch in the mirrored
+        # area for the database branch in old distroseries has tip revision of
+        # 'null:'.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
