@@ -634,26 +634,24 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertEqual(0, returncode)
         brancher.checkOneBranch(db_branch)
 
-    def test_checkOneBranch_script_success(self):
+    def test_checkNewBranches_script_success(self):
         script_path = os.path.join(config.root, 'scripts', 'branch-distro.py')
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeNewBranches()
         returncode = subprocess.call(
-            [script_path, db_branch.distribution.name,
-             brancher.old_distroseries.name, brancher.new_distroseries.name,
-             '--check'])
+            [script_path, '--check', db_branch.distribution.name,
+             brancher.old_distroseries.name, brancher.new_distroseries.name])
         self.assertEqual(0, returncode)
         brancher.checkOneBranch(db_branch)
 
-    def test_checkOneBranch_script_failure(self):
+    def test_checkNewBranches_script_failure(self):
         script_path = os.path.join(config.root, 'scripts', 'branch-distro.py')
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         returncode = subprocess.call(
-            [script_path, db_branch.distribution.name,
-             brancher.old_distroseries.name, brancher.new_distroseries.name,
-             '--check'])
+            [script_path, '--check', db_branch.distribution.name,
+             brancher.old_distroseries.name, brancher.new_distroseries.name])
         self.assertEqual(1, returncode)
 
 
