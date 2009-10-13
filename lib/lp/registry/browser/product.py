@@ -558,13 +558,27 @@ class ProductWithSeries:
     def __init__(self, product):
         self.product = product
         self.serieses = []
-        self.series_by_id = {}
+        for series in self.product.serieses:
+            series_with_releases = SeriesWithReleases(series, parent=self)
+            self.serieses.append(series_with_releases)
+            if self.product.development_focus == series:
+                self.development_focus = series_with_releases
 
-    def setSeries(self, serieses):
-        """Set the serieses to the provided collection."""
-        self.serieses = serieses
         self.series_by_id = dict(
             (series.id, series) for series in self.serieses)
+
+        # Get all of the releases for all of the serieses in a single
+        # query.  The query sorts the releases properly so we know the
+        # resulting list is sorted correctly.
+        self.release_by_id = {}
+        milestones_and_releases = list(
+            self.product.getMilestonesAndReleases())
+        for milestone, release in milestones_and_releases:
+            series = self.getSeriesById(
+                milestone.productseries.id)
+            decorated_release = ReleaseWithFiles(release, parent=series)
+            series.addRelease(decorated_release)
+            self.release_by_id[release.id] = decorated_release
 
     def getSeriesById(self, id):
         """Look up and return a ProductSeries by id."""
@@ -581,11 +595,13 @@ class SeriesWithReleases:
 
     # These need to be predeclared to avoid delegates taking them
     # over.
+    parent = None
     releases = None
     delegates(IProductSeries, 'series')
 
-    def __init__(self, series):
+    def __init__(self, series, parent):
         self.series = series
+        self.parent = parent
         self.releases = []
 
     def addRelease(self, release):
@@ -619,15 +635,31 @@ class ReleaseWithFiles:
 
     # These need to be predeclared to avoid delegates taking them
     # over.
-    files = None
+    parent = None
     delegates(IProductRelease, 'release')
 
-    def __init__(self, release):
+    def __init__(self, release, parent):
         self.release = release
-        self.files = []
+        self.parent = parent
+        self._files = None
 
-    def addFile(self, file):
-        self.files.append(file)
+    @cachedproperty
+    def files(self):
+        if self._files is None:
+            # Get all of the files for all of the releases.  The query
+            # returns all releases sorted properly.
+            product = self.parent.parent
+            decorated_releases = product.release_by_id.values()
+            files = getUtility(IProductReleaseSet).getFilesForReleases(
+                decorated_releases)
+            for decorated_release in decorated_releases:
+                decorated_release._files = []
+            for file in files:
+                id = file.productrelease.id
+                decorated_release = product.release_by_id[id]
+                decorated_release._files.append(file)
+
+        return self._files
 
     @property
     def name_with_codename(self):
@@ -653,40 +685,7 @@ class ProductDownloadFileMixin:
         Decorated classes are created, and they contain cached data
         obtained with a few queries rather than many iterated queries.
         """
-        # Create the decorated product and set the list of series.
-        original_product = self.context
-
-        product_with_series = ProductWithSeries(original_product)
-        serieses = []
-        for series in original_product.serieses:
-            series_with_releases = SeriesWithReleases(series)
-            serieses.append(series_with_releases)
-            if original_product.development_focus == series:
-                product_with_series.development_focus = series_with_releases
-
-        product_with_series.setSeries(serieses)
-
-        # Get all of the releases for all of the serieses in a single
-        # query.  The query sorts the releases properly so we know the
-        # resulting list is sorted correctly.
-        release_by_id = {}
-        milestones_and_releases = list(
-            original_product.getMilestonesAndReleases())
-        for milestone, release in milestones_and_releases:
-            series = product_with_series.getSeriesById(
-                milestone.productseries.id)
-            decorated_release = ReleaseWithFiles(release)
-            series.addRelease(decorated_release)
-            release_by_id[release.id] = decorated_release
-
-        # Get all of the files for all of the releases.  The query
-        # returns all releases sorted properly.
-        releases = [release for milestone, release in milestones_and_releases]
-        files = getUtility(IProductReleaseSet).getFilesForReleases(releases)
-        for file in files:
-            release = release_by_id[file.productrelease.id]
-            release.addFile(file)
-
+        product_with_series = ProductWithSeries(self.context)
         return product_with_series
 
     def deleteFiles(self, releases):
@@ -737,11 +736,15 @@ class ProductDownloadFileMixin:
     @cachedproperty
     def latest_release_with_download_files(self):
         """Return the latest release with download files."""
-        for series in self.sorted_series_list:
-            for release in series.releases:
-                if len(list(release.files)) > 0:
-                    return release
-        return None
+        try:
+            for series in self.sorted_series_list:
+                for release in series.releases:
+                    if len(list(release.files)) > 0:
+                        return release
+            return None
+        except AttributeError, e:
+            import sys
+            raise ValueError, e, sys.exc_info()[2]
 
 
 class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
