@@ -9,6 +9,8 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NotBranchError, NotStacked
 
+from lazr.uri import URI
+
 import transaction
 
 from zope.component import getUtility
@@ -62,9 +64,13 @@ def switch_branches(prefix, scheme, old_db_branch, new_db_branch):
     # preserve the format.  We have to open at the logical, unique_name-based,
     # location so that it works to set the stacked on url to '/' + a
     # unique_name.
-    new_location_bzrdir = BzrDir.open(scheme + new_db_branch.unique_name)
+    new_location_bzrdir = BzrDir.open(
+        str(URI(
+            scheme=scheme, host='', path='/' + new_db_branch.unique_name)))
     old_location_bzrdir = new_location_bzrdir.clone(
-        scheme + old_db_branch.unique_name, revision_id='null:')
+        str(URI(
+            scheme=scheme, host='', path='/' + old_db_branch.unique_name)),
+        revision_id='null:')
 
     # Set the stacked on url for old location.
     old_location_branch = old_location_bzrdir.open_branch()
@@ -81,10 +87,13 @@ class DistroBrancher:
     def __init__(self, logger, old_distroseries, new_distroseries):
         """XXX."""
         self.logger = logger
+        # XXX test these assertions
         if old_distroseries.distribution != new_distroseries.distribution:
             raise AssertionError(
                 "%s and %s are from different distributions!" %
                 (old_distroseries, new_distroseries))
+        if old_distroseries == new_distroseries:
+            raise AssertionError("XXX")
         self.old_distroseries = old_distroseries
         self.new_distroseries = new_distroseries
 
@@ -129,11 +138,9 @@ class DistroBrancher:
             return False
         elif links[0].sourcepackage != db_branch.sourcepackage:
             self.logger.warning(
-                "%s is the official branch for %s/%s/%s but not its "
+                "%s is the official branch for %s but not its "
                 "sourcepackage", db_branch.unique_name,
-                links[0].sourcepackage.distribution.name,
-                links[0].sourcepackage.distroseries.name,
-                links[0].sourcepackage.name)
+                links[0].sourcepackage.path)
             return False
         return True
 
@@ -154,9 +161,8 @@ class DistroBrancher:
         ok = self.checkConsistentOfficialPackageBranch(old_db_branch)
         if not ok:
             return ok
-        new_sourcepackage = getUtility(ISourcePackageFactory).new(
-            sourcepackagename=old_db_branch.sourcepackagename,
-            distroseries=self.new_distroseries)
+        new_sourcepackage = self.new_distroseries.getSourcePackage(
+            old_db_branch.sourcepackagename)
         new_db_branch = new_sourcepackage.getBranch(
             PackagePublishingPocket.RELEASE)
         if new_db_branch is None:
@@ -170,9 +176,10 @@ class DistroBrancher:
         if not ok:
             return ok
         # for both mirrored and hosted areas:
-        for scheme in 'lp-mirrored:///', 'lp-hosted:///':
+        for scheme in 'lp-mirrored', 'lp-hosted':
             # the branch in the new distroseries is unstacked
-            new_location = scheme + new_db_branch.unique_name
+            new_location = str(URI(
+                scheme=scheme, host='', path='/' + new_db_branch.unique_name))
             try:
                 new_bzr_branch = Branch.open(new_location)
             except NotBranchError:
@@ -190,13 +197,13 @@ class DistroBrancher:
                     pass
             # The branch in the old distroseries is stacked on that in the
             # new.
-            old_location = scheme + old_db_branch.unique_name
+            old_location = str(URI(
+                scheme=scheme, host='', path='/' + old_db_branch.unique_name))
             try:
                 old_bzr_branch = Branch.open(old_location)
             except NotBranchError:
                 self.logger.warning(
-                    "No bzr branch at old location %s",
-                    scheme + old_db_branch.unique_name)
+                    "No bzr branch at old location %s", old_location)
                 ok = False
             else:
                 try:
@@ -238,6 +245,7 @@ class DistroBrancher:
     def makeOneNewBranch(self, old_db_branch):
         """XXX."""
         if not self.checkConsistentOfficialPackageBranch(old_db_branch):
+            self.logger.warning("Skipping branch")
             return
         new_namespace = getUtility(IBranchNamespaceSet).get(
             person=old_db_branch.owner, product=None,
@@ -255,8 +263,8 @@ class DistroBrancher:
         transaction.commit()
         switch_branches(
             config.codehosting.hosted_branches_root,
-            'lp-hosted:///', old_db_branch, new_db_branch)
+            'lp-hosted', old_db_branch, new_db_branch)
         switch_branches(
             config.codehosting.mirrored_branches_root,
-            'lp-mirrored:///', old_db_branch, new_db_branch)
+            'lp-mirrored', old_db_branch, new_db_branch)
         return new_db_branch

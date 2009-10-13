@@ -17,6 +17,8 @@ from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.transport.chroot import ChrootServer
 
+from lazr.uri import URI
+
 import transaction
 
 from canonical.testing.layers import ZopelessAppServerLayer
@@ -54,7 +56,7 @@ class TestSwitchBranches(TestCaseWithTransport):
         chroot_server = ChrootServer(self.get_transport())
         chroot_server.setUp()
         self.addCleanup(chroot_server.tearDown)
-        scheme = chroot_server.get_url()
+        scheme = chroot_server.get_url().rstrip('/:')
 
         old_branch = FakeBranch(1)
         self.get_transport(old_branch.unique_name).create_prefix()
@@ -70,8 +72,10 @@ class TestSwitchBranches(TestCaseWithTransport):
         # 2. stacked branch with no revisions in repo at old_branch
         # 3. last_revision() the same for two branches
 
-        old_location_bzrdir = BzrDir.open(scheme + old_branch.unique_name)
-        new_location_bzrdir = BzrDir.open(scheme + new_branch.unique_name)
+        old_location_bzrdir = BzrDir.open(str(URI(
+            scheme=scheme, host='', path='/' + old_branch.unique_name)))
+        new_location_bzrdir = BzrDir.open(str(URI(
+            scheme=scheme, host='', path='/' + new_branch.unique_name)))
 
         old_location_branch = old_location_bzrdir.open_branch()
         new_location_branch = new_location_bzrdir.open_branch()
@@ -173,7 +177,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             db_branch.sourcepackage.name).getBranch(RELEASE)
         self.assertIs(new_branch, None)
         self.assertLogMessages(
-            ['^WARNING .*'])
+            ['^WARNING .*',
+             '^WARNING Skipping branch'])
 
     def test_makeNewBranches(self):
 
@@ -199,7 +204,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertIsNot(new_branch, None)
         self.assertIsNot(new_branch2, None)
 
-    def test_makeOneNewBranches_idempotent(self):
+    def test_makeNewBranches_idempotent(self):
         # 
         db_branch = self.makeOfficialPackageBranch()
 
