@@ -27,8 +27,7 @@ from canonical.config import config
 from canonical.testing.layers import ZopelessAppServerLayer
 from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
 
-from lp.codehosting.branchdistro import (
-    DistroBrancher, switch_branches)
+from lp.codehosting.branchdistro import DistroBrancher, switch_branches
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
@@ -192,7 +191,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         distroseries2 = self.factory.makeDistroRelease(
             distribution=distribution)
         brancher = DistroBrancher.fromNames(
-            distribution.name, distroseries1.name, distroseries2.name)
+            None, distribution.name, distroseries1.name, distroseries2.name)
         self.assertEqual(
             [distroseries1, distroseries2],
             [brancher.old_distroseries, brancher.new_distroseries])
@@ -219,14 +218,12 @@ class TestDistroBrancher(TestCaseWithFactory):
         # makeOneNewBranch skips over an inconsistent official package branch
         # (see `checkConsistentOfficialPackageBranch` for precisely what an
         # "inconsistent official package branch" is).
-        db_branch = self.makeOfficialPackageBranch()
-
-        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        brancher.makeOneNewBranch(
-            self.factory.makePackageBranch(db_branch.sourcepackage))
+        unofficial_branch = self.factory.makePackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(unofficial_branch.distroseries)
+        brancher.makeOneNewBranch(unofficial_branch)
 
         new_branch = brancher.new_distroseries.getSourcePackage(
-            db_branch.sourcepackage.name).getBranch(RELEASE)
+            unofficial_branch.sourcepackage.name).getBranch(RELEASE)
         self.assertIs(new_branch, None)
         self.assertLogMessages(
             ['^WARNING .*',

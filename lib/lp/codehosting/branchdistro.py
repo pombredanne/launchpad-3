@@ -131,7 +131,7 @@ class DistroBrancher:
             distribution_name)
         new_distroseries = distribution.getSeries(new_distroseries_name)
         old_distroseries = distribution.getSeries(old_distroseries_name)
-        return cls(logger, new_distroseries, old_distroseries)
+        return cls(logger, old_distroseries, new_distroseries)
 
     def _existingOfficialBranches(self):
         """Return the collection of official branches in the old distroseries.

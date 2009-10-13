@@ -6,6 +6,7 @@
 import _pythonpath
 
 from lp.codehosting.branchdistro import DistroBrancher
+from lp.codehosting.vfs import get_multi_server
 from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 
 
@@ -22,11 +23,16 @@ class BranchDistroScript(LaunchpadScript):
         if len(self.args) != 3:
             self.parser.error("Wrong number of arguments.")
         brancher = DistroBrancher.fromNames(self.logger, *self.args)
-        if self.options.check:
-            if not brancher.checkNewBranches():
-                raise LaunchpadScriptFailure("Check failed")
-        else:
-            brancher.makeNewBranches()
+        server = get_multi_server(write_mirrored=True, write_hosted=True)
+        server.setUp()
+        try:
+            if self.options.check:
+                if not brancher.checkNewBranches():
+                    raise LaunchpadScriptFailure("Check failed")
+            else:
+                brancher.makeNewBranches()
+        finally:
+            server.tearDown()
 
 if __name__ == '__main__':
     BranchDistroScript("branch-distro", dbuser='branch-distro').run()
