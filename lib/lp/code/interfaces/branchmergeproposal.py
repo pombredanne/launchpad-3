@@ -455,7 +455,8 @@ class IBranchMergeProposal(IPrivacy):
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
-    @export_factory_operation(Interface, []) # ICodeReviewComment
+    # ICodeReviewComment supplied as Interface to avoid circular imports.
+    @export_factory_operation(Interface, [])
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.
