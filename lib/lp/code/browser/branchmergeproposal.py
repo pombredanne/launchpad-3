@@ -415,14 +415,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         request.reviewer = self.user
         self.next_url = canonical_url(self.context)
 
-    @action('Save Comment', name='add')
-    def add_action(self, action, data):
-        """Create the comment..."""
-        comment = self.context.createComment(
-            self.user, subject=None, content=data['comment'],
-            parent=None, vote=data['vote'],
-            review_type=data['review_type'])
-
     @property
     def comment_location(self):
         """Location of page for commenting on this proposal."""
