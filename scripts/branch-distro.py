@@ -11,6 +11,7 @@ from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 
 
 class BranchDistroScript(LaunchpadScript):
+
     usage = "%prog distro old-series new-series"
 
     def add_my_options(self):

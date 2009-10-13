@@ -9,6 +9,12 @@ in the old.  The old branch will become stacked on the new, to avoid a using
 too much disk space whilst retaining best performance for the new branch.
 """
 
+__metaclass__ = type
+__all__ = [
+    'DistroBrancher',
+    'switch_branches',
+    ]
+
 import os
 
 from bzrlib.branch import Branch
@@ -35,10 +41,6 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
-__metaclass__ = type
-__all__ = []
-
-
 def switch_branches(prefix, scheme, old_db_branch, new_db_branch):
     """Move bzr data from an old to a new branch, leaving old stacked on new.
 
@@ -47,6 +49,11 @@ def switch_branches(prefix, scheme, old_db_branch, new_db_branch):
     next release of the distribution.  We move the bzr data to the location
     for the new branch and replace the trunk branch for the just released
     version with a stacked branch pointing at the new branch.
+
+    The procedure is to complicated to be carried out atomically, so if this
+    function is interrupted things may be a little inconsistent (e.g. there
+    might be a branch in the old location, but not stacked on the new location
+    yet).  There should be no data loss though.
 
     :param prefix: The non-branch id dependent part of the physical path to
         the branches on disk.
@@ -193,7 +200,6 @@ class DistroBrancher:
             try:
                 self.makeOneNewBranch(db_branch)
             except BranchExists:
-                # Check here?
                 pass
 
     def checkNewBranches(self):
@@ -203,6 +209,8 @@ class DistroBrancher:
         distroseries has a matching branch in the new distroseries and that
         stacking is set up as we expect in both the hosted and mirrored areas
         on disk.
+
+        Every branch will be checked, even if some fail.
 
         This function simply returns True or False -- any problems will be
         logged to ``self.logger``.
@@ -342,9 +350,10 @@ class DistroBrancher:
         new_db_branch.sourcepackage.setBranch(
             PackagePublishingPocket.RELEASE, new_db_branch,
             getUtility(ILaunchpadCelebrities).ubuntu_branches.teamowner)
-        # Commit now because switch_branches *moves* the data to locations
-        # dependent on the new_branch's id, so if the transaction doesn't get
-        # committed we won't know where it's gone.
+        # switch_branches *moves* the data to locations dependent on the
+        # new_branch's id, so if the transaction was rolled back we wouldn't
+        # know the branch id and thus wouldn't be able to find the branch data
+        # again.  So commit before doing that.
         transaction.commit()
         switch_branches(
             config.codehosting.hosted_branches_root,

@@ -184,8 +184,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             AssertionError, DistroBrancher, None, distroseries, distroseries)
 
     def test_fromNames(self):
-        # DistroBrancher.__init__ raises AssertionError if passed the same
-        # distroseries twice.
+        # DistroBrancher.fromNames constructs a DistroBrancher from the names
+        # of a distribution and two distroseries within it.
         distribution = self.factory.makeDistribution()
         distroseries1 = self.factory.makeDistroRelease(
             distribution=distribution)
@@ -213,7 +213,14 @@ class TestDistroBrancher(TestCaseWithFactory):
         new_branch = brancher.new_distroseries.getSourcePackage(
             db_branch.sourcepackage.name).getBranch(RELEASE)
 
-        self.assertIsNot(new_branch, None)
+        self.assertIsNot(None, new_branch)
+        # The branch owner/name/target is the same, apart from the
+        # distroseries.
+        self.assertEqual(
+            [db_branch.owner, db_branch.distribution,
+             db_branch.sourcepackagename, db_branch.name],
+            [new_branch.owner, new_branch.distribution,
+             new_branch.sourcepackagename, new_branch.name])
 
     def test_makeOneNewBranch_inconsistent_branch(self):
         # makeOneNewBranch skips over an inconsistent official package branch
@@ -226,10 +233,10 @@ class TestDistroBrancher(TestCaseWithFactory):
 
         new_branch = brancher.new_distroseries.getSourcePackage(
             unofficial_branch.sourcepackage.name).getBranch(RELEASE)
-        self.assertIs(new_branch, None)
+        self.assertIs(None, new_branch)
         self.assertLogMessages(
-            ['^WARNING .*',
-             '^WARNING Skipping branch'])
+            ['^WARNING .* is not an official branch$',
+             '^WARNING Skipping branch$'])
 
     def test_makeNewBranches(self):
         # makeNewBranches calls makeOneNewBranch for each official branch in
@@ -253,8 +260,8 @@ class TestDistroBrancher(TestCaseWithFactory):
             db_branch2.sourcepackage.name)
         new_branch2 = new_sourcepackage2.getBranch(RELEASE)
 
-        self.assertIsNot(new_branch, None)
-        self.assertIsNot(new_branch2, None)
+        self.assertIsNot(None, new_branch)
+        self.assertIsNot(None, new_branch2)
 
     def test_makeNewBranches_idempotent(self):
         # makeNewBranches is idempotent in the sense that if a branch in the
@@ -309,7 +316,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         ok = brancher.checkConsistentOfficialPackageBranch(db_branch)
         self.assertLogMessages(
-            ['^WARNING .*/.*/.*\ is not an official branch$'])
+            ['^WARNING .*/.*/.* is not an official branch$'])
         self.assertFalse(ok)
 
     def test_checkConsistentOfficialPackageBranch_official_elsewhere(self):
