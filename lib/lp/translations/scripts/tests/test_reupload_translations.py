@@ -22,6 +22,8 @@ from canonical.launchpad.scripts.tests import run_script
 
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.soyuz.model.sourcepackagerelease import (
+    _filter_ubuntu_translation_file)
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueue)
 
@@ -30,6 +32,12 @@ from lp.translations.scripts.reupload_translations import (
 
 
 class UploadInjector:
+    """Mockup for `SourcePackage.getLatestTranslationsUploads`.
+
+    If patched into a `SourcePackage` object, makes its
+    getLatestTranslationsUploads method return the given library file
+    alias.
+    """
     def __init__(self, script, tar_alias):
         self.tar_alias = tar_alias
         self.script = script
@@ -76,6 +84,23 @@ def summarize_translations_queue(sourcepackage):
     return dict((entry.path, entry.content.read()) for entry in entries)
 
 
+def filter_paths(files_dict):
+    """Apply `_filter_ubuntu_translation_file` to each file in `files_dict.`
+
+    :param files_dict: A dict mapping translation file names to their
+        contents.
+    :return: A similar dict, but with `_filter_ubuntu_translation_file`
+        applied to each file's path, and non-Ubuntu files left out.
+    """
+    filtered_dict = {}
+    for original_path, content in files_dict.iteritems():
+        new_path = _filter_ubuntu_translation_file(original_path)
+        if new_path:
+            filtered_dict[new_path] = content
+
+    return filtered_dict
+
+
 class TestReuploadPackageTranslations(TestCaseWithFactory):
     """Test `ReuploadPackageTranslations`."""
     layer = LaunchpadZopelessLayer
@@ -90,6 +115,27 @@ class TestReuploadPackageTranslations(TestCaseWithFactory):
             '-s', distroseries.name,
             '-p', sourcepackagename.name,
             '-qqq'])
+
+    def _uploadAndProcess(self, files_dict):
+        """Fake an upload and cause _processPackage to be run on it.
+
+        :param files_dict: A dict mapping file paths to file contents.
+        :return: A dict describing the resulting import queue for the
+            package.
+        """
+        tar_alias = upload_tarball(files_dict)
+
+        # Force Librarian update
+        transaction.commit()
+
+        self.script._findPackage = UploadInjector(self.script, tar_alias)
+        self.script.main()
+        self.assertEqual([], self.script.uploadless_packages)
+
+        # Force Librarian update
+        transaction.commit()
+
+        return summarize_translations_queue(self.sourcepackage)
 
     def test_findPackage(self):
         # _findPackage finds a SourcePackage by name.
@@ -109,23 +155,20 @@ class TestReuploadPackageTranslations(TestCaseWithFactory):
         # _processPackage will fetch the package's latest translations
         # upload from the Librarian and re-import it.
         translation_files = {
-            'po/messages.pot': '# pot',
-            'po/nl.po': '# nl',
+            'source/po/messages.pot': '# pot',
+            'source/po/nl.po': '# nl',
         }
-        tar_alias = upload_tarball(translation_files)
+        queue_summary = self._uploadAndProcess(translation_files)
+        self.assertEqual(filter_paths(translation_files), queue_summary)
 
-        # Force Librarian update
-        transaction.commit()
-
-        self.script._findPackage = UploadInjector(self.script, tar_alias)
-        self.script.main()
-        self.assertEqual([], self.script.uploadless_packages)
-
-        # Force Librarian update
-        transaction.commit()
-
-        queue_summary = summarize_translations_queue(self.sourcepackage)
-        self.assertEqual(translation_files, queue_summary)
+    def test_processPackage_filters_paths(self):
+        # Uploads are filtered just like other Ubuntu tarballs.
+        translation_files = {
+            'source/foo.pot': '# foo',
+            'elsewhere/bar.pot': '# bar',
+        }
+        queue_summary = self._uploadAndProcess(translation_files)
+        self.assertEqual({'foo.pot': '# foo'}, queue_summary)
 
 
 class TestReuploadScript(TestCaseWithFactory):
