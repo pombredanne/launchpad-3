@@ -2381,7 +2381,7 @@ class UdevDevice(BaseDevice):
 
     @property
     def root_device_ids(self):
-        """The vendor and product IDs of the rott device."""
+        """The vendor and product IDs of the root device."""
         return {
             'vendor': self.dmi.get('/sys/class/dmi/id/sys_vendor'),
             'product': self.dmi.get('/sys/class/dmi/id/product_name')
