@@ -138,6 +138,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         self._log_file = StringIO()
         new_distroseries = self.factory.makeDistroRelease(
             distribution=distroseries.distribution, name='new')
+        transaction.commit()
+        self.layer.switchDbUser('branch-distro')
         return DistroBrancher(
             FakeLogger(self._log_file), distroseries, new_distroseries)
 
@@ -329,10 +331,10 @@ class TestDistroBrancher(TestCaseWithFactory):
         # checkConsistentOfficialPackageBranch returns False when passed a
         # branch that is official for two sourcepackages.
         db_branch = self.factory.makePackageBranch()
-        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
         self.factory.makeSourcePackage().setBranch(
             RELEASE, db_branch, db_branch.owner)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         ok = brancher.checkConsistentOfficialPackageBranch(db_branch)
         self.assertLogMessages([
             '^WARNING .*/.*/.* is official for multiple series: .*/.*/.*, '
@@ -352,8 +354,8 @@ class TestDistroBrancher(TestCaseWithFactory):
     def test_checkOneBranch_inconsistent_old_package_branch(self):
         # checkOneBranch returns False when passed a branch that is not a
         # consistent official package branch.
-        brancher = self.makeNewSeriesAndBrancher()
         db_branch = self.factory.makePackageBranch()
+        brancher = self.makeNewSeriesAndBrancher()
         ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
         self.assertLogMessages(
@@ -375,9 +377,12 @@ class TestDistroBrancher(TestCaseWithFactory):
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
+        self.layer.switchDbUser('launchpad')
         new_db_branch.setTarget(
             new_db_branch.owner,
             source_package=self.factory.makeSourcePackage())
+        transaction.commit()
+        self.layer.switchDbUser('branch-distro')
         ok = brancher.checkOneBranch(new_db_branch)
         self.assertFalse(ok)
         self.assertLogMessages(
@@ -456,10 +461,10 @@ class TestDistroBrancher(TestCaseWithFactory):
         # checkOneBranch returns False when the bzr branch in the hosted area
         # for the database branch in new distroseries is stacked.
         db_branch = self.makeOfficialPackageBranch()
-        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        new_db_branch = brancher.makeOneNewBranch(db_branch)
         b, _ = self.create_branch_and_tree(
             self.factory.getUniqueString(), hosted=True)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        new_db_branch = brancher.makeOneNewBranch(db_branch)
         Branch.open(new_db_branch.getPullURL()).set_stacked_on_url(
             '/' + b.unique_name)
         ok = brancher.checkOneBranch(db_branch)
@@ -473,10 +478,10 @@ class TestDistroBrancher(TestCaseWithFactory):
         # checkOneBranch returns False when the bzr branch in the mirrored
         # area for the database branch in new distroseries is stacked.
         db_branch = self.makeOfficialPackageBranch()
-        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        new_db_branch = brancher.makeOneNewBranch(db_branch)
         b, _ = self.create_branch_and_tree(
             self.factory.getUniqueString(), hosted=False)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        new_db_branch = brancher.makeOneNewBranch(db_branch)
         Branch.open(new_db_branch.warehouse_url).set_stacked_on_url(
             '/' + b.unique_name)
         ok = brancher.checkOneBranch(db_branch)
@@ -523,10 +528,10 @@ class TestDistroBrancher(TestCaseWithFactory):
         # for the database branch in old distroseries stacked on some other
         # branch than the branch in the new distroseries.
         db_branch = self.makeOfficialPackageBranch()
-        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        brancher.makeOneNewBranch(db_branch)
         b, _ = self.create_branch_and_tree(
             self.factory.getUniqueString(), hosted=True)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
         Branch.open(db_branch.getPullURL()).set_stacked_on_url(
             '/' + b.unique_name)
         ok = brancher.checkOneBranch(db_branch)
@@ -541,10 +546,10 @@ class TestDistroBrancher(TestCaseWithFactory):
         # area for the database branch in old distroseries stacked on some
         # other branch than the branch in the new distroseries.
         db_branch = self.makeOfficialPackageBranch()
-        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        brancher.makeOneNewBranch(db_branch)
         b, _ = self.create_branch_and_tree(
             self.factory.getUniqueString(), hosted=False)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
         Branch.open(db_branch.warehouse_url).set_stacked_on_url(
             '/' + b.unique_name)
         ok = brancher.checkOneBranch(db_branch)
