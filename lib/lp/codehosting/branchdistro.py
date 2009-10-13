@@ -189,7 +189,7 @@ class DistroBrancher:
     def makeNewBranches(self):
         """Make official branches in the new distroseries."""
         for db_branch in self._existingOfficialBranches():
-            self.logger.debug("Processing %r" % db_branch)
+            self.logger.debug("Processing %s" % db_branch.unique_name)
             try:
                 self.makeOneNewBranch(db_branch)
             except BranchExists:
@@ -212,6 +212,7 @@ class DistroBrancher:
         """
         ok = True
         for db_branch in self._existingOfficialBranches():
+            self.logger.debug("Checking %s" % db_branch.unique_name)
             try:
                 if not self.checkOneBranch(db_branch):
                     ok = False

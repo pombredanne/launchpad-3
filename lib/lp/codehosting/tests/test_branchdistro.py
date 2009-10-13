@@ -9,7 +9,8 @@ __metaclass__ = type
 import os
 import re
 from StringIO import StringIO
-import subprocess
+from subprocess import PIPE, Popen, STDOUT
+import textwrap
 import unittest
 
 from bzrlib.branch import Branch
@@ -621,34 +622,63 @@ class TestDistroBrancher(TestCaseWithFactory):
             ])
         self.assertFalse(ok)
 
-    def test_makeNewBranches_script(self):
+    def runBranchDistroScript(self, args):
+        """Run the branch-distro.py script with the given arguments.
+
+        ;param args: The arguments to pass to the branch-distro.py script.
+        :return: A tuple (returncode, output).  stderr and stdout are both
+            contained in the output.
+        """
         script_path = os.path.join(config.root, 'scripts', 'branch-distro.py')
+        process = Popen([script_path] + args, stdout=PIPE, stderr=STDOUT)
+        output, error = process.communicate()
+        return process.returncode, output
+
+    def test_makeNewBranches_script(self):
+        # Running the script with the arguments 'distro old-series new-series'
+        # makes new branches in the new series.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        returncode = subprocess.call(
-            [script_path, db_branch.distribution.name,
+        returncode, output = self.runBranchDistroScript(
+            ['-v', db_branch.distribution.name,
              brancher.old_distroseries.name, brancher.new_distroseries.name])
         self.assertEqual(0, returncode)
+        self.assertEqual(
+            'DEBUG   Processing ' + db_branch.unique_name + '\n', output)
         brancher.checkOneBranch(db_branch)
 
     def test_checkNewBranches_script_success(self):
-        script_path = os.path.join(config.root, 'scripts', 'branch-distro.py')
+        # Running the script with the arguments '--check distro old-series
+        # new-series' checks that the branches in the new series are as
+        # expected.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeNewBranches()
-        returncode = subprocess.call(
-            [script_path, '--check', db_branch.distribution.name,
+        returncode, output = self.runBranchDistroScript(
+            ['-v', '--check', db_branch.distribution.name,
              brancher.old_distroseries.name, brancher.new_distroseries.name])
         self.assertEqual(0, returncode)
+        self.assertEqual(
+            'DEBUG   Checking ' + db_branch.unique_name + '\n', output)
         brancher.checkOneBranch(db_branch)
 
     def test_checkNewBranches_script_failure(self):
-        script_path = os.path.join(config.root, 'scripts', 'branch-distro.py')
+        # Running the script with the arguments '--check distro old-series
+        # new-series' checks that the branches in the new series are as
+        # expected and logs warnings and exits with code 1 is things are not
+        # as expected.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        returncode = subprocess.call(
-            [script_path, '--check', db_branch.distribution.name,
+        returncode, output = self.runBranchDistroScript(
+            ['-v', '--check', db_branch.distribution.name,
              brancher.old_distroseries.name, brancher.new_distroseries.name])
+        expected = '''\
+        DEBUG   Checking %(name)s
+        WARNING No official branch found for %(name)s
+        ERROR   Check failed
+        ''' % {'name': db_branch.unique_name}
+        self.assertEqual(
+            textwrap.dedent(expected), output)
         self.assertEqual(1, returncode)
 
 
