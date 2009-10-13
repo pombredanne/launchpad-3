@@ -59,6 +59,7 @@ _time_regex = re.compile(r"""
     re.VERBOSE)
 
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
+UDEV_ROOT_PATH = '/devices/LNXSYSTM:00'
 
 # These UDIs appears in some submissions more than once.
 KNOWN_DUPLICATE_UDIS = set((
@@ -1606,6 +1607,7 @@ class BaseDevice:
     @property
     def driver_name(self):
         """The name of the driver contolling this device. May be None."""
+        raise NotImplementedError
 
     def translateScsiBus(self):
         """Return the real bus of a device where raw_bus=='scsi'.
@@ -2358,7 +2360,7 @@ class HALDevice(BaseDevice):
 class UdevDevice(BaseDevice):
     """The representation of a udev device node."""
 
-    def __init__(self, udev_data, sysfs_data, parser):
+    def __init__(self, udev_data, sysfs_data, dmi_data, parser):
         """HALDevice constructor.
 
         :param udevdata: The udev data for this device
@@ -2369,6 +2371,7 @@ class UdevDevice(BaseDevice):
         super(UdevDevice, self).__init__(parser)
         self.udev = udev_data
         self.sysfs = sysfs_data
+        self.dmi = dmi_data
 
     @property
     def device_id(self):
@@ -2408,6 +2411,24 @@ class UdevDevice(BaseDevice):
     def pci_subclass(self):
         """See `BaseDevice`."""
         return self.pci_class_info[1]
+
+    @property
+    def pci_ids(self):
+        """The PCI vendor and product IDs.
+
+        :return: (vendor_id, product_id) for PCI devices
+            or (None, None) for other devices.
+        """
+        if self.is_pci:
+            # SubmissionParser.checkUdevPciProperties() ensures that
+            # each PCI device has the property PCI_ID and that is
+            # consists of two 4-digit hexadecimal numbers, separated
+            # by a ':'.
+            id_string = self.udev['E']['PCI_ID']
+            ids = id_string.split(':')
+            return [int(part, 16) for part in ids]
+        else:
+            return [None, None]
 
     @property
     def is_usb(self):
@@ -2475,6 +2496,116 @@ class UdevDevice(BaseDevice):
             return self.sysfs['model']
         else:
             return None
+
+    @property
+    def raw_bus(self):
+        """See `BaseDevice`."""
+        # udev specifies the property SUBSYSTEM for most devices;
+        # some devices have additionally the more specific property
+        # DEVTYPE. DEVTYPE is preferable.
+        # The root device has the subsystem/bus value "acpi", which
+        # is a bit nonsensical.
+        if self.device_id == '/devices/LNXSYSTM:00':
+            return None
+        properties = self.udev['E']
+        return properties.get('DEVTYPE') or properties.get('SUBSYSTEM')
+
+    def getVendorOrProduct(self, type_):
+        """Return the vendor or product of this device.
+
+        :return: The vendor or product data for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+
+        bus = self.raw_bus
+        if self.device_id == UDEV_ROOT_PATH:
+            # udev does not known about any product information for
+            # the root device. We use DMI data instead.
+            if type_ == 'vendor':
+                return self.dmi.get('/sys/class/dmi/id/sys_vendor')
+            else:
+                return self.dmi.get('/sys/class/dmi/id/product_name')
+        elif bus == 'scsi_device':
+            vendor, product = self.getScsiVendorAndModelName()
+            if type_ == 'vendor':
+                return vendor
+            else:
+                return product
+        elif bus in ('pci', 'usb_device'):
+            # XXX Abel Deuring 2009-10-13, bug 450480: udev does not
+            # provide human-readable vendor and product names for
+            # USB and PCI devices. We should retrieve these from
+            # http://www.linux-usb.org/usb.ids and
+            # http://pciids.sourceforge.net/v2.2/pci.ids
+            return 'Unknown'
+        else:
+            # We don't process yet other devices than complete systems,
+            # PCI, USB devices and those devices that are represented
+            # in udev as SCSI devices: real SCSI devices, and
+            # IDE/ATA/SATA devices.
+            return None
+
+    @property
+    def vendor(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProduct('vendor')
+
+    @property
+    def product(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProduct('product')
+
+    def getVendorOrProductID(self, type_):
+        """Return the vendor or product ID of this device.
+
+        :return: The vendor or product ID for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+
+        bus = self.raw_bus
+        if self.device_id == UDEV_ROOT_PATH:
+            # udev does not known about any product information for
+            # the root device. We use DMI data instead.
+            if type_ == 'vendor':
+                return self.dmi.get('/sys/class/dmi/id/sys_vendor')
+            else:
+                return self.dmi.get('/sys/class/dmi/id/product_name')
+        elif bus == 'scsi_device':
+            vendor, product = self.getScsiVendorAndModelName()
+            if type_ == 'vendor':
+                return vendor
+            else:
+                return product
+        elif bus == 'pci':
+            if type_ == 'vendor':
+                return self.pci_ids[0]
+            else:
+                return self.pci_ids[1]
+        elif bus == 'usb_device':
+            if type_ == 'vendor':
+                return self.usb_ids[0]
+            else:
+                return self.usb_ids[1]
+        else:
+            # We don't process yet other devices than complete systems,
+            # PCI, USB devices and those devices that are represented
+            # in udev as SCSI devices: real SCSI devices, and
+            # IDE/ATA/SATA devices.
+            return None
+
+    @property
+    def vendor_id(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProductID('vendor')
+
+    @property
+    def product_id(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProductID('product')
 
 
 class ProcessingLoop(object):

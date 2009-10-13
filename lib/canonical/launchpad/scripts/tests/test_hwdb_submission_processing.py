@@ -2606,6 +2606,11 @@ class TestUdevDevice(TestCase):
             }
         }
 
+    root_device_dmi_data = {
+        '/sys/class/dmi/id/sys_vendor': 'FUJITSU SIEMENS',
+        '/sys/class/dmi/id/product_name': 'LIFEBOOK E8210',
+        }
+
     pci_device_data = {
         'P': '/devices/pci0000:00/0000:00:1f.2',
         'E': {
@@ -2641,97 +2646,114 @@ class TestUdevDevice(TestCase):
         'type': '5',
         }
 
+    no_subsystem_device_data = {
+        'P': '/devices/pnp0/00:00',
+        'E': {}
+        }
+
     def test_device_id(self):
         """Test of UdevDevice.device_id."""
-        device = UdevDevice(self.pci_device_data, None, None)
+        device = UdevDevice(self.pci_device_data, None, None, None)
         self.assertEqual(
             '/devices/pci0000:00/0000:00:1f.2', device.device_id,
             'Unexpected value of UdevDevice.device_id.')
 
     def test_is_pci(self):
         """Test of UdevDevice.is_pci."""
-        device = UdevDevice(self.pci_device_data, None, None)
+        device = UdevDevice(self.pci_device_data, None, None, None)
         self.assertTrue(device.is_pci)
 
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertFalse(device.is_pci)
 
     def test_pci_class_info(self):
         """Test of UdevDevice.pci_class_info"""
-        device = UdevDevice(self.pci_device_data, None, None)
+        device = UdevDevice(self.pci_device_data, None, None, None)
         self.assertEqual(
             (1, 6, 2), device.pci_class_info,
             'Invalid value of UdevDevice.pci_class_info for PCI device.')
 
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertEqual(
             (None, None, None), device.pci_class_info,
             'Invalid value of UdevDevice.pci_class_info for Non-PCI device.')
 
     def test_pci_class(self):
         """Test of UdevDevice.pci_class"""
-        device = UdevDevice(self.pci_device_data, None, None)
+        device = UdevDevice(self.pci_device_data, None, None, None)
         self.assertEqual(
             1, device.pci_class,
             'Invalid value of UdevDevice.pci_class for PCI device.')
 
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertEqual(
             None, device.pci_class,
             'Invalid value of UdevDevice.pci_class for Non-PCI device.')
 
     def test_pci_subclass(self):
         """Test of UdevDevice.pci_subclass"""
-        device = UdevDevice(self.pci_device_data, None, None)
+        device = UdevDevice(self.pci_device_data, None, None, None)
         self.assertEqual(
             6, device.pci_subclass,
             'Invalid value of UdevDevice.pci_class for PCI device.')
 
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertEqual(
             None, device.pci_class,
             'Invalid value of UdevDevice.pci_class for Non-PCI device.')
 
+    def test_pci_ids(self):
+        """Test of UdevDevice.pci_ids"""
+        device = UdevDevice(self.pci_device_data, None, None, None)
+        self.assertEqual(
+            [0x8086, 0x27C5], device.pci_ids,
+            'Invalid value of UdevDevice.pci_ids for PCI device.')
+
+        device = UdevDevice(self.usb_device_data, None, None, None)
+        self.assertEqual(
+            [None, None], device.pci_ids,
+            'Invalid value of UdevDevice.pci_ids for Non-PCI device.')
+
     def test_is_usb(self):
         """Test of UdevDevice.is_usb"""
-        device = UdevDevice(self.usb_device_data, None, None)
+        device = UdevDevice(self.usb_device_data, None, None, None)
         self.assertTrue(device.is_usb)
 
-        device = UdevDevice(self.pci_device_data, None, None)
+        device = UdevDevice(self.pci_device_data, None, None, None)
         self.assertFalse(device.is_usb)
 
     def test_usb_ids(self):
         """Test of UdevDevice.usb_ids"""
-        device = UdevDevice(self.usb_device_data, None, None)
+        device = UdevDevice(self.usb_device_data, None, None, None)
         self.assertEqual(
             [0x46d, 0xa01, 0x1013], device.usb_ids,
             'Invalid value of UdevDevice.usb_ids for USB device.')
 
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertEqual(
             [None, None, None], device.usb_ids,
             'Invalid value of UdevDevice.usb_ids for Non-USB device.')
 
     def test_usb_vendor_id(self):
         """Test of UdevDevice.usb_vendor_id"""
-        device = UdevDevice(self.usb_device_data, None, None)
+        device = UdevDevice(self.usb_device_data, None, None, None)
         self.assertEqual(
             0x46d, device.usb_vendor_id,
             'Invalid value of UdevDevice.usb_vendor_id for USB device.')
 
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertEqual(
             None, device.usb_vendor_id,
             'Invalid value of UdevDevice.usb_vendor_id for Non-USB device.')
 
     def test_usb_product_id(self):
         """Test of UdevDevice.usb_product_id"""
-        device = UdevDevice(self.usb_device_data, None, None)
+        device = UdevDevice(self.usb_device_data, None, None, None)
         self.assertEqual(
             0xa01, device.usb_product_id,
             'Invalid value of UdevDevice.usb_product_id for USB device.')
 
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertEqual(
             None, device.usb_product_id,
             'Invalid value of UdevDevice.usb_product_id for Non-USB device.')
@@ -2739,28 +2761,127 @@ class TestUdevDevice(TestCase):
     def test_is_scsi_device(self):
         """Test of UdevDevice.is_scsi_device."""
         device = UdevDevice(
-            self.scsi_device_data, self.scsi_device_sysfs_data, None)
+            self.scsi_device_data, self.scsi_device_sysfs_data, None, None)
         self.assertTrue(device.is_scsi_device)
 
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertFalse(device.is_scsi_device)
 
     def test_scsi_vendor(self):
         """Test of UdevDevice.scsi_vendor."""
         device = UdevDevice(
-            self.scsi_device_data, self.scsi_device_sysfs_data, None)
+            self.scsi_device_data, self.scsi_device_sysfs_data, None, None)
         self.assertEqual('MATSHITA', device.scsi_vendor)
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertEqual(None, device.scsi_vendor)
 
     def test_scsi_model(self):
         """Test of UdevDevice.scsi_model."""
         device = UdevDevice(
-            self.scsi_device_data, self.scsi_device_sysfs_data, None)
+            self.scsi_device_data, self.scsi_device_sysfs_data, None, None)
         self.assertEqual('DVD-RAM UJ-841S', device.scsi_model)
 
-        device = UdevDevice(self.root_device, None, None)
+        device = UdevDevice(self.root_device, None, None, None)
         self.assertEqual(None, device.scsi_model)
+
+    def test_raw_bus(self):
+        """Test of UdevDevice.raw_bus."""
+        device = UdevDevice(self.root_device, None, None, None)
+        self.assertEqual(None, device.raw_bus)
+
+        device = UdevDevice(self.pci_device_data, None, None, None)
+        self.assertEqual('pci', device.raw_bus)
+
+        device = UdevDevice(self.usb_device_data, None, None, None)
+        self.assertEqual('usb_device', device.raw_bus)
+
+        device = UdevDevice(self.no_subsystem_device_data, None, None, None)
+        self.assertEqual(None, device.raw_bus)
+
+    def test_getVendorOrProduct(self):
+        """Test of UdevDevice.getVendorOrProduct()."""
+        device = UdevDevice(
+            self.root_device, None, self.root_device_dmi_data, None)
+        self.assertEqual(
+            'FUJITSU SIEMENS', device.getVendorOrProduct('vendor'))
+        self.assertEqual(
+            'LIFEBOOK E8210', device.getVendorOrProduct('product'))
+        self.assertRaises(
+            AssertionError, device.getVendorOrProduct, 'nonsense')
+
+        device = UdevDevice(self.pci_device_data, None, None, None)
+        self.assertEqual('Unknown', device.getVendorOrProduct('vendor'))
+        self.assertEqual('Unknown', device.getVendorOrProduct('product'))
+
+        device = UdevDevice(self.usb_device_data, None, None, None)
+        self.assertEqual('Unknown', device.getVendorOrProduct('vendor'))
+        self.assertEqual('Unknown', device.getVendorOrProduct('product'))
+
+        device = UdevDevice(
+            self.scsi_device_data, self.scsi_device_sysfs_data, None, None)
+        self.assertEqual('MATSHITA', device.getVendorOrProduct('vendor'))
+        self.assertEqual(
+            'DVD-RAM UJ-841S', device.getVendorOrProduct('product'))
+
+        device = UdevDevice(
+            self.no_subsystem_device_data, None, None, None)
+        self.assertEqual(None, device.getVendorOrProduct('vendor'))
+        self.assertEqual(None, device.getVendorOrProduct('product'))
+
+    def test_vendor(self):
+        """Test of UdevDevice.vendor."""
+        device = UdevDevice(
+            self.root_device, None, self.root_device_dmi_data, None)
+        self.assertEqual('FUJITSU SIEMENS', device.vendor)
+
+    def test_product(self):
+        """Test of UdevDevice.product."""
+        device = UdevDevice(
+            self.root_device, None, self.root_device_dmi_data, None)
+        self.assertEqual('LIFEBOOK E8210', device.product)
+
+    def test_getVendorOrProductID(self):
+        """Test of UdevDevice.getVendorOrProduct()."""
+        device = UdevDevice(
+            self.root_device, None, self.root_device_dmi_data, None)
+        self.assertEqual(
+            'FUJITSU SIEMENS', device.getVendorOrProductID('vendor'))
+        self.assertEqual(
+            'LIFEBOOK E8210', device.getVendorOrProductID('product'))
+        self.assertRaises(
+            AssertionError, device.getVendorOrProductID, 'nonsense')
+
+        device = UdevDevice(self.pci_device_data, None, None, None)
+        self.assertEqual(0x8086, device.getVendorOrProductID('vendor'))
+        self.assertEqual(0x27C5, device.getVendorOrProductID('product'))
+
+        device = UdevDevice(self.usb_device_data, None, None, None)
+        self.assertEqual(0x46d, device.getVendorOrProductID('vendor'))
+        self.assertEqual(0xa01, device.getVendorOrProductID('product'))
+
+        device = UdevDevice(
+            self.scsi_device_data, self.scsi_device_sysfs_data, None, None)
+        self.assertEqual('MATSHITA', device.getVendorOrProductID('vendor'))
+        self.assertEqual(
+            'DVD-RAM UJ-841S', device.getVendorOrProductID('product'))
+
+        device = UdevDevice(
+            self.no_subsystem_device_data, None, None, None)
+        self.assertEqual(None, device.getVendorOrProductID('vendor'))
+        self.assertEqual(None, device.getVendorOrProductID('product'))
+
+    def test_vendor_id(self):
+        """Test of UdevDevice.vendor_id."""
+        device = UdevDevice(
+            self.root_device, None, self.root_device_dmi_data, None)
+        self.assertEqual('FUJITSU SIEMENS', device.vendor_id)
+
+    def test_product_id(self):
+        """Test of UdevDevice.product_id."""
+        device = UdevDevice(
+            self.root_device, None, self.root_device_dmi_data, None)
+        self.assertEqual('LIFEBOOK E8210', device.product_id)
+
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
     """Tests of the HWDB popoluation with submitted data."""
