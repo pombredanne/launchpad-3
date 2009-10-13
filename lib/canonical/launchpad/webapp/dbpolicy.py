@@ -278,20 +278,15 @@ def WebServiceDatabasePolicyFactory(request):
     if config.launchpad.read_only:
         return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
-        return WebServiceDatabasePolicy(request)
-
-
-class WebServiceDatabasePolicy(LaunchpadDatabasePolicy):
-    """Policy for the Launchpad web service.
-
-    XXX StuartBishop 2009-10-12 bug=297052: Because the webservice
-    never offloads requests to slave databases, Launchpad will
-    collapse if the web service becomes popular.
-    """
-    default_flavor = MASTER_FLAVOR
-    def install(self):
-        """See `IDatabasePolicy`."""
-        pass
+        # If a session cookie was sent with the request, use the
+        # standard Launchpad database policy for load balancing to
+        # the slave databases. The javascript web service libraries
+        # send the session cookie for authenticated users.
+        cookie_name = getUtility(IClientIdManager).namespace
+        if cookie_name in request.cookies:
+            return LaunchpadDatabasePolicy(request)
+        # Otherwise, use the master only web service database policy.
+        return MasterDatabasePolicy(request)
 
 
 class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
