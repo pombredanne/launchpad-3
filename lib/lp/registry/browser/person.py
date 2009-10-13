@@ -4662,7 +4662,7 @@ class PersonEditEmailsView(LaunchpadFormView):
 class TeamMugshotView(LaunchpadView):
     """A view for the team mugshot (team photo) page"""
 
-    label = "Who's in this team?"
+    label = "Member photos"
     batch_size = config.launchpad.mugshot_batch_size
 
     def initialize(self):
