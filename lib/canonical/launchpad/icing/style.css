@@ -270,7 +270,11 @@ label, p {max-width: 60em;}
 /* === Fonts and colors === */
 
 /* Launchpad uses a white background with small, mostly black, text: */
-html {background: #fff; color: #000; font: 83.33% sans-serif;}
+html {
+    background: #fff;
+    color: #000;
+    font-size: 83.33%;
+    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
 code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
@@ -411,7 +415,7 @@ form {border: 0; margin: 0; padding: 0;}
 form table label {font-weight: bold;}
 fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
 input[type="text"], input[type="search"], input[type="password"], textarea {
-  font-family: sans-serif;
+  font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
   margin: 0;
 }
 input[type="text"], input[type="search"], input[type="submit"],
