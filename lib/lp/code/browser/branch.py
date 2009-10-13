@@ -174,6 +174,7 @@ class BranchNavigation(Navigation):
             if proposal.id == id:
                 return proposal
 
+
 class BranchEditMenu(NavigationMenu):
     """Edit menu for IBranch."""
 
@@ -203,6 +204,11 @@ class BranchEditMenu(NavigationMenu):
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
+    # XXX: Change this to check the permission on the code import, rather than
+    # the branch.
+    #
+    # XXX: Rewrite the page test to be smarter about who is actually logged
+    # in, handling cases of branch owner and vcs-imports member separately.
     @enabled_with_permission('launchpad.Edit')
     def edit_import(self):
         text = 'Edit import source or review import'
