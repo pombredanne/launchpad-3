@@ -27,8 +27,8 @@ from canonical.librarian.interfaces import LibrarianServerError
 from canonical.launchpad.scripts.hwdbsubmissions import (
     HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
     PCI_CLASS_STORAGE, PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
-    PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA, SubmissionParser,
-    process_pending_submissions)
+    PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA,
+    process_pending_submissions, SubmissionParser, UdevDevice)
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import BaseLayer, LaunchpadZopelessLayer
 
@@ -2590,6 +2590,177 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
             'Testing info.subsystem property: Device with existing info.bus '
             'property not treated as a real device.')
 
+
+class TestUdevDevice(TestCase):
+    """Tests of class UdevDevice."""
+
+    layer = BaseLayer
+
+    root_device = {
+        'P': '/devices/LNXSYSTM:00',
+        'E': {
+            'UDEV_LOG': '3',
+            'DEVPATH': '/devices/LNXSYSTM:00',
+            'MODALIAS': 'acpi:LNXSYSTM:',
+            'SUBSYSTEM': 'acpi',
+            }
+        }
+
+    pci_device_data = {
+        'P': '/devices/pci0000:00/0000:00:1f.2',
+        'E': {
+            'PCI_CLASS': '10602',
+            'PCI_ID': '8086:27C5',
+            'PCI_SUBSYS_ID': '10CF:1387',
+            'PCI_SLOT_NAME': '0000:00:1f.2',
+            'SUBSYSTEM': 'pci',
+            }
+        }
+
+    usb_device_data = {
+        'P': '/devices/pci0000:00/0000:00:1d.1/usb3/3-2',
+        'E': {
+            'SUBSYSTEM': 'usb',
+            'DEVTYPE': 'usb_device',
+            'PRODUCT': '46d/a01/1013',
+            'TYPE': '0/0/0',
+            },
+        }
+
+    scsi_device_data = {
+        'P': '/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0',
+        'E': {
+            'SUBSYSTEM': 'scsi',
+            'DEVTYPE': 'scsi_device',
+            },
+        }
+
+    scsi_device_sysfs_data = {
+        'vendor': 'MATSHITA',
+        'model': 'DVD-RAM UJ-841S',
+        'type': '5',
+        }
+
+    def test_device_id(self):
+        """Test of UdevDevice.device_id."""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertEqual(
+            '/devices/pci0000:00/0000:00:1f.2', device.device_id,
+            'Unexpected value of UdevDevice.device_id.')
+
+    def test_is_pci(self):
+        """Test of UdevDevice.is_pci."""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertTrue(device.is_pci)
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertFalse(device.is_pci)
+
+    def test_pci_class_info(self):
+        """Test of UdevDevice.pci_class_info"""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertEqual(
+            (1, 6, 2), device.pci_class_info,
+            'Invalid value of UdevDevice.pci_class_info for PCI device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            (None, None, None), device.pci_class_info,
+            'Invalid value of UdevDevice.pci_class_info for Non-PCI device.')
+
+    def test_pci_class(self):
+        """Test of UdevDevice.pci_class"""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertEqual(
+            1, device.pci_class,
+            'Invalid value of UdevDevice.pci_class for PCI device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            None, device.pci_class,
+            'Invalid value of UdevDevice.pci_class for Non-PCI device.')
+
+    def test_pci_subclass(self):
+        """Test of UdevDevice.pci_subclass"""
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertEqual(
+            6, device.pci_subclass,
+            'Invalid value of UdevDevice.pci_class for PCI device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            None, device.pci_class,
+            'Invalid value of UdevDevice.pci_class for Non-PCI device.')
+
+    def test_is_usb(self):
+        """Test of UdevDevice.is_usb"""
+        device = UdevDevice(self.usb_device_data, None, None)
+        self.assertTrue(device.is_usb)
+
+        device = UdevDevice(self.pci_device_data, None, None)
+        self.assertFalse(device.is_usb)
+
+    def test_usb_ids(self):
+        """Test of UdevDevice.usb_ids"""
+        device = UdevDevice(self.usb_device_data, None, None)
+        self.assertEqual(
+            [0x46d, 0xa01, 0x1013], device.usb_ids,
+            'Invalid value of UdevDevice.usb_ids for USB device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            [None, None, None], device.usb_ids,
+            'Invalid value of UdevDevice.usb_ids for Non-USB device.')
+
+    def test_usb_vendor_id(self):
+        """Test of UdevDevice.usb_vendor_id"""
+        device = UdevDevice(self.usb_device_data, None, None)
+        self.assertEqual(
+            0x46d, device.usb_vendor_id,
+            'Invalid value of UdevDevice.usb_vendor_id for USB device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            None, device.usb_vendor_id,
+            'Invalid value of UdevDevice.usb_vendor_id for Non-USB device.')
+
+    def test_usb_product_id(self):
+        """Test of UdevDevice.usb_product_id"""
+        device = UdevDevice(self.usb_device_data, None, None)
+        self.assertEqual(
+            0xa01, device.usb_product_id,
+            'Invalid value of UdevDevice.usb_product_id for USB device.')
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(
+            None, device.usb_product_id,
+            'Invalid value of UdevDevice.usb_product_id for Non-USB device.')
+
+    def test_is_scsi_device(self):
+        """Test of UdevDevice.is_scsi_device."""
+        device = UdevDevice(
+            self.scsi_device_data, self.scsi_device_sysfs_data, None)
+        self.assertTrue(device.is_scsi_device)
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertFalse(device.is_scsi_device)
+
+    def test_scsi_vendor(self):
+        """Test of UdevDevice.scsi_vendor."""
+        device = UdevDevice(
+            self.scsi_device_data, self.scsi_device_sysfs_data, None)
+        self.assertEqual('MATSHITA', device.scsi_vendor)
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(None, device.scsi_vendor)
+
+    def test_scsi_model(self):
+        """Test of UdevDevice.scsi_model."""
+        device = UdevDevice(
+            self.scsi_device_data, self.scsi_device_sysfs_data, None)
+        self.assertEqual('DVD-RAM UJ-841S', device.scsi_model)
+
+        device = UdevDevice(self.root_device, None, None)
+        self.assertEqual(None, device.scsi_model)
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
     """Tests of the HWDB popoluation with submitted data."""
