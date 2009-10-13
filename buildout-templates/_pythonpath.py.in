@@ -6,15 +6,16 @@
 
 __metaclass__ = type
 
-import site
 import sys
 import os
+import site
 
 def set_path():
     # Clean out sys.modules from site's processing of .pth files.
     # XXX This should come from z3c.recipe.filetemplate.
     clean_modules = [
         '_pythonpath',
+        'sitecustomize',
         'UserDict',
         '__builtin__',
         '__main__',
@@ -71,11 +72,11 @@ def set_path():
     # We don't want to have dropped any packages that weren't already added
     # back by what we just did.  If we did, there's a good chance that the
     # world will now be insane.  Quit now, and let's fix it.
-    for k, value in previously_imported.items():
-        if k not in sys.modules:
-            raise SystemExit(
-                'Found unexpected module %s.  Import _pythonpath earlier!' %
-                (k,))
+    unexpected = set(previously_imported).difference(sys.modules)
+    if unexpected:
+        raise RuntimeError(
+            'Found unexpected module(s): %s\n\nImport _pythonpath earlier!' %
+            (', '.join(sorted(unexpected)),))
 
     sys.path[0:0] = [${string-paths}]
     # Enable Storm's C extensions

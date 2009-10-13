@@ -10,6 +10,8 @@ Usage hint:
 % utilities/check-scripts.py
 """
 # pylint: disable-msg=W0403
+import _pythonpath
+
 import os
 import sys
 
