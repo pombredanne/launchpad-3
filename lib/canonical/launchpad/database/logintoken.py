@@ -77,10 +77,6 @@ class LoginToken(SQLBase):
         for token in tokens:
             token.date_consumed = UTC_NOW
 
-    @property
-    def email_url(self):
-        return canonical_url(self)
-
     def _send_email(self, from_name, subject, message, headers=None):
         """Send an email to this token's email address."""
         from_address = format_address(
