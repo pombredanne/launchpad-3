@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for the code to make new source packages just after a disto release.
+"""Tests for making new source package branches just after a distro release.
 """
 
 __metaclass__ = type
@@ -48,10 +48,12 @@ class FakeBranch:
 
 
 class TestSwitchBranches(TestCaseWithTransport):
-    """XXX."""
+    """Tests for `switch_branches`."""
 
     def test_switch_branches(self):
-        # 
+        # switch_branches moves a branch to the new location and places a
+        # branch (with no revisions) stacked on the new branch in the old
+        # location.
 
         chroot_server = ChrootServer(self.get_transport())
         chroot_server.setUp()
@@ -81,7 +83,6 @@ class TestSwitchBranches(TestCaseWithTransport):
         new_location_branch = new_location_bzrdir.open_branch()
 
         # 1. unstacked branch in new_branch's location
-        #print new_location_branch.get_stacked_on_url()
         self.assertRaises(NotStacked, new_location_branch.get_stacked_on_url)
 
         # 2. stacked branch with no revisions in repo at old_branch
@@ -106,10 +107,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.useBzrBranches(real_server=True)
 
     def makeOfficialPackageBranch(self, distroseries=None):
-        """Make an official package branch with an underlying bzr branch.
-
-        XXX.
-        """
+        """Make an official package branch with an underlying bzr branch."""
         db_branch = self.factory.makePackageBranch(distroseries=distroseries)
         db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
 
@@ -126,6 +124,11 @@ class TestDistroBrancher(TestCaseWithFactory):
         return db_branch
 
     def makeNewSeriesAndBrancher(self, distroseries=None):
+        """Make a DistroBrancher.
+
+        Any messages logged by this DistroBrancher can be checked by calling
+        `assertLogMessages` below.
+        """
         if distroseries is None:
             distroseries = self.factory.makeDistroRelease()
         self._log_file = StringIO()
