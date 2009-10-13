@@ -1589,11 +1589,16 @@ class EditBranch(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBranch
 
-    # XXX: Allow registrant of code import branch owned by vcs_imports to edit
-    # the branch.
     def checkAuthenticated(self, user):
-        return (user.inTeam(self.obj.owner) or
-                user_has_special_branch_access(user))
+        can_edit = (
+            user.inTeam(self.obj.owner) or
+            user_has_special_branch_access(user))
+        if can_edit:
+            return True
+        code_import = self.obj.code_import
+        if code_import is None:
+            return False
+        return user.inTeam(code_import.registrant)
 
 
 class AdminBranch(AuthorizationBase):

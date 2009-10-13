@@ -12,7 +12,7 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.security import AccessBranch
+from canonical.launchpad.security import AccessBranch, EditBranch
 from lp.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -153,6 +153,35 @@ class TestAccessBranch(TestCaseWithFactory):
         removeSecurityProxy(stacked_branch).stacked_on = stacked_branch
         self.assertUnauthenticatedAccess(stacked_branch, True)
 
+
+class TestEditBranch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertCanEdit(self, branch, person, can_edit):
+        branch = removeSecurityProxy(branch)
+        self.assertEqual(
+            can_edit, EditBranch(branch).checkAuthenticated(person))
+
+    def test_arbitrary_person_cannot_edit(self):
+        branch = self.factory.makeAnyBranch()
+        person = self.factory.makePerson()
+        self.assertCanEdit(branch, person, False)
+
+    def test_code_import_registrant_can_edit(self):
+        # It used to be the case that all import branches were owned by the
+        # special, restricted team ~vcs-imports. This made a lot of work for
+        # the Launchpad development team, since they needed to delete and
+        # rename import branches whenever people wanted it. To reduce this
+        # work a little, whoever registered of a code import branch is allowed
+        # to edit the branch, even if they aren't one of the owners.
+        registrant = self.factory.makePerson()
+        code_import = self.factory.makeCodeImport(registrant=registrant)
+        branch = code_import.branch
+        removeSecurityProxy(branch).setOwner(
+            getUtility(ILaunchpadCelebrities).vcs_imports,
+            getUtility(ILaunchpadCelebrities).vcs_imports)
+        self.assertCanEdit(branch, registrant, True)
 
 
 def test_suite():
