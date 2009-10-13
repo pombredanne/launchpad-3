@@ -23,6 +23,7 @@ from sqlobject import (
 from storm.locals import And, Desc, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from lazr.delegates import delegates
@@ -69,7 +70,7 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
+    HasTranslationImportsMixin, ITranslationImportQueue)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
@@ -177,7 +178,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
-    owner = ForeignKey(
+    _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,
         notNull=True)
@@ -489,6 +490,32 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self._cached_licenses = tuple(sorted(licenses))
 
     licenses = property(_getLicenses, _setLicenses)
+
+    def _getOwner(self):
+        """Get the owner."""
+        return self._owner
+
+    def _setOwner(self, new_owner):
+        """Set the owner.
+
+        Change the owner and change the ownership of related artifacts.
+        """
+        old_owner = self._owner
+        self._owner = new_owner
+        if old_owner is not None:
+            import_queue = getUtility(ITranslationImportQueue)
+            for entry in import_queue.getAllEntries(target=self):
+                if entry.importer == old_owner:
+                    removeSecurityProxy(entry).importer = new_owner
+            for series in self.serieses:
+                if series.owner == old_owner:
+                    series.owner = new_owner
+            for release in self.releases:
+                if release.owner == old_owner:
+                    release.owner = new_owner
+            Store.of(self).flush()
+
+    owner = property(_getOwner, _setOwner)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -969,9 +996,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             series_list.remove(self.development_focus)
         series_list.insert(0, self.development_focus)
         series_list.reverse()
-        return [series.getTimeline(include_inactive=include_inactive)
-                for series in series_list
-                if include_inactive or series.active]
+        return [
+            series.getTimeline(include_inactive=include_inactive)
+            for series in series_list
+            if include_inactive or series.active or
+               series == self.development_focus
+            ]
 
 
 class ProductSet:
@@ -1006,7 +1036,7 @@ class ProductSet:
         results = Product.selectBy(
             active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it.
-        return results.prejoin(["owner"])
+        return results.prejoin(["_owner"])
 
     def get(self, productid):
         """See `IProductSet`."""
@@ -1247,7 +1277,7 @@ class ProductSet:
             queries.append('Product.active IS TRUE')
         query = " AND ".join(queries)
         return Product.select(query, distinct=True,
-                              prejoins=["owner"],
+                              prejoins=["_owner"],
                               clauseTables=clauseTables)
 
     def getTranslatables(self):
@@ -1258,7 +1288,7 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product.ownerID
+            Person.id == Product._ownerID
             ).config(distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate

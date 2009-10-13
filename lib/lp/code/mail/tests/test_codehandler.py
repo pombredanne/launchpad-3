@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from difflib import unified_diff
 from textwrap import dedent
 import transaction
 import unittest
@@ -30,6 +31,7 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.database import MessageSet
 from lp.code.model.branchmergeproposaljob import (
     CreateMergeProposalJob, MergeProposalCreatedJob)
+from lp.code.model.diff import PreviewDiff
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from lp.code.mail.codehandler import (
@@ -589,6 +591,25 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(0, len(messages))
         # Ensure the DB operations violate no constraints.
         transaction.commit()
+
+    def test_reviewer_with_diff(self):
+        """Requesting a review with a diff works."""
+        diff_text = ''.join(unified_diff('', 'Fake diff'))
+        preview_diff = PreviewDiff.create(
+            diff_text,
+            unicode(self.factory.getUniqueString('revid')),
+            unicode(self.factory.getUniqueString('revid')),
+            None, None)
+        # To record the diff in the librarian.
+        transaction.commit()
+        bmp = self.factory.makeBranchMergeProposal(preview_diff=preview_diff)
+        eric = self.factory.makePerson(name="eric", email="eric@example.com")
+        mail = self.factory.makeSignedMessage(body=' reviewer eric')
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        [vote] = bmp.votes
+        self.assertEqual(eric, vote.reviewer)
 
     def test_processMergeProposalDefaultReviewer(self):
         # If no reviewer was requested in the comment body, then the default

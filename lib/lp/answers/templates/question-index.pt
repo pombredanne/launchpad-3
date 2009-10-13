@@ -143,12 +143,12 @@
             </tal:comment>
             <div class="actions" metal:fill-slot="buttons">
               <div>
-                <input tal:replace="structure view/comment_action/render" />
                 <input tal:replace="structure view/answer_action/render" />
                 <input tal:replace="structure view/selfanswer_action/render" />
                 <input tal:replace="structure view/requestinfo_action/render" />
                 <input tal:replace="structure view/giveinfo_action/render" />
                 <input tal:replace="structure view/reopen_action/render" />
+                <input tal:replace="structure view/comment_action/render" />
               </div>
               <p id="answer-button-hint"
                 tal:condition="view/confirm_action/available">

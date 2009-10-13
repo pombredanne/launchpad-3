@@ -9,15 +9,15 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productseries import IProductSeries
 
 from lazr.restful.interface import copy_field
-from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     collection_default_content, exported, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, operation_parameters,
@@ -152,9 +152,8 @@ class ITranslationImportQueueEntry(Interface):
             required=True))
 
     importer = exported(
-        ReferenceChoice(
+        ParticipatingPersonChoice(
             title=_("Uploader"),
-            schema=IPerson,
             required=True,
             readonly=True,
             description=_(
@@ -334,7 +333,7 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntriesFromTarball(content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None):
+        potemplate=None, filename_filter=None):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.

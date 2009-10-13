@@ -15,6 +15,17 @@
     #merge-summary {
       margin: 1em 0;
     }
+    #download-url dt, #upload-url dt {
+      font-weight: normal;
+    }
+    #download-url dd, #upload-url dd {
+      font-size: 120%;
+      font-weight: bold;
+    }
+    #download-url dd span.branch-url, #upload-url dd span.branch-url {
+      font-weight: normal;
+    }
+
   </style>
   <script type="text/javascript"
       tal:condition="devmode"
@@ -26,6 +37,22 @@
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/branchlinks.js">
   </script>
+  <script type="text/javascript"
+      tal:condition="devmode"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchstatus.js">
+  </script>
+  <script type="text/javascript"
+          tal:content="string:
+    YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
+              'lazr.choiceedit', 'code.branchstatus', function(Y) {
+        Y.on('load',
+             function(e) {
+                 Y.branchstatus.connect_status(${view/status_config});
+             },
+             window);
+    });
+  "/>
 </metal:block>
 
 <body>
@@ -63,55 +90,46 @@
     <tal:branch-errors tal:replace="structure context/@@+messages" />
   </div>
 
-  <div class="yui-g">
-    <div class="yui-u first">
-      <div id="related-bugs-and-blueprints" class="portlet">
-        <h2>Related bugs and blueprints</h2>
-        <tal:related-bugs-specs
-            replace="structure context/@@++branch-related-bugs-specs" />
-      </div>
-    </div>
+  <div id="branch-description" tal:condition="context/description"
+       class="summary"
+       tal:content="structure context/description/fmt:text-to-html">
+    TODO: set the size properly
+    The description of the branch usually goes here, but will be used so
+    rarely that it only shows if there is a description set.  To set a
+    description, one must do so through the "Edit details" navigation
+    link.
+  </div>
 
-    <div class="yui-u">
-      <div class="portlet" id="branch-merges">
-        <h2>Branch merges</h2>
-        <tal:branch-pending-merges
-            replace="structure context/@@++branch-pending-merges" />
-      </div>
+  <div class="yui-g first">
+    <div id="branch-management" class="portlet">
+      <tal:branch-management
+          replace="structure context/@@++branch-management" />
     </div>
   </div>
 
+  <div class="yui-g">
 
-  <div class="yui-g" tal:condition="context/description">
-    <div id="branch-description">
-      <h2>Description</h2>
-      <div tal:content="structure context/description/fmt:text-to-html">
-        The description of the branch usually goes here, but will be used so
-        rarely that it only shows if there is a description set.  To set a
-        description, one must do so through the "Edit details" navigation
-        link.
-      </div>
+    <div class="portlet" id="branch-merges">
+      <h2>Branch merges</h2>
+      <tal:branch-pending-merges
+          replace="structure context/@@++branch-pending-merges" />
+    </div>
+
+  </div>
+
+  <div class="yui-g">
+    <div id="branch-info" class="portlet">
+      <h2>Branch information</h2>
+      <tal:branch-info replace="structure context/@@++branch-information" />
     </div>
   </div>
 
-
   <div class="yui-g">
-
-    <div class="yui-u first">
-      <div id="branch-info" class="portlet">
-        <h2>Branch information</h2>
-        <tal:branch-info replace="structure context/@@++branch-information" />
-      </div>
+    <div id="related-bugs-and-blueprints" class="portlet">
+      <h2>Related bugs and blueprints</h2>
+      <tal:related-bugs-specs
+          replace="structure context/@@++branch-related-bugs-specs" />
     </div>
-
-    <div class="yui-u">
-      <div id="branch-management" class="portlet">
-        <h2>Branch management</h2>
-        <tal:branch-management
-            replace="structure context/@@++branch-management" />
-      </div>
-    </div>
-
   </div>
 
   <div id="branch-import-details"

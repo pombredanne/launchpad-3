@@ -291,8 +291,10 @@ class ZopelessTransactionManager(object):
             if match is not None:
                 dbhost = match.group(1)
 
-        if dbuser is None:
-            dbuser = config.launchpad.dbuser
+        assert dbuser is not None, '''
+            dbuser is now required. All scripts must connect as unique
+            database users.
+            '''
 
         isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',

@@ -41,6 +41,7 @@ setup(
         'mechanize',
         'mocker',
         'oauth',
+        'paramiko',
         'python-memcached',
         'python-openid',
         'pytz',
