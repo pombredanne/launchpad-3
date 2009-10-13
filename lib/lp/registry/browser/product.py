@@ -15,7 +15,6 @@ __all__ = [
     'ProductDistributionsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
-    'ProductEditNavigationMenu',
     'ProductEditPeopleView',
     'ProductEditView',
     'ProductFacets',
@@ -349,15 +348,6 @@ class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
 
 
-class ProductEditNavigationMenu(NavigationMenu, ProductEditLinksMixin):
-    """A sub-menu for different aspects of editing a Product's details."""
-
-    usedfor = IProductEditMenu
-    facet = 'overview'
-    title = 'Change project'
-    links = ('edit', 'branding', 'reassign', 'review_license', 'administer')
-
-
 class IProductActionMenu(Interface):
     """A marker interface for the global action navigation menu."""
 
@@ -390,6 +380,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'review_license',
         'branchvisibility',
         'rdf',
+        'branding',
         ]
 
     def top_contributors(self):
