@@ -133,10 +133,10 @@ class TestDistroBrancher(TestCaseWithFactory):
         if distroseries is None:
             distroseries = self.factory.makeDistroRelease()
         self._log_file = StringIO()
-        new_distro_series = self.factory.makeDistroRelease(
+        new_distroseries = self.factory.makeDistroRelease(
             distribution=distroseries.distribution, name='new')
         return DistroBrancher(
-            FakeLogger(self._log_file), distroseries, new_distro_series)
+            FakeLogger(self._log_file), distroseries, new_distroseries)
 
     def clearLogMessages(self):
         """Forget about all logged messages seen so far."""
@@ -162,6 +162,35 @@ class TestDistroBrancher(TestCaseWithFactory):
         for pattern, message in zip(patterns, log_messages):
             if not re.match(pattern, message):
                 self.fail("%r does not match %r" % (pattern, message))
+
+    def test_DistroBrancher_same_distro_check(self):
+        # DistroBrancher.__init__ raises AssertionError if the two
+        # distroseries passed are not from the same distribution.
+        self.assertRaises(
+            AssertionError, DistroBrancher, None,
+            self.factory.makeDistroRelease(),
+            self.factory.makeDistroRelease())
+
+    def test_DistroBrancher_same_distroseries_check(self):
+        # DistroBrancher.__init__ raises AssertionError if passed the same
+        # distroseries twice.
+        distroseries = self.factory.makeDistroRelease()
+        self.assertRaises(
+            AssertionError, DistroBrancher, None, distroseries, distroseries)
+
+    def test_fromNames(self):
+        # DistroBrancher.__init__ raises AssertionError if passed the same
+        # distroseries twice.
+        distribution = self.factory.makeDistribution()
+        distroseries1 = self.factory.makeDistroRelease(
+            distribution=distribution)
+        distroseries2 = self.factory.makeDistroRelease(
+            distribution=distribution)
+        brancher = DistroBrancher.fromNames(
+            distribution.name, distroseries1.name, distroseries2.name)
+        self.assertEqual(
+            [distroseries1, distroseries2],
+            [brancher.old_distroseries, brancher.new_distroseries])
 
     # A word on testing strategy: we don't directly test the post conditions
     # of makeOneNewBranch, but we do test that it satisfies checkOneBranch and
@@ -205,18 +234,18 @@ class TestDistroBrancher(TestCaseWithFactory):
         db_branch2 = self.makeOfficialPackageBranch(
             distroseries=db_branch.distroseries)
 
-        new_distro_series = self.factory.makeDistroRelease(
+        new_distroseries = self.factory.makeDistroRelease(
             distribution=db_branch.distribution)
 
         brancher = DistroBrancher(
-            QuietFakeLogger(), db_branch.distroseries, new_distro_series)
+            QuietFakeLogger(), db_branch.distroseries, new_distroseries)
 
         brancher.makeNewBranches()
 
-        new_sourcepackage = new_distro_series.getSourcePackage(
+        new_sourcepackage = new_distroseries.getSourcePackage(
             db_branch.sourcepackage.name)
         new_branch = new_sourcepackage.getBranch(RELEASE)
-        new_sourcepackage2 = new_distro_series.getSourcePackage(
+        new_sourcepackage2 = new_distroseries.getSourcePackage(
             db_branch2.sourcepackage.name)
         new_branch2 = new_sourcepackage2.getBranch(RELEASE)
 

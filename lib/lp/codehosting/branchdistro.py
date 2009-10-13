@@ -31,6 +31,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
@@ -111,15 +112,26 @@ class DistroBrancher:
             source branches made for it.
         """
         self.logger = logger
-        # XXX test these assertions
         if old_distroseries.distribution != new_distroseries.distribution:
             raise AssertionError(
                 "%s and %s are from different distributions!" %
                 (old_distroseries, new_distroseries))
         if old_distroseries == new_distroseries:
-            raise AssertionError("XXX")
+            raise AssertionError(
+                "New and old distributions must be different!")
         self.old_distroseries = old_distroseries
         self.new_distroseries = new_distroseries
+
+    @classmethod
+    def fromNames(cls, logger, distribution_name, old_distroseries_name,
+                  new_distroseries_name):
+        """Make a `DistroBrancher` from the names of a distro and two series.
+        """
+        distribution = getUtility(IDistributionSet).getByName(
+            distribution_name)
+        new_distroseries = distribution.getSeries(new_distroseries_name)
+        old_distroseries = distribution.getSeries(old_distroseries_name)
+        return cls(logger, new_distroseries, old_distroseries)
 
     def _existingOfficialBranches(self):
         """Return the collection of official branches in the old distroseries.
@@ -221,11 +233,6 @@ class DistroBrancher:
         :param old_db_branch: The branch to check.
         :return: ``True`` if the branch passes the check, ``False`` otherwise.
         """
-        if old_db_branch.distroseries != self.old_distroseries:
-            # XXX test this
-            raise AssertionError(
-                "%s is not a branch from  %s!"
-                % (old_db_branch.unique_name, self.old_distroseries.path))
         ok = self.checkConsistentOfficialPackageBranch(old_db_branch)
         if not ok:
             return ok
@@ -313,17 +320,16 @@ class DistroBrancher:
     def makeOneNewBranch(self, old_db_branch):
         """Copy a branch to the new distroseries.
 
-        XXX blah
+        This function makes a new database branch for the same source package
+        as old_db_branch but in the new distroseries and then uses
+        `switch_branches` to move the underlying bzr branch to the new series
+        and replace the old branch with a branch stacked on the new series'
+        branch.
 
         :param old_db_branch: The branch to copy into the new distroseries.
         :raises BranchExists: This will be raised if old_db_branch has already
             been copied to the new distroseries (in the database, at least).
         """
-        if old_db_branch.distroseries != self.old_distroseries:
-            # XXX test this
-            raise AssertionError(
-                "%s is not a branch from  %s!"
-                % (old_db_branch.unique_name, self.old_distroseries.path))
         if not self.checkConsistentOfficialPackageBranch(old_db_branch):
             self.logger.warning("Skipping branch")
             return
@@ -333,7 +339,6 @@ class DistroBrancher:
             sourcepackagename=old_db_branch.sourcepackagename)
         new_db_branch = new_namespace.createBranch(
             BranchType.HOSTED, old_db_branch.name, old_db_branch.registrant)
-        # XXX What to pass as registrant?
         new_db_branch.sourcepackage.setBranch(
             PackagePublishingPocket.RELEASE, new_db_branch,
             getUtility(ILaunchpadCelebrities).ubuntu_branches.teamowner)
