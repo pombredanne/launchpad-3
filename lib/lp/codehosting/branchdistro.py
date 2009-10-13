@@ -218,7 +218,8 @@ class DistroBrancher:
                     ok = False
             except:
                 ok = False
-                self.logger.exception("Unexpected error checking %s!", db_branch)
+                self.logger.exception(
+                    "Unexpected error checking %s!", db_branch)
         return ok
 
     def checkOneBranch(self, old_db_branch):

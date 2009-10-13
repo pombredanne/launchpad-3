@@ -220,7 +220,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         # (see `checkConsistentOfficialPackageBranch` for precisely what an
         # "inconsistent official package branch" is).
         unofficial_branch = self.factory.makePackageBranch()
-        brancher = self.makeNewSeriesAndBrancher(unofficial_branch.distroseries)
+        brancher = self.makeNewSeriesAndBrancher(
+            unofficial_branch.distroseries)
         brancher.makeOneNewBranch(unofficial_branch)
 
         new_branch = brancher.new_distroseries.getSourcePackage(
