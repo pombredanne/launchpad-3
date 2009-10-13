@@ -5,16 +5,28 @@
 
 import _pythonpath
 
-from lp.codehosting.branch_distro import branch_distro
-from lp.services.scripts.base import LaunchpadScript
+from lp.codehosting.branchdistro import DistroBrancher
+from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 
 
 class BranchDistroScript(LaunchpadScript):
     usage = "%prog distro old-series new-series"
+
+    def add_my_options(self):
+        self.parser.add_option(
+            '--check', dest="check", action="store_true", default=False,
+            help=("Check that the new distro series has its official "
+                  "branches set up correctly."))
+
     def main(self):
         if len(self.args) != 3:
             self.parser.error("Wrong number of arguments.")
-        branch_distro(self.logger, *self.args)
+        brancher = DistroBrancher.fromNames(self.logger, *self.args)
+        if self.options.check:
+            if not brancher.checkNewBranches():
+                raise LaunchpadScriptFailure("Check failed")
+        else:
+            brancher.makeNewBranches()
 
 if __name__ == '__main__':
     BranchDistroScript("branch-distro", dbuser='branch-distro').run()

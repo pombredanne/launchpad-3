@@ -6,8 +6,10 @@
 
 __metaclass__ = type
 
+import os
 import re
 from StringIO import StringIO
+import subprocess
 import unittest
 
 from bzrlib.branch import Branch
@@ -21,6 +23,7 @@ from lazr.uri import URI
 
 import transaction
 
+from canonical.config import config
 from canonical.testing.layers import ZopelessAppServerLayer
 from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
 
@@ -412,8 +415,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         get_transport(new_db_branch.warehouse_url).delete_tree('.bzr')
         ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
-        # Deleting the new mirrored branch will break the old branch, as that's
-        # stacked on the new one.
+        # Deleting the new mirrored branch will break the old branch, as
+        # that's stacked on the new one.
         self.assertLogMessages([
             '^WARNING No bzr branch at new location '
             'lp-mirrored:///.*/.*/.*/.*$',
@@ -500,8 +503,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertFalse(ok)
 
     def test_checkOneBranch_old_mirrored_unstacked(self):
-        # checkOneBranch returns False when the bzr branch in the mirrored area
-        # for the database branch in old distroseries is not stacked.
+        # checkOneBranch returns False when the bzr branch in the mirrored
+        # area for the database branch in old distroseries is not stacked.
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
@@ -615,6 +618,38 @@ class TestDistroBrancher(TestCaseWithFactory):
             'revision.'
             ])
         self.assertFalse(ok)
+
+    def test_makeNewBranches_script(self):
+        script_path = os.path.join(config.root, 'scripts', 'branch-distro.py')
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        returncode = subprocess.call(
+            [script_path, db_branch.distribution.name,
+             brancher.old_distroseries.name, brancher.new_distroseries.name])
+        self.assertEqual(0, returncode)
+        brancher.checkOneBranch(db_branch)
+
+    def test_checkOneBranch_script_success(self):
+        script_path = os.path.join(config.root, 'scripts', 'branch-distro.py')
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeNewBranches()
+        returncode = subprocess.call(
+            [script_path, db_branch.distribution.name,
+             brancher.old_distroseries.name, brancher.new_distroseries.name,
+             '--check'])
+        self.assertEqual(0, returncode)
+        brancher.checkOneBranch(db_branch)
+
+    def test_checkOneBranch_script_failure(self):
+        script_path = os.path.join(config.root, 'scripts', 'branch-distro.py')
+        db_branch = self.makeOfficialPackageBranch()
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        returncode = subprocess.call(
+            [script_path, db_branch.distribution.name,
+             brancher.old_distroseries.name, brancher.new_distroseries.name,
+             '--check'])
+        self.assertEqual(1, returncode)
 
 
 def test_suite():
