@@ -333,7 +333,7 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntriesFromTarball(content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None):
+        potemplate=None, filename_filter=None):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
