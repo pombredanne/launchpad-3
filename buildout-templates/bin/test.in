@@ -14,7 +14,64 @@
 ##############################################################################
 """Test script
 """
-import sys, os, time, logging, warnings, re
+import site
+import sys
+
+# Clean out sys.modules from site's processing of .pth files.
+clean_modules = [
+    'UserDict',
+    '__builtin__',
+    '__main__',
+    '_codecs',
+    'codecs',
+    'copy_reg',
+    'encodings',
+    'encodings.aliases',
+    'encodings.codecs',
+    'encodings.exceptions',
+    'encodings.types',
+    'encodings.utf_8',
+    'exceptions',
+    'linecache',
+    'os',
+    'os.path',
+    'posix',
+    'posixpath',
+    'signal',
+    'site',
+    'stat',
+    'sys',
+    'types',
+    'warnings',
+    'zipimport'
+    ]
+for k in sys.modules.keys():
+    if k not in clean_modules:
+        del sys.modules[k]
+
+sys.path[:] = [
+    ${string-egg-paths}
+    ]
+sys.path.extend([
+    ${string-stdlib-paths}
+    ])
+site_dirs = [
+    ${string-dir-paths}
+    ]
+# Add the site_dirs before `addsitedir` in case it has setuptools.
+sys.path.extend(site_dirs)
+# Process all buildout-controlled eggs before site-packages by importing
+# pkg_resources.  This is only important for namespace packages, so it may
+# not have been added, so ignore import errors.
+try:
+    import pkg_resources
+except ImportError:
+    pass
+# Process .pth files.
+for p in site_dirs:
+    site.addsitedir(p)
+
+import os, time, logging, warnings, re
 
 BUILD_DIR = '${buildout:directory}'
 
@@ -30,16 +87,16 @@ if os.getsid(0) == os.getsid(os.getppid()):
 
 # Make tests run in a timezone no launchpad developers live in.
 # Our tests need to run in any timezone.
-# (No longer actually required, as PQM does this)
+# (This is no longer actually required, as PQM does this.)
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
 
-# Enable Storm's C extensions
+# Enable Storm's C extensions.
 os.environ['STORM_CEXTENSIONS'] = '1'
 
-sys.path[0:0] = [${string-paths}]
-
-# Set PYTHONPATH environment variable for spawned processes
+# Set PYTHONPATH environment variable for spawned processes.
+# This is the kind of use case for the site.py fork we have in lib (see the
+# comment in that file). :-(
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
 # Set a flag if this is the main testrunner process
