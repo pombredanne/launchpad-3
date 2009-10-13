@@ -243,10 +243,8 @@ class DistroBrancher:
             PackagePublishingPocket.RELEASE)
         if new_db_branch is None:
             self.logger.warning(
-                "No official branch found for %s/%s/%s",
-                self.new_distroseries.distribution.name,
-                self.new_distroseries.name,
-                old_db_branch.sourcepackagename.name)
+                "No official branch found for %s",
+                new_sourcepackage.path)
             return False
         ok = self.checkConsistentOfficialPackageBranch(new_db_branch)
         if not ok:

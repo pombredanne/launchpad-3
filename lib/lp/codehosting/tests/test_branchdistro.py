@@ -672,11 +672,13 @@ class TestDistroBrancher(TestCaseWithFactory):
         returncode, output = self.runBranchDistroScript(
             ['-v', '--check', db_branch.distribution.name,
              brancher.old_distroseries.name, brancher.new_distroseries.name])
+        sp_path = brancher.new_distroseries.getSourcePackage(
+            db_branch.sourcepackagename).path
         expected = '''\
-        DEBUG   Checking %(name)s
-        WARNING No official branch found for %(name)s
+        DEBUG   Checking %(branch_name)s
+        WARNING No official branch found for %(sp_path)s
         ERROR   Check failed
-        ''' % {'name': db_branch.unique_name}
+        ''' % {'branch_name': db_branch.unique_name, 'sp_path': sp_path}
         self.assertEqual(
             textwrap.dedent(expected), output)
         self.assertEqual(1, returncode)
