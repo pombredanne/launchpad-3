@@ -173,8 +173,6 @@ class IAuthToken(Interface):
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
 
-    email_url = Attribute('Email URL')
-
     def consume():
         """Mark this token as consumed by setting date_consumed.
 
