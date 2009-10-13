@@ -2069,10 +2069,15 @@ class BaseDevice:
             # it is hard to find a better heuristic to separate
             # the vendor name from the product name.
             splitted_name = self.scsi_model.split(' ', 1)
-            if len(splitted_name) < 2:
-                return 'ATA', splitted_name[0]
-            return splitted_name
-        return (vendor, self.scsi_model)
+            if len(splitted_name) == 2:
+                return {
+                    'vendor': splitted_name[0],
+                    'product': splitted_name[1],
+                    }
+        return {
+            'vendor': vendor,
+            'product': self.scsi_model,
+            }
 
     def getDriver(self):
         """Return the HWDriver instance associated with this device.
@@ -2291,11 +2296,7 @@ class HALDevice(BaseDevice):
             # below does not work properly.
             return self.getProperty('system.hardware.' + type_)
         elif bus == 'scsi':
-            vendor, product = self.getScsiVendorAndModelName()
-            if type_ == 'vendor':
-                return vendor
-            else:
-                return product
+            return self.getScsiVendorAndModelName()[type_]
         else:
             result = self.getProperty('info.' + type_)
             if result is None:
@@ -2360,7 +2361,7 @@ class HALDevice(BaseDevice):
 class UdevDevice(BaseDevice):
     """The representation of a udev device node."""
 
-    def __init__(self, udev_data, sysfs_data, dmi_data, parser):
+    def __init__(self, parser, udev_data, sysfs_data=None, dmi_data=None):
         """HALDevice constructor.
 
         :param udevdata: The udev data for this device
@@ -2377,6 +2378,14 @@ class UdevDevice(BaseDevice):
     def device_id(self):
         """See `BaseDevice`."""
         return self.udev['P']
+
+    @property
+    def root_device_ids(self):
+        """The vendor and product IDs of the rott device."""
+        return {
+            'vendor': self.dmi.get('/sys/class/dmi/id/sys_vendor'),
+            'product': self.dmi.get('/sys/class/dmi/id/product_name')
+            }
 
     @property
     def is_pci(self):
@@ -2416,8 +2425,8 @@ class UdevDevice(BaseDevice):
     def pci_ids(self):
         """The PCI vendor and product IDs.
 
-        :return: (vendor_id, product_id) for PCI devices
-            or (None, None) for other devices.
+        :return: A dictionary containing the vendor and product IDs.
+            The IDs are set to None for Non-PCI devices.
         """
         if self.is_pci:
             # SubmissionParser.checkUdevPciProperties() ensures that
@@ -2426,9 +2435,15 @@ class UdevDevice(BaseDevice):
             # by a ':'.
             id_string = self.udev['E']['PCI_ID']
             ids = id_string.split(':')
-            return [int(part, 16) for part in ids]
+            return {
+                'vendor': int(ids[0], 16),
+                'product': int(ids[1], 16),
+                }
         else:
-            return [None, None]
+            return  {
+                'vendor': None,
+                'product': None,
+                }
 
     @property
     def is_usb(self):
@@ -2439,8 +2454,9 @@ class UdevDevice(BaseDevice):
     def usb_ids(self):
         """The vendor ID, product ID, product version for USB devices.
 
-        :return: [vendor_id, product_id, version] for USB devices
-            or [None, None, None] for other devices.
+        :return: A dictionary containing the vendor and product IDs and
+            the product version for USB devices.
+            The IDs are set to None for Non-USB devices.
         """
         if self.is_usb:
             # udev represents USB device IDs as strings
@@ -2449,19 +2465,27 @@ class UdevDevice(BaseDevice):
             # SubmissionParser.checkUdevUsbProperties() ensures that
             # the string PRODUCT is in the format required below.
             product_info = self.udev['E']['PRODUCT'].split('/')
-            return [int(part, 16) for part in product_info]
+            return {
+                'vendor': int(product_info[0], 16),
+                'product': int(product_info[1], 16),
+                'version': int(product_info[2], 16),
+                }
         else:
-            return [None, None, None]
+            return {
+                'vendor': None,
+                'product': None,
+                'version': None,
+                }
 
     @property
     def usb_vendor_id(self):
         """See `BaseDevice`."""
-        return self.usb_ids[0]
+        return self.usb_ids['vendor']
 
     @property
     def usb_product_id(self):
         """See `BaseDevice`."""
-        return self.usb_ids[1]
+        return self.usb_ids['product']
 
     @property
     def is_scsi_device(self):
@@ -2505,10 +2529,13 @@ class UdevDevice(BaseDevice):
         # DEVTYPE. DEVTYPE is preferable.
         # The root device has the subsystem/bus value "acpi", which
         # is a bit nonsensical.
-        if self.device_id == '/devices/LNXSYSTM:00':
+        if self.device_id == UDEV_ROOT_PATH:
             return None
         properties = self.udev['E']
-        return properties.get('DEVTYPE') or properties.get('SUBSYSTEM')
+        devtype = properties.get('DEVTYPE')
+        if devtype is not None:
+            return devtype
+        return properties.get('SUBSYSTEM')
 
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
@@ -2523,16 +2550,9 @@ class UdevDevice(BaseDevice):
         if self.device_id == UDEV_ROOT_PATH:
             # udev does not known about any product information for
             # the root device. We use DMI data instead.
-            if type_ == 'vendor':
-                return self.dmi.get('/sys/class/dmi/id/sys_vendor')
-            else:
-                return self.dmi.get('/sys/class/dmi/id/product_name')
+            return self.root_device_ids[type_]
         elif bus == 'scsi_device':
-            vendor, product = self.getScsiVendorAndModelName()
-            if type_ == 'vendor':
-                return vendor
-            else:
-                return product
+            return self.getScsiVendorAndModelName()[type_]
         elif bus in ('pci', 'usb_device'):
             # XXX Abel Deuring 2009-10-13, bug 450480: udev does not
             # provide human-readable vendor and product names for
@@ -2575,21 +2595,11 @@ class UdevDevice(BaseDevice):
             else:
                 return self.dmi.get('/sys/class/dmi/id/product_name')
         elif bus == 'scsi_device':
-            vendor, product = self.getScsiVendorAndModelName()
-            if type_ == 'vendor':
-                return vendor
-            else:
-                return product
+            return self.getScsiVendorAndModelName()[type_]
         elif bus == 'pci':
-            if type_ == 'vendor':
-                return self.pci_ids[0]
-            else:
-                return self.pci_ids[1]
+            return self.pci_ids[type_]
         elif bus == 'usb_device':
-            if type_ == 'vendor':
-                return self.usb_ids[0]
-            else:
-                return self.usb_ids[1]
+            return self.usb_ids[type_]
         else:
             # We don't process yet other devices than complete systems,
             # PCI, USB devices and those devices that are represented
