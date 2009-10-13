@@ -20,7 +20,7 @@ from lp.testing import TestCase
 from canonical.launchpad.webapp.dbpolicy import (
     BaseDatabasePolicy, LaunchpadDatabasePolicy, MasterDatabasePolicy,
     ReadOnlyLaunchpadDatabasePolicy, SlaveDatabasePolicy,
-    SlaveOnlyDatabasePolicy)
+    SlaveOnlyDatabasePolicy, WebServiceDatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
     ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore,
@@ -157,7 +157,7 @@ class LayerDatabasePolicyTestCase(TestCase):
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, SlaveOnlyDatabasePolicy)
 
-    def test_WebServiceRequest_uses_MasterDatabasePolicy(self):
+    def test_WebServiceRequest_uses_WebServiceDatabasePolicy(self):
         """WebService requests should always use the master flavor, since
         it's likely that clients won't support cookies and thus mixing read
         and write requests will result in incoherent views of the data.
@@ -171,7 +171,7 @@ class LayerDatabasePolicyTestCase(TestCase):
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         setFirstLayer(request, WebServiceLayer)
         policy = IDatabasePolicy(request)
-        self.assertIsInstance(policy, MasterDatabasePolicy)
+        self.assertIsInstance(policy, WebServiceDatabasePolicy)
 
     def test_read_only_mode_uses_ReadOnlyLaunchpadDatabasePolicy(self):
         config.push('read_only', """

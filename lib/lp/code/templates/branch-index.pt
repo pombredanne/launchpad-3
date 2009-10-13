@@ -37,6 +37,22 @@
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/branchlinks.js">
   </script>
+  <script type="text/javascript"
+      tal:condition="devmode"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchstatus.js">
+  </script>
+  <script type="text/javascript"
+          tal:content="string:
+    YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
+              'lazr.choiceedit', 'code.branchstatus', function(Y) {
+        Y.on('load',
+             function(e) {
+                 Y.branchstatus.connect_status(${view/status_config});
+             },
+             window);
+    });
+  "/>
 </metal:block>
 
 <body>

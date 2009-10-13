@@ -735,29 +735,13 @@ allowed to call the method at all.
 
 Make Celso's PPA private and create a private source publication.
 
-    >>> def _create_source(archive, version):
-    ...     """Create source with meaningful '.changes' file."""
-    ...     changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_%s_binary/foocomm_%s_i386.changes' % ((version,)*2)
-    ... 
-    ...     changesfile_content = ''
-    ...     handle = open(changesfile_path, 'r')
-    ...     try:
-    ...         changesfile_content = handle.read()
-    ...     finally:
-    ...         handle.close()
-    ... 
-    ...     source = test_publisher.getPubSource(
-    ...         sourcename='foocomm', archive=archive, version=version,
-    ...         changes_file_content=changesfile_content)
-    ... 
-    ...     return source
-
     >>> login('foo.bar@canonical.com')
 
     >>> cprov.archive.buildd_secret = 'boing'
     >>> cprov.archive.private = True
 
-    >>> private_publication = _create_source(cprov.archive, '1.0-1')
+    >>> private_publication = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-1')
 
     >>> logout()
 
@@ -924,7 +908,8 @@ In the same way we can use 'syncSources' for syncing an subsequent
 version.
 
     >>> login('foo.bar@canonical.com')
-    >>> unused = _create_source(cprov.archive, '1.0-2')
+    >>> unused = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-2')
     >>> logout()
 
     >>> print cprov_webservice.named_post(
