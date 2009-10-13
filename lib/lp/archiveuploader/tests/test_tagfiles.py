@@ -113,8 +113,8 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         """
 
         expected_text = (
-            'test75874, anotherbinary,\n'
-            ' andanother, andonemore,\n'
+            'test75874 anotherbinary\n'
+            ' andanother andonemore\n'
             '\tlastone')
 
         self.assertEqual(
