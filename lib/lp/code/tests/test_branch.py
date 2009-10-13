@@ -164,6 +164,8 @@ class TestEditBranch(TestCaseWithFactory):
             can_edit, EditBranch(branch).checkAuthenticated(person))
 
     def test_arbitrary_person_cannot_edit(self):
+        # Arbitrary people cannot edit branches, you have to be someone
+        # special.
         branch = self.factory.makeAnyBranch()
         person = self.factory.makePerson()
         self.assertCanEdit(branch, person, False)
