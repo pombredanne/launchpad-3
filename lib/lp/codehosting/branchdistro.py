@@ -1,7 +1,13 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""XXX write me."""
+"""Opening a new DistroSeries for branch based development.
+
+Intended to be run just after a new distro series has been completed, this
+script will create an official package branch in the new series for every one
+in the old.  The old branch will become stacked on the new, to avoid a using
+too much disk space whilst retaining best performance for the new branch.
+"""
 
 import os
 
@@ -26,7 +32,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
+
 
 __metaclass__ = type
 __all__ = []
@@ -43,8 +49,8 @@ def switch_branches(prefix, scheme, old_db_branch, new_db_branch):
 
     :param prefix: The non-branch id dependent part of the physical path to
         the branches on disk.
-    :param scheme: The branches should be open-able at
-        ``scheme + unique_name``.
+    :param scheme: The branches should be open-able at a URL of the form
+        ``scheme + :/// + unique_name``.
     :param old_db_branch: The branch that currently has the trunk bzr data.
     :param old_db_branch: The new trunk branch.  This should not have any
         presence on disk yet.
@@ -82,10 +88,28 @@ def switch_branches(prefix, scheme, old_db_branch, new_db_branch):
 
 
 class DistroBrancher:
-    """XXX."""
+    """Open a new distroseries for branch based development.
+
+    `makeNewBranches` will create an official package branch in the new series
+    for every one in the old.  `checkNewBranches` will check that a previous
+    run of this script completed successfully -- this is only likely to be
+    really useful if a script run died halfway through or had to be killed.
+    """
 
     def __init__(self, logger, old_distroseries, new_distroseries):
-        """XXX."""
+        """Construct a `DistroBrancher`.
+
+        The old and new distroseries must be from the same distribution, but
+        not the same distroseries.
+
+        :param logger: A Logger.  Problems will be logged to this object at
+            the WARNING level or higher; progress reports will be logged at
+            the DEBUG level.
+        :param old_distroseries: The distroseries that will be examined to
+            find existing source package branches.
+        :param new_distroseries: The distroseries that will have new official
+            source branches made for it.
+        """
         self.logger = logger
         # XXX test these assertions
         if old_distroseries.distribution != new_distroseries.distribution:
@@ -98,23 +122,27 @@ class DistroBrancher:
         self.new_distroseries = new_distroseries
 
     def _existingOfficialBranches(self):
-        """XXX."""
+        """Return the collection of official branches in the old distroseries.
+        """
         branches = getUtility(IAllBranches)
         distroseries_branches = branches.inDistroSeries(self.old_distroseries)
         return distroseries_branches.officialBranches().getBranches()
 
-    def makeNewBranches(self):
-        """XXX."""
-        for db_branch in self._existingOfficialBranches():
-            self.logger.debug("Processing %r" % db_branch)
-            try:
-                self.makeOneNewBranch(db_branch)
-            except BranchExists:
-                # Check here?
-                pass
-
     def checkConsistentOfficialPackageBranch(self, db_branch):
-        """XXX."""
+        """Check that `db_branch` is a consistent official package branch.
+
+        'Consistent official package branch' means:
+
+         * It's a package branch (rather than a personal or junk branch).
+         * It's official for its SourcePackage and no other.
+
+        This function simply returns True or False -- any problems will be
+        logged to ``self.logger``.
+
+        :param db_branch: The `IBranch` to check.
+        :return: ``True`` if the branch is a consistent official package
+            branch, ``False`` otherwise.
+        """
         if db_branch.product:
             self.logger.warning(
                 "Encountered unexpected product branch %r",
@@ -132,9 +160,11 @@ class DistroBrancher:
                 "%s is not an official branch", db_branch.unique_name)
             return False
         elif len(links) > 1:
+            series_text = ', '.join([
+                link.sourcepackage.path for link in links])
             self.logger.warning(
-                "%s is official for %s series",
-                db_branch.unique_name, len(links))
+                "%s is official for mulitple series: %s",
+                db_branch.unique_name, series_text)
             return False
         elif links[0].sourcepackage != db_branch.sourcepackage:
             self.logger.warning(
@@ -144,8 +174,30 @@ class DistroBrancher:
             return False
         return True
 
+    def makeNewBranches(self):
+        """Make official branches in the new distroseries."""
+        for db_branch in self._existingOfficialBranches():
+            self.logger.debug("Processing %r" % db_branch)
+            try:
+                self.makeOneNewBranch(db_branch)
+            except BranchExists:
+                # Check here?
+                pass
+
     def checkNewBranches(self):
-        """XXX."""
+        """Check the branches in the new distroseries are present and correct.
+
+        This function checks that every official package branch in the old
+        distroseries has a matching branch in the new distroseries and that
+        stacking is set up as we expect in both the hosted and mirrored areas
+        on disk.
+
+        This function simply returns True or False -- any problems will be
+        logged to ``self.logger``.
+
+        :return: ``True`` if every branch passes the check, ``False``
+            otherwise.
+        """
         ok = True
         for db_branch in self._existingOfficialBranches():
             try:
@@ -157,7 +209,23 @@ class DistroBrancher:
         return ok
 
     def checkOneBranch(self, old_db_branch):
-        """XXX."""
+        """Check a branch in the old distroseries has been copied to the new.
+
+        This function checks that `old_db_branch` has a matching branch in the
+        new distroseries and that stacking is set up as we expect in both the
+        hosted and mirrored areas on disk.
+
+        This function simply returns True or False -- any problems will be
+        logged to ``self.logger``.
+
+        :param old_db_branch: The branch to check.
+        :return: ``True`` if the branch passes the check, ``False`` otherwise.
+        """
+        if old_db_branch.distroseries != self.old_distroseries:
+            # XXX test this
+            raise AssertionError(
+                "%s is not a branch from  %s!"
+                % (old_db_branch.unique_name, self.old_distroseries.path))
         ok = self.checkConsistentOfficialPackageBranch(old_db_branch)
         if not ok:
             return ok
@@ -243,7 +311,19 @@ class DistroBrancher:
         return ok
 
     def makeOneNewBranch(self, old_db_branch):
-        """XXX."""
+        """Copy a branch to the new distroseries.
+
+        XXX blah
+
+        :param old_db_branch: The branch to copy into the new distroseries.
+        :raises BranchExists: This will be raised if old_db_branch has already
+            been copied to the new distroseries (in the database, at least).
+        """
+        if old_db_branch.distroseries != self.old_distroseries:
+            # XXX test this
+            raise AssertionError(
+                "%s is not a branch from  %s!"
+                % (old_db_branch.unique_name, self.old_distroseries.path))
         if not self.checkConsistentOfficialPackageBranch(old_db_branch):
             self.logger.warning("Skipping branch")
             return
