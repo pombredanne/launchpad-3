@@ -68,7 +68,7 @@ provided link.
 
     >>> jblack_browser.getLink('Create a new PPA').click()
     >>> print jblack_browser.title
-    Activate Personal Package Archive...
+    Personal Package Archive Activation : James Blackwell
 
     >>> jblack_browser.getControl(
     ...     name="field.displayname").value = 'PPA for James Blackwell'

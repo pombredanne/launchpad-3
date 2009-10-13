@@ -553,14 +553,14 @@ all his PPAs.
     >>> print extract_text(
     ...     first_tag_by_class(cprov_browser.contents, 'form'))
     PPA name:
-      A unique name used to identify this PPA. It will form part of the URL to
-      the archive repository.
+      A unique name used to identify this PPA. It will form part of the URL
+      to the archive repository.
     Displayname:
-      Displayname for this PPA. It Will be used in the signing key's
-      description if this is the first archive for a person.
+      Displayname for this PPA. It will be used in the signing key's
+      description if this is the first PPA for a person.
     PPA contents description: (Optional)
-      A short description of this PPA. URLs are allowed and will be
-      rendered as links.
+      A short description of this PPA. URLs are allowed and will be rendered
+      as links.
 
 Note that, differently than the time when the first PPA was activated,
 this time there is no warning about the fact that the context renaming
