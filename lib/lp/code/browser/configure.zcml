@@ -444,6 +444,13 @@
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
+        name="+edit-status"
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branch.BranchEditStatusView"
+        facet="branches"
+        permission="launchpad.Edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+edit"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchEditView"
