@@ -114,7 +114,18 @@ class TestGetReviewerClause(unittest.TestCase):
         # Branches can have more than one reviewer.
         clause = self.get_reviewer_clause(
             {None: [self.makePerson('foo'), self.makePerson('bar')]})
-        self.assertEqual('[r=foo,bar][ui=none]', clause)
+        self.assertEqual('[r=bar,foo][ui=none]', clause)
+
+    def test_mentat_reviewers(self):
+        # A mentat review sometimes is marked like 'ui*'.  Due to the
+        # unordered nature of dictionaries, the reviewers are sorted before
+        # being put into the clause for predictability.
+        clause = self.get_reviewer_clause(
+            {None: [self.makePerson('foo')],
+             'code*': [self.makePerson('newguy')],
+             'ui': [self.makePerson('beuno')],
+             'ui*': [self.makePerson('bac')]})
+        self.assertEqual('[r=foo,newguy][ui=bac,beuno]', clause)
 
     def test_code_reviewer_counts(self):
         # Some people explicitly specify the 'code' type when they do code
