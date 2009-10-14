@@ -24,6 +24,7 @@ from canonical.cachedproperty import cachedproperty
 
 from lp.registry.interfaces.announcement import IAnnouncement
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
@@ -263,7 +264,7 @@ class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     """A view class for pillars which have announcements."""
     implements(IAnnouncementCreateMenu)
 
-    batch_size = 5
+    batch_size = config.launchpad.announcement_batch_size
 
     @cachedproperty
     def feed_url(self):
