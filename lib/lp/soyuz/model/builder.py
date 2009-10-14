@@ -587,7 +587,6 @@ class Builder(SQLBase):
             ArchivePurpose.PPA, self.processor.family, BuildStatus.BUILDING))
 
         query = " AND ".join(clauses)
-
         candidate = BuildQueue.selectFirst(
             query, clauseTables=clauseTables, prejoins=['build'],
             orderBy=['-buildqueue.lastscore', 'build.id'])

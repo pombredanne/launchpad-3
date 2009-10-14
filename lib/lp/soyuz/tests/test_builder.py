@@ -8,6 +8,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -78,6 +79,38 @@ class TestFindBuildCandidate(TestCaseWithFactory):
         self.ppa_joe.buildd_secret = 'sekrit'
         next_job = self.builder2.findBuildCandidate()
         self.failUnlessEqual('joesppa', next_job.build.archive.name)
+
+    def test_findBuildCandidate_for_non_ppa(self):
+        # Normal archives are not restricted to serial builds per
+        # arch.
+        non_ppa = self.factory.makeArchive(
+            name="primary", purpose=ArchivePurpose.PRIMARY)
+
+        gedit_build = self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+            archive=non_ppa).createMissingBuilds()[0]
+        firefox_build = self.publisher.getPubSource(
+            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
+            archive=non_ppa).createMissingBuilds()[0]
+
+        # Rescore our primary builds so that they'll be returned before
+        # the PPA ones.
+        gedit_build.buildqueue_record.manualScore(3000)
+        firefox_build.buildqueue_record.manualScore(3000)
+
+        next_job = self.builder2.findBuildCandidate()
+        self.failUnlessEqual('primary', next_job.build.archive.name)
+        self.failUnlessEqual(
+            'gedit', next_job.build.sourcepackagerelease.name)
+
+        # Now even if we set the build building, we'll still get the
+        # second non-ppa build for the same archive as the next candidate.
+        next_job.build.buildstate = BuildStatus.BUILDING
+        next_job.build.builder = self.builder2
+        next_job = self.builder2.findBuildCandidate()
+        self.failUnlessEqual('primary', next_job.build.archive.name)
+        self.failUnlessEqual(
+            'firefox', next_job.build.sourcepackagerelease.name)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
