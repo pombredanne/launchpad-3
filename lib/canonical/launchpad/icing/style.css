@@ -1851,12 +1851,12 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   color: #d18b39;
 }
 
-.branchstatusMATURE       {color: #090;}
-.branchstatusDEVELOPMENT  {color: #900;}
-.branchstatusEXPERIMENTAL {color: #930;}
-.branchstatusMERGED       {color: #666;}
-.branchstatusABANDONED    {color: #666;}
-.branchstatusNEW          {color: black;}
+.branchstatusMATURE, .branchstatusMATURE a  {color: #090;}
+.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a  {color: #900;}
+.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {color: #930;}
+.branchstatusMERGED, .branchstatusMERGED a       {color: #666;}
+.branchstatusABANDONED, .branchstatusABANDONED a    {color: #666;}
+.branchstatusNEW, .branchstatusNEW a          {color: black;}
 
 .voteAPPROVE       {color: green;}
 .voteNEEDS_FIXING  {color: #930;}

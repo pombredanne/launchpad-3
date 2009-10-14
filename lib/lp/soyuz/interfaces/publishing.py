@@ -508,7 +508,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
     meta_sourcepackagerelease = Attribute(
-        "Return an IDistribuitionSourcePackageRelease meta object "
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute")
     meta_supersededby = Attribute(
         "Return an IDistribuitionSourcePackageRelease meta object "

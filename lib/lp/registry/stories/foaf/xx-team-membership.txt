@@ -12,8 +12,8 @@ administrator and his subscription never expires.
     >>> url = '/~ubuntu-team/+member/kamion'
     >>> browser.getLink(url=url).click()
 
-    >>> "Colin Watson's membership status in Ubuntu Team" in browser.contents
-    True
+    >>> print browser.title
+    Colin Watson's membership : ...Ubuntu Team... team
     >>> "Active member" in browser.contents
     True
     >>> browser.getControl(name='admin').value
@@ -109,8 +109,8 @@ the administrator control on the membership page.
     >>> url = '/~ubuntu-team/+member/jdub'
     >>> jdub_browser.getLink(url=url).click()
 
-    >>> "Jeff Waugh's membership status in Ubuntu Team" in jdub_browser.contents
-    True
+    >>> print jdub_browser.title
+    Jeff Waugh's membership : ...Ubuntu Team... team
     >>> "Active member" in jdub_browser.contents
     True
 
