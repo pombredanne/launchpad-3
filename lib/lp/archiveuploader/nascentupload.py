@@ -22,12 +22,13 @@ import apt_pkg
 import os
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
-    BaseBinaryUploadFile)
+    BaseBinaryUploadFile, DdebBinaryUploadFile, DebBinaryUploadFile)
 from lp.archiveuploader.permission import verify_upload
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
@@ -156,6 +157,30 @@ class NascentUpload:
         self.logger.debug("Verifying files in upload.")
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
+
+        unmatched_ddebs = {}
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                ddeb_key = (uploaded_file.package, uploaded_file.architecture)
+                assert ddeb_key not in unmatched_ddebs, \
+                    "Duplicate DDEB: %s %s" % ddeb_key
+                unmatched_ddebs[ddeb_key] = uploaded_file
+
+        for uploaded_file in self.changes.files:
+            # We need exactly a DEB, not a DDEB.
+            if (isinstance(uploaded_file, DebBinaryUploadFile) and
+                not isinstance(uploaded_file, DdebBinaryUploadFile)):
+                try:
+                    matching_ddeb = unmatched_ddebs.pop(
+                        (uploaded_file.package + '-dbgsym',
+                         uploaded_file.architecture))
+                except KeyError:
+                    continue
+                uploaded_file.ddeb_file = matching_ddeb
+                matching_ddeb.deb_file = uploaded_file
+
+        if len(unmatched_ddebs) > 0:
+            self.reject("Orphaned DDEBs: %s" % unmatched_ddebs)
 
         if (len(self.changes.files) == 1 and
             isinstance(self.changes.files[0], CustomUploadFile)):
@@ -941,6 +966,9 @@ class NascentUpload:
             # Container for the build that will be processed.
             processed_builds = []
 
+            # Map from upload files to BPRs.
+            file_to_bpr = {}
+
             for binary_package_file in self.changes.binary_package_files:
                 if self.sourceful:
                     # The reason we need to do this verification
@@ -960,8 +988,13 @@ class NascentUpload:
                 build = binary_package_file.findBuild(sourcepackagerelease)
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
-                binary_package_file.storeInDatabase(build)
+                file_to_bpr[binary_package_file] = \
+                    binary_package_file.storeInDatabase(build)
                 processed_builds.append(build)
+
+            for (bpf, bpr) in file_to_bpr.items():
+                if bpf.ddeb_file is not None:
+                    removeSecurityProxy(bpr).ddeb_package = file_to_bpr[bpf.ddeb_file]
 
             # Store the related builds after verifying they were built
             # from the same source.
