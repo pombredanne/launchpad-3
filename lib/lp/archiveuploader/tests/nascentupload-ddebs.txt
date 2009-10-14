@@ -72,7 +72,9 @@ DDEB.
     DEB
     >>> print build.binarypackages[1].binpackageformat.name
     DDEB
-    >>> build.binarypackages[0].ddeb_package is build.binarypackages[1]
+    >>> build.binarypackages[0].ddeb_package == build.binarypackages[1]
+    True
+    >>> build.binarypackages[1].ddeb_package is None
     True
 
 We override the binary to main/devel, and accept it into the archive.
@@ -133,11 +135,6 @@ And its corresponding file is also stored as DDEB filetype.
     >>> for bin_file in ddeb.files:
     ...     print bin_file.libraryfile.filename, bin_file.filetype.name
     debug-bin-dbgsym_1.0-1_i386.ddeb DDEB
-
-The DDEB can also be reached from the DEB.
-
-    >>> deb_pub.binarypackagerelease.ddeb_package == ddeb
-    True
 
 == DDEBs in other archives ==
 
