@@ -106,6 +106,17 @@
                 <dd tal:content="structure view/languages_edit_widget" />
               </dl>
 
+              <dl id="trunk-branch"
+                  tal:define="trunk context/development_focus/branch"
+                  tal:condition="trunk">
+                <dt>Development branch:</dt>
+                <dd>
+                  <a tal:replace="structure trunk/fmt:link" /><br/>
+                  <a style="padding-left: 18px"
+                     tal:attributes="href trunk/browse_source_url">View the source</a>
+                </dd>
+              </dl>
+
               <dl id="licences">
                 <dt>Licenses:</dt>
                 <dd>
