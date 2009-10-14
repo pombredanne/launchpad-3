@@ -338,6 +338,47 @@ Attributes can be edited via the webservice.patch() method.
     >>> webservice.get(firefox['bug_tracker_link']).jsonBody()['self_link']
     u'http://.../bugs/bugtrackers/mozilla.org'
 
+When the owner_link is changed the ownership of some attributes is
+changed as well.
+
+    >>> # Create a product with a series and release.
+    >>> login('test@canonical.com')
+    >>> test_project_owner = factory.makePerson(name='test-project-owner')
+    >>> test_project = factory.makeProduct(name='test-project', owner=test_project_owner)
+    >>> test_series = factory.makeProductSeries(
+    ...     product=test_project, name='test-series', owner=test_project_owner)
+    >>> test_milestone = factory.makeMilestone(
+    ...     product=test_project, name='test-milestone', productseries=test_series)
+    >>> test_project_release = factory.makeProductRelease(
+    ...     product=test_project, milestone=test_milestone)
+    >>> logout()
+
+    >>> test_project = webservice.get('/test-project').jsonBody()
+    >>> test_project['owner_link']
+    u'http://.../~test-project-owner'
+
+    >>> patch = {
+    ...     u'owner_link': webservice.getAbsoluteUrl('/~mark'),
+    ...     }
+    >>> print webservice.patch(
+    ...     '/test-project', 'application/json', dumps(patch))
+    HTTP/1.1 209 Content Returned
+    ...
+
+    >>> test_project = webservice.get('/test-project').jsonBody()
+    >>> test_project['owner_link']
+    u'http://.../~mark'
+
+    >>> test_series = webservice.get('/test-project/test-series').jsonBody()
+    >>> test_series['owner_link']
+    u'http://.../~mark'
+
+    >>> release_path = '/test-project/test-series/test-milestone'
+    >>> test_project_release = webservice.get(release_path).jsonBody()
+    >>> test_project_release['owner_link']
+    u'http://.../~mark'
+
+
 Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 
@@ -389,6 +430,7 @@ hierarchy of series, milestones, and releases.
                       u'type': u'release',
                       u'uri': u'/firefox/1.0/1.0.0'}],
       u'name': u'1.0',
+      u'status': u'Active Development',
       u'uri': u'/firefox/1.0'},
      {u'is_development_focus': True,
       u'landmarks': [{u'code_name': None,
@@ -412,6 +454,7 @@ hierarchy of series, milestones, and releases.
                       u'type': u'release',
                       u'uri': u'/firefox/trunk/0.9'}],
       u'name': u'trunk',
+      u'status': u'Obsolete',
       u'uri': u'/firefox/trunk'}]
 
 
@@ -424,24 +467,37 @@ It is possible to get a batched list of all the projects.
     >>> project_collection['resource_type_link']
     u'http://.../#projects'
 
+The entire collection has 25 entries.
+
     >>> project_collection['total_size']
-    24
+    25
+
+But the batch has only 5.  (The batch size is 5 for testing but larger
+in production.)
+
+    >>> project_entries = project_collection['entries']
+    >>> len(project_entries)
+    5
+
+The batch size can be changed through the ws.size argument.
+
+    >>> project_collection = webservice.get("/projects?ws.size=75").jsonBody()
 
     >>> project_entries = sorted(
     ...     project_collection['entries'], key=itemgetter('display_name'))
     >>> len(project_entries)
-    5
+    25
 
     >>> project_entries[0]['self_link']
-    u'http://.../gnome-terminal'
+    u'http://.../aptoncd'
 
-    >>> for project in project_entries:
-    ...   print project['display_name']
-    GNOME Terminal
-    Mozilla Firefox
-    Redfish
-    The Landscape Project
-    Tomcat
+    >>> for project in project_entries[:5]:
+    ...   print "%s (%s)" % (project['display_name'], project['name'])
+    APTonCD (aptoncd)
+    Arch mirrors (arch-mirrors)
+    Bazaar (bazaar)
+    Bazaar (bzr)
+    Derby (derby)
 
 It's possible to search the list and get a subset of the project groups.
 
@@ -480,7 +536,7 @@ The latest projects registered can be retrieved.
     Launchpad Translations
     Mega Money Maker
     Obsolete Junk
-    Redfish
+    Test-project
 
 There is a method for doing a query about attributes related to project
 licensing.  We can find all projects with unreviewed licenses.
@@ -726,10 +782,13 @@ The entry for a project series is available at its canonical URL on the
 virtual host.
 
     >>> login('test@canonical.com')
-    >>> babadoo = factory.makeProduct(name='babadoo')
-    >>> foobadoo = factory.makeProductSeries(product=babadoo, name='foobadoo')
+    >>> babadoo_owner = factory.makePerson(name='babadoo-owner')
+    >>> babadoo = factory.makeProduct(name='babadoo', owner=babadoo_owner)
+    >>> foobadoo = factory.makeProductSeries(
+    ...     product=babadoo, name='foobadoo', owner=babadoo_owner)
     >>> foobadoo.summary = u'Foobadoo support for Babadoo'
-    >>> fooey = factory.makeAnyBranch(product=babadoo, name='fooey')
+    >>> fooey = factory.makeAnyBranch(
+    ...     product=babadoo, name='fooey', owner=babadoo_owner)
     >>> foobadoo.branch = fooey
     >>> logout()
 
@@ -737,7 +796,7 @@ virtual host.
     >>> pprint_entry(babadoo_foobadoo)
     active_milestones_collection_link: u'http://.../babadoo/foobadoo/active_milestones'
     all_milestones_collection_link: u'http://.../babadoo/foobadoo/all_milestones'
-    branch_link: u'http://api.launchpad.dev/beta/~person-name12/babadoo/fooey'
+    branch_link: u'http://.../~babadoo-owner/babadoo/fooey'
     bug_reporting_guidelines: None
     date_created: u'...'
     display_name: u'foobadoo'
@@ -745,7 +804,7 @@ virtual host.
     drivers_collection_link: u'http://.../babadoo/foobadoo/drivers'
     name: u'foobadoo'
     official_bug_tags: []
-    owner_link: u'http://.../~person-name8'
+    owner_link: u'http://.../~babadoo-owner'
     project_link: u'http://.../babadoo'
     releases_collection_link: u'http://.../babadoo/foobadoo/releases'
     resource_type_link: u'...'
@@ -763,6 +822,7 @@ milestones and releases.
     {u'is_development_focus': False,
      u'landmarks': [],
      u'name': u'foobadoo',
+     u'status': u'Active Development',
      u'uri': u'/babadoo/foobadoo'}
 
 
@@ -885,7 +945,7 @@ Only one product release can be created per milestone.
     >>> print response
     HTTP/1.1 500 Internal Server Error
     ...
-    AssertionError: A milestone can only have one Productrelease.
+    AssertionError: A milestone can only have one ProductRelease.
 
 
 Project release entries

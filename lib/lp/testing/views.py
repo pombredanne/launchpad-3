@@ -20,7 +20,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 def create_view(context, name, form=None, layer=None, server_url=None,
                 method='GET', principal=None, query_string='', cookie='',
-                path_info='/', current_request=False, **kwargs):
+                request=None, path_info='/', current_request=False, **kwargs):
     """Return a view based on the given arguments.
 
     :param context: The context for the view.
@@ -33,15 +33,17 @@ def create_view(context, name, form=None, layer=None, server_url=None,
         unauthenticated principal.
     :param query_string: The query string for the request.
     :patam cookie: The HTTP_COOKIE value for the request.
+    :param request: Use this request instead of creating a new one.
     :param path_info: The PATH_INFO value for the request.
     :param current_request: If True, the request will be set as the current
         interaction.
     :param **kwargs: Any other parameter for the request.
     :return: The view class for the given context and the name.
     """
-    request = LaunchpadTestRequest(
-        form=form, SERVER_URL=server_url, QUERY_STRING=query_string,
-        HTTP_COOKIE=cookie, method=method, **kwargs)
+    if request is None:
+        request = LaunchpadTestRequest(
+            form=form, SERVER_URL=server_url, QUERY_STRING=query_string,
+            HTTP_COOKIE=cookie, method=method, **kwargs)
     if principal is not None:
         request.setPrincipal(principal)
     else:
@@ -57,7 +59,7 @@ def create_view(context, name, form=None, layer=None, server_url=None,
 
 def create_initialized_view(context, name, form=None, layer=None,
                             server_url=None, method=None, principal=None,
-                            query_string=None, cookie=None):
+                            query_string=None, cookie=None, request=None):
     """Return a view that has already been initialized."""
     if method is None:
         if form is None:
@@ -66,6 +68,6 @@ def create_initialized_view(context, name, form=None, layer=None,
             method = 'POST'
     view = create_view(
         context, name, form, layer, server_url, method, principal,
-        query_string, cookie)
+        query_string, cookie, request)
     view.initialize()
     return view

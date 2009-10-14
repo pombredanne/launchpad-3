@@ -90,8 +90,7 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
-	bin/test $(VERBOSITY) --layer=BugsWindmillLayer
-	bin/test $(VERBOSITY) --layer=CodeWindmillLayer
+	bin/test $(VERBOSITY) --layer=WindmillLayer
 
 jscheck_functest: build
     # Run the old functest Windmill integration tests.  The test runner

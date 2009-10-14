@@ -13,8 +13,6 @@ from storm.expr import And, Count, Desc, LeftJoin, Join, Or, Select, Union
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
@@ -119,10 +117,7 @@ class GenericBranchCollection:
 
     def _getBranchIdQuery(self):
         """Return a Storm 'Select' for the branch IDs in this collection."""
-        # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
-        # decorated set, so we get at the underlying set so we can get at the
-        # private and juicy _get_select.
-        select = self.getBranches().result_set._get_select()
+        select = self.getBranches()._get_select()
         select.columns = (Branch.id,)
         return select
 

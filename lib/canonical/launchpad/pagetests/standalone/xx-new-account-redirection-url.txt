@@ -39,8 +39,10 @@ them back to that same team, after the registration is complete.
 If she now creates a new account, we'll certainly redirect her back to
 whatever we had stored on the redirection_url hidden field.
 
+    >>> from lp.testing.registration import set_captcha_answer
     >>> anon_browser.getControl('E-mail address:', index=1).value = (
     ...     'granny@canonical.com')
+    >>> set_captcha_answer(anon_browser)
     >>> anon_browser.getControl('Register').click()
     >>> print anon_browser.contents
     <...

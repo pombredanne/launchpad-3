@@ -451,7 +451,6 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual([target_branch], list(branches.getBranches()))
 
 
-
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

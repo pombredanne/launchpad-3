@@ -176,7 +176,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         if self.product_release is not None:
             raise AssertionError(
-                'A milestone can only have one Productrelease.')
+                'A milestone can only have one ProductRelease.')
         return ProductRelease(
             owner=owner,
             changelog=changelog,
@@ -301,4 +301,3 @@ class ProjectMilestone(HasBugsBase):
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.target.official_bug_tags
-

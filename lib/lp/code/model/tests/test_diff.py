@@ -265,21 +265,21 @@ class TestPreviewDiff(DiffTestCase):
 
     layer = LaunchpadFunctionalLayer
 
-    def _createProposalWithPreviewDiff(self, dependent_branch=None,
+    def _createProposalWithPreviewDiff(self, prerequisite_branch=None,
                                        content=None):
         # Create and return a preview diff.
         mp = self.factory.makeBranchMergeProposal(
-            dependent_branch=dependent_branch)
+            prerequisite_branch=prerequisite_branch)
         login_person(mp.registrant)
-        if dependent_branch is None:
-            dependent_revision_id = None
+        if prerequisite_branch is None:
+            prerequisite_revision_id = None
         else:
-            dependent_revision_id = u'rev-c'
+            prerequisite_revision_id = u'rev-c'
         if content is None:
             content = ''.join(unified_diff('', 'content'))
         mp.updatePreviewDiff(
             content, u'rev-a', u'rev-b',
-            dependent_revision_id=dependent_revision_id)
+            prerequisite_revision_id=prerequisite_revision_id)
         # Make sure the librarian file is written.
         transaction.commit()
         return mp
@@ -335,9 +335,9 @@ class TestPreviewDiff(DiffTestCase):
         mp.target_branch.last_scanned_id = 'rev-d'
         self.assertEqual(True, mp.preview_diff.stale)
 
-    def test_stale_dependentBranch(self):
-        # If the merge proposal has a dependent branch, then the tip revision
-        # id of the dependent branch is also checked.
+    def test_stale_prerequisiteBranch(self):
+        # If the merge proposal has a prerequisite branch, then the tip
+        # revision id of the prerequisite branch is also checked.
         dep_branch = self.factory.makeProductBranch()
         mp = self._createProposalWithPreviewDiff(dep_branch)
         # Log in an admin to avoid the launchpad.Edit needs for last_scanned.

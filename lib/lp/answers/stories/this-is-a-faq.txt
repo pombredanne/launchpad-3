@@ -394,7 +394,7 @@ item, as above:
 Or you can just refer to FAQs in comments:
 
     >>> user_browser.getControl('Message').value = 'No, this is FAQ #2'
-    >>> user_browser.getControl('Add Comment').click()
+    >>> user_browser.getControl('Just Add a Comment').click()
     >>> user_browser.getLink("FAQ #2").url
     'http://answers.launchpad.dev/ubuntu/+faq/2'
 

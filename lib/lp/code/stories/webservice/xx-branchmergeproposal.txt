@@ -43,9 +43,9 @@ We use the webservice as an unrelated, unprivileged user.
     date_queued: None
     date_review_requested: None
     date_reviewed: None
-    dependent_branch_link: None
     merge_reporter_link: None
     merged_revno: None
+    prerequisite_branch_link: None
     preview_diff_link: None
     private: False
     queue_position: None
@@ -213,6 +213,7 @@ merge would look like if the source branch was merged into the target branch.
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/json
+    ...
     Vary: ...
     ...
 
@@ -226,11 +227,11 @@ The diff is now visible through the merge proposal.
     branch_merge_proposal_link:
       u'http://.../~source/fooix/fix-it/+merge/1'
     conflicts: u'oh, no conflicts'
-    dependent_revision_id: None
     diff_lines_count: 7
     diff_text_link:
       u'http://.../~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
     diffstat: {u'fooix.txt': [0, 0]}
+    prerequisite_revision_id: None
     removed_lines_count: 0
     resource_type_link: u'http://.../#preview_diff'
     self_link:
@@ -250,6 +251,7 @@ It is possible that the diff will be empty.
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/json
+    ...
     Vary: ...
     ...
 
