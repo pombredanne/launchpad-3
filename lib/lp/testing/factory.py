@@ -1489,7 +1489,13 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
                     virtualized=True, vm_host=None):
-        """Make a new builder ready to build PPA builds by default."""
+        """Make a new builder for i386 virtualized builds by default.
+
+        Note: the builder returned will not be able to actually build -
+        we currently have a build slave setup for 'bob' only in the
+        test environment.
+        See lib/canonical/buildd/tests/buildd-slave-test.conf
+        """
         if processor is None:
             processor_fam = ProcessorFamilySet().getByName('x86')
             processor = processor_fam.processors[0]
