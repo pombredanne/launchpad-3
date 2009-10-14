@@ -105,7 +105,7 @@
               tal:repeat="product context/products">
             <li><a tal:replace="structure product/fmt:link">product</a></li>
           </ul>
-          <ul>
+          <ul style="margin-top: 0.5em;">
             <li tal:condition="context/menu:overview/new_product/enabled">
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
             </li>
