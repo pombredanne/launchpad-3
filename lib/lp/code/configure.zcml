@@ -431,6 +431,7 @@
                     getMergeQueue
                     revisions_since
                     code_is_browseable
+                    browse_source_url
                     code_import
                     bzr_identity
                     canBeDeleted

@@ -56,7 +56,7 @@ from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -259,6 +259,7 @@ class Archive(SQLBase):
         archive_postfixes = {
             ArchivePurpose.PRIMARY : '',
             ArchivePurpose.PARTNER : '-partner',
+            ArchivePurpose.DEBUG : '-debug',
         }
 
         if self.is_ppa:
@@ -1397,6 +1398,19 @@ class ArchiveSet:
         if size is None:
             return 0
         return int(size)
+
+    def getPPAOwnedByPerson(self, person, name=None):
+        """See `IArchiveSet`."""
+        store = Store.of(person)
+        clause = [
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.owner == person]
+        if name is not None:
+            clause.append(Archive.name == name)
+        result = store.find(Archive, *clause).order_by(Archive.id).first()
+        if name is not None and result is None:
+            raise NoSuchPPA(name)
+        return result
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""

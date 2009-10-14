@@ -1333,6 +1333,13 @@ class TestCodebrowseURL(TestCaseWithFactory):
             'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
             branch.codebrowse_url('a', 'b'))
 
+    def test_source_code_url(self):
+        # The source code URL points to the codebrowse URL where you can
+        # actually browse the source code.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            branch.browse_source_url, branch.codebrowse_url('files'))
+
 
 class TestBranchNamespace(TestCaseWithFactory):
     """Tests for `IBranch.namespace`."""

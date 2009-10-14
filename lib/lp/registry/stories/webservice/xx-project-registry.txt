@@ -430,6 +430,7 @@ hierarchy of series, milestones, and releases.
                       u'type': u'release',
                       u'uri': u'/firefox/1.0/1.0.0'}],
       u'name': u'1.0',
+      u'status': u'Active Development',
       u'uri': u'/firefox/1.0'},
      {u'is_development_focus': True,
       u'landmarks': [{u'code_name': None,
@@ -453,6 +454,7 @@ hierarchy of series, milestones, and releases.
                       u'type': u'release',
                       u'uri': u'/firefox/trunk/0.9'}],
       u'name': u'trunk',
+      u'status': u'Obsolete',
       u'uri': u'/firefox/trunk'}]
 
 
@@ -820,6 +822,7 @@ milestones and releases.
     {u'is_development_focus': False,
      u'landmarks': [],
      u'name': u'foobadoo',
+     u'status': u'Active Development',
      u'uri': u'/babadoo/foobadoo'}
 
 

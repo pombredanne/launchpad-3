@@ -787,6 +787,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             end of the URL (with `bzrlib.urlutils.join`).
         """
 
+    browse_source_url = Attribute(
+        "The URL of the source browser for this branch.")
+
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
