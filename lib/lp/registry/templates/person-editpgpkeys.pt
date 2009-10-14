@@ -14,8 +14,6 @@
 >
   <body>
   <div metal:fill-slot="main">
-    <h1 tal:content="view/label" />
-
     <p tal:condition="view/error_message"
        tal:content="structure view/error_message/escapedtext" class="error message"
       >Error message.</p>
@@ -40,32 +38,17 @@
     <div tal:condition="view/key_retrieval_failed" class="error message">
       Launchpad could not import your OpenPGP key.
       <ul>
-        <li>Did you enter your complete fingerprint correctly? A
-        fingerprint is a long sequence of numbers and letters.
-        You should use the output produced by the command:
-        <blockquote>
-        <kbd>gpg --fingerprint</kbd>
-        </blockquote>
-        </li>
 
-        <li>Have you published your key to a public key
-        server? You can do that by by entering in a terminal:
-        <blockquote>
-        <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
-        </blockquote>
-        </li>
+        <li>Either you didn't enter your complete fingerprint correctly
+        (<a href="/+help/import-pgp-key.html"
+        target="help">Read about your getting your fingerprint</a>)</li>
 
-        <li>Has your key been automatically mirrored to the Ubuntu key
-        server? Keys sometimes take up to an hour to be synchronized
-        between servers. You can check if it has <a tal:attributes="href
-        view/keyserver_url">by querying the Ubuntu key server directly</a>.
-        If it hasn't, you can publish directly to our server by entering in a
-        terminal:
-        <blockquote>
-        <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
-        </blockquote>
-        </li>
+        <li>Or your key isn't yet available in the Ubuntu keyserver.
+            You may have to wait between ten minutes (if you pushed
+            directly to the Ubuntu key server) and one hour (if you pushed
+            your key to another server). (<a href="/+help/openpgp-keys.html" target="help">Read about generating and publishing keys</a>)</li>
       </ul>
+
     </div>
 
     <tal:has_key condition="view/key">
