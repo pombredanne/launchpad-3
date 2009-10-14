@@ -539,6 +539,214 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                          'HAL property info.bus.')
 
 
+    def test_HALDevice_scsi_controller_usb_storage_device(self):
+        """test of HALDevice.scsi_controller.
+
+        The physical device is a USB storage device.
+        """
+        devices = [
+            # The main node of the USB storage device.
+            {
+                'id': 1,
+                'udi': self.UDI_USB_STORAGE,
+                'properties': {
+                    'info.bus': ('usb_device', 'str'),
+                    },
+                },
+            # The storage interface of the USB device.
+            {
+                'id': 2,
+                'udi': self.UDI_USB_STORAGE_IF0,
+                'properties': {
+                    'info.bus': ('usb', 'str'),
+                    'info.parent': (self.UDI_USB_STORAGE, 'str'),
+                    },
+                },
+            # The fake SCSI host of the storage device. Note that HAL does
+            # _not_ provide the info.bus property.
+            {
+                'id': 3,
+                'udi': self.UDI_USB_STORAGE_SCSI_HOST,
+                'properties': {
+                    'info.parent': (self.UDI_USB_STORAGE_IF0, 'str'),
+                    },
+                },
+            # The fake SCSI disk.
+            {
+                'id': 3,
+                'udi': self.UDI_USB_STORAGE_SCSI_DEVICE,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'info.parent': (self.UDI_USB_STORAGE_SCSI_HOST, 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        parser = SubmissionParser()
+        parser.buildDeviceList(parsed_data)
+
+        usb_fake_scsi_disk = parser.hal_devices[
+            self.UDI_USB_STORAGE_SCSI_DEVICE]
+        usb_main_device = parser.hal_devices[self.UDI_USB_STORAGE_IF0]
+        self.assertEqual(usb_main_device, usb_fake_scsi_disk.scsi_controller)
+
+    def test_HALDevice_scsi_controller_pci_controller(self):
+        """test of HALDevice.scsi_controller.
+
+        Variant for a SCSI device connected to a PCI controller.
+        """
+        devices = [
+            # The PCI host controller.
+            {
+                'id': 1,
+                'udi': self.UDI_SATA_CONTROLLER,
+                'properties': {
+                    'info.bus': ('pci', 'str'),
+                    'pci.device_class': (PCI_CLASS_STORAGE, 'int'),
+                    'pci.device_subclass': (PCI_SUBCLASS_STORAGE_SATA,
+                                            'int'),
+                    },
+                },
+            # The (fake or real) SCSI host of the storage device.
+            {
+                'id': 2,
+                'udi': self.UDI_SATA_CONTROLLER_SCSI,
+                'properties': {
+                    'info.parent': (self.UDI_SATA_CONTROLLER, 'str'),
+                    },
+                },
+            # The (possibly fake) SCSI disk.
+            {
+                'id': 3,
+                'udi': self.UDI_SATA_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'info.parent': (self.UDI_SATA_CONTROLLER_SCSI, 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        parser = SubmissionParser()
+        parser.buildDeviceList(parsed_data)
+
+        scsi_device = parser.hal_devices[self.UDI_SATA_DISK]
+        controller = parser.hal_devices[self.UDI_SATA_CONTROLLER]
+        self.assertEqual(controller, scsi_device.scsi_controller)
+
+    def test_HALDevice_scsi_controller_non_scsi_device(self):
+        """test of HALDevice.scsi_controller.
+
+        Variant for non-SCSI devices.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {},
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        parser = SubmissionParser()
+        parser.buildDeviceList(parsed_data)
+
+        device = parser.hal_devices[self.UDI_COMPUTER]
+        self.assertEqual(None, device.scsi_controller)
+
+    def test_HALDevice_scsi_controller_no_grandparent(self):
+        """test of HALDevice.scsi_controller.
+
+        Variant for a SCSI device without a grandparent device.
+        """
+        devices = [
+            # The (fake or real) SCSI host of the storage device.
+            {
+                'id': 1,
+                'udi': self.UDI_SATA_CONTROLLER_SCSI,
+                'properties': {},
+                },
+            # The (possibly fake) SCSI disk.
+            {
+                'id': 2,
+                'udi': self.UDI_SATA_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'info.parent': (self.UDI_SATA_CONTROLLER_SCSI, 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'SCSI device without grandparent device'
+        parser.buildDeviceList(parsed_data)
+
+        scsi_device = parser.hal_devices[self.UDI_SATA_DISK]
+        self.assertEqual(None, scsi_device.scsi_controller)
+        self.assertWarningMessage(
+            parser.submission_key,
+            "Found SCSI device without a grandparent: %s."
+            % self.UDI_SATA_DISK)
+
+    def test_HALDevice_scsi_controller_no_parent(self):
+        """test of HALDevice.scsi_controller.
+
+        Variant for a SCSI device without a parent device.
+        """
+        devices = [
+            # The (possibly fake) SCSI disk.
+            {
+                'id': 1,
+                'udi': self.UDI_SATA_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'SCSI device without parent device'
+        parser.buildDeviceList(parsed_data)
+
+        scsi_device = parser.hal_devices[self.UDI_SATA_DISK]
+        self.assertEqual(None, scsi_device.scsi_controller)
+        self.assertWarningMessage(
+            parser.submission_key,
+            "Found SCSI device without a parent: %s." % self.UDI_SATA_DISK)
+
     def testHALDeviceGetRealBus(self):
         """Test of HALDevice.real_bus, generic case.
 
@@ -2613,6 +2821,7 @@ class TestUdevDevice(TestCase):
             'PCI_SUBSYS_ID': '10CF:1387',
             'PCI_SLOT_NAME': '0000:00:1f.2',
             'SUBSYSTEM': 'pci',
+            'DRIVER': 'ahci',
             }
         }
 
@@ -2623,21 +2832,23 @@ class TestUdevDevice(TestCase):
             'DEVTYPE': 'usb_device',
             'PRODUCT': '46d/a01/1013',
             'TYPE': '0/0/0',
+            'DRIVER': 'usb',
             },
         }
 
-    scsi_device_data = {
-        'P': '/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0',
+    scsi_scanner_device_data = {
+        'P': ('/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/0000:09:00.0/'
+              'host6/target6:0:1/6:0:1:0'),
         'E': {
-            'SUBSYSTEM': 'scsi',
             'DEVTYPE': 'scsi_device',
+            'SUBSYSTEM': 'scsi',
             },
         }
 
-    scsi_device_sysfs_data = {
-        'vendor': 'MATSHITA',
-        'model': 'DVD-RAM UJ-841S',
-        'type': '5',
+    scsi_scanner_device_sysfs_data = {
+        'vendor': 'FUJITSU',
+        'model': 'fi-5120Cdj',
+        'type': '6',
         }
 
     no_subsystem_device_data = {
@@ -2790,7 +3001,8 @@ class TestUdevDevice(TestCase):
     def test_is_scsi_device(self):
         """Test of UdevDevice.is_scsi_device."""
         device = UdevDevice(
-            None, self.scsi_device_data, self.scsi_device_sysfs_data)
+            None, self.scsi_scanner_device_data,
+            self.scsi_scanner_device_sysfs_data)
         self.assertTrue(device.is_scsi_device)
 
         device = UdevDevice(None, self.root_device)
@@ -2799,16 +3011,18 @@ class TestUdevDevice(TestCase):
     def test_scsi_vendor(self):
         """Test of UdevDevice.scsi_vendor."""
         device = UdevDevice(
-            None, self.scsi_device_data, self.scsi_device_sysfs_data, None)
-        self.assertEqual('MATSHITA', device.scsi_vendor)
+            None, self.scsi_scanner_device_data,
+            self.scsi_scanner_device_sysfs_data)
+        self.assertEqual('FUJITSU', device.scsi_vendor)
         device = UdevDevice(None, self.root_device)
         self.assertEqual(None, device.scsi_vendor)
 
     def test_scsi_model(self):
         """Test of UdevDevice.scsi_model."""
         device = UdevDevice(
-            None, self.scsi_device_data, self.scsi_device_sysfs_data)
-        self.assertEqual('DVD-RAM UJ-841S', device.scsi_model)
+            None, self.scsi_scanner_device_data,
+            self.scsi_scanner_device_sysfs_data)
+        self.assertEqual('fi-5120Cdj', device.scsi_model)
 
         device = UdevDevice(None, self.root_device)
         self.assertEqual(None, device.scsi_model)
@@ -2847,10 +3061,10 @@ class TestUdevDevice(TestCase):
         self.assertEqual('Unknown', device.getVendorOrProduct('product'))
 
         device = UdevDevice(
-            None, self.scsi_device_data, self.scsi_device_sysfs_data)
-        self.assertEqual('MATSHITA', device.getVendorOrProduct('vendor'))
-        self.assertEqual(
-            'DVD-RAM UJ-841S', device.getVendorOrProduct('product'))
+            None, self.scsi_scanner_device_data,
+            self.scsi_scanner_device_sysfs_data)
+        self.assertEqual('FUJITSU', device.getVendorOrProduct('vendor'))
+        self.assertEqual('fi-5120Cdj', device.getVendorOrProduct('product'))
 
         device = UdevDevice(None, self.no_subsystem_device_data)
         self.assertEqual(None, device.getVendorOrProduct('vendor'))
@@ -2888,10 +3102,10 @@ class TestUdevDevice(TestCase):
         self.assertEqual(0xa01, device.getVendorOrProductID('product'))
 
         device = UdevDevice(
-            None, self.scsi_device_data, self.scsi_device_sysfs_data)
-        self.assertEqual('MATSHITA', device.getVendorOrProductID('vendor'))
-        self.assertEqual(
-            'DVD-RAM UJ-841S', device.getVendorOrProductID('product'))
+            None, self.scsi_scanner_device_data,
+            self.scsi_scanner_device_sysfs_data)
+        self.assertEqual('FUJITSU', device.getVendorOrProductID('vendor'))
+        self.assertEqual('fi-5120Cdj', device.getVendorOrProductID('product'))
 
         device = UdevDevice(
             None, self.no_subsystem_device_data)
@@ -2909,6 +3123,49 @@ class TestUdevDevice(TestCase):
         device = UdevDevice(
             None, self.root_device, None, self.root_device_dmi_data)
         self.assertEqual('LIFEBOOK E8210', device.product_id)
+
+    def test_vendor_id_for_db(self):
+        """Test of UdevDevice.vendor_id_for_db."""
+        device = UdevDevice(
+            None, self.root_device, None, self.root_device_dmi_data)
+        self.assertEqual('FUJITSU SIEMENS', device.vendor_id_for_db)
+
+        device = UdevDevice(None, self.pci_device_data)
+        self.assertEqual('0x8086', device.vendor_id_for_db)
+
+        device = UdevDevice(None, self.usb_device_data)
+        self.assertEqual('0x046d', device.vendor_id_for_db)
+
+        device = UdevDevice(
+            None, self.scsi_scanner_device_data,
+            self.scsi_scanner_device_sysfs_data)
+        self.assertEqual('FUJITSU ', device.vendor_id_for_db)
+
+    def test_product_id_for_db(self):
+        """Test of UdevDevice.product_id_for_db."""
+        device = UdevDevice(
+            None, self.root_device, None, self.root_device_dmi_data)
+        self.assertEqual('LIFEBOOK E8210', device.product_id_for_db)
+
+        device = UdevDevice(None, self.pci_device_data)
+        self.assertEqual('0x27c5', device.product_id_for_db)
+
+        device = UdevDevice(None, self.usb_device_data)
+        self.assertEqual('0x0a01', device.product_id_for_db)
+
+        device = UdevDevice(
+            None, self.scsi_scanner_device_data,
+            self.scsi_scanner_device_sysfs_data)
+        self.assertEqual('fi-5120Cdj      ', device.product_id_for_db)
+
+    def test_driver_name(self):
+        """Test of UdevDevice.driver_name."""
+        device = UdevDevice(None, self.pci_device_data)
+        self.assertEqual('ahci', device.driver_name)
+
+        device = UdevDevice(
+            None, self.root_device, None, self.root_device_dmi_data)
+        self.assertEqual(None, device.driver_name)
 
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
