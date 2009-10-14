@@ -601,8 +601,13 @@ class NascentUpload:
         uploaded file targeted to an architecture not present in the
         distroseries in context. So callsites needs to be aware.
         """
+        if isinstance(uploaded_file, DdebBinaryUploadFile):
+            ancestry_name = uploaded_file.deb_file.package
+        else:
+            ancestry_name = uploaded_file.package
+
         binary_name = getUtility(
-            IBinaryPackageNameSet).queryByName(uploaded_file.package)
+            IBinaryPackageNameSet).queryByName(ancestry_name)
 
         if binary_name is None:
             return None
