@@ -570,8 +570,8 @@ class Builder(SQLBase):
         """ % sqlvalues(self.virtualized))
 
         # Ensure that if a currently-building build exists for the same
-        # ppa archive and architecture currently building then we don't
-        # consider another as a candidate.
+        # public ppa archive and architecture currently building then
+        # we don't consider another as a candidate.
         clauses.append("""
             NOT EXISTS (
                 SELECT Build.id
@@ -579,6 +579,7 @@ class Builder(SQLBase):
                 WHERE
                     build2.archive = build.archive AND
                     archive.purpose = %s AND
+                    archive.private IS FALSE AND
                     build2.distroarchseries = distroarchseries2.id AND
                     distroarchseries2.processorfamily = %s AND
                     build2.buildstate = %s)
