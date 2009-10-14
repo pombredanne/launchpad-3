@@ -16,15 +16,27 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-class TestFindBuildCandidate(TestCaseWithFactory):
+class TestFindBuildCandidateBase(TestCaseWithFactory):
+    """Setup the test publisher and some builders."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        """Publish some builds for the test archive."""
-        super(TestFindBuildCandidate, self).setUp()
+        super(TestFindBuildCandidateBase, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
+
+        # Create two i386 builders ready to build PPA builds.
+        builder_set = getUtility(IBuilderSet)
+        self.builder1 = self.factory.makeBuilder(name='bob2')
+        self.builder2 = self.factory.makeBuilder(name='frog2')
+
+
+class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
+
+    def setUp(self):
+        """Publish some builds for the test archive."""
+        super(TestFindBuildCandidatePPA, self).setUp()
 
         # Create two PPAs and add some builds to each.
         self.ppa_joe = self.factory.makeArchive(name="joesppa")
@@ -43,11 +55,6 @@ class TestFindBuildCandidate(TestCaseWithFactory):
         self.publisher.getPubSource(
             sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
             archive=self.ppa_jim).createMissingBuilds()
-
-        # Create two i386 builders ready to build PPA builds.
-        builder_set = getUtility(IBuilderSet)
-        self.builder1 = self.factory.makeBuilder(name='bob2')
-        self.builder2 = self.factory.makeBuilder(name='frog2')
 
         # Grab the first build, ensure that it is what we expect
         # (ie. the first build from joesppa) and set it building.
@@ -80,9 +87,14 @@ class TestFindBuildCandidate(TestCaseWithFactory):
         next_job = self.builder2.findBuildCandidate()
         self.failUnlessEqual('joesppa', next_job.build.archive.name)
 
-    def test_findBuildCandidate_for_non_ppa(self):
-        # Normal archives are not restricted to serial builds per
-        # arch.
+
+class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
+
+    def setUp(self):
+        """Publish some builds for the test archive."""
+        super(TestFindBuildCandidateDistroArchive, self).setUp()
+        # Create a primary archive and publish some builds for the
+        # queue.
         non_ppa = self.factory.makeArchive(
             name="primary", purpose=ArchivePurpose.PRIMARY)
 
@@ -93,10 +105,9 @@ class TestFindBuildCandidate(TestCaseWithFactory):
             sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
             archive=non_ppa).createMissingBuilds()[0]
 
-        # Rescore our primary builds so that they'll be returned before
-        # the PPA ones.
-        gedit_build.buildqueue_record.manualScore(3000)
-        firefox_build.buildqueue_record.manualScore(3000)
+    def test_findBuildCandidate_for_non_ppa(self):
+        # Normal archives are not restricted to serial builds per
+        # arch.
 
         next_job = self.builder2.findBuildCandidate()
         self.failUnlessEqual('primary', next_job.build.archive.name)
