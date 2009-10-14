@@ -109,7 +109,7 @@
               <dl id="trunk-branch"
                   tal:define="trunk context/development_focus/branch"
                   tal:condition="trunk">
-                <dt>Development branch:</dt>
+                <dt>Development focus:</dt>
                 <dd>
                   <a tal:replace="structure trunk/fmt:link" /><br/>
                   <a style="padding-left: 18px"
