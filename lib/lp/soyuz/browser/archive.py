@@ -1625,17 +1625,27 @@ class ArchiveActivateView(LaunchpadFormView):
 
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
+    label = "Personal Package Archive Activation"
 
     @property
     def ubuntu(self):
         return getUtility(ILaunchpadCelebrities).ubuntu
 
+    @property
+    def initial_values(self):
+        """Set up default values for form fields."""
+        # Suggest a default value of "ppa" for the name for the
+        # first PPA activation.
+        if self.context.archive is None:
+            return {'name': 'ppa'}
+        return {}
+
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
         Reorder the fields in a way the make more sense to users and also
-        omit 'name' and present a checkbox for acknowledging the PPA-ToS
-        if the user is creating his first PPA.
+        present a checkbox for acknowledging the PPA-ToS if the user is
+        creating his first PPA.
         """
         LaunchpadFormView.setUpFields(self)
 
@@ -1644,7 +1654,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 'name', 'displayname', 'description')
         else:
             self.form_fields = self.form_fields.select(
-                'displayname', 'accepted', 'description')
+                'name', 'displayname', 'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
