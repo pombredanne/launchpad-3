@@ -646,6 +646,15 @@ class DistributionPPASearchView(LaunchpadView):
 
     def initialize(self):
         self.name_filter = self.request.get('name_filter')
+        if isinstance(self.name_filter, list):
+            # This happens if someone hand-hacks the URL so that it has
+            # more than one name_filter field.
+            #
+            # XXX 2009-10-14 Julian bug=451424
+            # There really should be a way for the form to reject
+            # unexpected input like this before it hits the code here.
+            # See bug 451424.
+            self.name_filter = " ".join(self.name_filter)
         self.show_inactive = self.request.get('show_inactive')
 
     @property
