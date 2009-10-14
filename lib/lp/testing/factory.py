@@ -106,6 +106,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.testing import run_with_login, time_counter
@@ -1484,6 +1485,28 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
             distribution=distribution, name=name)
+
+    def makeBuilder(self, processor=None, url=None, name=None, title=None,
+                    description=None, owner=None, active=True,
+                    virtualized=True, vm_host=None):
+        """Make a new builder ready to build PPA builds by default."""
+        if processor is None:
+            processor_fam = ProcessorFamilySet().getByName('x86')
+            processor = processor_fam.processors[0]
+        if url is None:
+            url = 'http://%s:8221/' % self.getUniqueString()
+        if name is None:
+            name = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
+        if description is None:
+            description = self.getUniqueString()
+        if owner is None:
+            owner = self.makePerson()
+
+        return getUtility(IBuilderSet).new(
+            processor, url, name, title, description, owner, active,
+            virtualized, vm_host)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
