@@ -1603,7 +1603,7 @@ immediately recognises 'cprov' rights on it.
     PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
 
-The same happens for specific upload rights granted on 3rd-part
+The same happens for specific upload rights granted on 3rd-party
 PPAs. When 'No Privileges' gets upload rights to Celso's PPA,
 it gets listed by `getPPAsForUser`.
 
@@ -1628,6 +1628,23 @@ method returns an empty SelectResults.
 
     >>> jblack_ppas.count()
     0
+
+Another similar method, getPPAOwnedByPersonUser(), will return the named PPA
+owned by the person, or if the person is not supplied will default to the
+first PPA that the person created.
+
+    >>> print archive_set.getPPAOwnedByPerson(cprov).displayname
+    PPA for Celso Providelo
+
+    >>> print archive_set.getPPAOwnedByPerson(cprov, name="ppa").displayname
+    PPA for Celso Providelo
+
+If the named PPA does not exist, a NoSuchPPA exception is raised.
+
+    >>> print archive_set.getPPAOwnedByPerson(cprov, name="goat").displayname
+    Traceback (most recent call last):
+    ...
+    NoSuchPPA: No such ppa: 'goat'.
 
 The method getPrivatePPAs() will return a result set of all PPAs that are
 private.
