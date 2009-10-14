@@ -36,17 +36,16 @@
     </div>
 
     <div tal:condition="view/key_retrieval_failed" class="error message">
-      Launchpad could not import your OpenPGP key.
+      <strong>Launchpad could not import your OpenPGP key</strong>
       <ul>
-
-        <li>Either you didn't enter your complete fingerprint correctly
+        <li>Did you enter your complete fingerprint correctly?
         (<a href="/+help/import-pgp-key.html"
-        target="help">Read about your getting your fingerprint</a>)</li>
+        target="help">Help with fingerprints</a>)</li>
 
-        <li>Or your key isn't yet available in the Ubuntu keyserver.
+        <li>Is your key in the Ubuntu keyserver yet?
             You may have to wait between ten minutes (if you pushed
             directly to the Ubuntu key server) and one hour (if you pushed
-            your key to another server). (<a href="/+help/openpgp-keys.html" target="help">Read about generating and publishing keys</a>)</li>
+            your key to another server). (<a href="/+help/openpgp-keys.html" target="help">Help with publishing keys</a>)</li>
       </ul>
 
     </div>
