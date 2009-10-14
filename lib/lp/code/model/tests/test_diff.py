@@ -109,6 +109,11 @@ class TestDiff(DiffTestCase):
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
 
+
+class TestDiffInScripts(DiffTestCase):
+
+    layer = LaunchpadZopelessLayer
+
     def test_mergePreviewFromBranches(self):
         # mergePreviewFromBranches generates the correct diff.
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
@@ -178,22 +183,6 @@ class TestDiff(DiffTestCase):
             StringIO(self.diff_bytes_2), len(self.diff_bytes_2))
         self.assertEqual(5, diff.added_lines_count)
         self.assertEqual(4, diff.removed_lines_count)
-
-    def test_fromFile_withError(self):
-        # If the diff is formatted such that generating the diffstat fails, we
-        # want to record an oops but continue.
-        last_oops_id = errorlog.globalErrorUtility.lastid
-        diff_bytes = "not a real diff"
-        diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
-        self.assertNotEqual(last_oops_id, errorlog.globalErrorUtility.lastid)
-        self.assertIs(None, diff.diffstat)
-        self.assertIs(None, diff.added_lines_count)
-        self.assertIs(None, diff.removed_lines_count)
-
-
-class TestDiffInScripts(DiffTestCase):
-
-    layer = LaunchpadZopelessLayer
 
     def test_fromFile_withError(self):
         # If the diff is formatted such that generating the diffstat fails, we
