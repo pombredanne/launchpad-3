@@ -134,14 +134,10 @@ to a team.
 
     >>> from zope.security.interfaces import Unauthorized
     >>> mark = personset.getByName('mark')
-    >>> try:
-    ...     t3.addMember(
-    ...         salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
-    ... except Unauthorized, info:
-    ...     print Unauthorized, info
-    ... else:
-    ...     print "No exception raised"
-    zope.security.interfaces.Unauthorized (..., 'addMember', 'launchpad.Edit')
+    >>> t3.addMember(salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
 
     # Log in as the team owner.
     >>> login_person(t3.teamowner)
