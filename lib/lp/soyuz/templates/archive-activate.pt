@@ -8,10 +8,6 @@
   >
 <body>
 
-<div metal:fill-slot="heading">
-  <h1>Personal Package Archive Activation</h1>
-</div>
-
 <div metal:fill-slot="main">
   <div class="top-portlet">
     A PPA is a place where you can build and publish your own packages.
