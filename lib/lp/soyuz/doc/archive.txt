@@ -1637,6 +1637,26 @@ it gets listed by `getPPAsForUser`.
     PPA for Celso Providelo
     PPA for No Privileges Person
 
+This also works via indirect team memberships.  Let's make a dummy team
+and user and give the team access to cprov's PPA:
+
+    >>> uploader_team = factory.makeTeam(owner=cprov, name='uploader-team')
+    >>> indirect_uploader = factory.makePerson(name='indirect-uploader')
+    >>> cprov_archive.newComponentUploader(uploader_team, "main")
+    <ArchivePermission ...>
+
+'indirect_uploader' currently can't upload to cprov's PPA:
+
+    >>> for ppa in archive_set.getPPAsForUser(indirect_uploader):
+    ...     print ppa.displayname
+
+But if we make him part of the uploader_team he'll gain access:
+
+    >>> uploader_team.addMember(indirect_uploader, indirect_uploader)
+    >>> for ppa in archive_set.getPPAsForUser(indirect_uploader):
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+
 When there is no active PPA for the team a user participates the
 method returns an empty SelectResults.
 
@@ -1914,10 +1934,12 @@ archives:
 
 First we create three copy archives for ubuntu:
 
-    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
-    ...                                        name="ultimate-copy")
-    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
-    ...                                        name="fine-copy")
+    >>> copy_owner1 = factory.makePerson(name="copy-owner1")
+    >>> copy_owner2 = factory.makePerson(name="copy-owner2")
+    >>> copy = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu, name="ultimate-copy", owner=copy_owner1)
+    >>> copy = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu, name="fine-copy", owner=copy_owner2)
 
 One of the new copy archives will be owned by a team:
 
@@ -1935,10 +1957,10 @@ Now the `getArchivesForDistribution` finds the relevant COPY archives:
     ...     ubuntu, purposes=[ArchivePurpose.COPY])
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    fine-copy        person-name12 False    True
+    fine-copy        copy-owner2   False    True
     my-copy-archive  person-name6  False    True
     team-archive     t1            False    True
-    ultimate-copy    person-name9  False    True
+    ultimate-copy    copy-owner1   False    True
 
 The `getArchivesForDistribution` method can also be used to get an
 archive using an archive name:
@@ -1965,8 +1987,8 @@ method will by default only return public archives:
     ...     ubuntu, purposes=[ArchivePurpose.COPY])
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    fine-copy        person-name12 False    True
-    ultimate-copy    person-name9  False    True
+    fine-copy        copy-owner2   False    True
+    ultimate-copy    copy-owner1   False    True
 
 Similarly, a user who has no privs for the private archive will not see
 the private archives:
@@ -1975,8 +1997,8 @@ the private archives:
     ...     ubuntu, purposes=[ArchivePurpose.COPY], user=cprov)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    fine-copy        person-name12 False    True
-    ultimate-copy    person-name9  False    True
+    fine-copy        copy-owner2   False    True
+    ultimate-copy    copy-owner1   False    True
 
 The owner of the archive will also see their private archive in the results:
 
@@ -1985,9 +2007,9 @@ The owner of the archive will also see their private archive in the results:
     ...     user=my_copy_archive.owner)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    fine-copy        person-name12 False    True
+    fine-copy        copy-owner2   False    True
     my-copy-archive  person-name6  True     True
-    ultimate-copy    person-name9  False    True
+    ultimate-copy    copy-owner1   False    True
 
 An admin will see all the private and disabled archives in the results:
 
@@ -1996,11 +2018,11 @@ An admin will see all the private and disabled archives in the results:
     ...     ubuntu, purposes=[ArchivePurpose.COPY], user=foobar)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    fine-copy        person-name12 False    True
+    fine-copy        copy-owner2   False    True
     my-copy-archive  person-name6  True     True
     team-archive     t1            True     True
     there-we-go      juergen       False    False
-    ultimate-copy    person-name9  False    True
+    ultimate-copy    copy-owner1   False    True
 
 And if the archive is owned by a team, then anyone in the team will also
 be able to view the private team archive:
@@ -2010,9 +2032,9 @@ be able to view the private team archive:
     ...     ubuntu, purposes=[ArchivePurpose.COPY], user=cprov)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    fine-copy        person-name12 False    True
+    fine-copy        copy-owner2   False    True
     team-archive     t1            True     True
-    ultimate-copy    person-name9  False    True
+    ultimate-copy    copy-owner1   False    True
 
 
 == Getting publishing records across a set of Archives ==
