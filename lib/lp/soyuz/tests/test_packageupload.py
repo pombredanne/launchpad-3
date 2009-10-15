@@ -205,7 +205,14 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.layer.switchDbUser(self.dbuser)
 
         logger = BufferLogger()
-        pub_records = delayed_copy.realiseUpload(logger=logger)
+        # realiseUpload() assumes a umask of 022, which is normally true in
+        # production.  The user's environment might have a different umask, so
+        # just force it to what the test expects.
+        old_umask = os.umask(022)
+        try:
+            pub_records = delayed_copy.realiseUpload(logger=logger)
+        finally:
+            os.umask(old_umask)
         self.assertEquals(
             PackageUploadStatus.DONE, delayed_copy.status)
 
