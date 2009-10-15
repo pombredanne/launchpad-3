@@ -549,8 +549,9 @@ class ProductWithSeries:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid delegates taking them
-    # over.
+    # `serieses` and `development_focus` need to be declared as class
+    # attributes so that this class will not delegate the actual instance
+    # variables to self.product, which would bypass the caching.
     serieses = None
     development_focus = None
     delegates(IProduct, 'product')
@@ -564,25 +565,18 @@ class ProductWithSeries:
             if self.product.development_focus == series:
                 self.development_focus = series_with_releases
 
-        self.series_by_id = dict(
-            (series.id, series) for series in self.serieses)
-
         # Get all of the releases for all of the serieses in a single
         # query.  The query sorts the releases properly so we know the
         # resulting list is sorted correctly.
+        series_by_id = dict((series.id, series) for series in self.serieses)
         self.release_by_id = {}
         milestones_and_releases = list(
             self.product.getMilestonesAndReleases())
         for milestone, release in milestones_and_releases:
-            series = self.getSeriesById(
-                milestone.productseries.id)
+            series = series_by_id[milestone.productseries.id]
             decorated_release = ReleaseWithFiles(release, parent=series)
             series.addRelease(decorated_release)
             self.release_by_id[release.id] = decorated_release
-
-    def getSeriesById(self, id):
-        """Look up and return a ProductSeries by id."""
-        return self.series_by_id[id]
 
 
 class SeriesWithReleases:
@@ -593,8 +587,10 @@ class SeriesWithReleases:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid delegates taking them
-    # over.
+    # `parent` and `releases` need to be declared as class attributes so that
+    # this class will not delegate the actual instance variables to
+    # self.series, which would bypass the caching for self.releases and would
+    # raise an AttributeError for self.parent.
     parent = None
     releases = None
     delegates(IProductSeries, 'series')
@@ -633,8 +629,9 @@ class ReleaseWithFiles:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid delegates taking them
-    # over.
+    # `parent` needs to be declared as class attributes so that
+    # this class will not delegate the actual instance variables to
+    # self.release, which would raise an AttributeError.
     parent = None
     delegates(IProductRelease, 'release')
 
@@ -643,22 +640,25 @@ class ReleaseWithFiles:
         self.parent = parent
         self._files = None
 
-    @cachedproperty
+    @property
     def files(self):
+        """Cache the release files for all the releases in the product."""
         if self._files is None:
             # Get all of the files for all of the releases.  The query
             # returns all releases sorted properly.
             product = self.parent.parent
-            decorated_releases = product.release_by_id.values()
+            release_delegates = product.release_by_id.values()
             files = getUtility(IProductReleaseSet).getFilesForReleases(
-                decorated_releases)
-            for decorated_release in decorated_releases:
-                decorated_release._files = []
+                release_delegates)
+            for release_delegate in release_delegates:
+                release_delegate._files = []
             for file in files:
                 id = file.productrelease.id
-                decorated_release = product.release_by_id[id]
-                decorated_release._files.append(file)
+                release_delegate = product.release_by_id[id]
+                release_delegate._files.append(file)
 
+        # self._files was set above, since self is actually in the
+        # decorated_releases variable.
         return self._files
 
     @property
@@ -685,8 +685,7 @@ class ProductDownloadFileMixin:
         Decorated classes are created, and they contain cached data
         obtained with a few queries rather than many iterated queries.
         """
-        product_with_series = ProductWithSeries(self.context)
-        return product_with_series
+        return ProductWithSeries(self.context)
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -736,15 +735,11 @@ class ProductDownloadFileMixin:
     @cachedproperty
     def latest_release_with_download_files(self):
         """Return the latest release with download files."""
-        try:
-            for series in self.sorted_series_list:
-                for release in series.releases:
-                    if len(list(release.files)) > 0:
-                        return release
-            return None
-        except AttributeError, e:
-            import sys
-            raise ValueError, e, sys.exc_info()[2]
+        for series in self.sorted_series_list:
+            for release in series.releases:
+                if len(list(release.files)) > 0:
+                    return release
+        return None
 
 
 class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
