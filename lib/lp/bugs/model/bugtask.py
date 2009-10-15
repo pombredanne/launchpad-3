@@ -2021,23 +2021,41 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         bug_privacy_filter = get_bug_privacy_filter(user)
         if bug_privacy_filter != "":
-            bug_privacy_filter = ' AND ' + bug_privacy_filter
+            bug_privacy_filter = 'AND ' + bug_privacy_filter
         cur = cursor()
-        condition = """
-            (BugTask.productseries = %s
-                 OR Milestone.productseries = %s)
-            """ % sqlvalues(product_series, product_series)
+
+        # The union is actually much faster than a LEFT JOIN with the
+        # Milestone table, since postgres optimizes it to perform index
+        # scans instead of sequential scans on the BugTask table.
         query = """
-            SELECT BugTask.status, count(*)
-            FROM BugTask
-                JOIN Bug ON BugTask.bug = Bug.id
-                LEFT JOIN Milestone ON BugTask.milestone = Milestone.id
-            WHERE
-                %s
-                %s
-            GROUP BY BugTask.status
-            """ % (condition, bug_privacy_filter)
+            SELECT status, count(*)
+            FROM (
+                SELECT BugTask.status
+                FROM BugTask
+                    JOIN Bug ON BugTask.bug = Bug.id
+                WHERE
+                    BugTask.productseries = %(series)s
+                    %(privacy)s
+
+                UNION ALL
+
+                SELECT BugTask.status
+                FROM BugTask
+                    JOIN Bug ON BugTask.bug = Bug.id
+                    JOIN Milestone ON BugTask.milestone = Milestone.id
+                WHERE
+                    BugTask.productseries IS NULL
+                    AND Milestone.productseries = %(series)s
+                    %(privacy)s
+                ) AS subquery
+            GROUP BY status
+            """ % dict(series=quote(product_series),
+                       privacy=bug_privacy_filter)
+
         cur.execute(query)
+        print "!" * 72
+        print query
+        print "*" * 72
         return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
