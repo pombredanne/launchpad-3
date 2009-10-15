@@ -8,10 +8,13 @@ __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'components_valid_for',
+    'person_may_edit_branch',
     'verify_upload',
     ]
 
 from zope.component import getUtility
+
+from canonical.launchpad.webapp.authorization import check_permission
 
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 
@@ -128,3 +131,57 @@ def verify_upload(person, sourcepackagename, archive, component,
         return NoRightsForComponent(component)
 
     return None
+
+def person_may_edit_branch(person, branch):
+    """Return True if person may edit branch.
+
+    A person P may be allowed to edit the branch B on the following
+    grounds:
+
+      - P is owner of B or a member of the team owning B
+      - B is a source package branch (i.e. a branch linked to a
+        source package SP in the distro series DS, component C) and
+        - P is authorised to upload SP in DS.distribution.main_archive
+        - P is authorised to upload to C in DS.distribution.main_archive
+        - P is authorised to upload SP via a package set
+
+    :param person: The `IPerson` for which to check edit privileges.
+    :param branch: The `IBranch` for which to check edit privileges.
+    :return: True if 'person' has edit privileges for 'branch',
+             False otherwise.
+    """
+    def current_component(ds, package):
+        releases = ds.getCurrentSourceReleases(
+            [package.sourcepackagename])
+        return releases.get(package, None)
+
+    result = check_permission('launchpad.Edit', branch)
+    # P is owner of B or a member of the team owning B
+    if result == True:
+        return result
+
+    # Check whether we're dealing with a source package branch and
+    # whether person is authorised to upload the respective source
+    # package.
+    package = branch.sourcepackage
+    if package is None:
+        # No package .. hmm .. this can't be a source package branch
+        # then. Abort.
+        return False
+
+    distroseries = branch.distroseries
+    if distroseries is None:
+        # No distro series? Very fishy .. abort.
+        return False
+
+    archive = branch.distroseries.distribution.main_archive
+    spn = package.sourcepackagename
+    component = current_component(distroseries, package)
+
+    # Is person authorised to upload the source package this branch
+    # is targeting?
+    result = verify_upload(person, spn, archive, component)
+    # verify_upload() indicates that person *is* allowed to upload by
+    # returning None.
+    return result is None
+    

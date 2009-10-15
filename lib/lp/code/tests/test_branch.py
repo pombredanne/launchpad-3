@@ -8,50 +8,103 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.testing import DatabaseFunctionalLayer
+
+from lp.archiveuploader.permission import (
+    person_may_edit_branch, verify_upload)
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.security import AccessBranch
-from lp.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.testing import run_with_login, TestCaseWithFactory
 
 
-class TestAccessBranch(TestCaseWithFactory):
+class PermissionTest(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def assertAuthenticatedAccess(self, branch, person, can_access):
-        branch = removeSecurityProxy(branch)
-        self.assertEqual(
-            can_access, AccessBranch(branch).checkAuthenticated(person))
+    def assertPermission(self, can_access, person, secure_object, permission):
+        """Assert that 'person' can or cannot access 'secure_object'.
 
-    def assertUnauthenticatedAccess(self, branch, can_access):
-        branch = removeSecurityProxy(branch)
+        :param can_access: Whether or not the person can access the object.
+        :param person: The `IPerson` who is trying to access the object.
+        :param secure_object: The secured object.
+        :param permission: The Launchpad permission that 'person' is trying to
+            access 'secure_object' with.
+        """
         self.assertEqual(
-            can_access, AccessBranch(branch).checkUnauthenticated())
+            can_access,
+            run_with_login(
+                person, check_permission, permission, secure_object))
+
+    def assertAuthenticatedView(self, branch, person, can_access):
+        """Can 'branch' be accessed by 'person'?
+
+        :param branch: The `IBranch` we're curious about.
+        :param person: The `IPerson` trying to access it.
+        :param can_access: Whether we expect 'person' be able to access it.
+        """
+        self.assertPermission(can_access, person, branch, 'launchpad.View')
+
+    def assertUnauthenticatedView(self, branch, can_access):
+        """Can 'branch' be accessed anonymously?
+
+        :param branch: The `IBranch` we're curious about.
+        :param can_access: Whether we expect to access it anonymously.
+        """
+        self.assertAuthenticatedView(branch, None, can_access)
+
+    def assertCanEdit(self, person, secured_object):
+        """Assert 'person' can edit 'secured_object'.
+
+        That is, assert 'person' has 'launchpad.Edit' permissions on
+        'secured_object'.
+
+        :param person: An `IPerson`. None means anonymous.
+        :param secured_object: An object, secured through the Zope security
+            layer.
+        """
+        self.assertPermission(True, person, secured_object, 'launchpad.Edit')
+
+    def assertCannotEdit(self, person, secured_object):
+        """Assert 'person' cannot edit 'secured_object'.
+
+        That is, assert 'person' does not have 'launchpad.Edit' permissions on
+        'secured_object'.
+
+        :param person: An `IPerson`. None means anonymous.
+        :param secured_object: An object, secured through the Zope security
+            layer.
+        """
+        self.assertPermission(False, person, secured_object, 'launchpad.Edit')
+
+
+class TestAccessBranch(PermissionTest):
 
     def test_publicBranchUnauthenticated(self):
         # Public branches can be accessed without authentication.
         branch = self.factory.makeAnyBranch()
-        self.assertUnauthenticatedAccess(branch, True)
+        self.assertUnauthenticatedView(branch, True)
 
     def test_publicBranchArbitraryUser(self):
         # Public branches can be accessed by anyone.
         branch = self.factory.makeAnyBranch()
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(branch, person, True)
+        self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchUnauthenticated(self):
         # Private branches cannot be accessed without authentication.
         branch = self.factory.makeAnyBranch(private=True)
-        self.assertUnauthenticatedAccess(branch, False)
+        self.assertUnauthenticatedView(branch, False)
 
     def test_privateBranchOwner(self):
         # The owner of a branch can always access it.
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(private=True, owner=owner)
-        self.assertAuthenticatedAccess(branch, owner, True)
+        self.assertAuthenticatedView(branch, owner, True)
 
     def test_privateBranchOwnerMember(self):
         # Any member of the team that owns the branch can access it.
@@ -60,19 +113,20 @@ class TestAccessBranch(TestCaseWithFactory):
         person = self.factory.makePerson()
         removeSecurityProxy(team).addMember(person, team_owner)
         branch = self.factory.makeAnyBranch(private=True, owner=team)
-        self.assertAuthenticatedAccess(branch, person, True)
+        self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchBazaarExperts(self):
         # The Bazaar experts can access any branch.
         celebs = getUtility(ILaunchpadCelebrities)
         branch = self.factory.makeAnyBranch(private=True)
-        self.assertAuthenticatedAccess(branch, celebs.bazaar_experts, True)
+        self.assertAuthenticatedView(
+            branch, celebs.bazaar_experts.teamowner, True)
 
     def test_privateBranchAdmins(self):
         # Launchpad admins can access any branch.
         celebs = getUtility(ILaunchpadCelebrities)
         branch = self.factory.makeAnyBranch(private=True)
-        self.assertAuthenticatedAccess(branch, celebs.admin, True)
+        self.assertAuthenticatedView(branch, celebs.admin.teamowner, True)
 
     def test_privateBranchSubscriber(self):
         # If you are subscribed to a branch, you can access it.
@@ -82,13 +136,13 @@ class TestAccessBranch(TestCaseWithFactory):
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.NOEMAIL)
-        self.assertAuthenticatedAccess(branch, person, True)
+        self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchAnyoneElse(self):
         # In general, you can't access a private branch.
         branch = self.factory.makeAnyBranch(private=True)
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(branch, person, False)
+        self.assertAuthenticatedView(branch, person, False)
 
     def test_stackedOnPrivateBranchUnauthenticated(self):
         # If a branch is stacked on a private branch, then you cannot access
@@ -96,7 +150,7 @@ class TestAccessBranch(TestCaseWithFactory):
         stacked_on_branch = self.factory.makeAnyBranch(private=True)
         stacked_branch = self.factory.makeAnyBranch(
             stacked_on=stacked_on_branch)
-        self.assertUnauthenticatedAccess(stacked_branch, False)
+        self.assertUnauthenticatedView(stacked_branch, False)
 
     def test_stackedOnPrivateBranchAuthenticated(self):
         # If a branch is stacked on a private branch, you can only access it
@@ -105,7 +159,7 @@ class TestAccessBranch(TestCaseWithFactory):
         stacked_branch = self.factory.makeAnyBranch(
             stacked_on=stacked_on_branch)
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(stacked_branch, person, False)
+        self.assertAuthenticatedView(stacked_branch, person, False)
 
     def test_manyLevelsOfStackingUnauthenticated(self):
         # If a branch is stacked on a branch stacked on a private branch, you
@@ -113,7 +167,7 @@ class TestAccessBranch(TestCaseWithFactory):
         stacked_on_branch = self.factory.makeAnyBranch(private=True)
         branch_a = self.factory.makeAnyBranch(stacked_on=stacked_on_branch)
         branch_b = self.factory.makeAnyBranch(stacked_on=branch_a)
-        self.assertUnauthenticatedAccess(branch_b, False)
+        self.assertUnauthenticatedView(branch_b, False)
 
     def test_manyLevelsOfStackingAuthenticated(self):
         # If a branch is stacked on a branch stacked on a private branch, you
@@ -122,7 +176,7 @@ class TestAccessBranch(TestCaseWithFactory):
         branch_a = self.factory.makeAnyBranch(stacked_on=stacked_on_branch)
         branch_b = self.factory.makeAnyBranch(stacked_on=branch_a)
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(branch_b, person, False)
+        self.assertAuthenticatedView(branch_b, person, False)
 
     def test_loopedPublicStackedOn(self):
         # It's possible, although nonsensical, for branch stackings to form a
@@ -132,7 +186,7 @@ class TestAccessBranch(TestCaseWithFactory):
         stacked_branch = self.factory.makeAnyBranch()
         removeSecurityProxy(stacked_branch).stacked_on = stacked_branch
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(stacked_branch, person, True)
+        self.assertAuthenticatedView(stacked_branch, person, True)
 
     def test_loopedPrivateStackedOn(self):
         # It's possible, although nonsensical, for branch stackings to form a
@@ -142,7 +196,7 @@ class TestAccessBranch(TestCaseWithFactory):
         stacked_branch = self.factory.makeAnyBranch(private=True)
         removeSecurityProxy(stacked_branch).stacked_on = stacked_branch
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(stacked_branch, person, False)
+        self.assertAuthenticatedView(stacked_branch, person, False)
 
     def test_loopedPublicStackedOnUnauthenticated(self):
         # It's possible, although nonsensical, for branch stackings to form a
@@ -151,8 +205,112 @@ class TestAccessBranch(TestCaseWithFactory):
         # being logged in.
         stacked_branch = self.factory.makeAnyBranch()
         removeSecurityProxy(stacked_branch).stacked_on = stacked_branch
-        self.assertUnauthenticatedAccess(stacked_branch, True)
+        self.assertUnauthenticatedView(stacked_branch, True)
 
+
+class TestWriteToBranch(PermissionTest):
+    """Test who can write to branches."""
+
+    def test_owner_can_write(self):
+        # The owner of a branch can write to the branch.
+        branch = self.factory.makeAnyBranch()
+        self.assertCanEdit(branch.owner, branch)
+
+    def test_random_person_cannot_write(self):
+        # Arbitrary logged in people cannot write to branches.
+        branch = self.factory.makeAnyBranch()
+        person = self.factory.makePerson()
+        self.assertCannotEdit(person, branch)
+
+    def test_member_of_owning_team_can_write(self):
+        # Members of the team that owns a branch can write to the branch.
+        team = self.factory.makeTeam()
+        person = self.factory.makePerson()
+        removeSecurityProxy(team).addMember(person, team.teamowner)
+        branch = self.factory.makeAnyBranch(owner=team)
+        self.assertCanEdit(person, branch)
+
+    def makeOfficialPackageBranch(self):
+        """Make a branch linked to the pocket of a source package."""
+        branch = self.factory.makePackageBranch()
+        pocket = self.factory.getAnyPocket()
+        sourcepackage = branch.sourcepackage
+        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
+        registrant = self.factory.makePerson()
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            ICanHasLinkedBranch(suite_sourcepackage).setBranch,
+            branch, registrant)
+        return branch
+
+    def test_owner_can_write_to_official_package_branch(self):
+        # The owner of an official package branch can write to it, just like a
+        # regular person.
+        branch = self.makeOfficialPackageBranch()
+        self.assertCanEdit(branch.owner, branch)
+
+    def assertCanUpload(self, person, spn, archive, component,
+                        strict_component=True):
+        """Assert that 'person' can upload 'spn' to 'archive'."""
+        # For now, just check that doesn't raise an exception.
+        self.assertIs(
+            None,
+            verify_upload(person, spn, archive, component, strict_component))
+
+    def assertCannotUpload(self, reason, person, spn, archive, component):
+        """Assert that 'person' cannot upload to the archive.
+
+        :param reason: The expected reason for not being able to upload. A
+            string.
+        :param person: The person trying to upload.
+        :param spn: The `ISourcePackageName` being uploaded to. None if the
+            package does not yet exist.
+        :param archive: The `IArchive` being uploaded to.
+        :param component: The IComponent to which the package belongs.
+        """
+        exception = verify_upload(person, spn, archive, component)
+        self.assertEqual(reason, str(exception))
+
+    def test_package_upload_permissions_grant_branch_edit(self):
+        # If you can upload to the package, then you are also allowed to write
+        # to the branch.
+        permission_set = getUtility(IArchivePermissionSet)
+        # Only admins or techboard members can add permissions normally. That
+        # restriction isn't relevant to these tests.
+        self.permission_set = removeSecurityProxy(permission_set)
+        branch = self.makeOfficialPackageBranch()
+        package = branch.sourcepackage
+        person = self.factory.makePerson()
+
+        # Person is not allowed to edit the branch presently.
+        self.assertCannotEdit(person, branch)
+        self.assertFalse(person_may_edit_branch(person, branch))
+
+        # Now give 'person' permission to upload to 'package'.
+        archive = branch.distroseries.distribution.main_archive
+        spn = package.sourcepackagename
+        self.permission_set.newPackageUploader(archive, person, spn)
+        # Make sure person *is* authorised to upload the source package
+        # targeted by the branch at hand.
+        self.assertCanUpload(person, spn, archive, None)
+
+        # Person still cannot edit the branch on the basis of ownership.
+        self.assertCannotEdit(person, branch)
+
+        # But it can edit it based on source package upload privileges.
+        self.assertTrue(person_may_edit_branch(person, branch))
+
+        person2 = self.factory.makePerson()
+        # person2 has no upload rights ..
+        self.assertCannotUpload(
+            ("The signer of this package has no upload rights to this "
+             "distribution's primary archive.  Did you mean to upload to "
+             "a PPA?"),
+            person2, spn, archive, None)
+        # .. and is not authorised to edit the branch.
+        self.assertCannotEdit(person2, branch)
+        self.assertFalse(person_may_edit_branch(person2, branch))
 
 
 def test_suite():
