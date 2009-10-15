@@ -87,12 +87,14 @@ DB_FORMAT_FOR_VENDOR_ID = {
     'pci': '0x%04x',
     'usb_device': '0x%04x',
     'scsi': '%-8s',
+    'scsi_device': '%-8s',
     }
 
 DB_FORMAT_FOR_PRODUCT_ID = {
     'pci': '0x%04x',
     'usb_device': '0x%04x',
     'scsi': '%-16s',
+    'scsi_device': '%-16s',
     }
 
 UDEV_USB_DEVICE_PROPERTIES = set(('DEVTYPE', 'PRODUCT', 'TYPE'))
@@ -1609,6 +1611,11 @@ class BaseDevice:
         """The name of the driver contolling this device. May be None."""
         raise NotImplementedError
 
+    @property
+    def scsi_controller(self):
+        """Return the SCSI host controller for this device."""
+        raise NotImplementedError
+
     def translateScsiBus(self):
         """Return the real bus of a device where raw_bus=='scsi'.
 
@@ -1617,37 +1624,27 @@ class BaseDevice:
         for more details. This method determines the real bus
         of a device accessed via the kernel's SCSI subsystem.
         """
-        # While SCSI devices from valid submissions should have a
-        # parent and a grandparent, we can't be sure for bogus or
-        # broken submissions.
-        parent = self.parent
-        if parent is None:
-            self.parser._logWarning(
-                'Found SCSI device without a parent: %s.' % self.device_id)
-            return None
-        grandparent = parent.parent
-        if grandparent is None:
-            self.parser._logWarning(
-                'Found SCSI device without a grandparent: %s.'
-                % self.device_id)
+        scsi_controller = self.scsi_controller
+        if scsi_controller is None:
             return None
 
-        grandparent_bus = grandparent.raw_bus
-        if grandparent_bus == 'pci':
-            if (grandparent.pci_class != PCI_CLASS_STORAGE):
+        scsi_controller_bus = scsi_controller.raw_bus
+        if scsi_controller_bus == 'pci':
+            if (scsi_controller.pci_class != PCI_CLASS_STORAGE):
                 # This is not a storage class PCI device? This
                 # indicates a bug somewhere in HAL or in the hwdb
                 # client, or a fake submission.
-                device_class = grandparent.pci_class
+                device_class = scsi_controller.pci_class
                 self.parser._logWarning(
                     'A (possibly fake) SCSI device %s is connected to '
                     'PCI device %s that has the PCI device class %s; '
                     'expected class 1 (storage).'
-                    % (self.device_id, grandparent.device_id, device_class))
+                    % (self.device_id, scsi_controller.device_id,
+                       device_class))
                 return None
-            pci_subclass = grandparent.pci_subclass
+            pci_subclass = scsi_controller.pci_subclass
             return self.pci_storage_subclass_hwbus.get(pci_subclass)
-        elif grandparent_bus == 'usb':
+        elif scsi_controller_bus == 'usb':
             # USB storage devices have the following HAL device hierarchy:
             # - HAL node for the USB device. info.bus == 'usb_device',
             #   device class == 0, device subclass == 0
@@ -2357,6 +2354,27 @@ class HALDevice(BaseDevice):
         """See `BaseDevice`."""
         return self.getVendorOrProductID('product')
 
+    @property
+    def scsi_controller(self):
+        """See `BaseDevice`."""
+        # While SCSI devices from valid submissions should have a
+        # parent and a grandparent, we can't be sure for bogus or
+        # broken submissions.
+        if self.raw_bus != 'scsi':
+            return None
+        parent = self.parent
+        if parent is None:
+            self.parser._logWarning(
+                'Found SCSI device without a parent: %s.' % self.device_id)
+            return None
+        grandparent = parent.parent
+        if grandparent is None:
+            self.parser._logWarning(
+                'Found SCSI device without a grandparent: %s.'
+                % self.device_id)
+            return None
+        return grandparent
+
 
 class UdevDevice(BaseDevice):
     """The representation of a udev device node."""
@@ -2616,6 +2634,11 @@ class UdevDevice(BaseDevice):
     def product_id(self):
         """See `BaseDevice`."""
         return self.getVendorOrProductID('product')
+
+    @property
+    def driver_name(self):
+        """See `BaseDevice`."""
+        return self.udev['E'].get('DRIVER')
 
 
 class ProcessingLoop(object):
