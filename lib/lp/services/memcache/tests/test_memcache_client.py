@@ -24,6 +24,17 @@ class MemcacheClientTestCase(TestCase):
         self.assertTrue(self.client.set('somekey', 'somevalue'))
         self.assertEqual(self.client.get('somekey'), 'somevalue')
 
+    def test_bug_452092(self):
+        """Memcache 1.44 allowed spaces in keys, which was incorrect. This
+        would break things badly enough that we are running a patched version.
+        This test ensures that spaces are correctly flagged as errors at
+        the callsite rather than causing chaos later, ensuring that if
+        we upgrade we upgrade to a version with correct validation.
+        """
+        self.assertRaises(
+            self.client.MemcachedKeyCharacterError,
+            self.client.set, 'key with spaces', 'some value')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
