@@ -100,6 +100,7 @@ Setup a default dictionary used for generating the dictionaries we
 expect lsinfo to return.
 
     >>> def clean_mtime(stat_info):
+    ...     """Return a datetime from an mtime, sans microseconds."""
     ...     mtime = stat_info.st_mtime
     ...     datestamp = datetime.datetime.fromtimestamp(mtime)
     ...     datestamp.replace(microsecond=0)
