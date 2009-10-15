@@ -132,6 +132,20 @@ class TestHWDBSubmissionParser(TestCase):
                 },
             }
 
+        self.udev_scsi_device = {
+            'P': '/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0',
+            'E': {
+                'SUBSYSTEM': 'scsi',
+                'DEVTYPE': 'scsi_device',
+                },
+            }
+
+        self.sysfs_scsi_device = {
+            'vendor': 'MATSHITA',
+            'model': 'DVD-RAM UJ-841S',
+            'type': '5',
+            }
+
     def getTimestampETreeNode(self, time_string):
         """Return an Elementtree node for an XML tag with a timestamp."""
         return etree.Element('date_created', value=time_string)
@@ -2013,6 +2027,72 @@ invalid line
             "property: 'nonsense' "
             "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1'")
 
+    def testCheckUdevScsiProperties(self):
+        """Test of SubmissionParser.checkUdevScsiProperties()."""
+        parser = SubmissionParser()
+        sysfs_data = {
+            self.udev_scsi_device['P']: self.sysfs_scsi_device,
+            }
+        self.assertTrue(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], sysfs_data))
+
+    def testCheckUdevScsiProperties_missing_devtype(self):
+        """Test of SubmissionParser.checkUdevScsiProperties().
+
+        Each udev SCSI node must define the DEVTYPE property.
+        """
+        del self.udev_scsi_device['E']['DEVTYPE']
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'udev SCSI device without DEVTYPE'
+        sysfs_data = {
+            self.udev_scsi_device['P']: self.sysfs_scsi_device,
+            }
+        self.assertFalse(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], sysfs_data))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "SCSI udev node found without DEVTYPE property: "
+            "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
+
+    def testCheckUdevScsiProperties_no_sysfs_data(self):
+        """Test of SubmissionParser.checkUdevScsiProperties().
+
+        Each udev SCSI node must have a corresponding sysfs node.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'udev SCSI device without sysfs data'
+        sysfs_data = {}
+        self.assertFalse(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], sysfs_data))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "SCSI udev device node found without related sysfs record: "
+            "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
+
+    def testCheckUdevScsiProperties_missing_sysfs_attributes(self):
+        """Test of SubmissionParser.checkUdevScsiProperties().
+
+        Each sysfs node for a udev SCSI node must have a the attribues
+        vendor, model and type.
+        """
+        del self.sysfs_scsi_device['model']
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'udev SCSI device with incomplete sysfs data'
+        sysfs_data = {
+            self.udev_scsi_device['P']: self.sysfs_scsi_device,
+            }
+        self.assertFalse(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], sysfs_data))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "SCSI udev device found without required sysfs attributes: "
+            "set(['model']) "
+            "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
+
 
     class UdevTestSubmissionParser(SubmissionParser):
         """A variant of SubmissionParser that shortcuts udev related tests.
@@ -2031,10 +2111,19 @@ invalid line
             """See `SubmissionParser`."""
             return True
 
+        def checkUdevScsiProperties(self, udev_data, syfs_data):
+            """See `SubmissionParser`."""
+            return True
+
+        def checkUdevDmiData(self, dmi_data):
+            """See `SubmissionParser`."""
+            return True
+
     def testCheckConsistentUdevDeviceData(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),"""
         parser = self.UdevTestSubmissionParser()
-        self.assertTrue(parser.checkConsistentUdevDeviceData(None))
+        self.assertTrue(parser.checkConsistentUdevDeviceData(
+            None, None, None))
 
     def testCheckConsistentUdevDeviceData_invalid_path_data(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),
@@ -2050,7 +2139,8 @@ invalid line
                 return False
 
         parser = SubmissionParserUdevPathCheckFails()
-        self.assertFalse(parser.checkConsistentUdevDeviceData(None))
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
 
     def testCheckConsistentUdevDeviceData_invalid_pci_data(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),
@@ -2066,23 +2156,59 @@ invalid line
                 return False
 
         parser = SubmissionParserUdevPciCheckFails()
-        self.assertFalse(parser.checkConsistentUdevDeviceData(None))
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
 
     def testCheckConsistentUdevDeviceData_invalid_usb_data(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),
 
-        Detection of invalid PCI data lets the check fail.
+        Detection of invalid USB data lets the check fail.
         """
         class SubmissionParserUdevUsbCheckFails(
             self.UdevTestSubmissionParser):
-            """A SubmissionPaser where checkUdevPciProperties() fails."""
+            """A SubmissionPaser where checkUdevUsbProperties() fails."""
 
             def checkUdevUsbProperties(self, udev_data):
                 """See `SubmissionParser`."""
                 return False
 
         parser = SubmissionParserUdevUsbCheckFails()
-        self.assertFalse(parser.checkConsistentUdevDeviceData(None))
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
+
+    def testCheckConsistentUdevDeviceData_invalid_scsi_data(self):
+        """Test of SubmissionParser.checkConsistentUdevDeviceData(),
+
+        Detection of invalid SCSI data lets the check fail.
+        """
+        class SubmissionParserUdevUsbCheckFails(
+            self.UdevTestSubmissionParser):
+            """A SubmissionPaser where checkUdevScsiProperties() fails."""
+
+            def checkUdevScsiProperties(self, udev_data, sysfs_data):
+                """See `SubmissionParser`."""
+                return False
+
+        parser = SubmissionParserUdevUsbCheckFails()
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
+
+    def testCheckConsistentUdevDeviceData_invalid_dmi_data(self):
+        """Test of SubmissionParser.checkConsistentUdevDeviceData(),
+
+        Detection of invalid DMI data lets the check fail.
+        """
+        class SubmissionParserUdevUsbCheckFails(
+            self.UdevTestSubmissionParser):
+            """A SubmissionPaser where checkUdevDmiData() fails."""
+
+            def checkUdevDmiData(self, dmi_data):
+                """See `SubmissionParser`."""
+                return False
+
+        parser = SubmissionParserUdevUsbCheckFails()
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
 
     def _setupConsistencyCheckParser(self):
         """Prepare and return a SubmissionParser instance.
@@ -2110,7 +2236,7 @@ invalid line
             test.assertTrue(isinstance(self, SubmissionParser))
             return []
 
-        def checkConsistentUdevDeviceData(self, udev_data):
+        def checkConsistentUdevDeviceData(self, udev_data, sysfs_data):
             return True
 
         parser = SubmissionParser(self.log)
@@ -2126,8 +2252,8 @@ invalid line
             lambda udi_children: checkHALDevicesParentChildConsistency(
                 parser, udi_children))
         parser.checkConsistentUdevDeviceData = (
-            lambda udev_data: checkConsistentUdevDeviceData(
-                parser, udev_data))
+            lambda udev_data, sysfs_data: checkConsistentUdevDeviceData(
+                parser, udev_data, sysfs_data))
         return parser
 
     def assertErrorMessage(self, submission_key, log_message):
@@ -2201,13 +2327,13 @@ invalid line
 
     def testConsistencyCheck_invalid_udev_data(self):
         """Test of SubmissionParser.checkConsistency."""
-        def checkConsistentUdevDeviceData(self, udev_data):
+        def checkConsistentUdevDeviceData(self, udev_data, sysfs_data):
             return False
 
         parser = self._setupConsistencyCheckParser()
         parser.checkConsistentUdevDeviceData = (
-            lambda udev_data: checkConsistentUdevDeviceData(
-                parser, udev_data))
+            lambda udev_data, sysfs_data: checkConsistentUdevDeviceData(
+                parser, udev_data, sysfs_data))
         self.assertFalse(parser.checkConsistency(
             {
                 'hardware': {
