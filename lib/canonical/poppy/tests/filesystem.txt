@@ -99,6 +99,12 @@ dictionary's content.
 Setup a default dictionary used for generating the dictionaries we
 expect lsinfo to return.
 
+    >>> def clean_mtime(stat_info):
+    ...     mtime = stat_info.st_mtime
+    ...     datestamp = datetime.datetime.fromtimestamp(mtime)
+    ...     datestamp.replace(microsecond=0)
+    ...     return datestamp
+
     >>> import copy
     >>> import datetime
     >>> import stat
@@ -122,7 +128,7 @@ expect lsinfo to return.
     >>> exp = copy.copy(def_exp)
     >>> s = os.stat(full_testfile)
     >>> exp["name"] = testfile
-    >>> exp["mtime"] = datetime.datetime.fromtimestamp(s[stat.ST_MTIME])
+    >>> exp["mtime"] = clean_mtime(s)
     >>> exp["size"] = s[stat.ST_SIZE]
     >>> info = ufs.lsinfo(testfile)
     >>> info == exp
@@ -143,7 +149,7 @@ directory.
     ...     exp = copy.copy(def_exp)
     ...	    s = os.stat(filename)
     ...	    exp["name"] = i
-    ...	    exp["mtime"] = datetime.datetime.fromtimestamp(s[stat.ST_MTIME])
+    ...	    exp["mtime"] = clean_mtime(s)
     ...     exp["size"] = s[stat.ST_SIZE]
     ...     expected.append(exp)
     ...
@@ -152,7 +158,7 @@ directory.
     >>> s = os.stat(full_testdir)
     >>> dir_exp["type"] = "d"
     >>> dir_exp["name"] = testdir
-    >>> dir_exp["mtime"] = datetime.datetime.fromtimestamp(s[stat.ST_MTIME])
+    >>> dir_exp["mtime"] = clean_mtime(s)
     >>> dir_exp["size"] = s[stat.ST_SIZE]
     >>> dir_exp["nlinks"] = s[stat.ST_NLINK]
     >>> dir_exp["owner_executable"] = True
