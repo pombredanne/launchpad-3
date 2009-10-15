@@ -2646,18 +2646,18 @@ class UdevDevice(BaseDevice):
         if self.raw_bus != 'scsi_device':
             return None
 
-        current_device = self
-        for ancestor_level in range(1, 5):
-            if current_device.parent is None:
-                # While SCSI devices from valid submissions should have a
-                # parent and a grandparent, we can't be sure for bogus or
-                # broken submissions.
-                self.parser._logWarning(
-                    'Found a SCSI device without a sufficient number of '
-                    'ancestors: %s' % self.device_id)
-                return None
-            current_device = current_device.parent
-        return current_device
+        # While SCSI devices from valid submissions should have four
+        # ancestors, we can't be sure for bogus or broken submissions.
+        try:
+            controller = self.parent.parent.parent.parent
+        except AttributeError:
+            controller = None
+        if controller is None:
+            self.parser._logWarning(
+                'Found a SCSI device without a sufficient number of '
+                'ancestors: %s' % self.device_id)
+            return None
+        return controller
 
 class ProcessingLoop(object):
     """An `ITunableLoop` for processing HWDB submissions."""
