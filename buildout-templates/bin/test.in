@@ -14,55 +14,40 @@
 ##############################################################################
 """Test script
 """
+
+# NOTE: This is a generated file.  The original is in
+# buildout-templates/bin/test.in
+
 import site
 import sys
 
-# Clean out sys.modules from site's processing of .pth files.
-clean_modules = [
-    'UserDict',
-    '__builtin__',
-    '__main__',
-    '_codecs',
-    'codecs',
-    'copy_reg',
-    'encodings',
-    'encodings.aliases',
-    'encodings.codecs',
-    'encodings.exceptions',
-    'encodings.types',
-    'encodings.utf_8',
-    'exceptions',
-    'linecache',
-    'os',
-    'os.path',
-    'posix',
-    'posixpath',
-    'signal',
-    'site',
-    'stat',
-    'sys',
-    'types',
-    'warnings',
-    'zipimport'
+stdlib_paths = [
+    ${indented-stdlib-paths}
     ]
+egg_paths = [
+    ${indented-egg-paths}
+    ]
+site_dirs = [
+    ${indented-dir-paths}
+    ]
+clean_modules = [
+    'site',
+    'sitecustomize',
+    'sys',
+    ${clean-sys-modules}
+    ]
+
+# Clean out sys.modules from site's processing of .pth files.
 for k in sys.modules.keys():
     if k not in clean_modules:
         del sys.modules[k]
 
-sys.path[:] = [
-    ${string-egg-paths}
-    ]
-sys.path.extend([
-    ${string-stdlib-paths}
-    ])
-site_dirs = [
-    ${string-dir-paths}
-    ]
+sys.path[:] = egg_paths
+sys.path.extend(stdlib_paths)
 # Add the site_dirs before `addsitedir` in case it has setuptools.
 sys.path.extend(site_dirs)
 # Process all buildout-controlled eggs before site-packages by importing
-# pkg_resources.  This is only important for namespace packages, so it may
-# not have been added, so ignore import errors.
+# pkg_resources.
 try:
     import pkg_resources
 except ImportError:

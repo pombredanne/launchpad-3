@@ -88,7 +88,7 @@ def build_mailman():
         './configure',
         '--prefix', mailman_path,
         '--with-var-prefix=' + var_dir,
-        '--with-python=' + sys.executable,
+        '--with-python=' + os.path.abspath('bin/py'),
         '--with-username=' + user,
         '--with-groupname=' + group,
         '--with-mail-gid=' + group,

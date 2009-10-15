@@ -10,52 +10,32 @@ import sys
 import os
 import site
 
+stdlib_paths = [
+    ${indented-stdlib-paths}
+    ]
+egg_paths = [
+    ${indented-egg-paths}
+    ]
+site_dirs = [
+    ${indented-dir-paths}
+    ]
+clean_modules = [
+    'os',
+    '_pythonpath',
+    'site',
+    'sitecustomize',
+    'sys',
+    ${clean-sys-modules}
+    ]
+
 def set_path():
-    # Clean out sys.modules from site's processing of .pth files.
-    # XXX This should come from z3c.recipe.filetemplate.
-    clean_modules = [
-        '_pythonpath',
-        'sitecustomize',
-        'UserDict',
-        '__builtin__',
-        '__main__',
-        '_codecs',
-        'codecs',
-        'copy_reg',
-        'encodings',
-        'encodings.aliases',
-        'encodings.codecs',
-        'encodings.exceptions',
-        'encodings.types',
-        'encodings.utf_8',
-        'exceptions',
-        'linecache',
-        'os',
-        'os.path',
-        'posix',
-        'posixpath',
-        'signal',
-        'site',
-        'stat',
-        'sys',
-        'types',
-        'warnings',
-        'zipimport'
-        ]
     previously_imported = {}
     for k in sys.modules.keys():
         if k not in clean_modules:
             previously_imported[k] = sys.modules.pop(k)
 
-    sys.path[:] = [
-        ${string-egg-paths}
-        ]
-    sys.path.extend([
-        ${string-stdlib-paths}
-        ])
-    site_dirs = [
-        ${string-dir-paths}
-        ]
+    sys.path[:] = egg_paths
+    sys.path.extend(stdlib_paths)
     # Add the site_dirs before `addsitedir` in case it has setuptools.
     sys.path.extend(site_dirs)
     # Process all buildout-controlled eggs before site-packages by importing
@@ -78,7 +58,6 @@ def set_path():
             'Found unexpected module(s): %s\n\nImport _pythonpath earlier!' %
             (', '.join(sorted(unexpected)),))
 
-    sys.path[0:0] = [${string-paths}]
     # Enable Storm's C extensions
     os.environ['STORM_CEXTENSIONS'] = '1'
 
