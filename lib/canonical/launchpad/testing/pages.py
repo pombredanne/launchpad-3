@@ -11,15 +11,11 @@ __metaclass__ = type
 
 import os
 import pdb
+import pprint
 import re
 import transaction
 import sys
 import unittest
-
-# pprint25 is a copy of pprint.py from Python 2.5, which is almost
-# identical to that in 2.4 except that it resolves an ordering issue
-# which makes the 2.4 version unsuitable for use in a doctest.
-import pprint25
 
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,

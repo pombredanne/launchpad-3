@@ -16,12 +16,8 @@ __all__ = [
 
 import logging
 import os
+import pprint
 import sys
-
-# pprint25 is a copy of pprint.py from Python 2.5, which is almost
-# identical to that in 2.4 except that it resolves an ordering issue
-# which makes the 2.4 version unsuitable for use in a doctest.
-import pprint25
 
 import transaction
 from zope.component import getUtility
