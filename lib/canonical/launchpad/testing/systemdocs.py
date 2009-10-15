@@ -185,7 +185,7 @@ def setGlobs(test):
     test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
     test.globs['verifyObject'] = verifyObject
-    test.globs['pretty'] = pprint25.PrettyPrinter(width=1).pformat
+    test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
 
 
 def setUp(test):

@@ -665,7 +665,7 @@ def setUpGlobs(test):
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
-    test.globs['pretty'] = pprint25.PrettyPrinter(width=1).pformat
+    test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['print_action_links'] = print_action_links
     test.globs['print_errors'] = print_errors
     test.globs['print_location'] = print_location
