@@ -368,15 +368,6 @@ class PackageUpload(SQLBase):
         assert self.sources.count() == 1, (
             'Source is mandatory for delayed copies.')
         self.setAccepted()
-        # The second assert guarantees that we'll actually have a SPR.
-        spr = self.mySourcePackageRelease()
-        # Use the changesfile of the original upload.
-        changes_file_object = StringIO.StringIO(
-            spr.package_upload.changesfile.read())
-        self.notify(
-            announce_list=self.distroseries.changeslist,
-            changes_file_object=changes_file_object, allow_unsigned=True)
-        self.syncUpdate()
 
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -497,7 +488,8 @@ class PackageUpload(SQLBase):
         else:
             return None
 
-    def mySourcePackageRelease(self):
+    @property
+    def my_source_package_release(self):
         """The source package release related to this queue item.
 
         al-maisan, Wed, 30 Sep 2009 17:58:31 +0200:
@@ -549,6 +541,13 @@ class PackageUpload(SQLBase):
         if self.is_delayed_copy:
             for pub_record in publishing_records:
                 pub_record.overrideFromAncestry()
+
+                # Grab the .changes file of the original source package while
+                # it's available.
+                changes_file = None
+                if ISourcePackagePublishingHistory.providedBy(pub_record):
+                    changes_file = pub_record.sourcepackagerelease.package_upload.changesfile
+
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)
@@ -557,6 +556,17 @@ class PackageUpload(SQLBase):
                         config.builddmaster.root, self.distroseries)
                     pub_record.createMissingBuilds(
                         pas_verify=pas_verify, logger=logger)
+
+                if changes_file is not None:
+                    debug(
+                        logger,
+                        "sending email to %s" % self.distroseries.changeslist)
+                    changes_file_object = StringIO.StringIO(changes_file.read())
+                    self.notify(
+                        announce_list=self.distroseries.changeslist,
+                        changes_file_object=changes_file_object,
+                        allow_unsigned=True, logger=logger)
+                    self.syncUpdate()
 
         self.setDone()
 
@@ -727,7 +737,7 @@ class PackageUpload(SQLBase):
             message.ORIGIN = '\nOrigin: %s' % changes['origin']
 
         if self.sources or self.builds:
-            message.SPR_URL = canonical_url(self.mySourcePackageRelease())
+            message.SPR_URL = canonical_url(self.my_source_package_release)
 
     def _sendRejectionNotification(
         self, recipients, changes_lines, changes, summary_text, dry_run,
@@ -1131,7 +1141,7 @@ class PackageUpload(SQLBase):
         # the section of the source package uploaded in order to facilitate
         # filtering on the part of the email recipients.
         if self.sources:
-            spr = self.mySourcePackageRelease()
+            spr = self.my_source_package_release
             xlp_component_header = 'component=%s, section=%s' % (
                 spr.component.name, spr.section.name)
             extra_headers['X-Launchpad-Component'] = xlp_component_header

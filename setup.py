@@ -41,6 +41,7 @@ setup(
         'mechanize',
         'mocker',
         'oauth',
+        'paramiko',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
