@@ -2053,9 +2053,6 @@ class BugTaskSet:
                        privacy=bug_privacy_filter)
 
         cur.execute(query)
-        print "!" * 72
-        print query
-        print "*" * 72
         return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
