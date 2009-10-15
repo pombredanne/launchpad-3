@@ -1173,7 +1173,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             parser.submission_key,
             "Unknown bus 'nonsense' for device " + self.UDI_PCCARD_DEVICE)
 
-    def testHALDevice_is_root_device_for_root_device(self):
+    def test_HALDevice_is_root_device_for_root_device(self):
         """Test of HALDevice.is_root_device for the root device."""
         devices = [
             {
@@ -1195,7 +1195,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser.buildDeviceList(parsed_data)
         self.assertTrue(parser.hal_devices[self.UDI_COMPUTER].is_root_device)
 
-    def testHALDevice_is_root_device_for_non_root_device(self):
+    def test_HALDevice_is_root_device_for_non_root_device(self):
         """Test of HALDevice.is_root_device for a non-root device."""
         devices = [
             {
