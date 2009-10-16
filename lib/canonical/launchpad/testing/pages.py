@@ -18,7 +18,7 @@ import sys
 import unittest
 
 from BeautifulSoup import (
-    BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
+    BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 from urlparse import urljoin
@@ -337,6 +337,23 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
         node = nodes.pop(0)
         if type(node) in IGNORED_ELEMENTS:
             continue
+        elif isinstance(node, CData):
+            # CData inherits from NavigableString which inherits from unicode,
+            # but contains a __unicode__() method that calls __str__() that
+            # wraps the contents in <![CDATA[...]]>.  In Python 2.4, calling
+            # unicode(cdata_instance) copies the data directly so the wrapping
+            # does not happen.  Python 2.5 changed the unicode() function (C
+            # function PyObject_Unicode) to call its operand's __unicode__()
+            # method, which ends up calling CData.__str__() and the wrapping
+            # happens.  We don't want our test output to have to deal with the
+            # <![CDATA[...]]> wrapper.
+            #
+            # The CData class does not override slicing though, so by slicing
+            # node first, we're effectively turning it into a concrete unicode
+            # instance, which does not wrap the contents when its __unicode__()
+            # is called of course.  We could remove the unicode() call
+            # here, but we keep it for consistency and clarity purposes.
+            result.append(unicode(node[:]))
         elif isinstance(node, NavigableString):
             result.append(unicode(node))
         else:
