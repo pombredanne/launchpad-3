@@ -47,7 +47,7 @@ any sources.
     Edit PPA dependencies : PPA for No Privileges Person :
     No Privileges Person
 
-Only Celso and an administrator can access the 'Edit dependencies'
+Only Celso and an administrator can access the 'Edit PPA dependencies'
 page for Celso's PPA.
 
     >>> cprov_browser = setupBrowser(
