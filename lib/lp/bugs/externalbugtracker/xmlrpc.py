@@ -50,14 +50,13 @@ class XMLRPCRedirectHandler(HTTPRedirectHandler):
 class UrlLib2Transport(Transport):
     """An XMLRPC transport which uses urllib2.
 
-    This XMLRPC transport uses the Python urllib2 module to make the
-    request, and connects via the HTTP proxy specified in the
-    environment variable `http_proxy`, if present. It also handles
-    cookies correctly, and in addition allows specifying the cookie
-    explicitly by setting `self.auth_cookie`.
+    This XMLRPC transport uses the Python urllib2 module to make the request,
+    with proxying handled by that module's semantics (though underdocumented).
+    It also handles cookies correctly, and in addition allows specifying the
+    cookie explicitly by setting `self.auth_cookie`.
 
-    Note: this transport isn't fit for general XML-RPC use. It is just
-    good enough for some of our extrnal bug tracker implementations.
+    Note: this transport isn't fit for general XMLRPC use. It is just good
+    enough for some of our extrnal bug tracker implementations.
 
     :param endpoint: The URL of the XMLRPC server.
     """
@@ -74,25 +73,6 @@ class UrlLib2Transport(Transport):
         self.redirect_handler = XMLRPCRedirectHandler()
         self.opener = build_opener(
             self.cookie_processor, self.redirect_handler)
-        # The fix for Python bug 972322 broke build_opener() such that
-        # ProxyHandler will be skipped unintentionally.  It's shocking that
-        # this has been broken since 2006 and is broken in Python 2.5, 2.6,
-        # and 2.7.  Python bug 7152 provides specific details and will track
-        # fixes for this problem.
-        #
-        # Now, proxying might just work anyway though because if the
-        # environment has http_proxy set, you do get a ProxyHandler!  So bug
-        # 7152 might just be a documentation issue.
-        #
-        # We apparently have no real tests for proxying, despite what
-        # lib/lp/bugs/tests/externalbugtracker-xmlrpc-transport.txt seems to
-        # imply.  If we find we need the proxy handler even in cases where
-        # os.environ['http_proxy'] is not set, then enable the following
-        # code.  It's the only way to do it.
-        #
-        ## proxy_handler = ProxyHandler()
-        ## self.opener.handlers.insert(0, proxy_handler)
-        ## proxy_handler.add_parent(self.opener)
 
     def setCookie(self, cookie_str):
         """Set a cookie for the transport to use in future connections."""

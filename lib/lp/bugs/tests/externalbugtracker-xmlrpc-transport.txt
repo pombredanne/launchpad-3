@@ -13,24 +13,6 @@ We create the transport, and pass it a wrapper which returns a response
 without actually opening a connection. The response returns the request
 url as an XMLRPC parameter, and sets a cookie from the server, 'foo=bar'.
 
-The transport uses an opener with a ProxyHandler, to make sure it works
-in environments where http connections are made over a proxy.  The proxy is
-only enabled if the environment calls for it.
-
-    >>> import os
-    >>> old_http_proxy = os.environ.get('http_proxy')
-    >>> os.environ['http_proxy'] = 'localhost'
-    >>> try:
-    ...     transport = UrlLib2Transport('http://www.example.com/xmlrpc')
-    ... finally:
-    ...     if old_http_proxy is None:
-    ...         del os.environ['http_proxy']
-    ...     else:
-    ...         os.environ['http_proxy'] = old_http_proxy
-
-    >>> transport.opener.handlers
-    [<urllib2.ProxyHandler instance ...]
-
 UrlLib2Transport also accepts a CookieJar an optional parameter upon
 creation. This allows us to share a CookieJar - and therefore the cookie
 it contains - between different transports or URL openers.
