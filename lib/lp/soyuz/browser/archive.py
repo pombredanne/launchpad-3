@@ -830,7 +830,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
             # We'd like to include the builds in the latest updates
             # iff the build failed.
-            builds = None
+            builds = []
             if current_status == BuildSetStatus.FAILEDTOBUILD:
                 builds = status_summary['builds']
 

@@ -308,9 +308,7 @@ they were published. We include any relevant builds for failures.
 
     >>> def print_latest_updates(latest_updates):
     ...     for update in latest_updates:
-    ...         arch_tags = []
-    ...         if update['builds']:
-    ...             arch_tags = [build.arch_tag for build in update['builds']]
+    ...         arch_tags = [build.arch_tag for build in update['builds']]
     ...         print "%s - %s %s" % (
     ...             update['title'],
     ...             update['status'],
