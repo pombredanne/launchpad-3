@@ -15,7 +15,6 @@ import _pythonpath
 import os
 import sys
 
-import _pythonpath
 from lp.services.scripts.tests import find_lp_scripts
 from lp.testing import run_script
 
