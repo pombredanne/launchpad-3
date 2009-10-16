@@ -10,9 +10,16 @@
 <body>
 
 <div metal:fill-slot="main">
+  <ul class="horizontal">
+    <li>
+      <a tal:replace="structure context/menu:overview/distributions/fmt:link" />
+    </li>
+  </ul>
 
   <tal:series repeat="series context/serieses">
-    <h2>Series &#8220;<span tal:replace="series/name">main</span>&#8221;</h2>
+    <h2 style="margin-top: 2em">
+      Series &#8220;<span tal:replace="series/name">main</span>&#8221;
+    </h2>
 
     <table id="packages" class="listing" tal:condition="series/packagings">
       <thead>
@@ -56,9 +63,6 @@
     <ul class="horizontal">
       <li tal:condition="context/required:launchpad.Edit" >
         <a tal:replace="structure series/menu:overview/add_package/fmt:link" />
-      </li>
-      <li>
-        <a tal:replace="structure context/menu:overview/distributions/fmt:link" />
       </li>
     </ul>
 
