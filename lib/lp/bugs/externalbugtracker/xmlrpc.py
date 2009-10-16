@@ -80,14 +80,19 @@ class UrlLib2Transport(Transport):
         # and 2.7.  Python bug 7152 provides specific details and will track
         # fixes for this problem.
         #
-        # Note that we cannot just call
-        # >>> self.opener.add_handler(ProxyHandler())
-        # because the flaw is in that method and not overrideable.  Instead,
-        # this code mimics what .add_handler() should be doing in the happy
-        # path if it were not for this bug.
-        proxy_handler = ProxyHandler()
-        self.opener.handlers.insert(0, proxy_handler)
-        proxy_handler.add_parent(self.opener)
+        # Now, proxying might just work anyway though because if the
+        # environment has http_proxy set, you do get a ProxyHandler!  So bug
+        # 7152 might just be a documentation issue.
+        #
+        # We apparently have no real tests for proxying, despite what
+        # lib/lp/bugs/tests/externalbugtracker-xmlrpc-transport.txt seems to
+        # imply.  If we find we need the proxy handler even in cases where
+        # os.environ['http_proxy'] is not set, then enable the following
+        # code.  It's the only way to do it.
+        #
+        ## proxy_handler = ProxyHandler()
+        ## self.opener.handlers.insert(0, proxy_handler)
+        ## proxy_handler.add_parent(self.opener)
 
     def setCookie(self, cookie_str):
         """Set a cookie for the transport to use in future connections."""
