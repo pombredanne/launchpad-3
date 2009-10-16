@@ -842,7 +842,7 @@ class CommonMenuLinks:
 
     def related_software_summary(self):
         target = '+related-software'
-        text = 'Summary'
+        text = 'Related software'
         return Link(target, text, icon='info')
 
     def maintained(self):
@@ -854,21 +854,21 @@ class CommonMenuLinks:
     def uploaded(self):
         target = '+uploaded-packages'
         text = 'Uploaded packages'
-        return Link(target, text, icon='info')
+        enabled = bool(
+            self.person.getLatestUploadedButNotMaintainedPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def ppa(self):
-        # XXX: salgado, 2009-09-09, bug=426899: Need to conditionally disable
-        # this link.
         target = '+ppa-packages'
         text = 'PPA packages'
-        return Link(target, text, icon='info')
+        enabled = bool(self.person.getLatestUploadedPPAPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def projects(self):
-        # XXX: salgado, 2009-09-09, bug=426900: Need to conditionally disable
-        # this link.
         target = '+related-projects'
         text = 'Related projects'
-        return Link(target, text, icon='info')
+        enabled = bool(self.person.getOwnedOrDrivenPillars())
+        return Link(target, text, enabled=enabled, icon='info')
 
 
 class PersonMenuMixin(CommonMenuLinks):
@@ -1253,7 +1253,8 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'join', 'leave', 'add_my_teams',
-             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa']
+             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa',
+             'related_software_summary']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
