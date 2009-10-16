@@ -146,10 +146,12 @@ A review can be requested of the person 'target'.
 
 Now the code review should be made.
 
-    >>> comment = reviewer_webservice.named_post(
+    >>> comment_result = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'createComment',
     ...     subject='Great work', content='This is great work',
-    ...     vote=CodeReviewVote.APPROVE.title, review_type='code').jsonBody()
+    ...     vote=CodeReviewVote.APPROVE.title, review_type='code')
+    >>> comment_link = comment_result.getHeader('Location')
+    >>> comment = reviewer_webservice.get(comment_link).jsonBody()
     >>> pprint_entry(comment)
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
     id: 3
@@ -213,7 +215,6 @@ merge would look like if the source branch was merged into the target branch.
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/json
-    ...
     Vary: ...
     ...
 
@@ -251,7 +252,6 @@ It is possible that the diff will be empty.
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/json
-    ...
     Vary: ...
     ...
 

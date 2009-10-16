@@ -33,6 +33,7 @@ from zope.interface import implements
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.archiveuploader.utils import safe_fix_maintainer
 from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
@@ -747,14 +748,16 @@ class PackageUpload(SQLBase):
             """PPA rejected message."""
             template = get_email_template('ppa-upload-rejection.txt')
             SUMMARY = sanitize_string(summary_text)
-            CHANGESFILE = sanitize_string("".join(changes_lines))
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment("".join(changes_lines)))
             USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
             template = get_email_template('upload-rejection.txt')
             SUMMARY = sanitize_string(summary_text)
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -831,7 +834,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "New"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -845,7 +849,8 @@ class PackageUpload(SQLBase):
             STATUS = "Waiting for approval"
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -863,7 +868,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -881,14 +887,16 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = guess_encoding(
+                ChangesFile.formatChangesComment("".join(changes_lines)))
 
         class AnnouncementMessage:
             template = get_email_template('upload-announcement.txt')
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
