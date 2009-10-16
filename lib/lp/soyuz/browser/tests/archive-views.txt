@@ -626,6 +626,14 @@ build the page.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies")
 
+The view's h1 heading and leaf breadcrumb are equivalent.
+
+    >>> print view.label
+    Edit PPA dependencies
+
+    >>> print view.page_title
+    Edit PPA dependencies
+
 There is a property indicating whether or not the context PPA has
 recorded dependencies.
 

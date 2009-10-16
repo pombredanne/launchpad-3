@@ -1295,6 +1295,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     custom_widget('primary_components', LaunchpadRadioWidget,
                   cssClass='highlight-selected')
 
+    label = "Edit PPA dependencies"
+    page_title = label
+
     def initialize(self):
         self.cancel_url = canonical_url(self.context)
         self._messages = []

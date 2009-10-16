@@ -44,7 +44,8 @@ any sources.
     http://launchpad.dev/~no-priv/+archive/ppa/+edit-dependencies
 
     >>> print no_priv_browser.title
-    Edit dependencies for PPA for No Privileges Person...
+    Edit PPA dependencies : PPA for No Privileges Person :
+    No Privileges Person
 
 Only Celso and an administrator can access the 'Edit dependencies'
 page for Celso's PPA.
@@ -56,14 +57,14 @@ page for Celso's PPA.
     >>> print cprov_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
     >>> print cprov_browser.title
-    Edit dependencies for PPA for Celso Providelo...
+    Edit PPA dependencies : PPA for Celso Providelo : Celso Providelo
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> admin_browser.getLink('Edit PPA dependencies').click()
     >>> print admin_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
     >>> print admin_browser.title
-    Edit dependencies for PPA for Celso Providelo...
+    Edit PPA dependencies : PPA for Celso Providelo : Celso Providelo
 
 Once accessed the page provides a way to remove recorded dependencies
 via the POST form.
