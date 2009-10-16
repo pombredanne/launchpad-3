@@ -202,20 +202,15 @@ buildqueue record, so the build was eliminated:
 
 == PPA build dispatching ==
 
-Create two Build records of the same source targeted for a PPA archive:
+Create a new Build record of the same source targeted for a PPA archive:
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
-    >>> warty_i386 = warty['i386']
 
-    # One for hoary and one for warty.
     >>> ppa_build = sprf.sourcepackagerelease.createBuild(
     ...     hoary_i386, PackagePublishingPocket.RELEASE, cprov.archive)
-    >>> ppa_build_2 = sprf.sourcepackagerelease.createBuild(
-    ...     warty_i386, PackagePublishingPocket.RELEASE, cprov.archive)
 
-Create BuildQueue records and inspect some parameters:
+Create BuildQueue record and inspect some parameters:
 
     >>> ppa_job = ppa_build.createBuildQueueEntry()
     >>> ppa_job.id
@@ -224,9 +219,6 @@ Create BuildQueue records and inspect some parameters:
     True
     >>> ppa_job.buildstart == None
     True
-    >>> ppa_job_2 = ppa_build_2.createBuildQueueEntry()
-    >>> ppa_job_2.id
-    4
 
 The build job's archive requires virtualized builds.
 
@@ -248,10 +240,10 @@ above.
     >>> print job
     None
 
-In order to enable 'bob' to find and build the PPA jobs, we have to
+In order to enable 'bob' to find and build the PPA job, we have to
 change it to virtualized.  This is because PPA builds will only build
-on virtualized builders.  We also need to make sure the builds' sources
-are published, or they will also be ignored (by superseding it).  We can
+on virtualized builders.  We also need to make sure this build's source
+is published, or it will also be ignored (by superseding it).  We can
 do this by copying the existing publication in Ubuntu.
 
     >>> from lp.soyuz.model.publishing import (
@@ -261,11 +253,6 @@ do this by copying the existing publication in Ubuntu.
     ...    sourcepackagerelease=ppa_job.build.sourcepackagerelease)
     >>> new_pub = old_pub.copyTo(
     ...     old_pub.distroseries, old_pub.pocket, ppa_job.build.archive)
-    >>> [old_pub_2] = SourcePackagePublishingHistory.selectBy(
-    ...    distroseries=ppa_job_2.build.distroseries,
-    ...    sourcepackagerelease=ppa_job_2.build.sourcepackagerelease)
-    >>> new_pub_2 = old_pub_2.copyTo(
-    ...     old_pub_2.distroseries, old_pub_2.pocket, ppa_job_2.build.archive)
 
     >>> bob_builder.virtualized = True
     >>> syncUpdate(bob_builder)
@@ -273,6 +260,9 @@ do this by copying the existing publication in Ubuntu.
     >>> job = bob_builder.findBuildCandidate()
     >>> ppa_job.id == job.id
     True
+
+For further details regarding IBuilder.findBuildCandidate() please see
+lib/lp/soyuz/tests/test_builder.py.
 
 Start buildd-slave to be able to dispatch jobs.
 
@@ -309,30 +299,14 @@ PPA job is building.
     >>> ppa_job.buildstart == get_transaction_timestamp()
     True
 
-At this point, the second build job - for the same archive and architecture -
-will not be found as a build candidate for other builders. This is to
-avoid nightly builds using all the builders for an arch at once.
-
-    >>> print frog_builder.findBuildCandidate()
-    None
-
-But once the first build (for the same archive and architecture) finishes,
-the second build will be available as a build candidate for both builders.
-
-    >>> ppa_job.build.buildstate = BuildStatus.FAILEDTOBUILD
-    >>> ppa_job.destroySelf()
-    >>> print frog_builder.findBuildCandidate().id
-    4
-    >>> print bob_builder.findBuildCandidate().id
-    4
-
 Shutdown builder slave, mark the ppa build record as failed, remove the
 buildqueue record and make 'bob' builder non-virtual again,  so the
 environment is back to the initial state.
 
     >>> BuilddSlaveTestSetup().tearDown()
-    >>> ppa_job_2.build.buildstate = BuildStatus.FAILEDTOBUILD
-    >>> ppa_job_2.destroySelf()
+
+    >>> ppa_job.build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> ppa_job.destroySelf()
     >>> bob_builder.virtualized = False
     >>> flush_database_updates()
 
@@ -355,7 +329,7 @@ Create BuildQueue record and inspect some parameters:
 
     >>> sec_job = sec_build.createBuildQueueEntry()
     >>> sec_job.id
-    5
+    4
     >>> print sec_job.builder
     None
     >>> print sec_job.buildstart

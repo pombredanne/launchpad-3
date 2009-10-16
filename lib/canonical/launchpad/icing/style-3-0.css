@@ -312,8 +312,7 @@ strong.translations-stat {
 
 /* Default text presentation */
 html, body {
-    font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
-    font-family: sans-serif;
+    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
     font-size: 93%;
     }
 body.private {
