@@ -30,8 +30,12 @@ class PackagingAddView(LaunchpadFormView):
 
     def validate(self, data):
         productseries = self.context
-        sourcepackagename = data['sourcepackagename']
+        sourcepackagename = data.get('sourcepackagename', None)
         distroseries = data['distroseries']
+        if sourcepackagename is None:
+            message = "You must choose the source package name."
+            if message:
+                self.setFieldError('sourcepackagename', message)
         packaging_util = getUtility(IPackagingUtil)
         if packaging_util.packagingEntryExists(
             productseries=productseries,

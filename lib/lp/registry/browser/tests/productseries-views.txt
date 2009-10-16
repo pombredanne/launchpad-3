@@ -402,3 +402,18 @@ product series can link to it.
     ...     print error
     The <a href=".../hoary/+source/hot">hot</a> package in Hoary is already
     linked to another series.
+
+A source package name must be provided.
+
+    >>> form = {
+    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.sourcepackagename': '',
+    ...     'field.packaging': 'Primary Product',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     productseries, '+addpackage', form=form)
+    >>> for error in view.errors:
+    ...     print error
+    ('sourcepackagename', u'Source Package Name', RequiredMissing())
+    You must choose the source package name.
