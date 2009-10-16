@@ -13,10 +13,92 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import login, TestCaseWithFactory
 
-from canonical.launchpad.ftests import login
 from canonical.testing import DatabaseFunctionalLayer
+
+
+class PackagingUtilMixin:
+    """Common items for testing IPackagingUtil."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.packaging_util = getUtility(IPackagingUtil)
+        self.sourcepackagename = self.factory.makeSourcePackageName('sparkle')
+        self.distroseries = self.factory.makeDistroRelease(name='dazzle')
+        self.productseries = self.factory.makeProductSeries(name='glitter')
+        self.owner = self.productseries.product.owner
+
+
+class TestCreatePackaging(PackagingUtilMixin, TestCaseWithFactory):
+    """Test PackagingUtil.packagingEntryExists."""
+
+    def test_CreatePackaging_unique(self):
+        """Packaging is unique distroseries+sourcepackagename."""
+        self.packaging_util.createPackaging(
+            self.productseries, self.sourcepackagename, self.distroseries,
+            PackagingType.PRIME, owner=self.owner)
+        sourcepackage = self.distroseries.getSourcePackage('sparkle')
+        packaging = sourcepackage.direct_packaging
+        self.assertEqual(packaging.distroseries, self.distroseries)
+        self.assertEqual(packaging.sourcepackagename, self.sourcepackagename)
+        self.assertEqual(packaging.productseries, self.productseries)
+
+    def test_CreatePackaging_assert_unique(self):
+        """Assert unique distroseries+sourcepackagename."""
+        self.packaging_util.createPackaging(
+            self.productseries, self.sourcepackagename, self.distroseries,
+            PackagingType.PRIME, owner=self.owner)
+        self.assertRaises(
+            AssertionError, self.packaging_util.createPackaging,
+            self.productseries, self.sourcepackagename, self.distroseries,
+            PackagingType.PRIME, self.owner)
+
+
+class TestPackagingEntryExists(PackagingUtilMixin, TestCaseWithFactory):
+    """Test PackagingUtil.packagingEntryExists."""
+
+    def setUpPackaging(self):
+        self.packaging_util.createPackaging(
+            self.productseries, self.sourcepackagename, self.distroseries,
+            PackagingType.PRIME, owner=self.owner)
+
+    def test_packagingEntryExists_false(self):
+        """Verify that non-existent entries are false."""
+        self.assertFalse(
+            self.packaging_util.packagingEntryExists(
+                sourcepackagename=self.sourcepackagename,
+                distroseries=self.distroseries))
+
+    def test_packagingEntryExists_unique(self):
+        """Packaging entries are unique to distroseries+sourcepackagename."""
+        self.setUpPackaging()
+        self.assertTrue(
+            self.packaging_util.packagingEntryExists(
+                sourcepackagename=self.sourcepackagename,
+                distroseries=self.distroseries))
+        other_distroseries = self.factory.makeDistroRelease(name='shimmer')
+        self.assertFalse(
+            self.packaging_util.packagingEntryExists(
+                sourcepackagename=self.sourcepackagename,
+                distroseries=other_distroseries))
+
+    def test_packagingEntryExists_specific(self):
+        """Packaging entries are also specifc to both kinds of series."""
+        self.setUpPackaging()
+        self.assertTrue(
+            self.packaging_util.packagingEntryExists(
+                sourcepackagename=self.sourcepackagename,
+                distroseries=self.distroseries,
+                productseries=self.productseries))
+        other_productseries = self.factory.makeProductSeries(name='flash')
+        self.assertFalse(
+            self.packaging_util.packagingEntryExists(
+                sourcepackagename=self.sourcepackagename,
+                distroseries=self.distroseries,
+                productseries=other_productseries))
 
 
 class TestDeletePackaging(TestCaseWithFactory):
@@ -75,49 +157,6 @@ class TestDeletePackaging(TestCaseWithFactory):
                 "distroseries=ubuntu/hoary")
         else:
             self.fail("AssertionError was not raised.")
-
-
-class TestPackagingEntryExists(TestCaseWithFactory):
-    """Test PackagingUtil.packagingEntryExists."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.packaging_util = getUtility(IPackagingUtil)
-        self.sourcepackagename = self.factory.makeSourcePackageName('sparkle')
-        self.distroseries = self.factory.makeDistroRelease(name='dazzle')
-
-    def setUpPackaging(self):
-        self.productseries = self.factory.makeProductSeries(name='glitter')
-        self.owner = self.productseries.product.owner
-        self.packaging = self.packaging_util.createPackaging(
-            self.productseries, self.sourcepackagename, self.distroseries,
-            PackagingType.PRIME, owner=self.owner)
-
-    def test_packagingEntryExists_false(self):
-        """Verify that non-existent entries are false."""
-        self.assertFalse(
-            self.packaging_util.packagingEntryExists(
-                sourcepackagename=self.sourcepackagename,
-                distroseries=self.distroseries))
-
-    def test_packagingEntryExists_unique(self):
-        """Packaging entries are unique to distroseries+sourcepackagename."""
-        self.setUpPackaging()
-        self.assertTrue(
-            self.packaging_util.packagingEntryExists(
-                sourcepackagename=self.sourcepackagename,
-                distroseries=self.distroseries))
-
-    def test_packagingEntryExists_specific(self):
-        """Packaging entries are also specifc to both kinds of series."""
-        self.setUpPackaging()
-        self.assertTrue(
-            self.packaging_util.packagingEntryExists(
-                sourcepackagename=self.sourcepackagename,
-                distroseries=self.distroseries,
-                productseries=self.productseries))
 
 
 def test_suite():

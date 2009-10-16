@@ -56,7 +56,15 @@ class PackagingUtil:
 
     def createPackaging(self, productseries, sourcepackagename,
                         distroseries, packaging, owner):
-        """See `IPackaging`."""
+        """See `IPackaging`.
+
+        Raises an assertion error if there is already packaging for
+        the sourcepackagename in the distroseries.
+        """
+        if self.packagingEntryExists(sourcepackagename, distroseries):
+            raise AssertionError(
+                "A packaging entry for %s in %s already exists." %
+                (sourcepackagename.name, distroseries.name))
         Packaging(productseries=productseries,
                   sourcepackagename=sourcepackagename,
                   distroseries=distroseries,
