@@ -1644,7 +1644,7 @@ class BaseDevice:
                 return None
             pci_subclass = scsi_controller.pci_subclass
             return self.pci_storage_subclass_hwbus.get(pci_subclass)
-        elif scsi_controller_bus == 'usb':
+        elif scsi_controller_bus in ('usb', 'usb_interface'):
             # USB storage devices have the following HAL device hierarchy:
             # - HAL node for the USB device. info.bus == 'usb_device',
             #   device class == 0, device subclass == 0
@@ -1703,6 +1703,12 @@ class BaseDevice:
             return HWBus.PCI
 
     @property
+    def is_root_device(self):
+        """Return True is this is the root node of all devicese, else False.
+        """
+        raise NotImplementedError
+
+    @property
     def raw_bus(self):
         """Return the device bus as specified by HAL or udev."""
         raise NotImplementedError
@@ -1719,11 +1725,11 @@ class BaseDevice:
         if result is not None:
             return result
 
-        if device_bus == 'scsi':
+        if device_bus in ('scsi', 'scsi_device'):
             return self.translateScsiBus()
         elif device_bus == 'pci':
             return self.translatePciBus()
-        elif self.udi == ROOT_UDI:
+        elif self.is_root_device:
             # The computer itself. In Hardy, HAL provides no info.bus
             # for the machine itself; older versions set info.bus to
             # 'unknown', hence it is better to use the machine's
@@ -1731,7 +1737,7 @@ class BaseDevice:
             return HWBus.SYSTEM
         else:
             self.parser._logWarning(
-                'Unknown bus %r for device %s' % (device_bus, self.udi))
+                'Unknown bus %r for device %s' % (device_bus, self.device_id))
             return None
 
     @property
@@ -2275,6 +2281,11 @@ class HALDevice(BaseDevice):
             return result
         return self.getProperty('info.subsystem')
 
+    @property
+    def is_root_device(self):
+        """See `BaseDevice`."""
+        return self.udi == ROOT_UDI
+
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
 
@@ -2547,13 +2558,18 @@ class UdevDevice(BaseDevice):
         # DEVTYPE. DEVTYPE is preferable.
         # The root device has the subsystem/bus value "acpi", which
         # is a bit nonsensical.
-        if self.device_id == UDEV_ROOT_PATH:
+        if self.is_root_device:
             return None
         properties = self.udev['E']
         devtype = properties.get('DEVTYPE')
         if devtype is not None:
             return devtype
         return properties.get('SUBSYSTEM')
+
+    @property
+    def is_root_device(self):
+        """See `BaseDevice`."""
+        return self.udev['P'] == UDEV_ROOT_PATH
 
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
@@ -2565,7 +2581,7 @@ class UdevDevice(BaseDevice):
             'Unexpected value of type_: %r' % type_)
 
         bus = self.raw_bus
-        if self.device_id == UDEV_ROOT_PATH:
+        if self.is_root_device:
             # udev does not known about any product information for
             # the root device. We use DMI data instead.
             return self.root_device_ids[type_]
@@ -2605,7 +2621,7 @@ class UdevDevice(BaseDevice):
             'Unexpected value of type_: %r' % type_)
 
         bus = self.raw_bus
-        if self.device_id == UDEV_ROOT_PATH:
+        if self.is_root_device:
             # udev does not known about any product information for
             # the root device. We use DMI data instead.
             if type_ == 'vendor':
@@ -2640,6 +2656,24 @@ class UdevDevice(BaseDevice):
         """See `BaseDevice`."""
         return self.udev['E'].get('DRIVER')
 
+    @property
+    def scsi_controller(self):
+        """See `BaseDevice`."""
+        if self.raw_bus != 'scsi_device':
+            return None
+
+        # While SCSI devices from valid submissions should have four
+        # ancestors, we can't be sure for bogus or broken submissions.
+        try:
+            controller = self.parent.parent.parent.parent
+        except AttributeError:
+            controller = None
+        if controller is None:
+            self.parser._logWarning(
+                'Found a SCSI device without a sufficient number of '
+                'ancestors: %s' % self.device_id)
+            return None
+        return controller
 
 class ProcessingLoop(object):
     """An `ITunableLoop` for processing HWDB submissions."""
