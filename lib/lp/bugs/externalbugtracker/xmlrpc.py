@@ -12,8 +12,8 @@ __all__ = [
 
 from cookielib import Cookie
 from urllib2 import (
-    build_opener, HTTPCookieProcessor, HTTPError, HTTPRedirectHandler,
-    Request)
+    HTTPCookieProcessor, HTTPError, HTTPRedirectHandler, ProxyHandler,
+    Request, build_opener)
 from urlparse import urlparse, urlunparse
 from xmlrpclib import ProtocolError, Transport
 
@@ -52,7 +52,7 @@ class UrlLib2Transport(Transport):
 
     This XMLRPC transport uses the Python urllib2 module to make the
     request, and connects via the HTTP proxy specified in the
-    environment variable `http_proxy`, i present. It also handles
+    environment variable `http_proxy`, if present. It also handles
     cookies correctly, and in addition allows specifying the cookie
     explicitly by setting `self.auth_cookie`.
 
@@ -65,14 +65,29 @@ class UrlLib2Transport(Transport):
     verbose = False
 
     def __init__(self, endpoint, cookie_jar=None):
+        Transport.__init__(self)
         self.scheme, self.host = urlparse(endpoint)[:2]
         assert (
             self.scheme in ('http', 'https'),
-            "Unsupported URL schene: %s" % self.scheme)
+            "Unsupported URL scheme: %s" % self.scheme)
         self.cookie_processor = HTTPCookieProcessor(cookie_jar)
         self.redirect_handler = XMLRPCRedirectHandler()
         self.opener = build_opener(
             self.cookie_processor, self.redirect_handler)
+        # The fix for Python bug 972322 broke build_opener() such that
+        # ProxyHandler will be skipped unintentionally.  It's shocking that
+        # this has been broken since 2006 and is broken in Python 2.5, 2.6,
+        # and 2.7.  Python bug 7152 provides specific details and will track
+        # fixes for this problem.
+        #
+        # Note that we cannot just call
+        # >>> self.opener.add_handler(ProxyHandler())
+        # because the flaw is in that method and not overrideable.  Instead,
+        # this code mimics what .add_handler() should be doing in the happy
+        # path if it were not for this bug.
+        proxy_handler = ProxyHandler()
+        self.opener.handlers.insert(0, proxy_handler)
+        proxy_handler.add_parent(self.opener)
 
     def setCookie(self, cookie_str):
         """Set a cookie for the transport to use in future connections."""
