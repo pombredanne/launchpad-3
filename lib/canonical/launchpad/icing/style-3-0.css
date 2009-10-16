@@ -697,7 +697,7 @@ ul.super-add-action li a {
 
 /* For the Latest updates portlet
  * at https://launchpad.dev/~cprov/+archive/ppa */
-ul.latest-ppa-updates .duration {
+ul.latest-ppa-updates .duration, ul.latest-ppa-updates .build-details {
     font-size: 75%;
 }
 ul.latest-ppa-updates li {

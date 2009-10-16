@@ -304,16 +304,20 @@ Remove the testing PPA dependency to not influence subsequent tests.
     >>> login(ANONYMOUS)
 
 The ArchiveView also provides the latest updates ordered by the date
-they were published:
+they were published. We include any relevant builds for failures.
 
     >>> def print_latest_updates(latest_updates):
     ...     for update in latest_updates:
-    ...         print "%s - %s" % (
+    ...         arch_tags = []
+    ...         if update['builds']:
+    ...             arch_tags = [build.arch_tag for build in update['builds']]
+    ...         print "%s - %s %s" % (
     ...             update['title'],
-    ...             update['status']
+    ...             update['status'],
+    ...             " ".join(arch_tags),
     ...             )
     >>> print_latest_updates(view.latest_updates)
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
     iceweasel - Successfully built
 
@@ -326,7 +330,7 @@ is from most recent.
     >>> login(ANONYMOUS)
     >>> print_latest_updates(view.latest_updates)
     iceweasel - Successfully built
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
 
 The ArchiveView also includes a helper method to return the number of

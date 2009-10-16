@@ -371,6 +371,12 @@ div.package-details {
             ago
           </span><br />
           <span tal:replace="update/status">Successful</span>
+          <span tal:condition="update/builds"
+                tal:repeat="build update/builds"
+                class="build-details">
+            <a tal:attributes="href build/fmt:url"
+               tal:content="build/arch_tag">i386</a>
+          </span>
         </li>
       </ul>
     </tal:updates>
