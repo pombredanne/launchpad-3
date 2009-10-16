@@ -12,8 +12,8 @@ __all__ = [
 
 from cookielib import Cookie
 from urllib2 import (
-    HTTPCookieProcessor, HTTPError, HTTPRedirectHandler, ProxyHandler,
-    Request, build_opener)
+    HTTPCookieProcessor, HTTPError, HTTPRedirectHandler, Request,
+    build_opener)
 from urlparse import urlparse, urlunparse
 from xmlrpclib import ProtocolError, Transport
 
