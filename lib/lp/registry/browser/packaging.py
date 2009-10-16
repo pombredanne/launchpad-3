@@ -34,7 +34,9 @@ class PackagingAddView(LaunchpadFormView):
         packaging = data['packaging']
 
         if getUtility(IPackagingUtil).packagingEntryExists(
-            productseries, sourcepackagename, distroseries):
+            productseries=productseries,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries):
             self.addError(_(
                 "This series is already packaged in %s" %
                 distroseries.displayname))

@@ -77,14 +77,16 @@ class PackagingUtil:
                distroseries.parent.name, distroseries.name))
         packaging.destroySelf()
 
-    def packagingEntryExists(self, productseries, sourcepackagename,
-                             distroseries):
+    def packagingEntryExists(self, sourcepackagename, distroseries,
+                             productseries=None):
         """See `IPackaging`."""
-        result = Packaging.selectOneBy(
-            productseries=productseries,
+        criteria = dict(
             sourcepackagename=sourcepackagename,
-            distroseries=distroseries)
+            distroseries=distroseries,
+            )
+        if productseries is not None:
+            criteria['productseries'] = productseries
+        result = Packaging.selectOneBy(**criteria)
         if result is None:
             return False
         return True
-

@@ -5,26 +5,28 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
 from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.testing import TestCaseWithFactory
+
 from canonical.launchpad.ftests import login
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
-class TestDeletePackaging(TestCase):
+class TestDeletePackaging(TestCaseWithFactory):
     """Test PackagingUtil.deletePackaging.
 
     The essential functionality: deleting a Packaging record, is already
     covered in doctests.
     """
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_deleteNonExistentPackaging(self):
         """Deleting a non-existent Packaging fails.
@@ -75,6 +77,48 @@ class TestDeletePackaging(TestCase):
             self.fail("AssertionError was not raised.")
 
 
+class TestPackagingEntryExists(TestCaseWithFactory):
+    """Test PackagingUtil.packagingEntryExists."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.packaging_util = getUtility(IPackagingUtil)
+        self.sourcepackagename = self.factory.makeSourcePackageName('sparkle')
+        self.distroseries = self.factory.makeDistroRelease(name='dazzle')
+
+    def setUpPackaging(self):
+        self.productseries = self.factory.makeProductSeries(name='glitter')
+        self.owner = self.productseries.product.owner
+        self.packaging = self.packaging_util.createPackaging(
+            self.productseries, self.sourcepackagename, self.distroseries,
+            PackagingType.PRIME, owner=self.owner)
+
+    def test_packagingEntryExists_false(self):
+        """Verify that non-existent entries are false."""
+        self.assertFalse(
+            self.packaging_util.packagingEntryExists(
+                sourcepackagename=self.sourcepackagename,
+                distroseries=self.distroseries))
+
+    def test_packagingEntryExists_unique(self):
+        """Packaging entries are unique to distroseries+sourcepackagename."""
+        self.setUpPackaging()
+        self.assertTrue(
+            self.packaging_util.packagingEntryExists(
+                sourcepackagename=self.sourcepackagename,
+                distroseries=self.distroseries))
+
+    def test_packagingEntryExists_specific(self):
+        """Packaging entries are also specifc to both kinds of series."""
+        self.setUpPackaging()
+        self.assertTrue(
+            self.packaging_util.packagingEntryExists(
+                sourcepackagename=self.sourcepackagename,
+                distroseries=self.distroseries,
+                productseries=self.productseries))
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
-

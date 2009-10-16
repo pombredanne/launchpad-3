@@ -92,6 +92,11 @@ class IPackagingUtil(Interface):
     def deletePackaging(productseries, sourcepackagename, distroseries):
         """Delete a packaging entry."""
 
-    def packagingEntryExists(productseries, sourcepackagename,
-                             distroseries):
-        """Does this packaging entry already exists?"""
+    def packagingEntryExists(sourcepackagename, distroseries,
+                             productseries=None):
+        """Does this packaging entry already exists?
+
+        A sourcepackagename is unique to a distroseries. Passing the 
+        productseries argument verifies that the packaging entry exists and
+        that it is for the productseries
+        """
