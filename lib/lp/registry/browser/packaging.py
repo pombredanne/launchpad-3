@@ -10,7 +10,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.packaging import (
+from lp.registry.interfaces.packaging import (
     IPackaging, IPackagingUtil)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView

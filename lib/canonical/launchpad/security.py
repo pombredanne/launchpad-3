@@ -71,7 +71,7 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
-from canonical.launchpad.interfaces.packaging import IPackaging
+from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
     IPerson, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
