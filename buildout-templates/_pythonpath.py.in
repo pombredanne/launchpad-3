@@ -6,9 +6,9 @@
 
 __metaclass__ = type
 
-import sys
 import os
 import site
+import sys
 
 stdlib_paths = [
     ${indented-stdlib-paths}
@@ -30,6 +30,8 @@ clean_modules = [
 
 def set_path():
     previously_imported = {}
+    # We get a copy of the keys rather than simply iterating because we will
+    # be mutating the dictionary.
     for k in sys.modules.keys():
         if k not in clean_modules:
             previously_imported[k] = sys.modules.pop(k)
