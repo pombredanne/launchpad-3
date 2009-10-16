@@ -15,7 +15,9 @@ __all__ = [
     'TeamMailingListModerationView',
     'TeamMailingListSubscribersView',
     'TeamMapData',
+    'TeamMapLtdData',
     'TeamMapView',
+    'TeamMapLtdView',
     'TeamMemberAddView',
     'TeamPrivacyAdapter',
     ]
@@ -1012,14 +1014,7 @@ class TeamMapView(LaunchpadView):
     """
 
     label = "Team member locations"
-
-    def __init__(self, context, request):
-        """Accept the 'preview' parameter to limit mapped participants."""
-        super(TeamMapView, self).__init__(context, request)
-        if 'preview' in self.request.form:
-            self.limit = 24
-        else:
-            self.limit = None
+    limit = None
 
     def initialize(self):
         # Tell our main-template to include Google's gmap2 javascript so that
@@ -1067,7 +1062,7 @@ class TeamMapView(LaunchpadView):
     def bounds(self):
         """A dictionary with the bounds and center of the map, or None"""
         if self.has_mapped_participants:
-            return self.context.getMappedParticipantsBounds()
+            return self.context.getMappedParticipantsBounds(self.limit)
         return None
 
     @property
@@ -1100,6 +1095,11 @@ class TeamMapView(LaunchpadView):
             </script>""" % self.bounds
 
 
+class TeamMapLtdView(TeamMapView):
+    """Team map view with limited participants."""
+    limit = 24
+
+
 class TeamMapData(TeamMapView):
     """An XML dump of the locations of all team members."""
 
@@ -1108,6 +1108,14 @@ class TeamMapData(TeamMapView):
             'content-type', 'application/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
+
+
+class TeamMapLtdData(TeamMapData):
+    """An XML dump of the locations of some team members.
+
+    The data are limited to 24 members.
+    """
+    limit = 24
 
 
 class TeamHierarchyView(LaunchpadView):

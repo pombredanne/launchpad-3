@@ -1079,6 +1079,12 @@
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
+            class="lp.registry.browser.team.TeamMapLtdData"
+            template="../templates/team-map-data.pt"
+            name="+mapdataltd"/>
+        <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            permission="zope.Public"
             class="lp.registry.browser.person.TeamEditLocationView"
             name="+editlocation"/>
         <browser:page
@@ -1094,7 +1100,7 @@
             class="lp.registry.browser.person.TeamMugshotView"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.team.TeamMapView"
+            class="lp.registry.browser.team.TeamMapLtdView"
             permission="zope.Public"
             name="+portlet-map"
             template="../templates/team-portlet-map.pt"/>
