@@ -18,7 +18,7 @@ import sys
 import unittest
 
 from BeautifulSoup import (
-    BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
+    BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 from urlparse import urljoin
@@ -337,6 +337,11 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
         node = nodes.pop(0)
         if type(node) in IGNORED_ELEMENTS:
             continue
+        elif isinstance(node, CData):
+            # The slice cleaves out the content of the CDATA whilst avoiding
+            # it being wrapped in <![CDATA[ ]]> by the __unicode__/__str__
+            # methods.
+            result.append(unicode(node[:]))
         elif isinstance(node, NavigableString):
             result.append(unicode(node))
         else:
