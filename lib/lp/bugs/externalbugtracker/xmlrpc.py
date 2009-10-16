@@ -56,7 +56,7 @@ class UrlLib2Transport(Transport):
     cookie explicitly by setting `self.auth_cookie`.
 
     Note: this transport isn't fit for general XMLRPC use. It is just good
-    enough for some of our extrnal bug tracker implementations.
+    enough for some of our external bug tracker implementations.
 
     :param endpoint: The URL of the XMLRPC server.
     """
