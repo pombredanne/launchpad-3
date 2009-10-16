@@ -1173,6 +1173,51 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             parser.submission_key,
             "Unknown bus 'nonsense' for device " + self.UDI_PCCARD_DEVICE)
 
+    def test_HALDevice_is_root_device_for_root_device(self):
+        """Test of HALDevice.is_root_device for the root device."""
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {},
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        parser = SubmissionParser()
+        parser.submission_key = 'Test of HALDevice.is_root_device'
+        parser.buildDeviceList(parsed_data)
+        self.assertTrue(parser.hal_devices[self.UDI_COMPUTER].is_root_device)
+
+    def test_HALDevice_is_root_device_for_non_root_device(self):
+        """Test of HALDevice.is_root_device for a non-root device."""
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_PCCARD_DEVICE,
+                'properties': {},
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        parser = SubmissionParser()
+        parser.submission_key = 'Test of HALDevice.is_root_device'
+        parser.buildDeviceList(parsed_data)
+        self.assertFalse(
+            parser.hal_devices[self.UDI_PCCARD_DEVICE].is_root_device)
+
     def renameInfoBusToInfoSubsystem(self, devices):
         """Rename the property info.bus in a device list to info.subsystem.
 
@@ -2837,7 +2882,19 @@ class TestUdevDevice(TestCaseHWDB):
                 },
             }
 
-        self.pci_scsi_controller_data = {
+        self.pci_pccard_bridge = {
+            'P': '/devices/pci0000:00/0000:00:1e.0/0000:08:03.0',
+            'E': {
+                'DRIVER': 'yenta_cardbus',
+                'PCI_CLASS': '60700',
+                'PCI_ID': '1217:7134',
+                'PCI_SUBSYS_ID': '10CF:131E',
+                'PCI_SLOT_NAME': '0000:08:03.0',
+                'SUBSYSTEM': 'pci',
+                }
+            }
+
+        self.pccard_scsi_controller_data = {
             'P': '/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/0000:09:00.0',
             'E': {
                 'DRIVER': 'aic7xxx',
@@ -2856,6 +2913,12 @@ class TestUdevDevice(TestCaseHWDB):
                 'SUBSYSTEM': 'scsi',
                 },
             }
+
+        self.pci_bridge_pccard_hierarchy_data = [
+            {'udev_data': self.root_device},
+            {'udev_data': self.pci_pccard_bridge},
+            {'udev_data': self.pccard_scsi_controller_data},
+            ]
 
         self.pci_scsi_controller_scsi_side_2 = {
             'P': ('/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/'
@@ -2890,7 +2953,7 @@ class TestUdevDevice(TestCaseHWDB):
             }
 
         self.scsi_device_hierarchy_data = [
-            {'udev_data': self.pci_scsi_controller_data},
+            {'udev_data': self.pccard_scsi_controller_data},
             {'udev_data': self.pci_scsi_controller_scsi_side_1},
             {'udev_data': self.pci_scsi_controller_scsi_side_2},
             {'udev_data': self.scsi_scanner_target_data},
@@ -2968,6 +3031,7 @@ class TestUdevDevice(TestCaseHWDB):
                 'PRODUCT': '1307/163/100',
                 'TYPE': '0/0/0',
                 'INTERFACE': '8/6/80',
+                'DEVTYPE': 'usb_interface',
                 'SUBSYSTEM': 'usb',
                 },
             }
@@ -3214,6 +3278,14 @@ class TestUdevDevice(TestCaseHWDB):
         device = UdevDevice(None, self.no_subsystem_device_data)
         self.assertEqual(None, device.raw_bus)
 
+    def test_is_root_device(self):
+        """Test of UdevDevice.is_root_device."""
+        device = UdevDevice(None, self.root_device)
+        self.assertTrue(device.is_root_device)
+
+        device = UdevDevice(None, self.pci_device_data)
+        self.assertFalse(device.is_root_device)
+
     def test_getVendorOrProduct(self):
         """Test of UdevDevice.getVendorOrProduct()."""
         device = UdevDevice(
@@ -3421,6 +3493,54 @@ class TestUdevDevice(TestCaseHWDB):
         """Test of UdevDevice.translateScsiBus() for a non-SCSI device."""
         device = UdevDevice(None, self.root_device)
         self.assertEqual(None, device.translateScsiBus())
+
+    def test_translatePciBus(self):
+        """Test of UdevDevice.translatePciBus()."""
+        devices = self.buildUdevDeviceHierarchy(
+            self.pci_bridge_pccard_hierarchy_data)
+        pci_device = devices[1]
+        pccard_device = devices[2]
+        self.assertEqual(HWBus.PCI, pci_device.translatePciBus())
+        self.assertEqual(HWBus.PCCARD, pccard_device.translatePciBus())
+
+    def test_real_bus_usb_device(self):
+        """Test of UdevDevice.real_bus for a USB device."""
+        usb_device = UdevDevice(None, self.usb_device_data)
+        self.assertEqual(HWBus.USB, usb_device.real_bus)
+
+    def test_real_bus_usb_interface(self):
+        """Test of UdevDevice.real_bus for a USB interface."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'UdevDevice.real_bus for a not-real device'
+        usb_interface = UdevDevice(parser, self.usb_storage_usb_interface)
+        self.assertEqual(None, usb_interface.real_bus)
+        # UdevDevice.real_bus should only be accessed for real devices,
+        # which a USB is not. Hence we get a warning.
+        self.assertWarningMessage(
+            parser.submission_key,
+            "Unknown bus 'usb_interface' for device "
+            "/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0")
+
+    def test_real_bus_pci(self):
+        """Test of UdevDevice.real_bus for PCI devices."""
+        devices = self.buildUdevDeviceHierarchy(
+            self.pci_bridge_pccard_hierarchy_data)
+        pci_device = devices[1]
+        pccard_device = devices[2]
+        self.assertEqual(HWBus.PCI, pci_device.real_bus)
+        self.assertEqual(HWBus.PCCARD, pccard_device.real_bus)
+
+    def test_real_bus_scsi(self):
+        """Test of UdevDevice.real_bus for a SCSI device."""
+        devices = self.buildUdevDeviceHierarchy(
+            self.scsi_device_hierarchy_data)
+        scsi_device = devices[-1]
+        self.assertEqual(HWBus.SCSI, scsi_device.real_bus)
+
+    def test_real_bus_system(self):
+        """Test of UdevDevice.real_bus for a system."""
+        root_device = UdevDevice(None, self.root_device)
+        self.assertEqual(HWBus.SYSTEM, root_device.real_bus)
 
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
