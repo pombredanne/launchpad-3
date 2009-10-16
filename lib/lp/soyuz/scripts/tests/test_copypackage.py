@@ -152,9 +152,7 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         self.assertFileIsReset(private_file)
 
     def test_re_upload_file_does_not_leak_file_descriptors(self):
-        # Reuploading a library file doesn't leak file descriptors. The
-        # only extra file opened by the end of the process is the socket
-        # with the librarian server.
+        # Reuploading a library file doesn't leak file descriptors.
         private_file = self.factory.makeLibraryFileAlias(restricted=True)
         transaction.commit()
 
@@ -165,7 +163,7 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         public_file = re_upload_file(private_file)
 
         open_files = number_of_open_files() - previously_open_files
-        self.assertEqual(1, open_files)
+        self.assertEqual(0, open_files)
 
 
 class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
