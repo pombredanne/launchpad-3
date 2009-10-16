@@ -161,6 +161,9 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         previously_open_files = number_of_open_files()
 
         public_file = re_upload_file(private_file)
+        # The above call would've raised an error if the upload failed, but
+        # better safe than sorry.
+        self.assertIsNot(None, public_file)
 
         open_files = number_of_open_files() - previously_open_files
         self.assertEqual(0, open_files)
