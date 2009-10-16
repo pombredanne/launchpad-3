@@ -73,7 +73,13 @@ class IPackaging(IHasOwner):
         vocabulary='DistroSeries')
 
     packaging = Choice(
-        title=_('Packaging'), required=True, vocabulary=PackagingType)
+        title=_('Packaging'), required=True, vocabulary=PackagingType,
+        description=_(
+            "Is the project the primary content of the source package, "
+            "or does the source package include the work of other projects? "
+            'For example, "apache2" is the primary source package of the '
+            'apache2 project. The "cadaver" source package includes work '
+            "from the libneon project."))
 
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -96,7 +102,7 @@ class IPackagingUtil(Interface):
                              productseries=None):
         """Does this packaging entry already exists?
 
-        A sourcepackagename is unique to a distroseries. Passing the 
+        A sourcepackagename is unique to a distroseries. Passing the
         productseries argument verifies that the packaging entry exists and
         that it is for the productseries
         """
