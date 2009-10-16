@@ -1095,11 +1095,6 @@ class TeamMapView(LaunchpadView):
             </script>""" % self.bounds
 
 
-class TeamMapLtdView(TeamMapView):
-    """Team map view with limited participants."""
-    limit = 24
-
-
 class TeamMapData(TeamMapView):
     """An XML dump of the locations of all team members."""
 
@@ -1110,12 +1105,17 @@ class TeamMapData(TeamMapView):
         return body.encode('utf-8')
 
 
-class TeamMapLtdData(TeamMapData):
-    """An XML dump of the locations of some team members.
-
-    The data are limited to 24 members.
-    """
+class TeamMapLtdMixin:
+    """A mixin for team views with limited participants."""
     limit = 24
+
+
+class TeamMapLtdView(TeamMapLtdMixin, TeamMapView):
+    """Team map view with limited participants."""
+
+
+class TeamMapLtdData(TeamMapLtdMixin, TeamMapData):
+    """An XML dump of the locations of limited number of team members."""
 
 
 class TeamHierarchyView(LaunchpadView):

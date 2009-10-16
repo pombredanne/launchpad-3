@@ -57,7 +57,9 @@ without, mapped members.
     <BLANKLINE>
 
 The team index page has a map with data limited to 24 members and uses
-a slightly different URL.
+a slightly different URL.  We can see the URL works though there isn't
+enough test data to demonstrate the limit but that is done in the view
+test.
 
     >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdataltd')
     >>> print anon_browser.contents
