@@ -2640,6 +2640,24 @@ class UdevDevice(BaseDevice):
         """See `BaseDevice`."""
         return self.udev['E'].get('DRIVER')
 
+    @property
+    def scsi_controller(self):
+        """See `BaseDevice`."""
+        if self.raw_bus != 'scsi_device':
+            return None
+
+        # While SCSI devices from valid submissions should have four
+        # ancestors, we can't be sure for bogus or broken submissions.
+        try:
+            controller = self.parent.parent.parent.parent
+        except AttributeError:
+            controller = None
+        if controller is None:
+            self.parser._logWarning(
+                'Found a SCSI device without a sufficient number of '
+                'ancestors: %s' % self.device_id)
+            return None
+        return controller
 
 class ProcessingLoop(object):
     """An `ITunableLoop` for processing HWDB submissions."""
