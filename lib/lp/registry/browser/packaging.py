@@ -14,6 +14,7 @@ from lp.registry.interfaces.packaging import (
     IPackaging, IPackagingUtil)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
+from canonical.launchpad.webapp.menu import structured
 
 
 class PackagingAddView(LaunchpadFormView):
@@ -31,15 +32,29 @@ class PackagingAddView(LaunchpadFormView):
         productseries = self.context
         sourcepackagename = data['sourcepackagename']
         distroseries = data['distroseries']
-        packaging = data['packaging']
-
-        if getUtility(IPackagingUtil).packagingEntryExists(
+        packaging_util = getUtility(IPackagingUtil)
+        if packaging_util.packagingEntryExists(
             productseries=productseries,
             sourcepackagename=sourcepackagename,
             distroseries=distroseries):
             self.addError(_(
-                "This series is already packaged in %s" %
+                "This series is already packaged in %s." %
                 distroseries.displayname))
+        elif packaging_util.packagingEntryExists(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries):
+            sourcepackage = distroseries.getSourcePackage(
+                sourcepackagename.name)
+            self.addError(structured(
+                'The <a href="%s">%s</a> package in %s is already linked to '
+                'another series.' %
+                (canonical_url(sourcepackage),
+                 sourcepackagename.name,
+                 distroseries.displayname)))
+        else:
+            # The distroseries and sourcepackagename are not already linked
+            # to this series, or any other series.
+            pass
 
     @action('Continue', name='continue')
     def continue_action(self, action, data):
