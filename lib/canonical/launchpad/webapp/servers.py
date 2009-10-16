@@ -1301,6 +1301,7 @@ class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
     # For now, the same as public requests.
 
+
 # ---- Protocol errors
 
 class ProtocolErrorRequest(LaunchpadBrowserRequest):

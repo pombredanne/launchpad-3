@@ -23,6 +23,8 @@ from bzrlib.trace import report_exception
 from bzrlib.transport import get_transport
 from bzrlib.workingtree import WorkingTree
 
+from devscripts import get_launchpad_root
+
 
 def parse_config_file(file_handle):
     """Parse the source code config file 'file_handle'.
@@ -180,10 +182,6 @@ def update_sourcecode(sourcecode_directory, config_filename, public_only,
         get_branches(sourcecode_directory, new, possible_transports)
         update_branches(sourcecode_directory, updated, possible_transports)
         remove_branches(sourcecode_directory, removed)
-
-
-def get_launchpad_root():
-    return os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 
 # XXX: JonathanLange 2009-09-11: By default, the script will operate on the

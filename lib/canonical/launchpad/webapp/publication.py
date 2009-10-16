@@ -482,9 +482,9 @@ class LaunchpadBrowserPublication(
             pass
 
         # Log a soft OOPS for DisconnectionErrors as per Bug #373837.
-        # We need to do this before we re-raise the excaptionsas a Retry.
+        # We need to do this before we re-raise the exception as a Retry.
         if isinstance(exc_info[1], DisconnectionError):
-            getUtility(IErrorReportingUtility).raising(exc_info, request)
+            getUtility(IErrorReportingUtility).handling(exc_info, request)
 
         def should_retry(exc_info):
             if not retry_allowed:

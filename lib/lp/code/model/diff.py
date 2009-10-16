@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
 
+import sys
+
 from cStringIO import StringIO
 
 from bzrlib.branch import Branch
@@ -17,6 +19,7 @@ import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
 from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import classProvides, implements
 
 from canonical.config import config
@@ -47,6 +50,9 @@ class Diff(SQLBase):
                     in simplejson.loads(self._diffstat).items())
 
     def _set_diffstat(self, diffstat):
+        if diffstat is None:
+            self._diffstat = None
+            return
         # diffstats should be mappings of path to line counts.
         assert isinstance(diffstat, dict)
         self._diffstat = simplejson.dumps(diffstat)
@@ -150,9 +156,28 @@ class Diff(SQLBase):
             diff_content.seek(0)
             diff_content_bytes = diff_content.read(size)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
-        diffstat = cls.generateDiffstat(diff_content_bytes)
+        # Generation of diffstat is currently failing in some circumstances.
+        # See bug 436325.  Since diffstats are incidental to the whole
+        # process, we don't want failure here to kill the generation of the
+        # diff itself, but we do want to hear about it.  So log an error using
+        # the error reporting utility.
+        try:
+            diffstat = cls.generateDiffstat(diff_content_bytes)
+        except Exception:
+            getUtility(IErrorReportingUtility).raising(sys.exc_info())
+            # Set the diffstat to be empty.
+            diffstat = None
+            added_lines_count = None
+            removed_lines_count = None
+        else:
+            added_lines_count = 0
+            removed_lines_count = 0
+            for path, (added, removed) in diffstat.items():
+                added_lines_count += added
+                removed_lines_count += removed
         return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
-                   diffstat=diffstat)
+                   diffstat=diffstat, added_lines_count=added_lines_count,
+                   removed_lines_count=removed_lines_count)
 
     @staticmethod
     def generateDiffstat(diff_bytes):
@@ -231,7 +256,7 @@ class PreviewDiff(Storm):
 
     target_revision_id = Unicode(allow_none=False)
 
-    dependent_revision_id = Unicode()
+    prerequisite_revision_id = Unicode(name='dependent_revision_id')
 
     conflicts = Unicode()
 
@@ -260,20 +285,21 @@ class PreviewDiff(Storm):
 
     @classmethod
     def create(cls, diff_content, source_revision_id, target_revision_id,
-               dependent_revision_id, conflicts):
+               prerequisite_revision_id, conflicts):
         """Create a PreviewDiff with specified values.
 
         :param diff_content: The text of the dift, as bytes.
         :param source_revision_id: The revision_id of the source branch.
         :param target_revision_id: The revision_id of the target branch.
-        :param dependent_revision_id: The revision_id of the dependent branch.
+        :param prerequisite_revision_id: The revision_id of the prerequisite
+            branch.
         :param conflicts: The conflicts, as text.
         :return: A `PreviewDiff` with specified values.
         """
         preview = cls()
         preview.source_revision_id = source_revision_id
         preview.target_revision_id = target_revision_id
-        preview.dependent_revision_id = dependent_revision_id
+        preview.prerequisite_revision_id = prerequisite_revision_id
         preview.conflicts = conflicts
 
         filename = generate_uuid() + '.txt'
@@ -293,10 +319,10 @@ class PreviewDiff(Storm):
             # This is the simple frequent case.
             return True
 
-        # More complex involves the dependent branch too.
-        if (bmp.dependent_branch is not None and
-            (self.dependent_revision_id !=
-             bmp.dependent_branch.last_scanned_id)):
+        # More complex involves the prerequisite branch too.
+        if (bmp.prerequisite_branch is not None and
+            (self.prerequisite_revision_id !=
+             bmp.prerequisite_branch.last_scanned_id)):
             return True
         else:
             return False

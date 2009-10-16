@@ -565,6 +565,24 @@ target, we reset it in order to avoid data inconsistencies.
   HTTP/1.1 200 Ok
   ...
 
+We can change a distribution task to a task with a package from the same
+distribution.
+
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> login('foo.bar@canonical.com')
+  >>> distro_bugtask = factory.makeBugTask(
+  ...     target=getUtility(IDistributionSet).getByName('ubuntu'))
+  >>> distro_bugtask_path = webservice.getAbsoluteUrl(
+  ...     canonical_url(distro_bugtask).replace(
+  ...         'http://bugs.launchpad.dev', ''))
+  >>> logout()
+
+  >>> distro_bugtask = webservice.get(distro_bugtask_path)
+  >>> print webservice.named_post(
+  ...     distro_bugtask_path, 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 200 Ok ...
+
 It's possible to get a list of similar bugs for a bug task by calling
 its findSimilarBugs() method. As it happens, there aren't any bugs
 similar to bug 1 for Firefox.
@@ -1470,11 +1488,12 @@ the advanced search interface.
     ...     order_by='-datecreated').jsonBody()['entries']
     >>> for ordered_bugtask in ordered_bugtasks:
     ...     print ordered_bugtask['self_link']
+    http://.../ubuntu/+source/alsa-utils/+bug/19
     http://.../ubuntu/+source/evolution/+bug/18
     http://.../ubuntu/+bug/17
     http://.../ubuntu/+bug/2
     http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
-    http://.../ubuntu/+source/thunderbird/+bug/9
+
 
 Hardware related bug tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

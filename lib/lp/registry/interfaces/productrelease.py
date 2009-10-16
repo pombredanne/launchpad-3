@@ -27,8 +27,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.fields import ContentNameField
-from lp.registry.interfaces.person import IPerson
+from canonical.launchpad.fields import (
+    ContentNameField, ParticipatingPersonChoice)
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
@@ -270,9 +270,13 @@ class IProductReleasePublic(Interface):
         )
 
     owner = exported(
-            Reference(title=u"The owner of this release.",
-                      schema=IPerson, required=True)
+        ParticipatingPersonChoice(
+            title=u"The owner of this release.",
+            required=True,
+            vocabulary='ValidOwner',
+            description=_("The person or team who owns  his product release.")
             )
+        )
 
     productseries = Choice(
         title=_('Release series'), readonly=True,

@@ -300,8 +300,8 @@
 
 <metal:application-buttons define-macro="application-buttons">
   <!-- Application Menu -->
-  <ul
-    tal:define="facetmenu view/menu:facet">
+  <ul class="facetmenu"
+      tal:define="facetmenu view/menu:facet">
     <tal:facet repeat="link facetmenu">
       <li
         tal:condition="python: link.enabled and link.selected"
@@ -358,8 +358,11 @@
       &nbsp;&bull;&nbsp;
       <a href="/legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
-      <a href="/feedback"
-        tal:condition="request/lp:person">Contact us</a>
+      <a href="https://help.launchpad.net/Feedback"
+        >Contact us</a>
+      &nbsp;&bull;&nbsp;
+      <a href="http://identi.ca/launchpadstatus"
+        >System status</a>
       <span id="lp-version" tal:condition="not:is_lpnet">
       &nbsp;&bull;&nbsp;
         <a href="https://help.launchpad.net/LaunchpadReleases"

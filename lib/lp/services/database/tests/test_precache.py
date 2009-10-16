@@ -33,7 +33,7 @@ class PrecacheTestCase(TestCase):
         # to hide this from callsites.
         self.unwrapped_result = self.store.find(
             (Product, Person),
-            Product.ownerID == Person.id).order_by(Product.name)
+            Product._ownerID == Person.id).order_by(Product.name)
         self.precache_result = precache(self.unwrapped_result)
 
     def verify(self, precached, normal):
@@ -87,7 +87,7 @@ class PrecacheTestCase(TestCase):
         standard_result = self.store.find(Product, Product.name == 'firefox')
         precache_result = precache(self.store.find(
             (Product, Person),
-            Person.id == Product.ownerID,
+            Person.id == Product._ownerID,
             Product.name == 'firefox'))
         self.assertEqual(standard_result.one(), precache_result.one())
 

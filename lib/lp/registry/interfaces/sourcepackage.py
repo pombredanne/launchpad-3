@@ -225,6 +225,13 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
 
+    def getLatestTranslationsUploads():
+        """Find latest Translations tarballs as produced by Soyuz.
+
+        :return: A list of `ILibraryFileAlias`es, usually of size zero
+            or one.  If not, they are sorted from oldest to newest.
+        """
+
 
 class ISourcePackageFactory(Interface):
     """A creator of source packages."""

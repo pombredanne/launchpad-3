@@ -93,7 +93,7 @@ For SourcePackage, it's only possible to filter by state.
     ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    Builds for pmount in Ubuntu Hoary...
+    Builds for ...pmount... in Hoary :...
 
     >>> print check_builds_options(anon_browser.contents)
     State present, Name not present

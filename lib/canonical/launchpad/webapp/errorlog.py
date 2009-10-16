@@ -132,7 +132,7 @@ class ErrorReport:
     implements(IErrorReport)
 
     def __init__(self, id, type, value, time, pageid, tb_text, username,
-                 url, duration, req_vars, db_statements):
+                 url, duration, req_vars, db_statements, informational):
         self.id = id
         self.type = type
         self.value = value
@@ -146,6 +146,7 @@ class ErrorReport:
         self.db_statements = db_statements
         self.branch_nick = versioninfo.branch_nick
         self.revno  = versioninfo.revno
+        self.informational = informational
 
     def __repr__(self):
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
@@ -161,6 +162,7 @@ class ErrorReport:
         fp.write('User: %s\n' % _normalise_whitespace(self.username))
         fp.write('URL: %s\n' % _normalise_whitespace(self.url))
         fp.write('Duration: %s\n' % self.duration)
+        fp.write('Informational: %s\n' % self.informational)
         fp.write('\n')
         safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
@@ -184,6 +186,7 @@ class ErrorReport:
         username = msg.getheader('user')
         url = msg.getheader('url')
         duration = int(float(msg.getheader('duration', '-1')))
+        informational = msg.getheader('informational')
 
         # Explicitely use an iterator so we can process the file
         # sequentially. In most instances the iterator will actually
@@ -217,7 +220,8 @@ class ErrorReport:
         tb_text = ''.join(lines)
 
         return cls(id, exc_type, exc_value, date, pageid, tb_text,
-                   username, url, duration, req_vars, statements)
+                   username, url, duration, req_vars, statements,
+                   informational)
 
 
 class ErrorReportingUtility:
@@ -396,6 +400,10 @@ class ErrorReportingUtility:
 
     def raising(self, info, request=None, now=None):
         """See IErrorReportingUtility.raising()"""
+        self._raising(info, request=request, now=now, informational=False)
+
+    def _raising(self, info, request=None, now=None, informational=False):
+        """Private method used by raising() and handling()."""
         if now is not None:
             now = now.astimezone(UTC)
         else:
@@ -483,7 +491,8 @@ class ErrorReportingUtility:
 
             entry = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
                                 username, strurl, duration,
-                                req_vars, statements)
+                                req_vars, statements,
+                                informational)
             entry.write(open(filename, 'wb'))
 
             if request:
@@ -494,6 +503,10 @@ class ErrorReportingUtility:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
         finally:
             info = None
+
+    def handling(self, info, request=None, now=None):
+        """Flag ErrorReport as informational only."""
+        self._raising(info, request=request, now=now, informational=True)
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
@@ -618,7 +631,7 @@ def maybe_record_user_requested_oops():
         request.oopsid is not None or
         not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
         return None
-    globalErrorUtility.raising(
+    globalErrorUtility.handling(
         (UserRequestOops, UserRequestOops(), None), request)
     return request.oopsid
 

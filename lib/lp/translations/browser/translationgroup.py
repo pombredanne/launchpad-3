@@ -212,6 +212,12 @@ class TranslationGroupAddView(LaunchpadFormView):
 class TranslationGroupReassignmentView(ObjectReassignmentView):
     """View class for changing translation group owner."""
 
+    page_title = "Change owner"
+
+    @property
+    def label(self):
+        return "Change the owner of %s" % self.contextName
+
     @property
     def contextName(self):
         return self.context.title or self.context.name

@@ -76,7 +76,6 @@ from lp.code.enums import (
     CodeImportResultStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
 from lp.code.interfaces.branch import UnknownBranchTypeError
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -107,6 +106,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.testing import run_with_login, time_counter
@@ -509,9 +509,9 @@ class LaunchpadObjectFactory(ObjectFactory):
                          productseries=productseries,
                          name=name)
 
-    def makeProductRelease(self, milestone=None):
+    def makeProductRelease(self, milestone=None, product=None):
         if milestone is None:
-            milestone = self.makeMilestone()
+            milestone = self.makeMilestone(product=product)
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
 
@@ -804,7 +804,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
-                                set_state=None, dependent_branch=None,
+                                set_state=None, prerequisite_branch=None,
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None,
                                 preview_diff=None):
@@ -813,8 +813,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             target = target_branch.target
         elif source_branch is not None:
             target = source_branch.target
-        elif dependent_branch is not None:
-            target = dependent_branch.target
+        elif prerequisite_branch is not None:
+            target = prerequisite_branch.target
         else:
             # Create a target product branch, and use that target.  This is
             # needed to make sure we get a branch target that has the needed
@@ -829,8 +829,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         if registrant is None:
             registrant = self.makePerson()
         proposal = source_branch.addLandingTarget(
-            registrant, target_branch, dependent_branch=dependent_branch,
-            review_diff=review_diff, initial_comment=initial_comment)
+            registrant, target_branch,
+            prerequisite_branch=prerequisite_branch, review_diff=review_diff,
+            initial_comment=initial_comment)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         if preview_diff is not None:
@@ -1484,6 +1485,34 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
             distribution=distribution, name=name)
+
+    def makeBuilder(self, processor=None, url=None, name=None, title=None,
+                    description=None, owner=None, active=True,
+                    virtualized=True, vm_host=None):
+        """Make a new builder for i386 virtualized builds by default.
+
+        Note: the builder returned will not be able to actually build -
+        we currently have a build slave setup for 'bob' only in the
+        test environment.
+        See lib/canonical/buildd/tests/buildd-slave-test.conf
+        """
+        if processor is None:
+            processor_fam = ProcessorFamilySet().getByName('x86')
+            processor = processor_fam.processors[0]
+        if url is None:
+            url = 'http://%s:8221/' % self.getUniqueString()
+        if name is None:
+            name = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
+        if description is None:
+            description = self.getUniqueString()
+        if owner is None:
+            owner = self.makePerson()
+
+        return getUtility(IBuilderSet).new(
+            processor, url, name, title, description, owner, active,
+            virtualized, vm_host)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,

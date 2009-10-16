@@ -15,10 +15,10 @@ SourcePackage views
 
     >>> view = create_view(package, name='+edit-packaging')
     >>> print view.label
-     Define upstream link for bonkers in Youbuntu Busy
+     Define upstream link
 
     >>> print view.page_title
-     Define upstream link for bonkers in Youbuntu Busy
+     Define upstream link
 
     >>> print view.cancel_url
     http://launchpad.dev/youbuntu/busy/+source/bonkers

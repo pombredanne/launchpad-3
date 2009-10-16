@@ -92,11 +92,11 @@ be appended to the message.
     >>> print user_browser.getControl('Message').value
     No Privileges Person suggests this article as an answer to your question:
 
-He can then click 'Link FAQ' to answer the question with the selected
+He can then click 'Link to FAQ' to answer the question with the selected
 FAQ. After clicking the button, the user is redirected to the question
 page.
 
-    >>> user_browser.getControl('Link FAQ').click()
+    >>> user_browser.getControl('Link to FAQ').click()
     >>> print user_browser.url
     http://answers.launchpad.dev/firefox/+question/2
 
@@ -145,11 +145,11 @@ question's title are displayed:
     ( ) 9: How do I troubleshoot problems with extensions/themes?
     ( ) 7: How do I install Java?
 
-He changes the message and click 'Link FAQ'.
+He changes the message and click 'Link to FAQ'.
 
     >>> user_browser.getControl('Message').value = (
     ...     "Sorry, this document doesn't really answer your question.")
-    >>> user_browser.getControl('Link FAQ').click()
+    >>> user_browser.getControl('Link to FAQ').click()
 
 But since, he forgot to change the link, the form is displayed again
 with an error message.
@@ -165,7 +165,7 @@ To remove the FAQ, the user selects the 'No existing...' option and
 submit the form again.
 
     >>> user_browser.getControl('No existing FAQs').selected = True
-    >>> user_browser.getControl('Link FAQ').click()
+    >>> user_browser.getControl('Link to FAQ').click()
 
 The new message was added to the question:
 
@@ -359,7 +359,7 @@ information.
     >>> user_browser.getControl('Search', index=0).click()
     >>> user_browser.getControl('6').selected = True
     >>> user_browser.getControl('Message').value = "The FAQ mentions this:"
-    >>> user_browser.getControl('Link FAQ').click()
+    >>> user_browser.getControl('Link to FAQ').click()
 
 The question is still solved. No Privileges Person sees the FAQ was
 added to the question, and his message was added to the question's
@@ -394,7 +394,7 @@ item, as above:
 Or you can just refer to FAQs in comments:
 
     >>> user_browser.getControl('Message').value = 'No, this is FAQ #2'
-    >>> user_browser.getControl('Add Comment').click()
+    >>> user_browser.getControl('Just Add a Comment').click()
     >>> user_browser.getLink("FAQ #2").url
     'http://answers.launchpad.dev/ubuntu/+faq/2'
 

@@ -740,8 +740,8 @@ Make Celso's PPA private and create a private source publication.
     >>> cprov.archive.buildd_secret = 'boing'
     >>> cprov.archive.private = True
 
-    >>> private_publication = test_publisher.getPubSource(
-    ...     sourcename="private", version="1.0", archive=cprov.archive)
+    >>> private_publication = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-1')
 
     >>> logout()
 
@@ -893,12 +893,12 @@ admins and commercial admins.
 Copying private sources to public archives works fine with
 `syncSource` or `syncSources` operations.
 
-We use `syncSource` to copy 'private - 1.0' source from Celso's
+We use `syncSource` to copy 'foocomm - 1.0-1' source from Celso's
 private PPA to the ubuntu primary archive.
 
     >>> print cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSource', {},
-    ...     source_name='private', version='1.0', to_pocket='release',
+    ...     source_name='foocomm', version='1.0-1', to_pocket='release',
     ...     from_archive=cprov_archive['self_link'],
     ...     to_series="hoary")
     HTTP/1.1 200 Ok
@@ -908,13 +908,13 @@ In the same way we can use 'syncSources' for syncing an subsequent
 version.
 
     >>> login('foo.bar@canonical.com')
-    >>> unused = test_publisher.getPubSource(
-    ...     sourcename="private", version="1.1", archive=cprov.archive)
+    >>> unused = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-2')
     >>> logout()
 
     >>> print cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSources', {},
-    ...     source_names=['private'], to_pocket='release',
+    ...     source_names=['foocomm'], to_pocket='release',
     ...     from_archive=cprov_archive['self_link'],
     ...     to_series="hoary")
     HTTP/1.1 200 Ok
@@ -925,12 +925,12 @@ error is returned.
 
     >>> print cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSource', {},
-    ...     source_name='private', version='1.1', to_pocket='release',
+    ...     source_name='foocomm', version='1.0-2', to_pocket='release',
     ...     from_archive=cprov_archive['self_link'],
     ...     to_series="hoary")
     HTTP/1.1 400 Bad Request
     ...
-    CannotCopy: private 1.1 in hoary
+    CannotCopy: foocomm 1.0-2 in hoary
     (same version already uploaded and waiting in ACCEPTED queue)
 
 

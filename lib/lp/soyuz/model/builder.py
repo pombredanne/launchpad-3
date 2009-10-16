@@ -560,8 +560,8 @@ class Builder(SQLBase):
             build.buildstate = %s AND
             distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL
-        """ % sqlvalues(private_statuses,
-                        BuildStatus.NEEDSBUILD, self.processor.family)]
+        """ % sqlvalues(
+            private_statuses, BuildStatus.NEEDSBUILD, self.processor.family)]
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
@@ -569,8 +569,24 @@ class Builder(SQLBase):
             archive.require_virtualized = %s
         """ % sqlvalues(self.virtualized))
 
-        query = " AND ".join(clauses)
+        # Ensure that if a currently-building build exists for the same
+        # public ppa archive and architecture currently building then
+        # we don't consider another as a candidate.
+        clauses.append("""
+            NOT EXISTS (
+                SELECT Build.id
+                FROM Build build2, DistroArchSeries distroarchseries2
+                WHERE
+                    build2.archive = build.archive AND
+                    archive.purpose = %s AND
+                    archive.private IS FALSE AND
+                    build2.distroarchseries = distroarchseries2.id AND
+                    distroarchseries2.processorfamily = %s AND
+                    build2.buildstate = %s)
+        """ % sqlvalues(
+            ArchivePurpose.PPA, self.processor.family, BuildStatus.BUILDING))
 
+        query = " AND ".join(clauses)
         candidate = BuildQueue.selectFirst(
             query, clauseTables=clauseTables, prejoins=['build'],
             orderBy=['-buildqueue.lastscore', 'build.id'])

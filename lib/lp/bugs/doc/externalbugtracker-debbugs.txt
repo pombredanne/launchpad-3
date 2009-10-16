@@ -38,6 +38,13 @@ DebBugs, of course, implements IExternalBugTracker.
     >>> verifyObject(IExternalBugTracker, external_debbugs)
     True
 
+Because we keep a local copy of the DebBugs database we don't need to
+worry about batching bug watch updates for performance reasons, so
+DebBugs instances don't have a batch_size limit.
+
+    >>> print external_debbugs.batch_size
+    None
+
 
 == Retrieving bug status from the debbugs database ==
 
