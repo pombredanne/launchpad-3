@@ -9,13 +9,9 @@ which can connect through an http proxy server.
     >>> from lp.bugs.externalbugtracker.xmlrpc import (
     ...     UrlLib2Transport)
 
-We create the transport, and pass it a wrapper which returns a response
-without actually opening a connection. The response returns the request
-url as an XMLRPC parameter, and sets a cookie from the server, 'foo=bar'.
-
-UrlLib2Transport also accepts a CookieJar an optional parameter upon
-creation. This allows us to share a CookieJar - and therefore the cookie
-it contains - between different transports or URL openers.
+UrlLib2Transport accepts a CookieJar as an optional parameter upon creation.
+This allows us to share a CookieJar - and therefore the cookie it contains -
+between different transports or URL openers.
 
     >>> from cookielib import CookieJar
     >>> jar = CookieJar()
