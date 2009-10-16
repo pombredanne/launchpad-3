@@ -86,17 +86,25 @@ The table includes a number of convenience links:
     >>> for anchor in all_anchors:
     ...     url = extract_link_from_tag(anchor, base_href)
     ...     url = url.replace("http://bugs.launchpad.dev/ubuntu", "**")
-    ...     url = url.replace("&amp;", "\n&")
+    ...     url = url.replace("&", "\n&")
     ...     print extract_text(anchor), url
     linux-source-2.6.15 **/+source/linux-source-2.6.15
     (find) http://bugs.launchpad.dev/projects
     (link) **/hoary/+source/linux-source-2.6.15/+edit-packaging
     2 **/+source/linux-source-2.6.15/+bugs?search=Search
-    2 **/+source/linux-source-2.6.15/+bugs?search=Search&field.status=TRIAGED
-    0 **/+source/linux-source-2.6.15/+bugs?search=Search&field.status=CONFIRMED&field.status=INCOMPLETE_WITHOUT_RESPONSE&field.status=INCOMPLETE_WITH_RESPONSE&field.status=NEW
-    2 **/+source/linux-source-2.6.15/+bugs?search=Search&field.status_upstream=open_upstream
-    0 **/+source/linux-source-2.6.15/+bugs?search=Search&field.status_upstream=hide_upstream
-    1 **/+source/linux-source-2.6.15/+bugs?search=Search&field.status_upstream=pending_bugwatch
+    2 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status=TRIAGED
+    0 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status=CONFIRMED
+        &field.status=INCOMPLETE_WITHOUT_RESPONSE
+        &field.status=INCOMPLETE_WITH_RESPONSE
+        &field.status=NEW
+    2 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status_upstream=open_upstream
+    0 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status_upstream=hide_upstream
+    1 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status_upstream=pending_bugwatch
     ...
 
 
