@@ -19,8 +19,9 @@ between different transports or URL openers.
     >>> transport.cookie_processor.cookiejar == jar
     True
 
-We patch the opener to return a fixed response without actually opening
-a connection.
+We patch the opener to return a fixed response without actually opening a
+connection.  The response returns the request-url as an XMLRPC parameter, and
+sets a cookie from the server, 'foo=bar'.
 
     >>> patch_transport_opener(transport)
 
