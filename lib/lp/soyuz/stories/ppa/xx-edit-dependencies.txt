@@ -9,7 +9,7 @@ Anonymous and unprivileged users cannot access Celso's PPA interface to
 edit dependencies, even if they try the URL directly.
 
     >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> anon_browser.getLink('Edit dependencies').click()
+    >>> anon_browser.getLink('Edit PPA dependencies').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -21,7 +21,7 @@ edit dependencies, even if they try the URL directly.
     Unauthorized: ..., 'launchpad.Edit')
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> user_browser.getLink('Edit dependencies').click()
+    >>> user_browser.getLink('Edit PPA dependencies').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -39,7 +39,7 @@ any sources.
     ...     auth='Basic no-priv@canonical.com:test')
     >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
 
-    >>> no_priv_browser.getLink('Edit dependencies').click()
+    >>> no_priv_browser.getLink('Edit PPA dependencies').click()
     >>> print no_priv_browser.url
     http://launchpad.dev/~no-priv/+archive/ppa/+edit-dependencies
 
@@ -52,14 +52,14 @@ page for Celso's PPA.
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> cprov_browser.getLink('Edit dependencies').click()
+    >>> cprov_browser.getLink('Edit PPA dependencies').click()
     >>> print cprov_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
     >>> print cprov_browser.title
     Edit dependencies for PPA for Celso Providelo...
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> admin_browser.getLink('Edit dependencies').click()
+    >>> admin_browser.getLink('Edit PPA dependencies').click()
     >>> print admin_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
     >>> print admin_browser.title
@@ -507,7 +507,7 @@ index page (see `IArchivedependency.title`).
 At anytime the form can be cancelled and the user will be taken to the
 PPA context page and the action won't be executed.
 
-    >>> admin_browser.getLink('Edit dependencies').click()
+    >>> admin_browser.getLink('Edit PPA dependencies').click()
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
     >>> admin_browser.getControl(
