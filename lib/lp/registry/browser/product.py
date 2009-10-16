@@ -574,9 +574,9 @@ class ProductWithSeries:
             self.product.getMilestonesAndReleases())
         for milestone, release in milestones_and_releases:
             series = series_by_id[milestone.productseries.id]
-            decorated_release = ReleaseWithFiles(release, parent=series)
-            series.addRelease(decorated_release)
-            self.release_by_id[release.id] = decorated_release
+            release_delegate = ReleaseWithFiles(release, parent=series)
+            series.addRelease(release_delegate)
+            self.release_by_id[release.id] = release_delegate
 
 
 class SeriesWithReleases:
@@ -658,7 +658,7 @@ class ReleaseWithFiles:
                 release_delegate._files.append(file)
 
         # self._files was set above, since self is actually in the
-        # decorated_releases variable.
+        # release_delegates variable.
         return self._files
 
     @property
