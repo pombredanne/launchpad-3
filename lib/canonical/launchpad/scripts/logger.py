@@ -163,7 +163,12 @@ class LibrarianFormatter(logging.Formatter):
         except:
             pass
         if not exception_string:
-            exception_string = str(ei[0]).split('.')[-1]
+            # str(ei[0]) will be a string like "<class 'path.ExceptionName'>",
+            # so our exception string will be the bit after the last dot with
+            # the two characters from the end removed.
+            exception_string = str(ei[0])
+            exception_string = exception_string.split('.')[-1]
+            exception_string = exception_string[:-2]
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
