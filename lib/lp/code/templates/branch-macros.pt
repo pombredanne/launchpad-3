@@ -22,7 +22,7 @@
       mergeproposal - the proposal to show
       branch - one of the branches of the merge proposal
     The following variables define what is shown and are optional.
-      dependent_branch - the dependent branch to link to
+      prerequisite_branch - the prerequisite branch to link to
       show_status - show the proposal status
       show_commit_message - show the commit message
       show_associations - show the bugs and specs
@@ -53,12 +53,12 @@
         Merge proposed by
         <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
       </div>
-      <tal:show-dependent condition="dependent_branch|nothing">
-        <div tal:condition="dependent_branch/required:launchpad.View">
-          Dependent on
-          <tal:dependent replace="structure dependent_branch/fmt:link" />
+      <tal:show-prerequisite condition="prerequisite_branch|nothing">
+        <div tal:condition="prerequisite_branch/required:launchpad.View">
+          Prerequisite
+          <tal:prerequisite replace="structure prerequisite_branch/fmt:link" />
         </div>
-      </tal:show-dependent>
+      </tal:show-prerequisite>
       <tal:show-status condition="show_status|nothing">
       <div tal:condition="not: mergeproposal/queue_status/enumvalue:MERGED">
         <tal:proposal-status replace="mergeproposal/queue_status/title"/>

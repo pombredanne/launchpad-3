@@ -90,8 +90,7 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
-	bin/test $(VERBOSITY) --layer=BugsWindmillLayer
-	bin/test $(VERBOSITY) --layer=CodeWindmillLayer
+	bin/test $(VERBOSITY) --layer=WindmillLayer
 
 jscheck_functest: build
     # Run the old functest Windmill integration tests.  The test runner
@@ -197,9 +196,7 @@ stop_librarian:
 	bin/killservice librarian
 
 pull_branches: support_files
-	# Mirror the hosted branches in the development upload area to the
-	# mirrored area.
-	$(PY) cronscripts/supermirror-pull.py upload
+	$(PY) cronscripts/supermirror-pull.py
 
 scan_branches:
 	# Scan branches from the filesystem into the database.

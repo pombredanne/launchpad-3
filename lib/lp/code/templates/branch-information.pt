@@ -22,10 +22,15 @@
 
     <dl id="status">
       <dt>Status:</dt>
-      <dd
-        id="branch-details-status-value"
-        tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
-        tal:content="structure context/lifecycle_status/title" />
+      <dd>
+        <span id="branch-details-status-value">
+        <span tal:attributes="class string:value branchstatus${context/lifecycle_status/name}"
+              tal:content="structure context/lifecycle_status/title" />&nbsp;
+        <a href="+edit-status">
+          <img class="editicon" src="/@@/edit"/>
+        </a>
+        </span>
+      </dd>
     </dl>
   </div>
 

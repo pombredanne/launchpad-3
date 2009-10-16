@@ -25,6 +25,14 @@
                 tal:define="lp_js string:${icingroot}/build"
                 tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
         </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/lp/comment.js">
+        </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/lp/errors.js">
+        </script>
       </tal:devmode>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
@@ -272,6 +280,12 @@
               <script type="text/javascript">
                 var button = document.getElementById('field.actions.save');
                 button.style.display = 'none';
+              </script>
+              <script type="text/javascript">
+                YUI().use('lp.comment', function(Y) {
+                var comment = new Y.lp.Comment();
+                comment.render();
+                })
               </script>
             </div>
             <tal:attachment-link

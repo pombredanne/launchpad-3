@@ -35,6 +35,12 @@ He needs to enter a message explaining the rejection:
     There is 1 error.
     You must provide an explanation message.
 
+At this point the user might decide this is a bad idea, so there is a
+cancel link to take him back to the question:
+
+    >>> print admin_browser.getLink('Cancel').url
+    http://answers.launchpad.dev/firefox/+question/2
+
 Entering an explanation message and clicking the 'Reject' button,
 will reject the question.
 
@@ -107,6 +113,11 @@ The form has a select widget displaying the current status.
 
     >>> admin_browser.getControl('Status', index=0).displayValue
     ['Invalid']
+
+There is also a cancel link should the user decide otherwise:
+
+    >>> print admin_browser.getLink('Cancel').url
+    http://answers.launchpad.dev/firefox/+question/2
 
 The user needs to select a status and enter a message explaining the
 status change:

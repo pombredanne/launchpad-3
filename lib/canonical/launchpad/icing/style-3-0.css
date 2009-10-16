@@ -312,8 +312,7 @@ strong.translations-stat {
 
 /* Default text presentation */
 html, body {
-    font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
-    font-family: sans-serif;
+    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
     font-size: 93%;
     }
 body.private {
@@ -366,6 +365,9 @@ thead th, tr.thead th {
     vertical-align: bottom;
     }
 
+form {
+    margin-bottom: 1em;
+}
 form h1 {
     margin-bottom: 1em;
     }
@@ -540,12 +542,18 @@ div.watermark-apps-portlet h1 {
     color: #747474;
 }
 
+/* Facet menu, a.k.a. application tabs */
+.facetmenu {
+    width: 100%;
+    white-space: nowrap;
+}
 /* Registering slot */
 .registering {
     float: right;
-    padding-top: 10px;
     font-size: 85%;
     color: #666;
+    position: relative;
+    top: 2em;
 }
 
 /* Side content exceptions */
@@ -931,4 +939,26 @@ table.translation-stats tfoot td {
     font-weight: bold;
     margin-top: 2em;
     clear: both;
+}
+.gridflow {
+    margin: 0.0em;
+    padding: 0.0em;
+}
+.gridflow ul {
+    margin: 0.5em 0.0em 0.5em 0.0em;
+    padding: 0.5em 0.0em 0.0em 0.0em;
+}
+.gridflow li {
+    display: inline;
+    margin: 0.0em;
+    padding: 0.2em;
+}
+.gridflow li span {
+    display: table-cell;
+    display: inline-table;
+    display: inline-block;
+    width: 192px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 1em 1em 1em 0;
 }

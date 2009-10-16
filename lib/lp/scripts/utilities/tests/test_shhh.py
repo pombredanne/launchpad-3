@@ -6,7 +6,10 @@ __metaclass__ = type
 import unittest
 from doctest import DocTestSuite
 import sys, os
-sys.path.insert(0, os.pardir)
+sys.path.insert(0, os.path.join(
+    os.path.dirname(__file__),
+    os.pardir, os.pardir, os.pardir, os.pardir, os.pardir, 'utilities'))
+
 
 def test_suite():
     return DocTestSuite('shhh')

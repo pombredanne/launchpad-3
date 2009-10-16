@@ -165,6 +165,7 @@
           </form>
         </tal:block>
       </div>
+      <div id="spinner-loader"></div>
     </metal:translation-import-queue>
 </body>
 </html>

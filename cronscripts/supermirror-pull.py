@@ -10,12 +10,12 @@ from optparse import OptionParser
 
 from twisted.internet import defer, reactor
 from twisted.python import log as tplog
-from twisted.web.xmlrpc import Proxy
 
 from lp.codehosting.puller import mirror, scheduler
 from canonical.config import config
 from canonical.launchpad.scripts import logger_options
-from canonical.twistedsupport.loggingsupport import set_up_logging_for_script
+from canonical.twistedsupport.loggingsupport import (
+    LoggingProxy, set_up_logging_for_script)
 
 def clean_shutdown(ignored):
     reactor.stop()
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         parser.error("Unhandled arguments %s" % repr(arguments))
     log = set_up_logging_for_script(options, 'supermirror_puller')
     manager = scheduler.JobScheduler(
-        Proxy(config.codehosting.branch_puller_endpoint), log)
+        LoggingProxy(config.codehosting.branch_puller_endpoint, log), log)
 
     reactor.callWhenRunning(run_mirror, log, manager)
     reactor.run()

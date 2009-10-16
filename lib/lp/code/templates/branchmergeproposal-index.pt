@@ -20,6 +20,14 @@
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/codereview.js">
   </script>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/lp/comment.js">
+  </script>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/lp/errors.js">
+  </script>
 </metal:block>
 
 
@@ -65,10 +73,23 @@
          tal:content="structure link/render">
          Add comment
     </div>
-    <tal:comments condition="view/conversation"
-                  replace="structure view/conversation/@@+render"/>
+    <div id="conversation"
+         tal:content="structure view/conversation/@@+render"/>
+  </div>
+  <!-- Hide inline commenting if YUI isn't used. -->
+  <div id="inline-add-comment" style="display: none">
+  <tal:comment replace="structure context/@@+comment/++form++" />
+      <div class="actions" id="launchpad-form-actions">
+        <input type="submit" id="field.actions.add" name="field.actions.add" value="Save Comment" class="button" />
+      </div>
   </div>
 
+  <script type="text/javascript">
+    YUI().use('lp.comment', function(Y) {
+    var comment = new Y.lp.CodeReviewComment();
+    comment.render();
+    })
+  </script>
   <div class="yui-g">
     <div class="yui-u first">
       <div id="source-revisions"

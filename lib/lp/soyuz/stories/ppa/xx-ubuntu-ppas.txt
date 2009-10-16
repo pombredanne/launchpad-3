@@ -246,6 +246,20 @@ In the three sample data PPAs, only one matches the search string "Celso".
     1
 
 
+=== Hand-hacked search URLs ==
+
+If the search term is specified more than once by someone hand-hacking the
+URL, the page copes gracefully with this by searching for all the terms
+specified.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+ppas"
+    ...     "?name_filter=packages&name_filter=friends")
+    >>> [row] = find_tags_by_class(anon_browser.contents, 'ppa_batch_row')
+    >>> print extract_text(row)
+    PPA for Celso Providelo...
+
+
 == Owner's PPA pages ==
 
 Let's start by adding an extra package to Celso's archive:

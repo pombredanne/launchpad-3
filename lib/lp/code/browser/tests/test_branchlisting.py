@@ -13,10 +13,9 @@ from storm.expr import Asc, Desc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.systemdocs import create_initialized_view
 from lp.code.browser.branchlisting import (
-    BranchListingBatchNavigator, BranchListingSort, BranchListingView,
-    GroupedDistributionSourcePackageBranchesView, PersonOwnedBranchesView,
+    BranchListingSort, BranchListingView,
+    GroupedDistributionSourcePackageBranchesView,
     SourcePackageBranchesView)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
@@ -25,6 +24,7 @@ from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCase, TestCaseWithFactory, time_counter
+from lp.testing.views import create_initialized_view
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
