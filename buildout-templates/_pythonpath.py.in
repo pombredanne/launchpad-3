@@ -34,7 +34,9 @@ def set_path():
         if k not in clean_modules:
             previously_imported[k] = sys.modules.pop(k)
 
-    sys.path[:] = egg_paths
+    # We keep the very first path because that is typically the directory
+    # of the file that imported us, which should continue to have precedence.
+    sys.path[1:] = egg_paths
     sys.path.extend(stdlib_paths)
     # Add the site_dirs before `addsitedir` in case it has setuptools.
     sys.path.extend(site_dirs)
