@@ -1653,7 +1653,7 @@
     <browser:page
         name="+addpackage"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.browser.PackagingAddView"
+        class="lp.registry.browser.packaging.PackagingAddView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-packaging.pt"/>
