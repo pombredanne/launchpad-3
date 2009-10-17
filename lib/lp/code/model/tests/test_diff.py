@@ -109,6 +109,11 @@ class TestDiff(DiffTestCase):
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
 
+
+class TestDiffInScripts(DiffTestCase):
+
+    layer = LaunchpadZopelessLayer
+
     def test_mergePreviewFromBranches(self):
         # mergePreviewFromBranches generates the correct diff.
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()

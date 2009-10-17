@@ -29,7 +29,8 @@ class LaunchpadUser:
                 # We are logged as that user.
                 return
             client.click(name="logout")
-            client.waits.forPageLoad(timeout=u'20000')
+            client.waits.forElement(
+                link=u'Log in / Register', timeout=u'20000')
         client.click(link=u'Log in / Register')
         client.waits.forPageLoad(timeout=u'20000')
         client.waits.forElement(timeout=u'8000', id=u'email')
