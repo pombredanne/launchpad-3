@@ -90,7 +90,7 @@ from lp.registry.interfaces.distroseries import (
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from canonical.launchpad.interfaces.packaging import PackagingType
+from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)

@@ -9,8 +9,10 @@ from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IProductSet, ISourcePackageNameSet, IPackagingUtil)
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.testing.pages import setupBrowser
 from canonical.testing import PageTestLayer
