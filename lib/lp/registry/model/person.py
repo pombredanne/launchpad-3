@@ -1615,13 +1615,13 @@ class Person(
         """See `IPersonViewRestricted`."""
         return self._getMappedParticipantsLocations().count()
 
-    def getMappedParticipantsBounds(self):
+    def getMappedParticipantsBounds(self, limit=None):
         """See `IPersonViewRestricted`."""
         max_lat = -90.0
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        locations = self._getMappedParticipantsLocations()
+        locations = self._getMappedParticipantsLocations(limit)
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '

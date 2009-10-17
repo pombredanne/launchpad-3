@@ -63,7 +63,7 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+    BuildStatus, BuildSetStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -818,21 +818,29 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             'FULLYBUILT': 'Successfully built',
             'FULLYBUILT_PENDING': 'Successfully built',
             'NEEDSBUILD': 'Waiting to build',
-            'FAILEDTOBUILD': 'Failed to build',
+            'FAILEDTOBUILD': 'Failed to build:',
             'BUILDING': 'Currently building',
             }
 
         now = datetime.now(tz=pytz.UTC)
         for result_tuple in result_tuples:
             source_pub = result_tuple[0]
-            current_status = source_pub.getStatusSummaryForBuilds()['status']
+            status_summary = source_pub.getStatusSummaryForBuilds()
+            current_status = status_summary['status']
             duration = now - source_pub.datepublished
+
+            # We'd like to include the builds in the latest updates
+            # iff the build failed.
+            builds = []
+            if current_status == BuildSetStatus.FAILEDTOBUILD:
+                builds = status_summary['builds']
 
             latest_updates_list.append({
                 'title': source_pub.source_package_name,
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,
                 'duration': duration,
+                'builds': builds
                 })
 
         return latest_updates_list
