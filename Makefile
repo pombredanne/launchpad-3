@@ -82,7 +82,7 @@ check_config: build
 check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PYTHON} -t ${PY} ./test_on_merge.py $(VERBOSITY)
+	${PY} -t ./test_on_merge.py $(VERBOSITY)
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
@@ -103,7 +103,7 @@ jscheck_functest: build
 check_mailman: build
 	# Run all tests, including the Mailman integration
 	# tests. test_on_merge.py takes care of setting up the database.
-	${PYTHON} -t ${PY} ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
+	${PY} -t ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
 
 lint: ${PY}
 	@bash ./bin/lint.sh
@@ -112,7 +112,7 @@ lint-verbose: ${PY}
 	@bash ./bin/lint.sh -v
 
 xxxreport: $(PY)
-	${PYTHON} -t ${PY} ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
+	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
 check-configs: $(PY)
 	${PY} utilities/check-configs.py
@@ -149,7 +149,7 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
-	${SHHH} LPCONFIG=${LPCONFIG} ${PYTHON} -t ${PY} buildmailman.py
+	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 	${SHHH} $(PY) sourcecode/lazr-js/tools/build.py \
 		-n launchpad -s lib/canonical/launchpad/javascript \
 		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
