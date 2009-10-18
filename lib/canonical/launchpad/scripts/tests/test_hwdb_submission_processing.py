@@ -2882,8 +2882,10 @@ class TestUdevDevice(TestCaseHWDB):
                 },
             }
 
+        self.pci_pccard_bridge_path = (
+            '/devices/pci0000:00/0000:00:1e.0/0000:08:03.0')
         self.pci_pccard_bridge = {
-            'P': '/devices/pci0000:00/0000:00:1e.0/0000:08:03.0',
+            'P': self.pci_pccard_bridge_path,
             'E': {
                 'DRIVER': 'yenta_cardbus',
                 'PCI_CLASS': '60700',
@@ -2894,8 +2896,10 @@ class TestUdevDevice(TestCaseHWDB):
                 }
             }
 
+        self.pccard_scsi_controller_path = (
+            '/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/0000:09:00.0')
         self.pccard_scsi_controller_data = {
-            'P': '/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/0000:09:00.0',
+            'P': self.pccard_scsi_controller_path,
             'E': {
                 'DRIVER': 'aic7xxx',
                 'PCI_CLASS': '10000',
@@ -2937,9 +2941,11 @@ class TestUdevDevice(TestCaseHWDB):
                 },
             }
 
+        self.scsi_scanner_device_path = (
+            '/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/0000:09:00.0/'
+            'host6/target6:0:1/6:0:1:0')
         self.scsi_scanner_device_data = {
-            'P': ('/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/'
-                  '0000:09:00.0/host6/target6:0:1/6:0:1:0'),
+            'P': self.scsi_scanner_device_path,
             'E': {
                 'DEVTYPE': 'scsi_device',
                 'SUBSYSTEM': 'scsi',
@@ -2997,9 +3003,10 @@ class TestUdevDevice(TestCaseHWDB):
                 },
             }
 
+        self.ide_cdrom_device_path = (
+            '/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0')
         self.ide_cdrom_device_data = {
-             'P': ('/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/'
-                   '4:0:0:0'),
+             'P': self.ide_cdrom_device_path,
              'E': {
                  'SUBSYSTEM': 'scsi',
                  'DEVTYPE': 'scsi_device',
@@ -3061,9 +3068,11 @@ class TestUdevDevice(TestCaseHWDB):
                 },
             }
 
+        self.usb_storage_scsi_device_path = (
+            '/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0/host7/'
+            'target7:0:0/7:0:0:0')
         self.usb_storage_scsi_device = {
-            'P': ('/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0/host7/'
-                  'target7:0:0/7:0:0:0'),
+            'P': self.usb_storage_scsi_device_path,
             'E': {
                 'DEVTYPE': 'scsi_device',
                 'DRIVER': 'sd',
@@ -3423,22 +3432,42 @@ class TestUdevDevice(TestCaseHWDB):
         :param parser: A SubmissionParser instance to be passed to
             the constructor of UdevDevice.
         """
-        parent = None
-        devices = []
+        devices = {}
         for kwargs in device_data:
             device = UdevDevice(parser, **kwargs)
-            devices.append(device)
-            if parent is not None:
-                parent.addChild(device)
+            devices[device.device_id] = device
             parent = device
+
+        # Build the parent-child relations so that the parent device
+        # is that device which has the longest path matching the
+        # start of the child's path.
+        #
+        # There is one exception of this rule: The root device has
+        # the path "/devices/LNXSYSTM:00", but the paths of most of
+        # our test deviies start with "/devices/pci". Well patch the
+        # index temporarily in order to find children of the root
+        # device.
+        if '/devices/LNXSYSTM:00' in devices:
+            devices['/devices'] = devices['/devices/LNXSYSTM:00']
+            del devices['/devices/LNXSYSTM:00']
+
+        device_paths = sorted(devices, key=len, reverse=True)
+        for path_index, path in enumerate(device_paths):
+            for parent_path in device_paths[path_index+1:]:
+                if path.startswith(parent_path):
+                    devices[parent_path].addChild(devices[path])
+                    break
+        if '/devices' in devices:
+            devices['/devices/LNXSYSTM:00'] = devices['/devices']
+            del devices['/devices']
         return devices
 
     def test_scsi_controller(self):
         """Test of UdevDevice.scsi_controller for a PCI controller."""
         devices = self.buildUdevDeviceHierarchy(
             self.scsi_device_hierarchy_data)
-        controller = devices[0]
-        scsi_device = devices[-1]
+        controller = devices[self.pccard_scsi_controller_path]
+        scsi_device = devices[self.scsi_scanner_device_path]
         self.assertEqual(controller, scsi_device.scsi_controller)
 
     def test_scsi_controller_insufficient_anchestors(self):
@@ -3451,7 +3480,7 @@ class TestUdevDevice(TestCaseHWDB):
         parser.submission_key = 'UdevDevice.scsi_controller ancestor missing'
         devices = self.buildUdevDeviceHierarchy(
             self.scsi_device_hierarchy_data[1:], parser)
-        scsi_device = devices[-1]
+        scsi_device = devices[self.scsi_scanner_device_path]
         self.assertEqual(None, scsi_device.scsi_controller)
         self.assertWarningMessage(
             parser.submission_key,
@@ -3471,7 +3500,7 @@ class TestUdevDevice(TestCaseHWDB):
         """Test of UdevDevice.translateScsiBus() with a real SCSI device."""
         devices = self.buildUdevDeviceHierarchy(
             self.scsi_device_hierarchy_data)
-        scsi_device = devices[-1]
+        scsi_device = devices[self.scsi_scanner_device_path]
         self.assertEqual(
             HWBus.SCSI, scsi_device.translateScsiBus())
 
@@ -3479,14 +3508,14 @@ class TestUdevDevice(TestCaseHWDB):
         """Test of UdevDevice.translateScsiBus() with an IDE device."""
         devices = self.buildUdevDeviceHierarchy(
             self.ide_device_hierarchy_data)
-        ide_device = devices[-1]
+        ide_device = devices[self.ide_cdrom_device_path]
         self.assertEqual(HWBus.IDE, ide_device.translateScsiBus())
 
     def test_translateScsiBus_usb_device(self):
         """Test of UdevDevice.translateScsiBus() with a USB device."""
         devices = self.buildUdevDeviceHierarchy(
             self.usb_storage_hierarchy_data)
-        usb_scsi_device = devices[-1]
+        usb_scsi_device = devices[self.usb_storage_scsi_device_path]
         self.assertEqual(None, usb_scsi_device.translateScsiBus())
 
     def test_translateScsiBus_non_scsi_device(self):
@@ -3498,8 +3527,8 @@ class TestUdevDevice(TestCaseHWDB):
         """Test of UdevDevice.translatePciBus()."""
         devices = self.buildUdevDeviceHierarchy(
             self.pci_bridge_pccard_hierarchy_data)
-        pci_device = devices[1]
-        pccard_device = devices[2]
+        pci_device = devices[self.pci_pccard_bridge_path]
+        pccard_device = devices[self.pccard_scsi_controller_path]
         self.assertEqual(HWBus.PCI, pci_device.translatePciBus())
         self.assertEqual(HWBus.PCCARD, pccard_device.translatePciBus())
 
@@ -3525,8 +3554,8 @@ class TestUdevDevice(TestCaseHWDB):
         """Test of UdevDevice.real_bus for PCI devices."""
         devices = self.buildUdevDeviceHierarchy(
             self.pci_bridge_pccard_hierarchy_data)
-        pci_device = devices[1]
-        pccard_device = devices[2]
+        pci_device = devices[self.pci_pccard_bridge_path]
+        pccard_device = devices[self.pccard_scsi_controller_path]
         self.assertEqual(HWBus.PCI, pci_device.real_bus)
         self.assertEqual(HWBus.PCCARD, pccard_device.real_bus)
 
@@ -3534,7 +3563,7 @@ class TestUdevDevice(TestCaseHWDB):
         """Test of UdevDevice.real_bus for a SCSI device."""
         devices = self.buildUdevDeviceHierarchy(
             self.scsi_device_hierarchy_data)
-        scsi_device = devices[-1]
+        scsi_device = devices[self.scsi_scanner_device_path]
         self.assertEqual(HWBus.SCSI, scsi_device.real_bus)
 
     def test_real_bus_system(self):

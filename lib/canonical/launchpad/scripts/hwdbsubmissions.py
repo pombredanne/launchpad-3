@@ -2665,7 +2665,7 @@ class UdevDevice(BaseDevice):
         # While SCSI devices from valid submissions should have four
         # ancestors, we can't be sure for bogus or broken submissions.
         try:
-            controller = self.parent.parent.parent.parent
+            controller = self.parent.parent.parent
         except AttributeError:
             controller = None
         if controller is None:
