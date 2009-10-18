@@ -1,4 +1,4 @@
-#!${buildout:directory}/bin/py
+#! /usr/bin/env ${buildout:directory}/bin/py
 ##############################################################################
 #
 # Copyright (c) 2004 Zope Corporation and Contributors.
