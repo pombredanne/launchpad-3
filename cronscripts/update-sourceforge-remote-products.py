@@ -7,8 +7,8 @@
 
 """Cron job to update remote_products using SourceForge project data."""
 
-import time
 import _pythonpath
+import time
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript
