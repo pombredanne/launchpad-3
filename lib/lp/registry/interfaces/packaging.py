@@ -76,10 +76,7 @@ class IPackaging(IHasOwner):
         title=_('Packaging'), required=True, vocabulary=PackagingType,
         description=_(
             "Is the project the primary content of the source package, "
-            "or does the source package include the work of other projects? "
-            'For example, "apache2" is the primary source package of the '
-            'apache2 project. The "cadaver" source package includes work '
-            "from the libneon project."))
+            "or does the source package include the work of other projects?"))
 
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)

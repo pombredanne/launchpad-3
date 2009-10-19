@@ -29,9 +29,11 @@ class PackagingAddView(LaunchpadFormView):
     page_title = label
 
     @property
-    def cancel_url(self):
+    def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
+
+    cancel_url = next_url
 
     def validate(self, data):
         productseries = self.context
@@ -39,19 +41,20 @@ class PackagingAddView(LaunchpadFormView):
         distroseries = data['distroseries']
         if sourcepackagename is None:
             message = "You must choose the source package name."
-            if message:
-                self.setFieldError('sourcepackagename', message)
+            self.setFieldError('sourcepackagename', message)
         packaging_util = getUtility(IPackagingUtil)
         if packaging_util.packagingEntryExists(
             productseries=productseries,
             sourcepackagename=sourcepackagename,
             distroseries=distroseries):
+            # The series packaging conflicts with itself.
             self.addError(_(
                 "This series is already packaged in %s." %
                 distroseries.displayname))
         elif packaging_util.packagingEntryExists(
             sourcepackagename=sourcepackagename,
             distroseries=distroseries):
+            # The series package conflicts with another series.
             sourcepackage = distroseries.getSourcePackage(
                 sourcepackagename.name)
             self.addError(structured(
@@ -71,4 +74,3 @@ class PackagingAddView(LaunchpadFormView):
         getUtility(IPackagingUtil).createPackaging(
             productseries, data['sourcepackagename'], data['distroseries'],
             data['packaging'], owner=self.user)
-        self.next_url = self.cancel_url

@@ -91,8 +91,7 @@ class PackagingUtil:
         """See `IPackaging`."""
         criteria = dict(
             sourcepackagename=sourcepackagename,
-            distroseries=distroseries,
-            )
+            distroseries=distroseries)
         if productseries is not None:
             criteria['productseries'] = productseries
         result = Packaging.selectOneBy(**criteria)
