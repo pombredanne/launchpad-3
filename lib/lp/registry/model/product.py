@@ -32,7 +32,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
@@ -57,7 +57,7 @@ from lp.registry.model.milestone import (
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from lp.registry.model.announcement import MakesAnnouncements
-from canonical.launchpad.database.packaging import Packaging
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.person import Person
 from lp.registry.model.productlicense import ProductLicense
@@ -996,9 +996,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             series_list.remove(self.development_focus)
         series_list.insert(0, self.development_focus)
         series_list.reverse()
-        return [series.getTimeline(include_inactive=include_inactive)
-                for series in series_list
-                if include_inactive or series.active]
+        return [
+            series.getTimeline(include_inactive=include_inactive)
+            for series in series_list
+            if include_inactive or series.active or
+               series == self.development_focus
+            ]
 
 
 class ProductSet:

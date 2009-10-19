@@ -59,6 +59,7 @@ _time_regex = re.compile(r"""
     re.VERBOSE)
 
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
+UDEV_ROOT_PATH = '/devices/LNXSYSTM:00'
 
 # These UDIs appears in some submissions more than once.
 KNOWN_DUPLICATE_UDIS = set((
@@ -86,13 +87,21 @@ DB_FORMAT_FOR_VENDOR_ID = {
     'pci': '0x%04x',
     'usb_device': '0x%04x',
     'scsi': '%-8s',
+    'scsi_device': '%-8s',
     }
 
 DB_FORMAT_FOR_PRODUCT_ID = {
     'pci': '0x%04x',
     'usb_device': '0x%04x',
     'scsi': '%-16s',
+    'scsi_device': '%-16s',
     }
+
+UDEV_USB_DEVICE_PROPERTIES = set(('DEVTYPE', 'PRODUCT', 'TYPE'))
+UDEV_USB_PRODUCT_RE = re.compile(
+    '^[0-9a-f]{1,4}/[0-9a-f]{1,4}/[0-9a-f]{1,4}$', re.I)
+UDEV_USB_TYPE_RE = re.compile('^[0-9]{1,3}/[0-9]{1,3}/[0-9]{1,3}$')
+SYSFS_SCSI_DEVICE_ATTRIBUTES = set(('vendor', 'model', 'type'))
 
 class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
@@ -1141,6 +1150,207 @@ class SubmissionParser(object):
                 return False
         return True
 
+    PCI_PROPERTIES = set(
+        ('PCI_CLASS', 'PCI_ID', 'PCI_SUBSYS_ID', 'PCI_SLOT_NAME'))
+    pci_class_re = re.compile('^[0-9a-f]{1,6}$', re.I)
+    pci_id_re = re.compile('^[0-9a-f]{4}:[0-9a-f]{4}$', re.I)
+
+    def checkUdevPciProperties(self, udev_data):
+        """Validation of udev PCI devices.
+
+        :param udev_data: A list of dicitionaries describing udev
+             devices, as returned by _parseUdev()
+        :return: True if all checks pass, else False.
+
+        Each PCI device must have the properties PCI_CLASS, PCI_ID,
+        PCI_SUBSYS_ID, PCI_SLOT_NAME. Non-PCI devices must not have
+        them.
+
+        The value of PCI class must be a 24 bit integer in
+        hexadecimal representation.
+
+        The values of PCI_ID and PCI_SUBSYS_ID must be two 16 bit
+        integers, separated by a ':'.
+        """
+        for device in udev_data:
+            properties = device['E']
+            property_names = set(properties)
+            existing_pci_properties = property_names.intersection(
+                self.PCI_PROPERTIES)
+            subsystem = device['E'].get('SUBSYSTEM')
+            if subsystem is None:
+                self._logError(
+                    'udev device without SUBSYSTEM property found.',
+                    self.submission_key)
+                return False
+            if subsystem == 'pci':
+                # Check whether any of the standard pci properties were
+                # missing.
+                if existing_pci_properties != self.PCI_PROPERTIES:
+                    missing_properties = self.PCI_PROPERTIES.difference(
+                            existing_pci_properties)
+
+                    self._logError(
+                        'PCI udev device without required PCI properties: '
+                            '%r %r'
+                            % (missing_properties, device['P']),
+                        self.submission_key)
+                    return False
+                # Ensure that the pci class and ids for this device are
+                # formally valid.
+                if self.pci_class_re.search(properties['PCI_CLASS']) is None:
+                    self._logError(
+                        'Invalid udev PCI class: %r %r'
+                            % (properties['PCI_CLASS'], device['P']),
+                        self.submission_key)
+                    return False
+                for pci_id in (properties['PCI_ID'],
+                               properties['PCI_SUBSYS_ID']):
+                    if self.pci_id_re.search(pci_id) is None:
+                        self._logError(
+                            'Invalid udev PCI device ID: %r %r'
+                                % (pci_id, device['P']),
+                            self.submission_key)
+                        return False
+            else:
+                if len(existing_pci_properties) > 0:
+                    self._logError(
+                        'Non-PCI udev device with PCI properties: %r %r'
+                            % (existing_pci_properties, device['P']),
+                        self.submission_key)
+                    return False
+        return True
+
+    def checkUdevUsbProperties(self, udev_data):
+        """Validation of udev USB devices.
+
+        USB devices must have the properties DEVTYPE (value
+        'usb_device' or 'usb_interface'), PRODUCT and TYPE. PRODUCT
+        must be a tuple of three integers in hexadecimal
+        representation, separates by '/'. TYPE must be a a tuple of
+        three integers in decimal representation, separated by '/'.
+        usb_interface nodes must additionally have a property
+        INTERFACE, containing three integers in the same format as
+        TYPE.
+        """
+        for device in udev_data:
+            subsystem = device['E'].get('SUBSYSTEM')
+            if subsystem != 'usb':
+                continue
+            properties = device['E']
+            property_names = set(properties)
+            existing_usb_properties = property_names.intersection(
+                UDEV_USB_DEVICE_PROPERTIES)
+            if existing_usb_properties != UDEV_USB_DEVICE_PROPERTIES:
+                missing_properties = UDEV_USB_DEVICE_PROPERTIES.difference(
+                    existing_usb_properties)
+                self._logError(
+                    'USB udev device found without required properties: %r %r'
+                    % (missing_properties, device['P']),
+                    self.submission_key)
+                return False
+            if UDEV_USB_PRODUCT_RE.search(properties['PRODUCT']) is None:
+                self._logError(
+                    'USB udev device found with invalid product ID: %r %r'
+                    % (properties['PRODUCT'], device['P']),
+                    self.submission_key)
+                return False
+            if UDEV_USB_TYPE_RE.search(properties['TYPE']) is None:
+                self._logError(
+                    'USB udev device found with invalid type data: %r %r'
+                    % (properties['TYPE'], device['P']),
+                    self.submission_key)
+                return False
+
+            device_type = properties['DEVTYPE']
+            if device_type not in ('usb_device', 'usb_interface'):
+                self._logError(
+                    'USB udev device found with invalid udev type data: %r %r'
+                    % (device_type, device['P']),
+                    self.submission_key)
+                return False
+            if device_type == 'usb_interface':
+                interface_type = properties.get('INTERFACE')
+                if interface_type is None:
+                    self._logError(
+                        'USB interface udev device found without INTERFACE '
+                        'property: %r'
+                        % device['P'],
+                        self.submission_key)
+                    return False
+                if UDEV_USB_TYPE_RE.search(interface_type) is None:
+                    self._logError(
+                        'USB Interface udev device found with invalid '
+                        'INTERFACE property: %r %r'
+                        % (interface_type, device['P']),
+                        self.submission_key)
+                    return False
+        return True
+
+    def checkUdevScsiProperties(self, udev_data, sysfs_data):
+        """Validation of udev SCSI devices.
+
+        Each udev node where SUBSYSTEM is 'scsi' should have the
+        property DEVTYPE; nodes where DEVTYPE is 'scsi_device'
+        should have a corresponding sysfs node, and this node should
+        define the attributes 'vendor', 'model', 'type'.
+        """
+        for device in udev_data:
+            subsystem = device['E'].get('SUBSYSTEM')
+            if subsystem != 'scsi':
+                continue
+            properties = device['E']
+            if 'DEVTYPE' not in properties:
+                self._logError(
+                    'SCSI udev node found without DEVTYPE property: %r'
+                    % device['P'],
+                    self.submission_key)
+                return False
+            if properties['DEVTYPE'] == 'scsi_device':
+                device_path = device['P']
+                if device_path not in sysfs_data:
+                    self._logError(
+                        'SCSI udev device node found without related '
+                        'sysfs record: %r' % device_path,
+                        self.submission_key)
+                    return False
+                sysfs_attributes = sysfs_data[device_path]
+                sysfs_attribute_names = set(sysfs_attributes)
+                if SYSFS_SCSI_DEVICE_ATTRIBUTES.intersection(
+                    sysfs_attribute_names) != SYSFS_SCSI_DEVICE_ATTRIBUTES:
+                    missing_attributes = (
+                        SYSFS_SCSI_DEVICE_ATTRIBUTES.difference(
+                            sysfs_attribute_names))
+                    self._logError(
+                        'SCSI udev device found without required sysfs '
+                        'attributes: %r %r'
+                        % (missing_attributes, device_path),
+                        self.submission_key)
+                    return False
+        return True
+
+    def checkUdevDmiData(self, dmi_data):
+        """Consistency check for DMI data.
+
+        All keys of the dictionary dmi_data should start with
+        '/sys/class/dmi/id/'.
+        """
+        for dmi_key in dmi_data:
+            if not dmi_key.startswith('/sys/class/dmi/id/'):
+                self._logError(
+                    'Invalid DMI key: %r' % dmi_key, self.submission_key)
+                return False
+        return True
+
+    def checkConsistentUdevDeviceData(self, udev_data, sysfs_data, dmi_data):
+        """Consistency checks for udev data."""
+        return (
+            self.checkUdevDictsHavePathKey(udev_data) and
+            self.checkUdevPciProperties(udev_data) and
+            self.checkUdevUsbProperties(udev_data) and
+            self.checkUdevScsiProperties(udev_data, sysfs_data) and
+            self.checkUdevDmiData(dmi_data))
+
     def checkConsistency(self, parsed_data):
         """Run consistency checks on the submitted data.
 
@@ -1148,10 +1358,11 @@ class SubmissionParser(object):
         :param: parsed_data: parsed submission data, as returned by
                              parseSubmission
         """
-        if 'udev' in parsed_data['hardware']:
-            if not self.checkUdevDictsHavePathKey(
-                parsed_data['hardware']['udev']):
-                return False
+        if ('udev' in parsed_data['hardware']
+            and not self.checkConsistentUdevDeviceData(
+                parsed_data['hardware']['udev'],
+                parsed_data['hardware']['sysfs-attributes'])):
+            return False
         duplicate_ids = self.findDuplicateIDs(parsed_data)
         if duplicate_ids:
             self._logError('Duplicate IDs found: %s' % duplicate_ids,
@@ -1174,7 +1385,8 @@ class SubmissionParser(object):
                 self._logError(value, self.submission_key)
                 return False
 
-            circular = self.checkHALDevicesParentChildConsistency(udi_children)
+            circular = self.checkHALDevicesParentChildConsistency(
+                udi_children)
             if circular:
                 self._logError('Found HAL devices with circular parent/child '
                                'relationship: %s' % circular,
@@ -1397,6 +1609,12 @@ class BaseDevice:
     @property
     def driver_name(self):
         """The name of the driver contolling this device. May be None."""
+        raise NotImplementedError
+
+    @property
+    def scsi_controller(self):
+        """Return the SCSI host controller for this device."""
+        raise NotImplementedError
 
     def translateScsiBus(self):
         """Return the real bus of a device where raw_bus=='scsi'.
@@ -1406,37 +1624,27 @@ class BaseDevice:
         for more details. This method determines the real bus
         of a device accessed via the kernel's SCSI subsystem.
         """
-        # While SCSI devices from valid submissions should have a
-        # parent and a grandparent, we can't be sure for bogus or
-        # broken submissions.
-        parent = self.parent
-        if parent is None:
-            self.parser._logWarning(
-                'Found SCSI device without a parent: %s.' % self.device_id)
-            return None
-        grandparent = parent.parent
-        if grandparent is None:
-            self.parser._logWarning(
-                'Found SCSI device without a grandparent: %s.'
-                % self.device_id)
+        scsi_controller = self.scsi_controller
+        if scsi_controller is None:
             return None
 
-        grandparent_bus = grandparent.raw_bus
-        if grandparent_bus == 'pci':
-            if (grandparent.pci_class != PCI_CLASS_STORAGE):
+        scsi_controller_bus = scsi_controller.raw_bus
+        if scsi_controller_bus == 'pci':
+            if (scsi_controller.pci_class != PCI_CLASS_STORAGE):
                 # This is not a storage class PCI device? This
                 # indicates a bug somewhere in HAL or in the hwdb
                 # client, or a fake submission.
-                device_class = grandparent.pci_class
+                device_class = scsi_controller.pci_class
                 self.parser._logWarning(
                     'A (possibly fake) SCSI device %s is connected to '
                     'PCI device %s that has the PCI device class %s; '
                     'expected class 1 (storage).'
-                    % (self.device_id, grandparent.device_id, device_class))
+                    % (self.device_id, scsi_controller.device_id,
+                       device_class))
                 return None
-            pci_subclass = grandparent.pci_subclass
+            pci_subclass = scsi_controller.pci_subclass
             return self.pci_storage_subclass_hwbus.get(pci_subclass)
-        elif grandparent_bus == 'usb':
+        elif scsi_controller_bus in ('usb', 'usb_interface'):
             # USB storage devices have the following HAL device hierarchy:
             # - HAL node for the USB device. info.bus == 'usb_device',
             #   device class == 0, device subclass == 0
@@ -1495,6 +1703,12 @@ class BaseDevice:
             return HWBus.PCI
 
     @property
+    def is_root_device(self):
+        """Return True is this is the root node of all devicese, else False.
+        """
+        raise NotImplementedError
+
+    @property
     def raw_bus(self):
         """Return the device bus as specified by HAL or udev."""
         raise NotImplementedError
@@ -1511,11 +1725,11 @@ class BaseDevice:
         if result is not None:
             return result
 
-        if device_bus == 'scsi':
+        if device_bus in ('scsi', 'scsi_device'):
             return self.translateScsiBus()
         elif device_bus == 'pci':
             return self.translatePciBus()
-        elif self.udi == ROOT_UDI:
+        elif self.is_root_device:
             # The computer itself. In Hardy, HAL provides no info.bus
             # for the machine itself; older versions set info.bus to
             # 'unknown', hence it is better to use the machine's
@@ -1523,7 +1737,7 @@ class BaseDevice:
             return HWBus.SYSTEM
         else:
             self.parser._logWarning(
-                'Unknown bus %r for device %s' % (device_bus, self.udi))
+                'Unknown bus %r for device %s' % (device_bus, self.device_id))
             return None
 
     @property
@@ -1858,10 +2072,15 @@ class BaseDevice:
             # it is hard to find a better heuristic to separate
             # the vendor name from the product name.
             splitted_name = self.scsi_model.split(' ', 1)
-            if len(splitted_name) < 2:
-                return 'ATA', splitted_name[0]
-            return splitted_name
-        return (vendor, self.scsi_model)
+            if len(splitted_name) == 2:
+                return {
+                    'vendor': splitted_name[0],
+                    'product': splitted_name[1],
+                    }
+        return {
+            'vendor': vendor,
+            'product': self.scsi_model,
+            }
 
     def getDriver(self):
         """Return the HWDriver instance associated with this device.
@@ -2062,6 +2281,11 @@ class HALDevice(BaseDevice):
             return result
         return self.getProperty('info.subsystem')
 
+    @property
+    def is_root_device(self):
+        """See `BaseDevice`."""
+        return self.udi == ROOT_UDI
+
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
 
@@ -2080,11 +2304,7 @@ class HALDevice(BaseDevice):
             # below does not work properly.
             return self.getProperty('system.hardware.' + type_)
         elif bus == 'scsi':
-            vendor, product = self.getScsiVendorAndModelName()
-            if type_ == 'vendor':
-                return vendor
-            else:
-                return product
+            return self.getScsiVendorAndModelName()[type_]
         else:
             result = self.getProperty('info.' + type_)
             if result is None:
@@ -2145,6 +2365,315 @@ class HALDevice(BaseDevice):
         """See `BaseDevice`."""
         return self.getVendorOrProductID('product')
 
+    @property
+    def scsi_controller(self):
+        """See `BaseDevice`."""
+        # While SCSI devices from valid submissions should have a
+        # parent and a grandparent, we can't be sure for bogus or
+        # broken submissions.
+        if self.raw_bus != 'scsi':
+            return None
+        parent = self.parent
+        if parent is None:
+            self.parser._logWarning(
+                'Found SCSI device without a parent: %s.' % self.device_id)
+            return None
+        grandparent = parent.parent
+        if grandparent is None:
+            self.parser._logWarning(
+                'Found SCSI device without a grandparent: %s.'
+                % self.device_id)
+            return None
+        return grandparent
+
+
+class UdevDevice(BaseDevice):
+    """The representation of a udev device node."""
+
+    def __init__(self, parser, udev_data, sysfs_data=None, dmi_data=None):
+        """HALDevice constructor.
+
+        :param udevdata: The udev data for this device
+        :param sysfs_data: sysfs data for this device.
+        :param parser: The parser processing a submission.
+        :type parser: SubmissionParser
+        """
+        super(UdevDevice, self).__init__(parser)
+        self.udev = udev_data
+        self.sysfs = sysfs_data
+        self.dmi = dmi_data
+
+    @property
+    def device_id(self):
+        """See `BaseDevice`."""
+        return self.udev['P']
+
+    @property
+    def root_device_ids(self):
+        """The vendor and product IDs of the root device."""
+        return {
+            'vendor': self.dmi.get('/sys/class/dmi/id/sys_vendor'),
+            'product': self.dmi.get('/sys/class/dmi/id/product_name')
+            }
+
+    @property
+    def is_pci(self):
+        """True, if this is a PCI device, else False."""
+        return self.udev['E'].get('SUBSYSTEM') == 'pci'
+
+    @property
+    def pci_class_info(self):
+        """Parse the udev property PCI_SUBSYS_ID.
+
+        :return: (PCI class, PCI sub-class, version) for a PCI device
+            or (None, None, None) for other devices.
+        """
+        if self.is_pci:
+            # SubmissionParser.checkConsistentUdevDeviceData() ensures
+            # that PCI_CLASS is a 24 bit integer in hexadecimal
+            # representation.
+            # Bits 16..23 of the number are the man PCI class,
+            # bits 8..15 are the sub-class, bits 0..7 are the version.
+            class_info = int(self.udev['E']['PCI_CLASS'], 16)
+            return (class_info >> 16, (class_info >> 8) & 0xFF,
+                    class_info & 0xFF)
+        else:
+            return (None, None, None)
+
+    @property
+    def pci_class(self):
+        """See `BaseDevice`."""
+        return self.pci_class_info[0]
+
+    @property
+    def pci_subclass(self):
+        """See `BaseDevice`."""
+        return self.pci_class_info[1]
+
+    @property
+    def pci_ids(self):
+        """The PCI vendor and product IDs.
+
+        :return: A dictionary containing the vendor and product IDs.
+            The IDs are set to None for Non-PCI devices.
+        """
+        if self.is_pci:
+            # SubmissionParser.checkUdevPciProperties() ensures that
+            # each PCI device has the property PCI_ID and that is
+            # consists of two 4-digit hexadecimal numbers, separated
+            # by a ':'.
+            id_string = self.udev['E']['PCI_ID']
+            ids = id_string.split(':')
+            return {
+                'vendor': int(ids[0], 16),
+                'product': int(ids[1], 16),
+                }
+        else:
+            return  {
+                'vendor': None,
+                'product': None,
+                }
+
+    @property
+    def is_usb(self):
+        """True, if this is a USB device, else False."""
+        return self.udev['E'].get('SUBSYSTEM') == 'usb'
+
+    @property
+    def usb_ids(self):
+        """The vendor ID, product ID, product version for USB devices.
+
+        :return: A dictionary containing the vendor and product IDs and
+            the product version for USB devices.
+            The IDs are set to None for Non-USB devices.
+        """
+        if self.is_usb:
+            # udev represents USB device IDs as strings
+            # vendor_id/product_id/version, where each part is
+            # a hexadecimal number.
+            # SubmissionParser.checkUdevUsbProperties() ensures that
+            # the string PRODUCT is in the format required below.
+            product_info = self.udev['E']['PRODUCT'].split('/')
+            return {
+                'vendor': int(product_info[0], 16),
+                'product': int(product_info[1], 16),
+                'version': int(product_info[2], 16),
+                }
+        else:
+            return {
+                'vendor': None,
+                'product': None,
+                'version': None,
+                }
+
+    @property
+    def usb_vendor_id(self):
+        """See `BaseDevice`."""
+        return self.usb_ids['vendor']
+
+    @property
+    def usb_product_id(self):
+        """See `BaseDevice`."""
+        return self.usb_ids['product']
+
+    @property
+    def is_scsi_device(self):
+        """True, if this is a SCSI device, else False."""
+        # udev sets the property SUBSYSTEM to "scsi" for a number of
+        # different nodes: SCSI hosts, SCSI targets and SCSI devices.
+        # They are distiguished by the property DEVTYPE.
+        properties = self.udev['E']
+        return (properties.get('SUBSYSTEM') == 'scsi' and
+                properties.get('DEVTYPE') == 'scsi_device')
+
+    @property
+    def scsi_vendor(self):
+        """The SCSI vendor name of the device or None for Non-SCSI devices."""
+        if self.is_scsi_device:
+            # SubmissionParser.checkUdevScsiProperties() ensures that
+            # each SCSI device has a record in self.sysfs and that
+            # the attribute 'vendor' exists.
+            path = self.udev['P']
+            return self.sysfs['vendor']
+        else:
+            return None
+
+    @property
+    def scsi_model(self):
+        """The SCSI model name of the device or None for Non-SCSI devices."""
+        if self.is_scsi_device:
+            # SubmissionParser.checkUdevScsiProperties() ensures that
+            # each SCSI device has a record in self.sysfs and that
+            # the attribute 'model' exists.
+            path = self.udev['P']
+            return self.sysfs['model']
+        else:
+            return None
+
+    @property
+    def raw_bus(self):
+        """See `BaseDevice`."""
+        # udev specifies the property SUBSYSTEM for most devices;
+        # some devices have additionally the more specific property
+        # DEVTYPE. DEVTYPE is preferable.
+        # The root device has the subsystem/bus value "acpi", which
+        # is a bit nonsensical.
+        if self.is_root_device:
+            return None
+        properties = self.udev['E']
+        devtype = properties.get('DEVTYPE')
+        if devtype is not None:
+            return devtype
+        return properties.get('SUBSYSTEM')
+
+    @property
+    def is_root_device(self):
+        """See `BaseDevice`."""
+        return self.udev['P'] == UDEV_ROOT_PATH
+
+    def getVendorOrProduct(self, type_):
+        """Return the vendor or product of this device.
+
+        :return: The vendor or product data for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+
+        bus = self.raw_bus
+        if self.is_root_device:
+            # udev does not known about any product information for
+            # the root device. We use DMI data instead.
+            return self.root_device_ids[type_]
+        elif bus == 'scsi_device':
+            return self.getScsiVendorAndModelName()[type_]
+        elif bus in ('pci', 'usb_device'):
+            # XXX Abel Deuring 2009-10-13, bug 450480: udev does not
+            # provide human-readable vendor and product names for
+            # USB and PCI devices. We should retrieve these from
+            # http://www.linux-usb.org/usb.ids and
+            # http://pciids.sourceforge.net/v2.2/pci.ids
+            return 'Unknown'
+        else:
+            # We don't process yet other devices than complete systems,
+            # PCI, USB devices and those devices that are represented
+            # in udev as SCSI devices: real SCSI devices, and
+            # IDE/ATA/SATA devices.
+            return None
+
+    @property
+    def vendor(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProduct('vendor')
+
+    @property
+    def product(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProduct('product')
+
+    def getVendorOrProductID(self, type_):
+        """Return the vendor or product ID of this device.
+
+        :return: The vendor or product ID for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+
+        bus = self.raw_bus
+        if self.is_root_device:
+            # udev does not known about any product information for
+            # the root device. We use DMI data instead.
+            if type_ == 'vendor':
+                return self.dmi.get('/sys/class/dmi/id/sys_vendor')
+            else:
+                return self.dmi.get('/sys/class/dmi/id/product_name')
+        elif bus == 'scsi_device':
+            return self.getScsiVendorAndModelName()[type_]
+        elif bus == 'pci':
+            return self.pci_ids[type_]
+        elif bus == 'usb_device':
+            return self.usb_ids[type_]
+        else:
+            # We don't process yet other devices than complete systems,
+            # PCI, USB devices and those devices that are represented
+            # in udev as SCSI devices: real SCSI devices, and
+            # IDE/ATA/SATA devices.
+            return None
+
+    @property
+    def vendor_id(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProductID('vendor')
+
+    @property
+    def product_id(self):
+        """See `BaseDevice`."""
+        return self.getVendorOrProductID('product')
+
+    @property
+    def driver_name(self):
+        """See `BaseDevice`."""
+        return self.udev['E'].get('DRIVER')
+
+    @property
+    def scsi_controller(self):
+        """See `BaseDevice`."""
+        if self.raw_bus != 'scsi_device':
+            return None
+
+        # While SCSI devices from valid submissions should have four
+        # ancestors, we can't be sure for bogus or broken submissions.
+        try:
+            controller = self.parent.parent.parent.parent
+        except AttributeError:
+            controller = None
+        if controller is None:
+            self.parser._logWarning(
+                'Found a SCSI device without a sufficient number of '
+                'ancestors: %s' % self.device_id)
+            return None
+        return controller
 
 class ProcessingLoop(object):
     """An `ITunableLoop` for processing HWDB submissions."""
