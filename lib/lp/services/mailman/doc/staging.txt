@@ -198,8 +198,7 @@ launchpad.conf file.
     ...     stdout=PIPE, stderr=PIPE,
     ...     cwd=LayerProcessController.appserver_config.root,
     ...     env=dict(LPCONFIG='testrunner-appserver',
-    ...              PYTHONPATH=os.pathsep.join(sys.path),
-    ...              PATH=os.environ.get('PATH')))
+    ...              PYTHONPATH=os.pathsep.join(sys.path)))
     >>> stdout, stderr = proc.communicate()
 
     # Ignore stdout and stderr, but print the return code.  stdout should be
