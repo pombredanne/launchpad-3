@@ -3320,6 +3320,21 @@ class TestUdevDevice(TestCaseHWDB):
             'E': {}
             }
 
+        self.cpu_device_data = {
+            'P': '/devices/LNXSYSTM:00/LNXCPU:00',
+            'E': {
+                'DRIVER': 'processor',
+                'SUBSYSTEM': 'acpi',
+                },
+            }
+
+        self.platform_device_data = {
+            'P': '/devices/platform/dock.0',
+            'E': {
+                'SUBSYSTEM': 'platform',
+                },
+            }
+
     def test_device_id(self):
         """Test of UdevDevice.device_id."""
         device = UdevDevice(None, self.pci_sata_controller)
@@ -3880,6 +3895,110 @@ class TestUdevDevice(TestCaseHWDB):
                 % (device.device_id,
                    device.device_id == self.usb_storage_usb_device_path,
                    device.is_real_device))
+
+    def test_has_reliable_data_system(self):
+        """Test of UdevDevice.has_reliable_data for a system."""
+        root_device = UdevDevice(
+            None, self.root_device, dmi_data=self.root_device_dmi_data)
+        self.assertTrue(root_device.has_reliable_data)
+
+    def test_has_reliable_data_system_no_vendor_name(self):
+        """Test of UdevDevice.has_reliable_data for a system.
+
+        If the DMI data does not provide vendor name, has_reliable_data
+        is False.
+        """
+        del self.root_device_dmi_data['/sys/class/dmi/id/sys_vendor']
+        root_device = UdevDevice(
+            None, self.root_device, dmi_data=self.root_device_dmi_data)
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'root device without vendor name'
+        root_device.parser = parser
+        self.assertFalse(root_device.has_reliable_data)
+        self.assertWarningMessage(
+            parser.submission_key,
+            "A UdevDevice that is supposed to be a real device does not "
+            "provide bus, vendor ID, product ID or product name: "
+            "<DBItem HWBus.SYSTEM, (0) System> None 'LIFEBOOK E8210' "
+            "'LIFEBOOK E8210' /devices/LNXSYSTM:00")
+
+
+    def test_has_reliable_data_system_no_product_name(self):
+        """Test of UdevDevice.has_reliable_data for a system.
+
+        If the DMI data does not provide product name, has_reliable_data
+        is False.
+        """
+        del self.root_device_dmi_data['/sys/class/dmi/id/product_name']
+        root_device = UdevDevice(
+            None, self.root_device, dmi_data=self.root_device_dmi_data)
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'root device without product name'
+        root_device.parser = parser
+        self.assertFalse(root_device.has_reliable_data)
+        self.assertWarningMessage(
+            parser.submission_key,
+            "A UdevDevice that is supposed to be a real device does not "
+            "provide bus, vendor ID, product ID or product name: "
+            "<DBItem HWBus.SYSTEM, (0) System> 'FUJITSU SIEMENS' None None "
+            "/devices/LNXSYSTM:00")
+
+    def test_has_reliable_data_acpi_device(self):
+        """Test of UdevDevice.has_reliable_data for an ACPI device.
+
+        APCI devices are considered not to have reliable data. The only
+        exception is the root device, see test_has_reliable_data_system.
+        """
+        acpi_device = UdevDevice(None, self.cpu_device_data)
+        self.assertEqual('acpi', acpi_device.raw_bus)
+        self.assertFalse(acpi_device.has_reliable_data)
+
+    def test_has_reliable_data_platform_device(self):
+        """Test of UdevDevice.has_reliable_data for a "platform" device.
+
+        devices with raw_bus == 'platform' are considered not to have
+        reliable data.
+        """
+        platform_device = UdevDevice(None, self.platform_device_data)
+        self.assertFalse(platform_device.has_reliable_data)
+
+    def test_has_reliable_data_pci_device(self):
+        """Test of UdevDevice.has_reliable_data for a PCI device."""
+        devices = self.buildUdevDeviceHierarchy(
+            self.pci_bridge_pccard_hierarchy_data)
+        pci_device = devices[self.pci_pccard_bridge_path]
+        self.assertTrue(pci_device.has_reliable_data)
+
+    def test_has_reliable_data_usb_device(self):
+        """Test of UdevDevice.has_reliable_data for a USB device."""
+        usb_device = UdevDevice(None, self.usb_storage_usb_device_data)
+        self.assertTrue(usb_device.has_reliable_data)
+
+    def test_has_reliable_data_scsi_device(self):
+        """Test of UdevDevice.has_reliable_data for a SCSI device."""
+        devices = self.buildUdevDeviceHierarchy(
+            self.scsi_device_hierarchy_data)
+        scsi_device = devices[self.scsi_scanner_device_path]
+        self.assertTrue(scsi_device.has_reliable_data)
+
+    def test_has_reliable_data_usb_interface_device(self):
+        """Test of UdevDevice.has_reliable_data for a USB interface.
+
+        UdevDevice.has_reliable_data should only be called for nodes
+        where is_rel_device is True. If called for other nodes, we
+        may get a warning because they do not provide reqired data,
+        like a bus, vendor or product ID.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'UdevDevice.has_reliable_data for a USB interface')
+        usb_interface = UdevDevice(parser, self.usb_storage_usb_interface)
+        self.assertFalse(usb_interface.has_reliable_data)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'A UdevDevice that is supposed to be a real device does not '
+            'provide bus, vendor ID, product ID or product name: None None '
+            'None None /devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0')
 
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
