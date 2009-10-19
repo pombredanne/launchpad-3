@@ -12,8 +12,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing import DatabaseFunctionalLayer
 
-from lp.archiveuploader.permission import (
-    person_may_edit_branch, verify_upload)
+from lp.archiveuploader.permission import verify_upload
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -275,6 +274,7 @@ class TestWriteToBranch(PermissionTest):
     def test_package_upload_permissions_grant_branch_edit(self):
         # If you can upload to the package, then you are also allowed to write
         # to the branch.
+
         permission_set = getUtility(IArchivePermissionSet)
         # Only admins or techboard members can add permissions normally. That
         # restriction isn't relevant to these tests.
@@ -285,7 +285,6 @@ class TestWriteToBranch(PermissionTest):
 
         # Person is not allowed to edit the branch presently.
         self.assertCannotEdit(person, branch)
-        self.assertFalse(person_may_edit_branch(person, branch))
 
         # Now give 'person' permission to upload to 'package'.
         archive = branch.distroseries.distribution.main_archive
@@ -295,22 +294,9 @@ class TestWriteToBranch(PermissionTest):
         # targeted by the branch at hand.
         self.assertCanUpload(person, spn, archive, None)
 
-        # Person still cannot edit the branch on the basis of ownership.
-        self.assertCannotEdit(person, branch)
-
-        # But it can edit it based on source package upload privileges.
-        self.assertTrue(person_may_edit_branch(person, branch))
-
-        person2 = self.factory.makePerson()
-        # person2 has no upload rights ..
-        self.assertCannotUpload(
-            ("The signer of this package has no upload rights to this "
-             "distribution's primary archive.  Did you mean to upload to "
-             "a PPA?"),
-            person2, spn, archive, None)
-        # .. and is not authorised to edit the branch.
-        self.assertCannotEdit(person2, branch)
-        self.assertFalse(person_may_edit_branch(person2, branch))
+        # Now person can edit the branch on the basis of the upload
+        # permissions granted above.
+        self.assertCanEdit(person, branch)
 
 
 def test_suite():

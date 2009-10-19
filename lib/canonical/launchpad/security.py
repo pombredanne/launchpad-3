@@ -10,6 +10,7 @@ from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
+from lp.archiveuploader.permission import verify_upload
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
