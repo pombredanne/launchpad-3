@@ -53,8 +53,7 @@ class BranchRewriter:
                 branch_id, inserted_time = self._cache[first]
                 if (self._now() < inserted_time +
                     config.codehosting.branch_rewrite_cache_lifetime):
-                    trailing = second
-                    return branch_id, trailing, "HIT"
+                    return branch_id, second, "HIT"
             prefixes.append(first)
         result = self.store.find(
             (Branch.id, Branch.unique_name),
