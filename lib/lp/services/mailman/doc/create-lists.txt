@@ -15,8 +15,8 @@ First, No Privileges Person creates a new team.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.title
-    'ITest One in Launchpad'
+    >>> print browser.title
+    ITest One in Launchpad
 
 To request a mailing list, No Privileges Person navigates to the 'Configure
 mailing list' page and registers their application for a mailing list.

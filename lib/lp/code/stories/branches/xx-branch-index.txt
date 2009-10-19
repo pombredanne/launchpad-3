@@ -189,10 +189,9 @@ for the branch's canonical location.
     Status: Development
 
     >>> print extract_text(get_branch_management_portlet())
-    Branch management
-    View the branch content
     Only Sample Person can upload to this branch.
     If you are Sample Person please log in for upload directions.
+    View the branch content
 
 For mirrored branches, the table has a link to the branch's project, the
 location of the original branch, the mirror on Launchpad, information about
@@ -226,11 +225,10 @@ The branch description should not be shown if there is none.
 
     >>> def get_branch_description(browser):
     ...     return extract_text(find_tag_by_id(
-    ...         browser.contents, 'branch-description').div)
+    ...         browser.contents, 'branch-description'))
     >>> print get_branch_description(browser)
     Traceback (most recent call last):
-    ...
-    AttributeError: 'NoneType' object has no attribute 'div'
+    TypeError: expected string or buffer
 
 Branches that have never been mirrored don't have a 'Last mirrored' field.
 
@@ -339,7 +337,6 @@ So we need to fake that here.
     ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-management'))
-    Branch management...
     Get this branch:
       bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
@@ -350,7 +347,6 @@ Public branches use the lp spec bzr lookup name.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-management'))
-    Branch management...
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
 

@@ -19,3 +19,7 @@ if not paramiko.__version__.startswith('1.7.4'):
 # maybe add similar check for bzrlib?
 # End
 #############################################################################
+
+import warnings
+warnings.filterwarnings(
+    "ignore", category=DeprecationWarning, module="boto")

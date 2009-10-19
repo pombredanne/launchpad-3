@@ -176,7 +176,7 @@ cancellation is displayed.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have cancelled Launchpad Developers's subscription to PPA
+    You have revoked Launchpad Developers's access to PPA
     for Celso Providelo.
 
 
@@ -242,10 +242,10 @@ subscription is displayed.
     >>> regeneration_info = find_tag_by_id(
     ...     joe_browser.contents, 'regenerate_token')
     >>> print(extract_text(regeneration_info))
-    Password security
+    Reset password
     If you believe...
+    Reset password
     Note: after ...
-    Generate new password
 
 When Joe clicks on the 'Generate new personal subscription' link then
 the page is redisplayed with new sources.list entries and a notification.

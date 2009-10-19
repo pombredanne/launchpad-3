@@ -10,23 +10,10 @@
     </div>
   </div>
 
-  <div
-    id="browse_url"
-    class="portletBody portletContent"
-    style="margin-bottom: 1.5em"
-    tal:define="link context_menu/source"
-    tal:condition="link/enabled"
-    >
-    <a id="codebrowse-link"
-       class="sprite info"
-       tal:attributes="href link/url"
-       tal:content="link/text" >Browse this branch</a>
-  </div>
-
   <dl id="download-url"
       tal:condition="view/bzr_download_url">
     <dt>Get this branch:</dt>
-    <dd>bzr branch <tal:url replace="view/bzr_download_url" /></dd>
+    <dd>bzr branch <span class="branch-url" tal:content="view/bzr_download_url" /></dd>
   </dl>
 
   <tal:hosted-branch condition="context/branch_type/enumvalue:HOSTED">
@@ -52,7 +39,7 @@
         <tal:can-upload tal:condition="view/user_can_upload">
           <dl id="upload-url">
             <dt>Update this branch:</dt>
-            <dd>bzr push <tal:url replace="context/bzr_identity" /></dd>
+            <dd>bzr push <span class="branch-url" tal:content="context/bzr_identity" /></dd>
           </dl>
           <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
             To authenticate with the Launchpad branch upload service, you need
@@ -82,6 +69,12 @@
     </div>
   </tal:hosted-branch>
 
-
+  <div
+    style="margin-top: 1.5em"
+    tal:define="link context_menu/source"
+    tal:condition="link/enabled"
+    >
+    <a tal:replace="structure link/fmt:link" />
+  </div>
 
 </div>

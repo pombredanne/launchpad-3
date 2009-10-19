@@ -366,10 +366,8 @@ class PullerMaster:
 
     def startMirroring(self):
         self.logger.info(
-            'Mirroring branch %d: %s to %s', self.branch_id, self.source_url,
-            self.destination_url)
-        return self.branch_puller_endpoint.callRemote(
-            'startMirroring', self.branch_id)
+            'Worker started on branch %d: %s to %s', self.branch_id,
+            self.source_url, self.destination_url)
 
     def mirrorFailed(self, reason, oops):
         self.logger.info('Recorded %s', oops)

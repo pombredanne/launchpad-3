@@ -582,7 +582,7 @@
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        factory="lp.soyuz.browser.distroarchseriesbinarypackage.DistroArchSeriesBinaryPackageBreadcrumb"
+        factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
         permission="zope.Public" />
 
     <!-- PublishedPackage -->
@@ -647,6 +647,11 @@
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber"
         provides="lp.soyuz.browser.archivesubscription.IArchiveSubscriberUI"
         factory="lp.soyuz.browser.archivesubscription.archive_subscription_ui_adapter"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        permission="zope.Public"/>
     <subscriber
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber
              lazr.lifecycle.interfaces.IObjectCreatedEvent"

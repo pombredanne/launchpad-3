@@ -77,7 +77,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -1615,13 +1615,13 @@ class Person(
         """See `IPersonViewRestricted`."""
         return self._getMappedParticipantsLocations().count()
 
-    def getMappedParticipantsBounds(self):
+    def getMappedParticipantsBounds(self, limit=None):
         """See `IPersonViewRestricted`."""
         max_lat = -90.0
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        locations = self._getMappedParticipantsLocations()
+        locations = self._getMappedParticipantsLocations(limit)
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '
@@ -2286,8 +2286,7 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
+        return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
 
     @property
     def ppas(self):
@@ -2297,11 +2296,7 @@ class Person(
 
     def getPPAByName(self, name):
         """See `IPerson`."""
-        ppa = Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name=name)
-        if ppa is None:
-            raise NoSuchPPA(name)
-        return ppa
+        return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -2491,26 +2486,45 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        # Start by looking to see if there is an IEmailAddress for the given
+        # Start by checking if there is an `EmailAddress` for the given
         # text address.  There are many cases where an email address can be
-        # created without an associated IPerson.  For example we created an
-        # account linked to the address through an external system such SSO
-        # or ShipIt.
+        # created without an associated `Person`. For instance, we created
+        # an account linked to the address through an external system such
+        # SSO or ShipIt.
         email_address = getUtility(IEmailAddressSet).getByEmail(email)
 
-        # There is no IEmailAddress for this text address, so we need to
-        # create both the IPerson and IEmailAddress here, now.
+        # There is no `EmailAddress` for this text address, so we need to
+        # create both the `Person` and `EmailAddress` here and we are done.
         if email_address is None:
             person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
                 registrant=registrant, hide_email_addresses=True)
             return person
 
-        # There is an IEmailAddress for this text address, but there is no
-        # associated IPerson record.  This is likely because the account
-        # was created externally to Launchpad.  Create just the IPerson
-        # now and associate it with the IEmailAddress.
-        if email_address.personID is None:
+        # There is an `EmailAddress` for this text address, but no
+        # associated `Person`.
+        if email_address.person is None:
+            assert email_address.accountID is not None, (
+                '%s is not associated to a person or account'
+                % email_address.email)
+            account = IMasterStore(Account).get(
+                Account, email_address.accountID)
+            account_person = self.getByAccount(account)
+            # There is a `Person` linked to the `Account`, link the
+            # `EmailAddress` to this `Person` and return it.
+            if account_person is not None:
+                master_email = IMasterStore(EmailAddress).get(
+                    EmailAddress, email_address.id)
+                master_email.personID = account_person.id
+                # Populate the previously empty 'preferredemail' cached
+                # property, so the Person record is up-to-date.
+                if master_email.status == EmailAddressStatus.PREFERRED:
+                    account_person._preferredemail_cached = master_email
+                return account_person
+            # There is no associated `Person` to the email `Account`.
+            # This is probably because the account was created externally
+            # to Launchpad. Create just the `Person`, associate it with
+            # the `EmailAddress` and return it.
             name = generate_nick(email)
             person = self._newPerson(
                 name, displayname, hide_email_addresses=True,
@@ -2518,6 +2532,8 @@ class PersonSet:
                 account=email_address.account)
             return person
 
+        # Easy, return the `Person` associated with the existing
+        # `EmailAddress`.
         return IMasterStore(Person).get(Person, email_address.personID)
 
     def getByName(self, name, ignore_merged=True):
