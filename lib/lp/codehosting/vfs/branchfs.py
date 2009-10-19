@@ -53,6 +53,7 @@ __all__ = [
     'BadUrlSsh',
     'branch_id_to_path',
     'BranchPolicy',
+    'DirectDatabaseLaunchpadServer',
     'get_lp_server',
     'get_multi_server',
     'get_puller_server',
@@ -425,6 +426,10 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
         self.tearDown()
+
+
+class DirectDatabaseLaunchpadServer:
+    pass
 
 
 class AsyncLaunchpadTransport(AsyncVirtualTransport):
