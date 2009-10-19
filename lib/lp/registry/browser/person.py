@@ -860,7 +860,7 @@ class CommonMenuLinks:
 
     def ppa(self):
         target = '+ppa-packages'
-        text = 'PPA packages'
+        text = 'Related PPA packages'
         enabled = bool(self.person.getLatestUploadedPPAPackages())
         return Link(target, text, enabled=enabled, icon='info')
 
