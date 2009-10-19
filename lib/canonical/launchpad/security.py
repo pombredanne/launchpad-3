@@ -1596,32 +1596,49 @@ class EditBranch(AuthorizationBase):
 
 
 def can_upload_linked_package(person, branch):
-    """Return True if person may upload the package linked to `branch`."""
-    def current_component(ds, package):
+    """True if person may upload the package linked to `branch`."""
+    def get_current_release():
+        """Get current release for the source package linked to branch."""
+        ds = branch.distroseries
+        package = branch.sourcepackage
         releases = ds.getCurrentSourceReleases([package.sourcepackagename])
         return releases.get(package, None)
 
+    def get_property_value(obj, property_name):
+        """Get value of requested property or None."""
+        value = None
+        try:
+            value = getattr(obj, property_name)
+        except AttributeError:
+            return None
+        return value
+            
     # Check whether we're dealing with a source package branch and
     # whether person is authorised to upload the respective source
     # package.
-    package = branch.sourcepackage
-    if package is None:
+    if branch.sourcepackage is None:
         # No package .. hmm .. this can't be a source package branch
         # then. Abort.
         return False
 
-    distroseries = branch.distroseries
-    if distroseries is None:
-        # No distro series? Very fishy .. abort.
+    if branch.distroseries is None:
+        # No distro series? Abort.
+        return False
+
+    current_release = get_current_release()
+
+    # Do we have a pocket and, if yes, can we upload to it?
+    pocket = get_property_value(current_release, 'pocket')
+    if not (pocket is None or branch.distroseries.canUploadToPocket(pocket)):
         return False
 
     archive = branch.distroseries.distribution.main_archive
-    spn = package.sourcepackagename
-    component = current_component(distroseries, package)
+    component = get_property_value(current_release, 'component')
 
     # Is person authorised to upload the source package this branch
     # is targeting?
-    result = verify_upload(person, spn, archive, component)
+    result = verify_upload(
+        person, branch.sourcepackage.sourcepackagename, archive, component)
     # verify_upload() indicates that person *is* allowed to upload by
     # returning None.
     return result is None
