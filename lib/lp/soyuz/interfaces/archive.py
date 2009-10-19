@@ -196,6 +196,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         "The expanded list of archive dependencies. It includes the implicit "
         "PRIMARY archive dependency for PPAs.")
 
+    debug_archive = Attribute(
+        "The archive into which debug binaries should be uploaded.")
+
     archive_url = Attribute("External archive URL.")
 
     is_ppa = Attribute("True if this archive is a PPA.")

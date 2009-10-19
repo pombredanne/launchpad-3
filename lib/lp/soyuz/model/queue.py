@@ -1353,15 +1353,13 @@ class PackageUploadBuild(SQLBase):
             archive = self.packageupload.archive
             # DDEBs targeted to the PRIMARY archive are published in the
             # corresponding DEBUG archive.
-            if (archive.purpose == ArchivePurpose.PRIMARY and
-                binary.binpackageformat == BinaryPackageFormat.DDEB):
-                distribution = self.packageupload.distroseries.distribution
-                archive = getUtility(IArchiveSet).getByDistroPurpose(
-                    distribution, ArchivePurpose.DEBUG)
-                if archive is None:
+            if binary.binpackageformat == BinaryPackageFormat.DDEB:
+                debug_archive = archive.debug_archive
+                if debug_archive is None:
                     raise QueueInconsistentStateError(
                         "Could not find the corresponding DEBUG archive "
-                        "for %s" % (distribution.title))
+                        "for %s" % (archive.displayname))
+                archive = debug_archive
 
             for each_target_dar in target_dars:
                 bpph = getUtility(IPublishingSet).newBinaryPublication(
