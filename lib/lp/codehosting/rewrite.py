@@ -54,7 +54,7 @@ class BranchRewriter:
                     config.codehosting.branch_rewrite_cache_lifetime):
                     return branch_id, second, "HIT"
         branch_id, trailing = getUtility(IBranchLookup).getIdAndTrailingPath(
-            location)
+            location, from_slave=True)
         if branch_id is None:
             return None, None, "MISS"
         else:
