@@ -1591,7 +1591,40 @@ class EditBranch(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return (user.inTeam(self.obj.owner) or
-                user_has_special_branch_access(user))
+                user_has_special_branch_access(user) or
+                can_upload_linked_package(user, self.obj))
+
+
+def can_upload_linked_package(person, branch):
+    """Return True if person may upload the package linked to `branch`."""
+    def current_component(ds, package):
+        releases = ds.getCurrentSourceReleases([package.sourcepackagename])
+        return releases.get(package, None)
+
+    # Check whether we're dealing with a source package branch and
+    # whether person is authorised to upload the respective source
+    # package.
+    package = branch.sourcepackage
+    if package is None:
+        # No package .. hmm .. this can't be a source package branch
+        # then. Abort.
+        return False
+
+    distroseries = branch.distroseries
+    if distroseries is None:
+        # No distro series? Very fishy .. abort.
+        return False
+
+    archive = branch.distroseries.distribution.main_archive
+    spn = package.sourcepackagename
+    component = current_component(distroseries, package)
+
+    # Is person authorised to upload the source package this branch
+    # is targeting?
+    result = verify_upload(person, spn, archive, component)
+    # verify_upload() indicates that person *is* allowed to upload by
+    # returning None.
+    return result is None
 
 
 class AdminBranch(AuthorizationBase):

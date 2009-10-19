@@ -151,8 +151,7 @@ def person_may_edit_branch(person, branch):
              False otherwise.
     """
     def current_component(ds, package):
-        releases = ds.getCurrentSourceReleases(
-            [package.sourcepackagename])
+        releases = ds.getCurrentSourceReleases([package.sourcepackagename])
         return releases.get(package, None)
 
     result = check_permission('launchpad.Edit', branch)
