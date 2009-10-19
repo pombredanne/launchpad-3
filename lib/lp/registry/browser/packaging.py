@@ -28,6 +28,11 @@ class PackagingAddView(LaunchpadFormView):
 
     page_title = label
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
     def validate(self, data):
         productseries = self.context
         sourcepackagename = data.get('sourcepackagename', None)
@@ -66,4 +71,4 @@ class PackagingAddView(LaunchpadFormView):
         getUtility(IPackagingUtil).createPackaging(
             productseries, data['sourcepackagename'], data['distroseries'],
             data['packaging'], owner=self.user)
-        self.next_url = canonical_url(self.context)
+        self.next_url = self.cancel_url

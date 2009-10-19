@@ -355,6 +355,9 @@ and a packaging contents.
     >>> print view.field_names
     ['distroseries', 'sourcepackagename', 'packaging']
 
+    >>> print view.cancel_url
+    http://launchpad.dev/hot/hotter
+
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': 'hot',
