@@ -41,7 +41,8 @@ class Packaging(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False, default=DEFAULT)
+        storm_validator=validate_public_person,
+        notNull=False, default=DEFAULT)
 
     @property
     def sourcepackage(self):
