@@ -341,8 +341,7 @@ class LaunchpadInternalServerTests:
 class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
                                   TrialTestCase, BzrTestCase,
                                   LaunchpadInternalServerTests):
-    """Tests for the LaunchpadInternalServer, used by the puller and scanner.
-    """
+    """Tests for `LaunchpadInternalServer`, used by the puller and scanner."""
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -353,10 +352,9 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
             'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
 
 
-class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory,
+class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
                                         LaunchpadInternalServerTests):
-    """Tests for the LaunchpadInternalServer, used by the puller and scanner.
-    """
+    """Tests for `DirectDatabaseLaunchpadServer`."""
 
     layer = ZopelessDatabaseLayer
 

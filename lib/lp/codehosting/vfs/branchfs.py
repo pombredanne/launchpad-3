@@ -78,6 +78,7 @@ from lazr.uri import URI
 from twisted.internet import defer
 from twisted.python import failure
 
+from zope.component import getUtility
 from zope.interface import implements, Interface
 
 from lp.codehosting.vfs.branchfsclient import (
@@ -88,6 +89,7 @@ from lp.codehosting.vfs.transport import (
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
 from lp.code.enums import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
@@ -444,6 +446,25 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
         self.tearDown()
+
+    def translateVirtualPath(self, virtual_url_fragment):
+        """See `AsyncVirtualServer.translateVirtualPath`.
+
+        XXX.
+        """
+        deferred = defer.succeed(
+            getUtility(IBranchLookup).getIdAndTrailingPath(
+                '/' + virtual_url_fragment))
+
+        def process_result((branch_id, trailing)):
+            if branch_id is None:
+                raise NoSuchFile(virtual_url_fragment)
+            else:
+                return self._transport_dispatch.makeTransport(
+                    (BRANCH_TRANSPORT, dict(id=branch_id), trailing[1:]))
+
+        deferred.addCallback(process_result)
+        return deferred
 
 
 class AsyncLaunchpadTransport(AsyncVirtualTransport):
