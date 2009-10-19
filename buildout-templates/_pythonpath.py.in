@@ -62,6 +62,9 @@ def set_path():
             'Found unexpected module(s): %s\n\nImport _pythonpath earlier!' %
             (', '.join(sorted(unexpected)),))
 
+    # Make subprocesses have the same environment.
+    os.environ['PYTHONPATH'] = os.pathsep.join(sys.path)
+
     # Enable Storm's C extensions
     os.environ['STORM_CEXTENSIONS'] = '1'
 
