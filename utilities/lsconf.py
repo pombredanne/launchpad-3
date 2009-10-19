@@ -7,6 +7,9 @@
 
 __metatype__ = type
 
+# Scripts may have relative imports.
+# pylint: disable-msg=W0403
+import _pythonpath
 
 import os
 import sys
@@ -14,9 +17,6 @@ from optparse import OptionParser
 from operator import attrgetter
 from textwrap import dedent
 
-# Scripts may have relative imports.
-# pylint: disable-msg=W0403
-import _pythonpath
 import canonical.config
 from lazr.config import ImplicitTypeSchema
 

@@ -84,25 +84,52 @@ def build_mailman():
 
     # Build and install the Mailman software.  Note that we don't care about
     # --with-cgi-gid because we're not going to use that Mailman subsystem.
+    executable = os.path.abspath('bin/py')
     configure_args = (
         './configure',
         '--prefix', mailman_path,
         '--with-var-prefix=' + var_dir,
-        '--with-python=' + sys.executable,
+        '--with-python=' + executable,
         '--with-username=' + user,
         '--with-groupname=' + group,
         '--with-mail-gid=' + group,
         '--with-mailhost=' + build_host_name,
         '--with-urlhost=' + build_host_name,
         )
+    # Configure.
     retcode = subprocess.call(configure_args, cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not configure Mailman:'
         sys.exit(retcode)
+    # Make.
     retcode = subprocess.call(('make',), cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not make Mailman.'
         sys.exit(retcode)
+    # We have a brief interlude before we install.  Hardy will not
+    # accept a script as the executable for the shebang line--it will
+    # treat the file as a shell script instead. The ``bin/by``
+    # executable that we specified in '--with-python' above is a script
+    # so this behavior causes problems for us. Our work around is to
+    # prefix the ``bin/py`` script with ``/usr/bin/env``, which makes
+    # Hardy happy.  We need to do this before we install because the
+    # installation will call Mailman's ``bin/update``, which is a script
+    # that needs this fix.
+    build_dir = os.path.join(mailman_source, 'build')
+    original = '#! %s\n' % (executable,)
+    modified = '#! /usr/bin/env %s\n' % (executable,)
+    for (dirpath, dirnames, filenames) in os.walk(build_dir):
+        for filename in filenames:
+            filename = os.path.join(dirpath, filename)
+            f = open(filename, 'r')
+            if f.readline() == original:
+                rest = f.read()
+                f.close()
+                f = open(filename, 'w')
+                f.write(modified)
+                f.write(rest)
+            f.close()
+    # Now we actually install.
     retcode = subprocess.call(('make', 'install'), cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not install Mailman.'

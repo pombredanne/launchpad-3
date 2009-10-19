@@ -6,11 +6,11 @@
 # This script runs through the set of Debbugs watches, and tries to
 # syncronise each of those to the malone bug which is watching it.
 
+import _pythonpath
 import os
 import sys
 import email
 import logging
-import _pythonpath
 
 # zope bits
 from zope.component import getUtility

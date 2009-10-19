@@ -3,6 +3,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import _pythonpath
+
 import base64
 import httplib
 import os
@@ -10,12 +12,8 @@ import pwd
 import sys
 import urllib
 import webbrowser
-
 from optparse import OptionParser
 from urlparse import urljoin
-
-import _pythonpath
-
 from ClientCookie import Cookie, CookieJar
 from mechanize import HTTPRobotRulesProcessor
 

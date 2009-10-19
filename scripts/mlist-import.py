@@ -16,12 +16,12 @@ __all__ = [
     ]
 
 
+# pylint: disable-msg=W0403
+import _pythonpath
+
 import sys
 import logging
 import textwrap
-
-# pylint: disable-msg=W0403
-import _pythonpath
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadScript

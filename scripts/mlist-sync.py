@@ -24,14 +24,14 @@
 #   Not doing this means that some of the links in staging's MHonArc archive
 #   will point to production archives.
 
+# pylint: disable-msg=W0403
+import _pythonpath
+
 import os
 import sys
 import logging
 import textwrap
 import subprocess
-
-# pylint: disable-msg=W0403
-import _pythonpath
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

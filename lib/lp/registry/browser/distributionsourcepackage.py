@@ -32,7 +32,7 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from canonical.launchpad.interfaces.packaging import IPackagingUtil
+from lp.registry.interfaces.packaging import IPackagingUtil
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin

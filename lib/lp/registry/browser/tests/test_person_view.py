@@ -7,7 +7,8 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.browser.person import PersonView

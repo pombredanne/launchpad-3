@@ -8,7 +8,6 @@
 """Cron job to update Product.remote_product using bug watch information.  """
 
 import time
-import _pythonpath
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript

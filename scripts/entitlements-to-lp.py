@@ -4,13 +4,10 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0403
-
-__metaclass__ = type
+import _pythonpath
 
 import logging
 import sys
-
-import _pythonpath
 
 from lp.services.scripts.base import LaunchpadScript
 from lp.registry.scripts.entitlement import (

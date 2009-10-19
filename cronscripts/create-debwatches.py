@@ -11,9 +11,9 @@
 
 __metaclass__ = type
 
+import _pythonpath
 import os
 import logging
-import _pythonpath
 
 # zope bits
 from zope.component import getUtility

@@ -18,10 +18,10 @@ Ideally there should be database constraints to prevent this sort of
 situation, but that's not a simple thing and this should do for now.
 """
 
+import _pythonpath
+
 import optparse
 import sys
-
-import _pythonpath
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import (
