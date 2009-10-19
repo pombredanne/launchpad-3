@@ -388,7 +388,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         return Link('+topcontributors', text, icon='info')
 
     def distributions(self):
-        text = 'Packaging information'
+        text = 'Distribution packaging information'
         return Link('+distributions', text, icon='info')
 
     def packages(self):

@@ -18,7 +18,9 @@
 
   <tal:series repeat="series context/serieses">
     <h2 style="margin-top: 2em">
-      Series &#8220;<span tal:replace="series/name">main</span>&#8221;
+      <a tal:attributes="href series/name">
+        Series &#8220;<span tal:replace="series/name">main</span>&#8221;
+      </a>
     </h2>
 
     <table id="packages" class="listing" tal:condition="series/packagings">
@@ -41,7 +43,7 @@
               replace="pkging/distroseries/version" />
               (<tal:name replace="pkging/distroseries/displayname" />)</a>
           </td>
-              
+
             <td>
               <a
                 tal:attributes="href string:${pkging/distroseries/fmt:url}/+source/${pkging/sourcepackagename/name}"
@@ -60,7 +62,17 @@
       No packages linked to this series.
     </p>
 
-    <ul class="horizontal">
+    <tal:comment condition="nothing">
+      If the links are under a table, float them to the right.
+    </tal:comment>
+    <ul tal:condition="series/packagings"
+        style="float: right" class="horizontal">
+      <li tal:condition="context/required:launchpad.Edit" >
+        <a tal:replace="structure series/menu:overview/add_package/fmt:link" />
+      </li>
+    </ul>
+
+    <ul tal:condition="not: series/packagings" class="horizontal">
       <li tal:condition="context/required:launchpad.Edit" >
         <a tal:replace="structure series/menu:overview/add_package/fmt:link" />
       </li>
@@ -68,6 +80,6 @@
 
   </tal:series>
 
-</div> 
+</div>
 </body>
 </html>
