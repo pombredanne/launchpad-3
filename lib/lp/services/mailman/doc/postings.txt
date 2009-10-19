@@ -173,7 +173,7 @@ rejection notice to Anne.
     MIME-Version: 1.0
     ...
     Subject: Request to mailing list Itest-one rejected
-    From: itest-one-bounces@lists.launchpad.dev
+    From: itest-one-owner@lists.launchpad.dev
     To: anne.person@example.com
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
