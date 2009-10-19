@@ -428,8 +428,22 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         self.tearDown()
 
 
-class DirectDatabaseLaunchpadServer:
-    pass
+class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
+    def __init__(self, scheme, branch_transport):
+        AsyncVirtualServer.__init__(self, scheme)
+        self._transport_dispatch = BranchTransportDispatch(branch_transport)
+
+    def setUp(self):
+        super(DirectDatabaseLaunchpadServer, self).setUp()
+        try:
+            self._transport_dispatch.base_transport.ensure_base()
+        except TransportNotPossible:
+            pass
+
+    def destroy(self):
+        """Delete the on-disk branches and tear down."""
+        self._transport_dispatch.base_transport.delete_tree('.')
+        self.tearDown()
 
 
 class AsyncLaunchpadTransport(AsyncVirtualTransport):

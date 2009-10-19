@@ -354,13 +354,15 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
 
 
 class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory,
-                                  LaunchpadInternalServerTests):
+                                        LaunchpadInternalServerTests):
     """Tests for the LaunchpadInternalServer, used by the puller and scanner.
     """
 
     layer = ZopelessDatabaseLayer
 
     def setUp(self):
+        super(TestDirectDatabaseLaunchpadServer, self).setUp()
+        self.requester = self.factory.makePerson()
         self.server = DirectDatabaseLaunchpadServer(
             'lp-test://', MemoryTransport())
 
