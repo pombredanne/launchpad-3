@@ -160,19 +160,19 @@ twice, for obvious reasons.
     >>> len(view.times)
     2
 
-The number of persons returned my mapped_participants is governed by the
-view's limit attribute. the default value is None, meaning there is no
-limit.
+The number of persons returned by mapped_participants is governed by the
+view's limit attribute. The default value is None, meaning there is no
+limit.  This view is used for displaying the full map.
 
     >>> print view.limit
     None
     >>> len(view.mapped_participants)
     3
 
-When the preview parameter is sent to the view, the number of
-mapped_participants is limited to 24.
+A portlet for the map also exists which is used for displaying the map
+inside the person or team page.  It has the number of participants limited.
 
-    >>> view = create_initialized_view(context, '+map', form={'preview': 'anything'})
+    >>> view = create_initialized_view(context, '+portlet-map')
     >>> view.limit
     24
 
