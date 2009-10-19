@@ -1835,6 +1835,9 @@ class BaseDevice:
             Since these components are not the most important ones
             for the HWDB, we'll ignore them for now. Bug 237038.
 
+          - 'disk' is used udev submissions for a node related to the
+            sd or sr driver of (real or fake) SCSI block devices.
+
           - info.bus == 'drm' is used by the HAL for the direct
             rendering interface of a graphics card.
 
@@ -1847,6 +1850,12 @@ class BaseDevice:
           - info.bus == 'net' is used by the HAL version in
             Intrepid for the "output aspects" of network devices.
 
+          - 'partition' is used in udev submissions for a node
+            related to disk partition
+
+          - 'scsi_disk' is used in udev submissions for a sub-node of
+            the real device node.
+
             info.bus == 'scsi_generic' is used by the HAL version in
             Intrepid for a HAL node representing the generic
             interface of a SCSI device.
@@ -1857,6 +1866,12 @@ class BaseDevice:
             HAL nodes with this bus value are sub-nodes for the
             "SCSI aspect" of another HAL node which represents the
             real device.
+
+            'scsi_target' is used in udev data for SCSI target nodes,
+            the parent of a SCSI device (or LUN) node.
+
+            'spi_transport' (SCSI Parallel Transport) is used in
+            udev data for a sub-node of real SCSI devices.
 
             info.bus == 'sound' is used by the HAL version in
             Intrepid for "aspects" of sound devices.
@@ -1873,20 +1888,31 @@ class BaseDevice:
             info.bus == 'usb' is used for end points of USB devices;
             the root node of a USB device has info.bus == 'usb_device'.
 
+            'usb_interface' is used in udv submissions for interface
+            nodes of USB devices.
+
             info.bus == 'video4linux' is used for the "input aspect"
             of video devices.
         """
+        # The root node is always a real device, but its raw_bus
+        # property can have different values: None or 'Unknown' in
+        # submissions with HAL data, 'acpi' for submissions with udev
+        # data.
+        if self.is_root_device:
+            return True
+
         bus = self.raw_bus
         # This set of buses is only used once; it's easier to have it
         # here than to put it elsewhere and have to document its
         # location and purpose.
-        if bus in (None, 'drm', 'dvb', 'memstick_host', 'net',
-                   'scsi_generic', 'scsi_host', 'sound', 'ssb', 'tty',
-                   'usb', 'video4linux', ):
+        if bus in (None, 'disk', 'drm', 'dvb', 'memstick_host', 'net',
+                   'partition', 'scsi_disk', 'scsi_generic', 'scsi_host',
+                   'scsi_target', 'sound', 'spi_transport', 'ssb', 'tty',
+                   'usb', 'usb_interface', 'video4linux', ):
             #
             # The computer itself is the only HAL device without the
             # info.bus property that we treat as a real device.
-            return self.udi == ROOT_UDI
+            return False
         elif bus == 'usb_device':
             vendor_id = self.usb_vendor_id
             product_id = self.usb_product_id
@@ -1910,7 +1936,7 @@ class BaseDevice:
                         'host controller: %s' % self.udi)
                     return False
             return True
-        elif bus == 'scsi':
+        elif bus in ('scsi', 'scsi_device'):
             # Ensure consistency with HALDevice.real_bus
             return self.real_bus is not None
         else:
@@ -2564,7 +2590,17 @@ class UdevDevice(BaseDevice):
         devtype = properties.get('DEVTYPE')
         if devtype is not None:
             return devtype
-        return properties.get('SUBSYSTEM')
+        subsystem = properties.get('SUBSYSTEM')
+        # A real mess: The main node of a SCSI device has
+        # SUBSYSTEM = 'scsi' and DEVTYPE = 'scsi_device', while
+        # a sub-node has SUBSYSTEM='scsi_device'. We don't want
+        # the two to be confused. The latter node is not of any
+        # interest for us, so we return None. This ensures that
+        # is_real_device returns False for the sub-node.
+        if subsystem != 'scsi_device':
+            return subsystem
+        else:
+            return None
 
     @property
     def is_root_device(self):
