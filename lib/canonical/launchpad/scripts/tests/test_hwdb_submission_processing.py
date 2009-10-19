@@ -2859,18 +2859,6 @@ class TestUdevDevice(TestCaseHWDB):
             '/sys/class/dmi/id/product_name': 'LIFEBOOK E8210',
             }
 
-        self.pci_device_data = {
-            'P': '/devices/pci0000:00/0000:00:1f.2',
-            'E': {
-                'PCI_CLASS': '10602',
-                'PCI_ID': '8086:27C5',
-                'PCI_SUBSYS_ID': '10CF:1387',
-                'PCI_SLOT_NAME': '0000:00:1f.2',
-                'SUBSYSTEM': 'pci',
-                'DRIVER': 'ahci',
-                }
-            }
-
         self.usb_device_data = {
             'P': '/devices/pci0000:00/0000:00:1d.1/usb3/3-2',
             'E': {
@@ -2958,6 +2946,31 @@ class TestUdevDevice(TestCaseHWDB):
             'type': '6',
             }
 
+        self.scsi_scanner_device_data_2 = {
+            'P': ('/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/'
+                  '0000:09:00.0/host6/target6:0:1/6:0:1:0/scsi_device/'
+                  '6:0:1:0'),
+            'E': {
+                'SUBSYSTEM': 'scsi_device',
+                },
+        }
+
+        self.scsi_scanner_scsi_generic = {
+            'P': ('/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/'
+                  '0000:09:00.0/host6/target6:0:1/6:0:1:0/scsi_generic/sg2'),
+            'E': {
+                'SUBSYSTEM': 'scsi_generic',
+                },
+            }
+
+        self.scsi_scanner_spi = {
+            'P': ('/devices/pci0000:00/0000:00:1e.0/0000:08:03.0/'
+                  '0000:09:00.0/host6/target6:0:1/spi_transport/target6:0:1'),
+            'E': {
+                'SUBSYSTEM': 'spi_transport',
+                },
+            }
+
         self.scsi_device_hierarchy_data = [
             {'udev_data': self.pccard_scsi_controller_data},
             {'udev_data': self.pci_scsi_controller_scsi_side_1},
@@ -2967,10 +2980,14 @@ class TestUdevDevice(TestCaseHWDB):
                 'udev_data': self.scsi_scanner_device_data,
                 'sysfs_data': self.scsi_scanner_device_sysfs_data,
                 },
+            {'udev_data': self.scsi_scanner_device_data_2},
+            {'udev_data': self.scsi_scanner_scsi_generic},
+            {'udev_data': self.scsi_scanner_spi},
             ]
 
+        self.pci_ide_controller_path = '/devices/pci0000:00/0000:00:1f.1'
         self.pci_ide_controller = {
-            'P': '/devices/pci0000:00/0000:00:1f.1',
+            'P': self.pci_ide_controller_path,
             'E': {
                 'DRIVER': 'ata_piix',
                 'PCI_CLASS': '1018A',
@@ -3020,6 +3037,31 @@ class TestUdevDevice(TestCaseHWDB):
              'type': '5',
              }
 
+        self.ide_cdrom_sr_data = {
+            'P': ('/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/'
+                  '4:0:0:0/block/sr0'),
+            'E': {
+                'DEVTYPE': 'disk',
+                'SUBSYSTEM': 'block',
+                },
+            }
+
+        self.ide_cdrom_device_data_2 = {
+            'P': ('/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/'
+                  '4:0:0:0/scsi_device/4:0:0:0'),
+            'E': {
+                'SUBSYSTEM': 'scsi_device',
+                },
+            }
+
+        self.ide_cdrom_scsi_generic_data = {
+            'P': ('/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/'
+                  '4:0:0:0/scsi_generic/sg1'),
+            'E': {
+                'SUBSYSTEM': 'scsi_generic',
+                },
+            }
+
         self.ide_device_hierarchy_data = [
             {'udev_data': self.pci_ide_controller},
             {'udev_data': self.pci_ide_controller_scsi_side_1},
@@ -3029,7 +3071,135 @@ class TestUdevDevice(TestCaseHWDB):
                 'udev_data': self.ide_cdrom_device_data,
                 'sysfs_data': self.ide_cdrom_device_sysfs_data,
                 },
+            {'udev_data': self.ide_cdrom_sr_data},
+            {'udev_data': self.ide_cdrom_device_data_2},
+            {'udev_data': self.ide_cdrom_scsi_generic_data},
             ]
+
+        self.pci_sata_controller_path = '/devices/pci0000:00/0000:00:1f.2'
+        self.pci_sata_controller = {
+            'P': self.pci_sata_controller_path,
+            'E': {
+                'PCI_CLASS': '10602',
+                'PCI_ID': '8086:27C5',
+                'PCI_SUBSYS_ID': '10CF:1387',
+                'PCI_SLOT_NAME': '0000:00:1f.2',
+                'SUBSYSTEM': 'pci',
+                'DRIVER': 'ahci',
+                }
+            }
+
+        self.pci_sata_controller_scsi_side_1 = {
+            'P': '/devices/pci0000:00/0000:00:1f.2/host0',
+            'E': {
+                'DEVTYPE': 'scsi_host',
+                'SUBSYSTEM': 'scsi',
+                },
+            }
+
+        self.pci_sata_controller_scsi_side_2 = {
+            'P': '/devices/pci0000:00/0000:00:1f.2/host0/scsi_host/host0',
+            'E': {
+                'SUBSYSTEM': 'scsi_host',
+                },
+            }
+
+        self.sata_disk_target_data = {
+            'P': '/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0',
+            'E': {
+                'DEVTYPE': 'scsi_target',
+                'SUBSYSTEM': 'scsi',
+                },
+            }
+
+        self.sata_disk_device_path = (
+            '/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0')
+        self.sata_disk_device_data = {
+            'P': self.sata_disk_device_path,
+            'E': {
+                'DEVTYPE': 'scsi_device',
+                'DRIVER': 'sd',
+                'SUBSYSTEM': 'scsi',
+                },
+            }
+
+        self.sata_disk_device_sysfs_data = {
+            'vendor': 'ATA',
+            'model': 'Hitachi HTS54251',
+            'type': '0',
+            }
+
+        self.sata_disk_device_data_2 = {
+            'P': ('/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/'
+                  '0:0:0:0/scsi_device/0:0:0:0'),
+            'E': {
+                'SUBSYSTEM': 'scsi_device',
+                },
+            }
+
+        self.sata_disk_device_scsi_disk_data = {
+            'P': ('/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/'
+                  '0:0:0:0/scsi_disk/0:0:0:0'),
+            'E': {
+                'SUBSYSTEM': 'scsi_disk',
+                },
+            }
+
+        self.sata_disk_device_scsi_generic_data = {
+            'P': ('/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/'
+                  '0:0:0:0/scsi_generic/sg0'),
+            'E': {
+                'SUBSYSTEM': 'scsi_generic'
+                },
+            }
+
+        self.sata_disk_block_data = {
+            'P': ('/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/'
+                  '0:0:0:0/block/sda'),
+            'E': {
+                'DEVTYPE': 'disk',
+                'SUBSYSTEM': 'block',
+                },
+            }
+
+        self.sata_disk_partition_data = {
+            'P': ('/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/'
+                  '0:0:0:0/block/sda/sda1'),
+            'E': {
+                'DEVTYPE': 'partition',
+                'SUBSYSTEM': 'block',
+                },
+            }
+
+        self.sata_device_hierarchy_data = [
+            {'udev_data': self.pci_sata_controller},
+            {'udev_data': self.pci_sata_controller_scsi_side_1},
+            {'udev_data': self.pci_sata_controller_scsi_side_2},
+            {'udev_data': self.sata_disk_target_data},
+            {'udev_data': self.sata_disk_device_data},
+            {
+                'udev_data': self.sata_disk_device_data,
+                'sysfs_data': self.sata_disk_device_sysfs_data,
+                },
+            {'udev_data': self.sata_disk_device_data_2},
+            {'udev_data': self.sata_disk_device_scsi_disk_data},
+            {'udev_data': self.sata_disk_device_scsi_generic_data},
+            {'udev_data': self.sata_disk_block_data},
+            {'udev_data': self.sata_disk_partition_data},
+             ]
+
+        self.usb_storage_usb_device_path = (
+            '/devices/pci0000:00/0000:00:1d.7/usb1/1-1')
+        self.usb_storage_usb_device_data = {
+            'P': self.usb_storage_usb_device_path,
+            'E': {
+                'DEVTYPE': 'usb_device',
+                'DRIVER': 'usb',
+                'PRODUCT': '1307/163/100',
+                'TYPE': '0/0/0',
+                'SUBSYSTEM': 'usb',
+                },
+            }
 
         self.usb_storage_usb_interface = {
             'P': '/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0',
@@ -3086,7 +3256,50 @@ class TestUdevDevice(TestCaseHWDB):
             'type': '0',
             }
 
+        self.usb_storage_scsi_device_2 = {
+            'P': ('/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0/host7/'
+                  'target7:0:0/7:0:0:0/scsi_device/7:0:0:0'),
+            'E': {
+                'SUBSYSTEM': 'scsi_device',
+                },
+            }
+
+        self.usb_storage_scsi_disk = {
+            'P': ('/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0/host7/'
+                  'target7:0:0/7:0:0:0/scsi_disk/7:0:0:0'),
+            'E': {
+                'SUBSYSTEM': 'scsi_disk',
+                },
+            }
+
+        self.usb_storage_scsi_generic = {
+            'P': ('/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0/host7/'
+                  'target7:0:0/7:0:0:0/scsi_generic/sg3'),
+            'E': {
+                'SUBSYSTEM': 'scsi_generic',
+                },
+            }
+
+        self.usb_storage_block_device_data = {
+            'P': ('/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0/host7/'
+                  'target7:0:0/7:0:0:0/block/sdb'),
+            'E': {
+                'DEVTYPE': 'disk',
+                'SUBSYSTEM': 'block',
+                },
+            }
+
+        self.usb_storage_block_partition_data = {
+            'P': ('/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0/host7/'
+                  'target7:0:0/7:0:0:0/block/sdb/sdb1'),
+            'E': {
+                'DEVTYPE': 'partition',
+                'SUBSYSTEM': 'block',
+                },
+            }
+
         self.usb_storage_hierarchy_data = [
+            {'udev_data': self.usb_storage_usb_device_data},
             {'udev_data': self.usb_storage_usb_interface},
             {'udev_data': self.usb_storage_scsi_host_1},
             {'udev_data': self.usb_storage_scsi_host_2},
@@ -3095,6 +3308,11 @@ class TestUdevDevice(TestCaseHWDB):
                 'udev_data': self.usb_storage_scsi_device,
                 'sysfs_data': self.usb_storage_scsi_device_sysfs,
                 },
+            {'udev_data': self.usb_storage_scsi_device_2},
+            {'udev_data': self.usb_storage_scsi_disk},
+            {'udev_data': self.usb_storage_scsi_generic},
+            {'udev_data': self.usb_storage_block_device_data},
+            {'udev_data': self.usb_storage_block_partition_data},
             ]
 
         self.no_subsystem_device_data = {
@@ -3104,7 +3322,7 @@ class TestUdevDevice(TestCaseHWDB):
 
     def test_device_id(self):
         """Test of UdevDevice.device_id."""
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(
             '/devices/pci0000:00/0000:00:1f.2', device.device_id,
             'Unexpected value of UdevDevice.device_id.')
@@ -3130,7 +3348,7 @@ class TestUdevDevice(TestCaseHWDB):
 
     def test_is_pci(self):
         """Test of UdevDevice.is_pci."""
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertTrue(device.is_pci)
 
         device = UdevDevice(None, self.root_device)
@@ -3138,7 +3356,7 @@ class TestUdevDevice(TestCaseHWDB):
 
     def test_pci_class_info(self):
         """Test of UdevDevice.pci_class_info"""
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(
             (1, 6, 2), device.pci_class_info,
             'Invalid value of UdevDevice.pci_class_info for PCI device.')
@@ -3150,7 +3368,7 @@ class TestUdevDevice(TestCaseHWDB):
 
     def test_pci_class(self):
         """Test of UdevDevice.pci_class"""
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(
             1, device.pci_class,
             'Invalid value of UdevDevice.pci_class for PCI device.')
@@ -3162,7 +3380,7 @@ class TestUdevDevice(TestCaseHWDB):
 
     def test_pci_subclass(self):
         """Test of UdevDevice.pci_subclass"""
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(
             6, device.pci_subclass,
             'Invalid value of UdevDevice.pci_class for PCI device.')
@@ -3174,7 +3392,7 @@ class TestUdevDevice(TestCaseHWDB):
 
     def test_pci_ids(self):
         """Test of UdevDevice.pci_ids"""
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(
             {'vendor': 0x8086,
              'product': 0x27C5,
@@ -3195,7 +3413,7 @@ class TestUdevDevice(TestCaseHWDB):
         device = UdevDevice(None, self.usb_device_data)
         self.assertTrue(device.is_usb)
 
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertFalse(device.is_usb)
 
     def test_usb_ids(self):
@@ -3278,7 +3496,7 @@ class TestUdevDevice(TestCaseHWDB):
         device = UdevDevice(None, self.root_device)
         self.assertEqual(None, device.raw_bus)
 
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual('pci', device.raw_bus)
 
         device = UdevDevice(None, self.usb_device_data)
@@ -3292,7 +3510,7 @@ class TestUdevDevice(TestCaseHWDB):
         device = UdevDevice(None, self.root_device)
         self.assertTrue(device.is_root_device)
 
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertFalse(device.is_root_device)
 
     def test_getVendorOrProduct(self):
@@ -3306,7 +3524,7 @@ class TestUdevDevice(TestCaseHWDB):
         self.assertRaises(
             AssertionError, device.getVendorOrProduct, 'nonsense')
 
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual('Unknown', device.getVendorOrProduct('vendor'))
         self.assertEqual('Unknown', device.getVendorOrProduct('product'))
 
@@ -3347,7 +3565,7 @@ class TestUdevDevice(TestCaseHWDB):
         self.assertRaises(
             AssertionError, device.getVendorOrProductID, 'nonsense')
 
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(0x8086, device.getVendorOrProductID('vendor'))
         self.assertEqual(0x27C5, device.getVendorOrProductID('product'))
 
@@ -3384,7 +3602,7 @@ class TestUdevDevice(TestCaseHWDB):
             None, self.root_device, None, self.root_device_dmi_data)
         self.assertEqual('FUJITSU SIEMENS', device.vendor_id_for_db)
 
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual('0x8086', device.vendor_id_for_db)
 
         device = UdevDevice(None, self.usb_device_data)
@@ -3401,7 +3619,7 @@ class TestUdevDevice(TestCaseHWDB):
             None, self.root_device, None, self.root_device_dmi_data)
         self.assertEqual('LIFEBOOK E8210', device.product_id_for_db)
 
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual('0x27c5', device.product_id_for_db)
 
         device = UdevDevice(None, self.usb_device_data)
@@ -3414,7 +3632,7 @@ class TestUdevDevice(TestCaseHWDB):
 
     def test_driver_name(self):
         """Test of UdevDevice.driver_name."""
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual('ahci', device.driver_name)
 
         device = UdevDevice(
@@ -3493,7 +3711,7 @@ class TestUdevDevice(TestCaseHWDB):
 
         For non-SCSI devices, this property is None.
         """
-        device = UdevDevice(None, self.pci_device_data)
+        device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(None, device.scsi_controller)
 
     def test_translateScsiBus_real_scsi_device(self):
@@ -3570,6 +3788,98 @@ class TestUdevDevice(TestCaseHWDB):
         """Test of UdevDevice.real_bus for a system."""
         root_device = UdevDevice(None, self.root_device)
         self.assertEqual(HWBus.SYSTEM, root_device.real_bus)
+
+    def test_is_real_device_root_device(self):
+        """Test of UdevDevice._is_real_device for the root device."""
+        root_device = UdevDevice(None, self.root_device)
+        self.assertTrue(root_device.is_real_device)
+
+    def test_is_real_device_pci_device(self):
+        """Test of UdevDevice._is_real_device for a PCI device."""
+        pci_device = UdevDevice(None, self.pci_sata_controller)
+        self.assertTrue(pci_device.is_real_device)
+
+    def test_is_real_device_scsi_device_related_nodes(self):
+        """Test of UdevDevice._is_real_device for SCSI related nodes.
+
+        A SCSI device and its controller are represented by several
+        nodes which describe different aspects. Only the controller
+        itself and the node representing the SCSI device are
+        considered to be real devices.
+        """
+        devices = self.buildUdevDeviceHierarchy(
+            self.scsi_device_hierarchy_data)
+        real_devices = (
+            self.pccard_scsi_controller_path, self.scsi_scanner_device_path
+            )
+        for device in devices.values():
+            self.assertEqual(
+                device.device_id in real_devices, device.is_real_device,
+                'Invalid result of UdevDevice.is_real_device for %s '
+                'Expected %s, got %s'
+                % (device.device_id, device.device_id in real_devices,
+                   device.is_real_device))
+
+    def test_is_real_device_ide_device_related_nodes(self):
+        """Test of UdevDevice._is_real_device for IDE related nodes.
+
+        An IDE device and its controller are represented by several
+        nodes which describe different aspects. Only the controller
+        itself and the node representing the IDE device are
+        considered to be real devices.
+        """
+        devices = self.buildUdevDeviceHierarchy(
+            self.ide_device_hierarchy_data)
+        real_devices = (
+            self.pci_ide_controller_path, self.ide_cdrom_device_path,
+            )
+        for device in devices.values():
+            self.assertEqual(
+                device.device_id in real_devices, device.is_real_device,
+                'Invalid result of UdevDevice.is_real_device for %s '
+                'Expected %s, got %s'
+                % (device.device_id, device.device_id in real_devices,
+                   device.is_real_device))
+
+    def test_is_real_device_ata_device_related_nodes(self):
+        """Test of UdevDevice._is_real_device for IDE related nodes.
+
+        An IDE device and its controller are represented by several
+        nodes which describe different aspects. Only the controller
+        itself and the node representing the IDE device are
+        considered to be real devices.
+        """
+        devices = self.buildUdevDeviceHierarchy(
+            self.sata_device_hierarchy_data)
+        real_devices = (
+            self.pci_sata_controller_path, self.sata_disk_device_path,
+            )
+        for device in devices.values():
+            self.assertEqual(
+                device.device_id in real_devices, device.is_real_device,
+                'Invalid result of UdevDevice.is_real_device for %s '
+                'Expected %s, got %s'
+                % (device.device_id, device.device_id in real_devices,
+                   device.is_real_device))
+
+    def test_is_real_device_usb_storage_device_related_nodes(self):
+        """Test of UdevDevice._is_real_device for USB storage related nodes.
+
+        A USB storage device is represented by several nodes which
+        describe different aspects. Only the main USB device is
+        considered to be real devices.
+        """
+        devices = self.buildUdevDeviceHierarchy(
+            self.usb_storage_hierarchy_data)
+        for device in devices.values():
+            self.assertEqual(
+                device.device_id == self.usb_storage_usb_device_path,
+                device.is_real_device,
+                'Invalid result of UdevDevice.is_real_device for %s '
+                'Expected %s, got %s'
+                % (device.device_id,
+                   device.device_id == self.usb_storage_usb_device_path,
+                   device.is_real_device))
 
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
