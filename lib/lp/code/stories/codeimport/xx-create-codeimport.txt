@@ -102,6 +102,26 @@ to identify the CVS branch.  A project and branch name are also required.
     :pserver:anonymous@cvs.example.com:/mozilla/cvs.
 
 
+Requesting a CVS import with invalid information
+================================================
+
+If the :pserver is left off the beginning, the user is notified.
+
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Project').value = "firefox"
+    >>> browser.getControl('Branch Name').value = "import2"
+    >>> browser.getControl('CVS').click()
+    >>> browser.getControl('Repository').value = (
+    ...     ":anonymous@cvs.example.com:/mozilla/cvs")
+    >>> browser.getControl('Module').value = "firefox"
+    >>> browser.getControl('Request Import').click()
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    CVS root is invalid.
+
+
 == Requesting an import that is already being imported ==
 
 If a user requests an import that is already being imported, then
