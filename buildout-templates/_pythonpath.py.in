@@ -6,15 +6,73 @@
 
 __metaclass__ = type
 
-import sys, os
+import os
+import site
+import sys
 
-sys.path[0:0] = [${string-paths}]
-# Enable Storm's C extensions
-os.environ['STORM_CEXTENSIONS'] = '1'
+stdlib_paths = [
+    ${indented-stdlib-paths}
+    ]
+egg_paths = [
+    ${indented-egg-paths}
+    ]
+site_dirs = [
+    ${indented-dir-paths}
+    ]
+clean_modules = [
+    'os',
+    '_pythonpath',
+    'site',
+    'sitecustomize',
+    'sys',
+    ${clean-sys-modules}
+    ]
 
-# We don't want to bother tests or logs with these.
-import warnings
-warnings.filterwarnings(
-    'ignore',
-    'Module .+ was already imported from .+, but .+ is being added.*',
-    UserWarning)
+def set_path():
+    previously_imported = {}
+    # We get a copy of the keys rather than simply iterating because we will
+    # be mutating the dictionary.
+    for k in sys.modules.keys():
+        if k not in clean_modules:
+            previously_imported[k] = sys.modules.pop(k)
+
+    # We keep the very first path because that is typically the directory
+    # of the file that imported us, which should continue to have precedence.
+    sys.path[1:] = egg_paths
+    sys.path.extend(stdlib_paths)
+    # Add the site_dirs before `addsitedir` in case it has setuptools.
+    sys.path.extend(site_dirs)
+    # Process all buildout-controlled eggs before site-packages by importing
+    # pkg_resources.  This is only important for namespace packages, so it may
+    # not have been added, so ignore import errors.
+    try:
+        import pkg_resources
+    except ImportError:
+        pass
+    # Process .pth files.
+    for p in site_dirs:
+        site.addsitedir(p)
+
+    # We don't want to have dropped any packages that weren't already added
+    # back by what we just did.  If we did, there's a good chance that the
+    # world will now be insane.  Quit now, and let's fix it.
+    unexpected = set(previously_imported).difference(sys.modules)
+    if unexpected:
+        raise RuntimeError(
+            'Found unexpected module(s): %s\n\nImport _pythonpath earlier!' %
+            (', '.join(sorted(unexpected)),))
+
+    # Enable Storm's C extensions
+    os.environ['STORM_CEXTENSIONS'] = '1'
+
+    # We don't want to bother tests or logs with these.
+    import warnings
+    warnings.filterwarnings(
+        'ignore',
+        'Module .+ was already imported from .+, but .+ is being added.*',
+        UserWarning)
+
+try:
+    import canonical
+except ImportError:
+    set_path()
