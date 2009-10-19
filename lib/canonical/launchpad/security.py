@@ -84,7 +84,8 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject, IProjectSet
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
+    IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
+    ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -1598,6 +1599,7 @@ class EditBranch(AuthorizationBase):
 
 def can_upload_linked_package(person, branch):
     """True if person may upload the package linked to `branch`."""
+
     def get_current_release():
         """Get current release for the source package linked to branch."""
         ds = branch.distroseries
@@ -1605,36 +1607,18 @@ def can_upload_linked_package(person, branch):
         releases = ds.getCurrentSourceReleases([package.sourcepackagename])
         return releases.get(package, None)
 
-    def get_property_value(obj, property_name):
-        """Get value of requested property or None."""
-        value = None
-        try:
-            value = getattr(obj, property_name)
-        except AttributeError:
-            return None
-        return value
-            
-    # Check whether we're dealing with a source package branch and
-    # whether person is authorised to upload the respective source
-    # package.
-    if branch.sourcepackage is None:
-        # No package .. hmm .. this can't be a source package branch
-        # then. Abort.
+    # No `ISeriesSourcePackageBranch` -> not an official branch. Abort.
+    sspb = getUtility(IFindOfficialBranchLinks).findForBranch(branch)
+    if sspb is None:
         return False
 
-    if branch.distroseries is None:
-        # No distro series? Abort.
-        return False
-
-    current_release = get_current_release()
-
-    # Do we have a pocket and, if yes, can we upload to it?
-    pocket = get_property_value(current_release, 'pocket')
-    if not (pocket is None or branch.distroseries.canUploadToPocket(pocket)):
+    # Can we upload to the respective pocket?
+    if not branch.distroseries.canUploadToPocket(sspb.pocket):
         return False
 
     archive = branch.distroseries.distribution.main_archive
-    component = get_property_value(current_release, 'component')
+    current_release = get_current_release()
+    component = getattr(current_release, 'component', None)
 
     # Is person authorised to upload the source package this branch
     # is targeting?
