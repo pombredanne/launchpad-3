@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
 from zope.interface import implements, Interface
-from zope.component import getAdapter, getUtility
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from lp.archiveuploader.permission import verify_upload
