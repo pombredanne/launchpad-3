@@ -14,8 +14,8 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import (
-        PackagingType, IPackaging, IPackagingUtil)
+from lp.registry.interfaces.packaging import (
+    IPackaging, IPackagingUtil, PackagingType)
 from lp.registry.interfaces.person import validate_public_person
 
 

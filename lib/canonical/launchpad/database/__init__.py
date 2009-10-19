@@ -56,7 +56,6 @@ from lp.coop.answersbugs.model import *
 
 from canonical.launchpad.database.account import *
 from canonical.launchpad.database.personnotification import *
-from canonical.launchpad.database.packaging import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.message import *
