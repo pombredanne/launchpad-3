@@ -37,7 +37,9 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
+from lp.services.utils import iter_split
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -258,6 +260,25 @@ class BranchLookup:
         except InvalidNamespace:
             return None
         return self._getBranchInNamespace(namespace_data, branch_name)
+
+    def getIdAndTrailingPath(self, path, from_slave=False):
+        """See `IBranchLookup`. """
+        if from_slave:
+            store = ISlaveStore(Branch)
+        else:
+            store = IMasterStore(Branch)
+        prefixes = []
+        for first, second in iter_split(path[1:], '/'):
+            prefixes.append(first)
+        result = store.find(
+            (Branch.id, Branch.unique_name),
+            Branch.unique_name.is_in(prefixes), Branch.private == False).one()
+        if result is None:
+            return None, None
+        else:
+            branch_id, unique_name = result
+            trailing = path[len(unique_name) + 1:]
+            return branch_id, trailing
 
     def _getBranchInNamespace(self, namespace_data, branch_name):
         if namespace_data['product'] == '+junk':

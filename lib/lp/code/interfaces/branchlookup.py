@@ -68,6 +68,10 @@ class IBranchLookup(Interface):
         Return None if no match was found.
         """
 
+    def getIdAndTrailingPath(self, path, from_slave=False):
+        """XXX.
+        """
+
     def uriToUniqueName(uri):
         """Return the unique name for the URI, if the URI is on codehosting.
 
