@@ -8,11 +8,13 @@ import time
 
 from bzrlib import urlutils
 
+from canonical.config import config
 from canonical.launchpad.interfaces import ISlaveStore
+
 from lp.code.model.branch import Branch
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.utils import iter_split
 
-from canonical.config import config
 
 __all__ = ['BranchRewriter']
 
@@ -45,17 +47,15 @@ class BranchRewriter:
         In addition this method returns whether the answer can from the cache
         or from the database.
         """
-        parts = location[1:].split('/')
         prefixes = []
-        for i in range(1, len(parts) + 1):
-            prefix = '/'.join(parts[:i])
-            if prefix in self._cache:
-                branch_id, inserted_time = self._cache[prefix]
+        for first, second in iter_split(location[1:], '/'):
+            if first in self._cache:
+                branch_id, inserted_time = self._cache[first]
                 if (self._now() < inserted_time +
                     config.codehosting.branch_rewrite_cache_lifetime):
-                    trailing = location[len(prefix) + 1:]
+                    trailing = second
                     return branch_id, trailing, "HIT"
-            prefixes.append(prefix)
+            prefixes.append(first)
         result = self.store.find(
             (Branch.id, Branch.unique_name),
             Branch.unique_name.is_in(prefixes), Branch.private == False).one()
