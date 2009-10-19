@@ -8,10 +8,11 @@ import time
 
 from bzrlib import urlutils
 
-from canonical.config import config
-from canonical.launchpad.interfaces import ISlaveStore
+from zope.component import getUtility
 
-from lp.code.model.branch import Branch
+from canonical.config import config
+
+from lp.code.model.branchlookup import IBranchLookup
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.utils import iter_split
 
@@ -33,7 +34,6 @@ class BranchRewriter:
         else:
             self._now = _now
         self.logger = logger
-        self.store = ISlaveStore(Branch)
         self._cache = {}
 
     def _codebrowse_url(self, path):
@@ -47,23 +47,19 @@ class BranchRewriter:
         In addition this method returns whether the answer can from the cache
         or from the database.
         """
-        prefixes = []
         for first, second in iter_split(location[1:], '/'):
             if first in self._cache:
                 branch_id, inserted_time = self._cache[first]
                 if (self._now() < inserted_time +
                     config.codehosting.branch_rewrite_cache_lifetime):
                     return branch_id, second, "HIT"
-            prefixes.append(first)
-        result = self.store.find(
-            (Branch.id, Branch.unique_name),
-            Branch.unique_name.is_in(prefixes), Branch.private == False).one()
-        if result is None:
+        branch_id, trailing = getUtility(IBranchLookup).getIdAndTrailingPath(
+            location)
+        if branch_id is None:
             return None, None, "MISS"
         else:
-            branch_id, unique_name = result
+            unique_name = location[1:-len(trailing)]
             self._cache[unique_name] = (branch_id, self._now())
-            trailing = location[len(unique_name) + 1:]
             return branch_id, trailing, "MISS"
 
     def rewriteLine(self, resource_location):
