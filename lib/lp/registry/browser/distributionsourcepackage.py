@@ -177,7 +177,7 @@ class DistributionSourcePackageBaseView:
         # Reconstruct the entire changelog first.
         the_changelog = '\n'.join([spr.changelog_entry for spr in sprs])
         unique_bug_matches = extract_bug_numbers(the_changelog)
-        self.context.getBugsByNumbers(unique_bug_matches.keys())
+        return self.context.getBugsByNumbers(unique_bug_matches.keys())
 
     def releases(self):
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
@@ -196,7 +196,7 @@ class DistributionSourcePackageBaseView:
 
         # Load the various bugs referenced by the changelog into the storm
         # cache. This will aide the ensuing changelog linkification.
-        self._load_bugs_into_cache(sprs)
+        self.preloaded_bugs = self._load_bugs_into_cache(sprs)
 
         return [
             DecoratedDistributionSourcePackageRelease(
