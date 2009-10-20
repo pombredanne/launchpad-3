@@ -358,7 +358,7 @@ avoid conflicts. The linked branch is removed.
 Linking packages
 ----------------
 
-Distrobution sourcepackages can be linked to product series using the
+Distro series sourcepackages can be linked to product series using the
 +addpackage named view.
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -385,6 +385,9 @@ and a packaging contents.
     >>> print view.field_names
     ['distroseries', 'sourcepackagename', 'packaging']
 
+    >>> print view.cancel_url
+    http://launchpad.dev/hot/hotter
+
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': 'hot',
@@ -399,7 +402,9 @@ and a packaging contents.
     ...     print package.name
     hot
 
-It is an error to link a series to the same package twice.
+    >>> transaction.commit()
+
+It is an error to link a series to the same package and distro series twice.
 
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
@@ -411,5 +416,37 @@ It is an error to link a series to the same package twice.
     ...     productseries, '+addpackage', form=form)
     >>> for error in view.errors:
     ...     print error
-    This series is already packaged in Hoary
+    This series is already packaged in Hoary.
 
+Once a distro series sourcepackage is linked to a product series, no other
+product series can link to it.
+
+    >>> other_productseries = factory.makeProductSeries(
+    ...     product=product, name='hotest')
+    >>> form = {
+    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.sourcepackagename': 'hot',
+    ...     'field.packaging': 'Primary Product',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     other_productseries, '+addpackage', form=form)
+    >>> for error in view.errors:
+    ...     print error
+    The <a href=".../hoary/+source/hot">hot</a> package in Hoary is already
+    linked to another series.
+
+A source package name must be provided.
+
+    >>> form = {
+    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.sourcepackagename': '',
+    ...     'field.packaging': 'Primary Product',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     productseries, '+addpackage', form=form)
+    >>> for error in view.errors:
+    ...     print error
+    ('sourcepackagename', u'Source Package Name', RequiredMissing())
+    You must choose the source package name.
