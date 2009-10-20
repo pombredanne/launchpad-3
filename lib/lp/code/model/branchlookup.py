@@ -8,8 +8,7 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
-from zope.component import (
-    adapts, getSiteManager, getUtility, queryMultiAdapter)
+from zope.component import adapts, getUtility, queryMultiAdapter
 from zope.interface import implements
 
 from storm.expr import Join
@@ -160,12 +159,6 @@ class DistroSeriesTraversable:
         if sourcepackage is None:
             raise NoSuchSourcePackageName(name)
         return sourcepackage.getSuiteSourcePackage(self.pocket)
-
-
-sm = getSiteManager()
-sm.registerAdapter(ProductTraversable)
-sm.registerAdapter(DistributionTraversable)
-sm.registerAdapter(DistroSeriesTraversable)
 
 
 class LinkedBranchTraverser:
