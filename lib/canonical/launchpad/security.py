@@ -1603,8 +1603,7 @@ def can_upload_linked_package(person, branch):
     def get_current_release(sspb):
         """Get current release for the source package linked to branch."""
         package = sspb.sourcepackage
-        distroseries = sspb.distroseries
-        releases = distroseries.getCurrentSourceReleases(
+        releases = sspb.distroseries.getCurrentSourceReleases(
             [package.sourcepackagename])
         return releases.get(package, None)
 
