@@ -453,21 +453,6 @@ package.
     >>> print warty_firefox.direct_packaging.productseries.title
     Mozilla Firefox trunk series
 
-If multiple product series link to a sourcepackage, direct_packaging
-returns the last packaging added:
-
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> firefox_product = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_trunk = firefox_product.getSeries('trunk')
-    >>> PackagingUtil().createPackaging(
-    ...     sourcepackagename=firefox,
-    ...     distroseries=hoary,
-    ...     productseries=firefox_trunk,
-    ...     packaging=PackagingType.PRIME,
-    ...     owner=foobar)
-    >>> print hoary_firefox_one.direct_packaging.productseries.title
-    Mozilla Firefox trunk series
-
 
 Release History
 ---------------
