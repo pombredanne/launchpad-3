@@ -8,12 +8,11 @@ import inspect
 import zope.app.form.browser.metadirectives
 import zope.app.publisher.browser.metadirectives
 import zope.configuration.config
-from zope.app.component.metaconfigure import (
-    handler, PublicPermission, utility, view)
+from zope.app.component.metaconfigure import PublicPermission, view
 from zope.app.file.image import Image
 from zope.app.pagetemplate.engine import TrustedEngine
 from zope.component import getUtility
-from zope.component.zcml import adapter
+from zope.component.zcml import adapter, handler, utility
 from zope.configuration.fields import (
     GlobalInterface, GlobalObject, Path, PythonIdentifier, Tokens)
 from zope.interface import Interface, implements

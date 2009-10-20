@@ -69,6 +69,7 @@ setup(
         'zope.app.server',
         'zope.app.session',
         'zope.app.testing',
+        'zope.app.zcmlfiles',
         'zope.app.wsgi',
         'zope.app.zapi',
         'zope.contenttype',

@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from zope.app.component.metaconfigure import handler, utility
+from zope.component.zcml import handler, utility
 from zope.sendmail.interfaces import IMailer
 from zope.sendmail.zcml import IMailerDirective
 from zope.interface import Interface

@@ -9,8 +9,8 @@ import logging
 
 import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
-from zope.app.pluggableauth.interfaces import IPrincipalSource
+from zope.app.security.interfaces import (
+    IAuthentication, IPrincipal, IPrincipalSource)
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from lazr.batchnavigator.interfaces import IBatchNavigator
@@ -460,7 +460,7 @@ class LoggedOutEvent:
         self.request = request
 
 
-class IPlacelessAuthUtility(IAuthenticationUtility):
+class IPlacelessAuthUtility(IAuthentication):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
     a method to allow the acquisition of a principal using his
