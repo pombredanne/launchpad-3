@@ -17,7 +17,7 @@ where all items can be perused.
     Related software
     Maintained packages
     Uploaded packages
-    PPA packages
+    Related PPA packages
     Related projects
 
     >>> print browser.getLink("Maintained packages").url
