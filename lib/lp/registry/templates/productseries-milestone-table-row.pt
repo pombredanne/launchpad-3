@@ -60,7 +60,7 @@
         <tal:can-edit
           define="link view/milestone/menu:overview/create_release"
           condition="link/enabled">
-          <a style="sprite add"
+          <a style="white-space: nowrap"
             tal:attributes="href link/fmt:url;
                             title link/summary;
                             class string:sprite ${link/icon}">Release now</a>
