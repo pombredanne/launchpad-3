@@ -1600,7 +1600,10 @@ def can_upload_linked_package(person, branch):
     """True if person may upload the package linked to `branch`."""
 
     def get_current_release(ssp):
-        """Get current release for the source package linked to branch."""
+        """Get current release for the source package linked to branch.
+
+        This function uses the `ISuiteSourcePackage` instance supplied.
+        """
         package = ssp.sourcepackage
         releases = ssp.distroseries.getCurrentSourceReleases(
             [package.sourcepackagename])
@@ -1619,8 +1622,8 @@ def can_upload_linked_package(person, branch):
     # one combination that allows us to upload the corresponding source
     # package.
 
-    # See whether we can upload to any of the distro series/pocket
-    # combinations.
+    # Go through the associated `ISuiteSourcePackage` instances and see
+    # whether we can upload to any of the distro series/pocket combinations.
     ssp = None
     for ssp in ssp_list:
         # Can we upload to the respective pocket?
