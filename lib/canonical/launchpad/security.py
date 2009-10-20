@@ -84,8 +84,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject, IProjectSet
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
-    ISeriesSourcePackageBranch)
+    IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -1607,10 +1606,10 @@ def can_upload_linked_package(person, branch):
             [package.sourcepackagename])
         return releases.get(package, None)
 
-    # No associated `SeriesSourcePackageBranch` data -> not an official
-    # branch.  Abort.
-    result_set = getUtility(IFindOfficialBranchLinks).findForBranch(branch)
-    if result_set.count() < 1:
+    # No associated `ISuiteSourcePackage` data -> not an official branch.
+    # Abort.
+    ssp_list = branch.associatedSuiteSourcePackages()
+    if len(ssp_list) < 1:
         return False
 
     # XXX al-maisan, 2009-10-20: a branch may currently be associated with a
@@ -1622,24 +1621,24 @@ def can_upload_linked_package(person, branch):
 
     # See whether we can upload to any of the distro series/pocket
     # combinations.
-    sspb = None
-    for sspb in result_set:
+    ssp = None
+    for ssp in ssp_list:
         # Can we upload to the respective pocket?
-        if sspb.distroseries.canUploadToPocket(sspb.pocket):
+        if ssp.distroseries.canUploadToPocket(ssp.pocket):
             break
     else:
         # Loop terminated normally i.e. we could not upload to any of the
         # (distroseries, pocket) combinations found.
         return False
 
-    archive = sspb.distroseries.distribution.main_archive
+    archive = ssp.distroseries.distribution.main_archive
     # Find the component the linked source package was published in.
-    current_release = get_current_release(sspb)
+    current_release = get_current_release(ssp)
     component = getattr(current_release, 'component', None)
 
     # Is person authorised to upload the source package this branch
     # is targeting?
-    result = verify_upload(person, sspb.sourcepackagename, archive, component)
+    result = verify_upload(person, ssp.sourcepackagename, archive, component)
     # verify_upload() indicates that person *is* allowed to upload by
     # returning None.
     return result is None
