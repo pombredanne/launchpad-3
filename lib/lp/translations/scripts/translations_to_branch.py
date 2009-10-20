@@ -79,6 +79,39 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         """
         return DirectBranchCommit(db_branch)
 
+    def _prepareBranchCommit(self, db_branch):
+        """Prepare branch for use with `DirectBranchCommit`.
+
+        Create a `DirectBranchCommit` for `db_branch`.  If `db_branch`
+        is not in a format we can commit directly to, try to deal with
+        that.
+
+        :param db_branch: A `Branch`.
+        :return: `DirectBranchCommit`.
+        """
+        # XXX JeroenVermeulen 2009-09-30 bug=375013: It should become
+        # possible again to commit to these branches at some point.
+        # When that happens, remove this workaround and just call
+        # _makeDirectBranchCommit directly.
+        committer = self._makeDirectBranchCommit(db_branch)
+        if not db_branch.stacked_on:
+            # The normal case.
+            return committer
+
+        self.logger.info("Unstacking branch to work around bug 375013.")
+        try:
+            committer.bzrbranch.set_stacked_on_url(None)
+        finally:
+            committer.unlock()
+        self.logger.info("Done unstacking branch.")
+
+        # This may have taken a while, so commit for good
+        # manners.
+        if self.txn:
+            self.txn.commit()
+
+        return self._makeDirectBranchCommit(db_branch)
+
     def _commit(self, source, committer):
         """Commit changes to branch.  Check for race conditions."""
         self._checkForObjections(source)
@@ -121,7 +154,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         self.logger.info("Exporting %s." % source.title)
         self._checkForObjections(source)
 
-        committer = self._makeDirectBranchCommit(source.translations_branch)
+        committer = self._prepareBranchCommit(source.translations_branch)
 
         bzr_branch = committer.bzrbranch
 

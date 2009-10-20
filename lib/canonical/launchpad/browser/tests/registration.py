@@ -21,7 +21,7 @@ def start_registration_through_the_web(email):
     browser = setupBrowser()
     browser.open('http://launchpad.dev/+login')
     browser.getControl(name='loginpage_email', index=1).value = email
-    set_captcha_answer(browser)
+    set_captcha_answer(browser, prefix='loginpage_')
     browser.getControl('Register').click()
     return browser
 

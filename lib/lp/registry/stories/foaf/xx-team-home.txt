@@ -148,7 +148,7 @@ address:
     ...     find_tag_by_id(sample_browser.contents, 'contact-user'))
     Contact this team's members
 
-As teams do not have OpenID Logins, there is not link in the Contact
+As teams do not have OpenID Logins, there is no link in the Contact
 details section for help.
 
     >>> sample_browser.getLink('(What\xe2\x80\x99s\xc2\xa0this?)')
@@ -166,13 +166,19 @@ will even show the path from the user to the team.
     You are an indirect member of this team:
     Sample Person &rarr; Warty Security Team &rarr; Ubuntu Gnome Team...
 
-It is also possible to view the set of mugshots of the people in the team.
+It is also possible to view the set of mugshots of the people in the
+team.  Notice that the output of mugshots is batched.
 
-    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+mugshots')
-    >>> print find_main_content(anon_browser.contents)
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/')
+    >>> anon_browser.getLink('Show member photos').click()
+    >>> main_content = find_main_content(anon_browser.contents)
+    >>> print main_content
     <...
-    <h1>Who's in this team?</h1>
+    <h1>Member photos</h1>
     ...
+    1...10... of 10 results
+    ...
+
 
 == Team admins ==
 
