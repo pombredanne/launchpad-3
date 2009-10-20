@@ -520,17 +520,17 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         LP_CREDIT_HEADER = u'Launchpad Contributions:'
         SPACE = u' '
-        msgid = potmsgset.singular_text
-        assert potmsgset.is_translation_credit, (
+        credit_type = potmsgset.translation_credit_type
+        assert credit_type is not None, (
             "Calling prepareTranslationCredits on a message with "
-            "msgid '%s'." % msgid)
+            "msgid '%s'." % potmsgset.singular_text)
         imported = potmsgset.getImportedTranslationMessage(
             self.potemplate, self.language)
         if imported is None:
             text = None
         else:
             text = imported.translations[0]
-        if msgid in [u'_: EMAIL OF TRANSLATORS\nYour emails', u'Your emails']:
+        if credit_type == u'Your emails':
             emails = []
             if text is not None:
                 emails.append(text)
@@ -547,7 +547,7 @@ class POFile(SQLBase, POFileMixIn):
                 else:
                     emails.append(preferred_email.email)
             return u','.join(emails)
-        elif msgid in [u'_: NAME OF TRANSLATORS\nYour names', u'Your names']:
+        elif credit_type == u'Your names':
             names = []
             
             if text is not None:
@@ -561,9 +561,7 @@ class POFile(SQLBase, POFileMixIn):
                 contributor.displayname
                 for contributor in self.contributors])
             return u','.join(names)
-        elif (msgid in [u'translation-credits',
-                        u'translator-credits',
-                        u'translator_credits']):
+        elif credit_type == u'translator-credits':
             if len(list(self.contributors)):
                 if text is None:
                     text = u''
@@ -584,7 +582,7 @@ class POFile(SQLBase, POFileMixIn):
         else:
             raise AssertionError(
                 "Calling prepareTranslationCredits on a message with "
-                "msgid '%s'." % (msgid))
+                "unknown credit type '%s'." % credit_type)
 
     def canEditTranslations(self, person):
         """See `IPOFile`."""
