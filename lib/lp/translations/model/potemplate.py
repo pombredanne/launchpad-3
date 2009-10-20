@@ -1106,10 +1106,12 @@ class POTemplateSubset:
         elif len(result) == 1:
             return result[0]
         else:
+            templates = ['"%s"' % template.displayname for template in result]
+            templates.sort()
             log.warn(
-                "Found multiple templates with translation domain '%s'.  "
-                "There should be only one."
-                % translation_domain)
+                "Found %d competing templates with translation domain '%s': "
+                "%s."
+                % (len(templates), translation_domain, '; '.join(templates)))
             return None
 
     def getPOTemplateByPath(self, path):

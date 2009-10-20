@@ -10,11 +10,11 @@ named like cc.txt (where cc is the two letter country code),
 containing the archive mirrors for that country.
 """
 
-import os
-import tempfile
-
 # pylint: disable-msg=W0403
 import _pythonpath
+
+import os
+import tempfile
 
 from zope.component import getUtility
 

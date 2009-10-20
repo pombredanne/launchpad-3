@@ -1648,4 +1648,27 @@
         <allow
             interface="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet"/>
     </securedutility>
+
+    <!-- Packaging -->
+    <class
+        class="lp.registry.model.packaging.Packaging">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackaging"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.packaging.IPackaging"/>
+    </class>
+    
+    <!-- PackagingUtil -->
+    <class
+        class="lp.registry.model.packaging.PackagingUtil">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </class>
+    <securedutility
+        class="lp.registry.model.packaging.PackagingUtil"
+        provides="lp.registry.interfaces.packaging.IPackagingUtil">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </securedutility>
 </configure>
