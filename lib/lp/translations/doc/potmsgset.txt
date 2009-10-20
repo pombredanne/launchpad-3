@@ -28,6 +28,42 @@ We also need some time and date functions to do translation updates.
     >>> UTC = pytz.timezone('UTC')
 
 
+== POTMsgSet.is_translation_credit and POTMsgSet.translation_credit_type ==
+
+A POTMsgSet can be a translation credit. These have special msgids that may
+differ for historical reason for the same type of credit. Two methods detect
+gloss over these different msgids.
+
+    >>> def print_credit(credit):
+    ...     print credit.is_translation_credit
+    ...     print credit.translation_credit_type
+
+    >>> print_credit(factory.makePOTMsgSet(potemplate))
+    False
+    None
+
+    >>> print_credit(factory.makePOTMsgSet(
+    ...     potemplate, singular=u'translator-credits'))
+    True
+    translator-credits
+
+    >>> print_credit(factory.makePOTMsgSet(
+    ...     potemplate, singular=u'translation-credits'))
+    True
+    translator-credits
+
+    >>> print_credit(factory.makePOTMsgSet(
+    ...     potemplate,
+    ...     singular=u'Your emails', context=u'EMAIL OF TRANSLATORS'))
+    True
+    Your emails
+
+    >>> print_credit(factory.makePOTMsgSet(
+    ...     potemplate, singular=u'_: EMAIL OF TRANSLATORS\nYour emails'))
+    True
+    Your emails
+
+
 == POTMsgSet.normalizeWhitespaces ==
 
 This function copies the leading and trailing whitespaces from

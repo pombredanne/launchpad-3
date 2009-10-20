@@ -251,6 +251,13 @@ class IPOTMsgSet(Interface):
     is_translation_credit = Attribute(
         """Whether this is a message set for crediting translators.""")
 
+    translation_credit_type = Attribute(
+        """The type of translation credit this message is or None.
+
+        If not None, this is a normalized version of the msgid and is one of
+        'translator-credits', 'Your emails', 'Your names'.
+        """)
+
     def makeHTMLID(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.
 

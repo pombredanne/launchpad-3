@@ -1007,6 +1007,10 @@ class POTMsgSet(SQLBase):
         expected_context = credit_message_ids[self.msgid_singular.msgid]
         return expected_context is None or (self.context == expected_context)
 
+    @property
+    def translation_credit_type(self):
+        return None
+
     def makeHTMLID(self, suffix=None):
         """See `IPOTMsgSet`."""
         elements = ['msgset', str(self.id)]
