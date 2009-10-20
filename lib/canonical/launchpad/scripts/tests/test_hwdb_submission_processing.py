@@ -10,7 +10,7 @@ from datetime import datetime
 import logging
 import os
 import pytz
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
 from zope.component import getUtility
 from zope.testing.loghandler import Handler
@@ -32,6 +32,7 @@ from canonical.launchpad.scripts.hwdbsubmissions import (
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import BaseLayer, LaunchpadZopelessLayer
 
+from lp.testing import TestCase
 
 class TestCaseHWDB(TestCase):
     """Common base class for HWDB processing tests."""
@@ -113,6 +114,24 @@ class TestCaseHWDB(TestCase):
                 return
         raise AssertionError('No log message found: %s' % expected_message)
 
+    def assertErrorMessage(self, submission_key, log_message):
+        """Search for log_message in the log entries for submission_key.
+
+        :raise: AssertionError if no log message exists that starts with
+            "Parsing submission <submission_key>:" and that contains
+            the text passed as the parameter message.
+        """
+        expected_message = 'Parsing submission %s: %s' % (
+            submission_key, log_message)
+
+        for record in self.handler.records:
+            if record.levelno != logging.ERROR:
+                continue
+            candidate = record.getMessage()
+            if candidate == expected_message:
+                return
+        raise AssertionError('No log message found: %s' % expected_message)
+
 
 class TestHWDBSubmissionProcessing(TestCaseHWDB):
     """Tests for processing of HWDB submissions."""
@@ -168,6 +187,139 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                          'Child missing in parent.children.')
         self.assertEqual(child.parent, parent,
                          'Invalid value of child.parent.')
+
+    def makeUdevDeviceParsedData(self, paths, sysfs_data={}):
+        """Build test data that can be passed to buildUdevDevice()."""
+        def makeUdevDevice(path):
+            """Make a trivial UdevInstance with the given device path."""
+            return {
+                'P': path,
+                'E': {}
+                }
+        udev_device_data = [makeUdevDevice(path) for path in paths]
+        parsed_data = {
+            'hardware': {
+                'udev': udev_device_data,
+                'sysfs-attributes': sysfs_data,
+                'dmi': {'/sys/class/dmi/id/sys_vendor': 'FUJITSU SIEMENS'},
+                }
+            }
+        return parsed_data
+
+    def test_buildUdevDeviceList(self):
+        """Test the creation of UdevDevice instances for a submission."""
+        root_device_path = '/devices/LNXSYSTM:00'
+        pci_pci_bridge_path = '/devices/pci0000:00/0000:00:1c.0'
+        pci_ethernet_controller_path = (
+            '/devices/pci0000:00/0000:00:1c.0/0000:02:00.0')
+        pci_usb_controller_path = '/devices/pci0000:00/0000:00:1d.7'
+        pci_usb_controller_usb_hub_path = (
+            '/devices/pci0000:00/0000:00:1d.7/usb1')
+        usb_storage_device_path = '/devices/pci0000:00/0000:00:1d.7/usb1/1-1'
+        udev_paths = (
+            root_device_path, pci_pci_bridge_path,
+            pci_ethernet_controller_path, pci_usb_controller_path,
+            pci_usb_controller_usb_hub_path, usb_storage_device_path,
+            )
+
+        parsed_data = self.makeUdevDeviceParsedData(udev_paths)
+        parser = SubmissionParser()
+        self.assertTrue(parser.buildUdevDeviceList(parsed_data))
+
+        self.assertEqual(len(udev_paths), len(parser.devices))
+        for path in udev_paths:
+            self.assertEqual(path, parser.devices[path].device_id)
+
+        devices = parser.devices
+
+        root_device = parser.devices[root_device_path]
+        expected_children = set(
+            (devices[pci_pci_bridge_path], devices[pci_usb_controller_path]))
+        self.assertEqual(expected_children, set(root_device.children))
+
+        pci_pci_bridge = devices[pci_pci_bridge_path]
+        self.assertEqual(
+            [devices[pci_ethernet_controller_path]], pci_pci_bridge.children)
+
+        usb_controller = devices[pci_usb_controller_path]
+        usb_hub = devices[pci_usb_controller_usb_hub_path]
+        self.assertEqual([usb_hub], usb_controller.children)
+
+        usb_storage = devices[usb_storage_device_path]
+        self.assertEqual([usb_storage], usb_hub.children)
+
+    def test_buildUdevDeviceList_root_node_has_dmi_data(self):
+        """The root node of a udev submissions has DMI data."""
+        root_device_path = '/devices/LNXSYSTM:00'
+        pci_pci_bridge_path = '/devices/pci0000:00/0000:00:1c.0'
+        udev_paths = (root_device_path, pci_pci_bridge_path)
+
+        parsed_data = self.makeUdevDeviceParsedData(udev_paths)
+        parser = SubmissionParser()
+        parser.buildUdevDeviceList(parsed_data)
+
+        self.assertEqual(
+            {'/sys/class/dmi/id/sys_vendor': 'FUJITSU SIEMENS'},
+            parser.devices[root_device_path].dmi)
+
+        self.assertIs(None, parser.devices[pci_pci_bridge_path].dmi)
+
+    def test_buildUdevDeviceList_sysfs_data(self):
+        """Optional sysfs data is passed to UdevDevice instances."""
+        root_device_path = '/devices/LNXSYSTM:00'
+        pci_pci_bridge_path = '/devices/pci0000:00/0000:00:1c.0'
+        pci_ethernet_controller_path = (
+            '/devices/pci0000:00/0000:00:1c.0/0000:02:00.0')
+
+        udev_paths = (
+            root_device_path, pci_pci_bridge_path,
+            pci_ethernet_controller_path)
+
+        sysfs_data = {
+            pci_pci_bridge_path: 'sysfs-data',
+            }
+
+        parsed_data = self.makeUdevDeviceParsedData(udev_paths, sysfs_data)
+        parser = SubmissionParser()
+        parser.buildUdevDeviceList(parsed_data)
+
+        self.assertEqual(
+            'sysfs-data', parser.devices[pci_pci_bridge_path].sysfs)
+
+        self.assertIs(
+            None, parser.devices[pci_ethernet_controller_path].sysfs)
+
+    def test_buildUdevDeviceList_invalid_device_path(self):
+        """Test the creation of UdevDevice instances for a submission.
+
+        All device paths must start with '/devices'. Any other
+        device path makes the submission invalid.
+        """
+        root_device_path = '/devices/LNXSYSTM:00'
+        bad_device_path = '/nonsense'
+        udev_paths = (root_device_path, bad_device_path)
+
+        parsed_data = self.makeUdevDeviceParsedData(udev_paths)
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'udev device with invalid path'
+        self.assertFalse(parser.buildUdevDeviceList(parsed_data))
+        self.assertErrorMessage(
+            parser.submission_key, "Invalid device path name: '/nonsense'")
+
+    def test_buildUdevDeviceList_missing_root_device(self):
+        """Test the creation of UdevDevice instances for a submission.
+
+        Each submission must contain a udev node for the root device.
+        """
+        pci_pci_bridge_path = '/devices/pci0000:00/0000:00:1c.0'
+        udev_paths = (pci_pci_bridge_path, )
+
+        parsed_data = self.makeUdevDeviceParsedData(udev_paths)
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'no udev root device'
+        self.assertFalse(parser.buildUdevDeviceList(parsed_data))
+        self.assertErrorMessage(
+            parser.submission_key, "No udev root device defined")
 
     def testKernelPackageName(self):
         """Test of SubmissionParser.getKernelPackageName.
