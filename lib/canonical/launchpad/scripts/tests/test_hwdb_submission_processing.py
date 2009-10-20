@@ -188,7 +188,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.assertEqual(child.parent, parent,
                          'Invalid value of child.parent.')
 
-    def makeUdevDeviceParsedData(self, paths, sysfs_data={}):
+    def makeUdevDeviceParsedData(self, paths, sysfs_data=None):
         """Build test data that can be passed to buildUdevDevice()."""
         def makeUdevDevice(path):
             """Make a trivial UdevInstance with the given device path."""
@@ -197,6 +197,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'E': {}
                 }
         udev_device_data = [makeUdevDevice(path) for path in paths]
+        if sysfs_data is None:
+            sysfs_data = {}
         parsed_data = {
             'hardware': {
                 'udev': udev_device_data,
