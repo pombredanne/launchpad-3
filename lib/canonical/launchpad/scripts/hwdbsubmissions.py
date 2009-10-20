@@ -2015,6 +2015,10 @@ class BaseDevice:
         missing vendor/product information in order to store the
         data reliably in the HWDB.
 
+        raw_bus == 'acpi' is used in udev data for the main system,
+        for CPUs, power supply etc. Except for the main sytsem, none
+        of them provides a vendor or product id, so we ignore them.
+
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
         for product IDs or product names, hence HAL often uses
@@ -2038,7 +2042,7 @@ class BaseDevice:
         ensure that we have vendor ID, product ID and product name.
         """
         bus = self.raw_bus
-        if bus == 'unknown' and self.udi != ROOT_UDI:
+        if bus in ('unknown', 'acpi') and not self.is_root_device:
             # The root node is course a real device; storing data
             # about other devices with the bus "unkown" is pointless.
             return False
@@ -2059,11 +2063,11 @@ class BaseDevice:
             # it.
             if self.real_bus != HWBus.IDE:
                 self.parser._logWarning(
-                    'A HALDevice that is supposed to be a real device does '
+                    'A %s that is supposed to be a real device does '
                     'not provide bus, vendor ID, product ID or product name: '
                     '%r %r %r %r %s'
-                    % (self.real_bus, self.vendor_id, self.product_id,
-                       self.product, self.udi),
+                    % (self.__class__.__name__, self.real_bus, self.vendor_id,
+                       self.product_id, self.product, self.device_id),
                     self.parser.submission_key)
             return False
         return True
