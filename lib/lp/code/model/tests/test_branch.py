@@ -500,7 +500,8 @@ class TestBzrIdentity(TestCaseWithFactory):
         linked_branch.setBranch(branch, registrant)
         logout()
         login(ANONYMOUS)
-        self.assertBzrIdentity(branch, '%s/%s' % (branch.distribution.name, branch.sourcepackagename.name))
+        self.assertBzrIdentity(branch, '%s/%s' % (
+            branch.distribution.name, branch.sourcepackagename.name))
 
     def test_linked_to_dev_package(self):
         # If a branch is linked to the development focus version of a package
