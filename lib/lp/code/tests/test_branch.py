@@ -17,6 +17,8 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import run_with_login, TestCaseWithFactory
 
@@ -232,7 +234,14 @@ class TestWriteToBranch(PermissionTest):
     def makeOfficialPackageBranch(self):
         """Make a branch linked to the pocket of a source package."""
         branch = self.factory.makePackageBranch()
-        pocket = self.factory.getAnyPocket()
+        # Make sure the (distroseries, pocket) combination used allows us to
+        # upload to it.
+        stable_states = (
+            DistroSeriesStatus.SUPPORTED, DistroSeriesStatus.CURRENT)
+        if branch.distroseries.status in stable_states:
+            pocket = PackagePublishingPocket.BACKPORTS
+        else:
+            pocket = PackagePublishingPocket.RELEASE
         sourcepackage = branch.sourcepackage
         suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
         registrant = self.factory.makePerson()

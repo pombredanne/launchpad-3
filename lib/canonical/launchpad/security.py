@@ -1600,30 +1600,47 @@ class EditBranch(AuthorizationBase):
 def can_upload_linked_package(person, branch):
     """True if person may upload the package linked to `branch`."""
 
-    def get_current_release():
+    def get_current_release(sspb):
         """Get current release for the source package linked to branch."""
-        ds = branch.distroseries
-        package = branch.sourcepackage
-        releases = ds.getCurrentSourceReleases([package.sourcepackagename])
+        package = sspb.sourcepackage
+        distroseries = sspb.distroseries
+        releases = distroseries.getCurrentSourceReleases(
+            [package.sourcepackagename])
         return releases.get(package, None)
 
-    # No `ISeriesSourcePackageBranch` -> not an official branch. Abort.
-    sspb = getUtility(IFindOfficialBranchLinks).findForBranch(branch)
-    if sspb is None:
+    # No associated `SeriesSourcePackageBranch` data -> not an official
+    # branch.  Abort.
+    result_set = getUtility(IFindOfficialBranchLinks).findForBranch(branch)
+    if result_set.count() < 1:
         return False
 
-    # Can we upload to the respective pocket?
-    if not branch.distroseries.canUploadToPocket(sspb.pocket):
+    # XXX al-maisan, 2009-10-20: a branch may currently be associated with a
+    # number of (distroseries, sourcepackagename, pocket) combinations.
+    # This does not seem right. But until the database model is fixed we work
+    # around this by assuming that things are fine as long as we find at least
+    # one combination that allows us to upload the corresponding source
+    # package.
+
+    # See whether we can upload to any of the distro series/pocket
+    # combinations.
+    sspb = None
+    for sspb in result_set:
+        # Can we upload to the respective pocket?
+        if sspb.distroseries.canUploadToPocket(sspb.pocket):
+            break
+    else:
+        # Loop terminated normally i.e. we could not upload to any of the
+        # (distroseries, pocket) combinations found.
         return False
 
-    archive = branch.distroseries.distribution.main_archive
-    current_release = get_current_release()
+    archive = sspb.distroseries.distribution.main_archive
+    # Find the component the linked source package was published in.
+    current_release = get_current_release(sspb)
     component = getattr(current_release, 'component', None)
 
     # Is person authorised to upload the source package this branch
     # is targeting?
-    result = verify_upload(
-        person, branch.sourcepackage.sourcepackagename, archive, component)
+    result = verify_upload(person, sspb.sourcepackagename, archive, component)
     # verify_upload() indicates that person *is* allowed to upload by
     # returning None.
     return result is None
