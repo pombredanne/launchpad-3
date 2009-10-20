@@ -486,6 +486,22 @@ class TestBzrIdentity(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
+    def test_linked_to_development_package(self):
+        # If a branch is linked to the RELEASE pocket of the current
+        # distroseries for the source package, then the bzr identity is the
+        # distribution name followed by the sourcepackage name.
+        branch = self.factory.makePackageBranch()
+        pocket = PackagePublishingPocket.RELEASE
+        linked_branch = ICanHasLinkedBranch(
+            branch.sourcepackage.getSuiteSourcePackage(pocket))
+        registrant = getUtility(
+            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        login_person(registrant)
+        linked_branch.setBranch(branch, registrant)
+        logout()
+        login(ANONYMOUS)
+        self.assertBzrIdentity(branch, '%s/%s' % (branch.distribution.name, branch.sourcepackagename.name))
+
     def test_linked_to_dev_package(self):
         # If a branch is linked to the development focus version of a package
         # then the bzr identity is distro/package.
