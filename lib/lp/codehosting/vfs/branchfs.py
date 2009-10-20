@@ -450,7 +450,7 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
     def translateVirtualPath(self, virtual_url_fragment):
         """See `AsyncVirtualServer.translateVirtualPath`.
 
-        XXX.
+        This implementation connects to the database directly.
         """
         deferred = defer.succeed(
             getUtility(IBranchLookup).getIdAndTrailingPath(

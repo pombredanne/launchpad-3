@@ -69,7 +69,14 @@ class IBranchLookup(Interface):
         """
 
     def getIdAndTrailingPath(self, path, from_slave=False):
-        """XXX.
+        """Return id of and path within the branch identified by the `path`.
+
+        To explain by example, if the branch with id 5 has unique name
+        '~user/project/name', getIdAndTrailingPath('~user/project/name/foo')
+        will return (5, '/foo').
+
+        :return: ``(branch_id, trailing_path)``, both will be ``None`` if no
+            branch is identified.
         """
 
     def uriToUniqueName(uri):
