@@ -304,7 +304,7 @@ class LaunchpadInternalServerTests:
         expected_transport, expected_path = dispatch
 
         deferred = self.server.translateVirtualPath(
-            '%s/.bzr/README' % (branch.unique_name,))
+            '/%s/.bzr/README' % (branch.unique_name,))
         def check_branch_transport((transport, path)):
             self.assertEqual(expected_path, path)
             # Can't test for equality of transports, since URLs and object
