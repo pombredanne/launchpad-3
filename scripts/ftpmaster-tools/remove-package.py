@@ -7,6 +7,8 @@
 
 ################################################################################
 
+import _pythonpath
+
 import commands
 import optparse
 import os
@@ -16,8 +18,6 @@ import sys
 import dak_utils
 
 import apt_pkg
-
-import _pythonpath
 
 from zope.component import getUtility
 
@@ -187,12 +187,12 @@ def game_over():
 #     else:
 #         print "No dependency problem found."
 #     print
-    
+
 ################################################################################
 
 def options_init():
     global Options
-    
+
     parser = optparse.OptionParser()
     logger_options(parser)
     parser.add_option("-a", "--architecture", dest="architecture",
@@ -275,7 +275,7 @@ def init():
 
     return arguments
 
-################################################################################    
+################################################################################
 
 def summary_to_remove(to_remove):
     # Generate the summary of what's to be removed
@@ -314,7 +314,7 @@ def summary_to_remove(to_remove):
 
     return summary
 
-################################################################################   
+################################################################################
 
 def what_to_remove(packages):
     to_remove = []
