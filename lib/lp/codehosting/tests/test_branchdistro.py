@@ -25,7 +25,7 @@ from lazr.uri import URI
 import transaction
 
 from canonical.config import config
-from canonical.testing.layers import ZopelessAppServerLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
 
 from lp.codehosting.branchdistro import DistroBrancher, switch_branches
@@ -104,7 +104,7 @@ class TestSwitchBranches(TestCaseWithTransport):
 class TestDistroBrancher(TestCaseWithFactory):
     """Tests for `DistroBrancher`."""
 
-    layer = ZopelessAppServerLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)

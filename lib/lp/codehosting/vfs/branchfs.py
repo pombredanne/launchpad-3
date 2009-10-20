@@ -202,8 +202,6 @@ def get_multi_server(write_hosted=False, write_mirrored=False,
         directly to the database.  If False, the default, use a server
         implementation that talks to the internal XML-RPC server.
     """
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    branchfs_endpoint = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
         config.codehosting.hosted_branches_root, mkdir=True)
     if not write_hosted:
@@ -213,13 +211,15 @@ def get_multi_server(write_hosted=False, write_mirrored=False,
     if not write_mirrored:
         mirrored_transport = get_readonly_transport(mirrored_transport)
     if direct_database:
-        server_class = DirectDatabaseLaunchpadServer
+        make_server = DirectDatabaseLaunchpadServer
     else:
-        server_class = LaunchpadInternalServer
-    hosted_server = server_class(
-        'lp-hosted:///', branchfs_endpoint, hosted_transport)
-    mirrored_server = server_class(
-        'lp-mirrored:///', branchfs_endpoint, mirrored_transport)
+        proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+        branchfs_endpoint = BlockingProxy(proxy)
+        def make_server(scheme, transport):
+            return LaunchpadInternalServer(
+                scheme, branchfs_endpoint, transport)
+    hosted_server = make_server('lp-hosted:///', hosted_transport)
+    mirrored_server = make_server('lp-mirrored:///', mirrored_transport)
     return _MultiServer(hosted_server, mirrored_server)
 
 
@@ -465,7 +465,7 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
         """
         deferred = defer.succeed(
             getUtility(IBranchLookup).getIdAndTrailingPath(
-                '/' + virtual_url_fragment))
+                virtual_url_fragment))
 
         def process_result((branch_id, trailing)):
             if branch_id is None:
