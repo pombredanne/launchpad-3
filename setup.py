@@ -62,7 +62,6 @@ setup(
         'zope.app.file',
         'zope.app.form',
         'zope.app.pagetemplate',
-        'zope.app.pluggableauth',
         'zope.app.publication',
         'zope.app.publisher',
         'zope.app.security',
