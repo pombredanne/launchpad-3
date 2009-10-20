@@ -47,20 +47,20 @@ from lp.translations.model.translationtemplateitem import (
 
 
 # Msgids that indicate translation credit messages, and their
-# contexts.
+# contexts and normalized msgid.
 credit_message_ids = {
     # Regular gettext credits messages.
-    u'translation-credits': None,
-    u'translator-credits': None,
-    u'translator_credits': None,
+    u'translation-credits': (None, u'translator-credits'),
+    u'translator-credits': (None, u'translator-credits'),
+    u'translator_credits': (None, u'translator-credits'),
 
     # KDE credits messages.
-    u'Your emails': u'EMAIL OF TRANSLATORS',
-    u'Your names': u'NAME OF TRANSLATORS',
+    u'Your emails': (u'EMAIL OF TRANSLATORS', u'Your emails'),
+    u'Your names': (u'NAME OF TRANSLATORS', u'Your names'),
 
     # Old KDE credits messages.
-    u'_: EMAIL OF TRANSLATORS\nYour emails': None,
-    u'_: NAME OF TRANSLATORS\nYour names': None,
+    u'_: EMAIL OF TRANSLATORS\nYour emails': (None, u'Your emails'),
+    u'_: NAME OF TRANSLATORS\nYour names': (None, u'Your names'),
     }
 
 
@@ -999,16 +999,18 @@ class POTMsgSet(SQLBase):
     @property
     def is_translation_credit(self):
         """See `IPOTMsgSet`."""
-        # msgid_singular.msgid is pre-joined everywhere where
-        # is_translation_credit is used
-        if self.msgid_singular.msgid not in credit_message_ids:
-            return False
-
-        expected_context = credit_message_ids[self.msgid_singular.msgid]
-        return expected_context is None or (self.context == expected_context)
+        return self.translation_credit_type is not None
 
     @property
     def translation_credit_type(self):
+        """See `IPOTMsgSet`."""
+        if self.msgid_singular.msgid not in credit_message_ids:
+            return None
+
+        expected_context, normalized_msgid = (
+            credit_message_ids[self.msgid_singular.msgid])
+        if expected_context is None or (self.context == expected_context):
+            return normalized_msgid
         return None
 
     def makeHTMLID(self, suffix=None):
