@@ -49,6 +49,7 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from lazr.delegates import delegates
+from lp.soyuz.browser.sourcepackagerelease import extract_bug_numbers
 from canonical.lazr.utils import smartquote
 
 
@@ -171,6 +172,13 @@ class DistributionSourcePackageActionMenu(
 class DistributionSourcePackageBaseView:
     """Common features to all `DistributionSourcePackage` views."""
 
+    def _load_bugs_into_cache(self, sprs):
+        """Load bug objects referenced on +changelog page into storm cache."""
+        # Reconstruct the entire changelog first.
+        the_changelog = '\n'.join([spr.changelog_entry for spr in sprs])
+        unique_bug_matches = extract_bug_numbers(the_changelog)
+        self.context.getBugsByNumbers(unique_bug_matches.keys())
+
     def releases(self):
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
 
@@ -185,6 +193,10 @@ class DistributionSourcePackageBaseView:
         for spr, diffs in itertools.groupby(pkg_diffs,
                                             operator.attrgetter('to_source')):
             spr_diffs[spr] = list(diffs)
+
+        # Load the various bugs referenced by the changelog into the storm
+        # cache. This will aide the ensuing changelog linkification.
+        self._load_bugs_into_cache(sprs)
 
         return [
             DecoratedDistributionSourcePackageRelease(

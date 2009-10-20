@@ -22,7 +22,7 @@ from zope.interface import implements
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
-from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
+from lp.bugs.model.bug import Bug, BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
@@ -40,6 +40,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
+from canonical.launchpad.interfaces.lpstorm import IStore
 
 from canonical.lazr.utils import smartquote
 
@@ -407,6 +408,13 @@ class DistributionSourcePackage(BugTargetBase,
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
+
+    @staticmethod
+    def getBugsByNumbers(bug_numbers):
+        """List of `Bug` objects identified by the `bug_numbers` sequence."""
+        store = IStore(Bug)
+        result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return list(result_set)
 
 
 class DistributionSourcePackageInDatabase(Storm):
