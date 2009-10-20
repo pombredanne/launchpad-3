@@ -668,6 +668,39 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [self.potmsgset])
 
+    def test_getPOTMsgSetChangedInLaunchpad_diverged_imported(self):
+        # If there is a diverged imported (but non-current) message
+        # and a shared current message, it should not be listed as changed.
+        # Even though that is generally incorrect, this is a situation
+        # we can't come to with new code and is a residue of old data
+        # (see bug #455680 for details).
+
+        # To hit the bug, we need:
+        # 1) Shared imported and current translation.
+        # 2) Diverged, imported, non-current message.
+        shared = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Shared imported current"], is_imported=True)
+        diverged = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Diverged imported non-current"],
+            is_imported=True, force_diverged=True)
+        # As we can't come to this situation using existing code,
+        # we modify the is_current flag directly.
+        diverged.is_current = False
+
+        self.assertEquals(shared.is_imported, True)
+        self.assertEquals(shared.is_current, True)
+        self.assertIs(shared.potemplate, None)
+        self.assertEquals(diverged.is_imported, True)
+        self.assertEquals(diverged.is_current, False)
+        self.assertEquals(diverged.potemplate, self.devel_potemplate)
+
+        # Such POTMsgSet is not considered changed in this PO file.
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(found_translations, [])
+
     def test_getPOTMsgSetChangedInLaunchpad_SharedDiverged(self):
         # Test listing of changed in LP for shared/diverged messages.
 

@@ -801,12 +801,13 @@ class POFile(SQLBase, POFileMixIn):
         # translations which are 'new' and only exist in LP).
 
         # TranslationMessage is changed if:
-        # is_current IS TRUE,
+        # is_current IS TRUE, is_imported IS FALSE,
         # (diverged AND not empty) OR (shared AND not empty AND no diverged)
         # exists imported (is_imported AND not empty AND (diverged OR shared))
         clauses, clause_tables = self._getTranslatedMessagesQuery()
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            'TranslationMessage.is_imported IS FALSE',
             ])
 
         variant_clause = self._getLanguageVariantClause(table='diverged')
