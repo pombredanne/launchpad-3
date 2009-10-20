@@ -371,7 +371,7 @@ latest published sources with their states.
     >>> print extract_text(latest_updates)
     Latest updates
     cdrkit ... ago
-    Failed to build
+    Failed to build: i386
     pmount ... ago
     Successfully built
     iceweasel ... ago

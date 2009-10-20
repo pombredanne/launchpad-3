@@ -164,6 +164,7 @@
             <tal:block condition="view/registration_error">
               <h1>Your registration was unsuccessful</h1>
               <p class="error message"
+                 style="margin-top: 2em;"
                  tal:content="structure view/registration_error" />
             </tal:block>
             <!-- 5. might want to register: -->
