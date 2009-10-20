@@ -1599,10 +1599,10 @@ class EditBranch(AuthorizationBase):
 def can_upload_linked_package(person, branch):
     """True if person may upload the package linked to `branch`."""
 
-    def get_current_release(sspb):
+    def get_current_release(ssp):
         """Get current release for the source package linked to branch."""
-        package = sspb.sourcepackage
-        releases = sspb.distroseries.getCurrentSourceReleases(
+        package = ssp.sourcepackage
+        releases = ssp.distroseries.getCurrentSourceReleases(
             [package.sourcepackagename])
         return releases.get(package, None)
 
