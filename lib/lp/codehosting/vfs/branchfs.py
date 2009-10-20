@@ -183,17 +183,24 @@ def get_puller_server():
     return get_multi_server(write_mirrored=True)
 
 
-def get_multi_server(write_hosted=False, write_mirrored=False):
+def get_multi_server(write_hosted=False, write_mirrored=False,
+                     direct_database=False):
     """Get a server with access to both mirrored and hosted areas.
 
-    The server wraps up two `LaunchpadInternalServer`s. One of them points to
-    the hosted branch area, the other points to the mirrored area.
+    The server wraps up two `LaunchpadInternalServer`s or
+    `DirectDatabaseLaunchpadServer`s. One server points to the hosted branch
+    area and the other points to the mirrored area.
 
     Write permision defaults to False, but can be overridden.
+
     :param write_hosted: if True, lp-hosted URLs are writeable.  Otherwise,
         they are read-only.
     :param write_mirrored: if True, lp-mirrored URLs are writeable.
         Otherwise, they are read-only.
+
+    :param direct_database: if True, use a server implementation that talks
+        directly to the database.  If False, the default, use a server
+        implementation that talks to the internal XML-RPC server.
     """
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     branchfs_endpoint = BlockingProxy(proxy)
@@ -205,9 +212,13 @@ def get_multi_server(write_hosted=False, write_mirrored=False):
         config.codehosting.mirrored_branches_root, mkdir=True)
     if not write_mirrored:
         mirrored_transport = get_readonly_transport(mirrored_transport)
-    hosted_server = LaunchpadInternalServer(
+    if direct_database:
+        server_class = DirectDatabaseLaunchpadServer
+    else:
+        server_class = LaunchpadInternalServer
+    hosted_server = server_class(
         'lp-hosted:///', branchfs_endpoint, hosted_transport)
-    mirrored_server = LaunchpadInternalServer(
+    mirrored_server = server_class(
         'lp-mirrored:///', branchfs_endpoint, mirrored_transport)
     return _MultiServer(hosted_server, mirrored_server)
 
