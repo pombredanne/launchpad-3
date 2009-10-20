@@ -108,7 +108,7 @@ class TestDistroBrancher(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches(real_server=True, direct_database=True)
 
     def makeOfficialPackageBranch(self, distroseries=None):
         """Make an official package branch with an underlying bzr branch."""
