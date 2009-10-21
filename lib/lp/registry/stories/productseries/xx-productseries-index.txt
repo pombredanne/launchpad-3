@@ -135,7 +135,7 @@ The driver sees two packaging links near the distribution packaging.
     >>> driver_browser.getLink('Link to Ubuntu package')
     <Link ... url='http://launchpad.dev/firefox/trunk/+ubuntupkg'>
 
-    >>> driver_browser.getLink('Link to other package')
+    >>> driver_browser.getLink('Link package')
     <Link ... url='http://launchpad.dev/firefox/trunk/+addpackage'>
 
 There is a section that lists related links to this series
