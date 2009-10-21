@@ -10,6 +10,9 @@ named like cc.txt (where cc is the two letter country code),
 containing the archive mirrors for that country.
 """
 
+# pylint: disable-msg=W0403
+import _pythonpath
+
 import os
 import tempfile
 

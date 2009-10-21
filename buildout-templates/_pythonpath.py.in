@@ -20,6 +20,7 @@ site_dirs = [
     ${indented-dir-paths}
     ]
 clean_modules = [
+    'apport_python_hook',
     'os',
     '_pythonpath',
     'site',
