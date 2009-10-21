@@ -12,9 +12,9 @@
         <p>
           This page is a quick way for you to link the
           <tal:series replace="context/title" /> to a package in
-          the <strong>current development series of Ubuntu</strong>. We will use this
-          information to improve the flow of bug fixes and translations
-          from Ubuntu to the
+          the <strong>current development series of Ubuntu</strong>. We will
+          use this information to improve the flow of bug fixes and
+          translations from Ubuntu to the
           <span tal:replace="context/product/displayname">Firefox</span> team.
         </p>
         
