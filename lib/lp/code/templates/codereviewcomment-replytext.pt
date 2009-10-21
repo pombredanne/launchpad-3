@@ -1,2 +1,0 @@
-<tal:fragment replace="structure view/comment/as_quoted_email"
-    xmlns:tal="http://xml.zope.org/namespaces/tal" />
