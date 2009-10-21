@@ -15,7 +15,7 @@ import itertools
 import operator
 
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import And, Desc, In
+from storm.expr import And, Desc, In, Join, Lower
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
@@ -36,8 +36,10 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.registry.model.karma import KarmaTotalCache
+from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.interfaces.lpstorm import IStore
