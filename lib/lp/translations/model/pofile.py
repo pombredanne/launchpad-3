@@ -522,7 +522,7 @@ class POFile(SQLBase, POFileMixIn):
         LP_CREDIT_HEADER = u'Launchpad Contributions:'
         SPACE = u' '
         credits_type = potmsgset.translation_credits_type
-        assert credits_type == TranslationCreditsType.NOT_CREDITS, (
+        assert credits_type != TranslationCreditsType.NOT_CREDITS, (
             "Calling prepareTranslationCredits on a message with "
             "msgid '%s'." % potmsgset.singular_text)
         imported = potmsgset.getImportedTranslationMessage(
