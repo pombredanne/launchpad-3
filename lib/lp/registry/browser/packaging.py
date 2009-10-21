@@ -35,10 +35,19 @@ class PackagingAddView(LaunchpadFormView):
 
     cancel_url = next_url
 
+    @property
+    def default_distroseries(self):
+        """The default distroseries for this view; None.
+
+        The vocabulary guarantees a distroseries, but in subclasses that is
+        not true.
+        """
+        return None
+
     def validate(self, data):
         productseries = self.context
         sourcepackagename = data.get('sourcepackagename', None)
-        distroseries = data['distroseries']
+        distroseries = data.get('distroseries', self.default_distroseries)
         if sourcepackagename is None:
             message = "You must choose the source package name."
             self.setFieldError('sourcepackagename', message)
