@@ -209,7 +209,7 @@ class NotificationResponse:
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         self._notifications = None
 
-    def redirect(self, location, status=None):
+    def redirect(self, location, status=None, trusted=False):
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         # We are redirecting, so we need to stuff our notifications into
         # the session
@@ -220,7 +220,8 @@ class NotificationResponse:
             allowUnauthenticatedSession(self._request)
             session = ISession(self)[SESSION_KEY]
             session['notifications'] = self._notifications
-        return super(NotificationResponse, self).redirect(location, status)
+        return super(NotificationResponse, self).redirect(
+            location, status, trusted=trusted)
 
     def addDebugNotification(self, msg):
         """See `INotificationResponse`."""
