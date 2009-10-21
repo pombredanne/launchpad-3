@@ -138,11 +138,11 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
 
     def test_buildDeviceList(self):
         """Test of SubmissionParser.buildDeviceList()."""
-        class SubmissionParserFakedBuildDeviceList(SubmissionParser):
+        class MockSubmissionParser(SubmissionParser):
             """A SubmissionParser variant for testing."""
 
             def __init__(self, hal_result, udev_result):
-                super(SubmissionParserFakedBuildDeviceList, self).__init__()
+                super(MockSubmissionParser, self).__init__()
                 self.hal_result = hal_result
                 self.udev_result = udev_result
 
@@ -158,19 +158,19 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             'hardware': {'hal': None}
             }
 
-        parser = SubmissionParserFakedBuildDeviceList(True, True)
+        parser = MockSubmissionParser(True, True)
         self.assertTrue(parser.buildDeviceList(parsed_data_hal))
 
-        parser = SubmissionParserFakedBuildDeviceList(False, True)
+        parser = MockSubmissionParser(False, True)
         self.assertFalse(parser.buildDeviceList(parsed_data_hal))
 
         parsed_data_udev = {
             'hardware': {'udev': None}
             }
-        parser = SubmissionParserFakedBuildDeviceList(True, True)
+        parser = MockSubmissionParser(True, True)
         self.assertTrue(parser.buildDeviceList(parsed_data_udev))
 
-        parser = SubmissionParserFakedBuildDeviceList(True, False)
+        parser = MockSubmissionParser(True, False)
         self.assertFalse(parser.buildDeviceList(parsed_data_udev))
 
     def test_buildHalDeviceList(self):
@@ -4968,21 +4968,19 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
     def test_processSubmission_buildDeviceList_failing(self):
         """Test of SubmissionParser.processSubmission().
 
-        If the method buildDeviceList() fails for a submissions, it is
+        If the method buildDeviceList() fails for a submission, it is
         rejected.
         """
-        class SubmissionParserBuildDeviceListFails(SubmissionParser):
-            """A SubmissionParser varaint where buildDeviceList() fails."""
-            def buildDeviceList(self, parsed_data):
-                """See `SubmissionParser`."""
-                return False
+        def no(*args, **kw):
+            return False
 
         submission_key = 'builddevicelist-fails'
         submission_data = self.getSampleData(
             'simple_valid_hwdb_submission.xml')
         submission = self.createSubmissionData(
             submission_data, False, submission_key)
-        parser = SubmissionParserBuildDeviceListFails()
+        parser = SubmissionParser()
+        parser.buildDeviceList = no
         self.assertFalse(parser.processSubmission(submission))
 
     def testProcessSubmissionRealData(self):
