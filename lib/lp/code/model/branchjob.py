@@ -546,8 +546,8 @@ class RevisionsAddedJob(BranchJobDerived):
         """
         store = Store.of(self.branch)
         conditions = [
-            BranchMergeProposal.target_branch==self.branch.id,
-            BranchMergeProposal.source_branch==Branch.id,
+            BranchMergeProposal.target_branch == self.branch.id,
+            BranchMergeProposal.source_branch == Branch.id,
             Branch.last_scanned_id.is_in(revision_ids)]
         if not include_superseded:
             conditions.append(
