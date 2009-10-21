@@ -201,6 +201,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
         YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
+                accept_empty: %(accept_empty)s,
                 multiline: true,
                 buttons: 'top'
             });
@@ -250,6 +251,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
             'context_url': canonical_url(
                 self.context, path_only_if_possible=True),
             'attribute': self.attribute,
+            'accept_empty': self.accept_empty,
             'edit_controls': '',
             }
         # Only display the trigger link and the activation script if
