@@ -319,6 +319,17 @@ class IPOTMsgSet(Interface):
             `IPOTemplate`.
         """
 
+    def setTranslationCreditsToTranslated(language):
+        """Set the current translation for this translation credits message.
+
+        Sets a fixed dummy string as the current translation, if this is a
+        translation credits message, so that these get counted as
+        'translated', too.
+        Credits messages that already have a translation, imported messages
+        and normal messages are left untouched.
+        :param language: language to set this translation in.
+        """
+
     def getAllTranslationMessages():
         """Retrieve all `TranslationMessage`s for this `POTMsgSet`."""
 

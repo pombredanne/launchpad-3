@@ -34,34 +34,78 @@ differ for historical reason for the same type of credit. The property
 is_translation_credit indicates if the POTMsgSet is translation credits. The
 property translation_credit_type contains the type of translation credits.
 
-    >>> def print_credit(credit):
-    ...     print credit.is_translation_credit
-    ...     print credit.translation_credits_type.title
+    >>> def print_credits(credits):
+    ...     print credits.is_translation_credit
+    ...     print credits.translation_credits_type.title
 
-    >>> print_credit(factory.makePOTMsgSet(potemplate))
+    >>> print_credits(factory.makePOTMsgSet(potemplate))
     False
     Not a translation credits message
 
-    >>> print_credit(factory.makePOTMsgSet(
+    >>> print_credits(factory.makePOTMsgSet(
     ...     potemplate, singular=u'translator-credits'))
     True
     Gnome credits message
 
-    >>> print_credit(factory.makePOTMsgSet(
+    >>> print_credits(factory.makePOTMsgSet(
     ...     potemplate, singular=u'translation-credits'))
     True
     Gnome credits message
 
-    >>> print_credit(factory.makePOTMsgSet(
+    >>> print_credits(factory.makePOTMsgSet(
     ...     potemplate,
     ...     singular=u'Your emails', context=u'EMAIL OF TRANSLATORS'))
     True
     KDE emails credits message
 
-    >>> print_credit(factory.makePOTMsgSet(
+    >>> print_credits(factory.makePOTMsgSet(
     ...     potemplate, singular=u'_: EMAIL OF TRANSLATORS\nYour emails'))
     True
     KDE emails credits message
+
+
+== POTMsgSet.setTranslationCreditsToTranslated ==
+
+If a message is a translation credits message, its translations must be set
+to some dummy value so that they are counted as "translated" and don't
+mess up the statistics.
+
+    >>> eo_pofile = factory.makePOFile('eo', potemplate=potemplate)
+    >>> eo_language = eo_pofile.language
+    >>> gnome_credits = factory.makePOTMsgSet(
+    ...     potemplate, singular=u'translator-credits')
+    >>> current = gnome_credits.getCurrentTranslationMessage(potemplate,
+    ...                                                      eo_language)
+    >>> print current
+    None
+    >>> gnome_credits.setTranslationCreditsToTranslated(eo_language)
+    >>> current = gnome_credits.getCurrentTranslationMessage(potemplate,
+    ...                                                      eo_language)
+    >>> print current.msgstr0.translation
+    This is a dummy translation so that the credits are counted as translated.
+
+An imported translation credits message will already contain a translation
+and is therefore left untouched.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> sr_pofile = removeSecurityProxy(factory.makePOFile('sr', potemplate=potemplate))
+    >>> sr_language = sr_pofile.language
+    >>> sr_credits = factory.makeTranslationMessage(
+    ...     potmsgset=gnome_credits, pofile=sr_pofile, is_imported=True,
+    ...     translations=[u"Some translations credits for Serbian."])
+    >>> gnome_credits.setTranslationCreditsToTranslated(sr_language)
+    >>> current = gnome_credits.getCurrentTranslationMessage(potemplate,
+    ...                                                      sr_language)
+    >>> print current.msgstr0.translation
+    Some translations credits for Serbian.
+
+Normal messages will be left untouched, too.
+
+    >>> potmsgset.setTranslationCreditsToTranslated(sr_language)
+    >>> current = potmsgset.getCurrentTranslationMessage(potemplate,
+    ...                                                      sr_language)
+    >>> print current
+    None
 
 
 == POTMsgSet.normalizeWhitespaces ==

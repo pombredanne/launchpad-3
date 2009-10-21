@@ -68,6 +68,10 @@ credit_message_ids = {
         (None, TranslationCreditsType.KDE_NAMES),
     }
 
+# String to be used as msgstr for translation credits messages.
+credit_message_str = (u'This is a dummy translation so that the '
+                      u'credits are counted as translated.')
+
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -1038,6 +1042,9 @@ class POTMsgSet(SQLBase):
             except SQLObjectNotFound:
                 pomsgid = POMsgID(msgid=plural_form_text)
             self.msgid_plural = pomsgid
+
+    def setTranslationCreditsToTranslated(self, language):
+        """See `IPOTMsgSet`."""
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""
