@@ -512,6 +512,73 @@ class TestTemplateGuess(unittest.TestCase):
 
         self.assertEqual(entry1.potemplate, None)
 
+    def test_pathless_template_match(self):
+        # If an uploaded template has no directory component in its
+        # path, and no matching template is found in the database, the
+        # approver also tries if there might be exactly 1 template with
+        # the same base filename.  If so, that's a match.
+        self._setUpProduct()
+        template = self.producttemplate1
+        template.path = 'po/test.pot'
+        assert template.productseries == self.producttemplate2.productseries
+        assert template.iscurrent
+        assert self.producttemplate2.iscurrent
+        self.producttemplate2.path = 'different.pot'
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'test.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(template, entry.guessed_potemplate)
+
+    def test_pathless_template_no_match(self):
+        # The search for a matching filename will still ignore
+        # templates with non-matching paths.
+        self._setUpProduct()
+        template = self.producttemplate1
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'other.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(None, entry.guessed_potemplate)
+
+    def test_pathless_template_multiple_matches(self):
+        # If multiple active templates have matching filenames
+        # (regardless of whether they're in subdirectories or in the
+        # project root directory) then there is no unique match.
+        self._setUpProduct()
+        template = self.producttemplate1
+        template.path = 'here/test.pot'
+        self.producttemplate2.path = 'there/test.pot'
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'test.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(None, entry.guessed_potemplate)
+
+    def test_pathless_template_one_current_match(self):
+        # Deactivated templates are not considered in the match; if one
+        # active and one non-active template both match on filename, the
+        # active one is returned as a unique match.
+        self._setUpProduct()
+        template = self.producttemplate1
+        template.iscurrent = True
+        template.path = 'here/test.pot'
+        self.producttemplate2.iscurrent = False
+        self.producttemplate2.path = 'there/test.pot'
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'test.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(template, entry.guessed_potemplate)
+
 
 class TestKdePOFileGuess(unittest.TestCase):
     """Test auto-approval's `POFile` guessing for KDE uploads.
