@@ -187,18 +187,18 @@ class DistributionSourcePackageBaseView:
         if len(dspr_pubs) == 0:
             return []
 
-        # Collate diffs for relevant SourcePackageReleases
         sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
+        # Load the bugs and persons referenced by the +changelog page into the
+        # storm cache. This will aid the ensuing changelog linkification.
+        the_changelog = '\n'.join([spr.changelog_entry for spr in sprs])
+        self._preload_bug_person_data(the_changelog)
+
+        # Collate diffs for relevant SourcePackageReleases
         pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
         spr_diffs = {}
         for spr, diffs in itertools.groupby(pkg_diffs,
                                             operator.attrgetter('to_source')):
             spr_diffs[spr] = list(diffs)
-
-        # Load the bugs and persons referenced by the +changelog page into the
-        # storm cache. This will aid the ensuing changelog linkification.
-        the_changelog = '\n'.join([spr.changelog_entry for spr in sprs])
-        self._preload_bug_person_data(the_changelog)
 
         return [
             DecoratedDistributionSourcePackageRelease(

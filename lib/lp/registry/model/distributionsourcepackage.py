@@ -429,7 +429,10 @@ class DistributionSourcePackage(BugTargetBase,
             Person, Join(EmailAddress, EmailAddress.personID == Person.id)]
         # Get all persons whose email addresses are in the list.
         result_set = store.using(*origin).find(
-            Person, In(Lower(EmailAddress.email), email_addresses))
+            (EmailAddress, Person),
+            And(
+                In(Lower(EmailAddress.email), email_addresses),
+                EmailAddress.status ==  EmailAddressStatus.VALIDATED))
         return list(result_set)
 
 
