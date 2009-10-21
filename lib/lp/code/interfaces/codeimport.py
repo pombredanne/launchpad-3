@@ -31,6 +31,8 @@ def validate_cvs_root(cvsroot):
         raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
+    if not root.hostname:
+        raise LaunchpadValidationError('CVS root is invalid.')
     if root.hostname.count('.') == 0:
         raise LaunchpadValidationError(
             'Please use a fully qualified host name.')
