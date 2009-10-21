@@ -1397,15 +1397,23 @@ class SubmissionParser(object):
 
     def buildDeviceList(self, parsed_data):
         """Create a list of devices from a submission."""
-        self.hal_devices = hal_devices = {}
+        if 'hal' in parsed_data['hardware']:
+            return self.buildHalDeviceList(parsed_data)
+        else:
+            return self.buildUdevDeviceList(parsed_data)
+
+    def buildHalDeviceList(self, parsed_data):
+        """Create a list of devices from the HAL data of a submission."""
+        self.devices = devices = {}
         for hal_data in parsed_data['hardware']['hal']['devices']:
             udi = hal_data['udi']
-            hal_devices[udi] = HALDevice(hal_data['id'], udi,
-                                         hal_data['properties'], self)
-        for device in hal_devices.values():
+            devices[udi] = HALDevice(hal_data['id'], udi,
+                                     hal_data['properties'], self)
+        for device in devices.values():
             parent_udi = device.parent_udi
             if parent_udi is not None:
-                hal_devices[parent_udi].addChild(device)
+                devices[parent_udi].addChild(device)
+        return True
 
     def buildUdevDeviceList(self, parsed_data):
         """Create a list of devices from the udev data of a submission."""
@@ -1460,7 +1468,7 @@ class SubmissionParser(object):
 
     def getKernelPackageName(self):
         """Return the kernel package name of the submission,"""
-        root_hal_device = self.hal_devices[ROOT_UDI]
+        root_hal_device = self.devices[ROOT_UDI]
         kernel_version = root_hal_device.getProperty('system.kernel.version')
         if kernel_version is None:
             self._logWarning(
@@ -1521,8 +1529,9 @@ class SubmissionParser(object):
         self.parsed_data = parsed_data
         if not self.checkConsistency(parsed_data):
             return False
-        self.buildDeviceList(parsed_data)
-        root_device = self.hal_devices[ROOT_UDI]
+        if not self.buildDeviceList(parsed_data):
+            return False
+        root_device = self.devices[ROOT_UDI]
         root_device.createDBData(submission, None)
         return True
 
