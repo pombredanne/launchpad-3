@@ -58,7 +58,7 @@ def extract_bug_numbers(text):
 def extract_email_addresses(text):
     '''Unique email adresses in the text.'''
     matches = re.finditer(FormattersAPI._re_email, text)
-    return [match.group() for match in matches]
+    return list(set([match.group() for match in matches]))
 
 
 class SourcePackageReleaseView(LaunchpadView):
