@@ -187,7 +187,7 @@ Name some variables to mirror the names used as arguments.
 The facet specified for the outer pages element will be used only when a
 facet is not specified for the inner page.
 
-    >>> P = pages(context, for_, permission, facet="OUTERFACET")
+    >>> P = pages(context, permission, for_, facet="OUTERFACET")
     >>> P.page(context, name, facet=facet)
     >>> P.page(context, "OTHER NAME")
 
