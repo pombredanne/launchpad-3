@@ -20,13 +20,6 @@
         </a>
       </td>
     </tr>
-    <tr>
-      <th>Proposed by:</th>
-      <td>
-        <tal:registrant replace="structure context/registrant/fmt:link"/>
-        <tal:modified replace="context/date_created/fmt:displaydate" />
-      </td>
-    </tr>
     <tal:comment condition="nothing">
       Only show the reviewed section if the state is not superseded.
       Only show the reviewed revision if not rejected.

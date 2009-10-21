@@ -87,10 +87,8 @@ commit message can be set.
     ...     print extract_text(find_tag_by_id(
     ...         browser.contents, 'proposal-summary'))
     >>> print_summary(nopriv_browser)
-    Status: Needs review
-    Proposed by: No Privileges Person ...
-    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
-    Merge into: lp://dev/~name12/gnome-terminal/main
+    Status: ...
+    ...
     Commit message: Add more mojo
 
 
@@ -134,10 +132,7 @@ The status of the merge proposal is updated to "Needs review".
 
     >>> print_summary(sample_browser)
     Status: Needs review
-    Proposed ...
-    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
-    Merge into: lp://dev/~name12/gnome-terminal/main
-    Commit message: Add more mojo
+    ...
 
 Additional reviews can be requested.
 
@@ -289,7 +284,6 @@ next to the heading "Merged at revision".
     The proposal's merged revision has been updated.
     >>> print_summary(sample_browser)
     Status: Merged
-    ...
     Merged at revision: 42
     ...
     >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
