@@ -65,6 +65,19 @@ class TestPOTemplate(TestCaseWithFactory):
             "(Expected: '%s' Got: '%s')" % (expected, result)
             )
 
+    def test_getTranslationCredits(self):
+        # getTranslationCredits returns only translation credits.
+        not_credits = self.factory.makePOTMsgSet(self.potemplate)
+        gnome_credits = self.factory.makePOTMsgSet(
+            self.potemplate, singular=u"translator-credits")
+        kde_credits = self.factory.makePOTMsgSet(
+            self.potemplate, 
+            singular=u"Your emails", context=u"EMAIL OF TRANSLATORS")
+        not_credits_either = self.factory.makePOTMsgSet(self.potemplate)
+
+        self.assertContentEqual([gnome_credits, kde_credits],
+                                self.potemplate.getTranslationCredits())
+
 
 class EquivalenceClassTestMixin:
     """Helper for POTemplate equivalence class tests."""

@@ -418,6 +418,10 @@ class POTemplate(SQLBase, RosettaStats):
                                  orderBy=['TranslationTemplateItem.sequence'])
         return query.prejoin(['msgid_singular', 'msgid_plural'])
 
+    def getTranslationCredits(self):
+        """See `IPOTemplate`."""
+        return []
+
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
         results = self.getPOTMsgSets(current)
