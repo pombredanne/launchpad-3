@@ -47,18 +47,26 @@
 
       <tal:seriesfilesexist condition="series/has_release_files">
         <tal:releases repeat="release series/releases">
-          <div tal:condition="release/files">
-            <h2 style="font-size: 1.2em">
+          <div tal:condition="release/files" class="portlet">
+            <h2 style="font-size: 1.2em; float:left;">
               <a tal:attributes="href release/fmt:url">
                 <span tal:replace="release/name_with_codename" /> release</a>,
               from the
               <a tal:attributes="href series/fmt:url"
                  tal:content="series/name">name</a> series.
             </h2>
+            <div style="float:right;">
+              Released
+              <span
+                 tal:attributes="title release/datereleased/fmt:datetime"
+                 tal:content="release/datereleased/fmt:approximatedate" />
+            </div>
 
-            <div id="release_notes">
-              <h3>Release notes:</h3>
-              <tal:notes condition="release/release_notes"
+            <div style="clear:both;" />
+
+            <div id="release_notes" tal:condition="release/release_notes">
+              <strong>Release notes:</strong>
+              <tal:notes
                   define="notes release/release_notes/fmt:shorten/800">
                 <div tal:content="structure notes/fmt:text-to-html">
                   Release notes
@@ -67,15 +75,22 @@
               <div tal:condition="not: release/release_notes">
                 <em>This release does not have release notes.</em>
               </div>
-              <div>
-                <strong>Released:</strong>
-                <span
-                  tal:attributes="title release/datereleased/fmt:datetime"
-                  tal:content="release/datereleased/fmt:approximatedate" />
-              </div>
             </div>
 
-            <table class="listing">
+            <div id="changelog" tal:condition="release/changelog">
+
+              <fieldset class="collapsible collapsed" style="padding: 0px;">
+                <legend>Changelog</legend>
+
+                <div id="changelog" style="margin-bottom: 0px;"
+                     tal:content="structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
+                  ProductRelease.changelog.
+                </div>
+              </fieldset>
+            </div>
+
+
+            <table class="listing" style="margin-top: 1em;">
               <thead>
                 <tr>
                   <th width="35%">File</th>
@@ -105,6 +120,10 @@
               </tfoot>
             </table>
           </div>
+          <div tal:condition="not: release/total_downloads"
+               style="margin-top: 2em;">
+          </div>
+
         </tal:releases>
         <br />
 
