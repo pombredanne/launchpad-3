@@ -1200,7 +1200,7 @@ with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:shorten', foo=None)
     Traceback (most recent call last):
     ...
-    TraversalError: 'you need to traverse a number after fmt:shorten'
+    LocationError: 'you need to traverse a number after fmt:shorten'
 
     >>> test_tales('foo/fmt:shorten/8', foo=None)
     ''
@@ -1303,7 +1303,7 @@ DBSchema the item comes from.
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=udeb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The enumerated type BinaryPackageFormat does not have a
+    LocationError: 'The enumerated type BinaryPackageFormat does not have a
                      value CHEESEFISH.'
 
 It is possible for dbschemas to have a 'None' value.  This is a bit
@@ -1325,7 +1325,7 @@ dbschema items too:
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=wrapped_deb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The enumerated type BinaryPackageFormat does not have a
+    LocationError: 'The enumerated type BinaryPackageFormat does not have a
                      value CHEESEFISH.'
 
 
