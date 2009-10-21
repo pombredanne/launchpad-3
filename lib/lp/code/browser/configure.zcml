@@ -615,6 +615,9 @@
         <browser:page
             name="+fragment"
             template="../templates/codereviewcomment-fragment.pt"/>
+        <browser:page
+            name="+replytext"
+            template="../templates/codereviewcomment-replytext.pt"/>
     </browser:pages>
     <browser:page
         name="+reply"

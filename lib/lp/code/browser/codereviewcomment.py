@@ -82,6 +82,10 @@ class CodeReviewDisplayComment:
         # The date attribute is used to sort the comments in the conversation.
         self.date = self.comment.message.datecreated
 
+    @property
+    def as_quoted_email(self):
+        return quote_text_as_email(self.message_body)
+
 
 class CodeReviewCommentPrimaryContext:
     """The primary context is the comment is that of the source branch."""
@@ -222,7 +226,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         quoted comment being replied to.
         """
         if self.is_reply:
-            comment = quote_text_as_email(self.reply_to.message_body)
+            comment = self.reply_to.as_quoted_email
         else:
             comment = ''
         return {'comment': comment}
