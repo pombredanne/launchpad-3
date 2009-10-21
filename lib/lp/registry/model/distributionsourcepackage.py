@@ -416,6 +416,20 @@ class DistributionSourcePackage(BugTargetBase,
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
         return list(result_set)
 
+    @staticmethod
+    def getPersonsByEmail(email_addresses):
+        """List of `Person` objects with the given email addresses."""
+        # Perform basic sanitization of email addresses.
+        email_addresses = [
+            address.lower().strip() for address in email_addresses]
+        store = IStore(Person)
+        origin = [
+            Person, Join(EmailAddress, EmailAddress.personID == Person.id)]
+        # Get all persons whose email addresses are in the list.
+        result_set = store.using(*origin).find(
+            Person, In(Lower(EmailAddress.email), email_addresses))
+        return list(result_set)
+
 
 class DistributionSourcePackageInDatabase(Storm):
     """Temporary class to allow access to the database."""
