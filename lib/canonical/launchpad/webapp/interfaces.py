@@ -657,7 +657,7 @@ class INotificationResponse(Interface):
     def addErrorNotification(msg):
         """Shortcut to addNotification(msg, ERROR)."""
 
-    def redirect(location, status=None):
+    def redirect(location, status=None, trusted=False):
         """As per IHTTPApplicationResponse.redirect, except notifications
         are preserved.
         """

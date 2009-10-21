@@ -714,7 +714,8 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__()
 
-    def redirect(self, location, status=None, temporary_if_possible=False):
+    def redirect(self, location, status=None, trusted=False,
+                 temporary_if_possible=False):
         """Do a redirect.
 
         If temporary_if_possible is True, then do a temporary redirect
@@ -737,8 +738,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
             else:
                 status = 303
         super(LaunchpadBrowserResponse, self).redirect(
-                unicode(location).encode('UTF-8'), status=status
-                )
+            unicode(location).encode('UTF-8'), status=status, trusted=trusted)
 
 
 def adaptResponseToSession(response):
@@ -889,6 +889,13 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
         if self._notifications is None:
             self._notifications = NotificationList()
         return self._notifications
+
+    def redirect(self, location, status=None, trusted=True):
+        # Overridden here (with trusted=True) so that tests can redirect to
+        # any hosts. This was allowed (at least) up to zope.publisher-3.5.6
+        # and we have too many tests relying on that.
+        super(LaunchpadTestResponse, self).redirect(
+            location, status=status, trusted=trusted)
 
 
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
