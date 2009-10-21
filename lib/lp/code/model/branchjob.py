@@ -13,11 +13,13 @@ import shutil
 from StringIO import StringIO
 import tempfile
 
+from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
+from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -253,19 +255,26 @@ class BranchUpgradeJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchUpgradeJob`."""
-        self._prepare_upgrade()
-        self._upgrade()
-
-    def _prepare_upgrade(self):
-        """Prepares the branch for upgrade."""
-        self._upgrade_branch_path = tempfile.mkdtemp()
+        upgrade_branch_path = tempfile.mkdtemp()
+        upgrade_transport = get_transport(upgrade_branch_path)
         source_branch = self.branch.getBzrBranch()
-        bzr_dir = source_branch.bzrdir.sprout(self._upgrade_branch_path)
-        self._upgrade_branch = bzr_dir.open_branch()
+        source_branch_transport = source_branch.bzrdir.root_transport
+        source_branch_transport.copy_tree_to_transport(upgrade_transport)
+        upgrade_branch = BzrBranch.open(upgrade_transport.base)
 
-    def _upgrade(self):
-        """Performs the upgrade of the branch."""
-        upgrade(self._upgrade_branch.base, self.upgrade_format)
+        upgrade(upgrade_branch.base, self.upgrade_format)
+        upgrade_transport.delete_tree('backup.bzr')
+
+        #TODO: make sure new revisions are brought in properly.
+        #upgrade_branch.pull(self.branch.getBzrBranch().base)
+        #upgrade_branch.fetch(self.branch.getBzrBranch().base)
+
+        source_branch_transport.rename('.bzr', 'backup.bzr')
+        upgrade_transport.copy_tree_to_transport(source_branch_transport)
+
+        upgrade_transport.delete_tree('.bzr')
+        os.rmdir(upgrade_branch_path)
+
 
     @property
     def upgrade_format(self):

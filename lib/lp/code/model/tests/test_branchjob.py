@@ -283,14 +283,6 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             type(format._repository_format),
             RepositoryFormatKnitPack6)
 
-    def test__prepare_upgrade(self):
-        # _prepare_upgrade should do everything needed to start the upgrade.
-        self.useBzrBranches()
-        branch, job = self.make_upgrade_branchjob()
-        job._prepare_upgrade()
-
-        self.assertTrue(os.path.exists(job._upgrade_branch_path))
-
 
 class TestRevisionMailJob(TestCaseWithFactory):
     """Tests for BranchDiffJob."""
