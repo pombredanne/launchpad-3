@@ -391,6 +391,7 @@
                 parent_subscription_target
                 getBugNotificationsRecipients
                 getBugsByNumbers
+                getPersonsByEmail
                 getReleasesAndPublishingHistory
                 upstream_product
                 target_type_display
