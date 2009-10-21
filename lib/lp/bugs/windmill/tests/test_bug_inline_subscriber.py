@@ -91,9 +91,10 @@ class TestInlineSubscribing(TestCaseWithFactory):
             xpath=u'//table[contains(@class, "yui-picker") '
                    'and not(contains(@class, "yui-picker-hidden"))]'
                    '//div[@class="yui-picker-search-box"]/button')
-        search_result_xpath = (u'//table[contains(@class, "yui-picker") '
-                                'and not(contains(@class, "yui-picker-hidden"))]'
-                                '//ul[@class="yui-picker-results"]/li[1]/span')
+        search_result_xpath = (
+            u'//table[contains(@class, "yui-picker") '
+            'and not(contains(@class, "yui-picker-hidden"))]'
+            '//ul[@class="yui-picker-results"]/li[1]/span')
         client.waits.forElement(
             xpath=search_result_xpath, timeout=FOR_ELEMENT)
         client.click(xpath=search_result_xpath)
@@ -110,9 +111,10 @@ class TestInlineSubscribing(TestCaseWithFactory):
             xpath=u'//table[contains(@class, "yui-picker") '
                    'and not(contains(@class, "yui-picker-hidden"))]'
                    '//div[@class="yui-picker-search-box"]/button')
-        search_result_xpath = (u'//table[contains(@class, "yui-picker") '
-                                'and not(contains(@class, "yui-picker-hidden"))]'
-                                '//ul[@class="yui-picker-results"]/li[1]/span')
+        search_result_xpath = (
+            u'//table[contains(@class, "yui-picker") '
+            'and not(contains(@class, "yui-picker-hidden"))]'
+            '//ul[@class="yui-picker-results"]/li[1]/span')
         client.waits.forElement(
             xpath=search_result_xpath, timeout=FOR_ELEMENT)
         client.click(xpath=search_result_xpath)
@@ -126,7 +128,8 @@ class TestInlineSubscribing(TestCaseWithFactory):
         client.click(
             xpath=u'//div[@class="yui-lazr-formoverlay-actions"]/button[2]')
 
-        # If we subscribe the user again, the icon should still be the person icon.
+        # If we subscribe the user again,
+        # the icon should still be the person icon.
         client.click(xpath=SUBSCRIPTION_LINK)
         client.waits.sleep(milliseconds=SLEEP)
         client.asserts.assertProperty(
@@ -215,8 +218,8 @@ class TestInlineSubscribing(TestCaseWithFactory):
         client.asserts.assertNode(
             xpath=(u'//div[@id="subscribers-indirect"]'
                    '/div/a[text() = "Sample Person"]'))
-        # Clicking "Unsubscribe" successfully removes the duplicate subscription,
-        # but the indirect subscription remains.
+        # Clicking "Unsubscribe" successfully removes the duplicate
+        # subscription but the indirect subscription remains.
         client.click(xpath=SUBSCRIPTION_LINK)
         client.waits.sleep(milliseconds=SLEEP)
         client.asserts.assertNotNode(
@@ -226,8 +229,8 @@ class TestInlineSubscribing(TestCaseWithFactory):
             xpath=(u'//div[@id="subscribers-indirect"]'
                    '/div/a[text() = "Sample Person"]'))
 
-        # Second test case, confirm duplicate handling is correct between direct
-        # and duplicate subscriptions.  Subscribe directly to bug 5.
+        # Second test case, confirm duplicate handling is correct between
+        # direct and duplicate subscriptions.  Subscribe directly to bug 5.
         client.click(xpath=SUBSCRIPTION_LINK)
         client.waits.sleep(milliseconds=SLEEP)
         client.asserts.assertText(

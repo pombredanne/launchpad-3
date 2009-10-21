@@ -26,9 +26,9 @@ class TestMarkDuplicate(TestCaseWithFactory):
     def test_mark_duplicate_form_overlay(self):
         """Test the mark duplicate action on bug pages.
 
-        This test ensures that with Javascript enabled, the mark duplicate link
-        on a bug page uses the formoverlay to update the duplicateof field via
-        the api.
+        This test ensures that with Javascript enabled, the mark duplicate
+        link on a bug page uses the formoverlay to update the duplicateof
+        field via the api.
         """
         client = WindmillTestClient("Bug mark duplicate test")
         lpuser.SAMPLE_PERSON.ensure_login(client)
@@ -85,11 +85,13 @@ class TestMarkDuplicate(TestCaseWithFactory):
         client.click(xpath=CHANGE_BUTTON)
         client.waits.forElement(xpath=error_xpath)
 
-        # But entering a correct bug and submitting gets us back to a normal state
+        # But entering a correct bug and submitting gets us back
+        # to a normal state
         client.type(text=u'1', id=u'field.duplicateof')
         client.click(xpath=CHANGE_BUTTON)
         client.waits.forElement(
-            xpath=u"//span[@id='mark-duplicate-text']/a[contains(., 'bug #1')]")
+            xpath=u"//span[@id='mark-duplicate-text']"
+                   "/a[contains(., 'bug #1')]")
 
         # Finally, clicking on the link to the bug takes you to the master.
         client.click(link=u'bug #1')

@@ -54,9 +54,11 @@ class TestSecurityOverlay(TestCaseWithFactory):
             xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
 
         # Initially the form overlay is hidden.
-        client.asserts.assertElemJS(xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
+        client.asserts.assertElemJS(
+            xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
 
-        # Clicking on the "This report is public" link brings up the formoverlay.
+        # Clicking on the "This report is public" link brings up
+        # the formoverlay.
         client.click(id=PRIVACY_LINK)
         client.asserts.assertElemJS(xpath=MAIN_FORM_ELEMENT, js=FORM_VISIBLE)
 
@@ -70,11 +72,14 @@ class TestSecurityOverlay(TestCaseWithFactory):
         client.click(name=FIELD_PRIVATE)
         client.click(xpath=CHANGE_BUTTON)
         client.waits.sleep(milliseconds=WAIT_SUBMIT_CHANGE)
-        client.asserts.assertText(id=PRIVACY_TEXT, validator=u'This report is')
-        client.asserts.assertText(xpath=PRIVACY_TEXT_STRONG, validator=u'private')
+        client.asserts.assertText(
+            id=PRIVACY_TEXT, validator=u'This report is')
+        client.asserts.assertText(
+            xpath=PRIVACY_TEXT_STRONG, validator=u'private')
 
         # The form overlay is not longer visible.
-        client.asserts.assertElemJS(xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
+        client.asserts.assertElemJS(
+            xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
 
 
         # These text changes are made via Javascript, thus avoiding a
@@ -86,8 +91,10 @@ class TestSecurityOverlay(TestCaseWithFactory):
         client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
-        client.asserts.assertText(id=PRIVACY_TEXT, validator=u'This report is')
-        client.asserts.assertText(xpath=PRIVACY_TEXT_STRONG, validator=u'private')
+        client.asserts.assertText(
+            id=PRIVACY_TEXT, validator=u'This report is')
+        client.asserts.assertText(
+            xpath=PRIVACY_TEXT_STRONG, validator=u'private')
 
         # The checkboxes for "privacy" and "security" reflect these
         # settings too.
@@ -154,7 +161,8 @@ class TestSecurityOverlay(TestCaseWithFactory):
         client.click(id=PRIVACY_LINK)
         client.asserts.assertElemJS(xpath=MAIN_FORM_ELEMENT, js=FORM_VISIBLE)
         client.click(xpath=CANCEL_BUTTON)
-        client.asserts.assertElemJS(xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
+        client.asserts.assertElemJS(
+            xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -34,7 +34,8 @@ class TestOfficialBugTags(TestCaseWithFactory):
         client.click(link=u'Edit official tags')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
-    # There are no official tags defined (the rest of the test depends on that).
+    # There are no official tags defined (the rest of the test
+    # depends on that).
 
         client.asserts.assertElemJS(
             id=u'official-tags-list',
@@ -53,7 +54,8 @@ class TestOfficialBugTags(TestCaseWithFactory):
     # The new tag is added to the official tags list.
 
         client.asserts.assertNode(
-            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' % a_new_tag)
+            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
+                  a_new_tag)
         client.asserts.assertText(
             xpath=(u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]/label' %
                    a_new_tag),
@@ -61,7 +63,8 @@ class TestOfficialBugTags(TestCaseWithFactory):
 
     # The save button is now enabled.
 
-        client.asserts.assertElemJS(id=u'save-button', js=u'!element.disabled')
+        client.asserts.assertElemJS(
+            id=u'save-button', js=u'!element.disabled')
 
     # We type another tag, and hit [enter].
 
@@ -75,8 +78,8 @@ class TestOfficialBugTags(TestCaseWithFactory):
 
         client.asserts.assertNode(id=u'yui-pretty-overlay-modal')
 
-    # We click the close button to dismiss the error message, type a correct tag and
-    # try again.
+    # We click the close button to dismiss the error message, type a correct
+    # tag and try again.
 
         client.click(xpath=u'//a[@class="close-button"]')
         client.type(text=another_new_tag, id=u'new-tag-text')
@@ -94,8 +97,8 @@ class TestOfficialBugTags(TestCaseWithFactory):
                    another_new_tag),
             validator=another_new_tag)
 
-    # The arrow button for moving tags out of the official tags list is disabled,
-    # because no tags are selected.
+    # The arrow button for moving tags out of the official tags list is
+    # disabled, because no tags are selected.
 
         client.asserts.assertElemJS(
             id=u'remove-official-tags', js=u'element.disabled')
@@ -113,10 +116,11 @@ class TestOfficialBugTags(TestCaseWithFactory):
         client.asserts.assertNode(
             xpath=u'//ul[@id="other-tags-list"]/li[@id="tag-%s"]' % a_new_tag)
         client.asserts.assertNotNode(
-            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' % a_new_tag)
+            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
+                  a_new_tag)
 
-    # The arrow button for moving tags from the unofficial to the official tags
-    # list is disabled, because no unofficial tags are selected.
+    # The arrow button for moving tags from the unofficial to the official
+    # tags list is disabled, because no unofficial tags are selected.
 
         client.asserts.assertElemJS(
             id=u'add-official-tags', js=u'element.disabled')
@@ -131,15 +135,18 @@ class TestOfficialBugTags(TestCaseWithFactory):
             id=u'add-official-tags', js=u'!element.disabled')
         client.click(id=u'add-official-tags')
         client.asserts.assertNode(
-            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' % a_new_tag)
+            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
+                  a_new_tag)
         client.asserts.assertNotNode(
             xpath=u'//ul[@id="other-tags-list"]/li[@id="tag-%s"]' % a_new_tag)
         client.asserts.assertNode(
-            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' % doc_tag)
+            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
+                  doc_tag)
         client.asserts.assertNotNode(
             xpath=u'//ul[@id="other-tags-list"]/li[@id="tag-%s"]' % doc_tag)
 
-    # After moving the tags the button is disabled again, as no tags are selected.
+    # After moving the tags the button is disabled again, as no tags
+    # are selected.
 
         client.asserts.assertElemJS(
             id=u'add-official-tags', js=u'element.disabled')
@@ -151,8 +158,8 @@ class TestOfficialBugTags(TestCaseWithFactory):
             js=(u"(new RegExp('.*a-new-tag.*another-new-tag.*doc'))"
                 u".test(element.innerHTML)"))
 
-    # We click 'Save' and the tags are submitted to the server. We end up back on
-    # the bugs index page.
+    # We click 'Save' and the tags are submitted to the server. We end up back
+    # on the bugs index page.
 
         client.click(id=u'save-button')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
@@ -163,12 +170,14 @@ class TestOfficialBugTags(TestCaseWithFactory):
         client.click(link=u'Edit official tags')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertNode(
-            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' % a_new_tag)
+            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
+            a_new_tag)
         client.asserts.assertNode(
             xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
-            another_new_tag)
+                  another_new_tag)
         client.asserts.assertNode(
-            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' % doc_tag)
+            xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
+                  doc_tag)
 
     # We finish by cleaning after ourselves, to make sure that we leave the
     # database at the same state we found it.

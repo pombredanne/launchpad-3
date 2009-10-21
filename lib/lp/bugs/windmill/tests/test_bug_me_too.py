@@ -54,7 +54,8 @@ class TestMeToo(TestCaseWithFactory):
         lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Open bug 11 and wait for it to finish loading.
-        client.open(url=u'http://bugs.launchpad.dev:8085/jokosher/+bug/11/+index')
+        client.open(
+            url=u'http://bugs.launchpad.dev:8085/jokosher/+bug/11/+index')
         client.waits.forPageLoad(timeout=u'20000')
 
         # Wait for setup_me_too to sort out the "me too" elements.
@@ -64,7 +65,8 @@ class TestMeToo(TestCaseWithFactory):
 
         # Currently it's unknown if this bug affects the logged-in user.
         client.asserts.assertText(
-            xpath=VALUE_LOCATION_XPATH, validator=u"Does this bug affect you?")
+            xpath=VALUE_LOCATION_XPATH,
+            validator=u"Does this bug affect you?")
 
         # A flame icon is available in the page, but not visible owing to
         # the unseen class.

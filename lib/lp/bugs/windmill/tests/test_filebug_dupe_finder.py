@@ -63,7 +63,8 @@ class TestDupeFinder(TestCaseWithFactory):
 
         # The expander for the duplicate should be collapsed.
         client.asserts.assertProperty(
-            id='bug-details-expander-bug-4', validator='src|/@@/treeCollapsed')
+            id='bug-details-expander-bug-4',
+            validator='src|/@@/treeCollapsed')
 
         # Initially the form overlay is hidden
         client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_NOT_VISIBLE)
@@ -81,7 +82,8 @@ class TestDupeFinder(TestCaseWithFactory):
         client.click(id='bug-details-expander-bug-4')
         client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
         client.asserts.assertProperty(
-            id='bug-details-expander-bug-4', validator='src|/@@/treeCollapsed')
+            id='bug-details-expander-bug-4',
+            validator='src|/@@/treeCollapsed')
         client.asserts.assertProperty(
             id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
 
@@ -98,7 +100,8 @@ class TestDupeFinder(TestCaseWithFactory):
         client.click(id='bug-not-already-reported')
         client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
         client.asserts.assertProperty(
-            id='bug-details-expander-bug-4', validator='src|/@@/treeCollapsed')
+            id='bug-details-expander-bug-4',
+            validator='src|/@@/treeCollapsed')
         client.asserts.assertProperty(
             id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
         client.asserts.assertProperty(

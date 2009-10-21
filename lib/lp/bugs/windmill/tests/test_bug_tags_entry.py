@@ -85,7 +85,8 @@ class TestBugTags(TestCaseWithFactory):
         client.click(id=u'edit-tags-trigger')
         client.waits.forPageLoad(timeout=u'50000')
         client.asserts.assertJS(
-            js=u'window.location == "http://bugs.launchpad.dev:8085/firefox/+bug/5/+edit/+login"')
+            js=u'window.location == '
+               '"http://bugs.launchpad.dev:8085/firefox/+bug/5/+edit/+login"')
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
