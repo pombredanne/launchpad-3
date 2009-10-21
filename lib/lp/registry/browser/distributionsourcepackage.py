@@ -50,7 +50,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from lazr.delegates import delegates
 from lp.soyuz.browser.sourcepackagerelease import (
-    extract_bug_numbers, extract_email_addresses)
+    extract_bug_numbers, extract_email_addresses, linkify_changelog)
 from canonical.lazr.utils import smartquote
 
 
@@ -136,11 +136,14 @@ class DecoratedDistributionSourcePackageRelease:
     """
     delegates(IDistributionSourcePackageRelease, 'context')
 
-    def __init__(self, distributionsourcepackagerelease,
-                 publishing_history, package_diffs):
+    def __init__(
+        self, distributionsourcepackagerelease, publishing_history,
+        package_diffs, person_data, user):
         self.context = distributionsourcepackagerelease
         self._publishing_history = publishing_history
         self._package_diffs = package_diffs
+        self._person_data = person_data
+        self._user = user
 
     @property
     def publishing_history(self):
@@ -151,6 +154,13 @@ class DecoratedDistributionSourcePackageRelease:
     def package_diffs(self):
         """ See `ISourcePackageRelease`."""
         return self._package_diffs
+
+    @property
+    def change_summary(self):
+        """ See `ISourcePackageRelease`."""
+        return linkify_changelog(
+            self._user, self.context.sourcepackagerelease.change_summary(),
+            self._person_data)
 
 
 class IDistributionSourcePackageActionMenu(Interface):
@@ -173,15 +183,6 @@ class DistributionSourcePackageActionMenu(
 class DistributionSourcePackageBaseView:
     """Common features to all `DistributionSourcePackage` views."""
 
-    def _preload_bug_person_data(self, the_changelog):
-        """Load bug/person data on a +changelog page into storm cache."""
-        unique_bugs = extract_bug_numbers(the_changelog)
-        self._cached_bugs = list(
-            self.context.getBugsByNumbers(unique_bugs.keys()))
-        unique_emails = extract_email_addresses(the_changelog)
-        self._cached_persons = list(
-            self.context.getPersonsByEmail(unique_emails))
-
     def releases(self):
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
 
@@ -193,7 +194,14 @@ class DistributionSourcePackageBaseView:
         # Load the bugs and persons referenced by the +changelog page into the
         # storm cache. This will aid the ensuing changelog linkification.
         the_changelog = '\n'.join([spr.changelog_entry for spr in sprs])
-        self._preload_bug_person_data(the_changelog)
+        unique_bugs = extract_bug_numbers(the_changelog)
+        self._bug_data = list(
+            self.context.getBugsByNumbers(unique_bugs.keys()))
+        unique_emails = extract_email_addresses(the_changelog)
+        # This returns a [(EmailAddress,Person]] list.
+        result_set = self.context.getPersonsByEmail(unique_emails)
+        self._person_data = dict(
+            [(email.email,person) for (email,person) in result_set])
 
         # Collate diffs for relevant SourcePackageReleases
         pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
@@ -204,7 +212,8 @@ class DistributionSourcePackageBaseView:
 
         return [
             DecoratedDistributionSourcePackageRelease(
-                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
+                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []),
+                self._person_data, self.user)
             for (dspr, spphs) in dspr_pubs]
 
 

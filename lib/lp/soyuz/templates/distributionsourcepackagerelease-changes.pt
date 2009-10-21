@@ -22,7 +22,7 @@
   <div class="boardCommentBody">
     <div
       tal:attributes="id string:body_${context/name}_${context/version}"
-      tal:content="structure context/sourcepackagerelease/@@+change_summary" />
+      tal:content="structure context/sourcepackagerelease/change_summary" />
     <tal:diffs replace="structure context/@@+diffs" />
   </div>
 

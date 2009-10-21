@@ -2876,7 +2876,7 @@ class FormattersAPI:
             "<<email address hidden>>", "<email address hidden>")
         return text
 
-    def linkify_email(self):
+    def linkify_email(self, preloaded_person_data=None):
         """Linkify any email address recognised in Launchpad.
 
         If an email address is recognised as one registered in Launchpad,
@@ -2891,7 +2891,14 @@ class FormattersAPI:
         matches = re.finditer(self._re_email, text)
         for match in matches:
             address = match.group()
-            person = getUtility(IPersonSet).getByEmail(address)
+            person = None
+            # First try to find the person required in the preloaded person
+            # data dictionary.
+            if preloaded_person_data is not None:
+                person = preloaded_person_data.get(address, None)
+            if person is None:
+                # We need to perform a database lookup at this point.
+                person = getUtility(IPersonSet).getByEmail(address)
             # Only linkify if person exists and does not want to hide
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
