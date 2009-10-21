@@ -1407,6 +1407,57 @@ class SubmissionParser(object):
             if parent_udi is not None:
                 hal_devices[parent_udi].addChild(device)
 
+    def buildUdevDeviceList(self, parsed_data):
+        """Create a list of devices from the udev data of a submission."""
+        self.devices = devices = {}
+        sysfs_data = parsed_data['hardware']['sysfs-attributes']
+        dmi_data = parsed_data['hardware']['dmi']
+        for udev_data in parsed_data['hardware']['udev']:
+            device_path = udev_data['P']
+            if device_path == UDEV_ROOT_PATH:
+                device = UdevDevice(
+                    self, udev_data, sysfs_data=sysfs_data.get(device_path),
+                    dmi_data=dmi_data)
+            else:
+                device = UdevDevice(
+                    self, udev_data, sysfs_data=sysfs_data.get(device_path))
+            devices[device_path] = device
+
+        # The parent-child relations are derived from the path names of
+        # the devices. If A and B are the path names of two devices,
+        # the device with path name A is an ancestor of the device with
+        # path name B, iff B.startswith(A). If C is the set of the path
+        # names of all ancestors of A, the element with the longest path
+        # name belongs to the parent of A.
+        #
+        # There is one exception to this rule: The root node has the
+        # the path name '/devices/LNXSYSTM:00', while the path names
+        # of PCI devices start with '/devices/pci'. We'll temporarily
+        # change the path name of the root device so that the rule
+        # holds for all devices.
+        if UDEV_ROOT_PATH not in devices:
+            self._logError('No udev root device defined', self.submission_key)
+            return False
+        devices['/devices'] = devices[UDEV_ROOT_PATH]
+        del devices[UDEV_ROOT_PATH]
+
+        path_names = sorted(devices, key=len, reverse=True)
+        for path_index, path_name in enumerate(path_names[:-1]):
+            # Ensure that the last ancestor of each device is our
+            # root node.
+            if not path_name.startswith('/devices'):
+                self._logError(
+                    'Invalid device path name: %r' % path_name,
+                    self.submission_key)
+                return False
+            for parent_path in path_names[path_index+1:]:
+                if path_name.startswith(parent_path):
+                    devices[parent_path].addChild(devices[path_name])
+                    break
+        devices[UDEV_ROOT_PATH] = devices['/devices']
+        del devices['/devices']
+        return True
+
     def getKernelPackageName(self):
         """Return the kernel package name of the submission,"""
         root_hal_device = self.hal_devices[ROOT_UDI]
