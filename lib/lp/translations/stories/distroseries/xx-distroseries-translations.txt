@@ -171,3 +171,11 @@ Once the system accepts the submission, we can see such change applied.
 There are no visible user interface changes once this flag is changed. It
 just prevents that the translation import script, which is executed by cron,
 handle translation imports for this distro series.
+
+    >>> login('admin@canonical.com')
+    >>> distribution = factory.makeDistribution(name='earthian')
+    >>> distroseries = factory.makeDistroRelease(name='1.4', distribution=distribution)
+    >>> logout()
+    >>> admin_browser.open('http://translations.launchpad.dev/earthian/1.4')
+    >>> admin_browser.url
+    'http://translations.launchpad.dev/earthian/1.4'

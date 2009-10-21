@@ -13,7 +13,8 @@
         </a>
         <div></div><!-- to clear-up all floats -->
       </div>
-      <div class="top-portlet">
+      <div class="top-portlet"
+           tal:condition="context/distribution/translation_focus">
         <p tal:condition="not:view/is_translation_focus">
           Launchpad currently recommends translating
           <tal:target replace="
