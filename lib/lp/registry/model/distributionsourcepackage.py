@@ -417,7 +417,7 @@ class DistributionSourcePackage(BugTargetBase,
         """List of `Bug` objects identified by the `bug_numbers` sequence."""
         store = IStore(Bug)
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
-        return list(result_set)
+        return result_set
 
     @staticmethod
     def getPersonsByEmail(email_addresses):
@@ -434,7 +434,7 @@ class DistributionSourcePackage(BugTargetBase,
             And(
                 In(Lower(EmailAddress.email), email_addresses),
                 EmailAddress.status ==  EmailAddressStatus.VALIDATED))
-        return list(result_set)
+        return result_set
 
 
 class DistributionSourcePackageInDatabase(Storm):

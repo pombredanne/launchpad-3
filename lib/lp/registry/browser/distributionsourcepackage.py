@@ -176,9 +176,11 @@ class DistributionSourcePackageBaseView:
     def _preload_bug_person_data(self, the_changelog):
         """Load bug/person data on a +changelog page into storm cache."""
         unique_bugs = extract_bug_numbers(the_changelog)
-        self._cached_bugs = self.context.getBugsByNumbers(unique_bugs.keys())
+        self._cached_bugs = list(
+            self.context.getBugsByNumbers(unique_bugs.keys()))
         unique_emails = extract_email_addresses(the_changelog)
-        self._cached_persons = self.context.getPersonsByEmail(unique_emails)
+        self._cached_persons = list(
+            self.context.getPersonsByEmail(unique_emails))
 
     def releases(self):
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
