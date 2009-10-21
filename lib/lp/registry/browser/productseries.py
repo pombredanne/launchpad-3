@@ -199,7 +199,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     def add_package(self):
         """Return a link to link this series to a sourcepackage."""
-        text = 'Link to other package'
+        text = 'Link package'
         return Link('+addpackage', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')

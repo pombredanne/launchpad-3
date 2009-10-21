@@ -572,7 +572,7 @@ class TestCaseWithFactory(TestCase):
         os.environ['BZR_HOME'] = os.getcwd()
         self.addCleanup(restore_bzr_home)
 
-    def useBzrBranches(self, real_server=False):
+    def useBzrBranches(self, real_server=False, direct_database=False):
         """Prepare for using bzr branches.
 
         This sets up support for lp-hosted and lp-mirrored URLs,
@@ -586,7 +586,9 @@ class TestCaseWithFactory(TestCase):
         self.useTempBzrHome()
         self.real_bzr_server = real_server
         if real_server:
-            server = get_multi_server(write_hosted=True, write_mirrored=True)
+            server = get_multi_server(
+                write_hosted=True, write_mirrored=True,
+                direct_database=direct_database)
             server.setUp()
             self.addCleanup(server.destroy)
         else:

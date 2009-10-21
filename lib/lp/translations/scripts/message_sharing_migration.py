@@ -25,8 +25,10 @@ def get_potmsgset_key(potmsgset):
     A POTMsgSet is identified by its msgid, optional plural msgid, and
     optional context identifier.
     """
+    potmsgset = removeSecurityProxy(potmsgset)
     return (
-        potmsgset.msgid_singular, potmsgset.msgid_plural, potmsgset.context)
+        potmsgset.msgid_singularID, potmsgset.msgid_pluralID,
+        potmsgset.context)
 
 
 def merge_pofiletranslators(from_potmsgset, to_template):

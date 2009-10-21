@@ -158,11 +158,13 @@ class IRosettaUploadJobSource(Interface):
         """Iterate through ready IRosettaUploadJobs."""
 
 
-    def findUnfinishedJobs(branch):
+    def findUnfinishedJobs(branch, since=None):
         """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.
 
-        Returns ready jobs, but also ones in any other state except
-        "complete" or "failed."
+        :param branch: Branch to find unfinished jobs for.
+        :param since: Optional cutoff date: ignore jobs older than this.
+        :return: Any jobs for `branch` (and newer than `since`, if
+            given) whose status is neither "complete" nor "failed."
         """
 
 

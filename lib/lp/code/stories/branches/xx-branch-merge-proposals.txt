@@ -77,7 +77,7 @@ commit message can be set.
 
     >>> nopriv_browser.getLink('Edit commit message').click()
     >>> nopriv_browser.getControl(name='field.commit_message').value = (
-    ...     'Add more mojo')
+    ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
 
     >>> print nopriv_browser.url
@@ -89,7 +89,7 @@ commit message can be set.
     >>> print_summary(nopriv_browser)
     Status: ...
     ...
-    Commit message: Add more mojo
+    Commit message: Add more &lt;b&gt;mojo&lt;/b&gt;
 
 
 Deleting merge proposals
