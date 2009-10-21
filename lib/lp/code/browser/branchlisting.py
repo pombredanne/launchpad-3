@@ -351,11 +351,7 @@ class BranchListingItemsMixin:
 
     @cachedproperty
     def product_series_map(self):
-        """Return a map of branch id to a list of product series.
-
-        While this code is still valid with package branches is it a query
-        that isn't needed.
-        """
+        """Return a map from branch id to a list of product series."""
         series_resultset = self._query_optimiser.getProductSeriesForBranches(
             self._visible_branch_ids)
         result = {}
@@ -381,11 +377,7 @@ class BranchListingItemsMixin:
 
     @cachedproperty
     def official_package_links_map(self):
-        """Return a map of branch id to a list of package links.
-
-        While this code is still valid with package branches is it a query
-        that isn't needed.
-        """
+        """Return a map from branch id to a list of package links."""
         links = self._query_optimiser.getOfficialSourcePackageLinksForBranches(
             self._visible_branch_ids)
         result = {}
