@@ -526,8 +526,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             id="edit-description",
             title="Commit Message",
             value=commit_message,
-            accept_empty=True,
-            default_text="none specified")
+            accept_empty=True)
 
 
 class DecoratedCodeReviewVoteReference:

@@ -12,9 +12,6 @@
 
 <metal:block fill-slot="head_epilogue">
   <style type="text/css">
-    #code-review-votes {
-      margin: 2em 0;
-    }
     /* A page-specific fix for inline text are editing to line up box. */
     #edit-description .yui-ieditor-input { top: 0; }
   </style>
