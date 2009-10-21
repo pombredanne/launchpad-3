@@ -90,7 +90,15 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     usedfor = ISourcePackage
     facet = 'overview'
     links = [
-        'packaging', 'edit_packaging', 'changelog', 'builds', 'set_upstream']
+        'distribution_source_package', 'packaging', 'edit_packaging',
+        'changelog', 'builds', 'set_upstream',
+        ]
+
+    def distribution_source_package(self):
+        target = canonical_url(self.context.distribution_sourcepackage)
+        text = 'All source packages in %s for %s' % (
+            self.context.distribution.displayname, self.context.name)
+        return Link(target, text, icon='package-source')
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')

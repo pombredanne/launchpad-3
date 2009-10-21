@@ -40,6 +40,7 @@
         <ul class="horizontal">
           <li>
             <a tal:replace="structure context/menu:overview/changelog/fmt:link" />
+            <a tal:replace="structure context/menu:overview/distribution_source_package/fmt:link" />
           </li>
         </ul>
       </div>
