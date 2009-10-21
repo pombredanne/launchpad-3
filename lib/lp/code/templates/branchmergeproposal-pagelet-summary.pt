@@ -110,7 +110,7 @@
       <td>
         <tal:commit-message
           condition="context/commit_message"
-          replace="structure context/commit_message" />
+          replace="context/commit_message" />
         <tal:no-commit-message
           condition="not: context/commit_message">None</tal:no-commit-message>
         <a tal:define="link context/menu:context/edit_commit_message"
