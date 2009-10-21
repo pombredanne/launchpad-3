@@ -56,6 +56,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.widgets.lazrjs import TextAreaEditorWidget
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
@@ -507,6 +509,25 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         from lp.code.browser.branch import DecoratedBug
         return [DecoratedBug(bug, self.context.source_branch)
                 for bug in self.context.related_bugs]
+
+    @property
+    def commit_message_html(self):
+        """The commit message as widget HTML."""
+        commit_message = self.context.commit_message
+        if commit_message is None:
+            commit_message = ''
+        formatter = FormattersAPI
+        hide_email = formatter(commit_message).obfuscate_email()
+        commit_message = formatter(hide_email).text_to_html()
+        return TextAreaEditorWidget(
+            self.context,
+            'commit_message',
+            canonical_url(self.context, view_name='+edit-commit-message'),
+            id="edit-description",
+            title="Commit Message",
+            value=commit_message,
+            accept_empty=True,
+            default_text="none specified")
 
 
 class DecoratedCodeReviewVoteReference:

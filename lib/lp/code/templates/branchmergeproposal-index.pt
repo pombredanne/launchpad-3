@@ -15,6 +15,8 @@
     #code-review-votes {
       margin: 2em 0;
     }
+    /* A page-specific fix for inline text are editing to line up box. */
+    #edit-description .yui-ieditor-input { top: 0; }
   </style>
   <script type="text/javascript"
       tal:define="lp_js string:${icingroot}/build"
@@ -49,6 +51,12 @@
 
   <div class="yui-g first">
     <tal:summary replace="structure context/@@+pagelet-summary" />
+  </div>
+
+  <div class="yui-g">
+    <div id="edit-description"
+         tal:content="structure view/commit_message_html"
+         />
   </div>
 
   <div class="yui-g">
