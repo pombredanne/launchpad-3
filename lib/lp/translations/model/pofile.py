@@ -30,20 +30,16 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 from canonical.launchpad import helpers
-from lp.translations.utilities.rosettastats import RosettaStats
-from lp.registry.interfaces.person import validate_public_person
-from lp.translations.model.potmsgset import POTMsgSet
-from lp.translations.model.translationimportqueue import (
-    collect_import_info)
-from lp.translations.model.translationmessage import (
-    TranslationMessage, make_plurals_sql_fragment)
-from lp.translations.model.translationtemplateitem import (
-    TranslationTemplateItem)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.librarian.interfaces import ILibrarianClient
+from lp.registry.interfaces.person import validate_public_person
+from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
-from lp.translations.interfaces.potmsgset import BrokenTextError
+from lp.translations.interfaces.potmsgset import (
+    BrokenTextError, TranslationCreditsType)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
@@ -61,11 +57,16 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationimportqueue import (
+    collect_import_info)
 from lp.translations.model.translatablemessage import TranslatableMessage
+from lp.translations.model.translationmessage import (
+    TranslationMessage, make_plurals_sql_fragment)
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem)
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.librarian.interfaces import ILibrarianClient
 
 from storm.expr import And, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
@@ -520,8 +521,8 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         LP_CREDIT_HEADER = u'Launchpad Contributions:'
         SPACE = u' '
-        credit_type = potmsgset.translation_credit_type
-        assert credit_type is not None, (
+        credits_type = potmsgset.translation_credits_type
+        assert credits_type == TranslationCreditsType.NOT_CREDITS, (
             "Calling prepareTranslationCredits on a message with "
             "msgid '%s'." % potmsgset.singular_text)
         imported = potmsgset.getImportedTranslationMessage(
@@ -530,7 +531,7 @@ class POFile(SQLBase, POFileMixIn):
             text = None
         else:
             text = imported.translations[0]
-        if credit_type == u'Your emails':
+        if credits_type == TranslationCreditsType.KDE_EMAILS:
             emails = []
             if text is not None:
                 emails.append(text)
@@ -547,7 +548,7 @@ class POFile(SQLBase, POFileMixIn):
                 else:
                     emails.append(preferred_email.email)
             return u','.join(emails)
-        elif credit_type == u'Your names':
+        elif credits_type == TranslationCreditsType.KDE_NAMES:
             names = []
             
             if text is not None:
@@ -561,7 +562,7 @@ class POFile(SQLBase, POFileMixIn):
                 contributor.displayname
                 for contributor in self.contributors])
             return u','.join(names)
-        elif credit_type == u'translator-credits':
+        elif credits_type == TranslationCreditsType.GNOME:
             if len(list(self.contributors)):
                 if text is None:
                     text = u''
@@ -582,7 +583,7 @@ class POFile(SQLBase, POFileMixIn):
         else:
             raise AssertionError(
                 "Calling prepareTranslationCredits on a message with "
-                "unknown credit type '%s'." % credit_type)
+                "unknown credits type '%s'." % credits_type.title)
 
     def canEditTranslations(self, person):
         """See `IPOFile`."""

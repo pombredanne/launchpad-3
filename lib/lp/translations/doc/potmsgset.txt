@@ -36,32 +36,32 @@ gloss over these different msgids.
 
     >>> def print_credit(credit):
     ...     print credit.is_translation_credit
-    ...     print credit.translation_credit_type
+    ...     print credit.translation_credits_type.title
 
     >>> print_credit(factory.makePOTMsgSet(potemplate))
     False
-    None
+    Not a translation credits message
 
     >>> print_credit(factory.makePOTMsgSet(
     ...     potemplate, singular=u'translator-credits'))
     True
-    translator-credits
+    Gnome credits message
 
     >>> print_credit(factory.makePOTMsgSet(
     ...     potemplate, singular=u'translation-credits'))
     True
-    translator-credits
+    Gnome credits message
 
     >>> print_credit(factory.makePOTMsgSet(
     ...     potemplate,
     ...     singular=u'Your emails', context=u'EMAIL OF TRANSLATORS'))
     True
-    Your emails
+    KDE emails credits message
 
     >>> print_credit(factory.makePOTMsgSet(
     ...     potemplate, singular=u'_: EMAIL OF TRANSLATORS\nYour emails'))
     True
-    Your emails
+    KDE emails credits message
 
 
 == POTMsgSet.normalizeWhitespaces ==
