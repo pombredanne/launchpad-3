@@ -255,6 +255,7 @@ class BranchUpgradeJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchUpgradeJob`."""
+        # Set up the new branch structure
         upgrade_branch_path = tempfile.mkdtemp()
         upgrade_transport = get_transport(upgrade_branch_path)
         source_branch = self.branch.getBzrBranch()
@@ -262,19 +263,22 @@ class BranchUpgradeJob(BranchJobDerived):
         source_branch_transport.copy_tree_to_transport(upgrade_transport)
         upgrade_branch = BzrBranch.open(upgrade_transport.base)
 
+        # Perform the upgrade.
         upgrade(upgrade_branch.base, self.upgrade_format)
-        upgrade_transport.delete_tree('backup.bzr')
 
-        #TODO: make sure new revisions are brought in properly.
-        #upgrade_branch.pull(self.branch.getBzrBranch().base)
-        #upgrade_branch.fetch(self.branch.getBzrBranch().base)
+        # Re-open the branch, since its format has changed.
+        upgrade_branch = BzrBranch.open(upgrade_transport.base)
+        upgrade_branch.pull(source_branch)
+        upgrade_branch.fetch(source_branch)
 
+        # Move the branch in the old format to backup.bzr
         source_branch_transport.rename('.bzr', 'backup.bzr')
+        upgrade_transport.delete_tree('backup.bzr')
         upgrade_transport.copy_tree_to_transport(source_branch_transport)
 
+        # Clean up the temporary directory.
         upgrade_transport.delete_tree('.bzr')
         os.rmdir(upgrade_branch_path)
-
 
     @property
     def upgrade_format(self):
