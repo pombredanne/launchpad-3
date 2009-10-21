@@ -42,6 +42,7 @@ from lp.registry.model.sourcepackage import (
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IStore
 
 from canonical.lazr.utils import smartquote
