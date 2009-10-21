@@ -17,9 +17,9 @@
           translations from Ubuntu to the
           <span tal:replace="context/product/displayname">Firefox</span> team.
         </p>
-        
+
         <p>
-          Use 
+          Use
           <a tal:replace="structure context/menu:overview/add_package/fmt:link" />
            to link this series to packages in other distribution series.
         </p>
@@ -60,7 +60,7 @@
               <th>By</th>
             </tr>
           </thead>
-          
+
           <tbody>
             <tr tal:repeat="packaging view/ubuntu_history">
               <td>
@@ -74,7 +74,7 @@
                 <a tal:replace="structure packaging/distroseries/fmt:link" />
               </td>
               <td>
-                <a 
+                <a
                   tal:attributes="href string:${packaging/distroseries/fmt:url}/+source/${packaging/sourcepackagename/name}"
                   tal:content="packaging/sourcepackagename/name" />
               </td>
