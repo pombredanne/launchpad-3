@@ -16,6 +16,12 @@ The view is only visible to the owner of the ProductSeries and administrators.
     ...
     LinkNotFoundError
 
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/evolution/trunk/+templates')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
     >>> browser = setupBrowser('Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk')
