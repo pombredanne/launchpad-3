@@ -489,10 +489,6 @@ class ProductSeriesTemplatesView(LaunchpadView):
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(productseries=self.context)
 
-    def can_administer(self, template):
-        """Can the user administer the template?"""
-        return check_permission('launchpad.Admin', template)
-
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):
     """View to set the series' translations export branch."""

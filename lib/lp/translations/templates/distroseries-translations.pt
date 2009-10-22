@@ -49,10 +49,10 @@
                  tal:content="string:${context/displayname} import queue">
                 import queue</a>.
             </p>
-            <p tal:condition="context/required:launchpad.Edit">
-              To manage all the translation templates in
+            <p>
+              To see all the translation templates in
               <tal:series replace="context/displayname">Hoary</tal:series>,
-              see the
+              go to the
               <a tal:attributes="href context/menu:navigation/templates/url">
                 full list of templates</a>.
             </p>
