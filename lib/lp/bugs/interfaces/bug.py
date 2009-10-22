@@ -940,8 +940,8 @@ class IBugSet(Interface):
     def getByNumbers(bug_numbers):
         """Get `IBug` instances identified by the `bug_numbers` iterable.
 
-        :param bug_numbers: An iterable of bug numbers (strings) for which we
-            should return Bugs.
+        :param bug_numbers: An iterable of bug numbers for which we should
+            return Bugs.
         """
 
 

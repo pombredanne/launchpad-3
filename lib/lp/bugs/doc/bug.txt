@@ -40,7 +40,7 @@ raised:
 It is also possible to retrieve a number of bugs by specifying the bug numbers
 of interest.
 
-    >>> result_set = bugset.getByNumbers('6 1234'.split())
+    >>> result_set = bugset.getByNumbers([6, 1234])
     >>> print result_set.count()
     1
 
@@ -48,7 +48,7 @@ of interest.
     >>> print the_bug_found.title
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
-    >>> result_set = bugset.getByNumbers('6 4321 1'.split())
+    >>> result_set = bugset.getByNumbers([6, 4321, 1])
     >>> print result_set.count()
     2
 
