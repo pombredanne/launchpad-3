@@ -122,13 +122,13 @@ class BugBranchXHTMLRepresentation:
     adapts(IBugBranch, IWebServiceClientRequest)
     implements(Interface)
 
-    def __init__(self, comment, request):
-        self.comment = comment
+    def __init__(self, branch, request):
+        self.branch = branch
         self.request = request
 
     def __call__(self):
         """Render `BugBranch` as XHTML using the webservice."""
-        comment_view = getMultiAdapter(
-            (self.comment, self.request), name="+bug-branch")
-        return comment_view()
+        branch_view = getMultiAdapter(
+            (self.branch, self.request), name="+bug-branch")
+        return branch_view()
 
