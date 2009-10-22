@@ -60,30 +60,30 @@
 
             <div style="clear:both;" />
 
-            <div tal:condition="release/release_notes">
-              <fieldset class="collapsible collapsed" style="padding: 0px;">
-                <legend>Release notes</legend>
-
-                <div id="release_notes" style="margin-bottom: 0px;"
-                     tal:define="notes release/release_notes/fmt:shorten/800"
-                     tal:content="structure notes/fmt:text-to-html">
-                  ProductRelease.changelog.
-                </div>
-              </fieldset>
-            </div>
-
-            <div tal:condition="release/changelog">
+            <div id="release_information"
+               tal:condition="python: release.release_notes or release.changelog">
 
               <fieldset class="collapsible collapsed" style="padding: 0px;">
-                <legend>Changelog</legend>
+                <legend>Release information</legend>
 
-                <div id="changelog" style="margin-bottom: 0px;"
-                     tal:content="structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
-                  ProductRelease.changelog.
+                <div tal:condition="release/release_notes">
+                  <strong>Release notes:</strong>
+                  <div id="release_notes" style="margin-bottom: 0px;"
+                       tal:define="notes release/release_notes/fmt:shorten/800"
+                       tal:content="structure notes/fmt:text-to-html">
+                    ProductRelease.release_notes
+                  </div>
+                </div>
+
+                <div tal:condition="release/changelog">
+                  <strong>Changelog:</strong>
+                  <div id="changelog" style="margin-bottom: 0px;"
+                       tal:content="structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
+                    ProductRelease.changelog.
+                  </div>
                 </div>
               </fieldset>
-            </div>
-
+            </div> <!-- release information -->
 
             <table class="listing" style="margin-top: 1em;">
               <thead>
