@@ -36,7 +36,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     NavigationMenu)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
