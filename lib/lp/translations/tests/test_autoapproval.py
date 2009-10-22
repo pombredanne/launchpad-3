@@ -520,9 +520,6 @@ class TestTemplateGuess(unittest.TestCase):
         self._setUpProduct()
         template = self.producttemplate1
         template.path = 'po/test.pot'
-        assert template.productseries == self.producttemplate2.productseries
-        assert template.iscurrent
-        assert self.producttemplate2.iscurrent
         self.producttemplate2.path = 'different.pot'
 
         queue = TranslationImportQueue()

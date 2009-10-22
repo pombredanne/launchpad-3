@@ -172,7 +172,7 @@ class TranslationImportQueueEntry(SQLBase):
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
-        if candidate:
+        if candidate is not None:
             # This takes care of most of the auto-approvable cases.
             return candidate
 
