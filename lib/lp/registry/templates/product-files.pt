@@ -45,6 +45,7 @@
 
       <tal:seriesfilesexist condition="series/has_release_files">
         <tal:releases repeat="release series/releases">
+          <tal:releasefilesexist condition="release/files">
           <div tal:condition="not: repeat/release/start" class="portlet-border" />
           <div tal:condition="release/files" class="top-portlet">
             <h2 style="font-size: 1.2em; float:left;">
@@ -125,10 +126,24 @@
             <a tal:replace="structure link/fmt:link" />
           </div>
           <div style="clear:both" />
+          </tal:releasefilesexist>
         </tal:releases>
         <br />
 
       </tal:seriesfilesexist>
+
+      <p tal:condition="has_edit" class="add-files">
+        <tal:releases condition="series/releases">
+          Add download file to the
+          <a tal:attributes="href series/fmt:url"
+             tal:content="series/name">name</a> series for release:
+          <tal:release repeat="release series/releases">
+            <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
+               tal:content="release/version"
+              >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+          </tal:release>
+        </tal:releases>
+      </p>
 
     </div>
     <input tal:condition="python: has_edit and view.has_download_files"
@@ -139,4 +154,5 @@
   </form>
 </div>
 </body>
-</html>
+</html
+>
