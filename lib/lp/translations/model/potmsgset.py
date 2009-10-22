@@ -19,13 +19,16 @@ from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.launchpad import helpers
+from canonical.launchpad.helpers import shortlist
 from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     IPOTMsgSet,
-    POTMsgSetInIncompatibleTemplatesError)
+    POTMsgSetInIncompatibleTemplatesError,
+    TranslationCreditsType)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationimporter import (
@@ -35,8 +38,6 @@ from lp.translations.interfaces.translationmessage import (
     TranslationConflict,
     TranslationValidationStatus)
 from lp.translations.interfaces.translations import TranslationConstants
-from canonical.launchpad.helpers import shortlist
-from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import (
@@ -47,20 +48,24 @@ from lp.translations.model.translationtemplateitem import (
 
 
 # Msgids that indicate translation credit messages, and their
-# contexts.
+# contexts and type.
 credit_message_ids = {
     # Regular gettext credits messages.
-    u'translation-credits': None,
-    u'translator-credits': None,
-    u'translator_credits': None,
+    u'translation-credits': (None, TranslationCreditsType.GNOME),
+    u'translator-credits': (None, TranslationCreditsType.GNOME),
+    u'translator_credits': (None, TranslationCreditsType.GNOME),
 
     # KDE credits messages.
-    u'Your emails': u'EMAIL OF TRANSLATORS',
-    u'Your names': u'NAME OF TRANSLATORS',
+    u'Your emails': 
+        (u'EMAIL OF TRANSLATORS', TranslationCreditsType.KDE_EMAILS),
+    u'Your names':
+        (u'NAME OF TRANSLATORS', TranslationCreditsType.KDE_NAMES),
 
     # Old KDE credits messages.
-    u'_: EMAIL OF TRANSLATORS\nYour emails': None,
-    u'_: NAME OF TRANSLATORS\nYour names': None,
+    u'_: EMAIL OF TRANSLATORS\nYour emails':
+        (None, TranslationCreditsType.KDE_EMAILS),
+    u'_: NAME OF TRANSLATORS\nYour names': 
+        (None, TranslationCreditsType.KDE_NAMES),
     }
 
 
@@ -999,13 +1004,20 @@ class POTMsgSet(SQLBase):
     @property
     def is_translation_credit(self):
         """See `IPOTMsgSet`."""
-        # msgid_singular.msgid is pre-joined everywhere where
-        # is_translation_credit is used
-        if self.msgid_singular.msgid not in credit_message_ids:
-            return False
+        credit_type = self.translation_credits_type
+        return credit_type != TranslationCreditsType.NOT_CREDITS
 
-        expected_context = credit_message_ids[self.msgid_singular.msgid]
-        return expected_context is None or (self.context == expected_context)
+    @property
+    def translation_credits_type(self):
+        """See `IPOTMsgSet`."""
+        if self.msgid_singular.msgid not in credit_message_ids:
+            return TranslationCreditsType.NOT_CREDITS
+
+        expected_context, credits_type = (
+            credit_message_ids[self.msgid_singular.msgid])
+        if expected_context is None or (self.context == expected_context):
+            return credits_type
+        return TranslationCreditsType.NOT_CREDITS
 
     def makeHTMLID(self, suffix=None):
         """See `IPOTMsgSet`."""

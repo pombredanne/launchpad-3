@@ -355,6 +355,9 @@
       provides="lp.code.interfaces.branchlookup.ILinkedBranchTraverser">
     <allow interface="lp.code.interfaces.branchlookup.ILinkedBranchTraverser"/>
   </securedutility>
+  <adapter factory="lp.code.model.branchlookup.ProductTraversable" />
+  <adapter factory="lp.code.model.branchlookup.DistributionTraversable" />
+  <adapter factory="lp.code.model.branchlookup.DistroSeriesTraversable" />
   <securedutility
       class="lp.code.model.branchscanner.BranchScanner"
       provides="lp.code.interfaces.branchscanner.IBranchScanner">
