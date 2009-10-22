@@ -230,7 +230,7 @@ And on the filebug page...
 Finally, we add Testy Product to a source package:
 
     >>> admin_browser.open('http://bugs.launchpad.dev/testy/trunk/+ubuntupkg')
-    >>> admin_browser.getControl(name='ubuntupkg').value = 'thunderbird'
+    >>> admin_browser.getControl('Source Package Name').value = 'thunderbird'
     >>> admin_browser.getControl('Update').click()
 
 And this is also shown on the filebug page:

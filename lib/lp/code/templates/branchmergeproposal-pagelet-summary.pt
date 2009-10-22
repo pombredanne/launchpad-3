@@ -20,13 +20,6 @@
         </a>
       </td>
     </tr>
-    <tr>
-      <th>Proposed by:</th>
-      <td>
-        <tal:registrant replace="structure context/registrant/fmt:link"/>
-        <tal:modified replace="context/date_created/fmt:displaydate" />
-      </td>
-    </tr>
     <tal:comment condition="nothing">
       Only show the reviewed section if the state is not superseded.
       Only show the reviewed revision if not rejected.
@@ -117,7 +110,7 @@
       <td>
         <tal:commit-message
           condition="context/commit_message"
-          replace="structure context/commit_message" />
+          replace="context/commit_message" />
         <tal:no-commit-message
           condition="not: context/commit_message">None</tal:no-commit-message>
         <a tal:define="link context/menu:context/edit_commit_message"
