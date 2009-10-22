@@ -195,13 +195,6 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         format._set_repository_format(repo_format())
         return format
 
-    def make_upgrade_branchjob(self):
-        db_branch, tree = self.create_branch_and_tree(format='knit')
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
-        job = BranchUpgradeJob.create(db_branch)
-        return db_branch, job
-
     def test_providesInterface(self):
         """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
         branch = self.factory.makeAnyBranch()
@@ -211,7 +204,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches()
-        db_branch, tree = self.create_branch_and_tree(format='knit')
+        db_branch, tree = self.create_branch_and_tree(
+            hosted=True, format='knit')
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
         self.assertEqual(
