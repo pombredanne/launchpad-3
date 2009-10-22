@@ -24,7 +24,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, LeftJoin, Or, SQL
+from storm.expr import Alias, And, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
@@ -420,7 +420,20 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getTranslationCredits(self):
         """See `IPOTemplate`."""
-        return []
+        # Find potential credits messages by the message ids.
+        store = IStore(POTemplate)
+        credits_ids = ",".join(map(quote, POTMsgSet.credits_message_ids))
+        origin1 = Join(TranslationTemplateItem,
+                       TranslationTemplateItem.potmsgset == POTMsgSet.id)
+        origin2 = Join(POMsgID, POTMsgSet.msgid_singular == POMsgID.id)
+        result = store.using(POTMsgSet, origin1, origin2).find(
+            POTMsgSet, TranslationTemplateItem.potemplate == self,
+                       "pomsgid.msgid IN (%s)" % credits_ids)
+        # Filter these candidates because is_translation_credit checks for
+        # more conditions than the special msgids.
+        for potmsgset in result:
+            if potmsgset.is_translation_credit:
+                yield potmsgset
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""

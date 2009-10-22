@@ -78,7 +78,8 @@ mess up the statistics.
     ...                                                      eo_language)
     >>> print current
     None
-    >>> gnome_credits.setTranslationCreditsToTranslated(eo_language)
+    >>> login("foo.bar@canonical.com")
+    >>> gnome_credits.setTranslationCreditsToTranslated(eo_pofile)
     >>> current = gnome_credits.getCurrentTranslationMessage(potemplate,
     ...                                                      eo_language)
     >>> print current.msgstr0.translation
@@ -93,7 +94,7 @@ and is therefore left untouched.
     >>> sr_credits = factory.makeTranslationMessage(
     ...     potmsgset=gnome_credits, pofile=sr_pofile, is_imported=True,
     ...     translations=[u"Some translations credits for Serbian."])
-    >>> gnome_credits.setTranslationCreditsToTranslated(sr_language)
+    >>> gnome_credits.setTranslationCreditsToTranslated(sr_pofile)
     >>> current = gnome_credits.getCurrentTranslationMessage(potemplate,
     ...                                                      sr_language)
     >>> print current.msgstr0.translation
@@ -103,7 +104,7 @@ Normal messages will be left untouched, too.
 
     >>> potmsgset.setTranslationCreditsToTranslated(sr_language)
     >>> current = potmsgset.getCurrentTranslationMessage(potemplate,
-    ...                                                      sr_language)
+    ...                                                  sr_pofile)
     >>> print current
     None
 

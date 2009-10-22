@@ -67,13 +67,14 @@ class TestPOTemplate(TestCaseWithFactory):
 
     def test_getTranslationCredits(self):
         # getTranslationCredits returns only translation credits.
-        not_credits = self.factory.makePOTMsgSet(self.potemplate)
+        not_credits = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
         gnome_credits = self.factory.makePOTMsgSet(
-            self.potemplate, singular=u"translator-credits")
+            self.potemplate, sequence=2, singular=u"translator-credits")
         kde_credits = self.factory.makePOTMsgSet(
-            self.potemplate, 
+            self.potemplate, sequence=3, 
             singular=u"Your emails", context=u"EMAIL OF TRANSLATORS")
-        not_credits_either = self.factory.makePOTMsgSet(self.potemplate)
+        not_credits_either = self.factory.makePOTMsgSet(self.potemplate,
+                                                        sequence=4)
 
         self.assertContentEqual([gnome_credits, kde_credits],
                                 self.potemplate.getTranslationCredits())
