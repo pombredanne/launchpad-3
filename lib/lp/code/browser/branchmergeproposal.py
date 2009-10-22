@@ -33,14 +33,17 @@ __all__ = [
 import operator
 
 from zope.app.form.browser import TextAreaWidget
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
-from zope.interface import Interface, implements
+from zope.interface import Interface, implementer, implements
 from zope.schema import Choice, Int, Text
+from zope.schema.interfaces import IText
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer, IWebServiceClientRequest)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -1254,3 +1257,15 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+@adapter(IBranchMergeProposal, IText, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def text_xhtml_representation(context, field, request):
+    """Render an `IText` as XHTML using the webservice."""
+    formatter = FormattersAPI
+    def renderer(value):
+        nomail  = formatter(value).obfuscate_email()
+        html    = formatter(nomail).text_to_html()
+        return html
+    return renderer
