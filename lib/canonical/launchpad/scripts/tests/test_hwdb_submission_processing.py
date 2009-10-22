@@ -3521,7 +3521,7 @@ class TestUdevDevice(TestCaseHWDB):
                 },
             }
 
-    def test_device_id(self):
+    def test_device_device_id(self):
         """Test of UdevDevice.device_id."""
         device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(
