@@ -358,11 +358,15 @@ class IPOTemplate(IRosettaStats):
         The sequence number must be > 0.
         """
 
-    def getPOTMsgSets(current=True):
+    def getPOTMsgSets(current=True, prefetch=True):
         """Return an iterator over `IPOTMsgSet` objects in this template.
 
-        The 'current' argument is used to select only current POTMsgSets or
-        all of them.
+        :param current: Whether to limit the search to current
+            POTMsgSets.
+        :param prefetch: Whether to prefetch the `POMsgID`s attached to
+            the POTMsgSets.  This is for optimization only.
+        :return: All current POTMsgSets for the template if `current` is
+            True, or all POTMsgSets for the template otherwise.
         """
 
     def getPOTMsgSetsCount(current=True):
