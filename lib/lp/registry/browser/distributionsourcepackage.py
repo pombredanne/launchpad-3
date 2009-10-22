@@ -213,8 +213,10 @@ class DistributionSourcePackageBaseView:
             unique_emails = extract_email_addresses(the_changelog)
             # The method below returns a [(EmailAddress,Person]] result set.
             result_set = self.context.getPersonsByEmail(unique_emails)
+            # Ignore the persons who want their email addresses hidden.
             self._person_data = dict(
-                [(email.email,person) for (email,person) in result_set])
+                [(email.email,person) for (email,person) in result_set
+                 if not person.hide_email_addresses])
         else:
             self._person_data = None
 
