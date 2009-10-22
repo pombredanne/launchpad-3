@@ -207,11 +207,17 @@ class DistributionSourcePackageBaseView:
         unique_bugs = extract_bug_numbers(the_changelog)
         self._bug_data = list(
             getUtility(IBugSet).getByNumbers(unique_bugs.keys()))
-        unique_emails = extract_email_addresses(the_changelog)
-        # The method below returns a [(EmailAddress,Person]] result set.
-        result_set = self.context.getPersonsByEmail(unique_emails)
-        self._person_data = dict(
-            [(email.email,person) for (email,person) in result_set])
+        # Preload email/person data only if user is logged on. In the opposite
+        # case the emails in the changelog will be obfuscated anyway and thus
+        # cause no database lookups.
+        if self.user:
+            unique_emails = extract_email_addresses(the_changelog)
+            # The method below returns a [(EmailAddress,Person]] result set.
+            result_set = self.context.getPersonsByEmail(unique_emails)
+            self._person_data = dict(
+                [(email.email,person) for (email,person) in result_set])
+        else:
+            self._person_data = None
 
         # Collate diffs for relevant SourcePackageReleases
         pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
