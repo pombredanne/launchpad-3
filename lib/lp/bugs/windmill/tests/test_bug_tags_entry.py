@@ -6,16 +6,19 @@
 __metaclass__ = type
 __all__ = []
 
+import transaction
 import unittest
 
 from windmill.authoring import WindmillTestClient
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import lpuser
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
+from zope.security.proxy import removeSecurityProxy
 
-class TestBugTags(TestCaseWithFactory):
+class TestBugTagsEntry(TestCaseWithFactory):
 
     layer = BugsWindmillLayer
 
@@ -25,39 +28,21 @@ class TestBugTags(TestCaseWithFactory):
 
         # First, we add some official tags to test with
 
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).official_bug_tags = [
+            u'eenie', u'meenie', u'meinie', u'moe']
+        bug = self.factory.makeBug(product=product)
+        removeSecurityProxy(bug).tags = ['unofficial-tag']
+        # XXX Make the testing canonical_url available as a global utility
+        bug_url = canonical_url(bug).replace(
+            'https', 'http').replace('.dev/', '.dev:8085/')
+        transaction.commit()
+
         lpuser.FOO_BAR.ensure_login(client)
-
-        client.open(url='http://bugs.launchpad.dev:8085/firefox')
-        client.waits.forPageLoad(timeout=u'100000')
-        client.waits.sleep(milliseconds=u'8000')
-
-        client.click(link=u'Edit official tags')
-        client.waits.forPageLoad(timeout=u'100000')
-        client.waits.sleep(milliseconds=u'8000')
-
-        client.type(text=u'eenie', id=u'new-tag-text')
-        client.click(id=u'new-tag-add')
-        client.type(text=u'meenie', id=u'new-tag-text')
-        client.click(id=u'new-tag-add')
-        client.type(text=u'meinie', id=u'new-tag-text')
-        client.click(id=u'new-tag-add')
-        client.type(text=u'moe', id=u'new-tag-text')
-        client.click(id=u'new-tag-add')
-        # if the tags already exist the save button might be disabled.
-        # make sure it's enabled so that we can complete the test.
-        client.asserts.assertJS(js=u"""(function(){
-                document.getElementById('save-button').disabled = false;
-                return true;
-            }());
-        """)
-        client.click(id=u'save-button')
-        client.waits.forPageLoad(timeout=u'100000')
-        client.asserts.assertJS(
-            js=u'window.location == "http://bugs.launchpad.dev:8085/firefox"')
 
         # Now let's tag a bug using the auto-complete widget
 
-        client.open(url='http://bugs.launchpad.dev:8085/firefox/+bug/5')
+        client.open(url=bug_url)
         client.waits.forPageLoad(timeout=u'300000')
         client.waits.sleep(milliseconds=u'8000')
 
@@ -79,14 +64,14 @@ class TestBugTags(TestCaseWithFactory):
         # Test that anonymous users are prompted to log in.
 
         lpuser.ANONYMOUS.ensure_login(client)
-        client.open(url='http://bugs.launchpad.dev:8085/firefox/+bug/5')
+        client.open(url=bug_url)
         client.waits.forPageLoad(timeout=u'50000')
         client.waits.sleep(milliseconds=u'8000')
         client.click(id=u'edit-tags-trigger')
         client.waits.forPageLoad(timeout=u'50000')
         client.asserts.assertJS(
-            js=u'window.location == '
-               '"http://bugs.launchpad.dev:8085/firefox/+bug/5/+edit/+login"')
+            js=u'window.location.href.indexOf("+login") > 0')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

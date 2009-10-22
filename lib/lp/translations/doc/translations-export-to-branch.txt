@@ -257,3 +257,20 @@ pending translations BranchJobs on the branch.
     has pending translations changes.  Not committing.
     INFO Processed 1 item(s); 1 failure(s).
 
+There is one problem with detecting this race condition.  Jobs are never
+cleaned up.  So if the job failed for whatever reason, an unfinished job
+will stick around forever.
+
+To avoid blocking on such a job forever, the check ignores jobs that are
+old enough that they must have completed one way or another.
+
+    >>> job.date_created -= timedelta(days=7)
+    >>> transaction.commit()
+    >>> script.main()
+    INFO Exporting to translations branches.
+    INFO Exporting Gazblachko trunk series.
+    DEBUG ...
+    INFO Writing file 'po/main/nl.po':
+    INFO ...
+    INFO Unlock.
+    INFO Processed 1 item(s); 0 failure(s).

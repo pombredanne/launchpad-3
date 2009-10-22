@@ -1,6 +1,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Test for the bug tag entry UI."""
+
+__metaclass__ = type
+__all__ = []
+
 import unittest
 
 from windmill.authoring import WindmillTestClient
@@ -85,13 +90,13 @@ class TestMarkDuplicate(TestCaseWithFactory):
         client.click(xpath=CHANGE_BUTTON)
         client.waits.forElement(xpath=error_xpath)
 
-        # But entering a correct bug and submitting gets us back
-        # to a normal state
+        # But entering a correct bug and submitting
+        # gets us back to a normal state
         client.type(text=u'1', id=u'field.duplicateof')
         client.click(xpath=CHANGE_BUTTON)
         client.waits.forElement(
             xpath=u"//span[@id='mark-duplicate-text']"
-                   "/a[contains(., 'bug #1')]")
+                  u"/a[contains(., 'bug #1')]")
 
         # Finally, clicking on the link to the bug takes you to the master.
         client.click(link=u'bug #1')

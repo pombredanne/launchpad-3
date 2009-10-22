@@ -17,6 +17,7 @@ from operator import attrgetter
 
 from zope.component import getUtility
 from zope.interface import implements, Interface
+from zope.publisher.interfaces import NotFound
 from zope.schema import Choice
 
 from lazr.delegates import delegates
@@ -30,6 +31,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
 
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
 from lp.code.interfaces.branchmergeproposal import (
@@ -304,6 +306,10 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         return self.user
 
     def initialize(self):
+        # Branches, despite implementing IHasMergeProposals, does not
+        # have an active reviews page.
+        if IBranch.providedBy(self.context):
+            raise NotFound(self.context, '+activereviews')
         # Work out the review groups
         self.review_groups = {}
         self.getter = getUtility(IBranchMergeProposalGetter)
