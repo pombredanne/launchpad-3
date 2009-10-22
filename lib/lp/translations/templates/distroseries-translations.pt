@@ -6,15 +6,16 @@
 
   <body>
     <div metal:fill-slot="main">
-      <ul class="helplinks">
-        <li>
-          <a href="https://help.launchpad.net/Translations"
-             id="link-to-translations-help"
-             >Help for translations
-          </a>
-        </li>
-      </ul>
-      <div class="top-portlet">
+      <div class="translation-help-links">
+        <a href="https://help.launchpad.net/Translations"
+           id="link-to-translations-help"
+           >Help for translations
+        </a>
+        <div></div><!-- to clear-up all floats -->
+      </div>
+      <div class="top-portlet"
+           id="translation-focus"
+           tal:condition="context/distribution/translation_focus">
         <p tal:condition="not:view/is_translation_focus">
           Launchpad currently recommends translating
           <tal:target replace="

@@ -143,7 +143,7 @@ A project milestone page has the same navigation as the project:
     Hierarchy: None displayed
     Tabs:
     * Overview (selected) - http://launchpad.dev/firefox
-    * Code - http://code.launchpad.dev/firefox
+    * Branches - http://code.launchpad.dev/firefox
     * Bugs - http://bugs.launchpad.dev/firefox
     * Blueprints - http://blueprints.launchpad.dev/firefox
     * Translations - http://translations.launchpad.dev/firefox
@@ -161,7 +161,7 @@ the distribution:
     Hierarchy: None displayed
     Tabs:
     * Overview (selected) - http://launchpad.dev/debian
-    * Code - http://code.launchpad.dev/debian
+    * Branches - http://code.launchpad.dev/debian
     * Bugs - http://bugs.launchpad.dev/debian
     * Blueprints - http://blueprints.launchpad.dev/debian
     * Translations - http://translations.launchpad.dev/debian

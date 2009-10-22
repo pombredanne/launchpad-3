@@ -78,23 +78,7 @@
                 </div>
                 <div class="furthur-information-block-bot"></div>
             </div>
-            <div class="furthur-information-block singular">
-                <div class="furthur-information-block-top"></div>
-                <div class="furthur-information-block-mid">
-                    <div class="block">
-                        <h3>Sprint planning</h3>
-                        <h4>Face to face meetings are a great way to discuss ideas and make decisions in free software projects.</h4>
-                        <p class="screen-holder">
-                            <img src="images/blueprints/3.png" alt="Sprint planning" />
-                        </p>
-                        <p>
-                            With Launchpad&rsquo;s meeting planner you can organise development sprints, track who is attending and create an agenda from your project&rsquo;s blueprints.
-                        </p>
-                    </div>
-                    <div class="clear"></div>
-                </div>
-                <div class="furthur-information-block-bot"></div>
-            </div>
+
         </div>
         <ul id="footer-navigation">
             <li class="button-prev">

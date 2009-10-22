@@ -69,4 +69,4 @@ Answers front page:
     >>> print anon_browser.url
     http://answers.launchpad.dev/ubuntu
     >>> print anon_browser.title
-    Questions for Ubuntu
+    Questions : Ubuntu

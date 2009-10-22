@@ -13,10 +13,9 @@ from storm.expr import Asc, Desc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.systemdocs import create_initialized_view
 from lp.code.browser.branchlisting import (
-    BranchListingBatchNavigator, BranchListingSort, BranchListingView,
-    GroupedDistributionSourcePackageBranchesView, PersonOwnedBranchesView,
+    BranchListingSort, BranchListingView,
+    GroupedDistributionSourcePackageBranchesView,
     SourcePackageBranchesView)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
@@ -25,6 +24,7 @@ from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCase, TestCaseWithFactory, time_counter
+from lp.testing.views import create_initialized_view
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -305,6 +305,29 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         series, branches, official = self.makeBranches(6, 4)
         expected = official[:3] + branches
         self.assertGroupBranchesEqual(expected, series)
+
+
+class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
+    """Make sure that the bzr_identity of the branches are correct."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_package_development_focus(self):
+        # Check the bzr_identity of a development focus package branch.
+        branch = self.factory.makePackageBranch()
+        series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
+        sspb = series_set.new(
+            branch.distroseries, PackagePublishingPocket.RELEASE,
+            branch.sourcepackagename, branch, branch.owner)
+        identity = "lp://dev/%s/%s" % (
+            branch.distribution.name, branch.sourcepackagename.name)
+        self.assertEqual(identity, branch.bzr_identity)
+        # Now confirm that we get the same through the view.
+        view = create_initialized_view(branch.distribution, name='+branches')
+        # There is only one branch.
+        batch = view.branches()
+        [view_branch] = batch.branches
+        self.assertEqual(identity, view_branch.bzr_identity)
 
 
 def test_suite():

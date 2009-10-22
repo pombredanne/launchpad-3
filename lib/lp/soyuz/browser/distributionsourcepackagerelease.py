@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionSourcePackageReleaseNavigation',
     'DistributionSourcePackageReleaseView',
+    'DistributionSourcePackageReleasePublishingHistoryView',
     ]
 
 import operator
@@ -133,3 +134,15 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
                 {'distroseries': distroseries, 'builds': builds})
 
         return distroseries_builds
+
+
+class DistributionSourcePackageReleasePublishingHistoryView(LaunchpadView):
+    """Presenting `DistributionSourcePackageRelease` publishing history."""
+
+    usedfor = IDistributionSourcePackageRelease
+
+    page_title = 'Publishing history'
+
+    @property
+    def label(self):
+        return 'Publishing history of %s' % smartquote(self.context.title)

@@ -44,6 +44,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
@@ -132,7 +134,7 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
                    'answers', 'translations']
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         return Link('', text, enabled=self.context.hasProducts())
 
     def bugs(self):
@@ -267,29 +269,11 @@ class ProjectEditNavigationMenu(NavigationMenu, ProjectEditMenuMixin):
     links = ('branding', 'reassign', 'driver', 'administer')
 
 
-class ProjectSpecificationsMenu(ApplicationMenu):
-
+class ProjectSpecificationsMenu(NavigationMenu,
+                                HasSpecificationsMenuMixin):
     usedfor = IProject
     facet = 'specifications'
     links = ['listall', 'doc', 'assignments', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def doc(self):
-        text = 'List documentation'
-        summary = 'Show all completed informational specifications'
-        return Link('+documentation', text, summary, icon="info")
-
-    def assignments(self):
-        text = 'Assignments'
-        return Link('+assignments', text, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
 
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):

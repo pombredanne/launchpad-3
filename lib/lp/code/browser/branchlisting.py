@@ -12,7 +12,7 @@ __all__ = [
     'DistributionSourcePackageBranchesView',
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
-    'HasBranchesBreadcrumb',
+    'CodeVHostBreadcrumb',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -87,6 +87,7 @@ from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
@@ -100,12 +101,9 @@ def get_plural_text(count, singular, plural):
         return plural
 
 
-class HasBranchesBreadcrumb(Breadcrumb):
+class CodeVHostBreadcrumb(Breadcrumb):
     rootsite = 'code'
-
-    @property
-    def text(self):
-        return 'Branches for %s' % self.context.displayname
+    text = 'Branches'
 
 
 class BranchBadges(HasBadgeBase):
@@ -156,20 +154,25 @@ class BranchListingItem(BranchBadges):
     delegates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
-                 show_blueprint_badge, is_dev_focus,
-                 associated_product_series, show_mp_badge):
+                 show_blueprint_badge, show_mp_badge,
+                 associated_product_series, suite_source_packages, is_dev_focus):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
         self.show_merge_proposals = show_mp_badge
         self._now = now
-        self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
+        self.suite_source_packages = suite_source_packages
+        self.is_development_focus = is_dev_focus
 
     def associatedProductSeries(self):
         """Override the IBranch.associatedProductSeries."""
         return self.associated_product_series
+
+    def associatedSuiteSourcePackages(self):
+        """Override the IBranch.associatedSuiteSourcePackages."""
+        return self.suite_source_packages
 
     @property
     def active_series(self):
@@ -317,7 +320,7 @@ class BranchListingItemsMixin:
     # Requires the following attributes:
     #   visible_branches_for_view
     def __init__(self, user):
-        self._dev_series_map = {}
+        self._distro_series_map = {}
         self._now = datetime.now(pytz.UTC)
         self.view_user = user
 
@@ -348,11 +351,7 @@ class BranchListingItemsMixin:
 
     @cachedproperty
     def product_series_map(self):
-        """Return a map of branch id to a list of product series.
-
-        While this code is still valid with package branches is it a query
-        that isn't needed.
-        """
+        """Return a map from branch id to a list of product series."""
         series_resultset = self._query_optimiser.getProductSeriesForBranches(
             self._visible_branch_ids)
         result = {}
@@ -376,20 +375,58 @@ class BranchListingItemsMixin:
                 series.insert(0, dev_focus)
         return series
 
-    def getDevFocusBranch(self, branch):
-        """Get the development focus branch that relates to `branch`."""
-        # XXX: 2009-07-02 TimPenhey spec=package-branches We need to determine
-        # here what constitutes a dev focus branch for package branches, and
-        # that perhaps this should also refer to targets instead of using
-        # product.
-        if branch.product is None:
-            return None
+    @cachedproperty
+    def official_package_links_map(self):
+        """Return a map from branch id to a list of package links."""
+        links = self._query_optimiser.getOfficialSourcePackageLinksForBranches(
+            self._visible_branch_ids)
+        result = {}
+        for link in links:
+            result.setdefault(link.branch.id, []).append(link)
+        return result
+
+    def getSuiteSourcePackages(self, branch):
+        """Get the associated SuiteSourcePackages for the branch.
+
+        If there is more than one, they are sorted by pocket.
+        """
+        links = [link.suite_sourcepackage for link in
+                 self.official_package_links_map.get(branch.id, [])]
+        return sorted(links, key=attrgetter('pocket'))
+
+    def getDistroDevelSeries(self, distribution):
+        """Since distribution.currentseries hits the DB every time, cache it."""
+        self._distro_series_map = {}
         try:
-            return self._dev_series_map[branch.product]
+            return self._distro_series_map[distribution]
         except KeyError:
-            result = branch.product.development_focus.branch
-            self._dev_series_map[branch.product] = result
+            result = distribution.currentseries
+            self._distro_series_map[distribution] = result
             return result
+
+    def isBranchDevFocus(self, branch,
+                         associated_product_series, suite_source_packages):
+        """Is the branch the development focus?
+
+        For product branches this means that the branch is linked to the
+        development focus series.
+
+        For package branches this means that the branch is linked to the
+        release pocket of the development series.
+        """
+        # Refactor this code to work for model.branch too?
+        # Do we care if a non-product branch is linked to the product series?
+        # Do we care if a non-package branch is linked to the package?
+        # A) not right now.
+        for series in associated_product_series:
+            if series.product.development_focus == series:
+                return True
+        for ssp in suite_source_packages:
+            if (ssp.pocket == PackagePublishingPocket.RELEASE and
+                ssp.distroseries == self.getDistroDevelSeries(
+                    ssp.distribution)):
+                return True
+        return False
 
     @cachedproperty
     def branch_ids_with_bug_links(self):
@@ -439,11 +476,13 @@ class BranchListingItemsMixin:
         show_blueprint_badge = branch.id in self.branch_ids_with_spec_links
         show_mp_badge = branch.id in self.branch_ids_with_merge_proposals
         associated_product_series = self.getProductSeries(branch)
-        is_dev_focus = (self.getDevFocusBranch(branch) == branch)
+        suite_source_packages = self.getSuiteSourcePackages(branch)
+        is_dev_focus = self.isBranchDevFocus(
+            branch, associated_product_series, suite_source_packages)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
-            show_blueprint_badge, is_dev_focus,
-            associated_product_series, show_mp_badge)
+            show_blueprint_badge, show_mp_badge,
+            associated_product_series, suite_source_packages, is_dev_focus)
 
     def decoratedBranches(self, branches):
         """Return the decorated branches for the branches passed in."""

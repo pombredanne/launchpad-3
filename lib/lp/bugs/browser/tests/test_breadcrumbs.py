@@ -55,7 +55,7 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
              'http://bugs.launchpad.dev/crumb-tester'],
             self._getBreadcrumbsURLs(url, self.traversed_objects))
         self.assertEquals(
-            ["Crumb Tester", "Bugs in crumb-tester"],
+            ["Crumb Tester", "Bugs"],
             self._getBreadcrumbsTexts(url, self.traversed_objects))
 
 

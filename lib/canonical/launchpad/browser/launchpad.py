@@ -54,6 +54,7 @@ from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.layers import WebServiceLayer
 
+from lp.app.interfaces.headings import IMajorHeadingView
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
@@ -261,6 +262,15 @@ class Hierarchy(LaunchpadView):
                 breadcrumbs.append(page_crumb)
         return breadcrumbs
 
+    @property
+    def _naked_context_view(self):
+        """Return the unproxied view for the context of the hierarchy."""
+        from zope.security.proxy import removeSecurityProxy
+        if len(self.request.traversed_objects) > 0:
+            return removeSecurityProxy(self.request.traversed_objects[-1])
+        else:
+            return None
+
     def makeBreadcrumbForRequestedPage(self):
         """Return an `IBreadcrumb` for the requested page.
 
@@ -271,10 +281,9 @@ class Hierarchy(LaunchpadView):
         one for our parent view's context, return None.
         """
         url = self.request.getURL()
-        from zope.security.proxy import removeSecurityProxy
-        view = removeSecurityProxy(self.request.traversed_objects[-1])
         obj = self.request.traversed_objects[-2]
         default_view_name = zapi.getDefaultViewName(obj, self.request)
+        view = self._naked_context_view
         if view.__name__ != default_view_name:
             title = getattr(view, 'page_title', None)
             if title is None:
@@ -300,7 +309,11 @@ class Hierarchy(LaunchpadView):
         """Return whether the breadcrumbs should be displayed."""
         # If there is only one breadcrumb then it does not make sense
         # to display it as it will simply repeat the context.title.
-        return len(self.items) > 1
+        # If the view is an IMajorHeadingView then we do not want
+        # to display breadcrumbs either.
+        has_major_heading = IMajorHeadingView.providedBy(
+            self._naked_context_view)
+        return len(self.items) > 1 and not has_major_heading
 
 
 class MaintenanceMessage:
@@ -386,7 +399,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = ''
-        text = 'Code'
+        text = 'Branches'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 

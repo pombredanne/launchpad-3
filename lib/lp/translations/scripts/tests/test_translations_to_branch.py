@@ -16,6 +16,9 @@ from canonical.testing import ZopelessAppServerLayer
 
 from lp.testing import map_branch_contents, TestCaseWithFactory
 
+from lp.translations.scripts.translations_to_branch import (
+    ExportTranslationsToBranch)
+
 
 class TestExportTranslationsToBranch(TestCaseWithFactory):
 
@@ -111,8 +114,54 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # anything because it sees that the POFile has not been changed
         # since the last export.
         retcode, stdout, stderr = run_script(
-            'cronscripts/translations-export-to-branch.py', ['-vvv'])
+            'cronscripts/translations-export-to-branch.py',
+            ['-vvv', '--no-fudge'])
+        self.assertEqual(0, retcode)
         self.assertIn('Last commit was at', stderr)
+        self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
+        self.assertEqual(
+            None, re.search("INFO\s+Committed [0-9]+ file", stderr))
+
+
+class TestExportToStackedBranch(TestCaseWithFactory):
+    """Test workaround for bzr bug 375013."""
+    # XXX JeroenVermeulen 2009-10-02 bug=375013: Once bug 375013 is
+    # fixed, this entire test can go.
+    layer = ZopelessAppServerLayer
+
+    def _setUpBranch(self, db_branch, tree, message):
+        """Set the given branch and tree up for use."""
+        bzr_branch = tree.branch
+        last_revno, last_revision_id = bzr_branch.last_revision_info()
+        removeSecurityProxy(db_branch).last_scanned_id = last_revision_id
+
+    def setUp(self):
+        super(TestExportToStackedBranch, self).setUp()
+        self.useBzrBranches()
+
+        base_branch, base_tree = self.create_branch_and_tree(
+            'base', name='base', hosted=True)
+        self._setUpBranch(base_branch, base_tree, "Base branch.")
+
+        stacked_branch, stacked_tree = self.create_branch_and_tree(
+            'stacked', name='stacked', hosted=True)
+        stacked_tree.branch.set_stacked_on_url('/' + base_branch.unique_name)
+        stacked_branch.stacked_on = base_branch
+        self._setUpBranch(stacked_branch, stacked_tree, "Stacked branch.")
+
+        self.stacked_branch = stacked_branch
+
+    def test_export_to_shared_branch(self):
+        # The script knows how to deal with stacked branches.
+        # Otherwise, this would fail.
+        script = ExportTranslationsToBranch('reupload', test_args=['-q'])
+        committer = script._prepareBranchCommit(self.stacked_branch)
+        try:
+            self.assertNotEqual(None, committer)
+            committer.writeFile('x.txt', 'x')
+            committer.commit("x!")
+        finally:
+            committer.unlock()
 
 
 def test_suite():

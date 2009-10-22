@@ -25,6 +25,14 @@
                 tal:define="lp_js string:${icingroot}/build"
                 tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
         </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/lp/comment.js">
+        </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/lp/errors.js">
+        </script>
       </tal:devmode>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
@@ -52,21 +60,18 @@
       <div tal:replace="structure context/bug/@@+portlet-watch" />
     </metal:side>
 
+    <tal:registering metal:fill-slot="registering">
+      Bug #<tal:block content="context/bug/id"/> reported by
+      <tal:reporter replace="structure context/bug/owner/fmt:link" />
+      <span
+        tal:attributes="title context/bug/datecreated/fmt:datetime"
+        tal:content="context/bug/datecreated/fmt:displaydate" />
+    </tal:registering>
+
     <metal:heading fill-slot="heading" tal:define="context_menu context/menu:context">
       <h1 tal:replace="structure view/bug_title_edit_widget">
         Bug title
       </h1>
-      <div class="object" id="bug">
-        Bug #<tal:block content="context/bug/id"/> reported
-        by <tal:reporter replace="structure context/bug/owner/fmt:link" />
-        <span
-            tal:attributes="title context/bug/datecreated/fmt:datetime"
-            tal:content="context/bug/datecreated/fmt:displaydate" />
-        <tal:activitylog
-          define="link context_menu/activitylog"
-          condition="link/enabled"
-        >(<tal:link replace="structure link/render" />)</tal:activitylog>
-      </div>
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
@@ -284,6 +289,12 @@
               <script type="text/javascript">
                 var button = document.getElementById('field.actions.save');
                 button.style.display = 'none';
+              </script>
+              <script type="text/javascript">
+                YUI().use('lp.comment', function(Y) {
+                var comment = new Y.lp.Comment();
+                comment.render();
+                })
               </script>
             </div>
             <tal:attachment-link

@@ -41,9 +41,10 @@ from lp.services.job.interfaces.job import IJob, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_entry, rename_parameters_as, REQUEST_USER)
+    call_with, export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_entry, rename_parameters_as,
+    REQUEST_USER)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -113,7 +114,7 @@ class IBranchMergeProposal(IPrivacy):
             description=_(
                 "The branch that the source branch will be merged into.")))
 
-    dependent_branch = exported(
+    prerequisite_branch = exported(
         Reference(
             title=_('Dependent Branch'),
             schema=IBranch, required=False, readonly=True,
@@ -454,7 +455,8 @@ class IBranchMergeProposal(IPrivacy):
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
-    @export_write_operation()
+    # ICodeReviewComment supplied as Interface to avoid circular imports.
+    @export_factory_operation(Interface, [])
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.
@@ -482,11 +484,11 @@ class IBranchMergeProposal(IPrivacy):
 
     @operation_parameters(
         diff_content=Bytes(), source_revision_id=TextLine(),
-        target_revision_id=TextLine(), dependent_revision_id=TextLine(),
+        target_revision_id=TextLine(), prerequisite_revision_id=TextLine(),
         conflicts=Text())
     @export_write_operation()
     def updatePreviewDiff(diff_content, source_revision_id,
-                          target_revision_id, dependent_revision_id=None,
+                          target_revision_id, prerequisite_revision_id=None,
                           conflicts=None):
         """Update the preview diff for this proposal.
 
@@ -499,8 +501,8 @@ class IBranchMergeProposal(IPrivacy):
             source branch.
         :param target_revision_id: The revision id that was used from the
             target branch.
-        :param dependent_revision_id: The revision id that was used from the
-            dependent branch.
+        :param prerequisite_revision_id: The revision id that was used from the
+            prerequisite branch.
         :param conflicts: Text describing the conflicts if any.
         """
 

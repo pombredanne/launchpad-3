@@ -9,7 +9,9 @@ __metaclass__ = type
 
 __all__ = [
     'ALLOW_RELEASE_BUILDS',
+    'AlreadySubscribed',
     'ArchiveDependencyError',
+    'ArchiveNotPrivate',
     'ArchivePurpose',
     'CannotCopy',
     'ComponentNotFound',
@@ -28,8 +30,7 @@ __all__ = [
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
     'PocketNotFound',
-    'AlreadySubscribed',
-    'ArchiveNotPrivate',
+    'VersionRequiresName',
     'default_name_by_purpose',
     ]
 
@@ -101,6 +102,7 @@ class ComponentNotFound(Exception):
     """Invalid source name."""
     webservice_error(400) #Bad request.
 
+
 class InvalidComponent(Exception):
     """Invalid component name."""
     webservice_error(400) #Bad request.
@@ -110,6 +112,11 @@ class NoSuchPPA(NameLookupFailed):
     """Raised when we try to look up an PPA that doesn't exist."""
     webservice_error(400) #Bad request.
     _message_prefix = "No such ppa"
+
+
+class VersionRequiresName(Exception):
+    """Raised on some queries when version is specified but name is not."""
+    webservice_error(400) # Bad request.
 
 
 class IArchivePublic(IHasOwner, IPrivacy):
@@ -1068,11 +1075,14 @@ class IPPAActivateForm(Interface):
 
     name = TextLine(
         title=_("PPA name"), required=True, constraint=name_validator,
-        description=_("A unique name used to identify this PPA."))
+        description=_("A unique name used to identify this PPA. It will "
+                      "form part of the URL to the archive repository."))
 
     displayname = StrippedTextLine(
         title=_("Displayname"), required=True,
-        description=_("Displayname for this PPA."))
+        description=_("Displayname for this PPA. It will be used in "
+                      "the signing key's description if this is the "
+                      "first PPA for a person."))
 
     description = Text(
         title=_("PPA contents description"), required=False,
@@ -1162,6 +1172,18 @@ class IArchiveSet(Interface):
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
+
+    def getPPAOwnedByPerson(person, name=None):
+        """Return the named PPA owned by person.
+
+        :param person: An `IPerson`
+        :param name: The PPA name required.
+
+        If the person is not supplied it will default to the
+        first PPA that the person created.
+
+        :raises NoSuchPPA: if the named PPA does not exist.
+        """
 
     def getPPAsForUser(user):
         """Return all PPAs the given user can participate.

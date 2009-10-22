@@ -43,6 +43,13 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
     # factor.
     fudge_factor = timedelta(hours=6)
 
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option(
+            '-n', '--no-fudge', action='store_true', dest='no_fudge',
+            default=False,
+            help="For testing: no fudge period for POFile changes.")
+
     def _checkForObjections(self, source):
         """Check for reasons why we can't commit to this branch.
 
@@ -56,8 +63,12 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 "Translations export for %s was just disabled." % (
                     source.title))
 
+        branch = source.translations_branch
         jobsource = getUtility(IRosettaUploadJobSource)
-        if jobsource.findUnfinishedJobs(source.translations_branch).any():
+        unfinished_jobs = jobsource.findUnfinishedJobs(
+            branch, since=datetime.now(UTC) - timedelta(days=1))
+
+        if unfinished_jobs.any():
             raise ConcurrentUpdateError(
                 "Translations branch for %s has pending translations "
                 "changes.  Not committing." % source.title)
@@ -72,6 +83,39 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         """
         return DirectBranchCommit(db_branch)
 
+    def _prepareBranchCommit(self, db_branch):
+        """Prepare branch for use with `DirectBranchCommit`.
+
+        Create a `DirectBranchCommit` for `db_branch`.  If `db_branch`
+        is not in a format we can commit directly to, try to deal with
+        that.
+
+        :param db_branch: A `Branch`.
+        :return: `DirectBranchCommit`.
+        """
+        # XXX JeroenVermeulen 2009-09-30 bug=375013: It should become
+        # possible again to commit to these branches at some point.
+        # When that happens, remove this workaround and just call
+        # _makeDirectBranchCommit directly.
+        committer = self._makeDirectBranchCommit(db_branch)
+        if not db_branch.stacked_on:
+            # The normal case.
+            return committer
+
+        self.logger.info("Unstacking branch to work around bug 375013.")
+        try:
+            committer.bzrbranch.set_stacked_on_url(None)
+        finally:
+            committer.unlock()
+        self.logger.info("Done unstacking branch.")
+
+        # This may have taken a while, so commit for good
+        # manners.
+        if self.txn:
+            self.txn.commit()
+
+        return self._makeDirectBranchCommit(db_branch)
+
     def _commit(self, source, committer):
         """Commit changes to branch.  Check for race conditions."""
         self._checkForObjections(source)
@@ -81,6 +125,13 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         """Is `revision` an automatic translations commit?"""
         return revision.message == self.commit_message
 
+    def _getRevisionTime(self, revision):
+        """Get timestamp of `revision`."""
+        # The bzr timestamp is a float representing UTC-based seconds
+        # since the epoch.  It stores the timezone as well, but we can
+        # ignore it here.
+        return datetime.fromtimestamp(revision.timestamp, UTC)
+
     def _getLatestTranslationsCommit(self, branch):
         """Get date of last translations commit to `branch`, if any."""
         cutoff_date = datetime.now(UTC) - self.previous_commit_cutoff_age
@@ -89,7 +140,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         repository = branch.repository
         for rev_id in repository.iter_reverse_revision_history(current_rev):
             revision = repository.get_revision(rev_id)
-            revision_date = revision.timestamp
+            revision_date = self._getRevisionTime(revision)
             if self._isTranslationsCommit(revision):
                 return revision_date
 
@@ -107,7 +158,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         self.logger.info("Exporting %s." % source.title)
         self._checkForObjections(source)
 
-        committer = self._makeDirectBranchCommit(source.translations_branch)
+        committer = self._prepareBranchCommit(source.translations_branch)
 
         bzr_branch = committer.bzrbranch
 
@@ -124,6 +175,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
             # transaction that changed them.
             self.logger.debug("Last commit was at %s." % last_commit_date)
             changed_since = last_commit_date - self.fudge_factor
+
+        change_count = 0
 
         try:
             subset = getUtility(IPOTemplateSet).getSubset(
@@ -144,6 +197,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     pofile_contents = pofile.export()
 
                     committer.writeFile(pofile_path, pofile_contents)
+                    change_count += 1
 
                     # We're not actually writing any changes to the
                     # database, but it's not polite to stay in one
@@ -155,7 +209,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     # anything about it any longer.
                     template.clearPOFileCache()
 
-            self._commit(source, committer)
+            if change_count > 0:
+                self._commit(source, committer)
         finally:
             committer.unlock()
 
@@ -192,6 +247,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # Avoid circular imports.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
+
+        if self.options.no_fudge:
+            self.fudge_factor = timedelta(0)
 
         self.logger.info("Exporting to translations branches.")
 

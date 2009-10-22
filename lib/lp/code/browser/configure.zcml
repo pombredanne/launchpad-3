@@ -60,7 +60,7 @@
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+code-import-list"
       class="lp.registry.browser.productseries.ProductSeriesSourceListView"
-      template="../../../canonical/launchpad/templates/sources-list.pt"
+      template="../templates/sources-list.pt"
       permission="zope.Public"
       />
   <browser:page
@@ -444,6 +444,13 @@
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
+        name="+edit-status"
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branch.BranchEditStatusView"
+        facet="branches"
+        permission="launchpad.Edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+edit"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchEditView"
@@ -605,6 +612,9 @@
         <browser:page
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
+        <browser:page
+            name="+fragment"
+            template="../templates/codereviewcomment-fragment.pt"/>
     </browser:pages>
     <browser:page
         name="+reply"
@@ -959,7 +969,7 @@
         name="code"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.hasbranches.IHasBranches"
-        factory="lp.code.browser.branchlisting.HasBranchesBreadcrumb"
+        factory="lp.code.browser.branchlisting.CodeVHostBreadcrumb"
         permission="zope.Public"/>
 
     <adapter

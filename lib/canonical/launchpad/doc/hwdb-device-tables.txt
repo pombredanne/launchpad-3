@@ -1486,7 +1486,7 @@ HWDriverSet.all_package_names() returns a list of distinct package
 names. Note that the package name value None (used in older submissions)
 is not included.
 
-    >>> from canonical.launchpad.database import HWDriver
+    >>> from canonical.launchpad.database.hwdb import HWDriver
     >>> store.add(HWDriver(name='foo', package_name=None))
     <HWDriver at...
     >>> for package_name in driver_set.all_package_names():

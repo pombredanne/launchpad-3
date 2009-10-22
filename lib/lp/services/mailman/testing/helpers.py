@@ -103,7 +103,7 @@ def create_list(team_name):
         'Open Team']
     browser.getControl('Create').click()
     # Create the mailing list.
-    browser.getLink('Configure mailing list').click()
+    browser.getLink('Create a mailing list').click()
     browser.getControl('Apply for Mailing List').click()
     mailing_list = review_list(team_name)
     # pylint: disable-msg=F0401

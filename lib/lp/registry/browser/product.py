@@ -15,7 +15,6 @@ __all__ = [
     'ProductDistributionsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
-    'ProductEditNavigationMenu',
     'ProductEditPeopleView',
     'ProductEditView',
     'ProductFacets',
@@ -47,7 +46,6 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -58,13 +56,13 @@ from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from lp.app.interfaces.headings import IEditableContextTitle
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -91,6 +89,7 @@ from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
@@ -269,7 +268,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         summary = 'Branches for %s' % self.context.displayname
         return Link('', text, summary)
 
@@ -313,7 +312,7 @@ class ProductNavigationMenu(NavigationMenu):
         return Link('+branchvisibility', text)
 
 
-class ProductEditLinksMixin:
+class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
     """A mixin class for menus that need Product edit links."""
 
     @enabled_with_permission('launchpad.Edit')
@@ -341,22 +340,9 @@ class ProductEditLinksMixin:
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
-
 
 class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
-
-
-class ProductEditNavigationMenu(NavigationMenu, ProductEditLinksMixin):
-    """A sub-menu for different aspects of editing a Product's details."""
-
-    usedfor = IProductEditMenu
-    facet = 'overview'
-    title = 'Change project'
-    links = ('edit', 'branding', 'reassign', 'review_license', 'administer')
 
 
 class IProductActionMenu(Interface):
@@ -391,6 +377,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'review_license',
         'branchvisibility',
         'rdf',
+        'branding',
         ]
 
     def top_contributors(self):
@@ -398,7 +385,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         return Link('+topcontributors', text, icon='info')
 
     def distributions(self):
-        text = 'Packaging information'
+        text = 'Distribution packaging information'
         return Link('+distributions', text, icon='info')
 
     def packages(self):
@@ -441,7 +428,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         return Link('+branchvisibility', text, icon='edit')
 
 
-class ProductBugsMenu(ApplicationMenu):
+class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IProduct
     facet = 'bugs'
@@ -470,37 +457,12 @@ class ProductBugsMenu(ApplicationMenu):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class ProductSpecificationsMenu(ApplicationMenu):
-
+class ProductSpecificationsMenu(NavigationMenu,
+                                HasSpecificationsMenuMixin):
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'table', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        summary = 'Show all specifications for %s' %  self.context.title
-        return Link('+specs?show=all', text, summary, icon='info')
-
-    def doc(self):
-        text = 'List documentation'
-        summary = 'List all complete informational specifications'
-        return Link('+documentation', text, summary,
-            icon='info')
-
-    def table(self):
-        text = 'Assignments'
-        summary = 'Show the full assignment of work, drafting and approving'
-        return Link('+assignments', text, summary, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = ['listall', 'doc', 'assignments', 'new']
 
 
 def _sort_distros(a, b):
@@ -580,8 +542,9 @@ class ProductWithSeries:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid delegates taking them
-    # over.
+    # `serieses` and `development_focus` need to be declared as class
+    # attributes so that this class will not delegate the actual instance
+    # variables to self.product, which would bypass the caching.
     serieses = None
     development_focus = None
     delegates(IProduct, 'product')
@@ -589,17 +552,24 @@ class ProductWithSeries:
     def __init__(self, product):
         self.product = product
         self.serieses = []
-        self.series_by_id = {}
+        for series in self.product.serieses:
+            series_with_releases = SeriesWithReleases(series, parent=self)
+            self.serieses.append(series_with_releases)
+            if self.product.development_focus == series:
+                self.development_focus = series_with_releases
 
-    def setSeries(self, serieses):
-        """Set the serieses to the provided collection."""
-        self.serieses = serieses
-        self.series_by_id = dict(
-            (series.id, series) for series in self.serieses)
-
-    def getSeriesById(self, id):
-        """Look up and return a ProductSeries by id."""
-        return self.series_by_id[id]
+        # Get all of the releases for all of the serieses in a single
+        # query.  The query sorts the releases properly so we know the
+        # resulting list is sorted correctly.
+        series_by_id = dict((series.id, series) for series in self.serieses)
+        self.release_by_id = {}
+        milestones_and_releases = list(
+            self.product.getMilestonesAndReleases())
+        for milestone, release in milestones_and_releases:
+            series = series_by_id[milestone.productseries.id]
+            release_delegate = ReleaseWithFiles(release, parent=series)
+            series.addRelease(release_delegate)
+            self.release_by_id[release.id] = release_delegate
 
 
 class SeriesWithReleases:
@@ -610,13 +580,17 @@ class SeriesWithReleases:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid delegates taking them
-    # over.
+    # `parent` and `releases` need to be declared as class attributes so that
+    # this class will not delegate the actual instance variables to
+    # self.series, which would bypass the caching for self.releases and would
+    # raise an AttributeError for self.parent.
+    parent = None
     releases = None
     delegates(IProductSeries, 'series')
 
-    def __init__(self, series):
+    def __init__(self, series, parent):
         self.series = series
+        self.parent = parent
         self.releases = []
 
     def addRelease(self, release):
@@ -648,17 +622,37 @@ class ReleaseWithFiles:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid delegates taking them
-    # over.
-    files = None
+    # `parent` needs to be declared as class attributes so that
+    # this class will not delegate the actual instance variables to
+    # self.release, which would raise an AttributeError.
+    parent = None
     delegates(IProductRelease, 'release')
 
-    def __init__(self, release):
+    def __init__(self, release, parent):
         self.release = release
-        self.files = []
+        self.parent = parent
+        self._files = None
 
-    def addFile(self, file):
-        self.files.append(file)
+    @property
+    def files(self):
+        """Cache the release files for all the releases in the product."""
+        if self._files is None:
+            # Get all of the files for all of the releases.  The query
+            # returns all releases sorted properly.
+            product = self.parent.parent
+            release_delegates = product.release_by_id.values()
+            files = getUtility(IProductReleaseSet).getFilesForReleases(
+                release_delegates)
+            for release_delegate in release_delegates:
+                release_delegate._files = []
+            for file in files:
+                id = file.productrelease.id
+                release_delegate = product.release_by_id[id]
+                release_delegate._files.append(file)
+
+        # self._files was set above, since self is actually in the
+        # release_delegates variable.
+        return self._files
 
     @property
     def name_with_codename(self):
@@ -684,41 +678,7 @@ class ProductDownloadFileMixin:
         Decorated classes are created, and they contain cached data
         obtained with a few queries rather than many iterated queries.
         """
-        # Create the decorated product and set the list of series.
-        original_product = self.context
-
-        product_with_series = ProductWithSeries(original_product)
-        serieses = []
-        for series in original_product.serieses:
-            series_with_releases = SeriesWithReleases(series)
-            serieses.append(series_with_releases)
-            if original_product.development_focus == series:
-                product_with_series.development_focus = series_with_releases
-
-        product_with_series.setSeries(serieses)
-
-        # Get all of the releases for all of the serieses in a single
-        # query.  The query sorts the releases properly so we know the
-        # resulting list is sorted correctly.
-        release_by_id = {}
-        milestones_and_releases = list(
-            original_product.getMilestonesAndReleases())
-        for milestone, release in milestones_and_releases:
-            series = product_with_series.getSeriesById(
-                milestone.productseries.id)
-            decorated_release = ReleaseWithFiles(release)
-            series.addRelease(decorated_release)
-            release_by_id[release.id] = decorated_release
-
-        # Get all of the files for all of the releases.  The query
-        # returns all releases sorted properly.
-        releases = [release for milestone, release in milestones_and_releases]
-        files = getUtility(IProductReleaseSet).getFilesForReleases(releases)
-        for file in files:
-            release = release_by_id[file.productrelease.id]
-            release.addFile(file)
-
-        return product_with_series
+        return ProductWithSeries(self.context)
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -1728,8 +1688,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         old_owner = self.context.owner
         old_driver = self.context.driver
         self.updateContextFromData(data)
-        self._reassignProductDependencies(
-            self.context, old_owner, self.context.owner)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
                 "Successfully changed the maintainer to %s"
@@ -1752,22 +1710,3 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-
-    def _reassignProductDependencies(self, product, oldOwner, newOwner):
-        """Reassign ownership of objects related to this product.
-
-        Objects related to this product includes: ProductSeries,
-        ProductReleases and TranslationImportQueueEntries that are owned
-        by oldOwner of the product.
-
-        """
-        import_queue = getUtility(ITranslationImportQueue)
-        for entry in import_queue.getAllEntries(target=product):
-            if entry.importer == oldOwner:
-                removeSecurityProxy(entry).importer = newOwner
-        for series in product.serieses:
-            if series.owner == oldOwner:
-                series.owner = newOwner
-        for release in product.releases:
-            if release.owner == oldOwner:
-                release.owner = newOwner

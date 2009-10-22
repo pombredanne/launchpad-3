@@ -659,6 +659,30 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'message:\n'
         '  rev2d\n' % canonical_url(bmp), message)
 
+    def test_getRevisionMessage_with_related_superseded_BMP(self):
+        """Superseded proposals are skipped."""
+        job, bmp = self.makeJobAndBMP()
+        bmp2 = bmp.resubmit(bmp.registrant)
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
+        message = job.getRevisionMessage('rev2d-id', 1)
+        self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
+        'Related merge proposals:\n'
+        '  %s\n'
+        '  proposed by: J. Random Hacker (jrandom)\n'
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n' % canonical_url(bmp2), message)
+
     def test_getRevisionMessage_with_BMP_with_requested_review(self):
         """Information about incomplete reviews is omitted.
 
@@ -956,6 +980,25 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.assertEqual(len(entries), 1)
         entry = entries[0]
         self.assertEqual(pot_path, entry.path)
+
+    def test_init_translation_file_lists_skip_dirs(self):
+        # The method _init_translation_file_lists extracts all translation
+        # files from the branch but does not add changed directories to the
+        # template_files_changed and translation_files_changed lists .
+        pot_path = u"subdir/foo.pot"
+        pot_content = self.factory.getUniqueString()
+        po_path = u"subdir/foo.po"
+        po_content = self.factory.getUniqueString()
+        self._makeBranchWithTreeAndFiles(((pot_path, pot_content),
+                                          (po_path, po_content)))
+        self._makeProductSeries(TranslationsBranchImportMode.NO_IMPORT)
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION, True)
+        job._init_translation_file_lists()
+
+        self.assertEqual([(pot_path, pot_content)],
+                         job.template_files_changed)
+        self.assertEqual([(po_path, po_content)],
+                         job.translation_files_changed)
 
     def test_upload_xpi_template(self):
         # XPI templates are indentified by a special name. They are imported

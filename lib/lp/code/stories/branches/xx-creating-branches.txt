@@ -38,8 +38,8 @@ Branch URLs are not valid for hosted branches.
     ...     print extract_text(branch_info)
     >>> print_branch_info(browser)
     Branch information
-    Project: Redfish (Unspecified)
     Owner: Sample Person
+    Project: Redfish (Unspecified)
     Status: Development
 
 
@@ -72,8 +72,8 @@ Branch URLs are required for mirrored branches.
 
     >>> print_branch_info(browser)
     Branch information
-    Project: Redfish (Unspecified)
     Owner: Sample Person
+    Project: Redfish (Unspecified)
     Status: Development
     Location: http://example.com/mirrored-branch
     Last mirrored: Not mirrored yet
@@ -97,8 +97,8 @@ A remote branch may have a URL, but doesn't have to.
     >>> browser.getControl('Register Branch').click()
     >>> print_branch_info(browser)
     Branch information
-    Project: Redfish (Unspecified)
     Owner: Sample Person
+    Project: Redfish (Unspecified)
     Status: Development
     Location: http://example.com/remote-branch
 
@@ -144,13 +144,15 @@ matching for the angle brackets of an enclosing tag.
     >>> user_browser.url
     'http://code.launchpad.dev/~no-priv/applets/main'
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'privacy'))
-    This branch is public
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> content = find_tag_by_id(user_browser.contents, 'document')
+    >>> print extract_text(find_tag_by_id(content, 'registration'))
     Created by No Privileges Person on ... and last modified on ...
-    lp://dev/~no-priv/applets/main ...
-    Gnome Applets ...
-    http://example.com/applets/main...
+    >>> print extract_text(find_tag_by_id(content, 'privacy'))
+    This branch is public
+    >>> print extract_text(content.h1)
+    lp://dev/~no-priv/applets/main
+    >>> print extract_text(find_tag_by_id(content, 'mirror-location'))
+    Location: http://example.com/applets/main
 
 
 This page includes a link to other branches associated
@@ -316,7 +318,7 @@ Trailing slashes on URLs are removed.
     >>> user_browser.getControl('Register Branch').click()
     >>> print_tag_with_id(user_browser.contents, 'branch-info')
     Branch information
-    Project: ...
+    Owner: ...
     ...
     Location: sftp://example.com/~lifeless/pyresources
     ...

@@ -22,7 +22,7 @@ The languages that are supported are displayed with an asterisk.
 
     >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
     >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
-    
+
     >>> browser.getControl('Language').displayOptions
     ['English (en) *', 'Portuguese (Brazil) (pt_BR)']
 
@@ -78,7 +78,7 @@ from asking a question in the language of his choice.
     >>> browser.url
     '.../ubuntu/+question/...'
     >>> print browser.title
-    Questions for...
+    Questions : Ubuntu
 
 The page reports the question language both in the content and in the
 markup. Search engine robots and browsers will use the lang and dir
@@ -155,5 +155,5 @@ new question.
     >>> browser.url
     '.../ubuntu/+question/...'
     >>> print browser.title.decode('utf-8')
-    Questions for...
+    Questions : Ubuntu
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-details')

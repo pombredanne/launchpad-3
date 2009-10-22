@@ -304,16 +304,18 @@ Remove the testing PPA dependency to not influence subsequent tests.
     >>> login(ANONYMOUS)
 
 The ArchiveView also provides the latest updates ordered by the date
-they were published:
+they were published. We include any relevant builds for failures.
 
     >>> def print_latest_updates(latest_updates):
     ...     for update in latest_updates:
-    ...         print "%s - %s" % (
+    ...         arch_tags = [build.arch_tag for build in update['builds']]
+    ...         print "%s - %s %s" % (
     ...             update['title'],
-    ...             update['status']
+    ...             update['status'],
+    ...             " ".join(arch_tags),
     ...             )
     >>> print_latest_updates(view.latest_updates)
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
     iceweasel - Successfully built
 
@@ -326,7 +328,7 @@ is from most recent.
     >>> login(ANONYMOUS)
     >>> print_latest_updates(view.latest_updates)
     iceweasel - Successfully built
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
 
 The ArchiveView also includes a helper method to return the number of
@@ -1284,16 +1286,15 @@ Then we will create a testing publication, that will be restricted.
     >>> hoary = ubuntu.getSeries('hoary')
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
-    >>> private_source = test_publisher.getPubSource(
-    ...     sourcename="private", version="1.0", archive=cprov.archive)
-
+    >>> private_source = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
     >>> transaction.commit()
 
 Now, as Celso we will try to copy the just created 'private' source to
 the public Ubuntu-team PPA, which is empty.
 
     >>> print private_source.displayname
-    private 1.0 in hoary
+    foocomm 2.0-1 in hoary
 
     >>> ubuntu_team_ppa.getPublishedSources().count()
     0
@@ -1319,14 +1320,14 @@ it via a page notification.
     >>> for notification in view.request.response.notifications:
     ...     print extract_text(notification.message)
     Packages copied to PPA for Ubuntu Team:
-    Delayed copy of private - 1.0 (source)
+    Delayed copy of foocomm - 2.0-1 (source)
 
 The delayed-copy request is waiting to be processed in the ACCEPTED
 upload queue.
 
     >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
     >>> copy = getUtility(IPackageUploadSet).findSourceUpload(
-    ...     'private', '1.0', ubuntu_team_ppa, ubuntu)
+    ...     'foocomm', '2.0-1', ubuntu_team_ppa, ubuntu)
 
     >>> print copy.status.name
     ACCEPTED

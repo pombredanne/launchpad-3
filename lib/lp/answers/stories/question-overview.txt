@@ -53,7 +53,7 @@ question page.
 
     >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
     >>> print browser.title
-    Questions for Mozilla Firefox...
+    Questions : Mozilla Firefox
     >>> print find_main_content(browser.contents).first('h1').renderContents()
     Problem showing the SVG demo on W3C site
 
@@ -80,7 +80,7 @@ The distribution home page also has a link to the 'Answers' facet:
     'http://answers.launchpad.dev/ubuntu'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions for Ubuntu
+    Questions : Ubuntu
     >>> browser.getLink('Ask a question')
     <Link...>
 
@@ -103,8 +103,8 @@ the Answers facet.
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution'
     >>> browser.getLink('Answers').click()
-    >>> print browser.title
-    Questions for evolution in Ubuntu Hoary...
+    >>> browser.title
+    'Questions : \xe2\x80\x9cevolution\xe2\x80\x9d source package : 5.04 : Ubuntu'
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/hoary/+source/evolution/+addquestion'
 
@@ -124,8 +124,8 @@ page:
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
     >>> browser.getLink('Answers').click()
-    >>> print browser.title
-    Questions for mozilla-firefox in ubuntu
+    >>> browser.title
+    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/+source/mozilla-firefox/+addquestion'
     >>> browser.getLink('Open').url
@@ -166,10 +166,10 @@ involving a person.
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/~name16'
     >>> browser.getLink('Answers').click()
-    >>> browser.title
-    'Questions involving Foo Bar'
+    >>> print browser.title
+    Questions : Foo Bar
     >>> print find_main_content(browser.contents).first('h1').renderContents()
-    Questions involving Foo Bar
+    Questions for Foo Bar
     >>> browser.getLink('Slow system').url
     '.../ubuntu/+question/7'
 

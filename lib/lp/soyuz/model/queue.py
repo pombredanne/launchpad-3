@@ -33,6 +33,7 @@ from zope.interface import implements
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.archiveuploader.utils import safe_fix_maintainer
 from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
@@ -487,6 +488,26 @@ class PackageUpload(SQLBase):
         else:
             return None
 
+    @property
+    def my_source_package_release(self):
+        """The source package release related to this queue item.
+
+        al-maisan, Wed, 30 Sep 2009 17:58:31 +0200:
+        The cached property version above behaves very finicky in
+        tests and I've had a *hell* of a time revising these and
+        making them pass.
+
+        In any case, Celso's advice was to stay away from it
+        and I am hence introducing this non-cached variant for
+        usage inside the content class.
+        """
+        if self.sources is not None and self.sources.count() > 0:
+            return self.sources[0].sourcepackagerelease
+        elif self.builds is not None and self.builds.count() > 0:
+            return self.builds[0].build.sourcepackagerelease
+        else:
+            return None
+
     def realiseUpload(self, logger=None):
         """See `IPackageUpload`."""
         assert self.status == PackageUploadStatus.ACCEPTED, (
@@ -520,6 +541,13 @@ class PackageUpload(SQLBase):
         if self.is_delayed_copy:
             for pub_record in publishing_records:
                 pub_record.overrideFromAncestry()
+
+                # Grab the .changes file of the original source package while
+                # it's available.
+                changes_file = None
+                if ISourcePackagePublishingHistory.providedBy(pub_record):
+                    changes_file = pub_record.sourcepackagerelease.package_upload.changesfile
+
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)
@@ -528,6 +556,17 @@ class PackageUpload(SQLBase):
                         config.builddmaster.root, self.distroseries)
                     pub_record.createMissingBuilds(
                         pas_verify=pas_verify, logger=logger)
+
+                if changes_file is not None:
+                    debug(
+                        logger,
+                        "sending email to %s" % self.distroseries.changeslist)
+                    changes_file_object = StringIO.StringIO(changes_file.read())
+                    self.notify(
+                        announce_list=self.distroseries.changeslist,
+                        changes_file_object=changes_file_object,
+                        allow_unsigned=True, logger=logger)
+                    self.syncUpdate()
 
         self.setDone()
 
@@ -563,9 +602,13 @@ class PackageUpload(SQLBase):
         """Strip any PGP signature from the supplied changes lines."""
         text = "".join(changes_lines)
         signed_message = signed_message_from_string(text)
-        return signed_message.signedContent.splitlines(True)
+        # For unsigned '.changes' files we'll get a None `signedContent`.
+        if signed_message.signedContent is not None:
+            return signed_message.signedContent.splitlines(True)
+        else:
+            return changes_lines
 
-    def _getChangesDict(self, changes_file_object=None):
+    def _getChangesDict(self, changes_file_object=None, allow_unsigned=None):
         """Return a dictionary with changes file tags in it."""
         changes_lines = None
         if changes_file_object is None:
@@ -579,7 +622,14 @@ class PackageUpload(SQLBase):
         if hasattr(changes_file_object, "seek"):
             changes_file_object.seek(0)
 
-        unsigned = not self.signing_key
+        # When the 'changesfile' content comes from a different
+        # `PackageUpload` instance (e.g. when dealing with delayed copies)
+        # we need to be able to specify the "allow unsigned" flag explicitly.
+        # In that case the presence of the signing key is immaterial.
+        if allow_unsigned is None:
+            unsigned = not self.signing_key
+        else:
+            unsigned = allow_unsigned
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
         if self.isPPA():
@@ -687,7 +737,7 @@ class PackageUpload(SQLBase):
             message.ORIGIN = '\nOrigin: %s' % changes['origin']
 
         if self.sources or self.builds:
-            message.SPR_URL = canonical_url(self.sourcepackagerelease)
+            message.SPR_URL = canonical_url(self.my_source_package_release)
 
     def _sendRejectionNotification(
         self, recipients, changes_lines, changes, summary_text, dry_run,
@@ -698,14 +748,16 @@ class PackageUpload(SQLBase):
             """PPA rejected message."""
             template = get_email_template('ppa-upload-rejection.txt')
             SUMMARY = sanitize_string(summary_text)
-            CHANGESFILE = sanitize_string("".join(changes_lines))
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment("".join(changes_lines)))
             USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
             template = get_email_template('upload-rejection.txt')
             SUMMARY = sanitize_string(summary_text)
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -782,7 +834,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "New"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -796,7 +849,8 @@ class PackageUpload(SQLBase):
             STATUS = "Waiting for approval"
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -814,7 +868,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -832,14 +887,16 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = guess_encoding(
+                ChangesFile.formatChangesComment("".join(changes_lines)))
 
         class AnnouncementMessage:
             template = get_email_template('upload-announcement.txt')
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -907,7 +964,8 @@ class PackageUpload(SQLBase):
                     self.displayname)
 
     def notify(self, announce_list=None, summary_text=None,
-               changes_file_object=None, logger=None, dry_run=False):
+               changes_file_object=None, logger=None, dry_run=False,
+               allow_unsigned=None):
         """See `IPackageUpload`."""
 
         self.logger = logger
@@ -920,11 +978,6 @@ class PackageUpload(SQLBase):
             debug(self.logger, "Not sending email, upload contains binaries.")
             return
 
-        # Get the changes file from the librarian and parse the tags to
-        # a dictionary.  This can throw exceptions but since the tag file
-        # already will have parsed elsewhere we don't need to worry about that
-        # here.  Any exceptions from the librarian can be left to the caller.
-
         # XXX julian 2007-05-11:
         # Requiring an open changesfile object is a bit ugly but it is
         # required because of several problems:
@@ -934,7 +987,8 @@ class PackageUpload(SQLBase):
         #    the email's summary section.
         # For now, it's just easier to re-read the original file if the caller
         # requires us to do that instead of using the librarian's copy.
-        changes, changes_lines = self._getChangesDict(changes_file_object)
+        changes, changes_lines = self._getChangesDict(
+            changes_file_object, allow_unsigned=allow_unsigned)
 
         # "files" will contain a list of tuples of filename,component,section.
         # If files is empty, we don't need to send an email if this is not
@@ -1087,7 +1141,7 @@ class PackageUpload(SQLBase):
         # the section of the source package uploaded in order to facilitate
         # filtering on the part of the email recipients.
         if self.sources:
-            spr = self.sourcepackagerelease
+            spr = self.my_source_package_release
             xlp_component_header = 'component=%s, section=%s' % (
                 spr.component.name, spr.section.name)
             extra_headers['X-Launchpad-Component'] = xlp_component_header

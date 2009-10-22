@@ -5,14 +5,14 @@
 
   <div class="two-column-list">
 
-    <dl id="partof" tal:condition="context/product">
-      <dt>Project:</dt>
-      <dd tal:content="structure context/product/fmt:link" />
-    </dl>
-
     <dl id="owner">
       <dt>Owner:</dt>
       <dd tal:content="structure context/owner/fmt:link" />
+    </dl>
+
+    <dl id="partof" tal:condition="context/product">
+      <dt>Project:</dt>
+      <dd tal:content="structure context/product/fmt:link" />
     </dl>
 
     <dl id="default-reviewer" tal:condition="not:view/owner_is_reviewer">
@@ -22,23 +22,33 @@
 
     <dl id="status">
       <dt>Status:</dt>
-      <dd
-        id="branch-details-status-value"
-        tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
-        tal:content="structure context/lifecycle_status/title" />
+      <dd>
+        <span id="branch-details-status-value">
+        <span tal:attributes="class string:value branchstatus${context/lifecycle_status/name}"
+              tal:content="structure context/lifecycle_status/title" />&nbsp;
+        <a href="+edit-status">
+          <img class="editicon" src="/@@/edit"/>
+        </a>
+        </span>
+      </dd>
     </dl>
+  </div>
 
-    <tal:mirror-branch condition="context/branch_type/enumvalue:MIRRORED">
+  <div tal:condition="context/branch_type/enumvalue:MIRRORED">
+    <div>
       <dl id="mirror-location"
           tal:condition="view/mirror_location">
         <dt>Location:</dt>
         <dd tal:content="view/mirror_location" />
       </dl>
-      <dl tal:replace="structure context/@@+mirror-status" />
-    </tal:mirror-branch>
+    </div>
+    <div class="two-column-list">
+      <tal:mirror-status replace="structure context/@@+mirror-status" />
+    </div>
+  </div>
 
-    <dl id="remote-location"
-        tal:condition="context/branch_type/enumvalue:REMOTE">
+  <div tal:condition="context/branch_type/enumvalue:REMOTE">
+    <dl id="remote-location">
       <dt>Location:</dt>
       <dd
         tal:condition="context/url"

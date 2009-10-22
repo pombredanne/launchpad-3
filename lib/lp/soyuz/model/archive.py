@@ -56,7 +56,7 @@ from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, default_name_by_purpose)
+    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -259,6 +259,7 @@ class Archive(SQLBase):
         archive_postfixes = {
             ArchivePurpose.PRIMARY : '',
             ArchivePurpose.PARTNER : '-partner',
+            ArchivePurpose.DEBUG : '-debug',
         }
 
         if self.is_ppa:
@@ -320,8 +321,10 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
             clauses.append("""
                 SourcePackageRelease.version = %s
             """ % sqlvalues(version))
@@ -442,8 +445,10 @@ class Archive(SQLBase):
     def sources_size(self):
         """See `IArchive`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(
-            (LibraryFileContent),
+        result = store.find((
+            LibraryFileAlias.filename,
+            LibraryFileContent.sha1,
+            LibraryFileContent.filesize,),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -451,15 +456,22 @@ class Archive(SQLBase):
             SourcePackageReleaseFile.libraryfileID == LibraryFileAlias.id,
             LibraryFileAlias.contentID == LibraryFileContent.id)
 
-        # We need to select distinct `LibraryFileContent`s because that how
-        # they end up published in the archive disk. Duplications may happen
-        # because of the publishing records join, the same `LibraryFileAlias`
-        # gets logically re-published in several locations and the fact that
-        # the same `LibraryFileContent` can be shared by multiple
-        # `LibraryFileAlias.` (librarian-gc).
+        # Note: we can't use the LFC.sha1 instead of LFA.filename above
+        # because some archives publish the same file content with different
+        # names in the archive, so although the duplication will be removed
+        # in the librarian by the librarian-gc, we do not (yet) remove
+        # this duplication in the pool when the filenames are different.
+
+        # We need to select distinct on the (filename, filesize) result
+        # so that we only count duplicate files (with the same filename)
+        # once (ie. the same tarball used for different distroseries) as
+        # we do avoid this duplication in the pool when the names are
+        # the same.
         result = result.config(distinct=True)
-        size = sum([lfc.filesize for lfc in result])
-        return size
+
+        # Using result.sum(LibraryFileContent.filesize) throws errors when
+        # the result is empty, so instead:
+        return sum(result.values(LibraryFileContent.filesize))
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
@@ -491,8 +503,11 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
+
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
@@ -1384,6 +1399,19 @@ class ArchiveSet:
             return 0
         return int(size)
 
+    def getPPAOwnedByPerson(self, person, name=None):
+        """See `IArchiveSet`."""
+        store = Store.of(person)
+        clause = [
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.owner == person]
+        if name is not None:
+            clause.append(Archive.name == name)
+        result = store.find(Archive, *clause).order_by(Archive.id).first()
+        if name is not None and result is None:
+            raise NoSuchPPA(name)
+        return result
+
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
         # Avoiding circular imports.
@@ -1396,14 +1424,15 @@ class ArchiveSet:
             TeamParticipation.team == Archive.ownerID,
             TeamParticipation.person == user,
             )
-        third_part_upload_acl = store.find(
+        third_party_upload_acl = store.find(
             Archive,
             Archive.purpose == ArchivePurpose.PPA,
             ArchivePermission.archiveID == Archive.id,
-            ArchivePermission.person == user,
+            TeamParticipation.person == user,
+            TeamParticipation.team == ArchivePermission.personID,
             )
 
-        result = direct_membership.union(third_part_upload_acl)
+        result = direct_membership.union(third_party_upload_acl)
         result.order_by(Archive.displayname)
 
         return result

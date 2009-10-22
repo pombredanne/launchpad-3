@@ -57,7 +57,7 @@ class HWDBUploadView(LaunchpadFormView):
             info = (HWSubmissionMissingFields,
                     'Missing form fields: %s' % missing_fields, None)
             errorUtility = getUtility(IErrorReportingUtility)
-            errorUtility.raising(info, self.request)
+            errorUtility.handling(info, self.request)
             self.addCustomHeader(
                 'Error: Required fields not contained in POST data: '
                 + missing_fields)

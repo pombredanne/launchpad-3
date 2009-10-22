@@ -18,10 +18,6 @@
   </tal:devmode>
 </metal:block>
 
-<tal:heading metal:fill-slot="heading">
-  <h1 tal:content="view/page_title"/>
-</tal:heading>
-
 <tal:side metal:fill-slot="side">
     <tal:menu replace="structure view/@@+global-actions" />
 

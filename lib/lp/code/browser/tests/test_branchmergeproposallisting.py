@@ -5,9 +5,12 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 from unittest import TestLoader
 
+import pytz
 import transaction
+from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -16,6 +19,7 @@ from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView, BranchMergeProposalListingView)
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 
 _default = object()
 
@@ -249,6 +253,44 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
             reviewer, 'subject', vote=CodeReviewVote.APPROVE)
         self.assertReviewGroupForReviewer(
             reviewer, ActiveReviewsView.ARE_DOING)
+
+
+class ActiveReviewSortingTest(TestCaseWithFactory):
+    """Test the sorting of the active review groups."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_oldest_first(self):
+        # The oldest requested reviews should be first.
+        product = self.factory.makeProduct()
+        bmp1 = self.factory.makeBranchMergeProposal(product=product)
+        login_person(bmp1.source_branch.owner)
+        bmp1.requestReview(datetime(2009,6,1,tzinfo=pytz.UTC))
+        bmp2 = self.factory.makeBranchMergeProposal(product=product)
+        login_person(bmp2.source_branch.owner)
+        bmp2.requestReview(datetime(2009,3,1,tzinfo=pytz.UTC))
+        bmp3 = self.factory.makeBranchMergeProposal(product=product)
+        login_person(bmp3.source_branch.owner)
+        bmp3.requestReview(datetime(2009,1,1,tzinfo=pytz.UTC))
+        login(ANONYMOUS)
+        view = create_initialized_view(product, name='+activereviews')
+        self.assertEqual(
+            [bmp3, bmp2, bmp1],
+            [item.context for item in view.review_groups[view.OTHER]])
+
+
+class NoActiveReviewsForBranchTest(TestCaseWithFactory):
+    """A branch should not have +activereviews."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_active_reviews(self):
+        # 404 is more apt than an oops.
+        branch = self.factory.makeProductBranch()
+        self.assertRaises(
+            NotFound,
+            create_initialized_view,
+            branch, name='+activereviews')
 
 
 def test_suite():

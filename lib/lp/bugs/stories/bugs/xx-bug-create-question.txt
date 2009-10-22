@@ -103,7 +103,7 @@ No Privileges Person case see that the question was created from a
 bug. He uses the link to Related bug to return to the bug.
 
     >>> user_browser.title
-    'Questions for \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package...
+    'Questions : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'original-bug'))
@@ -239,10 +239,10 @@ it is still in the Open status.
     ...     'Copy, Cut and Delete operations should work on '
     ...     'selections').click()
     >>> print user_browser.title
-    Questions for Jokosher...
+    Questions : Jokosher
 
-    >>> content = find_main_content(user_browser.contents)
-    >>> print extract_text(content(['img'], src='/@@/question')[0].parent)
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'registration'))
     Open Question #..., asked ... by Foo Bar
 
 No Privileges Person uses his browser's back button to view the bug

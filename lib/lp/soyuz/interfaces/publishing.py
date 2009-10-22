@@ -18,6 +18,7 @@ __all__ = [
     'ISecureSourcePackagePublishingHistory',
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
+    'MissingSymlinkInPool',
     'NotInPool',
     'PackagePublishingPriority',
     'PackagePublishingStatus',
@@ -60,6 +61,15 @@ class PoolFileOverwriteError(Exception):
     requires manual intervention in the archive.
     """
 
+class MissingSymlinkInPool(Exception):
+    """Raised when there is a missing symlink in pool.
+
+    This condition is ignored, similarly to what we do for `NotInPool`,
+    since the pool entry requested to be removed is not there anymore.
+
+    The corresponding record is marked as removed and the process
+    continues.
+    """
 
 class PackagePublishingStatus(DBEnumeratedType):
     """Package Publishing Status
@@ -498,7 +508,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
     meta_sourcepackagerelease = Attribute(
-        "Return an IDistribuitionSourcePackageRelease meta object "
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute")
     meta_supersededby = Attribute(
         "Return an IDistribuitionSourcePackageRelease meta object "

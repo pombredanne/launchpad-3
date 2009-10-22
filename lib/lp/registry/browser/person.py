@@ -214,17 +214,17 @@ from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, stepthrough, stepto)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView,
+    LaunchpadFormView, Link, Navigation, NavigationMenu, structured,
+    StandardLaunchpadFacets, action, canonical_url, custom_widget,
+    enabled_with_permission, stepthrough, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
-from canonical.launchpad.webapp.menu import (
-    get_current_view, structured, NavigationMenu)
+from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from lazr.uri import URI, InvalidURIError
@@ -595,12 +595,10 @@ class TeamInvitationView(LaunchpadFormView):
         return "Make %s a member of %s" % (
             self.context.person.displayname, self.context.team.displayname)
 
-    # XXX BarryWarsaw 2009-09-14 bug 429663.  Because this view is subordinate
-    # to the ~person in its context, no +hierarchy adapter can be found.  This
-    # means the page has no breadcrumbs and no proper page title.  For
-    # expediency during the 3.0 conversion work, we'll just set the page title
-    # to its label and move on.
-    page_title = label
+    @property
+    def page_title(self):
+        return smartquote(
+            '"%s" team invitation') % self.context.team.displayname
 
     def browserDefault(self, request):
         return self, ()
@@ -713,7 +711,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.displayname)
         return Link('', text, summary)
@@ -775,7 +773,7 @@ class PersonBugsMenu(NavigationMenu):
         return Link('+commentedbugs', text, summary=summary)
 
 
-class PersonSpecsMenu(ApplicationMenu):
+class PersonSpecsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'specifications'
@@ -786,28 +784,28 @@ class PersonSpecsMenu(ApplicationMenu):
     def registrant(self):
         text = 'Registrant'
         summary = 'List specs registered by %s' % self.context.displayname
-        return Link('+specs?role=registrant', text, summary, icon='spec')
+        return Link('+specs?role=registrant', text, summary, icon='blueprint')
 
     def approver(self):
         text = 'Approver'
         summary = 'List specs with %s is supposed to approve' % (
             self.context.displayname)
-        return Link('+specs?role=approver', text, summary, icon='spec')
+        return Link('+specs?role=approver', text, summary, icon='blueprint')
 
     def assignee(self):
         text = 'Assignee'
         summary = 'List specs for which %s is the assignee' % (
             self.context.displayname)
-        return Link('+specs?role=assignee', text, summary, icon='spec')
+        return Link('+specs?role=assignee', text, summary, icon='blueprint')
 
     def drafter(self):
         text = 'Drafter'
         summary = 'List specs drafted by %s' % self.context.displayname
-        return Link('+specs?role=drafter', text, summary, icon='spec')
+        return Link('+specs?role=drafter', text, summary, icon='blueprint')
 
     def subscriber(self):
         text = 'Subscriber'
-        return Link('+specs?role=subscriber', text, icon='spec')
+        return Link('+specs?role=subscriber', text, icon='blueprint')
 
     def feedback(self):
         text = 'Feedback requests'
@@ -844,7 +842,7 @@ class CommonMenuLinks:
 
     def related_software_summary(self):
         target = '+related-software'
-        text = 'Summary'
+        text = 'Related software'
         return Link(target, text, icon='info')
 
     def maintained(self):
@@ -856,21 +854,21 @@ class CommonMenuLinks:
     def uploaded(self):
         target = '+uploaded-packages'
         text = 'Uploaded packages'
-        return Link(target, text, icon='info')
+        enabled = bool(
+            self.person.getLatestUploadedButNotMaintainedPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def ppa(self):
-        # XXX: salgado, 2009-09-09, bug=426899: Need to conditionally disable
-        # this link.
         target = '+ppa-packages'
-        text = 'PPA packages'
-        return Link(target, text, icon='info')
+        text = 'Related PPA packages'
+        enabled = bool(self.person.getLatestUploadedPPAPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def projects(self):
-        # XXX: salgado, 2009-09-09, bug=426900: Need to conditionally disable
-        # this link.
         target = '+related-projects'
         text = 'Related projects'
-        return Link(target, text, icon='info')
+        enabled = bool(self.person.getOwnedOrDrivenPillars())
+        return Link(target, text, enabled=enabled, icon='info')
 
 
 class PersonMenuMixin(CommonMenuLinks):
@@ -1255,7 +1253,8 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'join', 'leave', 'add_my_teams',
-             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa']
+             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa',
+             'related_software_summary']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -1820,6 +1819,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug subscriber."""
 
     columns_to_show = ["id", "summary", "importance", "status"]
+    page_title = 'Package bugs'
 
     @property
     def current_package(self):
@@ -2013,6 +2013,10 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def getSimpleSearchURL(self):
         return self.getBugSubscriberPackageSearchURL()
 
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
+
 
 class RelevantMilestonesMixin:
     """Mixin to narrow the milestone list to only relevant milestones."""
@@ -2033,6 +2037,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Related bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2081,6 +2086,10 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSimpleSearchURL(self):
         return canonical_url(self.context, view_name="+bugs")
 
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
+
 
 class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
                                              BugTaskSearchListingView):
@@ -2088,6 +2097,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Assigned bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2133,6 +2143,10 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Return a URL that can be usedas an href to the simple search."""
         return canonical_url(self.context, view_name="+assignedbugs")
 
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
+
 
 class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
                                               BugTaskSearchListingView):
@@ -2140,6 +2154,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Commented bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2173,6 +2188,10 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+commentedbugs")
 
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
+
 
 class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
                                              BugTaskSearchListingView):
@@ -2180,6 +2199,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Reported bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2224,6 +2244,10 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the tags combinator widget show on the search page?"""
         return False
 
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
+
 
 class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
                                                BugTaskSearchListingView):
@@ -2231,6 +2255,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
+    page_title = 'Subscribed bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None):
@@ -2263,6 +2288,10 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+subscribedbugs")
+
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
 
 
 class PersonVouchersView(LaunchpadFormView):
@@ -4634,16 +4663,20 @@ class PersonEditEmailsView(LaunchpadFormView):
 class TeamMugshotView(LaunchpadView):
     """A view for the team mugshot (team photo) page"""
 
-    label = "Who's in this team?"
+    label = "Member photos"
+    batch_size = config.launchpad.mugshot_batch_size
 
     def initialize(self):
         """Cache images to avoid dying from a million cuts."""
-        getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
-
+        getUtility(IPersonSet).cacheBrandingForPeople(
+            self.members.currentBatch())
 
     @cachedproperty
-    def allmembers(self):
-        return list(self.context.allmembers)
+    def members(self):
+        """Get a batch of all members in the team."""
+        batch_nav = BatchNavigator(
+            self.context.allmembers, self.request, size=self.batch_size)
+        return batch_nav
 
 
 class TeamReassignmentView(ObjectReassignmentView):
@@ -4886,7 +4919,7 @@ class PersonAnswerContactForView(LaunchpadView):
         return self.user == self.context
 
 
-class PersonAnswersMenu(ApplicationMenu):
+class PersonAnswersMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'answers'
@@ -4896,7 +4929,8 @@ class PersonAnswersMenu(ApplicationMenu):
     def answer_contact_for(self):
         summary = "Projects for which %s is an answer contact" % (
             self.context.displayname)
-        return Link('+answer-contact-for', 'Answer contact for', summary)
+        return Link(
+            '+answer-contact-for', 'Answer contact for', summary, icon='edit')
 
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname

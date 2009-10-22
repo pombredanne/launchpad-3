@@ -1035,12 +1035,18 @@ PackageUpload records.
    >>> from lp.registry.interfaces.gpg import IGPGKeySet
    >>> testing_key = getUtility(IGPGKeySet).get(1)
 
-   >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
-   ...     ubuntu.main_archive, breezy_autotest,
-   ...     PackagePublishingPocket.RELEASE, testing_key)
+   >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+   >>> test_publisher = SoyuzTestPublisher()
+   >>> test_publisher.addFakeChroots(hoary)
+   >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
+   >>> from lp.registry.interfaces.person import IPersonSet
+   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 A 'delayed-copy' is a PackageUpload record.
 
+   >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+   ...     ubuntu.main_archive, hoary,
+   ...     PackagePublishingPocket.RELEASE, testing_key)
    >>> verifyObject(IPackageUpload, delayed_copy)
    True
 
@@ -1064,7 +1070,7 @@ distroseries, pocket).
    Primary Archive for Ubuntu Linux
 
    >>> print delayed_copy.distroseries.displayname
-   Breezy Badger Autotest
+   Hoary
 
    >>> print delayed_copy.pocket.name
    RELEASE
@@ -1087,11 +1093,10 @@ requester of the copy.
 Delayed copies are further manipulated exactly as normal uploads
 are. Contents can be attached to it.
 
-   # Retrieve a SourcePackageRelease from the sampledata.
-   >>> a_source_package = pmount.getVersion('0.1-2')
-   >>> a_source_release = a_source_package.sourcepackagerelease
-
-   >>> unused = delayed_copy.addSource(a_source_release)
+   >>> a_source_package = test_publisher.createSource(
+   ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
+   >>> transaction.commit()
+   >>> unused = delayed_copy.addSource(a_source_package.sourcepackagerelease)
 
 IPackageUpload.acceptFromCopy() simply checks and accepts a
 delayed-copy record. Bugs mentioned in the changelog are closed by
@@ -1113,7 +1118,7 @@ IPackageUpload.realiseUpload().
 
    >>> for pub_record in publishing_records:
    ...     print pub_record.displayname, pub_record.status.name
-   pmount 0.1-2 in breezy-autotest PENDING
+   foocomm 2.0-1 in hoary PENDING
 
    >>> print delayed_copy.status.name
    DONE
@@ -1130,17 +1135,17 @@ creating a duplicated delayed-copy is perfectly possible.
    ...     ubuntu.main_archive, breezy_autotest,
    ...     PackagePublishingPocket.RELEASE, testing_key)
 
-   >>> unused = dup_delayed_copy.addSource(a_source_release)
+   >>> unused = dup_delayed_copy.addSource(
+   ...     a_source_package.sourcepackagerelease)
 
 Although it cannot be accepted.
 
    >>> dup_delayed_copy.acceptFromCopy()
    Traceback (most recent call last):
    ...
-   QueueInconsistentStateError: The source pmount - 0.1-2 is already
-   accepted in ubuntu/breezy-autotest and you cannot upload the same
-   version within the same distribution. You have to modify the source
-   version and re-upload.
+   QueueInconsistentStateError: The source foocomm - 2.0-1 is already
+   accepted in ubuntu/hoary and you cannot upload the same version within the
+   same distribution. You have to modify the source version and re-upload.
 
 For detecting conflicting delayed copies we have to inspect the
 ACCEPTED and DONE queue for uploads of sources matching a given
@@ -1148,7 +1153,7 @@ ACCEPTED and DONE queue for uploads of sources matching a given
 distribution.
 
    >>> conflict = getUtility(IPackageUploadSet).findSourceUpload(
-   ...     'pmount', '0.1-2', ubuntu.main_archive, ubuntu)
+   ...     'foocomm', '2.0-1', ubuntu.main_archive, ubuntu)
 
    >>> conflict.id == delayed_copy.id
    True

@@ -1,4 +1,6 @@
-= Modifying lists =
+===============
+Modifying lists
+===============
 
 A team administrator can make changes to the mailing list, although currently
 the only thing they can change is the list's welcome message.
@@ -13,7 +15,7 @@ mailing list for that team, and an expert will approve that request.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink('Create a mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
 Before approving the creation of the mailing list, let's set the welcome
@@ -26,7 +28,7 @@ feature is exposed.
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> list_set = getUtility(IMailingListSet)
     >>> list_one = list_set.get('itest-one')
     >>> list_one.welcome_message = 'Greetings team members!'

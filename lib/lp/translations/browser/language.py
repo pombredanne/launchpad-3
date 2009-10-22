@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'LanguageAddView',
     'LanguageAdminView',
-    'LanguageNavigation',
     'LanguageSetBreadcrumb',
     'LanguageSetContextMenu',
     'LanguageSetNavigation',
@@ -26,9 +25,9 @@ from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadView, LaunchpadFormView,
-    LaunchpadEditFormView, action, canonical_url, ContextMenu, Navigation,
-    NavigationMenu, enabled_with_permission, Link, custom_widget)
+    action, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, NavigationMenu)
 from lp.translations.utilities.pluralforms import make_friendly_plural_forms
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -41,14 +40,6 @@ def describe_language(language):
         return "%s (%s)" % (englishname, language.nativename)
     else:
         return englishname
-
-
-class LanguageNavigation(Navigation):
-    """Make breadcrumb appear for language."""
-    # XXX: JeroenVermeulen 2009-09-18, bug=423898: Salgado is working to
-    # make this Navigation class obsolete.  Once 423898 is solved, this
-    # class and the ZCML referring to it can go.
-    usedfor = ILanguage
 
 
 class LanguageBreadcrumb(Breadcrumb):

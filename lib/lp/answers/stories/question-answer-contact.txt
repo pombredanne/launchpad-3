@@ -149,8 +149,8 @@ contacts for Ubuntu, but only for Spanish questions to keep the email
 traffic to a manageable volume.
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/')
-    >>> browser.title
-    'Questions for Ubuntu'
+    >>> print browser.title
+    Questions : Ubuntu
 
     >>> browser.getLink('Set answer contact').click()
     >>> browser.getControl("Landscape Developers").selected = True
@@ -188,12 +188,12 @@ Developers Team is not subscribed to English questions, and is
 subscribed to Spanish questions.
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/')
-    >>> browser.title
-    'Questions for Ubuntu'
+    >>> print browser.title
+    Questions : Ubuntu
 
     >>> browser.getLink('Play DVDs in Totem').click()
     >>> print extract_text(browser.title)
-    Questions for...
+    Questions : Ubuntu
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
     Language: English
@@ -210,7 +210,7 @@ Question:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/12')
     >>> print browser.title
-    Questions for...
+    Questions : Ubuntu
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
     Language: Spanish

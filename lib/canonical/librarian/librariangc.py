@@ -534,19 +534,22 @@ def delete_unwanted_files(con):
         # Ignore known and harmless noise in the Librarian storage area.
         if 'incoming' in dirnames:
             dirnames.remove('incoming')
+        if 'lost+found' in dirnames:
+            dirnames.remove('lost+found')
         if 'librarian.pid' in filenames:
             filenames.remove('librarian.pid')
 
         for dirname in dirnames[:]:
             if len(dirname) != 2:
                 dirnames.remove(dirname)
-                log.error(
+                log.warning(
                     "Ignoring directory %s that shouldn't be here" % dirname)
+                continue
             try:
                 int(dirname, 16)
             except ValueError:
                 dirnames.remove(dirname)
-                log.error("Ignoring invalid directory %s" % dirname)
+                log.warning("Ignoring invalid directory %s" % dirname)
 
         # We need everything in order to ensure we visit files in the
         # same order we retrieve wanted files from the database.
@@ -556,7 +559,7 @@ def delete_unwanted_files(con):
         # Noise in the storage area, or maybe we are looking at the wrong
         # path?
         if dirnames and filenames:
-            log.error(
+            log.warning(
                 "%s contains both files %r and subdirectories %r. Skipping."
                 % (dirpath, filenames, dirnames))
             continue
@@ -565,7 +568,7 @@ def delete_unwanted_files(con):
             path = os.path.join(dirpath, filename)
             hex_content_id = ''.join(path.split(os.sep)[-4:])
             if hex_content_id_re.search(hex_content_id) is None:
-                log.error(
+                log.warning(
                     "Ignoring invalid path %s" % path)
                 continue
 
@@ -577,6 +580,7 @@ def delete_unwanted_files(con):
                 next_wanted_content_id = get_next_wanted_content_id()
 
                 if (config.librarian_server.upstream_host is None
+                        and next_wanted_content_id is not None
                         and next_wanted_content_id < content_id):
                     log.error(
                         "LibraryFileContent %d exists in the database but "

@@ -131,7 +131,7 @@ span.invisible {left:-9999em;display:block;}
 .product {background:url(icon-sprites-2) 0 -640px no-repeat;}
 .read-only {background:url(icon-sprites-2) 0 -672px no-repeat;}
 .warning-icon, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
-.private {background:url(icon-sprites-2) 0 -320px no-repeat;}
+.private {background:url(icon-sprites-2) 0 -736px no-repeat;}
 .meeting {background:url(icon-sprites-2) 0 -768px no-repeat;}
 .translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}
 .translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
@@ -147,7 +147,9 @@ span.invisible {left:-9999em;display:block;}
 .ppa-icon-inactive {background:url(icon-sprites-2) 0 -1171px no-repeat;}
 
 .bug-status-expand {background:url(icon-sprites-3) 0 -10px no-repeat;}
-.merge-proposal {background:url(icon-sprites-3) 0 -46px no-repeat;}
+.merge-proposal {
+  background:url(icon-sprites-3) 0 -46px no-repeat;
+  padding-left: 22px}
 .build-superseded {background:url(icon-sprites-3) 0 -80px no-repeat;}
 .build-sucess {background:url(icon-sprites-3) 0 -112px no-repeat;}
 .build-needed {background:url(icon-sprites-3) 0 -144px no-repeat;}
@@ -268,7 +270,11 @@ label, p {max-width: 60em;}
 /* === Fonts and colors === */
 
 /* Launchpad uses a white background with small, mostly black, text: */
-html {background: #fff; color: #000; font: 83.33% sans-serif;}
+html {
+    background: #fff;
+    color: #000;
+    font-size: 83.33%;
+    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
 code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
@@ -409,7 +415,7 @@ form {border: 0; margin: 0; padding: 0;}
 form table label {font-weight: bold;}
 fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
 input[type="text"], input[type="search"], input[type="password"], textarea {
-  font-family: sans-serif;
+  font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
   margin: 0;
 }
 input[type="text"], input[type="search"], input[type="submit"],
@@ -710,7 +716,7 @@ ol.breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 1em;
+    margin-bottom: 2em;
     font-size: 80%;
 }
 ol.breadcrumbs li {
@@ -1352,7 +1358,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 
 /* === Public/private status === */
 /* The first portlet on many pages discloses whether the object is private: */
-#privacy {background: #fff;}
 #privacy.private {
   background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
@@ -1577,116 +1582,6 @@ Launchpad but that does actually look quite good ... ;-).*/
 #locationbar {
     height: 1em;
 }
-
-#homepage {
-    margin: auto;
-    width: 90%;
-    max-width: 80em;
-}
-
-.homepage-portlet {
-    margin-bottom: 3em;
-    line-height: 140%;
-}
-
-.homepage-portlet h2 {
-    margin-bottom: 0.5em;
-    font-size: 131%;
-}
-
-/* Home: search form */
-
-#homepage-searchform {
-    text-align: center;
-}
-
-#homepage-stats {
-    max-width: 50em;
-    margin: auto;
-    padding-top: 0.5em;
-    color: gray;
-    font-size: 83.3%
-}
-
-/* Home: What's launchpad */
-
-#homepage-whatslaunchpad ul {
-    margin-left: 1em;
-    margin-bottom: 0.5em;
-}
-
-#homepage-whatslaunchpad ul,
-#homepage-whatslaunchpad-tour {
-    font-size: 116%;
-    font-weight: bold;
-}
-
-/* Home: blog posts */
-
-#homepage-blogposts {
-    padding-right: 4em;
-}
-
-#homepage-blogposts .blogdate {
-    font-size: 85%;
-    color: grey;
-}
-
-#homepage-blogposts-older {
-    text-align: right;
-}
-
-/* Home: Get started */
-
-#homepage-getstarted ul {
-    margin-top: 0.5em;
-}
-
-/* Home: Featured projects */
-
-#homepage-featured {
-    width: 100%;
-}
-
-#homepage-featured ul {
-    width: 48%;
-}
-
-#homepage-featured-left {
-    float: left;
-}
-
-#homepage-featured-right {
-    float: right;
-}
-
-#homepage-featured-top img {
-    float: left;
-}
-#homepage-featured-top-title {
-    height: 64px;
-    display: block;
-    margin-left: 70px;
-}
-
-#homepage-featured-top-title span{
-    font-size: 131%;
-    font-weight: bold;
-    position: relative;
-    top: 20px;
-}
-
-#homepage-featured-top-text {
-    margin-top: 0.5em;
-    margin-bottom: 1em;
-}
-
-#homepage-featured-more {
-    margin-top: 0.5em;
-    text-align: right;
-    clear: both;
-}
-
 /* -- Notices -- */
 
 .important-notice-container {
@@ -1960,12 +1855,12 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   color: #d18b39;
 }
 
-.branchstatusMATURE       {color: #090;}
-.branchstatusDEVELOPMENT  {color: #900;}
-.branchstatusEXPERIMENTAL {color: #930;}
-.branchstatusMERGED       {color: #666;}
-.branchstatusABANDONED    {color: #666;}
-.branchstatusNEW          {color: black;}
+.branchstatusMATURE, .branchstatusMATURE a  {color: #090;}
+.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a  {color: #900;}
+.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {color: #930;}
+.branchstatusMERGED, .branchstatusMERGED a       {color: #666;}
+.branchstatusABANDONED, .branchstatusABANDONED a    {color: #666;}
+.branchstatusNEW, .branchstatusNEW a          {color: black;}
 
 .voteAPPROVE       {color: green;}
 .voteNEEDS_FIXING  {color: #930;}
@@ -2416,12 +2311,6 @@ ul.buttons li {display: inline; margin: 0 0 0 0;}
 body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 ul.cross-reference {font-size: 1.25em;}
-
-ul.helplinks {float: right; margin: 0.5em;}
-/* We set `display: block` to lose the bullets.  We should use
- * `list-style-type:none` but this is what our existing code does.
- */
-ul.helplinks li {display: block; margin: 0 0 0 0;}
 
 /*
 li {

@@ -77,17 +77,32 @@ for the new sprint.
   >>> user_browser.url
   'http://launchpad.dev/sprints/ltsponsteroids'
 
+Because sprints are root contexts, an h1 heading is used to display
+the main heading above the application buttons) and the breadcrumbs
+are not displayed.
+
+  >>> print_location(user_browser.contents)
+  Hierarchy: None displayed
+  Tabs:
+  * Overview (selected) - not linked
+  ...
+  * Bugs - not linked
+  * Blueprints - http://blueprints.launchpad.dev/sprints/ltsponsteroids
+  * Translations - not linked
+  * Answers - not linked
+  Main heading: LTSP On Steroids
+
+There is no h1 heading in the main content.
+
+  >>> print find_main_content(user_browser.contents).find('h1')
+  None
+
 Since the sprint's time zone was set to UTC, the dates are displayed in
 that time zone:
 
-  >>> print find_portlet(user_browser.contents, 'Meeting details')
-  <...
-  ...Starts:...
-  2006-10-10 09:15 UTC...
-  ...Ends:...
-  2006-10-13 16:00 UTC...
-  ...
-
+  >>> print extract_text(find_tag_by_id(user_browser.contents, 'start-end'))
+  Starts: 09:15 UTC on Tuesday, 2006-10-10
+  Ends: 16:00 UTC on Friday, 2006-10-13
 
 Because this is a brand new sprint, it will have no specs, and we should see
 a warning to that effect on the page.
@@ -115,11 +130,7 @@ Add a new sprint with a different time zone is also handled correctly.
   >>> user_browser.url
   'http://launchpad.dev/sprints/africa-sprint'
 
-  >>> print find_portlet(user_browser.contents, 'Meeting details')
-  <...
-  ...Starts:...
-  2006-07-10 09:15 SAST...
-  ...Ends:...
-  2006-07-13 16:00 SAST...
-  ...
+  >>> print extract_text(find_tag_by_id(user_browser.contents, 'start-end'))
+  Starts: 09:15 SAST on Monday, 2006-07-10
+  Ends: 16:00 SAST on Thursday, 2006-07-13
 

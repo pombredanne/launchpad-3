@@ -69,7 +69,7 @@ are no subscribers so there whould be no emails.
 
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-info'))
-    Branch information
+    Branch information...
     Project: GNOME Terminal (Unspecified)...
     Status: Experimental
     Location: http://trekkies.example.com/gnome-terminal/klingon
@@ -107,7 +107,7 @@ The branch page is displayed with the new status:
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
     >>> contents = browser.contents
     >>> status_tag = find_tag_by_id(contents, 'branch-details-status-value')
-    >>> print status_tag.renderContents()
+    >>> print extract_text(status_tag)
     Merged
 
 Set the branch status back to its initial state.

@@ -68,7 +68,7 @@ provided link.
 
     >>> jblack_browser.getLink('Create a new PPA').click()
     >>> print jblack_browser.title
-    Activate Personal Package Archive...
+    Personal Package Archive Activation : James Blackwell
 
     >>> jblack_browser.getControl(
     ...     name="field.displayname").value = 'PPA for James Blackwell'
@@ -294,7 +294,6 @@ build created during the copy is ready to be dispatched.
     PPA for James Blackwell : James Blackwell
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
-    created ... ago
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
     James Blackwell
     PPA for James Blackwell

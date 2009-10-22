@@ -83,9 +83,9 @@ Watermark and breadcrumbs.
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
-    <BLANKLINE>
+    ...
       <!-- Application Menu -->
-      <ul>
+      <ul class="facetmenu">
     <BLANKLINE>
           <li class="overview active"
               title="General information about Waffles"><a
@@ -93,8 +93,6 @@ Watermark and breadcrumbs.
     ...
               <div class="yui-b" dir="ltr">
                 <div>
-                  <div class="registering">
-                  </div>
                   <h2>Heading</h2>
                   <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
     ...
@@ -191,8 +189,6 @@ Main content.
     <BLANKLINE>
               <div class="yui-b" dir="ltr">
                 <div>
-                  <div class="registering">
-                  </div>
     <BLANKLINE>
                   <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
     <BLANKLINE>
@@ -290,9 +286,11 @@ Watermarks.
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
+            <div id="registration" class="registering">
+            </div>
     <BLANKLINE>
       <!-- Application Menu -->
-      <ul>
+      <ul class="facetmenu">
     <BLANKLINE>
           <li class="overview active"
               title="General information about Waffles"><a
@@ -311,8 +309,6 @@ Main content.
     <BLANKLINE>
               <div class="yui-b" dir="ltr">
                 <div>
-                  <div class="registering">
-                  </div>
     <BLANKLINE>
                   <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
     <BLANKLINE>
@@ -489,7 +485,7 @@ and date_created, normally).
     ...     first_tag_by_class)
 
     >>> print first_tag_by_class(html, 'registering')
-    <div class="registering">
+    <div id="registration" class="registering">
     <p>something nice about the context registering.</p>
     </div>
 

@@ -630,32 +630,6 @@ COMMENT ON COLUMN ProductSeries.name IS 'The name of the ProductSeries is like a
 COMMENT ON COLUMN ProductSeries.status IS 'The current status of this productseries.';
 COMMENT ON COLUMN ProductSeries.summary IS 'A summary of this Product Series. A good example would include the date the series was initiated and whether this is the current recommended series for people to use. The summary is usually displayed at the top of the page, in bold, just beneath the title and above the description, if there is a description field.';
 COMMENT ON COLUMN ProductSeries.driver IS 'This is a person or team who can approve spes and bugs for implementation or fixing in this specific series. Note that the product drivers and project drivers can also do this for any series in the product or project, so use this only for the specific team responsible for this specific series.';
-COMMENT ON COLUMN ProductSeries.importstatus IS 'A status flag which
-gives the state of our efforts to import the upstream code from its revision
-control system and publish that in the baz revision control system. The
-allowed values are documented in ImportStatus.';
-COMMENT ON COLUMN ProductSeries.rcstype IS 'The revision control system used
-by upstream for this product series. The value is defined in
-dbschema.RevisionControlSystems.  If NULL, then there should be no CVS or
-SVN information attached to this productseries, otherwise the relevant
-fields for CVS or SVN etc should be filled out.';
-COMMENT ON COLUMN ProductSeries.cvsroot IS 'The CVS root where this
-productseries hosts its code. Only used if rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS module which contains
-the upstream code for this productseries. Only used if rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS branch that contains
-the upstream code for this productseries.  Only used if rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.cvstarfileurl IS 'The URL of a tarfile of
-the CVS repository for this productseries. This is an optimisation of the
-CVS import process - instead of hitting the server to pass us every set of
-changes in history, we can sometimes arrange to be given a tarfile of the
-CVS repository and then process it all locally. Once imported, we switch
-back to using the CVS server for ongoing syncronization.  Only used if
-rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.svnrepository IS 'The URL of the SVN branch
-where the upstream productseries code can be found. This single URL is the
-equivalent of the cvsroot, cvsmodule and cvsbranch for CVS. Only used if
-rcstype is SVN.';
 COMMENT ON COLUMN ProductSeries.releasefileglob IS 'A fileglob that lets us
 see which URLs are potentially new upstream tarball releases. For example:
 http://ftp.gnu.org/gnu/libtool/libtool-1.5.*.gz.';
@@ -663,25 +637,6 @@ COMMENT ON COLUMN ProductSeries.releaseverstyle IS 'An enum giving the style
 of this product series release version numbering system.  The options are
 documented in dbschema.UpstreamReleaseVersionStyle.  Most applications use
 Gnu style numbering, but there are other alternatives.';
-COMMENT ON COLUMN ProductSeries.dateprocessapproved IS 'The timestamp when
-this upstream import was certified for processing. Processing means it has
-passed autotesting, and is being moved towards production syncing. If the
-sync goes well, it will be approved for sync and then be fully in
-production.';
-COMMENT ON COLUMN ProductSeries.datesyncapproved IS 'The timestamp when this
-upstream import was certified for ongoing syncronisation.';
-COMMENT ON COLUMN ProductSeries.dateautotested IS 'This upstream revision
-control system target has passed automatic testing. It can probably be moved
-towards production sync status. This date is the timestamp when it passed
-the autotester. The autotester allows us to find the low hanging fruit that
-is easily brought into the bazaar import system by highlighting repositories
-which had no apparent difficulty in being imported.';
-COMMENT ON COLUMN ProductSeries.datestarted IS 'The timestamp when we last
-initiated an import test or sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
-completed an import test or sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last successfully completed a production sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
 COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
 series.';
 COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'Level of

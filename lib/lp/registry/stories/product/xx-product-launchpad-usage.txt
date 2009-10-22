@@ -67,7 +67,7 @@ tracker, not even Launchpad.
 
     >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Answers and Code.
+    Uses Launchpad for: Answers and Branches.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print extract_text(
@@ -87,7 +87,7 @@ Now let's go back and choose to use a specific bug tracker.
     >>> registrant_browser.getControl('Change').click()
     >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Answers and Code.
+    Uses Launchpad for: Answers and Branches.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print extract_text(
@@ -109,7 +109,7 @@ Let's reset it to the way it was before.
     >>> registrant_browser.getControl('Change').click()
     >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Answers, Bug Tracking, and Code.
+    Uses Launchpad for: Answers, Bug Tracking, and Branches.
 
 
 Tracking bugs by email

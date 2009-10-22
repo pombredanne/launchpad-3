@@ -47,6 +47,8 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
@@ -74,6 +76,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -111,7 +114,7 @@ class UsesLaunchpadMixin:
         if IProduct.providedBy(self.context):
             if self.context.official_codehosting:
                 url = canonical_url(self.context, rootsite='code')
-                uses.append(href_template % (url, 'Code'))
+                uses.append(href_template % (url, 'Branches'))
         if self.context.official_rosetta:
             url = canonical_url(self.context, rootsite='translations')
             uses.append(href_template % (url, 'Translations'))
@@ -419,7 +422,7 @@ class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
         return Link('+addseries', text, icon='add')
 
 
-class DistributionBugsMenu(ApplicationMenu):
+class DistributionBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistribution
     facet = 'bugs'
@@ -449,35 +452,12 @@ class DistributionBugsMenu(ApplicationMenu):
         text = 'Report a bug'
         return Link('+filebug', text, icon='bug')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class DistributionSpecificationsMenu(ApplicationMenu):
-
+class DistributionSpecificationsMenu(NavigationMenu,
+                                     HasSpecificationsMenuMixin):
     usedfor = IDistribution
     facet = 'specifications'
     links = ['listall', 'doc', 'assignments', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def assignments(self):
-        text = 'Assignments'
-        return Link('+assignments', text, icon='info')
-
-    def doc(self):
-        text = 'Documentation'
-        summary = 'List all complete informational specifications'
-        return Link('+documentation', text, summary,
-            icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
 
 
 class DistributionPackageSearchView(PackageSearchViewBase):
@@ -659,13 +639,22 @@ class DistributionArchivesView(LaunchpadView):
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
 
+    page_title = "Personal Package Archives"
+
     def initialize(self):
         self.name_filter = self.request.get('name_filter')
+        if isinstance(self.name_filter, list):
+            # This happens if someone hand-hacks the URL so that it has
+            # more than one name_filter field.  We could do something
+            # like form.getOne() so that the request would be rejected,
+            # but we can acutally do better and join the terms supplied
+            # instead.
+            self.name_filter = " ".join(self.name_filter)
         self.show_inactive = self.request.get('show_inactive')
 
     @property
-    def page_title(self):
-        return '%s Personal Package Archives' % self.context.title
+    def label(self):
+        return 'Personal Package Archives for %s' % self.context.title
 
     @property
     def search_results(self):
