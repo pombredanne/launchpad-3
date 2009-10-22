@@ -41,6 +41,7 @@ from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
@@ -142,7 +143,8 @@ class DistroSeriesFacets(StandardLaunchpadFacets):
                    'translations']
 
 
-class DistroSeriesOverviewMenu(ApplicationMenu):
+class DistroSeriesOverviewMenu(
+    ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'overview'
@@ -202,12 +204,8 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class DistroSeriesBugsMenu(ApplicationMenu):
+class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'bugs'
@@ -222,9 +220,6 @@ class DistroSeriesBugsMenu(ApplicationMenu):
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
-
-    def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail')
 
 
 class DistroSeriesSpecificationsMenu(NavigationMenu,
