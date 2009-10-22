@@ -47,16 +47,17 @@
 
       <tal:seriesfilesexist condition="series/has_release_files">
         <tal:releases repeat="release series/releases">
-          <div tal:condition="release/files" class="portlet">
+          <div tal:condition="not: repeat/release/start" class="portlet-border" />
+          <div tal:condition="release/files" class="top-portlet">
             <h2 style="font-size: 1.2em; float:left;">
               <a tal:attributes="href release/fmt:url">
-                <span tal:replace="release/name_with_codename" /> release</a>,
+                <span tal:replace="release/name_with_codename" /> release</a>
               from the
               <a tal:attributes="href series/fmt:url"
-                 tal:content="series/name">name</a> series.
+                 tal:content="series/name">name</a> series
             </h2>
             <div style="float:right;">
-              Released
+              Released:&nbsp;
               <span
                  tal:attributes="title release/datereleased/fmt:datetime"
                  tal:content="release/datereleased/fmt:approximatedate" />
@@ -124,21 +125,16 @@
                style="margin-top: 2em;">
           </div>
 
+          <div style="float:right"
+               tal:define="link release/menu:context/add_file"
+               tal:condition="link/enabled">
+            <a tal:replace="structure link/fmt:link" />
+          </div>
+          <div style="clear:both" />
         </tal:releases>
         <br />
 
       </tal:seriesfilesexist>
-
-      <p tal:condition="has_edit" class="add-files">
-        <tal:releases condition="series/releases">
-          Add download file for release:
-          <tal:release repeat="release series/releases">
-            <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
-               tal:content="release/version"
-              >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
-          </tal:release>
-        </tal:releases>
-      </p>
 
     </div>
     <input tal:condition="python: has_edit and view.has_download_files"
