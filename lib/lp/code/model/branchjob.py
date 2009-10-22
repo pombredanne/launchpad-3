@@ -3,6 +3,7 @@
 
 __all__ = [
     'BranchJob',
+    'BranchUpgradeJob',
     'RevisionsAddedJob',
     'RevisionMailJob',
     'RosettaUploadJob',
@@ -245,8 +246,8 @@ class BranchUpgradeJob(BranchJobDerived):
     """A Job that upgrades branches to the current stable format."""
 
     implements(IBranchUpgradeJob)
-
     classProvides(IBranchUpgradeJobSource)
+
     @classmethod
     def create(cls, branch):
         """See `IBranchUpgradeJobSource`."""
