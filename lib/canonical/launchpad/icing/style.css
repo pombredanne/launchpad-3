@@ -2312,12 +2312,6 @@ body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 ul.cross-reference {font-size: 1.25em;}
 
-ul.helplinks {float: right; margin: 0.5em;}
-/* We set `display: block` to lose the bullets.  We should use
- * `list-style-type:none` but this is what our existing code does.
- */
-ul.helplinks li {display: block; margin: 0 0 0 0;}
-
 /*
 li {
   margin-bottom: 0.75em;

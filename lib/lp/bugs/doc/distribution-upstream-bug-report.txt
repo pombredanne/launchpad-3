@@ -1,19 +1,24 @@
-= Upstream Bug reports =
+Upstream Bug reports
+====================
 
 For a distribution's bug tracking process to be successful, it's vital
 that it is able to communicate upstream bugs to the relevant upstream
 project and monitor them as they change. Launchpad offers functionality
 to allow a distribution to focus on and improve this process.
 
-
     >>> from canonical.launchpad.ftests import login
     >>> from lp.bugs.tests.bug import (
     ...     create_bug_from_strings)
     >>> from canonical.launchpad.ftests import sync
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageNameSet, IDistributionSet, IProductSet,
-    ...     IPackagingUtil, IPersonSet, PackagingType, IBugTaskSet,
-    ...     IBugWatchSet, BugTaskStatus)
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.packaging import (
+    ...     IPackagingUtil, PackagingType)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet, BugTaskStatus
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.getByName('ubuntu')
@@ -21,7 +26,8 @@ to allow a distribution to focus on and improve this process.
     >>> kubuntu = distroset.getByName('kubuntu')
 
 
-== The API ==
+The API
+-------
 
 IDistribution has a special API that allows you to assemble data for a
 bug report that associates packages with upstream information linked to
@@ -87,11 +93,11 @@ for triaged bugs updated:
     thunderbird         None    1 1 1 1
 
 We add two new bugs to pmount in Ubuntu. From now on we'll limit the
-results to 3 packages (as a demonstration of the API) so thunderbird will be
-popped off the list:
+results to 3 packages (as a demonstration of the API) so thunderbird
+will be popped off the list:
 
     >>> bug = create_bug_from_strings(distribution='ubuntu',
-    ...     sourcepackagename='pmount', owner='name12', 
+    ...     sourcepackagename='pmount', owner='name12',
     ...     summary='pmount used to work', description='fix it',
     ...     status=BugTaskStatus.TRIAGED)
     >>> bug = create_bug_from_strings(distribution='ubuntu',
@@ -141,7 +147,8 @@ Linking that task to a bugwatch makes the watch counts update:
     mozilla-firefox     firefox 1 1 1 1
 
 
-== Properties of BugReportData ==
+Properties of BugReportData
+---------------------------
 
 The API listed above is based around BugReportData instances, each of
 which offers a set of properties that can be used to accessed data. Each
@@ -156,7 +163,8 @@ properties offered by BugReportData.
     ...     watched_bugs=60)
 
 
-=== Percentages ===
+Percentages
+...........
 
 BugReportData offers a set of *_percentage properties.
 
@@ -179,7 +187,8 @@ forwarded upstream that have a bug watch against a remote bug.
     85.714285714285708
 
 
-=== Deltas ===
+Deltas
+......
 
 BugReportData also offers a set of of *_delta properties along with the
 *_percentage properties.
@@ -190,8 +199,8 @@ open bugs and the number of triaged bugs.
     >>> bug_data.triaged_bugs_delta
     40
 
-BugReportData.upstream bugs_delta is the difference between the number of
-open bugs and the number of bugs forwarded upstream.
+BugReportData.upstream bugs_delta is the difference between the number
+of open bugs and the number of bugs forwarded upstream.
 
     >>> bug_data.upstream_bugs_delta
     20
@@ -204,12 +213,13 @@ upstream bug.
     10
 
 
-=== Classes ===
+Classes
+.......
 
-Finally, BugReportData offers a set of *_class properties. These
-provide the correct CSS class to use for rendering the data in a table.
-They return 'good' if the property that they represent is above a
-certain threshold or an empty string if not.
+Finally, BugReportData offers a set of *_class properties. These provide
+the correct CSS class to use for rendering the data in a table. They
+return 'good' if the property that they represent is above a certain
+threshold or an empty string if not.
 
 BugReportData.triaged_bugs_class returns 'good' if the
 triaged_bugs_percentage is greater than BugReportData.TRIAGED_THRESHOLD.
@@ -295,7 +305,8 @@ Otherwise, row_class returns an empty string.
     ''
 
 
-== The view ==
+The view
+--------
 
 We test that the view data is constructed sanely and without any hidden
 defects. Let's set up some helpers to make it easier for us to output
@@ -358,9 +369,9 @@ Here are the helper URLs we construct:
     NO PRODUCT
     NO URL
     NO URL
-    **linux-source-2.6.15/+bugs?search=Search&field.status_upstream=open_upstream
-    **linux-source-2.6.15/+bugs?search=Search&field.status_upstream=hide_upstream
-    **linux-source-2.6.15/+bugs?search=Search&field.status_upstream=pending_bugwatch
+    **linux-source-2.6.15/+bugs?...&field.status_upstream=open_upstream
+    **linux-source-2.6.15/+bugs?...h&field.status_upstream=hide_upstream
+    **linux-source-2.6.15/+bugs?...&field.status_upstream=pending_bugwatch
     --
     mozilla-firefox ubuntu hoary
     firefox
@@ -368,7 +379,7 @@ Here are the helper URLs we construct:
     http://launchpad.dev/firefox/+edit
     **mozilla-firefox/+bugs?search=Search&field.status_upstream=open_upstream
     **mozilla-firefox/+bugs?search=Search&field.status_upstream=hide_upstream
-    **mozilla-firefox/+bugs?search=Search&field.status_upstream=pending_bugwatch
+    **mozilla-firefox/+bugs?...&field.status_upstream=pending_bugwatch
     --
     thunderbird ubuntu hoary
     NO PRODUCT
@@ -410,7 +421,8 @@ Nada!
     0   0   0   0   0.0    0.0   0.0            0  0  0
 
 
-== Sorting the report ==
+Sorting the report
+------------------
 
 The upstream report is sortable by each of the columns displayed. We'll
 demonstrate this using the Ubuntu report.
@@ -552,6 +564,5 @@ accordingly.
     bug_supervisor_name /@@/arrowBlank
     bugtracker_name /@@/arrowDown...
 
-PS: This page is actually browser-tested in
-pagetests.distribution-upstream-bug-report. Look there for more details.
-
+PS: This page is actually browser-tested in pagetests.distribution-
+upstream-bug-report. Look there for more details.

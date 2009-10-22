@@ -446,7 +446,7 @@ class cmd_demo(EC2Command):
         runner = EC2TestRunner(
             test_branch, branches=branches,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance)
+            instance=instance, launchpad_login=instance._launchpad_login)
 
         demo_network_string = '\n'.join(
             '  ' + network for network in demo)

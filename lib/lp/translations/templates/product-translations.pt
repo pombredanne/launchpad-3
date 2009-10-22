@@ -9,19 +9,15 @@
     <div metal:fill-slot="main"
          tal:define="uses_translations view/uses_translations;
                      admin_user context/required:launchpad.TranslationsAdmin">
-      <ul class="helplinks">
-        <li>
-          <a href="https://help.launchpad.net/Translations"
-             id="link-to-translations-help"
-             >Help for translations
-          </a>
-        </li>
-      </ul>
+      <div class="translation-help-links">
+        <a href="https://help.launchpad.net/Translations"
+           id="link-to-translations-help"
+           >Help for translations
+        </a>
+        <div></div><!-- to clear-up all floats -->
+      </div>
       <tal:uses-translations condition="uses_translations">
         <tal:translatable define="target context/primary_translatable">
-
-          <div class="top-portlet">
-          </div>
 
           <div class="yui-g">
             <div class="yui-u first">
@@ -29,7 +25,7 @@
                 <h3>Translation details</h3>
                 <p>
                   Launchpad currently recommends translating
-                  <tal:target replace="structure target/fmt:link/+translations"
+                  <tal:target replace="structure target/fmt:link"
                               >trunk</tal:target>.
                   <tal:admins condition="context/required:launchpad.AnyPerson">
                     You can also

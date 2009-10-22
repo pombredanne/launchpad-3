@@ -68,7 +68,6 @@ from lp.code.enums import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
@@ -1230,10 +1229,11 @@ def bazaar_identity(branch, is_dev_focus):
             'series': use_series.name}
 
     if branch.sourcepackage is not None:
-        distro_package = branch.sourcepackage.distribution_sourcepackage
-        linked_branch = ICanHasLinkedBranch(distro_package)
-        if linked_branch.branch == branch:
-            return lp_prefix + linked_branch.bzr_path
+        if is_dev_focus:
+            return "%(prefix)s%(distro)s/%(packagename)s" % {
+            'prefix': lp_prefix,
+            'distro': branch.distroseries.distribution.name,
+            'packagename': branch.sourcepackagename.name}
         suite_sourcepackages = branch.associatedSuiteSourcePackages()
         # Take the first link if there is one.
         if len(suite_sourcepackages) > 0:

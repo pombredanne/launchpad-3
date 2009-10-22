@@ -1397,19 +1397,79 @@ class SubmissionParser(object):
 
     def buildDeviceList(self, parsed_data):
         """Create a list of devices from a submission."""
-        self.hal_devices = hal_devices = {}
+        if 'hal' in parsed_data['hardware']:
+            return self.buildHalDeviceList(parsed_data)
+        else:
+            return self.buildUdevDeviceList(parsed_data)
+
+    def buildHalDeviceList(self, parsed_data):
+        """Create a list of devices from the HAL data of a submission."""
+        self.devices = {}
         for hal_data in parsed_data['hardware']['hal']['devices']:
             udi = hal_data['udi']
-            hal_devices[udi] = HALDevice(hal_data['id'], udi,
-                                         hal_data['properties'], self)
-        for device in hal_devices.values():
+            self.devices[udi] = HALDevice(hal_data['id'], udi,
+                                          hal_data['properties'], self)
+        for device in self.devices.values():
             parent_udi = device.parent_udi
             if parent_udi is not None:
-                hal_devices[parent_udi].addChild(device)
+                self.devices[parent_udi].addChild(device)
+        return True
+
+    def buildUdevDeviceList(self, parsed_data):
+        """Create a list of devices from the udev data of a submission."""
+        self.devices = {}
+        sysfs_data = parsed_data['hardware']['sysfs-attributes']
+        dmi_data = parsed_data['hardware']['dmi']
+        for udev_data in parsed_data['hardware']['udev']:
+            device_path = udev_data['P']
+            if device_path == UDEV_ROOT_PATH:
+                device = UdevDevice(
+                    self, udev_data, sysfs_data=sysfs_data.get(device_path),
+                    dmi_data=dmi_data)
+            else:
+                device = UdevDevice(
+                    self, udev_data, sysfs_data=sysfs_data.get(device_path))
+            self.devices[device_path] = device
+
+        # The parent-child relations are derived from the path names of
+        # the devices. If A and B are the path names of two devices,
+        # the device with path name A is an ancestor of the device with
+        # path name B, iff B.startswith(A). If C is the set of the path
+        # names of all ancestors of A, the element with the longest path
+        # name belongs to the parent of A.
+        #
+        # There is one exception to this rule: The root node has the
+        # the path name '/devices/LNXSYSTM:00', while the path names
+        # of PCI devices start with '/devices/pci'. We'll temporarily
+        # change the path name of the root device so that the rule
+        # holds for all devices.
+        if UDEV_ROOT_PATH not in self.devices:
+            self._logError('No udev root device defined', self.submission_key)
+            return False
+        self.devices['/devices'] = self.devices[UDEV_ROOT_PATH]
+        del self.devices[UDEV_ROOT_PATH]
+
+        path_names = sorted(self.devices, key=len, reverse=True)
+        for path_index, path_name in enumerate(path_names[:-1]):
+            # Ensure that the last ancestor of each device is our
+            # root node.
+            if not path_name.startswith('/devices'):
+                self._logError(
+                    'Invalid device path name: %r' % path_name,
+                    self.submission_key)
+                return False
+            for parent_path in path_names[path_index+1:]:
+                if path_name.startswith(parent_path):
+                    self.devices[parent_path].addChild(
+                        self.devices[path_name])
+                    break
+        self.devices[UDEV_ROOT_PATH] = self.devices['/devices']
+        del self.devices['/devices']
+        return True
 
     def getKernelPackageName(self):
         """Return the kernel package name of the submission,"""
-        root_hal_device = self.hal_devices[ROOT_UDI]
+        root_hal_device = self.devices[ROOT_UDI]
         kernel_version = root_hal_device.getProperty('system.kernel.version')
         if kernel_version is None:
             self._logWarning(
@@ -1470,8 +1530,9 @@ class SubmissionParser(object):
         self.parsed_data = parsed_data
         if not self.checkConsistency(parsed_data):
             return False
-        self.buildDeviceList(parsed_data)
-        root_device = self.hal_devices[ROOT_UDI]
+        if not self.buildDeviceList(parsed_data):
+            return False
+        root_device = self.devices[ROOT_UDI]
         root_device.createDBData(submission, None)
         return True
 
@@ -1835,6 +1896,9 @@ class BaseDevice:
             Since these components are not the most important ones
             for the HWDB, we'll ignore them for now. Bug 237038.
 
+          - 'disk' is used udev submissions for a node related to the
+            sd or sr driver of (real or fake) SCSI block devices.
+
           - info.bus == 'drm' is used by the HAL for the direct
             rendering interface of a graphics card.
 
@@ -1847,6 +1911,12 @@ class BaseDevice:
           - info.bus == 'net' is used by the HAL version in
             Intrepid for the "output aspects" of network devices.
 
+          - 'partition' is used in udev submissions for a node
+            related to disk partition
+
+          - 'scsi_disk' is used in udev submissions for a sub-node of
+            the real device node.
+
             info.bus == 'scsi_generic' is used by the HAL version in
             Intrepid for a HAL node representing the generic
             interface of a SCSI device.
@@ -1857,6 +1927,12 @@ class BaseDevice:
             HAL nodes with this bus value are sub-nodes for the
             "SCSI aspect" of another HAL node which represents the
             real device.
+
+            'scsi_target' is used in udev data for SCSI target nodes,
+            the parent of a SCSI device (or LUN) node.
+
+            'spi_transport' (SCSI Parallel Transport) is used in
+            udev data for a sub-node of real SCSI devices.
 
             info.bus == 'sound' is used by the HAL version in
             Intrepid for "aspects" of sound devices.
@@ -1873,20 +1949,31 @@ class BaseDevice:
             info.bus == 'usb' is used for end points of USB devices;
             the root node of a USB device has info.bus == 'usb_device'.
 
+            'usb_interface' is used in udv submissions for interface
+            nodes of USB devices.
+
             info.bus == 'video4linux' is used for the "input aspect"
             of video devices.
         """
+        # The root node is always a real device, but its raw_bus
+        # property can have different values: None or 'Unknown' in
+        # submissions with HAL data, 'acpi' for submissions with udev
+        # data.
+        if self.is_root_device:
+            return True
+
         bus = self.raw_bus
         # This set of buses is only used once; it's easier to have it
         # here than to put it elsewhere and have to document its
         # location and purpose.
-        if bus in (None, 'drm', 'dvb', 'memstick_host', 'net',
-                   'scsi_generic', 'scsi_host', 'sound', 'ssb', 'tty',
-                   'usb', 'video4linux', ):
+        if bus in (None, 'disk', 'drm', 'dvb', 'memstick_host', 'net',
+                   'partition', 'scsi_disk', 'scsi_generic', 'scsi_host',
+                   'scsi_target', 'sound', 'spi_transport', 'ssb', 'tty',
+                   'usb', 'usb_interface', 'video4linux', ):
             #
             # The computer itself is the only HAL device without the
             # info.bus property that we treat as a real device.
-            return self.udi == ROOT_UDI
+            return False
         elif bus == 'usb_device':
             vendor_id = self.usb_vendor_id
             product_id = self.usb_product_id
@@ -1910,7 +1997,7 @@ class BaseDevice:
                         'host controller: %s' % self.udi)
                     return False
             return True
-        elif bus == 'scsi':
+        elif bus in ('scsi', 'scsi_device'):
             # Ensure consistency with HALDevice.real_bus
             return self.real_bus is not None
         else:
@@ -1989,6 +2076,10 @@ class BaseDevice:
         missing vendor/product information in order to store the
         data reliably in the HWDB.
 
+        raw_bus == 'acpi' is used in udev data for the main system,
+        for CPUs, power supply etc. Except for the main sytsem, none
+        of them provides a vendor or product id, so we ignore them.
+
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
         for product IDs or product names, hence HAL often uses
@@ -2012,7 +2103,7 @@ class BaseDevice:
         ensure that we have vendor ID, product ID and product name.
         """
         bus = self.raw_bus
-        if bus == 'unknown' and self.udi != ROOT_UDI:
+        if bus in ('unknown', 'acpi') and not self.is_root_device:
             # The root node is course a real device; storing data
             # about other devices with the bus "unkown" is pointless.
             return False
@@ -2033,11 +2124,11 @@ class BaseDevice:
             # it.
             if self.real_bus != HWBus.IDE:
                 self.parser._logWarning(
-                    'A HALDevice that is supposed to be a real device does '
+                    'A %s that is supposed to be a real device does '
                     'not provide bus, vendor ID, product ID or product name: '
                     '%r %r %r %r %s'
-                    % (self.real_bus, self.vendor_id, self.product_id,
-                       self.product, self.udi),
+                    % (self.__class__.__name__, self.real_bus, self.vendor_id,
+                       self.product_id, self.product, self.device_id),
                     self.parser.submission_key)
             return False
         return True
@@ -2564,7 +2655,17 @@ class UdevDevice(BaseDevice):
         devtype = properties.get('DEVTYPE')
         if devtype is not None:
             return devtype
-        return properties.get('SUBSYSTEM')
+        subsystem = properties.get('SUBSYSTEM')
+        # A real mess: The main node of a SCSI device has
+        # SUBSYSTEM = 'scsi' and DEVTYPE = 'scsi_device', while
+        # a sub-node has SUBSYSTEM='scsi_device'. We don't want
+        # the two to be confused. The latter node is not of any
+        # interest for us, so we return None. This ensures that
+        # is_real_device returns False for the sub-node.
+        if subsystem != 'scsi_device':
+            return subsystem
+        else:
+            return None
 
     @property
     def is_root_device(self):
@@ -2665,7 +2766,7 @@ class UdevDevice(BaseDevice):
         # While SCSI devices from valid submissions should have four
         # ancestors, we can't be sure for bogus or broken submissions.
         try:
-            controller = self.parent.parent.parent.parent
+            controller = self.parent.parent.parent
         except AttributeError:
             controller = None
         if controller is None:
