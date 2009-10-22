@@ -156,10 +156,17 @@ class DecoratedDistributionSourcePackageRelease:
         """ See `ISourcePackageRelease`."""
         return self._package_diffs
 
+    def debug(self):
+        result = ''
+        if self._person_data is not None:
+            for k,v in self._person_data.iteritems():
+                result += "\n'%s' -> '%s'" % (k, v.name)
+        return '<!--\n%s\n-->\n' % result
+
     @property
     def change_summary(self):
         """ See `ISourcePackageRelease`."""
-        return linkify_changelog(
+        return self.debug() + linkify_changelog(
             self._user, self.context.change_summary, self._person_data)
 
 

@@ -427,9 +427,7 @@ class DistributionSourcePackage(BugTargetBase,
         # Get all persons whose email addresses are in the list.
         result_set = store.using(*origin).find(
             (EmailAddress, Person),
-            And(
-                In(Lower(EmailAddress.email), email_addresses),
-                EmailAddress.status ==  EmailAddressStatus.VALIDATED))
+            In(Lower(EmailAddress.email), email_addresses))
         return result_set
 
 

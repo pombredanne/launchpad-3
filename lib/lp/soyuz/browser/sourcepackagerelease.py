@@ -97,7 +97,7 @@ def obfuscate_email(user, text):
         return formatter.obfuscate_email()
 
 
-def linkify_email(text, preloaded_person_data=None):
+def linkify_email(text, preloaded_person_data):
     """Email addresses are linkified to point to the person's profile."""
     formatter = FormattersAPI(text)
     return formatter.linkify_email(preloaded_person_data)
@@ -123,7 +123,9 @@ def linkify_changelog(user, changelog, preloaded_person_data=None):
 
     # Any email addresses remaining in the changelog were not obfuscated,
     # so we linkify them here.
+    from storm.tracer import debug; debug(True)
     changelog = linkify_email(changelog, preloaded_person_data)
+    debug(False)
 
     # Ensure any bug numbers are linkified to the bug page.
     changelog = linkify_bug_numbers(changelog)
