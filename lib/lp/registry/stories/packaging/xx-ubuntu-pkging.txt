@@ -37,12 +37,8 @@ that includes it.
     ...
     ... ubuntupkg=pmount&set_ubuntu_pkg=Update""")
     HTTP/1.1 200 Ok
-    Content-Length: ...
-    Content-Type: text/html;charset=utf-8
-    <BLANKLINE>
     ...
-    <input type="text" name="ubuntupkg" size="30"
-    value="pmount" />
+    <input type="text" name="ubuntupkg" size="30" value="pmount" />
     ...
 
 OK, if that worked, we better set it back to where it was so we restore
@@ -56,12 +52,8 @@ balance to the Force...
     ...
     ... ubuntupkg=evolution&set_ubuntu_pkg=Update""")
     HTTP/1.1 200 Ok
-    Content-Length: ...
-    Content-Type: text/html;charset=utf-8
-    <BLANKLINE>
     ...
-    <input type="text" name="ubuntupkg" size="30"
-    value="evolution" />
+    <input type="text" name="ubuntupkg" size="30" value="evolution" />
     ...
 
 Now lets make sure we can create a new ubuntu package relationship where
@@ -73,12 +65,8 @@ form, it should have an empty field for ubuntupkg.
     ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
     ... """)
     HTTP/1.1 200 Ok
-    Content-Length: ...
-    Content-Type: text/html;charset=utf-8
-    <BLANKLINE>
     ...
-    <input type="text" name="ubuntupkg" size="30"
-    value="" />
+    <input type="text" name="ubuntupkg" size="30" value="" />
     ...
 
 Trying to add a Source Package with an non-existent name should fail
@@ -110,12 +98,8 @@ in the current ubuntu distroseries.
     ...
     ... ubuntupkg=mozilla&set_ubuntu_pkg=Update""")
     HTTP/1.1 200 Ok
-    Content-Length: ...
-    Content-Type: text/html;charset=utf-8
-    <BLANKLINE>
     ...
-    <input type="text" name="ubuntupkg" size="30"
-    value="mozilla" />
+    <input type="text" name="ubuntupkg" size="30" value="mozilla" />
     ...
 
 Markup in the source package name is escaped in error notices to
