@@ -6,8 +6,9 @@ __metaclass__ = type
 __all__ = [
     'CustomLanguageCodeAddView',
     'CustomLanguageCodeBreadcrumb',
-    'CustomLanguageCodeIndexsView',
+    'CustomLanguageCodesIndexView',
     'CustomLanguageCodeRemoveView',
+    'CustomLanguageCodeView',
     'HasCustomLanguageCodesNavigation',
     'HasCustomLanguageCodesTraversalMixin',
 	]
@@ -112,6 +113,10 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return self.next_url
+
+
+class CustomLanguageCodeView(LaunchpadView):
+    schema = ICustomLanguageCode
 
 
 class CustomLanguageCodeRemoveView(LaunchpadFormView):

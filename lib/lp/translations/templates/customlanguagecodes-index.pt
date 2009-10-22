@@ -8,7 +8,20 @@
   >
 <body>
   <div metal:fill-slot="main">
-    <div tal:condition="context/has_custom_language_codes" class="top-portlet">
+    <div class="top-portlet">
+      <p>
+        You can define custom language codes for
+        <a tal:replace="structure context/fmt:link">Evolution</a> here.  Custom
+        language codes will be treated like proper language codes by
+        translations imports, except each is associated with a language
+        you choose.
+      </p>
+      <p>
+        Avoid doing this if possible; it makes it harder to keep track
+        of what goes where during translations import, and why.
+      </p>
+    </div>
+    <div tal:condition="context/has_custom_language_codes" class="portlet">
       <p>
         <tal:block replace="context/displayname">Evolution</tal:block>
         uses the following custom language codes:
@@ -23,7 +36,10 @@
         </thead>
         <tbody>
           <tr tal:repeat="entry context/custom_language_codes">
-            <td align="center" tal:content="entry/language_code">pt-PT</td>
+            <td align="center">
+              <a tal:attributes="href entry/fmt:url"
+                 tal:content="entry/language_code">pt-PT</a>
+            </td>
             <td>
               <a tal:condition="entry/language"
                  tal:replace="structure entry/language/fmt:link">
@@ -45,7 +61,7 @@
     </div>
 
     <div tal:condition="not: context/has_custom_language_codes"
-         class="top-portlet">
+         class="portlet">
       <p>
         No custom language codes have been defined.
       </p>

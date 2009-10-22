@@ -8,8 +8,22 @@
 
 <body>
   <div metal:fill-slot="main">
-      <div metal:use-macro="context/@@launchpad_form/form">
-      </div>
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <metal:extra-info metal:fill-slot="extra_info">
+        <p>
+          Enter a language code, and select what language it should map
+          to during upload auto-approval.
+         </p>
+         <p>
+          Avoid using this capability if possible, since it makes
+          it harder to keep track of what goes where.  For cases with
+          few templates, where a code would only cover one or two
+          translation files, it may be better to approve those
+          uploads manually.  Launchpad will remember the filename and
+          approve it automatically next time it comes along.
+        </p>
+      </metal:extra-info>
+    </div>
   </div>
 </body>
 </html>

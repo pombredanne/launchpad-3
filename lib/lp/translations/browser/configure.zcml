@@ -994,7 +994,7 @@
         name="+index"
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
         permission="zope.Public"
-        class="lp.translations.browser.customlanguagecode.CustomLanguageCodesIndexView"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodeView"
         template="../templates/customlanguagecode-index.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
@@ -1013,14 +1013,14 @@
         for="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"
         layer="canonical.launchpad.layers.TranslationsLayer"
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodesIndexView"
-        template="../templates/customlanguagecode-index.pt"
+        template="../templates/customlanguagecodes-index.pt"
         permission="zope.Public"/>
     <browser:page
         name="+add-custom-language-code"
         for="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"
         layer="canonical.launchpad.layers.TranslationsLayer"
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeAddView"
-        template="../../app/templates/generic-edit.pt"
+        template="../templates/customlanguagecode-add.pt"
         permission="launchpad.Admin"/>
 
     </facet>
