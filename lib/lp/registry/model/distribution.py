@@ -328,7 +328,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     # XXX: 2008-01-29 kiko: This is used in a number of places and given it's
     # already listified, why not spare the trouble of regenerating this as a
     # cachedproperty? Answer: because it breaks tests.
-    @property
+    @cachedproperty
     def serieses(self):
         """See `IDistribution`."""
         ret = DistroSeries.selectBy(distribution=self)
@@ -444,7 +444,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See BugTargetBase."""
         return 'BugTask.distribution = %s' % sqlvalues(self)
 
-    @property
+    @cachedproperty
     def currentseries(self):
         """See `IDistribution`."""
         # XXX kiko 2006-03-18:
