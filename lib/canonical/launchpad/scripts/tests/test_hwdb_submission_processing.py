@@ -3036,7 +3036,8 @@ class TestUdevDevice(TestCaseHWDB):
                 'DEVPATH': '/devices/LNXSYSTM:00',
                 'MODALIAS': 'acpi:LNXSYSTM:',
                 'SUBSYSTEM': 'acpi',
-                }
+                },
+            'id': 1,
             }
 
         self.root_device_dmi_data = {
@@ -3520,7 +3521,7 @@ class TestUdevDevice(TestCaseHWDB):
                 },
             }
 
-    def test_device_id(self):
+    def test_device_device_id(self):
         """Test of UdevDevice.device_id."""
         device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(
@@ -4184,6 +4185,11 @@ class TestUdevDevice(TestCaseHWDB):
             'A UdevDevice that is supposed to be a real device does not '
             'provide bus, vendor ID, product ID or product name: None None '
             'None None /devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0')
+
+    def test_device_id(self):
+        """Each UdevDevice has a property 'id'."""
+        device = UdevDevice(None, self.root_device)
+        self.assertEqual(1, device.id)
 
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
