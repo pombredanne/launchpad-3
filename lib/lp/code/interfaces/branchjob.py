@@ -14,6 +14,7 @@ __all__ = [
     'IBranchDiffJob',
     'IBranchDiffJobSource',
     'IBranchUpgradeJob',
+    'IBranchUpgradeJobSource',
     'IRevisionMailJob',
     'IRevisionMailJobSource',
     'IRevisionsAddedJobSource',
@@ -71,7 +72,7 @@ class IBranchDiffJobSource(Interface):
         """
 
 
-class IBranchUpgradeJob(Interface):
+class IBranchUpgradeJob(IRunnableJob):
     """A job to upgrade branches with out-of-date formats."""
 
     def run():
@@ -85,6 +86,9 @@ class IBranchUpgradeJobSource(Interface):
 
         :param branch: The database branch to upgrade.
         """
+
+    def iterReady():
+        """Iterate through all IBranchUpgradeJobs."""
 
 
 class IRevisionMailJob(IRunnableJob):

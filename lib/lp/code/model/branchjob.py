@@ -247,6 +247,7 @@ class BranchUpgradeJob(BranchJobDerived):
 
     implements(IBranchUpgradeJob)
     classProvides(IBranchUpgradeJobSource)
+    class_job_type = BranchJobType.UPGRADE_BRANCH
 
     @classmethod
     def create(cls, branch):

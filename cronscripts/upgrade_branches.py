@@ -11,8 +11,6 @@ import _pythonpath
 
 from lp.services.job.runner import JobCronScript
 from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-#from lp.code.interfaces.branchmergeproposal import (
-#    IUpdatePreviewDiffJobSource,)
 
 
 class RunUpgradeBranches(JobCronScript):
@@ -20,6 +18,9 @@ class RunUpgradeBranches(JobCronScript):
 
     config_name = 'upgrade_branches'
     source_interface = IBranchUpgradeJobSource
+
+    def setUp(self):
+        return []
 
 
 if __name__ == '__main__':
