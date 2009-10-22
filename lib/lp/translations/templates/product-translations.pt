@@ -27,16 +27,21 @@
                   Launchpad currently recommends translating
                   <tal:target replace="structure target/fmt:link"
                               >trunk</tal:target>.
-                  <tal:admins condition="context/required:launchpad.AnyPerson">
+                  <span id="downloadupload"
+                       tal:condition="context/required:launchpad.AnyPerson">
                     You can also
                     <a tal:attributes="href target/fmt:url/+export"
-                       >download</a> or
-                    <a tal:attributes="
-                        href target/fmt:url/+translations-upload"
-                     >upload</a> translations for
+                       >download</a>
+                    <tal:owner-or-admin condition="admin_user">
+                      or
+                      <a tal:attributes="
+                          href target/fmt:url/+translations-upload"
+                       >upload</a>
+                    </tal:owner-or-admin>
+                    translations for
                     <tal:target replace="structure target/name"
                                 >trunk</tal:target>.
-                  </tal:admins>
+                  </span>
                 </p>
                 <p>To see all the translation files that are waiting to be
                   imported, please look at
