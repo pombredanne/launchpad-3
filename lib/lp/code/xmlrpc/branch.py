@@ -12,6 +12,7 @@ __all__ = [
     'PublicCodehostingAPI']
 
 import os
+import urllib
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
@@ -207,6 +208,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     def _getUniqueNameResultDict(self, unique_name, suffix=None,
                                  supported_schemes=None):
+        if isinstance(unique_name, unicode):
+            unique_name = urllib.quote(unique_name.encode('utf-8'))
         if supported_schemes is None:
             supported_schemes = self.supported_schemes
         result = dict(urls=[])

@@ -8,6 +8,7 @@ __all__ = []
 
 
 import os
+import urllib
 import unittest
 import xmlrpclib
 
@@ -225,6 +226,16 @@ class TestExpandURL(TestCaseWithFactory):
         nonexistent_branch = '~%s/%s/doesntexist' % (
             owner.name, self.product.name)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
+
+    def test_no_such_branch_product_non_ascii(self):
+        # A path to a branch that contains non ascii characters will never
+        # find a branch, but it still resolves rather than erroring.
+        owner = self.factory.makePerson()
+        nonexistent_branch = u'~%s/%s/\N{LATIN SMALL LETTER E WITH ACUTE}' % (
+            owner.name, self.product.name)
+        self.assertResolves(
+            nonexistent_branch,
+            urllib.quote(nonexistent_branch.encode('utf-8'), '/~'))
 
     def test_no_such_branch_personal(self):
         # Resolve paths to junk branches.
