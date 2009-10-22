@@ -414,17 +414,8 @@ class DistributionSourcePackage(BugTargetBase,
                 sqlvalues(self.distribution, self.sourcepackagename))
 
     @staticmethod
-    def getBugsByNumbers(bug_numbers):
-        """List of `Bug` objects identified by the `bug_numbers` sequence."""
-        if bug_numbers is None or len(bug_numbers) < 1:
-            return EmptyResultSet()
-        store = IStore(Bug)
-        result_set = store.find(Bug, In(Bug.id, bug_numbers))
-        return result_set
-
-    @staticmethod
     def getPersonsByEmail(email_addresses):
-        """List of `Person` objects with the given email addresses."""
+        """[(EmailAddress,Person), ..] iterable for given email addresses."""
         if email_addresses is None or len(email_addresses) < 1:
             return EmptyResultSet()
         # Perform basic sanitization of email addresses.

@@ -27,6 +27,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IBugSet
 from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
@@ -205,7 +206,7 @@ class DistributionSourcePackageBaseView:
              if not_empty(spr.changelog_entry)])
         unique_bugs = extract_bug_numbers(the_changelog)
         self._bug_data = list(
-            self.context.getBugsByNumbers(unique_bugs.keys()))
+            getUtility(IBugSet).getByNumbers(unique_bugs.keys()))
         unique_emails = extract_email_addresses(the_changelog)
         # The method below returns a [(EmailAddress,Person]] result set.
         result_set = self.context.getPersonsByEmail(unique_emails)
