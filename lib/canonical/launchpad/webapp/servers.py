@@ -714,9 +714,13 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__()
 
-    def redirect(self, location, status=None, trusted=False,
+    def redirect(self, location, status=None, trusted=True,
                  temporary_if_possible=False):
         """Do a redirect.
+
+        Unlike Zope's BrowserResponse.redirect(), consider all redirects to be
+        trusted. Otherwise we'd have to change all callsites that redirect
+        from lp.net to vhost.lp.net to pass trusted=True.
 
         If temporary_if_possible is True, then do a temporary redirect
         if this is a HEAD or GET, otherwise do a 303.
@@ -889,13 +893,6 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
         if self._notifications is None:
             self._notifications = NotificationList()
         return self._notifications
-
-    def redirect(self, location, status=None, trusted=True):
-        # Overridden here (with trusted=True) so that tests can redirect to
-        # any hosts. This was allowed (at least) up to zope.publisher-3.5.6
-        # and we have too many tests relying on that.
-        super(LaunchpadTestResponse, self).redirect(
-            location, status=status, trusted=trusted)
 
 
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):

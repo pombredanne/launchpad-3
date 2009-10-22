@@ -209,7 +209,7 @@ class NotificationResponse:
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         self._notifications = None
 
-    def redirect(self, location, status=None, trusted=False):
+    def redirect(self, location, status=None, trusted=True):
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         # We are redirecting, so we need to stuff our notifications into
         # the session

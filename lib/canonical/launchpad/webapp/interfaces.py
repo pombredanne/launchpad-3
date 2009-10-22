@@ -611,7 +611,7 @@ class INotificationRequest(Interface):
 
 
 class INotificationResponse(Interface):
-    """This class is responsible for propogating any notifications that
+    """This class is responsible for propagating any notifications that
     have been set when redirect() is called.
     """
 
@@ -657,9 +657,12 @@ class INotificationResponse(Interface):
     def addErrorNotification(msg):
         """Shortcut to addNotification(msg, ERROR)."""
 
-    def redirect(location, status=None, trusted=False):
-        """As per IHTTPApplicationResponse.redirect, except notifications
-        are preserved.
+    def redirect(location, status=None, trusted=True):
+        """Like IHTTPApplicationResponse.redirect, preserving notifications.
+
+        Also, for convenience we use trusted=True here, so that our callsites
+        that redirect from lp.net to vhost.lp.net don't have to pass
+        trusted=True explicitly.
         """
 
 
