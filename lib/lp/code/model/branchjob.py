@@ -529,8 +529,8 @@ class RevisionsAddedJob(BranchJobDerived):
         """
         store = Store.of(self.branch)
         conditions = [
-            BranchMergeProposal.target_branch==self.branch.id,
-            BranchMergeProposal.source_branch==Branch.id,
+            BranchMergeProposal.target_branch == self.branch.id,
+            BranchMergeProposal.source_branch == Branch.id,
             Branch.last_scanned_id.is_in(revision_ids)]
         if not include_superseded:
             conditions.append(
@@ -843,15 +843,18 @@ class RosettaUploadJob(BranchJobDerived):
         return (RosettaUploadJob(job) for job in jobs)
 
     @staticmethod
-    def findUnfinishedJobs(branch):
+    def findUnfinishedJobs(branch, since=None):
         """See `IRosettaUploadJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.using(BranchJob, Job).find((BranchJob), And(
+        match = And(
             Job.id == BranchJob.jobID,
             BranchJob.branch == branch,
             BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
             Job._status != JobStatus.COMPLETED,
-            Job._status != JobStatus.FAILED))
+            Job._status != JobStatus.FAILED)
+        if since is not None:
+            match = And(match, Job.date_created > since)
+        jobs = store.using(BranchJob, Job).find((BranchJob), match)
         return jobs
 
 

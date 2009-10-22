@@ -4,7 +4,8 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, Object, Text
+from zope.schema import Bool, Choice, Int, Object, Text
+from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pomsgid import IPOMsgID
@@ -15,7 +16,36 @@ __all__ = [
     'IPOTMsgSet',
     'BrokenTextError',
     'POTMsgSetInIncompatibleTemplatesError',
+    'TranslationCreditsType',
     ]
+
+
+class TranslationCreditsType(EnumeratedType):
+    """Identify a POTMsgSet as translation credits."""
+
+    NOT_CREDITS = Item("""
+        Not a translation credits message
+
+        This is a standard msgid and not translation credits.
+        """)
+
+    GNOME = Item("""
+        Gnome credits message
+
+        How they do them in Gnome.
+        """)
+
+    KDE_EMAILS = Item("""
+        KDE emails credits message
+
+        How they do them in KDE for translator emails.
+        """)
+
+    KDE_NAMES = Item("""
+        KDE names credits message
+
+        How they do them in KDE for translator names.
+        """)
 
 
 class BrokenTextError(ValueError):
@@ -250,6 +280,11 @@ class IPOTMsgSet(Interface):
 
     is_translation_credit = Attribute(
         """Whether this is a message set for crediting translators.""")
+
+    translation_credits_type = Choice(
+        title=u"The type of translation credit of this message.",
+        required=True,
+        vocabulary = TranslationCreditsType)
 
     def makeHTMLID(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.

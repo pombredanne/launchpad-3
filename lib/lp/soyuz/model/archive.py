@@ -1424,14 +1424,15 @@ class ArchiveSet:
             TeamParticipation.team == Archive.ownerID,
             TeamParticipation.person == user,
             )
-        third_part_upload_acl = store.find(
+        third_party_upload_acl = store.find(
             Archive,
             Archive.purpose == ArchivePurpose.PPA,
             ArchivePermission.archiveID == Archive.id,
-            ArchivePermission.person == user,
+            TeamParticipation.person == user,
+            TeamParticipation.team == ArchivePermission.personID,
             )
 
-        result = direct_membership.union(third_part_upload_acl)
+        result = direct_membership.union(third_party_upload_acl)
         result.order_by(Archive.displayname)
 
         return result

@@ -14,8 +14,8 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import (
-        PackagingType, IPackaging, IPackagingUtil)
+from lp.registry.interfaces.packaging import (
+    IPackaging, IPackagingUtil, PackagingType)
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -41,7 +41,8 @@ class Packaging(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False, default=DEFAULT)
+        storm_validator=validate_public_person,
+        notNull=False, default=DEFAULT)
 
     @property
     def sourcepackage(self):
@@ -56,7 +57,15 @@ class PackagingUtil:
 
     def createPackaging(self, productseries, sourcepackagename,
                         distroseries, packaging, owner):
-        """See `IPackaging`."""
+        """See `IPackaging`.
+
+        Raises an assertion error if there is already packaging for
+        the sourcepackagename in the distroseries.
+        """
+        if self.packagingEntryExists(sourcepackagename, distroseries):
+            raise AssertionError(
+                "A packaging entry for %s in %s already exists." %
+                (sourcepackagename.name, distroseries.name))
         Packaging(productseries=productseries,
                   sourcepackagename=sourcepackagename,
                   distroseries=distroseries,
@@ -77,14 +86,15 @@ class PackagingUtil:
                distroseries.parent.name, distroseries.name))
         packaging.destroySelf()
 
-    def packagingEntryExists(self, productseries, sourcepackagename,
-                             distroseries):
+    def packagingEntryExists(self, sourcepackagename, distroseries,
+                             productseries=None):
         """See `IPackaging`."""
-        result = Packaging.selectOneBy(
-            productseries=productseries,
+        criteria = dict(
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
+        if productseries is not None:
+            criteria['productseries'] = productseries
+        result = Packaging.selectOneBy(**criteria)
         if result is None:
             return False
         return True
-
