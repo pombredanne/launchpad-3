@@ -123,9 +123,7 @@ def linkify_changelog(user, changelog, preloaded_person_data=None):
 
     # Any email addresses remaining in the changelog were not obfuscated,
     # so we linkify them here.
-    from storm.tracer import debug; debug(True)
     changelog = linkify_email(changelog, preloaded_person_data)
-    debug(False)
 
     # Ensure any bug numbers are linkified to the bug page.
     changelog = linkify_bug_numbers(changelog)
