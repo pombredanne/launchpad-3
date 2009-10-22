@@ -160,8 +160,7 @@ class DecoratedDistributionSourcePackageRelease:
     def change_summary(self):
         """ See `ISourcePackageRelease`."""
         return linkify_changelog(
-            self._user, self.context.sourcepackagerelease.change_summary(),
-            self._person_data)
+            self._user, self.context.change_summary, self._person_data)
 
 
 class IDistributionSourcePackageActionMenu(Interface):
