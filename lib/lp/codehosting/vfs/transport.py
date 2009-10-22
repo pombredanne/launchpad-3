@@ -108,6 +108,7 @@ class AsyncVirtualTransport(Transport):
     def _abspath(self, relpath):
         """Return the absolute, escaped path to `relpath` without the schema.
         """
+        # XXX HERE IS THE PROBLEM!!
         return urlutils.joinpath(
             self.base[len(self.server.get_url())-1:], relpath)
 
