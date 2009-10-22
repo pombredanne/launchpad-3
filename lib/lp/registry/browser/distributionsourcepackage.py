@@ -196,8 +196,10 @@ class DistributionSourcePackageBaseView:
             return []
 
         sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
-        # Load the bugs and persons referenced by the +changelog page into the
-        # storm cache. This will aid the ensuing changelog linkification.
+        # Pre-load the bugs and persons referenced by the +changelog page from
+        # the database.
+        # This will improve the performance of the ensuing changelog
+        # linkification.
         the_changelog = '\n'.join(
             [spr.changelog_entry for spr in sprs
              if not_empty(spr.changelog_entry)])
@@ -205,7 +207,7 @@ class DistributionSourcePackageBaseView:
         self._bug_data = list(
             self.context.getBugsByNumbers(unique_bugs.keys()))
         unique_emails = extract_email_addresses(the_changelog)
-        # This returns a [(EmailAddress,Person]] list.
+        # The method below returns a [(EmailAddress,Person]] result set.
         result_set = self.context.getPersonsByEmail(unique_emails)
         self._person_data = dict(
             [(email.email,person) for (email,person) in result_set])
