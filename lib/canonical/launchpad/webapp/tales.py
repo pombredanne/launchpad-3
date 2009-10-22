@@ -2896,8 +2896,8 @@ class FormattersAPI:
             # data dictionary.
             if preloaded_person_data is not None:
                 person = preloaded_person_data.get(address, None)
-            if person is None:
-                # We need to perform a database lookup at this point.
+            else:
+                # No pre-loaded data -> we need to perform a database lookup.
                 person = getUtility(IPersonSet).getByEmail(address)
             # Only linkify if person exists and does not want to hide
             # their email addresses.
