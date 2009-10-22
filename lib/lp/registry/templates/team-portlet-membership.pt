@@ -7,7 +7,7 @@
 <div id="membership" class="portlet">
   <h2>
     <span class="see-all">
-      <a tal:attributes="href context/menu:overview/members/fmt:url">
+      <a tal:attributes="href context/menu:overview/packages/fmt:url">
         All members
       </a>
     </span>
