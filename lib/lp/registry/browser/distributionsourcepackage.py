@@ -184,6 +184,11 @@ class DistributionSourcePackageBaseView:
     """Common features to all `DistributionSourcePackage` views."""
 
     def releases(self):
+        def not_empty(text):
+            return (
+                text is not None and isinstance(text, basestring)
+                and len(text.strip()) > 0)
+
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
 
         # Return as early as possible to avoid unnecessary processing.
@@ -193,7 +198,9 @@ class DistributionSourcePackageBaseView:
         sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
         # Load the bugs and persons referenced by the +changelog page into the
         # storm cache. This will aid the ensuing changelog linkification.
-        the_changelog = '\n'.join([spr.changelog_entry for spr in sprs])
+        the_changelog = '\n'.join(
+            [spr.changelog_entry for spr in sprs
+             if not_empty(spr.changelog_entry)])
         unique_bugs = extract_bug_numbers(the_changelog)
         self._bug_data = list(
             self.context.getBugsByNumbers(unique_bugs.keys()))

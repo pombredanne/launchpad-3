@@ -16,6 +16,7 @@ import operator
 
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import And, Desc, In, Join, Lower
+from storm.store import EmptyResultSet
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
@@ -415,6 +416,8 @@ class DistributionSourcePackage(BugTargetBase,
     @staticmethod
     def getBugsByNumbers(bug_numbers):
         """List of `Bug` objects identified by the `bug_numbers` sequence."""
+        if bug_numbers is None or len(bug_numbers) < 1:
+            return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
         return result_set
@@ -422,6 +425,8 @@ class DistributionSourcePackage(BugTargetBase,
     @staticmethod
     def getPersonsByEmail(email_addresses):
         """List of `Person` objects with the given email addresses."""
+        if email_addresses is None or len(email_addresses) < 1:
+            return EmptyResultSet()
         # Perform basic sanitization of email addresses.
         email_addresses = [
             address.lower().strip() for address in email_addresses]
