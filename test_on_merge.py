@@ -4,6 +4,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
+import _pythonpath
 
 import sys, time
 import os, errno

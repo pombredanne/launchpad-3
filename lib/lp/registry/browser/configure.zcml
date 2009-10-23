@@ -1663,7 +1663,7 @@
         template="../templates/productseries-ubuntupkg.pt"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
-        permission="zope.Public"/>
+        permission="launchpad.View"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"

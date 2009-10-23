@@ -120,16 +120,22 @@
       <div class="portlet">
         <h2>Milestones and releases</h2>
 
-        <table tal:replace="structure context/@@+table-releases" />
+        <tal:comment condition="nothing">
+          This DIV is necessary for the table-actions:nth-child stylesheet.
+        </tal:comment>
+        <div>
+          <table tal:condition="context/all_milestones"
+                tal:replace="structure context/@@+table-releases" />
 
-        <ul class="horizontal" style="margin-bottom: 1em;">
-          <li>
-            <a tal:replace="structure overview_menu/create_milestone/fmt:icon-link" />
-          </li>
-          <li>
-            <a tal:replace="structure overview_menu/create_release/fmt:icon-link" />
-          </li>
-        </ul>
+          <ul class="table-actions" style="margin-bottom: 1em;">
+            <li>
+              <a tal:replace="structure overview_menu/create_milestone/fmt:icon-link" />
+            </li>
+            <li>
+              <a tal:replace="structure overview_menu/create_release/fmt:icon-link" />
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div class="yui-g">

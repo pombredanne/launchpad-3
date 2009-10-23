@@ -177,6 +177,11 @@ class TestDiffInScripts(DiffTestCase):
         self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
                          diff.diffstat)
 
+    def test_fromFileAcceptsBinary(self):
+        diff_bytes = "Binary files a\t and b\t differ\n"
+        diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
+        self.assertEqual({}, diff.diffstat)
+
     def test_fromFileSets_added_removed(self):
         """fromFile sets added_lines_count, removed_lines_count."""
         diff = Diff.fromFile(

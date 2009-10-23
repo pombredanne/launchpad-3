@@ -24,7 +24,8 @@ class BranchDistroScript(LaunchpadScript):
         if len(self.args) != 3:
             self.parser.error("Wrong number of arguments.")
         brancher = DistroBrancher.fromNames(self.logger, *self.args)
-        server = get_multi_server(write_mirrored=True, write_hosted=True)
+        server = get_multi_server(
+            write_mirrored=True, write_hosted=True, direct_database=True)
         server.setUp()
         try:
             if self.options.check:
