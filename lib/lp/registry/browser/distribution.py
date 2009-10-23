@@ -76,6 +76,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -421,7 +422,7 @@ class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
         return Link('+addseries', text, icon='add')
 
 
-class DistributionBugsMenu(ApplicationMenu):
+class DistributionBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistribution
     facet = 'bugs'
@@ -450,10 +451,6 @@ class DistributionBugsMenu(ApplicationMenu):
     def filebug(self):
         text = 'Report a bug'
         return Link('+filebug', text, icon='bug')
-
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
 
 class DistributionSpecificationsMenu(NavigationMenu,

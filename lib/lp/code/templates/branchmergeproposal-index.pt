@@ -30,6 +30,12 @@
   </script>
 </metal:block>
 
+<tal:registering metal:fill-slot="registering">
+  Proposed by
+  <tal:registrant replace="structure context/registrant/fmt:link"/>
+  <tal:modified replace="context/date_created/fmt:displaydate" />
+</tal:registering>
+
 
 <metal:side fill-slot="side"
             tal:define="context_menu context/menu:context">

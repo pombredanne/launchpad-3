@@ -503,6 +503,7 @@ class SubmissionParser(object):
         devices = []
         device = None
         line_number = 0
+        device_id = 0
 
         for line_number, line in enumerate(udev_data):
             if len(line) == 0:
@@ -518,9 +519,11 @@ class SubmissionParser(object):
 
             key, value = record
             if device is None:
+                device_id += 1
                 device = {
                     'E': {},
                     'S': [],
+                    'id': device_id,
                     }
                 devices.append(device)
             # Some attribute lines have a space character after the
@@ -1397,19 +1400,27 @@ class SubmissionParser(object):
 
     def buildDeviceList(self, parsed_data):
         """Create a list of devices from a submission."""
-        self.hal_devices = hal_devices = {}
+        if 'hal' in parsed_data['hardware']:
+            return self.buildHalDeviceList(parsed_data)
+        else:
+            return self.buildUdevDeviceList(parsed_data)
+
+    def buildHalDeviceList(self, parsed_data):
+        """Create a list of devices from the HAL data of a submission."""
+        self.devices = {}
         for hal_data in parsed_data['hardware']['hal']['devices']:
             udi = hal_data['udi']
-            hal_devices[udi] = HALDevice(hal_data['id'], udi,
-                                         hal_data['properties'], self)
-        for device in hal_devices.values():
+            self.devices[udi] = HALDevice(hal_data['id'], udi,
+                                          hal_data['properties'], self)
+        for device in self.devices.values():
             parent_udi = device.parent_udi
             if parent_udi is not None:
-                hal_devices[parent_udi].addChild(device)
+                self.devices[parent_udi].addChild(device)
+        return True
 
     def buildUdevDeviceList(self, parsed_data):
         """Create a list of devices from the udev data of a submission."""
-        self.devices = devices = {}
+        self.devices = {}
         sysfs_data = parsed_data['hardware']['sysfs-attributes']
         dmi_data = parsed_data['hardware']['dmi']
         for udev_data in parsed_data['hardware']['udev']:
@@ -1421,7 +1432,7 @@ class SubmissionParser(object):
             else:
                 device = UdevDevice(
                     self, udev_data, sysfs_data=sysfs_data.get(device_path))
-            devices[device_path] = device
+            self.devices[device_path] = device
 
         # The parent-child relations are derived from the path names of
         # the devices. If A and B are the path names of two devices,
@@ -1435,13 +1446,13 @@ class SubmissionParser(object):
         # of PCI devices start with '/devices/pci'. We'll temporarily
         # change the path name of the root device so that the rule
         # holds for all devices.
-        if UDEV_ROOT_PATH not in devices:
+        if UDEV_ROOT_PATH not in self.devices:
             self._logError('No udev root device defined', self.submission_key)
             return False
-        devices['/devices'] = devices[UDEV_ROOT_PATH]
-        del devices[UDEV_ROOT_PATH]
+        self.devices['/devices'] = self.devices[UDEV_ROOT_PATH]
+        del self.devices[UDEV_ROOT_PATH]
 
-        path_names = sorted(devices, key=len, reverse=True)
+        path_names = sorted(self.devices, key=len, reverse=True)
         for path_index, path_name in enumerate(path_names[:-1]):
             # Ensure that the last ancestor of each device is our
             # root node.
@@ -1452,15 +1463,16 @@ class SubmissionParser(object):
                 return False
             for parent_path in path_names[path_index+1:]:
                 if path_name.startswith(parent_path):
-                    devices[parent_path].addChild(devices[path_name])
+                    self.devices[parent_path].addChild(
+                        self.devices[path_name])
                     break
-        devices[UDEV_ROOT_PATH] = devices['/devices']
-        del devices['/devices']
+        self.devices[UDEV_ROOT_PATH] = self.devices['/devices']
+        del self.devices['/devices']
         return True
 
     def getKernelPackageName(self):
         """Return the kernel package name of the submission,"""
-        root_hal_device = self.hal_devices[ROOT_UDI]
+        root_hal_device = self.devices[ROOT_UDI]
         kernel_version = root_hal_device.getProperty('system.kernel.version')
         if kernel_version is None:
             self._logWarning(
@@ -1521,8 +1533,9 @@ class SubmissionParser(object):
         self.parsed_data = parsed_data
         if not self.checkConsistency(parsed_data):
             return False
-        self.buildDeviceList(parsed_data)
-        root_device = self.hal_devices[ROOT_UDI]
+        if not self.buildDeviceList(parsed_data):
+            return False
+        root_device = self.devices[ROOT_UDI]
         root_device.createDBData(submission, None)
         return True
 
@@ -2765,6 +2778,11 @@ class UdevDevice(BaseDevice):
                 'ancestors: %s' % self.device_id)
             return None
         return controller
+
+    @property
+    def id(self):
+        return self.udev['id']
+
 
 class ProcessingLoop(object):
     """An `ITunableLoop` for processing HWDB submissions."""
