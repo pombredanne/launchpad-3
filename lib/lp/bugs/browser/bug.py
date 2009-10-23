@@ -290,7 +290,7 @@ class BugContextMenu(ContextMenu):
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'Activity log'
+        text = 'See full activity log'
         return Link('+activity', text)
 
     def affectsmetoo(self):
