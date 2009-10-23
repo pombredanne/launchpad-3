@@ -365,6 +365,13 @@ class IPOTemplate(IRosettaStats):
         all of them.
         """
 
+    def getTranslationCredits():
+        """Return an iterator over translation credits.
+
+        Return all `IPOTMsgSet` objects in this template that are translation
+        credits.
+        """
+
     def getPOTMsgSetsCount(current=True):
         """Return the number of POTMsgSet objects related to this object.
 

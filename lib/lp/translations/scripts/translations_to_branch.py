@@ -63,8 +63,12 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 "Translations export for %s was just disabled." % (
                     source.title))
 
+        branch = source.translations_branch
         jobsource = getUtility(IRosettaUploadJobSource)
-        if jobsource.findUnfinishedJobs(source.translations_branch).any():
+        unfinished_jobs = jobsource.findUnfinishedJobs(
+            branch, since=datetime.now(UTC) - timedelta(days=1))
+
+        if unfinished_jobs.any():
             raise ConcurrentUpdateError(
                 "Translations branch for %s has pending translations "
                 "changes.  Not committing." % source.title)
