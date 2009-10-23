@@ -146,7 +146,7 @@ class StructuralSubscriptionTargetMixin:
                 return True
 
         admins = getUtility(ILaunchpadCelebrities).admin
-        return (subscriber is subscribed_by or
+        return (subscriber == subscribed_by or
                 subscriber in subscribed_by.getAdministratedTeams() or
                 subscribed_by.inTeam(admins))
 
