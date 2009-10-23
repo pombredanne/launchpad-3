@@ -441,7 +441,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See BugTargetBase."""
         return 'BugTask.distribution = %s' % sqlvalues(self)
 
-    @cachedproperty('_cached_currentseries')
+    @property
     def currentseries(self):
         """See `IDistribution`."""
         # XXX kiko 2006-03-18:
@@ -1495,8 +1495,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # This driver is a release manager.
             series.driver = owner
 
-        if safe_hasattr(self, '_cached_currentseries'):
-            del self._cached_currentseries
         if safe_hasattr(self, '_cached_serieses'):
             del self._cached_serieses
         return series
