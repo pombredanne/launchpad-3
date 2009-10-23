@@ -96,8 +96,8 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def distribution_source_package(self):
         target = canonical_url(self.context.distribution_sourcepackage)
-        text = 'All source packages in %s for %s' % (
-            self.context.distribution.displayname, self.context.name)
+        text = 'All versions of %s source in %s' % (
+            self.context.name, self.context.distribution.displayname)
         return Link(target, text, icon='package-source')
 
     def changelog(self):
