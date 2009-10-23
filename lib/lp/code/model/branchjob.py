@@ -263,7 +263,7 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_transport = get_transport(upgrade_branch_path)
             source_branch_transport = get_transport(self.branch.getPullURL())
             source_branch_transport.copy_tree_to_transport(upgrade_transport)
-            upgrade_branch = BzrBranch.open(upgrade_transport.base)
+            upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
             # Perform the upgrade.
             upgrade(upgrade_branch.base, self.upgrade_format)
@@ -295,7 +295,8 @@ class BranchUpgradeJob(BranchJobDerived):
         repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
             self.branch.repository_format)
         if branch_format is None or repository_format is None:
-            branch = self.branch.getBzrBranch()
+            branch_transport = get_transport(self.branch.getPullURL())
+            branch = BzrBranch.open_from_transport(branch_transport)
             if branch_format is None:
                 branch_format = type(branch._format)
             if repository_format is None:
