@@ -752,7 +752,7 @@ def validate_mock_class(mock_class):
     We often use mock classes in tests which are derived from real
     classes.
 
-    This decorator ensures that methods redefined in the mock
+    This function ensures that methods redefined in the mock
     class have the same signature as the corresponding methods of
     the base class.
 
