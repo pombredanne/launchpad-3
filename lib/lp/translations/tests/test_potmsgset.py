@@ -20,7 +20,7 @@ from lp.translations.model.translationmessage import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potmsgset import (
-    POTMsgSetInIncompatibleTemplatesError)
+    POTMsgSetInIncompatibleTemplatesError, TranslationCreditsType)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationmessage import TranslationConflict
@@ -1076,6 +1076,100 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
 
         self.assertTrue(tm1.is_imported)
         self.assertFalse(tm2.is_imported)
+
+
+class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
+    """Test methods related to TranslationCredits."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestPOTMsgSetTranslationCredits, self).setUp()
+        self.potemplate = self.factory.makePOTemplate()
+
+    def test_creation_credits(self):
+        # Upon creation of a translation credits message,
+        # dummy translations are inserted for each POFile.
+        eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+        sr_pofile = self.factory.makePOFile('sr', potemplate=self.potemplate)
+
+        credits = self.factory.makePOTMsgSet(
+            self.potemplate, u'translator-credits', sequence=1)
+
+        eo_translation = credits.getCurrentTranslationMessage(
+            self.potemplate, eo_pofile.language)
+        self.assertIsNot(None, eo_translation,
+            "Translation credits are not translated upon creation.")
+
+        sr_translation = credits.getCurrentTranslationMessage(
+            self.potemplate, sr_pofile.language)
+        self.assertIsNot(None, sr_translation,
+            "Translation credits are not translated upon "
+            "creation in 2nd POFile.")
+
+    def test_creation_not_translated(self):
+        # Normal messages do not receive a dummy translation.
+        eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
+        eo_translation = potmsgset.getCurrentTranslationMessage(
+            self.potemplate, eo_pofile.language)
+        self.assertIs(None, eo_translation)
+
+    def test_creation_not_imported(self):
+        # Dummy translation for translation credits are not created as
+        # imported and can therefore be overwritten by later imports.
+        eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+        imported_credits = u'Imported credits.'
+
+        credits = self.factory.makePOTMsgSet(
+            self.potemplate, u'translator-credits', sequence=1)
+        translation = self.factory.makeTranslationMessage(eo_pofile, credits,
+             translations=[imported_credits], is_imported=True)
+
+        eo_translation = credits.getCurrentTranslationMessage(
+            self.potemplate, eo_pofile.language)
+        self.assertEqual(imported_credits, eo_translation.msgstr0.translation,
+            "Imported translation credits do not replace dummy credits.")
+
+    def test_translation_credits_gnome(self):
+        # Detect all know variations of Gnome translator credits.
+        gnome_credits = [
+            u'translator-credits',
+            u'translator_credits',
+            u'translation-credits',
+        ]
+        for sequence, credits_string in enumerate(gnome_credits):
+            credits = self.factory.makePOTMsgSet(
+                self.potemplate, credits_string, sequence=sequence+1)
+            self.assertTrue(credits.is_translation_credit)
+            self.assertEqual(TranslationCreditsType.GNOME,
+                             credits.translation_credits_type)
+
+    def test_translation_credits_kde(self):
+        # Detect all know variations of KDE translator credits.
+        kde_credits = [
+            (u'Your emails', u'EMAIL OF TRANSLATORS',
+             TranslationCreditsType.KDE_EMAILS),
+            (u'Your names', u'NAME OF TRANSLATORS',
+             TranslationCreditsType.KDE_NAMES),
+        ]
+        sequence = 0
+        for credits_string, context, credits_type in kde_credits:
+            sequence += 1
+            credits = self.factory.makePOTMsgSet(
+                self.potemplate, credits_string,
+                context=context, sequence=sequence)
+            self.assertTrue(credits.is_translation_credit)
+            self.assertEqual(credits_type, credits.translation_credits_type)
+
+            # Old KDE style.
+            sequence += 1
+            credits = self.factory.makePOTMsgSet(
+                self.potemplate, u'_: %s\n%s' % (context, credits_string),
+                sequence=sequence)
+            self.assertTrue(credits.is_translation_credit)
+            self.assertEqual(credits_type, credits.translation_credits_type)
 
 
 def test_suite():
