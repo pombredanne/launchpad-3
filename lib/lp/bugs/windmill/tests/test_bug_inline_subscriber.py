@@ -102,32 +102,6 @@ class TestInlineSubscribing(TestCaseWithFactory):
             id=u'subscribers-links', timeout=FOR_ELEMENT)
         client.asserts.assertNode(xpath=PERSON_LINK % u'Ubuntu Team')
 
-        # The same team cannot be subscribed again.
-        client.click(link=u'Subscribe someone else')
-        client.waits.forElement(
-            name=u'search', timeout=FOR_ELEMENT)
-        client.type(text=u'ubuntu-team', name=u'search')
-        client.click(
-            xpath=u'//table[contains(@class, "yui-picker") '
-                   'and not(contains(@class, "yui-picker-hidden"))]'
-                   '//div[@class="yui-picker-search-box"]/button')
-        search_result_xpath = (
-            u'//table[contains(@class, "yui-picker") '
-            'and not(contains(@class, "yui-picker-hidden"))]'
-            '//ul[@class="yui-picker-results"]/li[1]/span')
-        client.waits.forElement(
-            xpath=search_result_xpath, timeout=FOR_ELEMENT)
-        client.click(xpath=search_result_xpath)
-        client.waits.forElement(
-            classname=u'yui-lazr-formoverlay-errors',
-            timeout=FOR_ELEMENT)
-        client.asserts.assertText(
-            classname=u'yui-lazr-formoverlay-errors',
-            validator=u'Ubuntu Team has already been subscribed')
-        # Clear the error message by clicking the OK button.
-        client.click(
-            xpath=u'//div[@class="yui-lazr-formoverlay-actions"]/button[2]')
-
         # If we subscribe the user again,
         # the icon should still be the person icon.
         client.click(xpath=SUBSCRIPTION_LINK)
@@ -135,7 +109,6 @@ class TestInlineSubscribing(TestCaseWithFactory):
         client.asserts.assertProperty(
             xpath=(PERSON_LINK % u'Sample Person') + '/span',
             validator=u'className|person')
-
 
         # Sample Person is logged in currently. She is not a
         # member of Ubuntu Team, and so, does not have permission
