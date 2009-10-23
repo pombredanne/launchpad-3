@@ -11,6 +11,7 @@ import _pythonpath
 
 from lp.services.job.runner import JobCronScript
 from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
+from lp.codehosting.vfs import get_multi_server
 
 
 class RunUpgradeBranches(JobCronScript):
@@ -20,7 +21,9 @@ class RunUpgradeBranches(JobCronScript):
     source_interface = IBranchUpgradeJobSource
 
     def setUp(self):
-        return []
+        server = get_multi_server(write_hosted=True)
+        server.setUp()
+        return [server.destroy]
 
 
 if __name__ == '__main__':
