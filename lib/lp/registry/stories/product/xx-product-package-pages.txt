@@ -27,7 +27,8 @@ for each series. In this case, mark@example.com is the owner of Evolution.
     >>> evo_owner.open('http://launchpad.dev/evolution/+packages')
     >>> print evo_owner.title
     Linked packages ...
-    >>> print extract_text(find_tag_by_id(evo_owner.contents, 'packages'))
+    >>> print extract_text(find_tag_by_id(
+    ...     evo_owner.contents, 'packages-trunk'))
     Distribution  Series        Source Package  Version
     Ubuntu        4.10 (Warty)  evolution ...
 
