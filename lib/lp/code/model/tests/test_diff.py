@@ -109,6 +109,11 @@ class TestDiff(DiffTestCase):
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
 
+
+class TestDiffInScripts(DiffTestCase):
+
+    layer = LaunchpadZopelessLayer
+
     def test_mergePreviewFromBranches(self):
         # mergePreviewFromBranches generates the correct diff.
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
@@ -171,6 +176,11 @@ class TestDiff(DiffTestCase):
         diff = Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
         self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
                          diff.diffstat)
+
+    def test_fromFileAcceptsBinary(self):
+        diff_bytes = "Binary files a\t and b\t differ\n"
+        diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
+        self.assertEqual({}, diff.diffstat)
 
     def test_fromFileSets_added_removed(self):
         """fromFile sets added_lines_count, removed_lines_count."""

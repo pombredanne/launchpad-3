@@ -77,7 +77,7 @@ commit message can be set.
 
     >>> nopriv_browser.getLink('Edit commit message').click()
     >>> nopriv_browser.getControl(name='field.commit_message').value = (
-    ...     'Add more mojo')
+    ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
 
     >>> print nopriv_browser.url
@@ -87,11 +87,9 @@ commit message can be set.
     ...     print extract_text(find_tag_by_id(
     ...         browser.contents, 'proposal-summary'))
     >>> print_summary(nopriv_browser)
-    Status: Needs review
-    Proposed by: No Privileges Person ...
-    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
-    Merge into: lp://dev/~name12/gnome-terminal/main
-    Commit message: Add more mojo
+    Status: ...
+    ...
+    Commit message: Add more &lt;b&gt;mojo&lt;/b&gt;
 
 
 Deleting merge proposals
@@ -134,10 +132,7 @@ The status of the merge proposal is updated to "Needs review".
 
     >>> print_summary(sample_browser)
     Status: Needs review
-    Proposed ...
-    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
-    Merge into: lp://dev/~name12/gnome-terminal/main
-    Commit message: Add more mojo
+    ...
 
 Additional reviews can be requested.
 
@@ -245,7 +240,7 @@ be marked as merged.
 
 The edit icon at the end of the status allows the user to edit the status.
 
-    >>> nopriv_browser.getLink('Change status').click()
+    >>> nopriv_browser.getLink('Edit status').click()
 
 When marking a proposal as merged there is an optional revision number.
 If this is set then the when setting the merge proposal as merged the
@@ -289,7 +284,6 @@ next to the heading "Merged at revision".
     The proposal's merged revision has been updated.
     >>> print_summary(sample_browser)
     Status: Merged
-    ...
     Merged at revision: 42
     ...
     >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
@@ -347,7 +341,7 @@ The superseded proposal can't be made active because of the duplicate
 proposal.  It can only be set to another inactive state like "rejected" or
 "merged".
 
-    >>> eric_browser.getLink('Change status').click()
+    >>> eric_browser.getLink('Edit status').click()
     >>> def print_options(field):
     ...     for option in field.options:
     ...         print option
@@ -359,7 +353,7 @@ If we make the superseding proposal inactive, we can set the original back to
 work-in-progress.
 
     >>> eric_browser.open(superseding_url)
-    >>> eric_browser.getLink('Change status').click()
+    >>> eric_browser.getLink('Edit status').click()
     >>> eric_browser.getControl(name='field.queue_status').displayValue = (
     ...     ['Merged'])
     >>> eric_browser.getControl('Change Status').click()
@@ -370,7 +364,7 @@ work-in-progress.
     >>> print_summary(eric_browser)
     Status: Superseded
     ...
-    >>> eric_browser.getLink('Change status').click()
+    >>> eric_browser.getLink('Edit status').click()
     >>> print_options(eric_browser.getControl(name='field.queue_status'))
     WORK_IN_PROGRESS
     NEEDS_REVIEW
@@ -387,7 +381,7 @@ marked merged by mistake, in the UI.
     >>> print_summary(eric_browser)
     Status: Merged
     ...
-    >>> eric_browser.getLink('Change status').click()
+    >>> eric_browser.getLink('Edit status').click()
     >>> print_options(eric_browser.getControl(name='field.queue_status'))
     WORK_IN_PROGRESS
     NEEDS_REVIEW

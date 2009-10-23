@@ -73,7 +73,10 @@ class IPackaging(IHasOwner):
         vocabulary='DistroSeries')
 
     packaging = Choice(
-        title=_('Packaging'), required=True, vocabulary=PackagingType)
+        title=_('Packaging'), required=True, vocabulary=PackagingType,
+        description=_(
+            "Is the project the primary content of the source package, "
+            "or does the source package include the work of other projects?"))
 
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -92,6 +95,11 @@ class IPackagingUtil(Interface):
     def deletePackaging(productseries, sourcepackagename, distroseries):
         """Delete a packaging entry."""
 
-    def packagingEntryExists(productseries, sourcepackagename,
-                             distroseries):
-        """Does this packaging entry already exists?"""
+    def packagingEntryExists(sourcepackagename, distroseries,
+                             productseries=None):
+        """Does this packaging entry already exists?
+
+        A sourcepackagename is unique to a distroseries. Passing the
+        productseries argument verifies that the packaging entry exists and
+        that it is for the productseries
+        """

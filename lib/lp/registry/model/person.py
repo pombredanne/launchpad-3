@@ -77,7 +77,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -1615,13 +1615,13 @@ class Person(
         """See `IPersonViewRestricted`."""
         return self._getMappedParticipantsLocations().count()
 
-    def getMappedParticipantsBounds(self):
+    def getMappedParticipantsBounds(self, limit=None):
         """See `IPersonViewRestricted`."""
         max_lat = -90.0
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        locations = self._getMappedParticipantsLocations()
+        locations = self._getMappedParticipantsLocations(limit)
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '
@@ -2286,8 +2286,7 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
+        return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
 
     @property
     def ppas(self):
@@ -2297,11 +2296,7 @@ class Person(
 
     def getPPAByName(self, name):
         """See `IPerson`."""
-        ppa = Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name=name)
-        if ppa is None:
-            raise NoSuchPPA(name)
-        return ppa
+        return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

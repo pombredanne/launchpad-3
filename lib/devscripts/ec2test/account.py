@@ -13,7 +13,10 @@ import re
 import sys
 import urllib
 
+from datetime import datetime
+
 from boto.exception import EC2ResponseError
+from devscripts.ec2test.session import EC2SessionName
 
 import paramiko
 
@@ -23,6 +26,13 @@ VALID_AMI_OWNERS = (
     200337130613, # mwhudson
     # ...anyone else want in on the fun?
     )
+
+AUTH_FAILURE_MESSAGE = """\
+POSSIBLE CAUSES OF ERROR:
+- Did you sign up for EC2?
+- Did you put a credit card number in your AWS account?
+Please double-check before reporting a problem.
+"""
 
 
 def get_ip():
@@ -64,15 +74,21 @@ class EC2Account:
         sys.stdout.write(msg)
         sys.stdout.flush()
 
+    def _find_expired_artifacts(self, artifacts):
+        now = datetime.utcnow()
+        for artifact in artifacts:
+            session_name = EC2SessionName(artifact.name)
+            if (session_name in (self.name, self.name.base) or (
+                    session_name.base == self.name.base and
+                    session_name.expires is not None and
+                    session_name.expires < now)):
+                yield artifact
+
     def acquire_security_group(self, demo_networks=None):
         """Get a security group with the appropriate configuration.
 
         "Appropriate" means configured to allow this machine to connect via
         SSH, HTTP and HTTPS.
-
-        If a group is already configured with this name for this connection,
-        then re-use that. Otherwise, create a new security group and configure
-        it appropriately.
 
         The name of the security group is the `EC2Account.name` attribute.
 
@@ -80,28 +96,7 @@ class EC2Account:
         """
         if demo_networks is None:
             demo_networks = []
-        try:
-            group = self.conn.get_all_security_groups(self.name)[0]
-        except EC2ResponseError, e:
-            if e.code != 'InvalidGroup.NotFound':
-                raise
-        else:
-            # If an existing security group was configured, try deleting it
-            # since our external IP might have changed.
-            try:
-                group.delete()
-            except EC2ResponseError, e:
-                if e.code != 'InvalidGroup.InUse':
-                    raise
-                # Otherwise, it means that an instance is already using
-                # it, so simply re-use it. It's unlikely that our IP changed!
-                #
-                # XXX: JonathanLange 2009-06-05: If the security group exists
-                # already, verify that the current IP is permitted; if it is
-                # not, make an INFO log and add the current IP.
-                self.log("Security group already in use, so reusing.\n")
-                return group
-
+        # Create the security group.
         security_group = self.conn.create_security_group(
             self.name, 'Authorization to access the test runner instance.')
         # Authorize SSH and HTTP.
@@ -117,34 +112,49 @@ class EC2Account:
             security_group.authorize('tcp', 443, 443, network)
         return security_group
 
+    def delete_previous_security_groups(self):
+        """Delete previously used security groups, if found."""
+        expired_groups = self._find_expired_artifacts(
+            self.conn.get_all_security_groups())
+        for group in expired_groups:
+            try:
+                group.delete()
+            except EC2ResponseError, e:
+                if e.code != 'InvalidGroup.InUse':
+                    raise
+                self.log('Cannot delete; security group '
+                         '%r in use.\n' % group.name)
+            else:
+                self.log('Deleted security group %r.\n' % group.name)
+
     def acquire_private_key(self):
         """Create & return a new key pair for the test runner."""
         key_pair = self.conn.create_key_pair(self.name)
         return paramiko.RSAKey.from_private_key(
             cStringIO.StringIO(key_pair.material.encode('ascii')))
 
-    def delete_previous_key_pair(self):
-        """Delete previously used keypair, if it exists."""
-        try:
-            # Only one keypair will match 'self.name' since it's a unique
-            # identifier.
-            key_pairs = self.conn.get_all_key_pairs(self.name)
-            assert len(key_pairs) == 1, (
-                "Should be only one keypair, found %d (%s)"
-                % (len(key_pairs), key_pairs))
-            key_pair = key_pairs[0]
-            key_pair.delete()
-        except EC2ResponseError, e:
-            if e.code != 'InvalidKeyPair.NotFound':
-                if e.code == 'AuthFailure':
-                    # Inserted because of previous support issue.
-                    self.log(
-                        'POSSIBLE CAUSES OF ERROR:\n'
-                        '  Did you sign up for EC2?\n'
-                        '  Did you put a credit card number in your AWS '
-                        'account?\n'
-                        'Please doublecheck before reporting a problem.\n')
-                raise
+    def delete_previous_key_pairs(self):
+        """Delete previously used keypairs, if found."""
+        expired_key_pairs = self._find_expired_artifacts(
+            self.conn.get_all_key_pairs())
+        for key_pair in expired_key_pairs:
+            try:
+                key_pair.delete()
+            except EC2ResponseError, e:
+                if e.code != 'InvalidKeyPair.NotFound':
+                    if e.code == 'AuthFailure':
+                        # Inserted because of previous support issue.
+                        self.log(AUTH_FAILURE_MESSAGE)
+                    raise
+                self.log('Cannot delete; key pair not '
+                         'found %r\n' % key_pair.name)
+            else:
+                self.log('Deleted key pair %r.\n' % key_pair.name)
+
+    def collect_garbage(self):
+        """Remove any old keys and security groups."""
+        self.delete_previous_security_groups()
+        self.delete_previous_key_pairs()
 
     def acquire_image(self, machine_id):
         """Get the image.

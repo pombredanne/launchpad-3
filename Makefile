@@ -90,8 +90,7 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
-	bin/test $(VERBOSITY) --layer=BugsWindmillLayer
-	bin/test $(VERBOSITY) --layer=CodeWindmillLayer
+	bin/test $(VERBOSITY) --layer=WindmillLayer
 
 jscheck_functest: build
     # Run the old functest Windmill integration tests.  The test runner
@@ -150,7 +149,7 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
-	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
+	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 	${SHHH} $(PY) sourcecode/lazr-js/tools/build.py \
 		-n launchpad -s lib/canonical/launchpad/javascript \
 		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)

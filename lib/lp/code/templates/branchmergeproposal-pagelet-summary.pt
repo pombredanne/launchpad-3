@@ -13,13 +13,11 @@
               tal:content="context/queue_status/title">
                     >
         Work in progress</span>
-      </td>
-    </tr>
-    <tr>
-      <th>Proposed by:</th>
-      <td>
-        <tal:registrant replace="structure context/registrant/fmt:link"/>
-        <tal:modified replace="context/date_created/fmt:displaydate" />
+        <a tal:define="link context/menu:context/edit_status"
+           tal:condition="link/enabled"
+           tal:attributes="href link/url">
+           <img src="/@@/edit" alt="Edit status" />
+        </a>
       </td>
     </tr>
     <tal:comment condition="nothing">
@@ -112,9 +110,14 @@
       <td>
         <tal:commit-message
           condition="context/commit_message"
-          replace="structure context/commit_message" />
+          replace="context/commit_message" />
         <tal:no-commit-message
           condition="not: context/commit_message">None</tal:no-commit-message>
+        <a tal:define="link context/menu:context/edit_commit_message"
+           tal:condition="link/enabled"
+           tal:attributes="href link/url">
+           <img src="/@@/edit" alt="Edit commit message" />
+        </a>
       </td>
     </tr>
     <tr tal:condition="context/preview_diff">

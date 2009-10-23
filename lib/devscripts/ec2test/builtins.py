@@ -10,6 +10,7 @@ import os
 import pdb
 import subprocess
 
+from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
 from bzrlib.help import help_commands
@@ -22,6 +23,7 @@ from devscripts import get_launchpad_root
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
     AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+from devscripts.ec2test.session import EC2SessionName
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 
@@ -240,8 +242,8 @@ class cmd_test(EC2Command):
         postmortem_option,
         Option(
             'headless',
-            help=('After building the instance and test, run the remote tests '
-                  'headless.  Cannot be used with postmortem '
+            help=('After building the instance and test, run the remote '
+                  'tests headless.  Cannot be used with postmortem '
                   'or file.')),
         debug_option,
         Option(
@@ -252,7 +254,7 @@ class cmd_test(EC2Command):
 
     takes_args = ['test_branch?']
 
-    def run(self, test_branch=None, branch=[], trunk=False, machine=None,
+    def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE,
             file=None, email=None, test_options='-vv', noemail=False,
             submit_pqm_message=None, pqm_public_location=None,
@@ -261,6 +263,8 @@ class cmd_test(EC2Command):
             include_download_cache_changes=False):
         if debug:
             pdb.set_trace()
+        if branch is None:
+            branch = []
         branches, test_branch = _get_branches_and_test_branch(
             trunk, branch, test_branch)
         if ((postmortem or file) and headless):
@@ -285,8 +289,9 @@ class cmd_test(EC2Command):
                 "Submitting to PQM with non-default test options isn't "
                 "supported")
 
+        session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
-            EC2TestRunner.name, instance_type, machine)
+            session_name, instance_type, machine)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
@@ -321,7 +326,7 @@ class cmd_land(EC2Command):
             help="Land the branch even if the proposal is not approved."),
         ]
 
-    takes_args = ['merge_proposal']
+    takes_args = ['merge_proposal?']
 
     def _get_landing_command(self, source_url, target_url, commit_message,
                              emails):
@@ -338,7 +343,7 @@ class cmd_land(EC2Command):
              commit_message, str(source_url)])
         return command
 
-    def run(self, merge_proposal, machine=None,
+    def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
             print_commit=False, force=False):
@@ -361,7 +366,13 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
         lander = LaunchpadBranchLander.load()
-        mp = lander.load_merge_proposal(merge_proposal)
+
+        if merge_proposal is None:
+            (tree, bzrbranch, relpath) = (
+                BzrDir.open_containing_tree_or_branch('.'))
+            mp = lander.get_merge_proposal_from_branch(bzrbranch)
+        else:
+            mp = lander.load_merge_proposal(merge_proposal)
         if not mp.is_approved:
             if force:
                 print "Merge proposal is not approved, landing anyway."
@@ -418,21 +429,24 @@ class cmd_demo(EC2Command):
 
     takes_args = ['test_branch?']
 
-    def run(self, test_branch=None, branch=[], trunk=False, machine=None,
+    def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
             include_download_cache_changes=False, demo=None):
         if debug:
             pdb.set_trace()
+        if branch is None:
+            branch = []
         branches, test_branch = _get_branches_and_test_branch(
             trunk, branch, test_branch)
 
+        session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
-            EC2TestRunner.name, instance_type, machine, demo)
+            session_name, instance_type, machine, demo)
 
         runner = EC2TestRunner(
             test_branch, branches=branches,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance)
+            instance=instance, launchpad_login=instance._launchpad_login)
 
         demo_network_string = '\n'.join(
             '  ' + network for network in demo)
@@ -480,8 +494,9 @@ class cmd_update_image(EC2Command):
         ListOption(
             'extra-update-image-command', type=str,
             help=('Run this command (with an ssh agent) on the image before '
-                  'running the default update steps.  Can be passed more than '
-                  'once, the commands will be run in the order specified.')),
+                  'running the default update steps.  Can be passed more '
+                  'than once, the commands will be run in the order '
+                  'specified.')),
         Option(
             'public',
             help=('Remove proprietary code from the sourcecode directory '
@@ -491,15 +506,19 @@ class cmd_update_image(EC2Command):
     takes_args = ['ami_name']
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
-            debug=False, postmortem=False, extra_update_image_command=[],
+            debug=False, postmortem=False, extra_update_image_command=None,
             public=False):
         if debug:
             pdb.set_trace()
 
+        if extra_update_image_command is None:
+            extra_update_image_command = []
+
         credentials = EC2Credentials.load_from_file()
 
+        session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
-            EC2TestRunner.name, instance_type, machine,
+            session_name, instance_type, machine,
             credentials=credentials)
         instance.check_bundling_prerequisites()
 
