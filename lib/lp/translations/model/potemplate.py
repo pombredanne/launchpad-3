@@ -801,7 +801,7 @@ class POTemplate(SQLBase, RosettaStats):
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
                                   context=None):
         """See `IPOTemplate`."""
-        return POTMsgSet(
+        potmsgset = POTMsgSet(
             context=context,
             msgid_singular=msgid_singular,
             msgid_plural=msgid_plural,
@@ -811,6 +811,14 @@ class POTemplate(SQLBase, RosettaStats):
             filereferences=None,
             sourcecomment=None,
             flagscomment=None)
+
+        for language in self.languages():
+            pofile = self.getPOFileByLang(language.code)
+            if pofile is not None:
+                # The method will check if this really is a translation
+                # credits message.
+                potmsgset.setTranslationCreditsToTranslated(pofile)
+        return potmsgset
 
     def getOrCreatePOMsgID(self, text):
         """Creates or returns existing POMsgID for given `text`."""
