@@ -82,6 +82,7 @@ from lp.bugs.browser.bugtask import (
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
@@ -926,10 +927,17 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 check_permission('launchpad.Commercial', self.context))
 
 
-class ProductPackagesView(ProductView):
+class ProductPackagesView(PackagingDeleteView):
     """View for displaying product packaging"""
 
     label = 'Packages in Launchpad'
+
+    @property
+    def all_packaging(self):
+        """See `PackagingDeleteView`."""
+        for series in self.context.serieses:
+            for packaging in series.packagings:
+                yield packaging
 
 
 class ProductDistributionsView(ProductView):

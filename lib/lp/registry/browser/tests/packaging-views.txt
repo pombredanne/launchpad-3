@@ -235,3 +235,23 @@ and a new entry can be added to the packaging history.
     ...     print packaging.sourcepackagename.name
     grumpy hot
     hoary thunderbird
+
+
+Product packages view
+----------------------
+
+The +packages named view decends from PackagingDeleteView to provide remvoe
+link actions for the products linked packages.
+
+    >>> from lp.registry.browser.packaging import PackagingDeleteView
+    >>> view = create_view(product, name='+packages')
+    >>> print view.label
+    Packages in Launchpad
+
+The view defines the all_packages property used by the PackagingDeleteView
+to create a vocabulary.
+
+    >>> for package in view.all_packaging:
+    ...     print package.distroseries.name, package.productseries.name
+    grumpy hotter
+    hoary hotter
