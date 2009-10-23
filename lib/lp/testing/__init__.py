@@ -12,6 +12,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 
 from bzrlib.branch import Branch as BzrBranch
@@ -55,20 +56,44 @@ _Frame.f_locals = property(lambda self: {})
 class FakeTime:
     """Provides a controllable implementation of time.time()."""
 
-    def __init__(self, start):
+    def __init__(self, start=None, advance=1):
         """Set up the instance.
 
         :param start: The value that will initially be returned by `now()`.
+            If None, the current time will be used.
+        :param advance: The value to advance the clock by by default.
         """
-        self._now = start
+        if start is not None:
+            self._now = start
+        else:
+            self._now = time.time()
+        self._advance = advance
 
-    def advance(self, amount):
-        """Advance the value that will be returned by `now()` by 'amount'."""
-        self._now += amount
+    def advance(self, amount=None):
+        """Advance the value that will be returned by `now()`.
+
+        :param amount: The amount of seconds to advance the value by.
+            If None, the configured default value will be used.
+        """
+        if amount is None:
+            self._now += self._advance
+        else:
+            self._now += amount
 
     def now(self):
         """Use this bound method instead of time.time in tests."""
         return self._now
+
+    def next_now(self, amount=None):
+        """Read the current time and advance it.
+
+        Calls returns the current value of now() and then calls advance().
+        :param amount: The amount of seconds to advance the value by.
+            If None, the configured default value will be used.
+        """
+        current_now = self.now()
+        self.advance(amount)
+        return current_now
 
 
 class StormStatementRecorder:
