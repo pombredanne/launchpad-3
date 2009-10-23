@@ -85,7 +85,7 @@
          Add comment
     </div>
 
-    <div id="edit-description"
+    <div id="edit-description" class="lazr-multiline-edit"
          tal:content="structure view/commit_message_html"/>
 
     <div id="conversation"

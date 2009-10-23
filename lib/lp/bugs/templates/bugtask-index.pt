@@ -119,7 +119,7 @@
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
-        <div id="edit-description"
+        <div id="edit-description" class="lazr-multiline-edit"
           tal:content="structure view/bug_description_html"
           />
 
