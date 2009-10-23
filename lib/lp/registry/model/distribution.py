@@ -10,8 +10,7 @@ __all__ = ['Distribution', 'DistributionSet']
 from zope.interface import alsoProvides, implements
 from zope.component import getUtility
 
-from sqlobject import (
-    BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
+from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
