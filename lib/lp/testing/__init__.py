@@ -54,14 +54,39 @@ _Frame.f_locals = property(lambda self: {})
 
 
 class FakeTime:
-    """Provides a controllable implementation of time.time()."""
+    """Provides a controllable implementation of time.time().
+
+    You can either advance the time manually using advance() or have it done
+    automatically using next_now(). The amount of seconds to advance the
+    time by is set during initialization but can also be changed for single
+    calls of advance() or next_now().
+
+    >>> faketime = FakeTime(1000)
+    >>> print faketime.now()
+    1000
+    >>> print faketime.now()
+    1000
+    >>> faketime.advance(10)
+    >>> print faketime.now()
+    1010
+    >>> print faketime.next_now()
+    1011
+    >>> print faketime.next_now(100)
+    1111
+    >>> faketime = FakeTime(1000, 5)
+    >>> print faketime.next_now()
+    1005
+    >>> print faketime.next_now()
+    1010
+    """
 
     def __init__(self, start=None, advance=1):
         """Set up the instance.
 
         :param start: The value that will initially be returned by `now()`.
             If None, the current time will be used.
-        :param advance: The value to advance the clock by by default.
+        :param advance: The value in secounds to advance the clock by by
+            default.
         """
         if start is not None:
             self._now = start
@@ -87,13 +112,12 @@ class FakeTime:
     def next_now(self, amount=None):
         """Read the current time and advance it.
 
-        Calls returns the current value of now() and then calls advance().
+        Calls advance() and returns the current value of now().
         :param amount: The amount of seconds to advance the value by.
             If None, the configured default value will be used.
         """
-        current_now = self.now()
         self.advance(amount)
-        return current_now
+        return self.now()
 
 
 class StormStatementRecorder:
