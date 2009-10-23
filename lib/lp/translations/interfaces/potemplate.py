@@ -463,27 +463,35 @@ class IPOTemplate(IRosettaStats):
         """
 
     def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
-                                  context=None):
+                                  context=None, sequence=0):
         """Creates a new template message in the database.
 
         :param msgid_singular: A reference to a singular msgid.
         :param msgid_plural: A reference to a plural msgid.  Can be None
-        if the message is not a plural message.
+            if the message is not a plural message.
         :param context: A context for the template message differentiating
-        it from other template messages with exactly the same `msgid`.
+            it from other template messages with exactly the same `msgid`.
+        :param sequence: The sequence number of this POTMsgSet within this
+            POTemplate. If 0, it is considered obsolete.
         :return: The newly created message set.
         """
 
-    def createMessageSetFromText(singular_text, plural_text, context=None):
+    def createMessageSetFromText(singular_text, plural_text,
+                                 context=None, sequence=0):
         """Creates a new template message in the database using strings.
 
         Similar to createMessageSetFromMessageID, but takes text objects
         (unicode or string) along with textual context, rather than a
         message IDs.
 
-        For non-plural messages, plural_text should be None.
-
-        Returns the newly created message set.
+        :param singular_text: The string for the singular msgid.
+        :param msgid_plural: The string for the plural msgid.  Must be None
+            if the message is not a plural message.
+        :param context: A context for the template message differentiating
+            it from other template messages with exactly the same `msgid`.
+        :param sequence: The sequence number of this POTMsgSet within this
+            POTemplate. If 0, it is considered obsolete.
+        :return: The newly created message set.
         """
 
     def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None):

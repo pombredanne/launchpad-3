@@ -799,7 +799,7 @@ class POTemplate(SQLBase, RosettaStats):
         return DummyPOFile(self, language, variant=variant, owner=requester)
 
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
-                                  context=None):
+                                  context=None, sequence=0):
         """See `IPOTemplate`."""
         potmsgset = POTMsgSet(
             context=context,
@@ -812,12 +812,13 @@ class POTemplate(SQLBase, RosettaStats):
             sourcecomment=None,
             flagscomment=None)
 
-        for language in self.languages():
-            pofile = self.getPOFileByLang(language.code)
-            if pofile is not None:
-                # The method will check if this really is a translation
-                # credits message.
-                potmsgset.setTranslationCreditsToTranslated(pofile)
+        potmsgset.setSequence(self, sequence)
+        if potmsgset.is_translation_credit:
+            for language in self.languages():
+                pofile = self.getPOFileByLang(language.code)
+                if pofile is not None:
+                    potmsgset.setTranslationCreditsToTranslated(pofile)
+
         return potmsgset
 
     def getOrCreatePOMsgID(self, text):
@@ -832,7 +833,7 @@ class POTemplate(SQLBase, RosettaStats):
         return msgid
 
     def createMessageSetFromText(self, singular_text, plural_text,
-                                 context=None):
+                                 context=None, sequence=0):
         """See `IPOTemplate`."""
 
         msgid_singular = self.getOrCreatePOMsgID(singular_text)
@@ -845,7 +846,7 @@ class POTemplate(SQLBase, RosettaStats):
             " primary msgid and context '%r'" % context)
 
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
-                                              context)
+                                              context, sequence)
 
     def getOrCreateSharedPOTMsgSet(self, singular_text, plural_text,
                                    context=None):
@@ -859,8 +860,7 @@ class POTemplate(SQLBase, RosettaStats):
                                          context, sharing_templates=True)
         if potmsgset is None:
             potmsgset = self.createMessageSetFromText(
-                singular_text, plural_text, context)
-            potmsgset.setSequence(self, 0)
+                singular_text, plural_text, context, sequence=0)
         return potmsgset
 
     def importFromQueue(self, entry_to_import, logger=None, txn=None):
