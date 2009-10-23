@@ -802,7 +802,7 @@ def validate_mock_class(mock_class):
     for name, obj in getmembers(mock_class):
         if ismethod(obj):
             for base_class in base_classes[1:]:
-                if (name in base_class.__dict__):
+                if name in base_class.__dict__:
                     mock_args = getargspec(obj)
                     real_args = getargspec(base_class.__dict__[name])
                     if mock_args != real_args:
