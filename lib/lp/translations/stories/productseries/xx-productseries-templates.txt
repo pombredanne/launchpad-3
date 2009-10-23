@@ -7,20 +7,13 @@ each template.
 
 == Getting there ==
 
-The view is only visible to the owner of the ProductSeries and administrators.
+To get to the listing of all templates, one needs to use the link
+from the product series translations page.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('full list of templates')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> browser = setupBrowser('Basic test@canonical.com:test')
-    >>> browser.open(
-    ...     'http://translations.launchpad.dev/evolution/trunk')
-    >>> browser.getLink('full list of templates').click()
-    >>> print browser.url
+    >>> user_browser.getLink('full list of templates').click()
+    >>> print user_browser.url
     http://translations.launchpad.dev/evolution/trunk/+templates
 
 
@@ -28,11 +21,11 @@ The view is only visible to the owner of the ProductSeries and administrators.
 
 The page shows a table of all templates and links to their subpages.
 
-    >>> table = find_tag_by_id(browser.contents, 'templates_table')
+    >>> table = find_tag_by_id(user_browser.contents, 'templates_table')
     >>> print extract_text(table)
     Template name       Actions
-    evolution-2.2       Edit Upload Download
-    evolution-2.2-test  Edit Upload Download
+    evolution-2.2       Download
+    evolution-2.2-test  Download
 
 If an administrator views this page, links to the templates admin page are
 shown, too.

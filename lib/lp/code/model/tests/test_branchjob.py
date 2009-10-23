@@ -183,6 +183,18 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def make_format(self, branch_format=None, repo_format=None):
+        # Return a Bzr MetaDir format with the provided branch and repository
+        # formats.
+        if branch_format is None:
+            branch_format = BzrBranchFormat7
+        if repo_format is None:
+            repo_format = RepositoryFormatKnitPack6
+        format = BzrDirMetaFormat1()
+        format.set_branch_format(branch_format())
+        format._set_repository_format(repo_format())
+        return format
+
     def test_providesInterface(self):
         """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
         branch = self.factory.makeAnyBranch()
@@ -192,7 +204,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches()
-        db_branch, tree = self.create_branch_and_tree(format='knit')
+        db_branch, tree = self.create_branch_and_tree(
+            hosted=True, format='knit')
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
         self.assertEqual(
@@ -223,18 +236,6 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             type(format._repository_format),
             REPOSITORY_FORMAT_UPGRADE_PATH.get(
                 RepositoryFormat.BZR_REPOSITORY_4))
-
-    def make_format(self, branch_format=None, repo_format=None):
-        # Return a Bzr MetaDir format with the provided branch and repository
-        # formats.
-        if branch_format is None:
-            branch_format = BzrBranchFormat7
-        if repo_format is None:
-            repo_format = RepositoryFormatKnitPack6
-        format = BzrDirMetaFormat1()
-        format.set_branch_format(branch_format())
-        format._set_repository_format(repo_format())
-        return format
 
     def test_upgrade_format_no_branch_upgrade_needed(self):
         # getUpgradeFormat should not downgrade the branch format when it is

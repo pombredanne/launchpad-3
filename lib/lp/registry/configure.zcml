@@ -149,7 +149,8 @@
                 getSubscription
                 getSubscriptions
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -285,7 +286,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -395,7 +397,8 @@
                 target_type_display
                 official_bug_tags
                 findRelatedArchives
-                findRelatedArchivePublications"/>
+                findRelatedArchivePublications
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -903,7 +906,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1150,7 +1154,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1297,7 +1302,8 @@
                 getSubscription
                 getSubscriptions
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1407,7 +1413,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="

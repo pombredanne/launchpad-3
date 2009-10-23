@@ -503,6 +503,7 @@ class SubmissionParser(object):
         devices = []
         device = None
         line_number = 0
+        device_id = 0
 
         for line_number, line in enumerate(udev_data):
             if len(line) == 0:
@@ -518,9 +519,11 @@ class SubmissionParser(object):
 
             key, value = record
             if device is None:
+                device_id += 1
                 device = {
                     'E': {},
                     'S': [],
+                    'id': device_id,
                     }
                 devices.append(device)
             # Some attribute lines have a space character after the
@@ -2775,6 +2778,11 @@ class UdevDevice(BaseDevice):
                 'ancestors: %s' % self.device_id)
             return None
         return controller
+
+    @property
+    def id(self):
+        return self.udev['id']
+
 
 class ProcessingLoop(object):
     """An `ITunableLoop` for processing HWDB submissions."""
