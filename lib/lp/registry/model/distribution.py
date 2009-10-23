@@ -325,9 +325,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
-    # XXX: 2008-01-29 kiko: This is used in a number of places and given it's
-    # already listified, why not spare the trouble of regenerating this as a
-    # cachedproperty? Answer: because it breaks tests.
     @cachedproperty('_cached_serieses')
     def serieses(self):
         """See `IDistribution`."""
@@ -1497,6 +1494,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # This driver is a release manager.
             series.driver = owner
+
         if safe_hasattr(self, '_cached_currentseries'):
             del self._cached_currentseries
         if safe_hasattr(self, '_cached_serieses'):
