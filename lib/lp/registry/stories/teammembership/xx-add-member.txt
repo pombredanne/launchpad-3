@@ -64,6 +64,33 @@ successfully added.
     ...     print tag.renderContents()
     Celso Providelo (cprov) has been added as a member of this team.
 
+Administrators can add members via link on the 'All members' page as a convenience.
+
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.getLink('All members').click()
+    >>> print browser.url
+    http://launchpad.dev/~landscape-developers/+members
+    >>> browser.getLink('Add member').click()
+    >>> print browser.url
+    http://launchpad.dev/~landscape-developers/+addmember
+
+A normal user does not see the link to add a new member.
+
+    >>> user_browser.open('http://launchpad.dev/~landscape-developers/+members')
+    >>> user_browser.getLink('Add member')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+And, of course, the anonymous user does not see the link.
+
+    >>> anon_browser.open('http://launchpad.dev/~landscape-developers/+members')
+    >>> anon_browser.getLink('Add member')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
 
 Adding teams
 ============
