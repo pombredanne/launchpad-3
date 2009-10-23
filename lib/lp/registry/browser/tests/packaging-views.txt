@@ -246,7 +246,7 @@ link actions for the products linked packages.
     >>> from lp.registry.browser.packaging import PackagingDeleteView
     >>> view = create_view(product, name='+packages')
     >>> print view.label
-    Packages in Launchpad
+    Linked packages
 
 The view defines the all_packages property used by the PackagingDeleteView
 to create a vocabulary.

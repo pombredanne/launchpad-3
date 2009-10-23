@@ -930,7 +930,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 class ProductPackagesView(PackagingDeleteView):
     """View for displaying product packaging"""
 
-    label = 'Packages in Launchpad'
+    label = 'Linked packages'
 
     @property
     def all_packaging(self):
