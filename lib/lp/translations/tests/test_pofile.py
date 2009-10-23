@@ -926,6 +926,14 @@ class TestTranslationCredits(TestCaseWithFactory):
         self.credits_potmsgset = self.factory.makePOTMsgSet(
             potemplate=self.potemplate, singular=u'translator-credits')
 
+    def _launchpad_credits_text(self, imported_credits_text):
+        return u"%s\n\nLaunchpad Contributions:\n  %s" % (
+                imported_credits_text,
+                "\n  ".join(["%s %s" % (person.displayname,
+                                        canonical_url(person))
+                             for person in self.pofile.contributors])
+            )
+
     def test_prepareTranslationCredits_extending(self):
         # This test ensures that continuous updates to the translation credits
         # don't result in duplicate entries.
@@ -933,10 +941,6 @@ class TestTranslationCredits(TestCaseWithFactory):
         person = self.factory.makePerson()
 
         imported_credits_text = u"Imported Contributor <name@project.org>"
-        launchpad_credits_text = (
-            u"%s\n\nLaunchpad Contributions:\n  %s %s" % (
-                imported_credits_text, person.displayname,
-                canonical_url(person)))
 
         # Import a translation credits message to 'translator-credits'.
         self.factory.makeTranslationMessage(
@@ -954,7 +958,8 @@ class TestTranslationCredits(TestCaseWithFactory):
         # The first translation credits export.
         credits_text = self.pofile.prepareTranslationCredits(
             self.credits_potmsgset)
-        self.assertEquals(launchpad_credits_text, credits_text)
+        self.assertEquals(self._launchpad_credits_text(imported_credits_text),
+                          credits_text)
 
         # Now, re-import this generated message.
         self.factory.makeTranslationMessage(
@@ -965,7 +970,8 @@ class TestTranslationCredits(TestCaseWithFactory):
 
         credits_text = self.pofile.prepareTranslationCredits(
             self.credits_potmsgset)
-        self.assertEquals(launchpad_credits_text, credits_text)
+        self.assertEquals(self._launchpad_credits_text(imported_credits_text),
+                          credits_text)
 
 
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
