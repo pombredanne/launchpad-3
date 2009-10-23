@@ -72,7 +72,7 @@ class TestSecurityOverlay(TestCaseWithFactory):
         client.click(name=FIELD_PRIVATE)
         client.click(xpath=CHANGE_BUTTON)
         client.waits.sleep(milliseconds=WAIT_SUBMIT_CHANGE)
-        client.asserts.assertText(
+        client.asserts.assertTextIn(
             id=PRIVACY_TEXT, validator=u'This report is')
         client.asserts.assertText(
             xpath=PRIVACY_TEXT_STRONG, validator=u'private')
@@ -91,7 +91,7 @@ class TestSecurityOverlay(TestCaseWithFactory):
         client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
-        client.asserts.assertText(
+        client.asserts.assertTextIn(
             id=PRIVACY_TEXT, validator=u'This report is')
         client.asserts.assertText(
             xpath=PRIVACY_TEXT_STRONG, validator=u'private')
@@ -114,7 +114,7 @@ class TestSecurityOverlay(TestCaseWithFactory):
         # we have an additional text below the link indicating that
         # this bug is a security vulnerability.
         client.waits.sleep(milliseconds=WAIT_SUBMIT_CHANGE)
-        client.asserts.assertText(
+        client.asserts.assertTextIn(
             id=PRIVACY_TEXT, validator=u'This report is public')
         client.asserts.assertText(
             id=SECURITY_MESSAGE, validator=u'Security vulnerability')
@@ -129,7 +129,7 @@ class TestSecurityOverlay(TestCaseWithFactory):
         client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
-        client.asserts.assertText(
+        client.asserts.assertTextIn(
             id=PRIVACY_TEXT, validator=u'This report is public')
         client.asserts.assertText(
             id=SECURITY_MESSAGE, validator=u'Security vulnerability')
