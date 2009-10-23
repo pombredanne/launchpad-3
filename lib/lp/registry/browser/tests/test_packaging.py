@@ -56,7 +56,7 @@ class TestBrowserDeletePackaging(TestCase):
         user_browser = self.user_browser
         user_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
         form = user_browser.getForm("delete_warty_alsa-utils_trunk")
-        form.getControl("Delete Link").click()
+        form.getControl(name="field.actions.delete_packaging").click()
         # Check that the change was committed.
         login('no-priv@canonical.com')
         self.assertFalse(packaging_util.packagingEntryExists(

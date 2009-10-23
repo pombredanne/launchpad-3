@@ -379,6 +379,9 @@ form table th, form table td {
 form table tbody th {
     font-weight: bold;
     }
+input[type='image'] {
+    vertical-align: middle;
+    }
 em {
     font-style: italic;
     }
