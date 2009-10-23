@@ -63,6 +63,9 @@ def set_path():
             'Found unexpected module(s): %s\n\nImport _pythonpath earlier!' %
             (', '.join(sorted(unexpected)),))
 
+    # Make subprocesses have the same environment.
+    os.environ['PYTHONPATH'] = os.pathsep.join(sys.path)
+
     # Enable Storm's C extensions
     os.environ['STORM_CEXTENSIONS'] = '1'
 
@@ -74,6 +77,21 @@ def set_path():
         UserWarning)
 
 try:
-    import canonical
+    # We try two smoke tests.  The first checks to see that lib has been
+    # added.
+    import lp
+    # XXX gary 10-19-2009 bug 455737
+    # The second wants to see if the egg paths have been added.  The
+    # only reason this is necessary is because, as of this writing, our
+    # buildbot configuration sets PYTHONPATH at one point to include
+    # lib, but not the rest of the eggs.  This means that importing lp
+    # will work, but importing ZConfig won't.  The right fix here is to
+    # change our buildbot to not set PYTHONPATH.  That's not an option
+    # at this instance in time because the LOSAs are swamped with
+    # another task. We can remove this comment, the following import,
+    # and ``sys.modules.pop('lp', None)`` below when buildbot's
+    # configuration is changed.
+    import ZConfig
 except ImportError:
+    sys.modules.pop('lp', None)
     set_path()

@@ -11,7 +11,10 @@ __all__ = [
     'BugBranchPrimaryContext',
     ]
 
-from zope.interface import implements
+from zope.component import adapts, getMultiAdapter, getUtility
+from zope.interface import implements, Interface
+
+from lazr.restful.interfaces import IWebServiceClientRequest
 
 from canonical.lazr.utils import smartquote
 
@@ -113,3 +116,19 @@ class BranchLinkToBugView(LaunchpadFormView):
         bug = data['bug']
         bug_branch = bug.linkBranch(
             branch=self.context, registrant=self.user)
+
+
+class BugBranchXHTMLRepresentation:
+    adapts(IBugBranch, IWebServiceClientRequest)
+    implements(Interface)
+
+    def __init__(self, branch, request):
+        self.branch = branch
+        self.request = request
+
+    def __call__(self):
+        """Render `BugBranch` as XHTML using the webservice."""
+        branch_view = getMultiAdapter(
+            (self.branch, self.request), name="+bug-branch")
+        return branch_view()
+
