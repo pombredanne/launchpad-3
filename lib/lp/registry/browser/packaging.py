@@ -20,6 +20,7 @@ from canonical.launchpad.webapp.menu import structured
 class PackagingAddView(LaunchpadFormView):
     schema = IPackaging
     field_names = ['distroseries', 'sourcepackagename', 'packaging']
+    default_distroseries = None
 
     @property
     def label(self):
@@ -38,7 +39,7 @@ class PackagingAddView(LaunchpadFormView):
     def validate(self, data):
         productseries = self.context
         sourcepackagename = data.get('sourcepackagename', None)
-        distroseries = data['distroseries']
+        distroseries = data.get('distroseries', self.default_distroseries)
         if sourcepackagename is None:
             message = "You must choose the source package name."
             self.setFieldError('sourcepackagename', message)
@@ -48,21 +49,23 @@ class PackagingAddView(LaunchpadFormView):
             sourcepackagename=sourcepackagename,
             distroseries=distroseries):
             # The series packaging conflicts with itself.
-            self.addError(_(
+            message = _(
                 "This series is already packaged in %s." %
-                distroseries.displayname))
+                distroseries.displayname)
+            self.setFieldError('sourcepackagename', message)
         elif packaging_util.packagingEntryExists(
             sourcepackagename=sourcepackagename,
             distroseries=distroseries):
             # The series package conflicts with another series.
             sourcepackage = distroseries.getSourcePackage(
                 sourcepackagename.name)
-            self.addError(structured(
+            message = structured(
                 'The <a href="%s">%s</a> package in %s is already linked to '
                 'another series.' %
                 (canonical_url(sourcepackage),
                  sourcepackagename.name,
-                 distroseries.displayname)))
+                 distroseries.displayname))
+            self.setFieldError('sourcepackagename', message)
         else:
             # The distroseries and sourcepackagename are not already linked
             # to this series, or any other series.

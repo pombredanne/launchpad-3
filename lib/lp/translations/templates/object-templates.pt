@@ -75,7 +75,9 @@
             <th tal:condition="view/is_distroseries"
                 class="sourcepackage_column">Source package</th>
             <th class="template_column">Template name</th>
-            <th class="actions_column">Actions</th>
+            <th class="actions_column"
+                tal:condition="context/required:launchpad.AnyPerson">
+              Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -86,21 +88,25 @@
             </td>
             <td class="template_column"><a tal:attributes="href template/fmt:url"
                    tal:content="template/name">Template name</a></td>
-            <td class="actions_column">
+            <td class="actions_column"
+                tal:condition="context/required:launchpad.AnyPerson">
             <div class="template_links">
+              <tal:maintainer condition="template/required:launchpad.Edit">
                 <a tal:attributes="href string:${template/fmt:url}/+edit;
                                    title string:Edit ${template/name}'s details">
                    <img src="/@@/edit" />&nbsp;Edit</a>
                 <a tal:attributes="href string:${template/fmt:url}/+upload;
                       title string:Upload translations to ${template/name}">
                    <img src="/@@/add" />&nbsp;Upload</a>
-                <a tal:attributes="href string:${template/fmt:url}/+export;
-                      title string:Download translations from ${template/name}">
-                   <img src="/@@/download" />&nbsp;Download</a>
-                <a tal:condition="python:view.can_administer(template)"
-                   tal:attributes="href string:${template/fmt:url}/+admin;
+              </tal:maintainer>
+              <a tal:attributes="href string:${template/fmt:url}/+export;
+                   title string:Download translations from ${template/name}">
+                <img src="/@@/download" />&nbsp;Download</a>
+              <tal:admin condition="template/required:launchpad.Admin">
+                <a tal:attributes="href string:${template/fmt:url}/+admin;
                                    title string:Administer ${template/name}">
                    <img src="/@@/edit" />&nbsp;Administer</a>
+              </tal:admin>
             </div>
             </td>
           </tr>
