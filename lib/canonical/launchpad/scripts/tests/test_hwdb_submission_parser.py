@@ -23,6 +23,7 @@ from canonical.launchpad.scripts.hwdbsubmissions import (SubmissionParser,
     ROOT_UDI)
 from canonical.testing import BaseLayer
 
+from lp.testing import validate_mock_class
 
 class SubmissionParserTestParseSoftware(SubmissionParser):
     """A Variant used to test SubmissionParser._parseSoftware.
@@ -2102,7 +2103,7 @@ invalid line
 
         All shortcut methods return True.
         """
-        def checkUdevDictsHavePathKey(self, udev_data):
+        def checkUdevDictsHavePathKey(self, udev_nodes):
             """See `SubmissionParser`."""
             return True
 
@@ -2114,13 +2115,15 @@ invalid line
             """See `SubmissionParser`."""
             return True
 
-        def checkUdevScsiProperties(self, udev_data, syfs_data):
+        def checkUdevScsiProperties(self, udev_data, sysfs_data):
             """See `SubmissionParser`."""
             return True
 
         def checkUdevDmiData(self, dmi_data):
             """See `SubmissionParser`."""
             return True
+
+    validate_mock_class(UdevTestSubmissionParser)
 
     def testCheckConsistentUdevDeviceData(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),"""
@@ -2137,9 +2140,11 @@ invalid line
             self.UdevTestSubmissionParser):
             """A SubmissionPaser where checkUdevDictsHavePathKey() fails."""
 
-            def checkUdevDictsHavePathKey(self, udev_data):
+            def checkUdevDictsHavePathKey(self, udev_nodes):
                 """See `SubmissionParser`."""
                 return False
+
+        validate_mock_class(SubmissionParserUdevPathCheckFails)
 
         parser = SubmissionParserUdevPathCheckFails()
         self.assertFalse(parser.checkConsistentUdevDeviceData(
@@ -2158,6 +2163,8 @@ invalid line
                 """See `SubmissionParser`."""
                 return False
 
+        validate_mock_class(SubmissionParserUdevPciCheckFails)
+
         parser = SubmissionParserUdevPciCheckFails()
         self.assertFalse(parser.checkConsistentUdevDeviceData(
             None, None, None))
@@ -2174,6 +2181,8 @@ invalid line
             def checkUdevUsbProperties(self, udev_data):
                 """See `SubmissionParser`."""
                 return False
+
+        validate_mock_class(SubmissionParserUdevUsbCheckFails)
 
         parser = SubmissionParserUdevUsbCheckFails()
         self.assertFalse(parser.checkConsistentUdevDeviceData(
@@ -2192,6 +2201,8 @@ invalid line
                 """See `SubmissionParser`."""
                 return False
 
+        validate_mock_class(SubmissionParserUdevUsbCheckFails)
+
         parser = SubmissionParserUdevUsbCheckFails()
         self.assertFalse(parser.checkConsistentUdevDeviceData(
             None, None, None))
@@ -2209,55 +2220,38 @@ invalid line
                 """See `SubmissionParser`."""
                 return False
 
+        validate_mock_class(SubmissionParserUdevUsbCheckFails)
+
         parser = SubmissionParserUdevUsbCheckFails()
         self.assertFalse(parser.checkConsistentUdevDeviceData(
             None, None, None))
 
-    def _setupConsistencyCheckParser(self):
-        """Prepare and return a SubmissionParser instance.
+    class MockSubmissionParser(SubmissionParser):
+        """A SubmissionParser variant for testing checkCOnsistentData()
 
         All "method substitutes" return a valid result.
         """
-        test = self
+
         def findDuplicateIDs(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
             return set()
 
         def findInvalidIDReferences(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
             return set()
 
         def getUDIDeviceMap(self, devices):
-            test.assertTrue(isinstance(self, SubmissionParser))
             return {}
 
         def getUDIChildren(self, udi_device_map):
-            test.assertTrue(isinstance(self, SubmissionParser))
             return {}
 
-        def checkHALDevicesParentChildConsistency(self, devices):
-            test.assertTrue(isinstance(self, SubmissionParser))
+        def checkHALDevicesParentChildConsistency(self, udi_children):
             return []
 
-        def checkConsistentUdevDeviceData(self, udev_data, sysfs_data):
+        def checkConsistentUdevDeviceData(
+            self, udev_data, sysfs_data, dmi_data):
             return True
 
-        parser = SubmissionParser(self.log)
-        parser.findDuplicateIDs = (
-            lambda parsed_data: findDuplicateIDs(parser, parsed_data))
-        parser.findInvalidIDReferences = (
-            lambda parsed_data: findInvalidIDReferences(parser, parsed_data))
-        parser.getUDIDeviceMap = (
-            lambda devices: getUDIDeviceMap(parser, devices))
-        parser.getUDIChildren = (
-            lambda udi_device_map: getUDIChildren(parser, udi_device_map))
-        parser.checkHALDevicesParentChildConsistency = (
-            lambda udi_children: checkHALDevicesParentChildConsistency(
-                parser, udi_children))
-        parser.checkConsistentUdevDeviceData = (
-            lambda udev_data, sysfs_data: checkConsistentUdevDeviceData(
-                parser, udev_data, sysfs_data))
-        return parser
+    validate_mock_class(MockSubmissionParser)
 
     def assertErrorMessage(self, submission_key, log_message):
         """Search for message in the log entries for submission_key.
@@ -2309,7 +2303,7 @@ invalid line
 
     def testConsistencyCheck(self):
         """Test of SubmissionParser.checkConsistency."""
-        parser = self._setupConsistencyCheckParser()
+        parser = self.MockSubmissionParser()
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, True,
@@ -2318,45 +2312,53 @@ invalid line
 
     def testConsistencyCheckValidUdevData(self):
         """Test of SubmissionParser.checkConsistency."""
-        parser = self._setupConsistencyCheckParser()
+        parser = self.MockSubmissionParser()
         self.assertTrue(parser.checkConsistency(
             {
                 'hardware': {
-                    'udev': [],
-                    'sysfs-attributes': []
+                    'udev': None,
+                    'sysfs-attributes': None,
+                    'dmi': None,
                     }
                 }
             ))
 
     def testConsistencyCheck_invalid_udev_data(self):
         """Test of SubmissionParser.checkConsistency."""
-        def checkConsistentUdevDeviceData(self, udev_data, sysfs_data):
-            return False
+        class MockSubmissionParserBadUdevDeviceData(
+            self.MockSubmissionParser):
+            """A parser where checkConsistentUdevDeviceData() fails."""
 
-        parser = self._setupConsistencyCheckParser()
-        parser.checkConsistentUdevDeviceData = (
-            lambda udev_data, sysfs_data: checkConsistentUdevDeviceData(
-                parser, udev_data, sysfs_data))
+            def checkConsistentUdevDeviceData(self, udev_data, sysfs_data,
+                                              dmi_data):
+                return False
+
+        validate_mock_class(MockSubmissionParserBadUdevDeviceData)
+
+        parser = MockSubmissionParserBadUdevDeviceData()
         self.assertFalse(parser.checkConsistency(
             {
                 'hardware': {
-                    'udev': [{}],
-                    'sysfs-attributes': []
+                    'udev': None,
+                    'sysfs-attributes': None,
+                    'dmi': None,
                     }
                 }
             ))
 
     def testConsistencyCheckWithDuplicateIDs(self):
         """SubmissionParser.checkConsistency detects duplicate IDs."""
-        test = self
-        def findDuplicateIDs(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            return set([1])
+        class MockSubmissionParserDuplicateIds(
+            self.MockSubmissionParser):
+            """A parser where findDuplicateIDs() fails."""
 
-        parser = self._setupConsistencyCheckParser()
+            def findDuplicateIDs(self, parsed_data):
+                return set([1])
+
+        validate_mock_class(MockSubmissionParserDuplicateIds)
+
+        parser = MockSubmissionParserDuplicateIds(self.log)
         parser.submission_key = 'Consistency check detects duplicate IDs'
-        parser.findDuplicateIDs = (
-            lambda parsed_data: findDuplicateIDs(parser, parsed_data))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,
@@ -2366,15 +2368,16 @@ invalid line
 
     def testConsistencyCheckWithInvalidIDReferences(self):
         """SubmissionParser.checkConsistency detects invalid ID references."""
-        test = self
-        def findInvalidIDReferences(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            return set([1])
+        class MockSubmissionParserInvalidIDReferences(
+            self.MockSubmissionParser):
+            """A parser where findInvalidIDReferences() fails."""
+            def findInvalidIDReferences(self, parsed_data):
+                return set([1])
 
-        parser = self._setupConsistencyCheckParser()
+        validate_mock_class(MockSubmissionParserInvalidIDReferences)
+
+        parser = MockSubmissionParserInvalidIDReferences(self.log)
         parser.submission_key = 'Consistency check detects invalid ID refs'
-        parser.findInvalidIDReferences = (
-            lambda parsed_data: findInvalidIDReferences(parser, parsed_data))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,
@@ -2384,16 +2387,18 @@ invalid line
 
     def testConsistencyCheckWithDuplicateUDI(self):
         """SubmissionParser.checkConsistency detects duplicate UDIs."""
-        test = self
-        def getUDIDeviceMap(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            raise ValueError(
-                'Duplicate UDI: /org/freedesktop/Hal/devices/computer')
+        class MockSubmissionParserUDIDeviceMapFails(
+            self.MockSubmissionParser):
+            """A parser where getUDIDeviceMap() fails."""
 
-        parser = self._setupConsistencyCheckParser()
+            def getUDIDeviceMap(self, devices):
+                raise ValueError(
+                    'Duplicate UDI: /org/freedesktop/Hal/devices/computer')
+
+        validate_mock_class(MockSubmissionParserUDIDeviceMapFails)
+
+        parser = MockSubmissionParserUDIDeviceMapFails(self.log)
         parser.submission_key = 'Consistency check detects invalid ID refs'
-        parser.getUDIDeviceMap = (
-            lambda devices: getUDIDeviceMap(parser, devices))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,
@@ -2404,15 +2409,17 @@ invalid line
 
     def testConsistencyCheckChildUDIWithoutParent(self):
         """SubmissionParser.checkConsistency detects "orphaned" devices."""
-        test = self
-        def getUDIChildren(self, udi_device_map):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            raise ValueError('Unknown parent UDI /foo in <device id="3">')
+        class MockSubmissionParserUDIChildrenFails(
+            self.MockSubmissionParser):
+            """A parser where getUDIChildren() fails."""
 
-        parser = self._setupConsistencyCheckParser()
+            def getUDIChildren(self, udi_device_map):
+                raise ValueError('Unknown parent UDI /foo in <device id="3">')
+
+        validate_mock_class(MockSubmissionParserUDIChildrenFails)
+
+        parser = MockSubmissionParserUDIChildrenFails(self.log)
         parser.submission_key = 'Consistency check detects invalid ID refs'
-        parser.getUDIChildren = (
-            lambda udi_device_map: getUDIChildren(parser, udi_device_map))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,
@@ -2423,17 +2430,21 @@ invalid line
 
     def testConsistencyCheckCircularParentChildRelation(self):
         """SubmissionParser.checkConsistency detects "orphaned" devices."""
-        test = self
-        def checkHALDevicesParentChildConsistency(self, devices):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            return ['/foo', '/bar']
+        class MockSubmissionParserHALDevicesParentChildConsistency(
+            self.MockSubmissionParser):
+            """A parser where checkHALDevicesParentChildConsistency() fails.
+            """
 
-        parser = self._setupConsistencyCheckParser()
+            def checkHALDevicesParentChildConsistency(self, udi_children):
+                return ['/foo', '/bar']
+
+        validate_mock_class(
+            MockSubmissionParserHALDevicesParentChildConsistency)
+
+        parser = MockSubmissionParserHALDevicesParentChildConsistency(
+            self.log)
         parser.submission_key = ('Consistency check detects circular '
                                  'parent-child relationships')
-        parser.checkHALDevicesParentChildConsistency = (
-            lambda devices: checkHALDevicesParentChildConsistency(
-                parser, devices))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,

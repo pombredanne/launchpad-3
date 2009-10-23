@@ -1365,7 +1365,8 @@ class SubmissionParser(object):
         if ('udev' in parsed_data['hardware']
             and not self.checkConsistentUdevDeviceData(
                 parsed_data['hardware']['udev'],
-                parsed_data['hardware']['sysfs-attributes'])):
+                parsed_data['hardware']['sysfs-attributes'],
+                parsed_data['hardware']['dmi'],)):
             return False
         duplicate_ids = self.findDuplicateIDs(parsed_data)
         if duplicate_ids:
