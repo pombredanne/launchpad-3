@@ -939,6 +939,33 @@ class ProductPackagesView(PackagingDeleteView):
             for packaging in series.packagings:
                 yield packaging
 
+    @cachedproperty
+    def series_packages(self):
+        """A hierarchy of product series, packaging and field data.
+
+        A dict of series and packagings. Each packaging is a dict of the
+        packaging and a hidden HTML field for forms:
+           [{series: <hoary>,
+             packagings: {
+                packaging: <packaging>,
+                field: '<input type=''hidden' ...>},
+                }]
+        """
+        # This method is a superset of all_packaging. While all_packaging will
+        # be called several times as data is mutated, series_packages should
+        # only be called during render().
+        packaged_series = []
+        for series in self.context.serieses:
+            packagings = []
+            for packaging in series.packagings:
+                packaging_field = dict(
+                    packaging=packaging,
+                    field=self._renderHiddenPackagingField(packaging))
+                packagings.append(packaging_field)
+            packaged_series.append(dict(
+                series=series, packagings=packagings))
+        return packaged_series
+
 
 class ProductDistributionsView(ProductView):
     """View for displaying product packaging by distribution"""

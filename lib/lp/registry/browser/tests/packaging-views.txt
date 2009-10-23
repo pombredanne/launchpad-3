@@ -244,7 +244,7 @@ The +packages named view decends from PackagingDeleteView to provide remvoe
 link actions for the products linked packages.
 
     >>> from lp.registry.browser.packaging import PackagingDeleteView
-    >>> view = create_view(product, name='+packages')
+    >>> view = create_initialized_view(product, name='+packages')
     >>> print view.label
     Linked packages
 
@@ -255,3 +255,18 @@ to create a vocabulary.
     ...     print package.distroseries.name, package.productseries.name
     grumpy hotter
     hoary hotter
+
+The view provides the series_packages property that returns a list of
+dicts. Each dict as a series and a list of package dicts. The package dict
+contains the package and field for form actions.
+
+    >>> for series_dict in view.series_packages:
+    ...     print series_dict['series'].name
+    ...     for package_dict in series_dict['packagings']:
+    ...         print package_dict['packaging'].distroseries.name
+    ...         print package_dict['field']
+    cold
+    hotter
+      grumpy <input type="hidden" name="field.packaging" .../>
+      hoary <input type="hidden" name="field.packaging" .../>
+    trunk
