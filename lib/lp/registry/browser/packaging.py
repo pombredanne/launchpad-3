@@ -86,7 +86,8 @@ class PackagingAddView(LaunchpadFormView):
 class PackagingDeleteView(LaunchpadFormView):
     """A base view that provides packaging link deletion."""
 
-    def get_packaging(self):
+    @property
+    def all_packaging(self):
         """An iterator of the context's packaging links."""
         raise NotImplementedError
 
@@ -109,10 +110,7 @@ class PackagingDeleteView(LaunchpadFormView):
         associated to this DistributionSourcePackage.
         """
         terms = []
-        for sourcepackage in self.context.get_distroseries_packages():
-            packaging = sourcepackage.direct_packaging
-            if packaging is None:
-                continue
+        for packaging in self.all_packaging:
             terms.append(SimpleTerm(packaging, packaging.id))
         return form.Fields(
             Choice(__name__='packaging', vocabulary=SimpleVocabulary(terms),

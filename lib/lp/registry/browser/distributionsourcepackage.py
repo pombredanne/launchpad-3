@@ -202,10 +202,13 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
-    def get_packaging(self):
+    @property
+    def all_packaging(self):
         """See `PackagingDeleteView`."""
-        return [sourcepackage.direct_packaging
-                for sourcepackage in self.context.get_distroseries_packages()]
+        for sourcepackage in self.context.get_distroseries_packages():
+            packaging = sourcepackage.direct_packaging
+            if packaging is not None:
+                yield packaging
 
     @property
     def all_published_in_active_distroseries(self):
