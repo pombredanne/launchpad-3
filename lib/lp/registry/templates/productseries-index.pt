@@ -24,8 +24,7 @@
     </tal:heading>
 
     <div metal:fill-slot="main"
-      tal:define="overview_menu context/menu:overview;
-                  sourcepackages context/sourcepackages">
+      tal:define="overview_menu context/menu:overview">
 
       <div class="top-portlet">
         <div id="description"
@@ -144,41 +143,7 @@
             tal:content="structure context/@@+portlet-latestbugs"
             tal:condition="context/@@+get-involved/official_malone" />
 
-          <div class="portlet">
-            <h2>Distribution packaging</h2>
-
-            <p id="distribution-packaging-explanation">
-              <tal:distro condition="sourcepackages">
-                This series is packaged in the following distribution series:
-              </tal:distro>
-              <tal:no-distro condition="not: sourcepackages">
-                This series is not packaged in any distribution series.
-              </tal:no-distro>
-            </p>
-
-            <ul id="distribution-packaging"
-              tal:condition="sourcepackages">
-              <li
-                tal:repeat="package sourcepackages">
-                <a class="sprite package-source"
-                  tal:attributes="href package/fmt:url"><tal:distro
-                  tal:content="package/distroseries/distribution/displayname">
-                  Ubuntu</tal:distro>
-                  <tal:series tal:replace="package/distroseries/displayname">
-                  Warty</tal:series>
-                  <tal:package tal:content="package/name">firefox</tal:package></a>
-              </li>
-            </ul>
-
-            <ul class="horizontal">
-              <li>
-                <a tal:replace="structure overview_menu/ubuntupkg/fmt:icon-link" />
-              </li>
-              <li>
-                <a tal:replace="structure overview_menu/add_package/fmt:icon-link" />
-              </li>
-            </ul>
-          </div>
+          <div tal:content="structure context/@@+portlet-packages" />
         </div>
 
         <div class="yui-u">
