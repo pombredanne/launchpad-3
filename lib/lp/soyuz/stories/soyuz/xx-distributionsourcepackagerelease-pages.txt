@@ -292,11 +292,11 @@ The full change log can be viewed as follows:
     Change log
     0.9
     Pending in breezy-autotest-release
-    since ...
+    ...
     None
     1.0
     Published in breezy-autotest-release
-    2 seconds ago
+    ...
     Testing!!!
     biscuit@canonical.com
     LP: #1234
