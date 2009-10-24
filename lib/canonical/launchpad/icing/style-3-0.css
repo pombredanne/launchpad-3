@@ -233,6 +233,10 @@ span.nolink {
 .footer .lp-branding {
     float: left;
     }
+.portlet-border {
+    border-top: 1px solid #EBEBEB;
+    padding: 1em 0;
+    }
 .portlet, .aside {
     clear: both;
     border-top: 1px solid #EBEBEB;
