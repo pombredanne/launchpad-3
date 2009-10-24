@@ -23,6 +23,7 @@ from zope.component import getUtility
 from zope.interface import implements, Interface
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.interfaces import IBugSet
 from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
@@ -45,11 +46,14 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from lazr.delegates import delegates
+from lp.soyuz.browser.sourcepackagerelease import (
+    extract_bug_numbers, extract_email_addresses, linkify_changelog)
 from canonical.lazr.utils import smartquote
 
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
+
     @property
     def text(self):
         return smartquote('"%s" package') % (
@@ -64,6 +68,7 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
 
 class DistributionSourcePackageLinksMixin:
+
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
@@ -130,11 +135,14 @@ class DecoratedDistributionSourcePackageRelease:
     """
     delegates(IDistributionSourcePackageRelease, 'context')
 
-    def __init__(self, distributionsourcepackagerelease,
-                 publishing_history, package_diffs):
+    def __init__(
+        self, distributionsourcepackagerelease, publishing_history,
+        package_diffs, person_data, user):
         self.context = distributionsourcepackagerelease
         self._publishing_history = publishing_history
         self._package_diffs = package_diffs
+        self._person_data = person_data
+        self._user = user
 
     @property
     def publishing_history(self):
@@ -145,6 +153,12 @@ class DecoratedDistributionSourcePackageRelease:
     def package_diffs(self):
         """ See `ISourcePackageRelease`."""
         return self._package_diffs
+
+    @property
+    def change_summary(self):
+        """ See `ISourcePackageRelease`."""
+        return linkify_changelog(
+            self._user, self.context.change_summary, self._person_data)
 
 
 class IDistributionSourcePackageActionMenu(Interface):
@@ -168,14 +182,44 @@ class DistributionSourcePackageBaseView:
     """Common features to all `DistributionSourcePackage` views."""
 
     def releases(self):
+        """All releases for this `IDistributionSourcePackage`."""
+
+        def not_empty(text):
+            return (
+                text is not None and isinstance(text, basestring)
+                and len(text.strip()) > 0)
+
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
 
         # Return as early as possible to avoid unnecessary processing.
         if len(dspr_pubs) == 0:
             return []
 
-        # Collate diffs for relevant SourcePackageReleases
         sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
+        # Pre-load the bugs and persons referenced by the +changelog page from
+        # the database.
+        # This will improve the performance of the ensuing changelog
+        # linkification.
+        the_changelog = '\n'.join(
+            [spr.changelog_entry for spr in sprs
+             if not_empty(spr.changelog_entry)])
+        unique_bugs = extract_bug_numbers(the_changelog)
+        self._bug_data = list(
+            getUtility(IBugSet).getByNumbers(unique_bugs.keys()))
+        # Preload email/person data only if user is logged on. In the opposite
+        # case the emails in the changelog will be obfuscated anyway and thus
+        # cause no database lookups.
+        if self.user:
+            unique_emails = extract_email_addresses(the_changelog)
+            # The method below returns a [(EmailAddress,Person]] result set.
+            result_set = self.context.getPersonsByEmail(unique_emails)
+            # Ignore the persons who want their email addresses hidden.
+            self._person_data = dict(
+                [(email.email, person) for (email, person) in result_set
+                 if not person.hide_email_addresses])
+        else:
+            self._person_data = None
+        # Collate diffs for relevant SourcePackageReleases
         pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
         spr_diffs = {}
         for spr, diffs in itertools.groupby(pkg_diffs,
@@ -184,7 +228,8 @@ class DistributionSourcePackageBaseView:
 
         return [
             DecoratedDistributionSourcePackageRelease(
-                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
+                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []),
+                self._person_data, self.user)
             for (dspr, spphs) in dspr_pubs]
 
 
@@ -222,11 +267,11 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         for pub in self.context.current_publishing_records:
             if pub.distroseries.active:
                 entry = {
-                    "suite" : (pub.distroseries.name.capitalize() +
+                    "suite": (pub.distroseries.name.capitalize() +
                                pocketsuffix[pub.pocket]),
-                    "description" : "(%s): %s/%s" % (
+                    "description": "(%s): %s/%s" % (
                         pub.sourcepackagerelease.version,
-                        pub.component.name, pub.section.name)
+                        pub.component.name, pub.section.name),
                     }
                 results.append(entry)
         return results
@@ -286,12 +331,12 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                 versions.append(
                     "%s (%s)" % (
                         pub.distroseries.displayname,
-                        pub.source_package_version
+                        pub.source_package_version,
                         )
                     )
             archive_versions.append({
                 'archive': archive,
-                'versions': ", ".join(versions)
+                'versions': ", ".join(versions),
                 })
 
         return archive_versions
