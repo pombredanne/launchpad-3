@@ -33,6 +33,7 @@ from zope.interface import implements
 
 from canonical.lazr.xml import RelaxNGValidator
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.librarian.interfaces import LibrarianServerError
 from canonical.launchpad.interfaces.hwdb import (
@@ -1470,15 +1471,20 @@ class SubmissionParser(object):
         del self.devices['/devices']
         return True
 
-    def getKernelPackageName(self):
-        """Return the kernel package name of the submission,"""
-        root_hal_device = self.devices[ROOT_UDI]
-        kernel_version = root_hal_device.getProperty('system.kernel.version')
+    @cachedproperty
+    def kernel_package_name(self):
+        """The kernel package name for the submission."""
+        if ROOT_UDI in self.devices:
+            root_hal_device = self.devices[ROOT_UDI]
+            kernel_version = root_hal_device.getProperty(
+                'system.kernel.version')
+        else:
+            kernel_version = self.parsed_data['summary'].get('kernel-release')
         if kernel_version is None:
             self._logWarning(
                 'Submission does not provide property system.kernel.version '
-                'for /org/freedesktop/Hal/devices/computer.',
-                WARNING_NO_HAL_KERNEL_VERSION)
+                'for /org/freedesktop/Hal/devices/computer or a summary '
+                'sub-node <kernel-release>.')
             return None
         kernel_package_name = 'linux-image-' + kernel_version
         packages = self.parsed_data['software']['packages']
@@ -1490,8 +1496,7 @@ class SubmissionParser(object):
                 'Inconsistent kernel version data: According to HAL the '
                 'kernel is %s, but the submission does not know about a '
                 'kernel package %s'
-                % (kernel_version, kernel_package_name),
-                WARNING_NO_HAL_KERNEL_VERSION)
+                % (kernel_version, kernel_package_name))
             return None
         return kernel_package_name
 
@@ -2185,10 +2190,9 @@ class BaseDevice:
         # drivers, so there is currently no need to search for
         # for user space printer drivers, for example.
         if self.driver_name is not None:
-            kernel_package_name = self.parser.getKernelPackageName()
             db_driver_set = getUtility(IHWDriverSet)
             return db_driver_set.getOrCreate(
-                kernel_package_name, self.driver_name)
+                self.parser.kernel_package_name, self.driver_name)
         else:
             return None
 
