@@ -47,7 +47,8 @@ processors = '|'.join([
     'sparc',
     ])
 flavor_pattern = re.compile(r"""
-    (_[a-z][a-z]_[A-Z][A-Z]       # Language version
+    (~                            # Packaging target
+     |_[a-z][a-z]_[A-Z][A-Z]      # or language version
      |_(%s)                       # or processor version
      |[\.-](win32|OSX)            # or OS version
      |\.(deb|noarch|rpm|dmg|exe)  # or packaging version

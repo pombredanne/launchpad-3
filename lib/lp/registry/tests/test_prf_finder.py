@@ -345,6 +345,8 @@ class ExtractVersionTestCase(unittest.TestCase):
         self.assertEqual(version, '1.16.3')
         version = extract_version('partitionmanager-21-2.noarch.rpm')
         self.assertEqual(version, '21-2')
+        version = extract_version('php-fpm-0.6~5.3.1.tar.gz')
+        self.assertEqual(version, '0.6')
 
     def test_extract_version_name_with_uppercase(self):
         """Verify that the file's version is lowercases."""
