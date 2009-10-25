@@ -169,6 +169,7 @@ class HandleReleaseTestCase(unittest.TestCase):
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
         file_name = 'evolution-42.0.orig.tar.gz'
+        alt_file_name = 'evolution-42.0.orig.tar.bz2'
 
         # create a release tarball
         fp = open(os.path.join(
@@ -179,6 +180,9 @@ class HandleReleaseTestCase(unittest.TestCase):
         self.assertEqual(
             prf.hasReleaseFile('evolution', 'trunk', '42.0', file_name),
             False)
+        self.assertEqual(
+            prf.hasReleaseFile('evolution', 'trunk', '42.0', alt_file_name),
+            False)
 
         prf.handleRelease(
             'evolution', 'trunk', self.release_url + '/' + file_name)
@@ -186,6 +190,9 @@ class HandleReleaseTestCase(unittest.TestCase):
         self.assertEqual(
             prf.hasReleaseFile('evolution', 'trunk', '42.0', file_name),
             True)
+        self.assertEqual(
+            prf.hasReleaseFile('evolution', 'trunk', '42.0', alt_file_name),
+            False)
 
         # check to see that the release has been created
         evo = getUtility(IProductSet).getByName('evolution')
