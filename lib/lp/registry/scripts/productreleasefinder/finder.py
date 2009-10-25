@@ -141,9 +141,9 @@ class ProductReleaseFinder:
                                product_name, url)
 
     def hasReleaseFile(self, product_name, series_name,
-                          release_name, file_name):
+                          release_name, filename):
         """Return True if we have a tarball for the given product release."""
-        has_tarball = False
+        has_file = False
         self.ztm.begin()
         try:
             product = getUtility(IProductSet).getByName(product_name)
@@ -153,13 +153,12 @@ class ProductReleaseFinder:
                     release = series.getRelease(release_name)
                     if release is not None:
                         for fileinfo in release.files:
-                            if (fileinfo.filetype
-                                == UpstreamFileType.CODETARBALL):
-                                has_tarball = True
+                            if filename == fileinfo.libraryfile.filename:
+                                has_file = True
                                 break
         finally:
             self.ztm.abort()
-        return has_tarball
+        return has_file
 
     def addReleaseTarball(self, product_name, series_name, release_name,
                           filename, size, file, content_type):
