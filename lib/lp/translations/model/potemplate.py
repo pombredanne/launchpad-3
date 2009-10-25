@@ -24,7 +24,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, LeftJoin, Or, SQL
+from storm.expr import Alias, And, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
@@ -36,7 +36,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, flush_database_updates, sqlvalues)
+    SQLBase, quote, quote_like, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.utilities.rosettastats import RosettaStats
@@ -417,6 +417,23 @@ class POTemplate(SQLBase, RosettaStats):
                                  clauseTables=['TranslationTemplateItem'],
                                  orderBy=['TranslationTemplateItem.sequence'])
         return query.prejoin(['msgid_singular', 'msgid_plural'])
+
+    def getTranslationCredits(self):
+        """See `IPOTemplate`."""
+        # Find potential credits messages by the message ids.
+        store = IStore(POTemplate)
+        credits_ids = ",".join(map(quote, POTMsgSet.credits_message_ids))
+        origin1 = Join(TranslationTemplateItem,
+                       TranslationTemplateItem.potmsgset == POTMsgSet.id)
+        origin2 = Join(POMsgID, POTMsgSet.msgid_singular == POMsgID.id)
+        result = store.using(POTMsgSet, origin1, origin2).find(
+            POTMsgSet, TranslationTemplateItem.potemplate == self,
+                       "pomsgid.msgid IN (%s)" % credits_ids)
+        # Filter these candidates because is_translation_credit checks for
+        # more conditions than the special msgids.
+        for potmsgset in result:
+            if potmsgset.is_translation_credit:
+                yield potmsgset
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
@@ -1159,6 +1176,19 @@ class POTemplateSubset:
             return None
         else:
             return closest_template
+
+    def findUniquePathlessMatch(self, filename):
+        """See `IPOTemplateSubset`."""
+        query = self.query + (
+            " AND (POTemplate.path = %s OR POTemplate.path LIKE '%%/' || %s)"
+                % (quote(filename), quote_like(filename)))
+        candidates = list(POTemplate.select(query, limit=2))
+
+        if len(candidates) == 1:
+            # Found exactly one match.
+            return candidates[0]
+        else:
+            return None
 
 
 class POTemplateSet:
