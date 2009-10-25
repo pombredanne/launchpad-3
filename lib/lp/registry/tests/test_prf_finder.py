@@ -168,21 +168,24 @@ class HandleReleaseTestCase(unittest.TestCase):
         ztm = self.layer.txn
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
+        file_name = 'evolution-42.0.orig.tar.gz'
 
         # create a release tarball
         fp = open(os.path.join(
-            self.release_root, 'evolution-42.0.orig.tar.gz'), 'w')
+            self.release_root, file_name), 'w')
         fp.write('foo')
         fp.close()
 
-        self.assertEqual(prf.hasReleaseTarball('evolution', 'trunk', '42.0'),
-                         False)
+        self.assertEqual(
+            prf.hasReleaseFile('evolution', 'trunk', '42.0', file_name),
+            False)
 
-        prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-42.0.orig.tar.gz')
+        prf.handleRelease(
+            'evolution', 'trunk', self.release_url + '/' + file_name)
 
-        self.assertEqual(prf.hasReleaseTarball('evolution', 'trunk', '42.0'),
-                         True)
+        self.assertEqual(
+            prf.hasReleaseFile('evolution', 'trunk', '42.0', file_name),
+            True)
 
         # check to see that the release has been created
         evo = getUtility(IProductSet).getByName('evolution')
@@ -192,8 +195,7 @@ class HandleReleaseTestCase(unittest.TestCase):
         self.assertEqual(release.files.count(), 1)
         fileinfo = release.files[0]
         self.assertEqual(fileinfo.filetype, UpstreamFileType.CODETARBALL)
-        self.assertEqual(fileinfo.libraryfile.filename,
-                         'evolution-42.0.orig.tar.gz')
+        self.assertEqual(fileinfo.libraryfile.filename, file_name)
 
         # verify that the fileinfo object is sane
         self.failUnless(verifyObject(IProductReleaseFile, fileinfo))
