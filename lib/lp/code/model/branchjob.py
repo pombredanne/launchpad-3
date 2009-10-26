@@ -252,6 +252,8 @@ class BranchUpgradeJob(BranchJobDerived):
     @classmethod
     def create(cls, branch):
         """See `IBranchUpgradeJobSource`."""
+        if not branch.needs_upgrading:
+            raise AssertionError('Branch does not need upgrading.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
