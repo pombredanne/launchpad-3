@@ -284,7 +284,6 @@ next to the heading "Merged at revision".
     The proposal's merged revision has been updated.
     >>> print_summary(sample_browser)
     Status: Merged
-    ...
     Merged at revision: 42
     ...
     >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()

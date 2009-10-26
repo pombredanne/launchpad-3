@@ -1,4 +1,5 @@
-=== Concurrent Deletion of Packaging ===
+Concurrent Deletion of Packaging
+================================
 
 When two browsers are used to concurrently delete the same packaging
 association, only one of them can succeed. The other one does not oops
@@ -16,7 +17,7 @@ Then the user click the "Delete Link" button in the first tab. The
 deletion succeeds and the usual informational message is displayed.
 
     >>> form = first_browser.getForm("delete_warty_alsa-utils_trunk")
-    >>> form.getControl("Delete Link").click()
+    >>> form.getControl(name="field.actions.delete_packaging").click()
     >>> content = first_browser.contents
     >>> for tag in find_tags_by_class(content, 'error'):
     ...     print extract_text(tag)
@@ -37,7 +38,7 @@ So we resort to just displaying a helpful error message.
 -- David Allouche 2007-12-07
 
     >>> form = second_browser.getForm("delete_warty_alsa-utils_trunk")
-    >>> form.getControl("Delete Link").click()
+    >>> form.getControl(name="field.actions.delete_packaging").click()
     >>> content = second_browser.contents
     >>> for tag in find_tags_by_class(content, 'informational'):
     ...     print extract_text(tag)

@@ -11,12 +11,15 @@ __all__ = [
 import os
 import shutil
 from StringIO import StringIO
+import tempfile
 
+from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
+from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -252,16 +255,34 @@ class BranchUpgradeJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchUpgradeJob`."""
-        self._prepare_upgrade()
-        self._upgrade()
+        # Set up the new branch structure
+        upgrade_branch_path = tempfile.mkdtemp()
+        try:
+            upgrade_transport = get_transport(upgrade_branch_path)
+            source_branch_transport = get_transport(self.branch.getPullURL())
+            source_branch_transport.copy_tree_to_transport(upgrade_transport)
+            upgrade_branch = BzrBranch.open(upgrade_transport.base)
 
-    def _prepare_upgrade(self):
-        """Prepares the branch for upgrade."""
-        self._upgrade_branch = self.branch.getBzrBranch()
+            # Perform the upgrade.
+            upgrade(upgrade_branch.base, self.upgrade_format)
 
-    def _upgrade(self):
-        """Performs the upgrade of the branch."""
-        upgrade(self._upgrade_branch.base, self.upgrade_format)
+            # Re-open the branch, since its format has changed.
+            upgrade_branch = BzrBranch.open_from_transport(
+                upgrade_transport)
+            source_branch = BzrBranch.open_from_transport(
+                source_branch_transport)
+
+            source_branch.lock_write()
+            upgrade_branch.pull(source_branch)
+            upgrade_branch.fetch(source_branch)
+            source_branch.unlock()
+
+            # Move the branch in the old format to backup.bzr
+            source_branch_transport.rename('.bzr', 'backup.bzr')
+            upgrade_transport.delete_tree('backup.bzr')
+            upgrade_transport.copy_tree_to_transport(source_branch_transport)
+        finally:
+            shutil.rmtree(upgrade_branch_path)
 
     @property
     def upgrade_format(self):
