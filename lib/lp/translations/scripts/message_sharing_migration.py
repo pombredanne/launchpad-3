@@ -191,6 +191,7 @@ class MessageSharingMerge(LaunchpadScript):
 
     def main(self):
         actions = (
+            self.options.remove_duplicates or
             self.options.merge_potmsgsets or
             self.options.merge_translationmessages)
 
