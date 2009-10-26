@@ -121,6 +121,7 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
 
 class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
+    """A view to set the `IProductSeries` of a sourcepackage."""
     schema = ISourcePackage
     field_names = ['productseries']
 
@@ -131,9 +132,16 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
+    def validate(self, data):
+        productseries = data.get('productseries', None)
+        if productseries is None:
+            message = "You must choose a project series."
+            self.setFieldError('productseries', message)
+
     @action(_("Change"), name="change")
     def change(self, action, data):
-        self.context.setPackaging(data['productseries'], self.user)
+        productseries = data['productseries']
+        self.context.setPackaging(productseries, self.user)
         self.request.response.addNotification('Upstream link updated.')
         self.next_url = canonical_url(self.context)
 
