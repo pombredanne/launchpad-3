@@ -365,6 +365,13 @@ class IPOTemplate(IRosettaStats):
         all of them.
         """
 
+    def getTranslationCredits():
+        """Return an iterator over translation credits.
+
+        Return all `IPOTMsgSet` objects in this template that are translation
+        credits.
+        """
+
     def getPOTMsgSetsCount(current=True):
         """Return the number of POTMsgSet objects related to this object.
 
@@ -584,6 +591,18 @@ class IPOTemplateSubset(Interface):
         If there is no `IPOTemplate` with a common path with the given argument,
         or if there are more than one `IPOTemplate` with the same common path,
         and both are the closer ones, returns None.
+        """
+
+    def findUniquePathlessMatch(filename):
+        """Find the one `POTemplate` with given filename, if there is one.
+
+        Directory paths are ignored in the search.  Only the filename
+        itself is matched.
+
+        :param filename: A filename, without any directory component.
+        :return: The one `POTemplate` in the subset whose filename
+            matches `filename`, if there is exactly one.  Otherwise,
+            None.
         """
 
 
