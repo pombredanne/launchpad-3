@@ -45,8 +45,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.helpers import get_email_template
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -56,7 +54,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, ISourcePackagePublishingHistory, PackagePublishingStatus)
+    IPublishingSet, ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
