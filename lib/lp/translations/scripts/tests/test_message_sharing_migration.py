@@ -357,40 +357,6 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         self.assertEqual(tms, expected_tms)
         self.assertEqual(len(tms), 3)
 
-    def test_duplicatesAreCleanedUp(self):
-        # The duplicates removal function cleans up any duplicate
-        # TranslationMessages that might get in the way of merging.
-        trunk_message, stable_message = self._makeTranslationMessages(
-            'snaggle', 'snaggle')
-        trunk_message.is_current = False
-        trunk_message.sync()
-
-        potmsgset = trunk_message.potmsgset
-
-        stable_message.is_imported = True
-        stable_message.potemplate = trunk_message.potemplate
-        stable_message.potmsgset = potmsgset
-        stable_message.sync()
-
-        # We've set up a situation where trunk has two identical
-        # messages (one of which is current, the other imported) and
-        # stable has none.
-        self.assertEqual(self._getTranslations(), ('snaggle', None))
-        tms = set(potmsgset.getAllTranslationMessages())
-        self.assertEqual(tms, set([trunk_message, stable_message]))
-
-        self.script._removeDuplicateMessages(self.templates)
-
-        # The duplicates have been cleaned up.
-        self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
-        
-        # The is_current and is_imported flags from the duplicate
-        # messages have been merged into a single, current, imported
-        # message.
-        message = self._getMessage(potmsgset, self.trunk_template)
-        self.assertTrue(message.is_current)
-        self.assertTrue(message.is_imported)
-
 
 class TestTranslationMessageNonMerging(TestCaseWithFactory,
                                        TranslatedProductMixin):
@@ -590,6 +556,40 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
         self.layer.switchDbUser('postgres')
         super(TestRemoveDuplicates, self).setUp(user='mark@example.com')
         super(TestRemoveDuplicates, self).setUpProduct()
+
+    def test_duplicatesAreCleanedUp(self):
+        # The duplicates removal function cleans up any duplicate
+        # TranslationMessages that might get in the way of merging.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'snaggle', 'snaggle')
+        trunk_message.is_current = False
+        trunk_message.sync()
+
+        potmsgset = trunk_message.potmsgset
+
+        stable_message.is_imported = True
+        stable_message.potemplate = trunk_message.potemplate
+        stable_message.potmsgset = potmsgset
+        stable_message.sync()
+
+        # We've set up a situation where trunk has two identical
+        # messages (one of which is current, the other imported) and
+        # stable has none.
+        self.assertEqual(self._getTranslations(), ('snaggle', None))
+        tms = set(potmsgset.getAllTranslationMessages())
+        self.assertEqual(tms, set([trunk_message, stable_message]))
+
+        self.script._removeDuplicateMessages(self.templates)
+
+        # The duplicates have been cleaned up.
+        self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
+        
+        # The is_current and is_imported flags from the duplicate
+        # messages have been merged into a single, current, imported
+        # message.
+        message = self._getMessage(potmsgset, self.trunk_template)
+        self.assertTrue(message.is_current)
+        self.assertTrue(message.is_imported)
 
     def test_ScrubPOTMsgSetTranslationsWithoutDuplication(self):
         # _scrubPOTMsgSetTranslations eliminates duplicated

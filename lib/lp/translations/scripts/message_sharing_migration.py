@@ -460,7 +460,7 @@ class MessageSharingMerge(LaunchpadScript):
 
                     existing_tm = translations[key]
                     assert tm != existing_tm, (
-                        "Duplicate is listed twice.")
+                        "Message is duplicate of itself.")
                     assert tm.potmsgset == existing_tm.potmsgset, (
                         "Different potmsgsets considered identical.")
                     assert tm.potemplate == existing_tm.potemplate, (
