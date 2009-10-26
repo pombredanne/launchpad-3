@@ -13,7 +13,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
-from storm.store import EmptyResultSet
+from storm.store import EmptyResultSet, Store
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -56,7 +56,7 @@ credit_message_ids = {
     u'translator_credits': (None, TranslationCreditsType.GNOME),
 
     # KDE credits messages.
-    u'Your emails': 
+    u'Your emails':
         (u'EMAIL OF TRANSLATORS', TranslationCreditsType.KDE_EMAILS),
     u'Your names':
         (u'NAME OF TRANSLATORS', TranslationCreditsType.KDE_NAMES),
@@ -64,7 +64,7 @@ credit_message_ids = {
     # Old KDE credits messages.
     u'_: EMAIL OF TRANSLATORS\nYour emails':
         (None, TranslationCreditsType.KDE_EMAILS),
-    u'_: NAME OF TRANSLATORS\nYour names': 
+    u'_: NAME OF TRANSLATORS\nYour names':
         (None, TranslationCreditsType.KDE_NAMES),
     }
 
@@ -1082,7 +1082,8 @@ class POTMsgSet(SQLBase):
 
     def getAllTranslationMessages(self):
         """See `IPOTMsgSet`."""
-        return TranslationMessage.selectBy(potmsgset=self, orderBy=['id'])
+        return Store.of(self).find(
+            TranslationMessage, TranslationMessage.potmsgset == self)
 
     def getAllTranslationTemplateItems(self):
         """See `IPOTMsgSet`."""

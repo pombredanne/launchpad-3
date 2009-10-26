@@ -581,51 +581,27 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self.assertEqual(poft.latest_message, stable_message)
 
 
-class TestMapMessages(TestCaseWithFactory, TranslatedProductMixin):
-    """Test _mapExistingMessages and friends."""
+class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
+    """Test _scrubPOTMsgSetTranslations and friends."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         self.layer.switchDbUser('postgres')
-        super(TestMapMessages, self).setUp(user='mark@example.com')
-        super(TestMapMessages, self).setUpProduct()
-
-    def test_NoMessagesToMap(self):
-        # Mapping an untranslated POTMsgSet produces an empty dict.
-        empty = self.script._mapExistingMessages(self.trunk_potmsgset)
-        self.assertEqual(empty, {})
-
-    def test_MapSharedMessage(self):
-        # Map existing, shared translation for a POTMsgSet.
-        message = self._makeTranslationMessage(
-            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
-            text='winslow', diverged=False)
-
-        map = self.script._mapExistingMessages(message.potmsgset)
-        key = self.script._getPOTMsgSetTranslationMessageKey(message)
-        expected = {key: { self.trunk_template: [message]}}
-
-    def test_MapDivergedMessage(self):
-        # Map existing, diverged translation for a POTMsgSet.
-        message = self._makeTranslationMessage(
-            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
-            text='winslow', diverged=True)
-
-        map = self.script._mapExistingMessages(message.potmsgset)
-        key = self.script._getPOTMsgSetTranslationMessageKey(message)
-        expected = {key: {self.trunk_template: [message]}}
-
-        self.assertEqual(map, expected)
+        super(TestRemoveDuplicates, self).setUp(user='mark@example.com')
+        super(TestRemoveDuplicates, self).setUpProduct()
 
     def test_ScrubPOTMsgSetTranslationsWithoutDuplication(self):
         # _scrubPOTMsgSetTranslations eliminates duplicated
         # TranslationMessages.  If it doesn't find any, nothing happens.
-        message = self._makeTranslationMessage(
+        self._makeTranslationMessage(
             pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
             text='gbzidh', diverged=False)
-        map = self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
-        key = self.script._getPOTMsgSetTranslationMessageKey(message)
-        self.assertEqual(map, {key: {None: [message]}})
+
+        self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
+
+        message1, message2 = self._getMessages()
+        self.assertIsNot(None, message1)
+        self.assertIs(None, message2)
 
     def test_ScrubPOTMsgSetTranslationsWithDuplication(self):
         # If there are duplicate TranslationMessages, one inherits all
@@ -641,14 +617,14 @@ class TestMapMessages(TestCaseWithFactory, TranslatedProductMixin):
         message2.is_imported = True
         message2.potmsgset = self.trunk_potmsgset
         message2.potemplate = self.trunk_template
+        ids = (message1.id, message2.id)
 
-        map = self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
+        self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
 
         message, no_message = self._getMessages()
 
-        # The resulting map has only one of the identical messages.
-        key = self.script._getPOTMsgSetTranslationMessageKey(message)
-        self.assertEqual(map, {key: {self.trunk_template: [message]}})
+        # One of the two messages is now gone.
+        self.assertIs(None, no_message)
 
         # The remaining message combines the flags from both its
         # predecessors.
