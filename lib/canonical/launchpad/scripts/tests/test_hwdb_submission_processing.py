@@ -360,8 +360,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.assertErrorMessage(
             parser.submission_key, "No udev root device defined")
 
-    def testKernelPackageName(self):
-        """Test of SubmissionParser.getKernelPackageName.
+    def test_kernel_package_name_hal_data(self):
+        """Test of SubmissionParser.kernel_package_name.
 
         Regular case.
         """
@@ -388,17 +388,19 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 },
             }
         parser.buildDeviceList(parser.parsed_data)
-        kernel_package = parser.getKernelPackageName()
-        self.assertEqual(kernel_package, self.KERNEL_PACKAGE,
-            'Unexpected result of SubmissionParser.getKernelPackageName. '
+        kernel_package = parser.kernel_package_name
+        self.assertEqual(
+            self.KERNEL_PACKAGE, kernel_package,
+            'Unexpected value of SubmissionParser.kernel_package_name. '
             'Expected linux-image-2.6.24-19-generic, got %r' % kernel_package)
 
-        self.assertEqual(len(self.handler.records), 0,
+        self.assertEqual(
+            0, len(self.handler.records),
             'One or more warning messages were logged by '
-            'getKernelPackageName, where zero was expected.')
+            'SubmissionParser.kernel_package_name, where zero was expected.')
 
-    def testKernelPackageNameInconsistent(self):
-        """Test of SubmissionParser.getKernelPackageName.
+    def test_kernel_package_hal_data_name_inconsistent(self):
+        """Test of SubmissionParser.kernel_package_name.
 
         Test a name inconsistency.
         """
@@ -426,24 +428,24 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser.submission_key = 'Test of inconsistent kernel package name'
         parser.buildDeviceList(parser.parsed_data)
-        kernel_package = parser.getKernelPackageName()
-        self.assertEqual(kernel_package, None,
-            'Unexpected result of SubmissionParser.getKernelPackageName. '
-            'Expected None, got %r' % kernel_package)
-        self.assertWarningMessage(parser.submission_key,
+        kernel_package = parser.kernel_package_name
+        self.assertIs(None, kernel_package)
+        self.assertWarningMessage(
+            parser.submission_key,
             'Inconsistent kernel version data: According to HAL the '
             'kernel is 2.6.24-19-generic, but the submission does not '
             'know about a kernel package linux-image-2.6.24-19-generic')
         # The warning appears only once per submission, even if the
-        # SubmissionParser.getKernelPackageName is called more than once.
+        # property kernel_package_name is accessed more than once.
         num_warnings = len(self.handler.records)
-        parser.getKernelPackageName()
-        self.assertEqual(num_warnings, len(self.handler.records),
+        test = parser.kernel_package_name
+        self.assertEqual(
+            num_warnings, len(self.handler.records),
             'Warning for missing HAL property system.kernel.version '
             'repeated.')
 
-    def testKernelPackageNameNoHALData(self):
-        """Test of SubmissionParser.getKernelPackageName.
+    def test_kernel_package_name_hal_data_no_kernel_version_in_hal_data(self):
+        """Test of SubmissionParser.kernel_package_name.
 
         Test without HAL property system.kernel.version.
         """
@@ -469,26 +471,28 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser.submission_key = 'Test: missing property system.kernel.version'
         parser.buildDeviceList(parser.parsed_data)
-        kernel_package = parser.getKernelPackageName()
-        self.assertEqual(kernel_package, None,
-            'Unexpected result of SubmissionParser.getKernelPackageName. '
-            'Expected None, got %r' % kernel_package)
-        self.assertWarningMessage(parser.submission_key,
+        self.assertIs(None, parser.kernel_package_name)
+        self.assertWarningMessage(
+            parser.submission_key,
             'Submission does not provide property system.kernel.version '
-            'for /org/freedesktop/Hal/devices/computer.')
+            'for /org/freedesktop/Hal/devices/computer or a summary '
+            'sub-node <kernel-release>.')
         # The warning appears only once per submission, even if the
-        # SubmissionParser.getKernelPackageName is called more than once.
+        # property kernel_package_name is accessed more than once.
         num_warnings = len(self.handler.records)
-        parser.getKernelPackageName()
-        self.assertEqual(num_warnings, len(self.handler.records),
+        test = parser.kernel_package_name
+        self.assertEqual(
+            num_warnings, len(self.handler.records),
             'Warning for missing HAL property system.kernel.version '
             'repeated.')
 
-    def testKernelPackageNameNoPackageData(self):
-        """Test of SubmissionParser.getKernelPackageName.
+    def test_kernel_package_name_hal_data_no_package_data(self):
+        """Test of SubmissionParser.kernel_package_name.
 
-        Test without any package data. getKernelPackageName returns
-        the property system.kernel.version without any further checking.
+        Test without any package data. In this case,
+        SubmissionParser.kernel_package_name is the value of the property
+        system.kernel.version if the root HAL device. No further checks
+        are done.
         """
         parser = SubmissionParser(self.log)
         devices = [
@@ -512,8 +516,156 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser.submission_key = 'Test: missing property system.kernel.version'
         parser.buildDeviceList(parser.parsed_data)
-        kernel_package = parser.getKernelPackageName()
-        self.assertEqual(kernel_package, self.KERNEL_PACKAGE,
+        kernel_package = parser.kernel_package_name
+        self.assertEqual(
+            self.KERNEL_PACKAGE, kernel_package,
+            'Unexpected result of SubmissionParser.getKernelPackageName, '
+            'test without any package data. Expected None, got %r'
+            % kernel_package)
+
+    def test_kernel_package_name_udev_data(self):
+        """Test of SubmissionParser.kernel_package_name for udev data.
+
+        Variant for udev data, regular case.
+        """
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = {
+            'hardware': {
+                'udev': [
+                    {'P': '/devices/LNXSYSTM:00'}
+                    ],
+                'sysfs-attributes': {},
+                'dmi': {},
+                },
+            'software': {
+                'packages': {
+                    self.KERNEL_PACKAGE: {},
+                    },
+                },
+            'summary': {
+                'kernel-release': self.KERNEL_VERSION,
+                },
+            }
+        parser.buildDeviceList(parser.parsed_data)
+        kernel_package = parser.kernel_package_name
+        self.assertEqual(
+            self.KERNEL_PACKAGE, kernel_package,
+            'Unexpected value of SubmissionParser.kernel_package_name. '
+            'Expected linux-image-2.6.24-19-generic, got %r' % kernel_package)
+
+        self.assertEqual(
+            0, len(self.handler.records),
+            'One or more warning messages were logged by '
+            'SubmissionParser.kernel_package_name, where zero was expected.')
+
+    def test_kernel_package_udev_data_name_inconsistent(self):
+        """Test of SubmissionParser.kernel_package_name.
+
+        Variant for udev data, name inconsistency.
+        """
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = {
+            'hardware': {
+                'udev': [
+                    {'P': '/devices/LNXSYSTM:00'}
+                    ],
+                'sysfs-attributes': {},
+                'dmi': {},
+                },
+            'software': {
+                'packages': {
+                    'linux-image-from-obscure-external-source': {},
+                    },
+                },
+            'summary': {
+                'kernel-release': self.KERNEL_VERSION,
+                },
+            }
+        parser.submission_key = 'Test of inconsistent kernel package name'
+        parser.buildDeviceList(parser.parsed_data)
+        kernel_package = parser.kernel_package_name
+        self.assertIs(None, kernel_package)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Inconsistent kernel version data: According to HAL the '
+            'kernel is 2.6.24-19-generic, but the submission does not '
+            'know about a kernel package linux-image-2.6.24-19-generic')
+        # The warning appears only once per submission, even if the
+        # property kernel_package_name is accessed more than once.
+        num_warnings = len(self.handler.records)
+        test = parser.kernel_package_name
+        self.assertEqual(
+            num_warnings, len(self.handler.records),
+            'Warning for missing HAL property system.kernel.version '
+            'repeated.')
+
+    def test_kernel_package_name_udev_data_no_kernel_version_in_summary(self):
+        """Test of SubmissionParser.kernel_package_name.
+
+        Test without the summary sub-node <kernel-release>.
+        """
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = {
+            'hardware': {
+                'udev': [
+                    {'P': '/devices/LNXSYSTM:00'}
+                    ],
+                'sysfs-attributes': {},
+                'dmi': {},
+                },
+            'software': {
+                'packages': {
+                    self.KERNEL_PACKAGE: {},
+                    },
+                },
+            'summary': {},
+            }
+        parser.submission_key = 'Test: missing property system.kernel.version'
+        parser.buildDeviceList(parser.parsed_data)
+        self.assertIs(None, parser.kernel_package_name)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Submission does not provide property system.kernel.version '
+            'for /org/freedesktop/Hal/devices/computer or a summary '
+            'sub-node <kernel-release>.')
+        # The warning appears only once per submission, even if the
+        # property kernel_package_name is accessed more than once.
+        num_warnings = len(self.handler.records)
+        test = parser.kernel_package_name
+        self.assertEqual(
+            num_warnings, len(self.handler.records),
+            'Warning for missing HAL property system.kernel.version '
+            'repeated.')
+
+    def test_kernel_package_name_udev_data_no_package_data(self):
+        """Test of SubmissionParser.kernel_package_name.
+
+        Variant for udev data, test without any package data. In this case,
+        SubmissionParser.kernel_package_name is the value of the property
+        system.kernel.version if the root HAL device. No further checks
+        are done.
+        """
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = {
+            'hardware': {
+                'udev': [
+                    {'P': '/devices/LNXSYSTM:00'},
+                    ],
+                'sysfs-attributes': {},
+                'dmi': {},
+                },
+            'software': {
+                'packages': {},
+                },
+            'summary': {
+                'kernel-release': self.KERNEL_VERSION,
+                },
+            }
+        parser.submission_key = 'Test: missing property system.kernel.version'
+        parser.buildDeviceList(parser.parsed_data)
+        kernel_package = parser.kernel_package_name
+        self.assertEqual(
+            self.KERNEL_PACKAGE, kernel_package,
             'Unexpected result of SubmissionParser.getKernelPackageName, '
             'test without any package data. Expected None, got %r'
             % kernel_package)

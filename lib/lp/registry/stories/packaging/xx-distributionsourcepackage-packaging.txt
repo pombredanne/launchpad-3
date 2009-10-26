@@ -1,4 +1,5 @@
-== Distribution Packaging ==
+Distribution Packaging
+======================
 
 The packaging records for a source package in a given distribution are
 displayed on the page of the distribution source package.
@@ -18,15 +19,16 @@ source package in each series of this distribution.
       1.0.9a-4        release (main) ... weeks ago
 
 
-=== Delete Link Button ===
+Delete Link Button
+------------------
 
 A button is displayed to authenticated users to delete existing
 packaging links.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
     >>> form = user_browser.getForm("delete_warty_alsa-utils_trunk")
-    >>> print form.getControl("Delete Link")
-    <SubmitControl name='field.actions.delete_packaging' type='submit'>
+    >>> print form.getControl(name="field.actions.delete_packaging")
+    <ImageControl name='field.actions.delete_packaging' type='image'>
 
 This button is not displayed to anonymous users.
 
@@ -39,7 +41,7 @@ This button is not displayed to anonymous users.
 Clicking this button deletes the corresponding packaging association.
 
     >>> form = user_browser.getForm("delete_warty_alsa-utils_trunk")
-    >>> form.getControl("Delete Link").click()
+    >>> form.getControl(name="field.actions.delete_packaging").click()
     >>> content = user_browser.contents
     >>> for tag in find_tags_by_class(content, 'error'):
     ...     print extract_text(tag)

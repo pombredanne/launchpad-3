@@ -601,6 +601,18 @@ class IPOTemplateSubset(Interface):
         and both are the closer ones, returns None.
         """
 
+    def findUniquePathlessMatch(filename):
+        """Find the one `POTemplate` with given filename, if there is one.
+
+        Directory paths are ignored in the search.  Only the filename
+        itself is matched.
+
+        :param filename: A filename, without any directory component.
+        :return: The one `POTemplate` in the subset whose filename
+            matches `filename`, if there is exactly one.  Otherwise,
+            None.
+        """
+
 
 class IPOTemplateSet(Interface):
     """A set of PO templates."""

@@ -530,7 +530,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             description="test file")
 
     def makeProduct(self, *args, **kwargs):
-        """As makeProductNoCommit with an implicit transaction commit.
+        """As makeProductNoCommit with an explicit transaction commit.
 
         This ensures that generated owners and registrants are fully
         flushed and available from all Stores.
