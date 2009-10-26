@@ -272,6 +272,14 @@ class MessageSharingMerge(LaunchpadScript):
         self.logger.info("Done.")
 
     def _endTransaction(self, intermediate=False):
+        """End this transaction and start a new one.
+
+        :param intermediate: Whether this is an intermediate commit.
+            Dry-run mode aborts transactions rather than committing
+            them; where doing that may break dependencies between steps
+            of the algorithm, pass `True` so that the abort can be
+            skipped.
+        """
         if self.txn is None:
             return
 
