@@ -240,17 +240,11 @@ and a new entry can be added to the packaging history.
 Product packages view
 ----------------------
 
-The +packages named view descends from PackagingDeleteView to provide remove
-link actions for the product's linked packages.
-
-    >>> from lp.registry.browser.packaging import PackagingDeleteView
+The +packages named view displays the packages links to the product's series.
 
     >>> view = create_initialized_view(product, name='+packages')
     >>> print view.label
     Linked packages
-
-    >>> isinstance(view, PackagingDeleteView)
-    True
 
 The view defines the all_packages property used by the PackagingDeleteView
 to create a vocabulary.
@@ -274,3 +268,26 @@ contains the package and field for form actions.
       grumpy <input type="hidden" name="field.packaging" .../>
       hoary <input type="hidden" name="field.packaging" .../>
     trunk
+
+The +packages named view descends from PackagingDeleteView to provide remove
+link actions for the product's linked packages.
+
+    >>> from lp.registry.browser.packaging import PackagingDeleteView
+
+    >>> isinstance(view, PackagingDeleteView)
+    True
+
+A packaging link can be deleted if the owner believes it is an error.
+
+    >>> [grumpy_package] = [package for package in view.all_packaging
+    ...                     if package.distroseries.name == 'grumpy']
+    >>> form = {
+    ...     'field.packaging': '%s' % grumpy_package.id,
+    ...     'field.actions.delete_packaging': 'Delete upstream link',
+    ...     }
+    >>> view = create_initialized_view(product, name='+packages', form=form)
+    >>> view.errors
+    []
+    >>> for package in view.all_packaging:
+    ...     print package.distroseries.name, package.productseries.name
+    hoary hotter
