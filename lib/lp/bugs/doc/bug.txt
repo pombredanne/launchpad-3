@@ -38,7 +38,7 @@ raised:
     NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
 It is also possible to retrieve a number of bugs by specifying the bug numbers
-of interest.
+of interest. The method ignores bug numbers not found in the database.
 
     >>> result_set = bugset.getByNumbers([6, 1234])
     >>> print result_set.count()
@@ -48,13 +48,14 @@ of interest.
     >>> print the_bug_found.title
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
-    >>> result_set = bugset.getByNumbers([6, 4321, 1])
+    >>> result_set = bugset.getByNumbers([6, 1])
     >>> print result_set.count()
     2
 
-    >>> second_bug_found = result_set[1]
-    >>> print second_bug_found.title
-    Firefox does not support SVG
+    >>> print [(bug.id, bug.title) for bug in result_set]
+    [(1, u'Firefox does not support SVG'),
+     (6, u'Firefox crashes when Save As dialog for a nonexistent window '
+         u'is closed')]
 
 If no bug numbers are specified an empty result set is returned.
 
