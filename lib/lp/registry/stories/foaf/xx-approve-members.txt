@@ -3,27 +3,6 @@
 We have one page in which a team admin can review (approve/decline/hold) all
 proposed members at once.
 
-The ability to approve or decline membership is reserved for team administrators.
-
-A regular user does not see the link.
-
-    >>> user_browser.open('http://launchpad.dev/~ubuntu-team/+members')
-    >>> user_browser.getLink('Approve or decline members').click()
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-The anonymous user doesn't see it either.
-
-    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+members')
-    >>> anon_browser.getLink('Approve or decline members').click()
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-Mark is an administrator for the Ubuntu team and can see and navigate
-to the link.
-
     >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+members')
     >>> browser.getLink('Approve or decline members').click()
@@ -92,3 +71,4 @@ And now we see that there are no pending members left.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
