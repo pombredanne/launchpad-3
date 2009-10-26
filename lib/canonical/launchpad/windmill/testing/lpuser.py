@@ -17,21 +17,24 @@ class LaunchpadUser:
 
     def ensure_login(self, client):
         """Ensure that this user is logged on the page under windmill."""
-        result = client.asserts.assertNode(
-            link=u'Log in / Register', assertion=False)
-        if not result['result']:
-            # User is probably logged in.
-            # Check under which name they are logged in.
-            result = client.commands.execJS(
-                code="""lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
-            if (result['result'] is not None and
-                result['result'].strip() == self.display_name):
-                # We are logged as that user.
-                return
-            client.click(name="logout")
-            client.waits.forElement(
-                link=u'Log in / Register', timeout=u'20000')
-        client.click(link=u'Log in / Register')
+        result = client.asserts.assertNode( name=u'loginpage_submit_login', assertion=False)
+        already_on_login_page = result['result']
+        if not already_on_login_page:
+            result = client.asserts.assertNode(
+                link=u'Log in / Register', assertion=False)
+            if not result['result']:
+                # User is probably logged in.
+                # Check under which name they are logged in.
+                result = client.commands.execJS(
+                    code="""lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
+                if (result['result'] is not None and
+                    result['result'].strip() == self.display_name):
+                    # We are logged as that user.
+                    return
+                client.click(name="logout")
+                client.waits.forElement(
+                    link=u'Log in / Register', timeout=u'20000')
+            client.click(link=u'Log in / Register')
         client.waits.forPageLoad(timeout=u'20000')
         client.waits.forElement(timeout=u'8000', id=u'email')
         client.type(text=self.email, id=u'email')
