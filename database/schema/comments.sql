@@ -2239,11 +2239,20 @@ COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
 
 -- Packageset
 
-COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages for purposes like the control of upload permissions, et.';
+COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages (in a given distro series) for purposes like the control of upload permissions, etc.';
 COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
 COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package set';
 COMMENT ON COLUMN Packageset.name IS 'The name for the package set on hand.';
 COMMENT ON COLUMN Packageset.description IS 'The description for the package set on hand.';
+COMMENT ON COLUMN Packageset.packagesetgroup IS 'The group this package set is affiliated with.';
+COMMENT ON COLUMN Packageset.distroseries IS 'The distro series this package set belongs to.';
+
+-- PackagesetGroup
+
+COMMENT ON TABLE PackagesetGroup IS 'Package set groups keep track of equivalent package sets across distro series boundaries.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package
+set group.';
 
 -- PackagesetSources
 
