@@ -280,8 +280,8 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch.unlock()
 
             # Move the branch in the old format to backup.bzr
-            source_branch_transport.rename('.bzr', 'backup.bzr')
             upgrade_transport.delete_tree('backup.bzr')
+            source_branch_transport.rename('.bzr', 'backup.bzr')
             upgrade_transport.copy_tree_to_transport(source_branch_transport)
         finally:
             shutil.rmtree(upgrade_branch_path)

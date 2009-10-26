@@ -23,7 +23,7 @@ class RunUpgradeBranches(JobCronScript):
     def setUp(self):
         server = get_multi_server(write_hosted=True)
         server.setUp()
-        return [server.destroy]
+        return [server.tearDown]
 
 
 if __name__ == '__main__':
