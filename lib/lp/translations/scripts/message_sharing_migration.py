@@ -295,7 +295,6 @@ class MessageSharingMerge(LaunchpadScript):
         self._setUpUtilities()
 
         representatives = {}
-        subordinates = {}
         order_check = OrderingCheck(cmp=self.compare_template_precedence)
 
         for template in potemplates:
