@@ -1133,7 +1133,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
             "Imported translation credits do not replace dummy credits.")
 
     def test_translation_credits_gnome(self):
-        # Detect all know variations of Gnome translator credits.
+        # Detect all known variations of Gnome translator credits.
         gnome_credits = [
             u'translator-credits',
             u'translator_credits',
@@ -1147,7 +1147,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
                              credits.translation_credits_type)
 
     def test_translation_credits_kde(self):
-        # Detect all know variations of KDE translator credits.
+        # Detect all known variations of KDE translator credits.
         kde_credits = [
             (u'Your emails', u'EMAIL OF TRANSLATORS',
              TranslationCreditsType.KDE_EMAILS),
