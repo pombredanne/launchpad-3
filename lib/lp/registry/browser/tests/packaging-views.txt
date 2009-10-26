@@ -262,11 +262,16 @@ contains the package and field for form actions.
     ...     print series_dict['series'].name
     ...     for package_dict in series_dict['packagings']:
     ...         print package_dict['packaging'].distroseries.name
+    ...         print package_dict['form_id']
     ...         print package_dict['field']
     cold
     hotter
-      grumpy <input type="hidden" name="field.packaging" .../>
-      hoary <input type="hidden" name="field.packaging" .../>
+      grumpy
+        delete-grumpy-hot-hotter
+        <input type="hidden" name="field.packaging" .../>
+      hoary
+        delete-hoary-thunderbird-hotter
+        <input type="hidden" name="field.packaging" .../>
     trunk
 
 The +packages named view descends from PackagingDeleteView to provide remove
@@ -277,12 +282,13 @@ link actions for the product's linked packages.
     >>> isinstance(view, PackagingDeleteView)
     True
 
-A packaging link can be deleted if the owner believes it is an error.
+A packaging link can be deleted if the owner believes it is an error. The
+package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
 
-    >>> [grumpy_package] = [package for package in view.all_packaging
-    ...                     if package.distroseries.name == 'grumpy']
+    >>> [hoary_package] = [package for package in view.all_packaging
+    ...                     if package.distroseries.name == 'hoary']
     >>> form = {
-    ...     'field.packaging': '%s' % grumpy_package.id,
+    ...     'field.packaging': '%s' % hoary_package.id,
     ...     'field.actions.delete_packaging': 'Delete upstream link',
     ...     }
     >>> view = create_initialized_view(product, name='+packages', form=form)
@@ -290,4 +296,4 @@ A packaging link can be deleted if the owner believes it is an error.
     []
     >>> for package in view.all_packaging:
     ...     print package.distroseries.name, package.productseries.name
-    hoary hotter
+    grumpy hotter

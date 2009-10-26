@@ -951,8 +951,14 @@ class ProductPackagesView(PackagingDeleteView):
         for series in self.context.serieses:
             packagings = []
             for packaging in series.packagings:
+                form_id = 'delete-%s-%s-%s' % (
+                    packaging.distroseries.name,
+                    packaging.sourcepackagename.name,
+                    packaging.productseries.name,
+                    )
                 packaging_field = dict(
                     packaging=packaging,
+                    form_id=form_id,
                     field=self._renderHiddenPackagingField(packaging))
                 packagings.append(packaging_field)
             packaged_series.append(dict(

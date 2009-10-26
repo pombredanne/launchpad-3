@@ -53,6 +53,7 @@
           <tr tal:repeat="packaging_dict packagings">
           <tal:packaging_field
             define="packaging packaging_dict/packaging;
+                    form_id packaging_dict/form_id;
                     field packaging_dict/field">
             <td>
               <a tal:replace="structure packaging/distroseries/distribution/fmt:link" />
@@ -77,8 +78,9 @@
               </tal:currentrelease>       
             </td>
             <td tal:condition="view/can_delete_packaging">
-              <form style="display: inline" method="POST"
-                tal:attributes="action request/URL">
+              <form style="display: inline" method="post"
+                tal:attributes="action request/URL;
+                                id form_id">
                 <tal:hidden replace="structure field" />
                 <tal:action replace="structure view/renderDeletePackagingAction" />
               </form>
