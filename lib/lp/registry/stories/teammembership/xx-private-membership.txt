@@ -35,9 +35,7 @@ The page indicates that the team is private.
     >>> browser.open('http://launchpad.dev/~myteam')
     >>> privacy_info = find_tag_by_id(browser.contents, 'privacy')
     >>> print extract_text(privacy_info)
-    Team membership is viewable by team members.
-    >>> print privacy_info['class']
-    portlet private
+    Team membership is viewable by team members
 
 A team member will be able to see these parts of the team page.
 

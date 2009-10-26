@@ -9,7 +9,6 @@ admins and members of that team can see the team.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility)
-    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> login('foo.bar@canonical.com')
     >>> owner = factory.makePerson(name='team-owner')
     >>> priv_team = factory.makeTeam(name='private-team',
@@ -35,9 +34,7 @@ The page indicates that the team is private.
 
     >>> privacy_info = find_tag_by_id(cprov_browser.contents, 'privacy')
     >>> print extract_text(privacy_info)
-    Viewable by team members.
-    >>> print privacy_info['class']
-    portlet private
+    Private team
 
 A normal user cannot see the team.
 

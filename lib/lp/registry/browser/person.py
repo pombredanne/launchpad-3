@@ -3236,22 +3236,20 @@ class TeamIndexView(PersonIndexView):
             raise AssertionError(e)
 
     @property
-    def visibility(self):
-        return self.context.visibility.title + ' Team'
-
-    @property
     def visibility_info(self):
         if self.context.visibility == PersonVisibility.PRIVATE:
-            return 'Viewable by team members.'
+            return 'Private team'
         elif self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
-            return 'Team membership is viewable by team members.'
+            return 'Team membership is viewable by team members'
         else:
             return 'Public team'
 
     @property
-    def visibility_is_public(self):
-        """True if visibility is PUBLIC."""
-        return self.context.visibility == PersonVisibility.PUBLIC
+    def visibility_portlet_class(self):
+        """The portlet class for team visibility."""
+        if self.context.visibility == PersonVisibility.PUBLIC:
+            return 'portlet'
+        return 'portlet private'
 
 
 class PersonCodeOfConductEditView(LaunchpadView):

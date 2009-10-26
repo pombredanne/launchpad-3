@@ -25,12 +25,9 @@
 <div metal:fill-slot="side"
      tal:define="overview_menu context/menu:overview">
 
-  <div id="privacy"
-       class="portlet private"
-       tal:attributes="class python: view.visibility_is_public and
-                                     'portlet' or
-                                     'portlet private'">
-    <span tal:content="view/visibility_info">Viewable by team members.</span>
+  <div id="privacy" class="portlet private"
+       tal:attributes="class view/visibility_portlet_class">
+    <span tal:content="view/visibility_info">Private team</span>
   </div>
 
   <metal:contact use-macro="context/@@+person-macros/contact">
