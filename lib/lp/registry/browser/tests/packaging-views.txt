@@ -240,13 +240,17 @@ and a new entry can be added to the packaging history.
 Product packages view
 ----------------------
 
-The +packages named view decends from PackagingDeleteView to provide remvoe
-link actions for the products linked packages.
+The +packages named view descends from PackagingDeleteView to provide remove
+link actions for the product's linked packages.
 
     >>> from lp.registry.browser.packaging import PackagingDeleteView
+
     >>> view = create_initialized_view(product, name='+packages')
     >>> print view.label
     Linked packages
+
+    >>> isinstance(view, PackagingDeleteView)
+    True
 
 The view defines the all_packages property used by the PackagingDeleteView
 to create a vocabulary.
