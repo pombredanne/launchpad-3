@@ -52,10 +52,9 @@ of interest. The method ignores bug numbers not found in the database.
     >>> print result_set.count()
     2
 
-    >>> print [(bug.id, bug.title) for bug in result_set]
+    >>> print [(bug.id, bug.title[:40]) for bug in result_set]
     [(1, u'Firefox does not support SVG'),
-     (6, u'Firefox crashes when Save As dialog for a nonexistent window '
-         u'is closed')]
+     (6, u'Firefox crashes when Save As dialog for ')]
 
 If no bug numbers are specified an empty result set is returned.
 
