@@ -1929,8 +1929,18 @@ invalid line
             "'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevUsbProperties(self):
-        """Test of SubmissionParser.checkUdevUsbProperties()."""
+        """Test of SubmissionParser.checkUdevUsbProperties().
+
+        udev nodes for USB devices must define the three properties
+        DEVTYPE, PRODUCT, TYPE or none of them.
+        """
         parser = SubmissionParser()
+        self.assertTrue(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device,
+             self.udev_usb_interface]))
+
+        for property_name in ('DEVTYPE', 'PRODUCT', 'TYPE'):
+            del self.udev_usb_device['E'][property_name]
         self.assertTrue(parser.checkUdevUsbProperties(
             [self.udev_root_device, self.udev_usb_device,
              self.udev_usb_interface]))
@@ -1938,18 +1948,22 @@ invalid line
     def testCheckUdevUsbProperties_missing_required_property(self):
         """Test of SubmissionParser.checkUdevUsbProperties().
 
-        A USB device that does not have a required property makes a
-        submission invalid.
+        A USB device where some but not all of the properties DEVTYPE,
+        PRODUCT, TYPE are defined makes a submission invalid.
         """
-        del self.udev_usb_device['E']['DEVTYPE']
-        parser = SubmissionParser(self.log)
-        parser.submission_key = 'USB device without DEVTYPE property'
-        self.assertFalse(parser.checkUdevUsbProperties(
-            [self.udev_root_device, self.udev_usb_device]))
-        self.assertErrorMessage(
-            parser.submission_key,
-            "USB udev device found without required properties: "
-            "set(['DEVTYPE']) '/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+        for property_name in ('DEVTYPE', 'PRODUCT', 'TYPE'):
+            saved_property = self.udev_usb_device['E'].pop(property_name)
+            parser = SubmissionParser(self.log)
+            parser.submission_key = (
+                'USB device without %s property' % property_name)
+            self.assertFalse(parser.checkUdevUsbProperties(
+                [self.udev_root_device, self.udev_usb_device]))
+            self.assertErrorMessage(
+                parser.submission_key,
+                "USB udev device found without required properties: "
+                "set(['%s']) '/devices/pci0000:00/0000:00:1d.1/usb3/3-2'"
+                % property_name)
+            self.udev_usb_device['E'][property_name] = saved_property
 
     def testCheckUdevUsbProperties_with_invalid_product_id(self):
         """Test of SubmissionParser.checkUdevUsbProperties().

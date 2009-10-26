@@ -1228,9 +1228,11 @@ class SubmissionParser(object):
     def checkUdevUsbProperties(self, udev_data):
         """Validation of udev USB devices.
 
-        USB devices must have the properties DEVTYPE (value
-        'usb_device' or 'usb_interface'), PRODUCT and TYPE. PRODUCT
-        must be a tuple of three integers in hexadecimal
+        USB devices must either have the three properties DEVTYPE
+        (value 'usb_device' or 'usb_interface'), PRODUCT and TYPE,
+        or they must have none of them.
+
+        PRODUCT must be a tuple of three integers in hexadecimal
         representation, separates by '/'. TYPE must be a a tuple of
         three integers in decimal representation, separated by '/'.
         usb_interface nodes must additionally have a property
@@ -1245,6 +1247,10 @@ class SubmissionParser(object):
             property_names = set(properties)
             existing_usb_properties = property_names.intersection(
                 UDEV_USB_DEVICE_PROPERTIES)
+
+            if len(existing_usb_properties) == 0:
+                continue
+
             if existing_usb_properties != UDEV_USB_DEVICE_PROPERTIES:
                 missing_properties = UDEV_USB_DEVICE_PROPERTIES.difference(
                     existing_usb_properties)
