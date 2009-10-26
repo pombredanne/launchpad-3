@@ -141,6 +141,9 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     @action(_("Change"), name="change")
     def change(self, action, data):
         productseries = data['productseries']
+        if self.context.productseries == productseries:
+            # There is nothing to do.
+            return
         self.context.setPackaging(productseries, self.user)
         self.request.response.addNotification('Upstream link updated.')
         self.next_url = canonical_url(self.context)

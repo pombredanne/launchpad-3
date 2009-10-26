@@ -52,6 +52,8 @@ The view allows the logged in user to change productseries field.
     >>> print package.productseries.name
     crazy
 
+    >>> transaction.commit()
+
 The form requires a product series. An error is raised if the field is left
 empty.
 
@@ -65,3 +67,19 @@ empty.
     >>> for error in view.errors:
     ...     print error
     You must choose a project series.
+
+Submitting the same product series as the current packaging is not an error,
+but there is no notification message that the upstream link was updated.
+
+    >>> form = {
+    ...     'field.productseries': 'bonkers/crazy',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     package, name='+edit-packaging', form=form,
+    ...     principal=product.owner)
+    >>> view.errors
+    []
+
+    >>> print view.request.response.notifications
+    []
