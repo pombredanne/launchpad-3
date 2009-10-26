@@ -38,7 +38,10 @@ raised:
     NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
 It is also possible to retrieve a number of bugs by specifying the bug numbers
-of interest. The method ignores bug numbers not found in the database.
+of interest.
+
+The method ignores bug numbers not found in the database. That's why the
+result set below has only one element.
 
     >>> result_set = bugset.getByNumbers([6, 1234])
     >>> print result_set.count()
