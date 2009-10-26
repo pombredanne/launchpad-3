@@ -46,90 +46,94 @@
       <tal:seriesfilesexist condition="series/has_release_files">
         <tal:releases repeat="release series/releases">
           <tal:releasefilesexist condition="release/files">
-          <div tal:condition="not: repeat/release/start" class="portlet-border" />
-          <div tal:condition="release/files" class="top-portlet">
-            <h2 style="font-size: 1.2em; float:left;">
-              <a tal:attributes="href release/fmt:url">
-                <span tal:replace="release/name_with_codename" /> release</a>
-              from the
-              <a tal:attributes="href series/fmt:url"
-                 tal:content="series/name">name</a> series released
-              <span
-                 tal:attributes="title release/datereleased/fmt:datetime"
-                 tal:content="release/datereleased/fmt:approximatedate" />
-            </h2>
+            <div tal:condition="not: repeat/release/start" class="portlet-border" />
+            <div class="top-portlet">
+              <h2 style="font-size: 1.2em;">
+                <a tal:attributes="href release/fmt:url">
+                  <span tal:replace="release/name_with_codename" /> release</a>
+                from the
+                <a tal:attributes="href series/fmt:url"
+                   tal:content="series/name">name</a> series released
+                <span
+                   tal:attributes="title release/datereleased/fmt:datetime"
+                   tal:content="release/datereleased/fmt:approximatedate" />
+              </h2>
 
-            <div style="clear:both;" />
+              <div tal:attributes="id release/version/fmt:css-id/release-information-"
+                   tal:condition="python: release.release_notes or release.changelog">
 
-            <div id="release_information"
-               tal:condition="python: release.release_notes or release.changelog">
+                <fieldset class="collapsible collapsed" style="padding: 0px;">
+                  <legend>Release information</legend>
 
-              <fieldset class="collapsible collapsed" style="padding: 0px;">
-                <legend>Release information</legend>
-
-                <div tal:condition="release/release_notes">
-                  <strong>Release notes:</strong>
-                  <div id="release_notes" style="margin-bottom: 0px;"
-                       tal:define="notes release/release_notes/fmt:shorten/800"
-                       tal:content="structure notes/fmt:text-to-html">
-                    ProductRelease.release_notes
+                  <div tal:condition="release/release_notes">
+                    <strong>Release notes:</strong>
+                    <div style="margin-bottom: 0px;"
+                         tal:attributes="id release/version/fmt:css-id/release-notes-"
+                         tal:define="notes release/release_notes/fmt:shorten/800"
+                         tal:content="structure notes/fmt:text-to-html">
+                      ProductRelease.release_notes
+                    </div>
                   </div>
-                </div>
 
-                <div tal:condition="release/changelog">
-                  <strong>Changelog:</strong>
-                  <div id="changelog" style="margin-bottom: 0px;"
-                       tal:content="structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
-                    ProductRelease.changelog.
+                  <div tal:condition="release/changelog">
+                    <strong>Changelog:</strong>
+                    <div style="margin-bottom: 0px;"
+                         tal:attributes="id release/version/fmt:css-id/changelog-"
+                         tal:content="structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
+                      ProductRelease.changelog.
+                    </div>
                   </div>
-                </div>
-              </fieldset>
-            </div> <!-- release information -->
-
-            <table class="listing" style="margin-top: 1em;">
-              <thead>
-                <tr>
-                  <th width="35%">File</th>
-                  <th width="45%">Description</th>
-                  <th>Downloads</th>
-                  <th tal:condition="has_edit">Delete</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr tal:repeat="file release/files">
-                  <tal:define-vars
-                    tal:define="checkbox_index string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}">
-                    <tal:release-file
-                      metal:use-macro="file/@@+macros/detailed_display" />
+                </fieldset>
+              </div>
+              <div>
+                <table class="listing" style="margin-top: 1em;">
+                  <thead>
+                    <tr>
+                      <th width="35%">File</th>
+                      <th width="45%">Description</th>
+                      <th>Downloads</th>
+                      <th tal:condition="has_edit">Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr tal:repeat="file release/files">
+                      <tal:define-vars
+                         tal:define="checkbox_index string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}">
+                        <tal:release-file
+                           metal:use-macro="file/@@+macros/detailed_display" />
                   </tal:define-vars>
-                </tr>
-              </tbody>
-              <tfoot tal:condition="release/total_downloads">
-                <tr>
-                  <th colspan="2" style="padding-top: 1em; text-align: right;">
-                    Total downloads:
-                  </th>
-                  <td style="border: none; text-align: center;">
-                    <span tal:replace="release/total_downloads/fmt:intcomma" />
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          <div tal:condition="not: release/total_downloads"
-               style="margin-top: 2em;">
-          </div>
+                    </tr>
+                  </tbody>
+                  <tfoot tal:condition="release/total_downloads">
+                    <tr>
+                      <th colspan="2" style="padding-top: 1em; text-align: right;">
+                        Total downloads:
+                      </th>
+                      <td style="border: none; text-align: center;">
+                        <span tal:replace="release/total_downloads/fmt:intcomma" />
+                      </td>
+                      <td style="border: none;"
+                          tal:condition="has_edit" />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div tal:condition="not: release/total_downloads"
+                   style="margin-top: 2em;" />
 
-          <div style="float:right"
-               tal:define="link release/menu:context/add_file"
-               tal:condition="link/enabled">
-            <a tal:replace="structure link/fmt:link" />
-          </div>
-          <div style="clear:both" />
+              <tal:linkexists
+                 define="link release/menu:context/add_file"
+                 condition="link/enabled">
+                <ul style="float: right; margin-top: 1em;">
+                  <li>
+                    <a tal:replace="structure link/fmt:link" />
+                  </li>
+                </ul>
+              </tal:linkexists>
+            </div>
           </tal:releasefilesexist>
         </tal:releases>
         <br />
-
       </tal:seriesfilesexist>
 
       <p tal:condition="has_edit" class="add-files">
