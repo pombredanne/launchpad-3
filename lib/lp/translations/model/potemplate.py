@@ -36,7 +36,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, flush_database_updates, sqlvalues)
+    SQLBase, quote, quote_like, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.utilities.rosettastats import RosettaStats
@@ -1176,6 +1176,19 @@ class POTemplateSubset:
             return None
         else:
             return closest_template
+
+    def findUniquePathlessMatch(self, filename):
+        """See `IPOTemplateSubset`."""
+        query = self.query + (
+            " AND (POTemplate.path = %s OR POTemplate.path LIKE '%%/' || %s)"
+                % (quote(filename), quote_like(filename)))
+        candidates = list(POTemplate.select(query, limit=2))
+
+        if len(candidates) == 1:
+            # Found exactly one match.
+            return candidates[0]
+        else:
+            return None
 
 
 class POTemplateSet:
