@@ -141,9 +141,24 @@
           Download diff
         </a>
       </div>
+      <input type='checkbox' checked="checked" id='show-no'/> Show line numbers
       <div class="boardCommentBody attachmentBody">
         <tal:diff replace="structure view/preview_diff_text/fmt:diff" />
       </div>
+      <script type="text/javascript">
+          YUI().use('node', function(Y){
+              var update_nos = function(){
+                  if (this.get('checked')) {
+                      var new_display = 'block'
+                  }
+                  else{
+                      var new_display = 'none'
+                  }
+                  Y.all('td.line-no').setStyle('display', new_display);
+              }
+              Y.get('#show-no').on('click', update_nos)
+          });
+      </script>
       <div class="boardCommentFooter"
            tal:condition="view/review_diff_oversized">
         The diff has been truncated for viewing.
