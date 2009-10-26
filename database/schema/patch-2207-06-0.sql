@@ -3,25 +3,29 @@
 
 SET client_min_messages=ERROR;
 
-
 -- ** PART 1 ** Create the 'packagesetgroup' table and the
 --              'packageset.packagesetgroup' foreign key,
 --              populate the 'packagesetgroup' table
 
 -- This table keeps track of package sets that are equivalent across
 -- distro series boundaries.
+CREATE SEQUENCE packagesetgroup_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 CREATE TABLE packagesetgroup (
-    id integer NOT NULL,
+    id integer NOT NULL DEFAULT nextval('packagesetgroup_id_seq'),
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     owner integer NOT NULL,
-    name text NOT NULL,
-    description text NOT NULL,
-    CONSTRAINT packagesetgroup_name_check CHECK (valid_name(name))
+    -- Please note: the 'name' column is only here to ease the data migration
+    -- and will be dropped at the end of this patch.
+    name text NOT NULL
 );
+ALTER SEQUENCE packagesetgroup_id_seq OWNED BY packagesetgroup.id;
 ALTER TABLE ONLY packagesetgroup
     ADD CONSTRAINT packagesetgroup_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY packagesetgroup
-    ADD CONSTRAINT packagesetgroup_name_key UNIQUE (name);
 ALTER TABLE ONLY packagesetgroup
     ADD CONSTRAINT packagesetgroup__owner__fk
     FOREIGN KEY (owner) REFERENCES person(id);
@@ -33,8 +37,8 @@ ALTER TABLE ONLY packageset
   FOREIGN KEY (packagesetgroup) REFERENCES packagesetgroup(id);
 
 -- Create a group for each of the original (karmic koala) package sets.
-INSERT INTO packagesetgroup(owner, name, description)
-SELECT packageset.owner, packageset.name, packageset.description
+INSERT INTO packagesetgroup(owner, name)
+SELECT packageset.owner, packageset.name
 FROM packageset WHERE NOT packageset.name LIKE('lucid-%');
 
 
@@ -86,8 +90,8 @@ WHERE name LIKE('lucid-%');
 -- ** PART 5 ** Create package set groups for package sets that were added in
 --              lucid lynx but do not exist in the karmic koala,
 --              associate these package sets with their newly created groups
-INSERT INTO packagesetgroup(owner, name, description)
-SELECT packageset.owner, packageset.name, packageset.description
+INSERT INTO packagesetgroup(owner, name)
+SELECT packageset.owner, packageset.name
 FROM packageset, distroseries WHERE
     packageset.packagesetgroup IS NULL
     AND packageset.distroseries = distroseries.id
@@ -103,6 +107,10 @@ WHERE
 
 -- ** PART 6 ** Make the 'packageset.packagesetgroup' foreign key mandatory
 ALTER TABLE ONLY packageset ALTER COLUMN packagesetgroup SET NOT NULL;
+
+-- ** PART 7 ** Drop the 'packagesetgroup.name' column that was only added
+--              for data migration purposes.
+ALTER TABLE ONLY packagesetgroup DROP COLUMN name;
 
 -- Define indices on the newly added foreign keys.
 CREATE INDEX packageset__packagesetgroup__idx
