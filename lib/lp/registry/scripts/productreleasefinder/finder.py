@@ -103,7 +103,7 @@ class ProductReleaseFinder:
         for product in products:
             filters = []
 
-            for series in product.serieses:
+            for series in product.series:
                 if not series.releasefileglob:
                     continue
 

@@ -1360,14 +1360,14 @@ class POTemplateSharingSubset(object):
         if self.product:
             subsets = [
                 self.potemplateset.getSubset(productseries=series)
-                for series in self.product.serieses
+                for series in self.product.series
                 ]
         else:
             subsets = [
                 self.potemplateset.getSubset(
                     distroseries=series,
                     sourcepackagename=self.sourcepackagename)
-                for series in self.distribution.serieses
+                for series in self.distribution.series
                 ]
         for subset in subsets:
             for template in subset:

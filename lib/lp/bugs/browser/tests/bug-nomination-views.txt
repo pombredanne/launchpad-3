@@ -36,7 +36,7 @@ Here's an example of nominating a bug for a distroseries.
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
     ...     form={"field.actions.submit": "Submit Nominations",
-    ...           "field.nominatable_serieses": ["warty"]})
+    ...           "field.nominatable_series": ["warty"]})
 
     >>> nomination_view = getMultiAdapter(
     ...     (bug_one_in_ubuntu_firefox, request), name="+nominate")
@@ -82,7 +82,7 @@ Here's an example of nominating a bug for a productseries.
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
     ...     form={"field.actions.submit": "Submit Nominations",
-    ...           "field.nominatable_serieses": ["trunk"]})
+    ...           "field.nominatable_series": ["trunk"]})
 
     >>> nomination_view = getMultiAdapter(
     ...     (bug_one_in_firefox, request), name="+nominate")
@@ -243,7 +243,7 @@ launchpad.Driver permission on the nomination.
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
     ...     form={"field.actions.submit": "Submit Nominations",
-    ...           "field.nominatable_serieses": ["grumpy"]})
+    ...           "field.nominatable_series": ["grumpy"]})
 
     >>> nomination_view = getMultiAdapter(
     ...     (bug_one_in_ubuntu_firefox, request), name="+nominate")

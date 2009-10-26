@@ -118,7 +118,7 @@ zope.exceptions.NotFoundError:
 
 == Project Milestones ==
 
-The database associates milestones only with products and distroserieses.
+The database associates milestones only with products and distroseries.
 The interface IProjectMilestone provides a virtual view of milestones
 that are related to a project by collecting all milestones that are
 associated with products that belong to a project.

@@ -16,7 +16,7 @@
     </li>
   </ul>
 
-  <tal:series repeat="series context/serieses">
+  <tal:series repeat="series context/series">
     <h2 style="margin-top: 2em">
       <a tal:attributes="href series/name">
         Series &#8220;<span tal:replace="series/name">main</span>&#8221;

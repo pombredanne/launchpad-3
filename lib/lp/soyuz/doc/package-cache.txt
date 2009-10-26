@@ -701,7 +701,7 @@ First, we rebuild and examinate the caches for Celso's PPA.
     ...     ubuntu.removeOldCacheItems(archive=archive, log=logger)
     ...     ubuntu.updateCompleteSourcePackageCache(
     ...         archive=archive, ztm=transaction, log=logger)
-    ...     for series in ubuntu.serieses:
+    ...     for series in ubuntu.series:
     ...         series.removeOldCacheItems(archive=archive, log=logger)
     ...         series.updateCompletePackageCache(
     ...             archive=archive, ztm=transaction, log=logger)

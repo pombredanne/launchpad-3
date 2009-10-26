@@ -220,7 +220,7 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         Make `branch_count` branches, and make `official_count` of those
         official branches.
         """
-        distroseries = self.distro.serieses[0]
+        distroseries = self.distro.series[0]
         # Make the branches created in the past in order.
         time_gen = time_counter(delta=timedelta(days=-1))
         branches = [
