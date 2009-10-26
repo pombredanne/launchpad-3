@@ -91,8 +91,8 @@
       </table>
 
       <ul class="table-actions"
-        tal:condition="view/can_delete_packaging">
-        <li tal:condition="context/required:launchpad.Edit">
+        tal:condition="series/menu:overview/add_package/linked">
+        <li>
           <a tal:replace="structure series/menu:overview/add_package/fmt:link" />
         </li>
       </ul>
