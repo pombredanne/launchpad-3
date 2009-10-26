@@ -358,8 +358,8 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         self.assertEqual(len(tms), 3)
 
     def test_duplicatesAreCleanedUp(self):
-        # The POTMsgSet merging function cleans up any duplicate
-        # TranslationMessages that might get in the way.
+        # The duplicates removal function cleans up any duplicate
+        # TranslationMessages that might get in the way of merging.
         trunk_message, stable_message = self._makeTranslationMessages(
             'snaggle', 'snaggle')
         trunk_message.is_current = False
@@ -379,7 +379,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         tms = set(potmsgset.getAllTranslationMessages())
         self.assertEqual(tms, set([trunk_message, stable_message]))
 
-        self.script._mergePOTMsgSets(self.templates)
+        self.script._removeDuplicateMessages(self.templates)
 
         # The duplicates have been cleaned up.
         self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)

@@ -292,7 +292,7 @@ class MessageSharingMerge(LaunchpadScript):
 
         for template in potemplates:
             order_check.check(template)
-            for potmsgset in template.getPOTMsgSets(False, prefetch=False):
+            for potmsgset in template.getPOTMsgSets(False):
                 key = get_potmsgset_key(potmsgset)
                 if key not in representatives:
                     representatives[key] = potmsgset
@@ -338,12 +338,6 @@ class MessageSharingMerge(LaunchpadScript):
                     subordinates[representative] = []
 
         for representative, potmsgsets in subordinates.iteritems():
-            # Scrub the representative POTMsgSet of any duplicate
-            # translation messages.  We don't need do this for subordinates
-            # because the algorithm will refuse to add new duplicates to the
-            # representative POTMsgSet anyway.
-            self._scrubPOTMsgSetTranslations(representative)
-
             seen_potmsgsets = set([representative])
 
             # Merge each subordinate POTMsgSet into its representative.
