@@ -39,11 +39,10 @@
 
     <div
       tal:repeat="series view/sorted_series_list"
-      tal:attributes="id string:series_${series/name}">
-
-      <div tal:condition="not: repeat/series/start" class="portlet-border" />
+      tal:attributes="id series/name/fmt:css-id/series-">
 
       <tal:seriesfilesexist condition="series/has_release_files">
+        <div tal:condition="not: repeat/series/start" class="portlet-border" />
         <tal:releases repeat="release series/releases">
           <tal:releasefilesexist condition="release/files">
             <div tal:condition="not: repeat/release/start" class="portlet-border" />
@@ -136,18 +135,18 @@
         <br />
       </tal:seriesfilesexist>
 
-      <p tal:condition="has_edit" class="add-files">
-        <tal:releases condition="series/releases">
+      <tal:releases condition="series/releases">
+        <p tal:condition="has_edit" class="add-files">
           Add download file to the
           <a tal:attributes="href series/fmt:url"
              tal:content="series/name">name</a> series for release:
           <tal:release repeat="release series/releases">
             <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
                tal:content="release/version"
-              >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+               >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
           </tal:release>
-        </tal:releases>
-      </p>
+        </p>
+      </tal:releases>
 
     </div>
     <input tal:condition="python: has_edit and view.has_download_files"
