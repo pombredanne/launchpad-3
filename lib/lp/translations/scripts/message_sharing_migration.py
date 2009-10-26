@@ -444,6 +444,8 @@ class MessageSharingMerge(LaunchpadScript):
                 ids_per_language[language] = []
             ids_per_language[language].append(tm.id)
 
+        self._endTransaction(intermediate=True)
+
         for ids in ids_per_language.itervalues():
             translations = {}
 
