@@ -195,13 +195,12 @@
           </tbody>
         </table>
 
-        <ul class="horizontal" style="float:right">
-          <li tal:condition="user_can_edit_memberships">
-            <a class="sprite edit"
-               href="+editproposedmembers"
-            >Approve or decline members</a>
-          </li>
-        </ul>
+        <div style="float:right">
+          <a tal:define="overview_menu context/menu:overview"
+             tal:replace="structure overview_menu/proposed_members/fmt:link"
+             />
+        </div>
+
       </tal:proposed>
     </li>
     <br />
