@@ -27,7 +27,6 @@ WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
 API_INDEX = lib/canonical/launchpad/apidoc/index.html
 
 EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
-				$(shell $(HERE)/utilities/yui-deps.py) \
 				lib/canonical/launchpad/icing/lazr/build/lazr.js
 
 # DO NOT ALTER : this should just build by default
@@ -124,11 +123,14 @@ inplace: build
 
 build: $(BZR_VERSION_INFO) compile apidoc jsbuild
 
-jsbuild:
+jsbuild_lazr:
 	${SHHH} bin/jsbuild -b lazr-js/build
+
+jsbuild: jsbuild_lazr
 	${SHHH} bin/jsbuild \
 		-n launchpad -s lib/canonical/launchpad/javascript \
-		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
+		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES) \
+		$(shell $(HERE)/utilities/yui-deps.py)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
