@@ -196,8 +196,8 @@ class MessageSharingMerge(LaunchpadScript):
 
         if not actions:
             raise LaunchpadScriptFailure(
-                "Select at least one action: merge POTMsgSets, "
-                "TranslationMessages, or both.")
+                "Select at least one action: remove duplicates, merge "
+                "POTMsgSets, and/or merge TranslationMessages.")
 
         if self.options.product and self.options.distribution:
             raise LaunchpadScriptFailure(
