@@ -7,6 +7,8 @@ __all__ = [
     ]
 
 
+import gc
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -278,7 +280,7 @@ class MessageSharingMerge(LaunchpadScript):
                 self.txn.abort()
         else:
             self.txn.commit()
-        self.txn.begin()
+        gc.collect()
 
     def _removeDuplicateMessages(self, potemplates):
         """Get rid of duplicate `TranslationMessages` where needed."""
@@ -431,34 +433,40 @@ class MessageSharingMerge(LaunchpadScript):
             TranslationMessage.languageID, TranslationMessage.variant,
             TranslationMessage.id)
 
-        previous_language = None
+        ids_per_language = {}
         for tm in tms:
-            next_language = (tm.language, tm.variant)
-            if next_language != previous_language:
-                translations = {}
-                previous_language = next_language
-                self._endTransaction(intermediate=True)
+            language = (tm.language, tm.variant)
+            if language not in ids_per_language:
+                ids_per_language[language] = []
+            ids_per_language[language].append(tm.id)
 
-            key = self._getPOTMsgSetTranslationMessageKey(tm)
+        for ids in ids_per_language.itervalues():
+            translations = {}
 
-            if key in translations:
-                self.logger.info(
+            for tm_id in ids:
+                tm = TranslationMessage.get(tm_id)
+                key = self._getPOTMsgSetTranslationMessageKey(tm)
+
+                if key in translations:
+                    self.logger.info(
                     "Cleaning up identical '%s' message for: \"%s\"" % (
                         tm.language.getFullCode(), potmsgset.singular_text))
 
-                existing_tm = translations[key]
-                assert tm != existing_tm, (
-                    "Duplicate is listed twice.")
-                assert tm.potmsgset == existing_tm.potmsgset, (
-                    "Different potmsgsets considered identical.")
-                assert tm.potemplate == existing_tm.potemplate, (
-                    "Different potemplates considered identical.")
+                    existing_tm = translations[key]
+                    assert tm != existing_tm, (
+                        "Duplicate is listed twice.")
+                    assert tm.potmsgset == existing_tm.potmsgset, (
+                        "Different potmsgsets considered identical.")
+                    assert tm.potemplate == existing_tm.potemplate, (
+                        "Different potemplates considered identical.")
 
-                # Transfer any current/imported flags to the existing
-                # the identical messages, and delete the duplicate.
-                bequeathe_flags(tm, existing_tm)
-            else:
-                translations[key] = tm
+                    # Transfer any current/imported flags to the existing
+                    # the identical messages, and delete the duplicate.
+                    bequeathe_flags(tm, existing_tm)
+                else:
+                    translations[key] = tm
+
+            self._endTransaction(intermediate=True)
 
     def _findClashes(self, message, target_potmsgset, target_potemplate):
         """What would clash if we moved `message` to the target environment?
