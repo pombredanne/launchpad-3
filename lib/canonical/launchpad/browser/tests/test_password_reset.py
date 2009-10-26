@@ -5,15 +5,14 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import logout
+import transaction
+from canonical.launchpad.browser.logintoken import ResetPasswordView
+from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.testing.pages import (
-    get_feedback_messages, setupBrowser)
-from canonical.launchpad.webapp import canonical_url
 from canonical.testing import DatabaseFunctionalLayer
 
 
@@ -34,28 +33,22 @@ class TestPasswordReset(TestCaseWithFactory):
         token = getUtility(ILoginTokenSet).new(
             self.person, self.email, self.email,
             LoginTokenType.PASSWORDRECOVERY)
-        token_url = str(canonical_url(token))
-        logout()
-        browser = self._completePasswordResetThroughWeb(token_url)
+        self._completePasswordReset(token)
         self.assertEquals(self.account.status, AccountStatus.ACTIVE)
         self.assertEquals(
             self.account.preferredemail.email, 'foo@example.com')
 
-    def _completePasswordResetThroughWeb(self, token_url):
-        """Complete the password reset using the given URL.
-
-        Also make sure the password reset was successful.
-
-        Callsites *must* logout() before calling this method.
-        """
-        browser = setupBrowser()
-        browser.open(token_url)
-        browser.getControl(name='field.email').value = self.email
-        browser.getControl(name='field.password').value = 'test'
-        browser.getControl(name='field.password_dupe').value = 'test'
-        browser.getControl('Continue').click()
-        feedback = get_feedback_messages(browser.contents)
-        self.assertIn('Your password has been reset successfully.', feedback)
+    def _completePasswordReset(self, token):
+        harness = LaunchpadFormHarness(token, ResetPasswordView)
+        form = {'field.email': self.email,
+                'field.password': 'test',
+                'field.password_dupe': 'test'}
+        harness.submit('continue', form)
+        self.assertFalse(harness.hasErrors())
+        # Need to manually commit because we're interested in testing the
+        # changes done by the view on the token's requester (i.e.
+        # self.person).
+        transaction.commit()
 
 
 def test_suite():
