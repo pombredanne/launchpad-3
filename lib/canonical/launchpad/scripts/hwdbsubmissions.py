@@ -1547,9 +1547,18 @@ class SubmissionParser(object):
             return False
         if not self.buildDeviceList(parsed_data):
             return False
-        root_device = self.devices[ROOT_UDI]
-        root_device.createDBData(submission, None)
+        self.root_device.createDBData(submission, None)
         return True
+
+    @property
+    def root_device(self):
+        """The HALDevice of UdevDevice node of the root device."""
+        # checkConsistency ensures that we have either a device with the
+        # key ROOU_UDI or a device with the key UDEV_ROOT_PATH.
+        if ROOT_UDI in self.devices:
+            return self.devices[ROOT_UDI]
+        else:
+            return self.devices[UDEV_ROOT_PATH]
 
 
 class BaseDevice:
@@ -2045,7 +2054,7 @@ class BaseDevice:
                     self.parser._logWarning(
                         'USB device found with vendor ID==0, product ID==0, '
                         'where the parent device does not look like a USB '
-                        'host controller: %s' % self.udi)
+                        'host controller: %s' % self.device_id)
                     return False
             return True
         elif bus in ('scsi', 'scsi_device'):

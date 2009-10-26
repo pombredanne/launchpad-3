@@ -32,7 +32,7 @@ from canonical.launchpad.scripts.hwdbsubmissions import (
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import BaseLayer, LaunchpadZopelessLayer
 
-from lp.testing import TestCase
+from lp.testing import TestCase, validate_mock_class
 
 class TestCaseHWDB(TestCase):
     """Common base class for HWDB processing tests."""
@@ -3662,6 +3662,23 @@ class TestUdevDevice(TestCaseHWDB):
             {'udev_data': self.usb_storage_block_partition_data},
             ]
 
+        self.usb_hub_path = '/devices/pci0000:00/0000:00:1d.0/usb2'
+        self.usb_hub = {
+            'P': self.usb_hub_path,
+            'E': {
+                'DEVTYPE': 'usb_device',
+                'DRIVER': 'usb',
+                'PRODUCT': '0/0/0',
+                'TYPE': '9/0/0',
+                'SUBSYSTEM': 'usb',
+                },
+            }
+
+        self.usb_hub_with_odd_parent_hierarchy_data = [
+            {'udev_data': self.root_device},
+            {'udev_data': self.usb_hub},
+            ]
+
         self.no_subsystem_device_data = {
             'P': '/devices/pnp0/00:00',
             'E': {}
@@ -4242,6 +4259,25 @@ class TestUdevDevice(TestCaseHWDB):
                 % (device.device_id,
                    device.device_id == self.usb_storage_usb_device_path,
                    device.is_real_device))
+
+    def test_is_real_device_usb_hub_with_odd_parent(self):
+        """Test of UdevDevice._is_real_device for USB storage related nodes.
+
+        If called for USB hub node with vendor ID == 0 and product_id == 0
+        which is not the child of a PCI device, we get a warning.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'UdevDevice.is_real_device, USB hub with odd parent.')
+        devices = self.buildUdevDeviceHierarchy(
+            self.usb_hub_with_odd_parent_hierarchy_data, parser)
+        usb_hub = devices[self.usb_hub_path]
+        self.assertFalse(usb_hub.is_real_device)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'USB device found with vendor ID==0, product ID==0, '
+            'where the parent device does not look like a USB '
+            'host controller: %s' % self.usb_hub_path)
 
     def test_has_reliable_data_system(self):
         """Test of UdevDevice.has_reliable_data for a system."""
@@ -5132,6 +5168,80 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.failIf(
             result, 'Submission with inconsistent data treated as valid.')
 
+    def test_processSubmission_udev_data(self):
+        """Test of SubmissionParser.processSubmission().
+
+        Variant with udev data.
+        """
+        class MockSubmissionParser(SubmissionParser):
+            """A variant that shortcuts parseSubmission().
+            """
+            def parseSubmission(self, submission, submission_key):
+                """See `SubmissionParser`."""
+                udev_root_device = {
+                    'P': '/devices/LNXSYSTM:00',
+                    'E': {'SUBSYSTEM': 'acpi'},
+                    'id': 1,
+                    }
+                udev_pci_device = {
+                    'P': '/devices/pci0000:00/0000:00:1f.2',
+                    'E': {
+                        'SUBSYSTEM': 'pci',
+                        'PCI_CLASS': '10601',
+                        'PCI_ID': '8086:27C5',
+                        'PCI_SUBSYS_ID': '10CF:1387',
+                        'PCI_SLOT_NAME': '0000:08:03.0',
+                        },
+                    'id': 2,
+                    }
+                root_device_dmi_data = {
+                    '/sys/class/dmi/id/sys_vendor': 'FUJITSU SIEMENS',
+                    '/sys/class/dmi/id/product_name': 'LIFEBOOK E8210',
+                    }
+                parsed_data = {
+                    'hardware': {
+                        'udev': [udev_root_device, udev_pci_device],
+                        'sysfs-attributes': {},
+                        'dmi': root_device_dmi_data,
+                        'processors': [],
+                        },
+                    'software': {'packages': {}},
+                    'questions': [],
+                    }
+                self.submission_key = submission_key
+                return parsed_data
+
+        validate_mock_class(MockSubmissionParser)
+
+        submission_key = 'submission-with-udev-data'
+        submission = self.createSubmissionData(
+            'does not matter', False, submission_key)
+        parser = MockSubmissionParser()
+
+        self.assertTrue(parser.processSubmission(submission))
+
+        device_set = getUtility(IHWDeviceSet)
+        device_1 = device_set.getByDeviceID(HWBus.PCI, '0x8086', '0x27c5')
+        self.assertEqual(HWBus.PCI, device_1.bus)
+        self.assertEqual('0x8086', device_1.vendor_id)
+        self.assertEqual('0x27c5', device_1.bus_product_id)
+
+        device_2 = device_set.getByDeviceID(
+            HWBus.SYSTEM, 'FUJITSU SIEMENS', 'LIFEBOOK E8210')
+        self.assertEqual(HWBus.SYSTEM, device_2.bus)
+        self.assertEqual('FUJITSU SIEMENS', device_2.vendor_id)
+        self.assertEqual('LIFEBOOK E8210', device_2.bus_product_id)
+
+        submission_device_set = getUtility(IHWSubmissionDeviceSet)
+        submission_devices = submission_device_set.getDevices(submission)
+        submission_device_1, submission_device_2 = submission_devices
+
+        self.assertEqual(device_1, submission_device_1.device)
+        self.assertEqual(submission_device_2, submission_device_1.parent)
+
+        self.assertEqual(device_2, submission_device_2.device)
+        self.assertIs(None, submission_device_2.parent)
+
     def test_processSubmission_buildDeviceList_failing(self):
         """Test of SubmissionParser.processSubmission().
 
@@ -5165,6 +5275,20 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             result,
             'Real submission data not processed. Logged errors:\n%s'
             % self.getLogData())
+
+    def test_root_device(self):
+        """Test o SubmissionParser.root_device."""
+        submission_parser = SubmissionParser()
+        submission_parser.devices = {
+            '/org/freedesktop/Hal/devices/computer': 'A HAL device',
+            }
+        self.assertEqual('A HAL device', submission_parser.root_device)
+
+        submission_parser = SubmissionParser()
+        submission_parser.devices = {
+            '/devices/LNXSYSTM:00': 'A udev device',
+            }
+        self.assertEqual('A udev device', submission_parser.root_device)
 
     def testPendingSubmissionProcessing(self):
         """Test of process_pending_submissions().
