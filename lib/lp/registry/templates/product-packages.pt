@@ -84,11 +84,6 @@
                 <tal:hidden replace="structure field" />
                 <tal:action replace="structure view/renderDeletePackagingAction" />
               </form>
-              <!--<a tal:attributes="
-                href row/series_package/menu:overview/edit_packaging/url;
-                title string:Edit upsteam link">
-                <img src="/@@/edit"/>
-              </a>--> 
             </td>
           </tal:packaging_field>
           </tr>
