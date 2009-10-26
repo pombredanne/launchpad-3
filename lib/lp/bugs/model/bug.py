@@ -33,7 +33,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
-from storm.store import Store
+from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
@@ -49,6 +49,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -1626,6 +1627,14 @@ class BugSet:
                     break
 
         return bugs
+
+    def getByNumbers(self, bug_numbers):
+        """see `IBugSet`."""
+        if bug_numbers is None or len(bug_numbers) < 1:
+            return EmptyResultSet()
+        store = IStore(Bug)
+        result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set
 
 
 class BugAffectsPerson(SQLBase):
