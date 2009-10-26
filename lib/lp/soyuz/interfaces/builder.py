@@ -262,6 +262,10 @@ class IBuilder(IHasOwner):
 
         The pending BuildQueue item with the highest score for this builder
         ProcessorFamily or None if no candidate is available.
+
+        For public PPA builds, subsequent builds for a given ppa and
+        architecture will not be returned until the current build for
+        the ppa and architecture is finished.
         """
 
     def dispatchBuildCandidate(candidate):

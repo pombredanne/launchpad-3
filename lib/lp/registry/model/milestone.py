@@ -301,3 +301,7 @@ class ProjectMilestone(HasBugsBase):
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.target.official_bug_tags
+
+    def userHasBugSubscriptions(self, user):
+        """See `IStructuralSubscriptionTarget`."""
+        return False

@@ -162,12 +162,11 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         # The super constructor is a no-op.
         # pylint: disable-msg=W0231
         self.request = request
-
-    def install(self):
-        """See `IDatabasePolicy`."""
         # Detect if this is a read only request or not.
         self.read_only = self.request.method in ['GET', 'HEAD']
 
+    def install(self):
+        """See `IDatabasePolicy`."""
         default_flavor = None
 
         # If this is a Retry attempt, force use of the master database.
@@ -231,16 +230,15 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
             else:
                 session_available = True
             if session_available:
-                # A non-readonly request has been made. Store this fact in the
-                # session. Precision is hard coded at 1 minute (so we don't
-                # update the timestamp if it is # no more than 1 minute out of
-                # date to avoid unnecessary and expensive write operations).
-                # Webservice and XMLRPC clients may not support cookies, so
-                # don't mess with their session. Feeds are always read only,
-                # and since they run over http, browsers won't send their
-                # session key that was set over https, so we don't want to
-                # access the session which will overwrite the cookie and log
-                # the user out.
+                # A non-readonly request has been made. Store this fact
+                # in the session. Precision is hard coded at 1 minute
+                # (so we don't update the timestamp if it is no more
+                # than 1 minute out of date to avoid unnecessary and
+                # expensive write operations). Feeds are always read
+                # only, and since they run over http, browsers won't
+                # send their session key that was set over https, so we
+                # don't want to access the session which will overwrite
+                # the cookie and log the user out.
                 session_data = ISession(self.request)['lp.dbpolicy']
                 last_write = session_data.get('last_write', None)
                 now = _now()
@@ -272,6 +270,23 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
         return master_store.execute(
             "SELECT replication_lag(%d)" % slave_node_id).get_one()[0]
+
+
+def WebServiceDatabasePolicyFactory(request):
+    """Return the Launchpad IDatabasePolicy for the current appserver state.
+    """
+    if config.launchpad.read_only:
+        return ReadOnlyLaunchpadDatabasePolicy(request)
+    else:
+        # If a session cookie was sent with the request, use the
+        # standard Launchpad database policy for load balancing to
+        # the slave databases. The javascript web service libraries
+        # send the session cookie for authenticated users.
+        cookie_name = getUtility(IClientIdManager).namespace
+        if cookie_name in request.cookies:
+            return LaunchpadDatabasePolicy(request)
+        # Otherwise, use the master only web service database policy.
+        return MasterDatabasePolicy(request)
 
 
 class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):

@@ -1,4 +1,5 @@
-== Distribution Packaging ==
+Distribution Packaging
+======================
 
 The packaging records for a source package in a given distribution are
 displayed on the page of the distribution source package.
@@ -18,15 +19,16 @@ source package in each series of this distribution.
       1.0.9a-4        release (main) ... weeks ago
 
 
-=== Delete Link Button ===
+Delete Link Button
+------------------
 
 A button is displayed to authenticated users to delete existing
 packaging links.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
     >>> form = user_browser.getForm("delete_warty_alsa-utils_trunk")
-    >>> print form.getControl("Delete Link")
-    <SubmitControl name='field.actions.delete_packaging' type='submit'>
+    >>> print form.getControl(name="field.actions.delete_packaging")
+    <ImageControl name='field.actions.delete_packaging' type='image'>
 
 This button is not displayed to anonymous users.
 
@@ -39,7 +41,7 @@ This button is not displayed to anonymous users.
 Clicking this button deletes the corresponding packaging association.
 
     >>> form = user_browser.getForm("delete_warty_alsa-utils_trunk")
-    >>> form.getControl("Delete Link").click()
+    >>> form.getControl(name="field.actions.delete_packaging").click()
     >>> content = user_browser.contents
     >>> for tag in find_tags_by_class(content, 'error'):
     ...     print extract_text(tag)
@@ -52,48 +54,3 @@ Clicking this button deletes the corresponding packaging association.
     The Warty Warthog Release (current stable release)  Set upstream link
       1.0.8-1ubuntu1  release (main) ... weeks ago
       1.0.9a-4        release (main) ... weeks ago
-
-
-== Multiple package links ==
-
-It is possible for multiple product series to be linked to the same
-sourcepackage. When this is the case, only the latest is displayed and
-will be deleted.
-
-(Link evolution source package to a new series.)
-
-    >>> admin_browser.open('http://launchpad.dev/evolution/+addseries')
-    >>> admin_browser.getControl('Name').value = 'no-crashes'
-    >>> admin_browser.getControl('Summary').value = (
-    ...     'The series that everybody is waiting for!')
-    >>> admin_browser.getControl('Register Series').click()
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/evolution/no-crashes/+ubuntupkg')
-    >>> user_browser.getControl(name='ubuntupkg').value = 'evolution'
-    >>> user_browser.getControl('Update').click()
-
-
-When the user visits the source package page, only the latest link is
-displayed:
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+source/evolution')
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'packages_list'))
-    The Hoary Hedgehog Release (active development) Evolution no-crashes series
-      1.0 release (main)  ... weeks ago
-
-
-Once he deletes the link, the older link shows:
-
-    >>> form = user_browser.getForm("delete_hoary_evolution_no-crashes")
-    >>> form.getControl("Delete Link").click()
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
-    Removed upstream association between Evolution no-crashes and Hoary.
-
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'packages_list'))
-    The Hoary Hedgehog Release (active development) Evolution trunk series
-      1.0 release (main)  ... weeks ago

@@ -68,6 +68,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
@@ -435,13 +436,20 @@ class Branch(SQLBase):
         return urlutils.join(root, self.unique_name, *extras)
 
     @property
+    def browse_source_url(self):
+        return self.codebrowse_url('files')
+
+    @property
     def bzr_identity(self):
         """See `IBranch`."""
-        # XXX: JonathanLange 2009-03-19 spec=package-branches bug=345740: This
-        # should not dispatch on product is None.
+        # Should probably put this into the branch target.
         if self.product is not None:
             series_branch = self.product.development_focus.branch
             is_dev_focus = (series_branch == self)
+        elif self.distroseries is not None:
+            distro_package = self.sourcepackage.distribution_sourcepackage
+            linked_branch = ICanHasLinkedBranch(distro_package)
+            is_dev_focus = (linked_branch.branch == self)
         else:
             is_dev_focus = False
         return bazaar_identity(self, is_dev_focus)

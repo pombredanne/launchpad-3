@@ -129,6 +129,7 @@ hostnames=$(cat <<EOF
     keyserver.launchpad.dev
     lists.launchpad.dev
     openid.launchpad.dev
+    ubuntu-openid.launchpad.dev
     ppa.launchpad.dev
     private-ppa.launchpad.dev
     shipit.edubuntu.dev
