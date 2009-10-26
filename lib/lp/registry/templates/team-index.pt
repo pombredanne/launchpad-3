@@ -25,8 +25,11 @@
 <div metal:fill-slot="side"
      tal:define="overview_menu context/menu:overview">
 
-  <div id="privacy" class="portlet">
-    <h2 tal:content="view/visibility">Public Team</h2>
+  <div id="privacy"
+       class="portlet private"
+       tal:attributes="class python: view.visibility_is_public and
+                                     'portlet' or
+                                     'portlet private'">
     <span tal:content="view/visibility_info">Viewable by team members.</span>
   </div>
 

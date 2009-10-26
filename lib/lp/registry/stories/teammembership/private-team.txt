@@ -31,12 +31,13 @@ admins and members of that team can see the team.
     >>> cprov_browser.title
     'Private Team in Launchpad'
 
-The page states that the team is private.
+The page indicates that the team is private.
 
     >>> privacy_info = find_tag_by_id(cprov_browser.contents, 'privacy')
     >>> print extract_text(privacy_info)
-    Private Team
     Viewable by team members.
+    >>> print privacy_info['class']
+    portlet private
 
 A normal user cannot see the team.
 

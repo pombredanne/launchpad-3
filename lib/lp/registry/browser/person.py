@@ -3246,7 +3246,12 @@ class TeamIndexView(PersonIndexView):
         elif self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
             return 'Team membership is viewable by team members.'
         else:
-            return ''
+            return 'Public team'
+
+    @property
+    def visibility_is_public(self):
+        """True if visibility is PUBLIC."""
+        return self.context.visibility == PersonVisibility.PUBLIC
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
