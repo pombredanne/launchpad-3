@@ -155,7 +155,7 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
-	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
+	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)

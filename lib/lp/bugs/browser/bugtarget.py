@@ -345,9 +345,7 @@ class FileBugViewBase(LaunchpadFormView):
         return (self.context == ubuntu or
                 (IMaloneApplication.providedBy(self.context) and
                  self.request.form.get('field.bugtarget.distribution') ==
-                 ubuntu.name) or
-                (IDistributionSourcePackage.providedBy(self.context) and
-                 self.context.distribution == ubuntu))
+                 ubuntu.name))
 
     @property
     def no_ubuntu_redirect(self):

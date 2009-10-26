@@ -4,9 +4,9 @@ All packages maintained or uploaded by a given person can be seen on
 that person's +related-software page, which is linked to from the
 person's home page.
 
-    >>> browser.open("http://launchpad.dev/~name16/+related-software")
+    >>> browser.open("http://launchpad.dev/~mark/+related-software")
     >>> print browser.title
-    Software related to Foo Bar...
+    Software related to Mark Shuttleworth...
 
 This page is just a summary of the user's packages and will only
 display up to the most recent 30 items in each category.  However, it
@@ -14,20 +14,20 @@ has more links that take the user to batched listings in each category
 where all items can be perused.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'navlinks'))
-    Summary
+    Related software
     Maintained packages
     Uploaded packages
-    PPA packages
+    Related PPA packages
     Related projects
 
     >>> print browser.getLink("Maintained packages").url
-    http://launchpad.dev/~name16/+maintained-packages
+    http://launchpad.dev/~mark/+maintained-packages
     >>> print browser.getLink("Uploaded packages").url
-    http://launchpad.dev/~name16/+uploaded-packages
+    http://launchpad.dev/~mark/+uploaded-packages
     >>> print browser.getLink("PPA packages").url
-    http://launchpad.dev/~name16/+ppa-packages
+    http://launchpad.dev/~mark/+ppa-packages
     >>> print browser.getLink("Related projects").url
-    http://launchpad.dev/~name16/+related-projects
+    http://launchpad.dev/~mark/+related-projects
 
 Each category on the summary page has a heading that shows how many
 packages are being displayed.
