@@ -391,6 +391,8 @@ class MessageSharingMerge(LaunchpadScript):
                     representative_templates[representative])
                 removeSecurityProxy(subordinate).destroySelf()
 
+            self._endTransaction(intermediate=True)
+
     def _mergeTranslationMessages(self, potemplates):
         """Share `TranslationMessage`s between templates where possible."""
         self._setUpUtilities()
@@ -400,6 +402,7 @@ class MessageSharingMerge(LaunchpadScript):
             for potmsgset in template.getPOTMsgSets(False):
                 for message in potmsgset.getAllTranslationMessages():
                     removeSecurityProxy(message).shareIfPossible()
+                self._endTransaction(intermediate=True)
 
     def _getPOTMsgSetTranslationMessageKey(self, tm):
         """Return tuple that identifies a TranslationMessage in a POTMsgSet.
