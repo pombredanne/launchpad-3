@@ -1969,6 +1969,40 @@ class BaseDevice:
 
             info.bus == 'video4linux' is used for the "input aspect"
             of video devices.
+
+            'ac97' is used in submissions with udev data for a sub-node
+            of sound devices.
+
+            'hid' is used in submissions with udev data for a sub-node
+            of USB input devices.
+
+            'drm_minor', 'pci_express', 'tifm_adapter', 'gameport',
+            'spi_host', 'tifm', 'wlan' are used in submissions with
+            udev data for sub-nodes of PCI devices.
+
+            'pcmcia_socket' is used in submissions with udev data for
+            a sub-node of PC Card and PCMCIA bridges.
+
+            'ieee80211'  is used in submissions with udev data for
+            sub-nodes IEEE 802.11 WLAN devices.
+
+            'host', 'link' are used in submissions with udev data for
+            sub.nodes of bluetooth devices.
+
+            'usb_host' and 'usbmon' are used in submissions with udev
+            data for sub-nodes of USB controllers.
+
+            'usb_endpoint', 'usb-serial', 'lirc' are used in
+            submissions with udev data for sub-nodes of USB devices.
+
+            'enclosure' is used in submissions with udev data for a
+            sub.node of SCSI devices.
+
+            'graphics' is used  in submissions with udev data for a
+            sub-node of graphics cards.
+
+            'hwmon' is is used  in submissions with udev data in
+            many sub-nodes.
         """
         # The root node is always a real device, but its raw_bus
         # property can have different values: None or 'Unknown' in
@@ -1981,13 +2015,15 @@ class BaseDevice:
         # This set of buses is only used once; it's easier to have it
         # here than to put it elsewhere and have to document its
         # location and purpose.
-        if bus in (None, 'disk', 'drm', 'dvb', 'memstick_host', 'net',
-                   'partition', 'scsi_disk', 'scsi_generic', 'scsi_host',
-                   'scsi_target', 'sound', 'spi_transport', 'ssb', 'tty',
-                   'usb', 'usb_interface', 'video4linux', ):
-            #
-            # The computer itself is the only HAL device without the
-            # info.bus property that we treat as a real device.
+        if bus in (None, 'ac97', 'disk', 'drm', 'drm_minor', 'dvb',
+                   'enclosure', 'gameport', 'graphics', 'hid', 'host',
+                   'hwmon', 'ieee80211', 'link', 'lirc', 'memstick_host',
+                   'net', 'partition', 'pci_express', 'pcmcia_socket',
+                   'scsi_disk', 'scsi_generic', 'scsi_host', 'scsi_target',
+                   'sound', 'spi_host', 'spi_transport', 'ssb', 'tifm',
+                   'tifm_adapter', 'tty', 'usb', 'usb-serial', 'usb_endpoint',
+                   'usb_host', 'usb_interface', 'usbmon', 'video4linux',
+                   'wlan'):
             return False
         elif bus == 'usb_device':
             vendor_id = self.usb_vendor_id
@@ -2095,6 +2131,16 @@ class BaseDevice:
         for CPUs, power supply etc. Except for the main sytsem, none
         of them provides a vendor or product id, so we ignore them.
 
+        raw_bus == 'video_output', 'thermal', 'vtconsole', 'bdi',
+        'mem', 'ppp', 'vc', 'dmi', 'hidraw', 'hwmon', 'heci', 'rfkill',
+        'i2c-adapter', 'ttm', 'ppdev', 'printer' is used in submissions
+        with udev data for virtual devices.
+
+        'pci_bus' is used in submissions with udev data for a node
+        describing a PCI bus.
+
+        'leds' is used in submissions with udev data to describe LEDs.
+
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
         for product IDs or product names, hence HAL often uses
@@ -2122,9 +2168,11 @@ class BaseDevice:
             # The root node is course a real device; storing data
             # about other devices with the bus "unkown" is pointless.
             return False
-        if bus in ('backlight', 'bluetooth', 'ieee1394', 'input', 'misc',
-                   'mmc', 'mmc_host', 'pcmcia', 'platform', 'pnp',
-                   'power_supply'):
+        if bus in ('backlight', 'bdi', 'bluetooth', 'dmi', 'heci', 'hidraw',
+                   'hwmon', 'i2c-adapter', 'ieee1394', 'input', 'leds', 'mem',
+                   'misc', 'mmc', 'mmc_host', 'pci_bus', 'pcmcia', 'platform',
+                   'pnp', 'power_supply', 'ppdev', 'ppp', 'printer', 'rfkill',
+                   'thermal', 'ttm', 'vc', 'video_output', 'vtconsole'):
             return False
 
         # We identify devices by bus, vendor ID and product ID;

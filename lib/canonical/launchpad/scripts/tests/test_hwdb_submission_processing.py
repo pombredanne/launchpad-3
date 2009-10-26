@@ -1672,8 +1672,14 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
 
         ignored_buses = (
-            'drm', 'dvb', 'memstick_host', 'net', 'scsi_generic', 'scsi_host',
-            'sound', 'ssb', 'tty', 'usb', 'video4linux', )
+            'ac97', 'disk', 'drm', 'drm_minor', 'dvb', 'enclosure',
+            'gameport', 'hid', 'host', 'ieee80211', 'link', 'lirc',
+            'memstick_host', 'net', 'partition', 'pci_express',
+            'pcmcia_socket', 'scsi_disk', 'scsi_generic', 'scsi_host',
+            'scsi_target', 'sound', 'spi_host', 'spi_transport', 'ssb',
+            'tifm', 'tifm_adapter', 'tty', 'usb', 'usb-serial',
+            'usb_endpoint', 'usb_host', 'usb_interface', 'video4linux',
+            'wlan')
         for tested_bus in ignored_buses:
             properties['info.bus'] = (tested_bus, 'str')
             parser.buildHalDeviceList(parsed_data)
@@ -2004,9 +2010,12 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         properties = devices[0]['properties']
-        for bus in ('backlight', 'bluetooth', 'ieee1394', 'input', 'misc',
-                    'mmc', 'mmc_host', 'pcmcia', 'platform', 'pnp',
-                    'power_supply', 'unknown'):
+        for bus in ('backlight', 'bdi', 'bluetooth', 'dmi', 'heci', 'hidraw',
+                   'hwmon', 'i2c-adapter', 'ieee1394', 'input', 'leds', 'mem',
+                   'misc', 'mmc', 'mmc_host', 'pci_bus', 'pcmcia', 'platform',
+                   'pnp', 'power_supply', 'ppdev', 'ppp', 'printer', 'rfkill',
+                   'thermal', 'ttm', 'unknown', 'vc', 'video_output',
+                    'vtconsole'):
             properties['info.bus'] = (bus, 'str')
             parser.buildHalDeviceList(parsed_data)
             device = parser.devices[self.UDI_SATA_CONTROLLER]
