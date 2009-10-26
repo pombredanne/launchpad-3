@@ -541,7 +541,7 @@ class TestCaseWithFactory(TestCase):
         ensure_base(get_transport(base))
         return os.path.join(base, branch_id_to_path(branch.id))
 
-    def createMirroredBranchAndTree(self, format=None):
+    def createMirroredBranchAndTree(self):
         """Create a database branch, bzr branch and bzr checkout.
 
         This always uses the configured mirrored area, ignoring whatever
@@ -556,10 +556,8 @@ class TestCaseWithFactory(TestCase):
         :return: a `Branch` and a workingtree.
         """
         db_branch = self.factory.makeAnyBranch()
-        bzr_branch = self.createBranchAtURL(
-            self.getBranchPath(
-                db_branch, config.codehosting.internal_branch_by_id_root),
-            format=format)
+        bzr_branch = self.createBranchAtURL(self.getBranchPath(
+                db_branch, config.codehosting.internal_branch_by_id_root))
         return db_branch, bzr_branch.bzrdir.open_workingtree()
 
     def useTempBzrHome(self):
