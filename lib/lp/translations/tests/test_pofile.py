@@ -926,7 +926,7 @@ class TestTranslationCredits(TestCaseWithFactory):
         self.credits_potmsgset = self.factory.makePOTMsgSet(
             potemplate=self.potemplate, singular=u'translator-credits')
 
-    def _launchpad_credits_text(self, imported_credits_text):
+    def compose_launchpad_credits_text(self, imported_credits_text):
         return u"%s\n\nLaunchpad Contributions:\n  %s" % (
                 imported_credits_text,
                 "\n  ".join(["%s %s" % (person.displayname,
@@ -958,8 +958,9 @@ class TestTranslationCredits(TestCaseWithFactory):
         # The first translation credits export.
         credits_text = self.pofile.prepareTranslationCredits(
             self.credits_potmsgset)
-        self.assertEquals(self._launchpad_credits_text(imported_credits_text),
-                          credits_text)
+        self.assertEquals(
+            self.compose_launchpad_credits_text(imported_credits_text),
+            credits_text)
 
         # Now, re-import this generated message.
         self.factory.makeTranslationMessage(
@@ -970,8 +971,9 @@ class TestTranslationCredits(TestCaseWithFactory):
 
         credits_text = self.pofile.prepareTranslationCredits(
             self.credits_potmsgset)
-        self.assertEquals(self._launchpad_credits_text(imported_credits_text),
-                          credits_text)
+        self.assertEquals(
+            self.compose_launchpad_credits_text(imported_credits_text),
+            credits_text)
 
 
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
