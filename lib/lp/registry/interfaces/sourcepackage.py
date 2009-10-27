@@ -90,7 +90,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
     # This is really a reference to an IProductSeries.
     productseries = exported(
         ReferenceChoice(
-            title=_("Project Series"), required=False,
+            title=_("Project series"), required=False,
             vocabulary="ProductSeries",
             schema=Interface,
             description=_(

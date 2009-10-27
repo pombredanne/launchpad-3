@@ -78,7 +78,7 @@ empty.
     ...     principal=product.owner)
     >>> for error in view.errors:
     ...     print error
-    ('productseries', u'Project Series', RequiredMissing())
+    ('productseries', u'Project series', RequiredMissing())
     You must choose a project series.
 
 Submitting the same product series as the current packaging is not an error,
