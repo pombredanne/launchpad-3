@@ -24,8 +24,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en" lang="en" dir="ltr">
   <head tal:define="
-    yui string:${icingroot}/yui/3.0.0pr2/build;
-    lazr_js string:${icingroot}/lazr/build;
+    yui string:${icingroot}/yui/3.0.0/build;
+    lazr_js string:${icingroot}/lazr;
     lp_js string:${icingroot}/build">
     <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />

@@ -43,8 +43,8 @@
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot string:${rooturl}+icing/rev${revno};
       devmode modules/canonical.config/config/devmode;
-      yui string:${icingroot}/yui/3.0.0pr2/build;
-      lazr_js string:${icingroot}/lazr/build;
+      yui string:${icingroot}/yui/3.0.0/build;
+      lazr_js string:${icingroot}/lazr;
       lp_js string:${icingroot}/build"
   >
   <tal:comment replace="nothing">
@@ -218,35 +218,35 @@
 
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/build/lazr/assets/skins/sam/lazr.css"
+      string:${icingroot}/lazr/lazr/assets/skins/sam/lazr.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
+      string:${icingroot}/lazr/inlineedit/assets/skins/sam/editor.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/build/autocomplete/assets/skins/sam/autocomplete.css"
+      string:${icingroot}/lazr/autocomplete/assets/skins/sam/autocomplete.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay.css"
+      string:${icingroot}/lazr/overlay/assets/skins/sam/pretty-overlay.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
+      string:${icingroot}/lazr/formoverlay/assets/formoverlay.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/build/picker/assets/skins/sam/picker.css"
+      string:${icingroot}/lazr/picker/assets/skins/sam/picker.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
+      string:${icingroot}/lazr/activator/assets/skins/sam/activator.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/build/choiceedit/assets/choiceedit-core.css"
+      string:${icingroot}/lazr/choiceedit/assets/choiceedit-core.css"
       />
 </metal:launchpad-stylesheet>
 
@@ -256,7 +256,7 @@
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     icingroot string:${rooturl}+icing/rev${revno};
-    yui string:${icingroot}/yui/3.0.0pr2/build;
+    yui string:${icingroot}/yui/3.0.0/build;
     devmode modules/canonical.config/config/devmode">
   <tal:comment replace="nothing">
     This macro loads the old stylesheet, then the YUI CSS, and finally
