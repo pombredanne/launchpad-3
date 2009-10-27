@@ -346,7 +346,8 @@ class DistroBrancher:
             distroseries=self.new_distroseries,
             sourcepackagename=old_db_branch.sourcepackagename)
         new_db_branch = new_namespace.createBranch(
-            BranchType.HOSTED, old_db_branch.name, old_db_branch.registrant)
+            BranchType.HOSTED, self.new_distroseries.name,
+            old_db_branch.registrant)
         new_db_branch.sourcepackage.setBranch(
             PackagePublishingPocket.RELEASE, new_db_branch,
             getUtility(ILaunchpadCelebrities).ubuntu_branches.teamowner)
