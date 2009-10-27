@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DuplicatePackagesetName',
     'IPackageset',
     'IPackagesetSet',
     'NoSuchPackageSet',
@@ -26,14 +27,21 @@ from lazr.restful.declarations import (
     operation_parameters, operation_returns_collection_of,
     operation_returns_entry, webservice_error)
 from lazr.restful.fields import Reference
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
+from lp.soyuz.interfaces.packagesetgroup import IPackagesetGroup
 
 
 class NoSuchPackageSet(NameLookupFailed):
     """Raised when we try to look up an PackageSet that doesn't exist."""
     webservice_error(400) #Bad request.
     _message_prefix = "No such packageset"
+
+
+class DuplicatePackagesetName(Exception):
+    """Raised for packagesets with the same name and distroseries."""
+    webservice_error(400) # Bad request.
 
 
 class IPackagesetViewOnly(IHasOwner):
@@ -57,6 +65,18 @@ class IPackagesetViewOnly(IHasOwner):
     description = exported(TextLine(
         title=_("Description"), required=True, readonly=True,
         description=_("The description for the package set at hand.")))
+
+    distroseries = Reference(
+        IDistroSeries, title=_("Distribution series"), required=True,
+        readonly=True,
+        description=_(
+            "The distroseries to which this package set is related."))
+
+    packagesetgroup = Reference(
+        IPackagesetGroup, title=_('Packageset group'), required=True,
+        readonly=True,
+        description=_(
+            'Used internally to link packagesets across distroseries'))
 
     def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
@@ -316,15 +336,26 @@ class IPackagesetSet(Interface):
             title=_('Package set description'), required=True),
         owner=Reference(
             IPerson, title=_("Person"), required=True, readonly=True,
-            description=_("The person who owns the package set at hand.")))
+            description=_("The person who owns the package set at hand.")),
+        distroseries=Reference(
+            IDistroSeries, title=_("Distroseries"), required=False,
+            readonly=True, description=_(
+                "The distribution series to which the packageset "
+                "is related.")))
     @export_factory_operation(IPackageset, [])
-    def new(name, description, owner):
+    def new(name, description, owner, distroseries=None, related_set=None):
         """Create a new package set.
 
         :param name: the name of the package set to be created.
         :param description: the description for the package set to be created.
         :param owner: the owner of the package set to be created.
+        :param distroseries: the distroseries to which the new packageset
+            is related. Defaults to the current ubuntu series.
+        :param related_set: the newly created package set is to be related to
+            `related_set` (by being placed in the same package group).
 
+        :raises DuplicatePackagesetName if a package set with the same `name`
+            exists in `distroseries` already.
         :return: a newly created `IPackageset`.
         """
 
@@ -332,10 +363,12 @@ class IPackagesetSet(Interface):
         name=TextLine(title=_('Package set name'), required=True))
     @operation_returns_entry(IPackageset)
     @export_read_operation()
-    def getByName(name):
+    def getByName(name, distroseries=None):
         """Return the single package set with the given name (if any).
 
         :param name: the name of the package set sought.
+        :param distroseries: the distroseries to which the new packageset
+            is related. Defaults to the current ubuntu series.
 
         :return: An `IPackageset` instance or None.
         """

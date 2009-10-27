@@ -856,4 +856,12 @@
                 new"/>
     </securedutility>
 
+    <!-- PackagesetGroup -->
+    <class
+        class="lp.soyuz.model.packagesetgroup.PackagesetGroup">
+        <allow
+            interface="lp.soyuz.interfaces.packagesetgroup.IPackagesetGroup"/>
+    </class>
+
+
 </configure>
