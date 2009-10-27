@@ -70,7 +70,7 @@ class TestPackagesetSetNew(TestCaseWithFactory):
 
         self.failUnlessRaises(
             DuplicatePackagesetName, self.packageset_set.new,
-            u'kernel', u'A packageset with a dupliacte name', self.person1,
+            u'kernel', u'A packageset with a duplicate name', self.person1,
             distroseries=self.distroseries_experimental)
 
     def test_new_duplicate_name_for_different_distroseries(self):

@@ -35,13 +35,15 @@ from lp.soyuz.interfaces.packagesetgroup import IPackagesetGroup
 
 class NoSuchPackageSet(NameLookupFailed):
     """Raised when we try to look up an PackageSet that doesn't exist."""
-    webservice_error(400) #Bad request.
+    # Bad request.
+    webservice_error(400)
     _message_prefix = "No such packageset"
 
 
 class DuplicatePackagesetName(Exception):
     """Raised for packagesets with the same name and distroseries."""
-    webservice_error(400) # Bad request.
+    # Bad request.
+    webservice_error(400)
 
 
 class IPackagesetViewOnly(IHasOwner):
@@ -56,7 +58,7 @@ class IPackagesetViewOnly(IHasOwner):
 
     owner = exported(Reference(
         IPerson, title=_("Person"), required=True, readonly=True,
-        description=_("The person who owns the package set at hand.")))
+        description=_("The person who owns this package set.")))
 
     name = exported(TextLine(
         title=_('Valid package set name'),
@@ -336,7 +338,7 @@ class IPackagesetSet(Interface):
             title=_('Package set description'), required=True),
         owner=Reference(
             IPerson, title=_("Person"), required=True, readonly=True,
-            description=_("The person who owns the package set at hand.")),
+            description=_("The person who owns this package set.")),
         distroseries=Reference(
             IDistroSeries, title=_("Distroseries"), required=False,
             readonly=True, description=_(
@@ -350,7 +352,7 @@ class IPackagesetSet(Interface):
         :param description: the description for the package set to be created.
         :param owner: the owner of the package set to be created.
         :param distroseries: the distroseries to which the new packageset
-            is related. Defaults to the current ubuntu series.
+            is related. Defaults to the current Ubuntu series.
         :param related_set: the newly created package set is to be related to
             `related_set` (by being placed in the same package group).
 
@@ -368,7 +370,7 @@ class IPackagesetSet(Interface):
 
         :param name: the name of the package set sought.
         :param distroseries: the distroseries to which the new packageset
-            is related. Defaults to the current ubuntu series.
+            is related. Defaults to the current Ubuntu series.
 
         :return: An `IPackageset` instance or None.
         """
