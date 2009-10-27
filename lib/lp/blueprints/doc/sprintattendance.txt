@@ -1,0 +1,29 @@
+SprintAttendance
+================
+
+The SprintAttendance object links a person to a sprint. It records additional
+information about the attendance. The start and end times (arrival and leave)
+are required.
+
+    >>> import datetime
+    >>> import pytz
+    >>> from lp.blueprints.model.sprintattendance import SprintAttendance
+
+    >>> sprint = factory.makeSprint(title='lunarbase')
+    >>> person = factory.makePerson(name='scarlet')
+    >>> UTC = pytz.timezone('UTC')
+    >>> time_starts = datetime.datetime(2019, 6, 21, 0, 0, 0, 0, UTC)
+    >>> time_ends = datetime.datetime(2019, 7, 4, 0, 0, 0, 0, UTC)
+    >>> sprint_attendance = SprintAttendance(
+    ...     sprint=sprint, attendee=person,
+    ...     time_starts=time_starts, time_ends=time_ends)
+
+The sprint_attendance object implements ISprintAttendance.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.blueprints.interfaces.sprintattendance import (
+    ...     ISprintAttendance)
+    >>> verifyObject(ISprintAttendance, sprint_attendance)
+    True
+
+
