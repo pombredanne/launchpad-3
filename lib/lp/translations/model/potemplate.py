@@ -781,6 +781,10 @@ class POTemplate(SQLBase, RosettaStats):
         # Update cache to reflect the change.
         self._cached_pofiles_by_language[language_code, variant] = pofile
 
+        # Set dummy translations for translation credits in this POFile
+        for credits in self.getTranslationCredits():
+            credits.setTranslationCreditsToTranslated(pofile)
+
         if create_sharing:
             self._createPOFilesInSharingPOTemplates(pofile)
         # Store the changes.
