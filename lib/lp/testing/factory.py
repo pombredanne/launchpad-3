@@ -1566,14 +1566,12 @@ class LaunchpadObjectFactory(ObjectFactory):
                                     create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      context=None, sequence=None):
+                      context=None, sequence=0):
         """Make a new `POTMsgSet` in the given template."""
         if singular is None and plural is None:
             singular = self.getUniqueString()
         potmsgset = potemplate.createMessageSetFromText(
-            singular, plural, context=context)
-        if sequence is not None:
-            potmsgset.setSequence(potemplate, sequence)
+            singular, plural, context, sequence)
         naked_potmsgset = removeSecurityProxy(potmsgset)
         naked_potmsgset.sync()
         return potmsgset

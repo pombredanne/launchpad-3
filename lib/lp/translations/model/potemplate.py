@@ -799,9 +799,9 @@ class POTemplate(SQLBase, RosettaStats):
         return DummyPOFile(self, language, variant=variant, owner=requester)
 
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
-                                  context=None):
+                                  context=None, sequence=0):
         """See `IPOTemplate`."""
-        return POTMsgSet(
+        potmsgset = POTMsgSet(
             context=context,
             msgid_singular=msgid_singular,
             msgid_plural=msgid_plural,
@@ -811,6 +811,15 @@ class POTemplate(SQLBase, RosettaStats):
             filereferences=None,
             sourcecomment=None,
             flagscomment=None)
+
+        potmsgset.setSequence(self, sequence)
+        if potmsgset.is_translation_credit:
+            for language in self.languages():
+                pofile = self.getPOFileByLang(language.code)
+                if pofile is not None:
+                    potmsgset.setTranslationCreditsToTranslated(pofile)
+
+        return potmsgset
 
     def getOrCreatePOMsgID(self, text):
         """Creates or returns existing POMsgID for given `text`."""
@@ -824,7 +833,7 @@ class POTemplate(SQLBase, RosettaStats):
         return msgid
 
     def createMessageSetFromText(self, singular_text, plural_text,
-                                 context=None):
+                                 context=None, sequence=0):
         """See `IPOTemplate`."""
 
         msgid_singular = self.getOrCreatePOMsgID(singular_text)
@@ -837,7 +846,7 @@ class POTemplate(SQLBase, RosettaStats):
             " primary msgid and context '%r'" % context)
 
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
-                                              context)
+                                              context, sequence)
 
     def getOrCreateSharedPOTMsgSet(self, singular_text, plural_text,
                                    context=None):
@@ -851,8 +860,7 @@ class POTemplate(SQLBase, RosettaStats):
                                          context, sharing_templates=True)
         if potmsgset is None:
             potmsgset = self.createMessageSetFromText(
-                singular_text, plural_text, context)
-            potmsgset.setSequence(self, 0)
+                singular_text, plural_text, context, sequence=0)
         return potmsgset
 
     def importFromQueue(self, entry_to_import, logger=None, txn=None):
