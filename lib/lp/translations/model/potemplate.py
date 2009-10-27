@@ -405,7 +405,7 @@ class POTemplate(SQLBase, RosettaStats):
         return POTMsgSet.selectOne(' AND '.join(clauses),
                                    clauseTables=['TranslationTemplateItem'])
 
-    def getPOTMsgSets(self, current=True):
+    def getPOTMsgSets(self, current=True, prefetch=True):
         """See `IPOTemplate`."""
         clauses = self._getPOTMsgSetSelectionClauses()
 
@@ -416,7 +416,10 @@ class POTemplate(SQLBase, RosettaStats):
         query = POTMsgSet.select(" AND ".join(clauses),
                                  clauseTables=['TranslationTemplateItem'],
                                  orderBy=['TranslationTemplateItem.sequence'])
-        return query.prejoin(['msgid_singular', 'msgid_plural'])
+        if prefetch:
+            query = query.prejoin(['msgid_singular', 'msgid_plural'])
+
+        return query
 
     def getTranslationCredits(self):
         """See `IPOTemplate`."""
@@ -437,7 +440,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
-        results = self.getPOTMsgSets(current)
+        results = self.getPOTMsgSets(current, prefetch=False)
         return results.count()
 
     def getPOTMsgSetByID(self, id):
@@ -661,7 +664,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def expireAllMessages(self):
         """See `IPOTemplate`."""
-        for potmsgset in self.getPOTMsgSets():
+        for potmsgset in self.getPOTMsgSets(prefetch=False):
             potmsgset.setSequence(self, 0)
 
     def _lookupLanguage(self, language_code):
