@@ -6,10 +6,9 @@
 """Test the upgrade_branches script."""
 
 
-import transaction
-
 from bzrlib.transport import get_transport
 from bzrlib.branch import Branch as BzrBranch
+import transaction
 
 from canonical.testing import ZopelessAppServerLayer
 from lp.testing import TestCaseWithFactory
@@ -23,8 +22,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
     layer = ZopelessAppServerLayer
 
     def test_upgrade_branches(self):
-        """Ensure update_preview_diffs runs and generates diffs."""
-        #self.useTempBzrHome()
+        """Test that upgrade_branches upgrades branches."""
         self.useBzrBranches(real_server=True)
         target, target_tree = self.create_branch_and_tree(
             hosted=True, format='knit')

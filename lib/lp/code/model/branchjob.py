@@ -246,6 +246,7 @@ class BranchUpgradeJob(BranchJobDerived):
     """A Job that upgrades branches to the current stable format."""
 
     implements(IBranchUpgradeJob)
+
     classProvides(IBranchUpgradeJobSource)
     class_job_type = BranchJobType.UPGRADE_BRANCH
 
@@ -295,8 +296,7 @@ class BranchUpgradeJob(BranchJobDerived):
         repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
             self.branch.repository_format)
         if branch_format is None or repository_format is None:
-            branch_transport = get_transport(self.branch.getPullURL())
-            branch = BzrBranch.open_from_transport(branch_transport)
+            branch = BzrBranch.open(self.branch.getPullURL())
             if branch_format is None:
                 branch_format = type(branch._format)
             if repository_format is None:
