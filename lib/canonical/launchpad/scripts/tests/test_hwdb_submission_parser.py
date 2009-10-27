@@ -983,7 +983,7 @@ invalid line
     def test_parseHardware_sub_parsers_fail(self):
         """Test of SubmissionParser._parseHardware().
 
-        If one of the sub-parsers returns None, _pasreHardware() returns
+        If one of the sub-parsers returns None, _parseHardware() returns
         None.
         """
         node = etree.fromstring("""
