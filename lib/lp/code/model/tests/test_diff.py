@@ -167,7 +167,7 @@ class TestDiffInScripts(DiffTestCase):
         "+e\n"
         "+f\n")
 
-    def test_mergePreviewWithPrerequisite(self):
+    def preparePrerequisiteMerge(self):
         self.useBzrBranches()
         target = self.factory.makeBranch()
         target_bzr = self.createBzrBranch(target)
@@ -181,9 +181,27 @@ class TestDiffInScripts(DiffTestCase):
         source_rev_id = self.commitFile(
             source, 'file',
             'target text\nprerequisite text\nsource text\n')
+        return (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
+                prerequisite)
+
+    def test_mergePreviewWithPrerequisite(self):
+        (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
+         prerequisite) = self.preparePrerequisiteMerge()
         diff = Diff.mergePreviewFromBranches(
             source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
         transaction.commit()
+        self.assertIn('+source text\n', diff.text)
+        self.assertNotIn('+prerequisite text\n', diff.text)
+
+    def test_mergePreviewWithNewerPrerequisite(self):
+        (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
+         prerequisite) = self.preparePrerequisiteMerge()
+        self.commitFile(
+            prerequisite, 'file', 'prerequisite text2\n')
+        diff = Diff.mergePreviewFromBranches(
+            source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
+        transaction.commit()
+        self.assertNotIn('-prerequisite text2\n', diff.text)
         self.assertIn('+source text\n', diff.text)
         self.assertNotIn('+prerequisite text\n', diff.text)
 

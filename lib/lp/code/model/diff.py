@@ -107,7 +107,8 @@ class Diff(SQLBase):
                 if prerequisite_branch is not None:
                     prerequisite_branch.lock_read()
                     cleanups.append(prerequisite_branch.unlock)
-                    prereq_revision = prerequisite_branch.last_revision()
+                    prereq_revision = cls.getLCA(
+                        source_branch, source_revision, prerequisite_branch)
                     prereq_base = cls.getLCATree(
                         prerequisite_branch, prereq_revision, target_branch)
                     prereq_tree = prerequisite_branch.repository.revision_tree(
@@ -129,11 +130,16 @@ class Diff(SQLBase):
             source_branch.unlock()
 
     @staticmethod
-    def getLCATree(source_branch, source_revision, target_branch):
+    def getLCA(source_branch, source_revision, target_branch):
         graph = target_branch.repository.get_graph(
             source_branch.repository)
-        base_revision = graph.find_unique_lca(
+        return graph.find_unique_lca(
             source_revision, target_branch.last_revision())
+
+    @classmethod
+    def getLCATree(cls, source_branch, source_revision, target_branch):
+        base_revision = cls.getLCA(
+            source_branch, source_revision, target_branch)
         return source_branch.repository.revision_tree(base_revision)
 
     @staticmethod
