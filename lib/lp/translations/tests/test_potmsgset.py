@@ -1132,6 +1132,19 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         self.assertEqual(imported_credits, eo_translation.msgstr0.translation,
             "Imported translation credits do not replace dummy credits.")
 
+    def test_creation_pofile(self):
+        # When a new pofile is created, dummy translations are created for
+        # all translation credits messages.
+        
+        credits = self.factory.makePOTMsgSet(
+            self.potemplate, u'translator-credits', sequence=1)
+        eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+
+        eo_translation = credits.getCurrentTranslationMessage(
+            self.potemplate, eo_pofile.language)
+        self.assertIsNot(None, eo_translation,
+            "Translation credits are not translated upon POFile creation.")
+
     def test_translation_credits_gnome(self):
         # Detect all known variations of Gnome translator credits.
         gnome_credits = [
