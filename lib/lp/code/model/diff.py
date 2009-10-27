@@ -85,41 +85,66 @@ class Diff(SQLBase):
 
     @classmethod
     def mergePreviewFromBranches(cls, source_branch, source_revision,
-                                 target_branch):
+                                 target_branch, prerequisite_branch=None):
         """Generate a merge preview diff from the supplied branches.
 
         :param source_branch: The branch that will be merged.
         :param source_revision: The revision_id of the revision that will be
             merged.
         :param target_branch: The branch that the source will merge into.
+        :param prerequisite_branch: The branch that should be merged before
+            merging the source.
         :return: A `Diff` for a merge preview.
         """
         source_branch.lock_read()
         try:
+            cleanups = []
             target_branch.lock_read()
+            cleanups.append(target_branch.unlock)
             try:
                 merge_target = target_branch.basis_tree()
-                # Can't use bzrlib.merge.Merger because it fetches.
-                graph = target_branch.repository.get_graph(
-                    source_branch.repository)
-                base_revision = graph.find_unique_lca(
-                    source_revision, merge_target.get_revision_id())
                 repo = source_branch.repository
+                if prerequisite_branch is not None:
+                    prerequisite_branch.lock_read()
+                    cleanups.append(prerequisite_branch.unlock)
+                    prereq_revision = prerequisite_branch.last_revision()
+                    prereq_base = cls.getLCATree(
+                        prerequisite_branch, prereq_revision, target_branch)
+                    prereq_tree = prerequisite_branch.repository.revision_tree(
+                        prereq_revision)
+                    from_tree = cls.getMergedTree(
+                        merge_target, prereq_base, prereq_tree, cleanups)
+                else:
+                    from_tree = merge_target
+                merge_base = cls.getLCATree(
+                    source_branch, source_revision, target_branch)
                 merge_source = repo.revision_tree(source_revision)
-                merge_base = repo.revision_tree(base_revision)
-                merger = Merge3Merger(
-                    merge_target, merge_target, merge_base, merge_source,
-                    do_merge=False)
-                transform = merger.make_preview_transform()
-                try:
-                    to_tree = transform.get_preview_tree()
-                    return Diff.fromTrees(merge_target, to_tree)
-                finally:
-                    transform.finalize()
+                to_tree = cls.getMergedTree(
+                    merge_target, merge_base, merge_source, cleanups)
+                return Diff.fromTrees(from_tree, to_tree)
             finally:
-                target_branch.unlock()
+                for cleanup in reversed(cleanups):
+                    cleanup()
         finally:
             source_branch.unlock()
+
+    @staticmethod
+    def getLCATree(source_branch, source_revision, target_branch):
+        graph = target_branch.repository.get_graph(
+            source_branch.repository)
+        base_revision = graph.find_unique_lca(
+            source_revision, target_branch.last_revision())
+        return source_branch.repository.revision_tree(base_revision)
+
+    @staticmethod
+    def getMergedTree(merge_target, merge_base, merge_source, cleanups):
+        # Can't use bzrlib.merge.Merger because it fetches.
+        merger = Merge3Merger(
+            merge_target, merge_target, merge_base, merge_source,
+            do_merge=False)
+        transform = merger.make_preview_transform()
+        cleanups.append(transform.finalize)
+        return transform.get_preview_tree()
 
     @classmethod
     def fromTrees(klass, from_tree, to_tree, filename=None):

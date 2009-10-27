@@ -167,6 +167,26 @@ class TestDiffInScripts(DiffTestCase):
         "+e\n"
         "+f\n")
 
+    def test_mergePreviewWithPrerequisite(self):
+        self.useBzrBranches()
+        target = self.factory.makeBranch()
+        target_bzr = self.createBzrBranch(target)
+        self.commitFile(target, 'file', 'target text\n')
+        prerequisite = self.factory.makeBranch()
+        prerequisite_bzr = self.createBzrBranch(prerequisite, target_bzr)
+        self.commitFile(
+            prerequisite, 'file', 'target text\nprerequisite text\n')
+        source = self.factory.makeBranch()
+        source_bzr = self.createBzrBranch(source, prerequisite_bzr)
+        source_rev_id = self.commitFile(
+            source, 'file',
+            'target text\nprerequisite text\nsource text\n')
+        diff = Diff.mergePreviewFromBranches(
+            source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
+        transaction.commit()
+        self.assertIn('+source text\n', diff.text)
+        self.assertNotIn('+prerequisite text\n', diff.text)
+
     def test_generateDiffstat(self):
         self.assertEqual(
             {'foo': (2, 1), 'bar': (0, 3), 'baz': (2, 0)},
