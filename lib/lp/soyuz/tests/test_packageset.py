@@ -106,5 +106,16 @@ class TestPackagesetSetNew(TestCaseWithFactory):
             u'kernel', u'A related package set.', self.person1,
             distroseries=self.distroseries_experimental, related_set=pset1)
         pset_found = getUtility(IPackagesetSet).getByName('kernel')
-        self.assertEqual(pset_found, pset1)
+        self.assertEqual(pset1, pset_found)
 
+    def test_get_by_name_in_specified_distroseries(self):
+        # IPackagesetSet.getByName() will return the package set in the
+        # specified distroseries.
+        pset1 = self.packageset_set.new(
+            u'kernel', u'Contains all OS kernel packages', self.person1)
+        pset2 = self.packageset_set.new(
+            u'kernel', u'A related package set.', self.person1,
+            distroseries=self.distroseries_experimental, related_set=pset1)
+        pset_found = getUtility(IPackagesetSet).getByName(
+            'kernel', distroseries=self.distroseries_experimental)
+        self.assertEqual(pset2, pset_found)
