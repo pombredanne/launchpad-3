@@ -422,13 +422,13 @@ class POTemplate(SQLBase, RosettaStats):
         """See `IPOTemplate`."""
         # Find potential credits messages by the message ids.
         store = IStore(POTemplate)
-        credits_ids = ",".join(map(quote, POTMsgSet.credits_message_ids))
+        credits_ids = quote(POTMsgSet.credits_message_ids)
         origin1 = Join(TranslationTemplateItem,
                        TranslationTemplateItem.potmsgset == POTMsgSet.id)
         origin2 = Join(POMsgID, POTMsgSet.msgid_singular == POMsgID.id)
         result = store.using(POTMsgSet, origin1, origin2).find(
             POTMsgSet, TranslationTemplateItem.potemplate == self,
-                       "pomsgid.msgid IN (%s)" % credits_ids)
+                       "pomsgid.msgid IN %s" % credits_ids)
         # Filter these candidates because is_translation_credit checks for
         # more conditions than the special msgids.
         for potmsgset in result:

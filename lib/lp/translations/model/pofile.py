@@ -57,6 +57,7 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationimportqueue import (
     collect_import_info)
@@ -68,7 +69,7 @@ from lp.translations.model.translationtemplateitem import (
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
 
-from storm.expr import And, Join, LeftJoin, Or, SQL
+from storm.expr import And, In, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 
@@ -1570,7 +1571,14 @@ class POFileSet:
 
     def getPOFilesWithTranslationCredits(self):
         """See `IPOFileSet`."""
-        return []
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        result = store.find(
+                (POFile, POTMsgSet),
+                TranslationTemplateItem.potemplateID == POFile.potemplateID,
+                POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
+                POTMsgSet.msgid_singular == POMsgID.id,
+                In(POMsgID.msgid, POTMsgSet.credits_message_ids))
+        return result
 
     def getPOFilesTouchedSince(self, date):
         """See `IPOFileSet`."""
