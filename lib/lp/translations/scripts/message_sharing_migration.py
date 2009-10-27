@@ -160,8 +160,8 @@ class MessageSharingMerge(LaunchpadScript):
         self.parser.add_option('-d', '--distribution', dest='distribution',
             help="Distribution to merge messages for.")
         self.parser.add_option('-D', '--remove-duplicates',
-            dest='remove_duplicates',
-            help="Phase 1: Remove some duplicate TranslationMessages.")
+            dest='remove_duplicates', action='store_true',
+            help="Phase 1: Remove problematic duplicate TranslationMessages.")
         self.parser.add_option('-p', '--product', dest='product',
             help="Product to merge messages for.")
         self.parser.add_option('-P', '--merge-potmsgsets',
@@ -306,7 +306,6 @@ class MessageSharingMerge(LaunchpadScript):
                 key = get_potmsgset_key(potmsgset)
                 if key not in representatives:
                     representatives[key] = potmsgset
-                representative = representatives[key]
 
         for representative in representatives.itervalues():
             self._scrubPOTMsgSetTranslations(representative)
@@ -470,7 +469,7 @@ class MessageSharingMerge(LaunchpadScript):
                         "Different potemplates considered identical.")
 
                     # Transfer any current/imported flags to the existing
-                    # the identical messages, and delete the duplicate.
+                    # message, and delete the duplicate.
                     bequeathe_flags(tm, existing_tm)
                 else:
                     translations[key] = tm
