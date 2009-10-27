@@ -242,6 +242,12 @@
                   metal:use-macro="context/@@bugcomment-macros/activity-box" />
           </tal:is-activity>
         </tal:comment>
+        <div style="float: right;">
+          <tal:activity_log
+              define="context_menu context/menu:context"
+              content="structure context_menu/activitylog/render" />
+        </div>
+        <div class="clearfix"></div>
 
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
