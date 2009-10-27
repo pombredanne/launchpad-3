@@ -6,8 +6,10 @@
 __metaclass__ = type
 __all__ = ['POTMsgSet']
 
+import datetime
 import gettextpo
 import logging
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -49,7 +51,7 @@ from lp.translations.model.translationtemplateitem import (
 
 # Msgids that indicate translation credit messages, and their
 # contexts and type.
-credit_message_ids = {
+credits_message_info = {
     # Regular gettext credits messages.
     u'translation-credits': (None, TranslationCreditsType.GNOME),
     u'translator-credits': (None, TranslationCreditsType.GNOME),
@@ -67,6 +69,10 @@ credit_message_ids = {
     u'_: NAME OF TRANSLATORS\nYour names':
         (None, TranslationCreditsType.KDE_NAMES),
     }
+
+# String to be used as msgstr for translation credits messages.
+credits_message_str = (u'This is a dummy translation so that the '
+                       u'credits are counted as translated.')
 
 
 class POTMsgSet(SQLBase):
@@ -89,6 +95,8 @@ class POTMsgSet(SQLBase):
     _cached_singular_text = None
 
     _cached_uses_english_msgids = None
+
+    credits_message_ids = credits_message_info.keys()
 
     def __storm_invalidated__(self):
         self._cached_singular_text = None
@@ -740,7 +748,8 @@ class POTMsgSet(SQLBase):
     def updateTranslation(self, pofile, submitter, new_translations,
                           is_imported, lock_timestamp, force_shared=False,
                           force_diverged=False, force_suggestion=False,
-                          ignore_errors=False, force_edition_rights=False):
+                          ignore_errors=False, force_edition_rights=False,
+                          allow_credits=False):
         """See `IPOTMsgSet`."""
 
         just_a_suggestion, warn_about_lock_timestamp = (
@@ -752,7 +761,10 @@ class POTMsgSet(SQLBase):
 
         # If the update is on the translation credits message, yet
         # update is not is_imported, silently return.
-        if self.is_translation_credit and not is_imported:
+        deny_credits = (not allow_credits and
+                        self.is_translation_credit and
+                        not is_imported)
+        if deny_credits:
             return None
 
         # Sanitize translations
@@ -1010,11 +1022,11 @@ class POTMsgSet(SQLBase):
     @property
     def translation_credits_type(self):
         """See `IPOTMsgSet`."""
-        if self.msgid_singular.msgid not in credit_message_ids:
+        if self.msgid_singular.msgid not in credits_message_info:
             return TranslationCreditsType.NOT_CREDITS
 
         expected_context, credits_type = (
-            credit_message_ids[self.msgid_singular.msgid])
+            credits_message_info[self.msgid_singular.msgid])
         if expected_context is None or (self.context == expected_context):
             return credits_type
         return TranslationCreditsType.NOT_CREDITS
@@ -1038,6 +1050,16 @@ class POTMsgSet(SQLBase):
             except SQLObjectNotFound:
                 pomsgid = POMsgID(msgid=plural_form_text)
             self.msgid_plural = pomsgid
+
+    def setTranslationCreditsToTranslated(self, pofile):
+        """See `IPOTMsgSet`."""
+        if self.is_translation_credit:
+            translation = self.getSharedTranslationMessage(pofile.language)
+            if translation is None:
+                message = self.updateTranslation(pofile, pofile.owner, 
+                    [credits_message_str], False,
+                    datetime.datetime.now(pytz.UTC),
+                    allow_credits=True)
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""

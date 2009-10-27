@@ -10,8 +10,7 @@ __all__ = ['Distribution', 'DistributionSet']
 from zope.interface import alsoProvides, implements
 from zope.component import getUtility
 
-from sqlobject import (
-    BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
+from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
@@ -26,6 +25,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
+from canonical.lazr.utils import safe_hasattr
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -325,10 +325,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
-    # XXX: 2008-01-29 kiko: This is used in a number of places and given it's
-    # already listified, why not spare the trouble of regenerating this as a
-    # cachedproperty? Answer: because it breaks tests.
-    @property
+    @cachedproperty('_cached_serieses')
     def serieses(self):
         """See `IDistribution`."""
         ret = DistroSeries.selectBy(distribution=self)
@@ -1497,6 +1494,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # This driver is a release manager.
             series.driver = owner
+
+        if safe_hasattr(self, '_cached_serieses'):
+            del self._cached_serieses
         return series
 
     @property
