@@ -117,5 +117,6 @@ CREATE INDEX packageset__packagesetgroup__idx
     ON packageset(packagesetgroup);
 CREATE INDEX packageset__distroseries__idx
     ON packageset(distroseries);
+CREATE INDEX packagesetgroup__owner__idx ON PackageSetGroup(owner);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 06, 0);
