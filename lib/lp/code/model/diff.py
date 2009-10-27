@@ -300,8 +300,13 @@ class PreviewDiff(Storm):
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
+        if bmp.prerequisite_branch is not None:
+            prerequisite_branch = Branch.open(
+                bmp.prerequisite_branch.warehouse_url)
+        else:
+            prerequisite_branch = None
         preview.diff = Diff.mergePreviewFromBranches(
-            source_branch, source_revision, target_branch)
+            source_branch, source_revision, target_branch, prerequisite_branch)
         return preview
 
     @classmethod
