@@ -12,7 +12,7 @@ from datetime import datetime
 import logging
 import os
 from textwrap import dedent
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
 import pytz
 
@@ -23,7 +23,7 @@ from canonical.launchpad.scripts.hwdbsubmissions import (SubmissionParser,
     ROOT_UDI)
 from canonical.testing import BaseLayer
 
-from lp.testing import validate_mock_class
+from lp.testing import TestCase, validate_mock_class
 
 class SubmissionParserTestParseSoftware(SubmissionParser):
     """A Variant used to test SubmissionParser._parseSoftware.
@@ -914,44 +914,112 @@ invalid line
             "Line 2 in <sysfs-attributes>: Unexpected key: "
             "'X: an invalid line'")
 
+    class MockSubmissionParserParseHardwareTest(SubmissionParser):
+        """A SubmissionParser variant for testing checkCOnsistentData()
+
+        All "method substitutes" return a valid result.
+        """
+        def __init__(self, logger=None):
+            super(self.__class__, self).__init__(logger)
+            self.hal_result = 'parsed HAL data'
+            self.processors_result = 'parsed processor data'
+            self.aliases_result = 'parsed alias data'
+            self.udev_result = 'parsed udev data'
+            self.dmi_result = 'parsed DMI data'
+            self.sysfs_result = 'parsed sysfs data'
+
+        def _parseHAL(self, hal_node):
+            """See `SubmissionParser`."""
+            return self.hal_result
+
+        def _parseProcessors(self, processors_node):
+            """See `SubmissionParser`."""
+            return self.processors_result
+
+        def _parseAliases(self, aliases_node):
+            """See `SubmissionParser`."""
+            return self.aliases_result
+
+        def _parseUdev(self, udev_node):
+            """See `SubmissionParser`."""
+            return self.udev_result
+
+        def _parseDmi(self, dmi_node):
+            """See `SubmissionParser`."""
+            return self.dmi_result
+
+        def _parseSysfsAttributes(self, sysfs_node):
+            """See `SubmissionParser`."""
+            return self.sysfs_result
+
+    validate_mock_class(MockSubmissionParserParseHardwareTest)
+
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
-        test = self
-
-        def _parseHAL(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'hal')
-            return 'parsed HAL data'
-
-        def _parseProcessors(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'processors')
-            return 'parsed processor data'
-
-        def _parseAliases(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'aliases')
-            return 'parsed alias data'
-
-        parser = SubmissionParser(self.log)
-        parser._parseHAL = lambda node: _parseHAL(parser, node)
-        parser._parseProcessors = lambda node: _parseProcessors(parser, node)
-        parser._parseAliases = lambda node: _parseAliases(parser, node)
-        parser._setHardwareSectionParsers()
+        parser = self.MockSubmissionParserParseHardwareTest(self.log)
 
         node = etree.fromstring("""
             <hardware>
                 <hal/>
                 <processors/>
                 <aliases/>
+                <udev/>
+                <dmi/>
+                <sysfs-attributes/>
             </hardware>
             """)
         result = parser._parseHardware(node)
-        self.assertEqual(result,
-                         {'hal': 'parsed HAL data',
-                          'processors': 'parsed processor data',
-                          'aliases': 'parsed alias data'},
-                         'Invalid parsing result for <hardware>')
+        self.assertEqual({
+            'hal': 'parsed HAL data',
+            'processors': 'parsed processor data',
+            'aliases': 'parsed alias data',
+            'udev': 'parsed udev data',
+            'dmi': 'parsed DMI data',
+            'sysfs-attributes': 'parsed sysfs data',
+            },
+            result,
+            'Invalid parsing result for <hardware>')
+
+    def test_parseHardware_sub_parsers_fail(self):
+        """Test of SubmissionParser._parseHardware().
+
+        If one of the sub-parsers returns None, _pasreHardware() returns
+        None.
+        """
+        node = etree.fromstring("""
+            <hardware>
+               <hal/>
+                <processors/>
+                <aliases/>
+                <udev/>
+                <dmi/>
+                <sysfs-attributes/>
+            </hardware>
+            """)
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.hal_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.processors_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.aliases_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.udev_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.dmi_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.sysfs_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
 
     def testLsbRelease(self):
         """The <lsbrelease> node is converted into a Python dictionary.
@@ -1234,42 +1302,52 @@ invalid line
         parser.submission_key = 'Test of <context> parsing'
         node = etree.fromstring('<context/>')
         parser._parseContext(node)
+        self.assertEqual({}, parser._parseContext(node))
         self.assertWarningMessage(
             parser.submission_key,
             'Submission contains unprocessed <context> data.')
+
+    class MockSubmissionParserMainParserTest(SubmissionParser):
+        """A SubmissionParser variant for testing checkCOnsistentData()
+
+        All "method substitutes" return a valid result.
+        """
+        def __init__(self, logger=None):
+            SubmissionParser.__init__(self, logger)
+            self.summary_result = 'parsed summary'
+            self.hardware_result = 'parsed hardware'
+            self.software_result = 'parsed software'
+            self.questions_result = 'parsed questions'
+            self.context_result = 'parsed context'
+
+        def _parseSummary(self, summary_node):
+            """See `SubmissionParser`."""
+            return self.summary_result
+
+        def _parseHardware(self, hardware_node):
+            """See `SubmissionParser`."""
+            return self.hardware_result
+
+        def _parseSoftware(self, software_node):
+            """See `SubmissionParser`."""
+            return self.software_result
+
+        def _parseQuestions(self, questions_node):
+            """See `SubmissionParser`."""
+            return self.questions_result
+
+        def _parseContext(self, context_node):
+            """See `SubmissionParser`."""
+            return self.context_result
+
+    validate_mock_class(MockSubmissionParserMainParserTest)
 
     def testMainParser(self):
         """Test SubmissionParser.parseMainSections
 
         Ensure that all sub-parsers are properly called.
         """
-        test = self
-        def _parseSummary(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'summary')
-            return 'parsed summary'
-
-        def _parseHardware(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'hardware')
-            return 'parsed hardware'
-
-        def _parseSoftware(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'software')
-            return 'parsed software'
-
-        def _parseQuestions(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'questions')
-            return 'parsed questions'
-
-        parser = SubmissionParser(self.log)
-        parser._parseSummary = lambda node: _parseSummary(parser, node)
-        parser._parseHardware = lambda node: _parseHardware(parser, node)
-        parser._parseSoftware = lambda node: _parseSoftware(parser, node)
-        parser._parseQuestions = lambda node: _parseQuestions(parser, node)
-        parser._setMainSectionParsers()
+        parser = self.MockSubmissionParserMainParserTest()
 
         node = etree.fromstring("""
             <system>
@@ -1277,6 +1355,7 @@ invalid line
                 <hardware/>
                 <software/>
                 <questions/>
+                <context/>
             </system>
             """)
 
@@ -1284,11 +1363,33 @@ invalid line
             'summary': 'parsed summary',
             'hardware': 'parsed hardware',
             'software': 'parsed software',
-            'questions':  'parsed questions'}
+            'questions':  'parsed questions',
+            'context':  'parsed context',
+            }
 
         result = parser.parseMainSections(node)
         self.assertEqual(result, expected_data,
             'SubmissionParser.parseSubmission returned an unexpected result')
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.summary_result = None
+        self.assertIs(None, parser.parseMainSections(node))
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.hardware_result = None
+        self.assertIs(None, parser.parseMainSections(node))
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.software_result = None
+        self.assertIs(None, parser.parseMainSections(node))
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.questions_result = None
+        self.assertIs(None, parser.parseMainSections(node))
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.context_result = None
+        self.assertIs(None, parser.parseMainSections(node))
 
     def testSubmissionParser(self):
         """Test the entire parser."""

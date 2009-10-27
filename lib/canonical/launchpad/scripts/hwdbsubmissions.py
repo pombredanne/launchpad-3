@@ -667,6 +667,8 @@ class SubmissionParser(object):
         for node in hardware_node.getchildren():
             parser = self._parse_hardware_section[node.tag]
             result = parser(node)
+            if result is None:
+                return None
             hardware_data[node.tag] = result
         return hardware_data
 
@@ -888,6 +890,7 @@ class SubmissionParser(object):
         to store the data.
         """
         self._logWarning('Submission contains unprocessed <context> data.')
+        return {}
 
     def _setMainSectionParsers(self):
         self._parse_system = {
@@ -906,7 +909,10 @@ class SubmissionParser(object):
         try:
             for node in submission_doc.getchildren():
                 parser = self._parse_system[node.tag]
-                submission_data[node.tag] = parser(node)
+                result = parser(node)
+                if result is None:
+                    return None
+                submission_data[node.tag] = result
         except ValueError, value:
             self._logError(value, self.submission_key)
             return None
