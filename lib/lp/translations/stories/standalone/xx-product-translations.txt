@@ -192,3 +192,34 @@ Also, we will get some translation status for network applet.
     ...Translation overview...
     >>> print_language_stats(anon_browser)
     Language                   Untranslated    Unreviewed       Changed
+
+
+== Download and upload links ==
+
+A logged-in user is invited to download translations.
+
+    >>> def find_download_upload_invitation(browser):
+    ...     """Find the text inviting the user to upload or download."""
+    ...     tag = find_tag_by_id(browser.contents, 'downloadupload')
+    ...     if tag is None:
+    ...         return None
+    ...     return extract_text(tag.renderContents())
+
+    >>> product_url = 'http://translations.launchpad.dev/evolution'
+
+    >>> user_browser.open(product_url)
+    >>> print find_download_upload_invitation(user_browser)
+    You can also download translations for trunk.
+
+An anonymous user does not see this invitation.
+
+    >>> anon_browser.open(product_url)
+    >>> print find_download_upload_invitation(anon_browser)
+    None
+
+A user with upload rights sees the invitation not just to download but
+to upload as well.
+
+    >>> admin_browser.open(product_url)
+    >>> print find_download_upload_invitation(admin_browser)
+    You can also download or upload translations for trunk.

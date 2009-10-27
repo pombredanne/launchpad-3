@@ -302,7 +302,7 @@ class MessageSharingMerge(LaunchpadScript):
 
         for template in potemplates:
             order_check.check(template)
-            for potmsgset in template.getPOTMsgSets(False):
+            for potmsgset in template.getPOTMsgSets(False, prefetch=False):
                 key = get_potmsgset_key(potmsgset)
                 if key not in representatives:
                     representatives[key] = potmsgset
@@ -335,7 +335,7 @@ class MessageSharingMerge(LaunchpadScript):
 
         for template in potemplates:
             order_check.check(template)
-            for potmsgset in template.getPOTMsgSets(False):
+            for potmsgset in template.getPOTMsgSets(False, prefetch=False):
                 key = get_potmsgset_key(potmsgset)
                 if key not in representatives:
                     representatives[key] = potmsgset
@@ -402,7 +402,7 @@ class MessageSharingMerge(LaunchpadScript):
         order_check = OrderingCheck(cmp=self.compare_template_precedence)
         for template in potemplates:
             order_check.check(template)
-            for potmsgset in template.getPOTMsgSets(False):
+            for potmsgset in template.getPOTMsgSets(False, prefetch=False):
                 for message in potmsgset.getAllTranslationMessages():
                     removeSecurityProxy(message).shareIfPossible()
                 self._endTransaction(intermediate=True)

@@ -66,6 +66,11 @@ class ICodeReviewComment(Interface):
             attachments.
         """
 
+    as_quoted_email = exported(
+        TextLine(
+            title=_('The message as quoted in email.'),
+            readonly=True))
+
 
 class ICodeReviewCommentDeletion(Interface):
     """This interface provides deletion of CodeReviewComments.
