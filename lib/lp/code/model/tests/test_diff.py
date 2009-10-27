@@ -63,6 +63,7 @@ class DiffTestCase(TestCaseWithFactory):
             diff_text)
 
     def preparePrerequisiteMerge(self, bmp=None):
+        """Prepare a merge scenario with a prerequisite branch."""
         self.useBzrBranches()
         if bmp is None:
             target = self.factory.makeBranch()
@@ -191,6 +192,7 @@ class TestDiffInScripts(DiffTestCase):
         "+f\n")
 
     def test_mergePreviewWithPrerequisite(self):
+        # Changes introduced in the prerequisite branch are ignored.
         (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
          prerequisite) = self.preparePrerequisiteMerge()
         diff = Diff.mergePreviewFromBranches(
@@ -200,6 +202,8 @@ class TestDiffInScripts(DiffTestCase):
         self.assertNotIn('+prerequisite text\n', diff.text)
 
     def test_mergePreviewWithNewerPrerequisite(self):
+        # If the prerequisite branch has unmerged revisions, they do not
+        # affect the diff.
         (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
          prerequisite) = self.preparePrerequisiteMerge()
         self.commitFile(

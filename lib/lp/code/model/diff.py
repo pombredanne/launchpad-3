@@ -104,14 +104,14 @@ class Diff(SQLBase):
                     cleanups.append(branch.unlock)
             merge_target = target_branch.basis_tree()
             if prerequisite_branch is not None:
-                prereq_revision = cls.getLCA(
+                prereq_revision = cls._getLCA(
                     source_branch, source_revision, prerequisite_branch)
-                from_tree = cls.getMerged(
+                from_tree = cls._getMergedTree(
                     prerequisite_branch, prereq_revision, target_branch,
                     merge_target, cleanups)
             else:
                 from_tree = merge_target
-            to_tree = cls.getMerged(
+            to_tree = cls._getMergedTree(
                 source_branch, source_revision, target_branch,
                 merge_target, cleanups)
             return cls.fromTrees(from_tree, to_tree)
@@ -120,9 +120,19 @@ class Diff(SQLBase):
                 cleanup()
 
     @classmethod
-    def getMerged(cls, source_branch, source_revision, target_branch,
+    def _getMergedTree(cls, source_branch, source_revision, target_branch,
                   merge_target, cleanups):
-        lca = cls.getLCA(source_branch, source_revision, target_branch)
+        """Return a tree that is the result of a merge.
+
+        :param source_branch: The branch to merge.
+        :param source_revision: The revision_id of the revision to merge.
+        :param target_branch: The branch to merge into.
+        :param merge_target: The tree to merge into.
+        :param cleanups: A list of cleanup operations to run when all
+            operations are complete.  This will be appended to.
+        :return: a tree.
+        """
+        lca = cls._getLCA(source_branch, source_revision, target_branch)
         merge_base = source_branch.repository.revision_tree(lca)
         merge_source = source_branch.repository.revision_tree(
             source_revision)
@@ -134,7 +144,13 @@ class Diff(SQLBase):
         return transform.get_preview_tree()
 
     @staticmethod
-    def getLCA(source_branch, source_revision, target_branch):
+    def _getLCA(source_branch, source_revision, target_branch):
+        """Return the unique LCA of two branches.
+
+        :param source_branch: The branch to merge.
+        :param source_revision: The revision of the source branch.
+        :param target_branch: The branch to merge into.
+        """
         graph = target_branch.repository.get_graph(
             source_branch.repository)
         return graph.find_unique_lca(
