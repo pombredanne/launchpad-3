@@ -17,6 +17,7 @@ class LaunchpadUser:
 
     def ensure_login(self, client):
         """Ensure that this user is logged on the page under windmill."""
+        client.waits.forPageLoad(timeout=u'20000')
         result = client.asserts.assertNode( name=u'loginpage_submit_login', assertion=False)
         already_on_login_page = result['result']
         if not already_on_login_page:
