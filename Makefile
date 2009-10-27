@@ -28,7 +28,7 @@ API_INDEX = lib/canonical/launchpad/apidoc/index.html
 
 EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
 				$(shell $(HERE)/utilities/yui-deps.py) \
-				lib/canonical/launchpad/icing/lazr/build/lazr.js
+				lib/canonical/launchpad/icing/lazr/lazr/lazr.js
 
 # DO NOT ALTER : this should just build by default
 default: inplace
