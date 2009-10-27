@@ -1143,7 +1143,8 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         eo_translation = credits.getCurrentTranslationMessage(
             self.potemplate, eo_pofile.language)
         self.assertIsNot(None, eo_translation,
-            "Translation credits are not translated upon POFile creation.")
+            "Translation credits receive no dummy translation upon "
+            "POFile creation.")
 
     def test_translation_credits_gnome(self):
         # Detect all known variations of Gnome translator credits.
