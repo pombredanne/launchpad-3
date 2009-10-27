@@ -635,6 +635,38 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.devel_potemplate, serbian)
         self.assertEquals(current_translation, shared_translation)
 
+    def test_setTranslationCreditsToTranslated(self):
+        """Test that translation credits are correctly set as translated."""
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+        self.assertNotEqual(None, current)
+
+    def test_setTranslationCreditsToTranslated_diverged(self):
+        # Even if there's a diverged translation credits translation,
+        # we should provide an automatic shared translation instead.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        diverged_translation = credits_potmsgset.updateTranslation(
+            pofile=sr_pofile, submitter=sr_pofile.owner,
+            new_translations=[u'Diverged credits'], is_imported=True,
+            force_diverged=True, lock_timestamp=datetime.now(pytz.UTC),
+            allow_credits=True)
+        self.assertTrue(diverged_translation.is_current)
+        self.assertNotEqual(None, diverged_translation.potemplate)
+
+        # Setting credits as translated will give us a shared translation.
+        credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+        self.assertNotEqual(None, current)
+        self.assertEqual(None, current.potemplate)
+
+
 class TestPOTMsgSetSuggestions(TestCaseWithFactory):
     """Test retrieval and dismissal of translation suggestions."""
 
