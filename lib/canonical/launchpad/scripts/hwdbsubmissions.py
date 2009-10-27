@@ -1554,7 +1554,7 @@ class SubmissionParser(object):
     def root_device(self):
         """The HALDevice of UdevDevice node of the root device."""
         # checkConsistency ensures that we have either a device with the
-        # key ROOU_UDI or a device with the key UDEV_ROOT_PATH.
+        # key ROOT_UDI or a device with the key UDEV_ROOT_PATH.
         if ROOT_UDI in self.devices:
             return self.devices[ROOT_UDI]
         else:
