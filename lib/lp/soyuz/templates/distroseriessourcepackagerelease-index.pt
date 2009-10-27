@@ -10,13 +10,14 @@
 
 <div metal:fill-slot="main">
 
-  <div class="top-portlet">
-    <h2>
-      <span class="see-all">
-        <a tal:replace="structure context/sourcepackage/menu:overview/distribution_source_package/fmt:link" />
-      </span>
-      Publishing history
-    </h2>
+  <ul class="horizontal">
+    <li>
+      <a tal:replace="structure context/sourcepackage/menu:overview/distribution_source_package/fmt:link" />
+    </li>
+  </ul>
+
+  <div class="portlet">
+    <h2>Publishing history</h2>
 
     <div id="publishing_history">
       <tal:block repeat="publishing context/publishing_history"
