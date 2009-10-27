@@ -356,7 +356,7 @@ class IPackagesetSet(Interface):
         :param related_set: the newly created package set is to be related to
             `related_set` (by being placed in the same package group).
 
-        :raises DuplicatePackagesetName if a package set with the same `name`
+        :raises DuplicatePackagesetName: if a package set with the same `name`
             exists in `distroseries` already.
         :return: a newly created `IPackageset`.
         """
