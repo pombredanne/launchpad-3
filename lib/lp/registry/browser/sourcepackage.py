@@ -18,6 +18,9 @@ __all__ = [
 from apt_pkg import ParseSrcDepends
 from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
+from zope.formlib.form import FormFields
+
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import helpers
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -125,12 +128,32 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     schema = ISourcePackage
     field_names = ['productseries']
 
-    label = 'Define upstream link'
+    label = 'Link to an upstream project'
     page_title = label
 
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+    def setUpFields(self):
+        """ See `LaunchpadFormView`.
+
+        The productseries field is required by the view.
+        """
+        super(SourcePackageChangeUpstreamView, self).setUpFields()
+        field = copy_field(ISourcePackage['productseries'], required=True)
+        self.form_fields = self.form_fields.omit('productseries')
+        self.form_fields = self.form_fields + FormFields(field)
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`.
+
+        Set the current `IProductSeries` as the default value.
+        """
+        super(SourcePackageChangeUpstreamView, self).setUpWidgets()
+        if self.context.productseries is not None:
+            widget = self.widgets.get('productseries')
+            widget.setRenderedValue(self.context.productseries)
 
     def validate(self, data):
         productseries = data.get('productseries', None)
