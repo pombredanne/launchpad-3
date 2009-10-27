@@ -284,12 +284,14 @@ class MessageSharingMerge(LaunchpadScript):
         if self.txn is None:
             return
 
+        self.logger.debug("Object count: %d." % len(gc.get_objects()))
         if self.options.dry_run:
             if not intermediate:
                 self.txn.abort()
         else:
             self.txn.commit()
-        gc.collect()
+        freed = gc.collect()
+        self.logger.debug("Freed %d objects." % freed)
 
     def _removeDuplicateMessages(self, potemplates):
         """Get rid of duplicate `TranslationMessages` where needed."""
