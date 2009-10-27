@@ -1568,6 +1568,10 @@ class POFileSet:
         return POFile.select(
             "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
 
+    def getPOFilesWithTranslationCredits(self):
+        """See `IPOFileSet`."""
+        return []
+
     def getPOFilesTouchedSince(self, date):
         """See `IPOFileSet`."""
         # Avoid circular imports.

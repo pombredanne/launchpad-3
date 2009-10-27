@@ -1388,6 +1388,48 @@ class TestPOFileSet(TestCaseWithFactory):
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
         self.assertContentEqual([pofile1], pofiles)
 
+    def test_getPOFilesWithTranslationCredits(self):
+        # Initially, we only get data from the sampledata.
+        sampledata_pofiles = list(
+            self.pofileset.getPOFilesWithTranslationCredits())
+        total = len(sampledata_pofiles)
+        self.assertEquals(0, total)
+
+        # All POFiles with translation credits messages are
+        # returned along with relevant POTMsgSets.
+        potemplate1 = self.factory.makePOTemplate()
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            potemplate1, singular=u'translator-credits')
+
+        sr_pofile = self.factory.makePOFile('sr', potemplate=potemplate1)
+        self.assertIn(sr_pofile,
+                      self.pofileset.getPOFilesWithTranslationCredits())
+        self.assertEquals(
+            total + 1,
+            self.pofileset.getPOFilesWithTranslationCredits().count())
+
+        # If there's another POFile on this template, it's returned as well.
+        de_pofile = self.factory.makePOFile('de', potemplate=potemplate1)
+        self.assertIn(de_pofile,
+                      self.pofileset.getPOFilesWithTranslationCredits())
+
+        # If another POTemplate has a translation credits message, it's
+        # returned as well.
+        potemplate2 = self.factory.makePOTemplate()
+        kde_credits_potmsgset = self.factory.makePOTMsgSet(
+            potemplate1, singular=u'Your names',
+            context=u'NAME OF TRANSLATORS')
+        sr_kde_pofile = self.factory.makePOFile('sr', potemplate=potemplate2)
+        self.assertIn(sr_kde_pofile,
+                      self.pofileset.getPOFilesWithTranslationCredits())
+
+        # And let's confirm that the full listing contains all of the
+        # above.
+        all_pofiles = sampledata_pofiles
+        all_pofiles.extend([sr_pofile, de_pofile, sr_kde_pofile])
+        self.assertContentEquals(
+            all_pofiles, self.pofileset.getPOFilesWithTranslationCredits())
+
 
 class TestPOFileStatistics(TestCaseWithFactory):
     """Test PO files statistics calculation."""
