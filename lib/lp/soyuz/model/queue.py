@@ -1472,7 +1472,7 @@ class PackageUploadSource(SQLBase):
             published_sha1 = published_file.content.sha1
 
             # Multiple orig(s) with the same content are fine.
-            if source_file.filetype == SourcePackageFileType.ORIG:
+            if source_file.filetype == SourcePackageFileType.ORIG_TARBALL:
                 if proposed_sha1 == published_sha1:
                     continue
                 raise QueueInconsistentStateError(

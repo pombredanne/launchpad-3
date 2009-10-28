@@ -275,11 +275,11 @@ class SourcePackageRelease(SQLBase):
         if file.filename.endswith(".dsc"):
             determined_filetype = SourcePackageFileType.DSC
         elif file.filename.endswith(".orig.tar.gz"):
-            determined_filetype = SourcePackageFileType.ORIG
+            determined_filetype = SourcePackageFileType.ORIG_TARBALL
         elif file.filename.endswith(".diff.gz"):
             determined_filetype = SourcePackageFileType.DIFF
         elif file.filename.endswith(".tar.gz"):
-            determined_filetype = SourcePackageFileType.TARBALL
+            determined_filetype = SourcePackageFileType.NATIVE_TARBALL
 
         return SourcePackageReleaseFile(sourcepackagerelease=self,
                                         filetype=determined_filetype,
