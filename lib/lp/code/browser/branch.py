@@ -575,7 +575,8 @@ class BranchView(LaunchpadView, FeedsMixin):
                 BranchLifecycleStatus,
                 css_class_prefix='branchstatus'),
             'status_value': self.context.lifecycle_status.title,
-            'user_can_edit_status': check_permission('launchpad.Edit', self.context),
+            'user_can_edit_status': check_permission(
+                'launchpad.Edit', self.context),
             'branch_path': '/' + self.context.unique_name,
             })
 
