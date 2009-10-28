@@ -291,11 +291,13 @@ class MessageSharingMerge(LaunchpadScript):
             return
 
         if self.commit_count % 100 == 0 or not intermediate:
-            garbage = gc.collect()
+            freed = gc.collect()
             objcount = len(gc.get_objects())
+            garbage = len(gc.garbage)
             memsize = open("/proc/%s/statm" % os.getpid()).read().split()[5]
-            self.logger.debug("Freed: %d.  Object count: %d.  Memory size: %s"
-                % (garbage, objcount, memsize))
+            self.logger.debug(
+                "Freed: %d.  Object count: %d.  Garbage: %d.  Memory size: %s"
+                % (freed, objcount, garbage, memsize))
 
         self.commit_count += 1
 
