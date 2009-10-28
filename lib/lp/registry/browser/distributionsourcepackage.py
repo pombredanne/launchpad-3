@@ -171,7 +171,11 @@ class DistributionSourcePackageActionMenu(
     usedfor = IDistributionSourcePackageActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ['change_log', 'subscribe', 'edit']
+    links = ['publishing_history', 'change_log', 'subscribe', 'edit']
+
+    def publishing_history(self):
+        text = 'View full publishing history'
+        return Link('+publishinghistory', text, icon="info")
 
     def change_log(self):
         text = 'View full change log'
