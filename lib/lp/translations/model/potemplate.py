@@ -24,7 +24,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, Join, LeftJoin, Or, SQL
+from storm.expr import Alias, And, Desc, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
@@ -1083,7 +1083,11 @@ class POTemplateSubset:
         if self.productseries is not None:
             potemplate = result.one()
         else:
-            potemplate, sourcepackagename = result.one()
+            one_result = result.one()
+            if one_result is not None:
+                potemplate, sourcepackagename = one_result
+            else:
+                potemplate = None
         return potemplate
 
     def __iter__(self):
@@ -1188,7 +1192,8 @@ class POTemplateSubset:
     def getAllOrderByDateLastUpdated(self):
         """See `IPOTemplateSet`."""
         result = self._build_query(ordered=False)
-        return self._generate(result.order_by(['-date_last_updated']))
+        return self._generate(result.order_by(
+                                Desc(POTemplate.date_last_updated)))
 
     def getClosestPOTemplate(self, path):
         """See `IPOTemplateSubset`."""
@@ -1222,7 +1227,7 @@ class POTemplateSubset:
             "(POTemplate.path = %s OR POTemplate.path LIKE '%%/' || %s)"
                 % (quote(filename), quote_like(filename)),
                 ordered=False)
-        candidates = self._generate(result.config(limit=2))
+        candidates = list(self._generate(result.config(limit=2)))
 
         if len(candidates) == 1:
             # Found exactly one match.
