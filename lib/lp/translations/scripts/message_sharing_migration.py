@@ -387,14 +387,17 @@ class MessageSharingMerge(LaunchpadScript):
             self.logger.info("Message %d/%d: %d subordinate(s)." % (
                 representative_num, num_representatives, len(potmsgsets)))
 
-            seen_potmsgsets = set([representative])
+            seen_potmsgsets = set([representative.id])
+
+            potmsgset_deletions = 0
+            tm_deletions = 0
 
             # Merge each subordinate POTMsgSet into its representative.
             for subordinate in potmsgsets:
-                if subordinate in seen_potmsgsets:
+                if subordinate.id in seen_potmsgsets:
                     continue
 
-                seen_potmsgsets.add(subordinate)
+                seen_potmsgsets.add(subordinate.id)
 
                 for message in subordinate.getAllTranslationMessages():
                     message = removeSecurityProxy(message)
@@ -428,13 +431,19 @@ class MessageSharingMerge(LaunchpadScript):
                             bequeathe_flags(
                                 message, twin,
                                 (clashing_current, clashing_imported))
+                            tm_deletions += 1
 
                 merge_translationtemplateitems(
                     subordinate, representative,
                     representative_templates[representative])
                 removeSecurityProxy(subordinate).destroySelf()
+                potmsgset_deletions += 1
 
                 self._endTransaction(intermediate=True)
+
+            self.logger.info(
+                "Deleted POTMsgSets: %d.  TranslationMessages: %d." % (
+                    potmsgset_deletions, tm_deletions))
 
     def _mergeTranslationMessages(self, potemplates):
         """Share `TranslationMessage`s between templates where possible."""
@@ -443,8 +452,15 @@ class MessageSharingMerge(LaunchpadScript):
         for template in potemplates:
             order_check.check(template)
             for potmsgset in template.getPOTMsgSets(False, prefetch=False):
+                before = potmsgset.getAllTranslationMessages().count()
+
                 for message in potmsgset.getAllTranslationMessages():
                     removeSecurityProxy(message).shareIfPossible()
+
+                after = potmsgset.getAllTranslationMessages().count()
+                self.logger.info(
+                    "TranslationMessages before merging: %d.  After: %d." % (
+                        before, after))
                 self._endTransaction(intermediate=True)
 
     def _getPOTMsgSetTranslationMessageKey(self, tm):
@@ -488,6 +504,8 @@ class MessageSharingMerge(LaunchpadScript):
 
         self._endTransaction(intermediate=True)
 
+        deletions = 0
+
         for ids in ids_per_language.itervalues():
             translations = {}
 
@@ -511,10 +529,13 @@ class MessageSharingMerge(LaunchpadScript):
                     # Transfer any current/imported flags to the existing
                     # message, and delete the duplicate.
                     bequeathe_flags(tm, existing_tm)
+                    deletions += 1
                 else:
                     translations[key] = tm
 
             self._endTransaction(intermediate=True)
+
+        self.logger.info("Deleted TranslationMessages: %d" % deletions)
 
     def _findClashes(self, message, target_potmsgset, target_potemplate):
         """What would clash if we moved `message` to the target environment?
