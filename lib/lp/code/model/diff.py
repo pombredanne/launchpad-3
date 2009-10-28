@@ -322,7 +322,8 @@ class PreviewDiff(Storm):
         else:
             prerequisite_branch = None
         preview.diff = Diff.mergePreviewFromBranches(
-            source_branch, source_revision, target_branch, prerequisite_branch)
+            source_branch, source_revision, target_branch,
+            prerequisite_branch)
         return preview
 
     @classmethod
