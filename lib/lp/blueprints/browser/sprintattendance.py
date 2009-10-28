@@ -104,6 +104,8 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
     _local_timeformat = '%H:%M on %A, %Y-%m-%d'
     @property
     def local_start(self):
@@ -142,10 +144,7 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
         time_starts, time_ends = self.getDates(data)
         self.context.attend(self.user, time_starts, time_ends)
 
-    @property
-    def cancel_url(self):
-        """Canceling goes back to the sprint page."""
-        return canonical_url(self.context)
+
 
 
 class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):

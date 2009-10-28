@@ -19,6 +19,14 @@ The view captures the user's time_start and time_ends attendance.
     >>> sprint_attendance_view.field_names
     ['time_starts', 'time_ends']
 
+The view also defines a next_url and cancel_url
+
+    >>> print sprint_attendance_view.next_url
+    http://launchpad.dev/sprints/ubz
+
+    >>> print sprint_attendance_view.cancel_url
+    http://launchpad.dev/sprints/ubz
+
 A helper function to test date handling.
 
   >>> def create_sprint_attendance_view(sprint, dates):
@@ -83,6 +91,21 @@ Sample Person is now listed as an attendee.
   True
   >>> ubz.time_ends == sprint_attendance.time_ends
   True
+
+The +attend and +register views
+-------------------------------
+
+The +attend view has a label.
+
+    >>> sprint_attendance_view = create_view(ubz, name='+attend')
+    >>> print sprint_attendance_view.label
+    Register your attendance
+
+The +register view has a label too.
+
+    >>> sprint_attendance_view = create_view(ubz, name='+register')
+    >>> print sprint_attendance_view.label
+    Register someone else
 
 
 Exporting the list of attendees
