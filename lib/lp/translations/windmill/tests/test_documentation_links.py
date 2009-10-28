@@ -83,7 +83,7 @@ class DocumentationLinksTest(TestCaseWithFactory):
         # is hidden.
         client.waits.forElementProperty(classname=u'important-notice-balloon',
                                         option=u'style.display|none',
-                                        timeout=u'8000')
+                                        timeout=u'800000')
 
         # Navigating to the next page of this translation doesn't show
         # the notification box.
