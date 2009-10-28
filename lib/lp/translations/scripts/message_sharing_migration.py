@@ -25,8 +25,10 @@ def get_potmsgset_key(potmsgset):
     A POTMsgSet is identified by its msgid, optional plural msgid, and
     optional context identifier.
     """
+    potmsgset = removeSecurityProxy(potmsgset)
     return (
-        potmsgset.msgid_singular, potmsgset.msgid_plural, potmsgset.context)
+        potmsgset.msgid_singularID, potmsgset.msgid_pluralID,
+        potmsgset.context)
 
 
 def merge_pofiletranslators(from_potmsgset, to_template):
@@ -289,7 +291,7 @@ class MessageSharingMerge(LaunchpadScript):
 
         for template in potemplates:
             order_check.check(template)
-            for potmsgset in template.getPOTMsgSets(False):
+            for potmsgset in template.getPOTMsgSets(False, prefetch=False):
                 key = get_potmsgset_key(potmsgset)
                 if key not in representatives:
                     representatives[key] = potmsgset
@@ -360,7 +362,7 @@ class MessageSharingMerge(LaunchpadScript):
         order_check = OrderingCheck(cmp=self.compare_template_precedence)
         for template in potemplates:
             order_check.check(template)
-            for potmsgset in template.getPOTMsgSets(False):
+            for potmsgset in template.getPOTMsgSets(False, prefetch=False):
                 for message in potmsgset.getAllTranslationMessages():
                     removeSecurityProxy(message).shareIfPossible()
 

@@ -16,7 +16,7 @@ password page.
     >>> browser.getControl('E-mail address:', index=1).value = (
     ...     'test@canonical.com')
     >>> from lp.testing.registration import set_captcha_answer
-    >>> set_captcha_answer(browser)
+    >>> set_captcha_answer(browser, prefix='loginpage_')
     >>> browser.getControl('Register').click()
 
     >>> for message in get_feedback_messages(browser.contents):
@@ -33,7 +33,7 @@ been validated, we pretend that we have never seen this email and move
 on with the registration process.
 
     >>> browser.getControl('E-mail address:', index=1).value = 'mpo@iki.fi'
-    >>> set_captcha_answer(browser)
+    >>> set_captcha_answer(browser, prefix='loginpage_')
     >>> browser.getControl('Register').click()
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'address'))
@@ -85,7 +85,7 @@ this.
 
     >>> anon_browser.getControl('E-mail address:', index=1).value = (
     ...     'christian.reis@ubuntulinux.com')
-    >>> set_captcha_answer(anon_browser)
+    >>> set_captcha_answer(anon_browser, prefix='loginpage_')
     >>> anon_browser.getControl('Register').click()
 
     >>> from_addr, to_addr, msg = stub.test_emails.pop()
@@ -147,7 +147,7 @@ email address.
 
     >>> browser.getControl('E-mail address:', index=1).value = (
     ...     'bad-user@canonical.com')
-    >>> set_captcha_answer(browser)
+    >>> set_captcha_answer(browser, prefix='loginpage_')
     >>> browser.getControl('Register').click()
 
     >>> print extract_text(find_main_content(browser.contents).p)

@@ -14,6 +14,7 @@ Long term once soyuz is monitoring other archives regularly, syncing
 will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
+import _pythonpath
 
 import apt_pkg
 import commands
@@ -29,7 +30,6 @@ import tempfile
 import time
 import urllib
 
-import _pythonpath
 import dak_utils
 from _syncorigins import origins
 

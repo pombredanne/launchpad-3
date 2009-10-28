@@ -42,7 +42,7 @@ whatever we had stored on the redirection_url hidden field.
     >>> from lp.testing.registration import set_captcha_answer
     >>> anon_browser.getControl('E-mail address:', index=1).value = (
     ...     'granny@canonical.com')
-    >>> set_captcha_answer(anon_browser)
+    >>> set_captcha_answer(anon_browser, prefix='loginpage_')
     >>> anon_browser.getControl('Register').click()
     >>> print anon_browser.contents
     <...

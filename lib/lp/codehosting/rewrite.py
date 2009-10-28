@@ -8,11 +8,14 @@ import time
 
 from bzrlib import urlutils
 
-from canonical.launchpad.interfaces import ISlaveStore
-from lp.code.model.branch import Branch
-from lp.codehosting.vfs import branch_id_to_path
+from zope.component import getUtility
 
 from canonical.config import config
+
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.codehosting.vfs import branch_id_to_path
+from lp.services.utils import iter_split
+
 
 __all__ = ['BranchRewriter']
 
@@ -31,7 +34,6 @@ class BranchRewriter:
         else:
             self._now = _now
         self.logger = logger
-        self.store = ISlaveStore(Branch)
         self._cache = {}
 
     def _codebrowse_url(self, path):
@@ -45,26 +47,19 @@ class BranchRewriter:
         In addition this method returns whether the answer can from the cache
         or from the database.
         """
-        parts = location[1:].split('/')
-        prefixes = []
-        for i in range(1, len(parts) + 1):
-            prefix = '/'.join(parts[:i])
-            if prefix in self._cache:
-                branch_id, inserted_time = self._cache[prefix]
+        for first, second in iter_split(location[1:], '/'):
+            if first in self._cache:
+                branch_id, inserted_time = self._cache[first]
                 if (self._now() < inserted_time +
                     config.codehosting.branch_rewrite_cache_lifetime):
-                    trailing = location[len(prefix) + 1:]
-                    return branch_id, trailing, "HIT"
-            prefixes.append(prefix)
-        result = self.store.find(
-            (Branch.id, Branch.unique_name),
-            Branch.unique_name.is_in(prefixes), Branch.private == False).one()
-        if result is None:
+                    return branch_id, second, "HIT"
+        branch_id, trailing = getUtility(IBranchLookup).getIdAndTrailingPath(
+            location, from_slave=True)
+        if branch_id is None:
             return None, None, "MISS"
         else:
-            branch_id, unique_name = result
+            unique_name = location[1:-len(trailing)]
             self._cache[unique_name] = (branch_id, self._now())
-            trailing = location[len(unique_name) + 1:]
             return branch_id, trailing, "MISS"
 
     def rewriteLine(self, resource_location):

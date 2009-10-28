@@ -240,6 +240,9 @@ class IStructuralSubscriptionTarget(Interface):
 
     target_type_display = Attribute("The type of the target, for display.")
 
+    def userHasBugSubscriptions(user):
+        """Is `user` subscribed, directly or via a team, to bug mail?"""
+
 
 class IStructuralSubscriptionForm(Interface):
     """Schema for the structural subscription form."""

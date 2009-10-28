@@ -12,7 +12,7 @@ from cStringIO import StringIO
 
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.patches import parse_patches
+from bzrlib.patches import parse_patches, Patch
 from bzrlib.merge import Merge3Merger
 from lazr.delegates import delegates
 import simplejson
@@ -188,6 +188,8 @@ class Diff(SQLBase):
         """
         file_stats = {}
         for patch in parse_patches(diff_bytes.splitlines(True)):
+            if not isinstance(patch, Patch):
+                continue
             path = patch.newname.split('\t')[0]
             file_stats[path] = tuple(patch.stats_values()[:2])
         return file_stats

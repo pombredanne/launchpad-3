@@ -5,6 +5,7 @@ Remove this section when the old templates and these declarations are gone.
 
 */
 #maincontent {
+    clear: both;
     float: left;
     width: 100%;
     margin-right: -25%;
@@ -232,6 +233,10 @@ span.nolink {
 .footer .lp-branding {
     float: left;
     }
+.portlet-border {
+    border-top: 1px solid #EBEBEB;
+    padding: 1em 0;
+    }
 .portlet, .aside {
     clear: both;
     border-top: 1px solid #EBEBEB;
@@ -312,8 +317,7 @@ strong.translations-stat {
 
 /* Default text presentation */
 html, body {
-    font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
-    font-family: sans-serif;
+    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
     font-size: 93%;
     }
 body.private {
@@ -379,6 +383,9 @@ form table th, form table td {
 form table tbody th {
     font-weight: bold;
     }
+input[type='image'] {
+    vertical-align: middle;
+    }
 em {
     font-style: italic;
     }
@@ -442,6 +449,19 @@ li .registered {
     margin: 1em 0 0 0;
     }
 .horizontal li {
+    display: inline;
+    padding: 0 1.5em 0 0;
+    }
+.table-actions:nth-child(2) {
+    /* text-align only works here because the <li> also has the
+       style display:inline.
+    */
+    text-align: right;
+    }
+.table-actions {
+    margin: 1em 0 0 0;
+    }
+.table-actions li {
     display: inline;
     padding: 0 1.5em 0 0;
     }
@@ -698,7 +718,7 @@ ul.super-add-action li a {
 
 /* For the Latest updates portlet
  * at https://launchpad.dev/~cprov/+archive/ppa */
-ul.latest-ppa-updates .duration {
+ul.latest-ppa-updates .duration, ul.latest-ppa-updates .build-details {
     font-size: 75%;
 }
 ul.latest-ppa-updates li {
@@ -771,7 +791,7 @@ form.translations div.fields {
 
 form.translations div.actions {
     padding: 1em;
-    text-align: right;
+    text-align: left;
     clear:both;
 }
 
@@ -852,6 +872,22 @@ table.translation-stats tfoot th {
 table.translation-stats tfoot td {
     text-align:center;
 }
+
+/* Translations help links.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+translations
+ *   https://translations.launchpad.dev/ubuntu/hoary/
+ *
+ */
+div.translation-help-links a {
+  float: right;
+}
+div.translation-help-links div {
+  clear: both;
+}
+
 
 /* Home page */
 .homepage {

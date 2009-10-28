@@ -9,8 +9,10 @@ from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IProductSet, ISourcePackageNameSet, IPackagingUtil)
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.testing.pages import setupBrowser
 from canonical.testing import PageTestLayer
@@ -54,7 +56,7 @@ class TestBrowserDeletePackaging(TestCase):
         user_browser = self.user_browser
         user_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
         form = user_browser.getForm("delete_warty_alsa-utils_trunk")
-        form.getControl("Delete Link").click()
+        form.getControl(name="field.actions.delete_packaging").click()
         # Check that the change was committed.
         login('no-priv@canonical.com')
         self.assertFalse(packaging_util.packagingEntryExists(
