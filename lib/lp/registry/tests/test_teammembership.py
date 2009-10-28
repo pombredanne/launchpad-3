@@ -58,7 +58,7 @@ class TestTeamMembershipSet(unittest.TestCase):
             ubuntu_team.teamowner, comment="I like her")
         self.assertEqual(ubuntu_team.teamowner, membership.proposed_by)
         self.assertEqual(membership.proponent_comment, "I like her")
-        now = datetime.now(pytz.timezone('UTC'))
+        now = datetime.now(pytz.UTC)
         self.failUnless(membership.date_proposed <= now)
         self.failUnless(membership.datejoined <= now)
         self.assertEqual(ubuntu_team.teamowner, membership.reviewed_by)
@@ -80,7 +80,7 @@ class TestTeamMembershipSet(unittest.TestCase):
         self.assertEqual(marilize, membership.proposed_by)
         self.assertEqual(membership.proponent_comment, "I'd like to join")
         self.failUnless(
-            membership.date_proposed <= datetime.now(pytz.timezone('UTC')))
+            membership.date_proposed <= datetime.now(pytz.UTC))
         self.assertEqual(membership.reviewed_by, None)
         self.assertEqual(membership.acknowledged_by, None)
 
@@ -110,7 +110,7 @@ class TestTeamMembershipSet(unittest.TestCase):
         # Now we need to cheat and set the expiration date of both memberships
         # manually because otherwise we would only be allowed to set an
         # expiration date in the future.
-        now = datetime.now(pytz.timezone('UTC'))
+        now = datetime.now(pytz.UTC)
         from zope.security.proxy import removeSecurityProxy
         sample_person_on_motu = removeSecurityProxy(
             self.membershipset.getByPersonAndTeam(sample_person, motu))
@@ -439,9 +439,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.team2 = factory.makeTeam(self.foobar)
         self.team3 = factory.makeTeam(self.foobar)
 
-    # XXX gary 2009-09-19 bug=433323
-    # Disabled because of spurious test failure.
-    def disabled_test_proponent_is_stored(self):
+    def test_proponent_is_stored(self):
         for status in [TeamMembershipStatus.DEACTIVATED,
                        TeamMembershipStatus.EXPIRED,
                        TeamMembershipStatus.DECLINED]:
@@ -459,7 +457,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
             self.failUnlessEqual(tm.proposed_by, self.foobar)
             self.failUnlessEqual(tm.proponent_comment, "Did it 'cause I can")
             self.failUnless(
-                tm.date_proposed <= datetime.now(pytz.timezone('UTC')))
+                tm.date_proposed <= datetime.now(pytz.UTC))
             # Destroy the membership so that we can create another in a
             # different state.
             tm.destroySelf()
@@ -483,7 +481,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
             self.failUnlessEqual(
                 tm.acknowledger_comment, "Did it 'cause I can")
             self.failUnless(
-                tm.date_acknowledged <= datetime.now(pytz.timezone('UTC')))
+                tm.date_acknowledged <= datetime.now(pytz.UTC))
             # Destroy the membership so that we can create another in a
             # different state.
             tm.destroySelf()
@@ -515,7 +513,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
                 self.failUnlessEqual(
                     tm.reviewer_comment, "Did it 'cause I can")
                 self.failUnless(
-                    tm.date_reviewed <= datetime.now(pytz.timezone('UTC')))
+                    tm.date_reviewed <= datetime.now(pytz.UTC))
 
                 # Destroy the membership so that we can create another in a
                 # different state.
@@ -531,7 +529,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.failIf(
             tm.datejoined, "There can be no datejoined at this point.")
         tm.setStatus(TeamMembershipStatus.APPROVED, self.foobar)
-        now = datetime.now(pytz.timezone('UTC'))
+        now = datetime.now(pytz.UTC)
         self.failUnless(tm.datejoined <= now)
 
         # We now set the status to deactivated and change datejoined to a

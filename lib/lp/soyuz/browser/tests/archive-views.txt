@@ -304,16 +304,18 @@ Remove the testing PPA dependency to not influence subsequent tests.
     >>> login(ANONYMOUS)
 
 The ArchiveView also provides the latest updates ordered by the date
-they were published:
+they were published. We include any relevant builds for failures.
 
     >>> def print_latest_updates(latest_updates):
     ...     for update in latest_updates:
-    ...         print "%s - %s" % (
+    ...         arch_tags = [build.arch_tag for build in update['builds']]
+    ...         print "%s - %s %s" % (
     ...             update['title'],
-    ...             update['status']
+    ...             update['status'],
+    ...             " ".join(arch_tags),
     ...             )
     >>> print_latest_updates(view.latest_updates)
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
     iceweasel - Successfully built
 
@@ -326,7 +328,7 @@ is from most recent.
     >>> login(ANONYMOUS)
     >>> print_latest_updates(view.latest_updates)
     iceweasel - Successfully built
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
 
 The ArchiveView also includes a helper method to return the number of
@@ -1284,28 +1286,8 @@ Then we will create a testing publication, that will be restricted.
     >>> hoary = ubuntu.getSeries('hoary')
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
-    >>> def _create_source():
-    ...     """Create source with meaningful '.changes' file."""
-    ...     archive = cprov.archive
-    ...     version = '1.0-1'
-    ...     new_version = '2.0-1'
-    ...     changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_%s_binary/foocomm_%s_i386.changes' % ((version,)*2)
-    ... 
-    ...     changesfile_content = ''
-    ...     handle = open(changesfile_path, 'r')
-    ...     try:
-    ...         changesfile_content = handle.read()
-    ...     finally:
-    ...         handle.close()
-    ... 
-    ...     changesfile_content = changesfile_content.replace(
-    ...          version, new_version)
-    ...     source = test_publisher.getPubSource(
-    ...         sourcename='foocomm', archive=archive, version=new_version,
-    ...         changes_file_content=changesfile_content, distroseries=hoary)
-    ... 
-    ...     return source
-    >>> private_source = _create_source()
+    >>> private_source = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
     >>> transaction.commit()
 
 Now, as Celso we will try to copy the just created 'private' source to

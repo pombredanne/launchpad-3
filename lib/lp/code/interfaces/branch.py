@@ -68,7 +68,6 @@ from lp.code.enums import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
@@ -723,13 +722,13 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def isBranchMergeable(other_branch):
         """Is the other branch mergeable into this branch (or vice versa)."""
 
-    def addLandingTarget(registrant, target_branch, dependent_branch=None,
+    def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
                          whiteboard=None, date_created=None,
                          needs_review=False, initial_comment=None,
                          review_requests=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
-        Both the target_branch and the dependent_branch, if it is there,
+        Both the target_branch and the prerequisite_branch, if it is there,
         must be branches of the same project as the source branch.
 
         Branches without associated projects, junk branches, cannot
@@ -737,7 +736,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
 
         :param registrant: The person who is adding the landing target.
         :param target_branch: Must be another branch, and different to self.
-        :param dependent_branch: Optional but if it is not None, it must be
+        :param prerequisite_branch: Optional but if it is not None, it must be
             another branch.
         :param whiteboard: Optional.  Just text, notes or instructions
             pertinant to the landing such as testing notes.
@@ -786,6 +785,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         :param extras: Zero or more path segments that will be joined onto the
             end of the URL (with `bzrlib.urlutils.join`).
         """
+
+    browse_source_url = Attribute(
+        "The URL of the source browser for this branch.")
 
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
@@ -1227,10 +1229,11 @@ def bazaar_identity(branch, is_dev_focus):
             'series': use_series.name}
 
     if branch.sourcepackage is not None:
-        distro_package = branch.sourcepackage.distribution_sourcepackage
-        linked_branch = ICanHasLinkedBranch(distro_package)
-        if linked_branch.branch == branch:
-            return lp_prefix + linked_branch.bzr_path
+        if is_dev_focus:
+            return "%(prefix)s%(distro)s/%(packagename)s" % {
+            'prefix': lp_prefix,
+            'distro': branch.distroseries.distribution.name,
+            'packagename': branch.sourcepackagename.name}
         suite_sourcepackages = branch.associatedSuiteSourcePackages()
         # Take the first link if there is one.
         if len(suite_sourcepackages) > 0:

@@ -1,4 +1,4 @@
-#!${buildout:executable}
+#! /usr/bin/env ${buildout:directory}/bin/py
 ##############################################################################
 #
 # Copyright (c) 2004 Zope Corporation and Contributors.
@@ -14,7 +14,11 @@
 ##############################################################################
 """Test script
 """
-import sys, os, time, logging, warnings, re
+
+# NOTE: This is a generated file.  The original is in
+# buildout-templates/bin/test.in
+
+import logging, os, re, sys, time, warnings
 
 BUILD_DIR = '${buildout:directory}'
 
@@ -30,16 +34,16 @@ if os.getsid(0) == os.getsid(os.getppid()):
 
 # Make tests run in a timezone no launchpad developers live in.
 # Our tests need to run in any timezone.
-# (No longer actually required, as PQM does this)
+# (This is no longer actually required, as PQM does this.)
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
 
-# Enable Storm's C extensions
+# Enable Storm's C extensions.
 os.environ['STORM_CEXTENSIONS'] = '1'
 
-sys.path[0:0] = [${string-paths}]
-
-# Set PYTHONPATH environment variable for spawned processes
+# Set PYTHONPATH environment variable for spawned processes.
+# This is the kind of use case for the site.py fork we have in lib (see the
+# comment in that file). :-(
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
 # Set a flag if this is the main testrunner process

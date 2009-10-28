@@ -595,12 +595,10 @@ class TeamInvitationView(LaunchpadFormView):
         return "Make %s a member of %s" % (
             self.context.person.displayname, self.context.team.displayname)
 
-    # XXX BarryWarsaw 2009-09-14 bug 429663.  Because this view is subordinate
-    # to the ~person in its context, no +hierarchy adapter can be found.  This
-    # means the page has no breadcrumbs and no proper page title.  For
-    # expediency during the 3.0 conversion work, we'll just set the page title
-    # to its label and move on.
-    page_title = label
+    @property
+    def page_title(self):
+        return smartquote(
+            '"%s" team invitation') % self.context.team.displayname
 
     def browserDefault(self, request):
         return self, ()
@@ -844,7 +842,7 @@ class CommonMenuLinks:
 
     def related_software_summary(self):
         target = '+related-software'
-        text = 'Summary'
+        text = 'Related software'
         return Link(target, text, icon='info')
 
     def maintained(self):
@@ -856,21 +854,21 @@ class CommonMenuLinks:
     def uploaded(self):
         target = '+uploaded-packages'
         text = 'Uploaded packages'
-        return Link(target, text, icon='info')
+        enabled = bool(
+            self.person.getLatestUploadedButNotMaintainedPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def ppa(self):
-        # XXX: salgado, 2009-09-09, bug=426899: Need to conditionally disable
-        # this link.
         target = '+ppa-packages'
-        text = 'PPA packages'
-        return Link(target, text, icon='info')
+        text = 'Related PPA packages'
+        enabled = bool(self.person.getLatestUploadedPPAPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def projects(self):
-        # XXX: salgado, 2009-09-09, bug=426900: Need to conditionally disable
-        # this link.
         target = '+related-projects'
         text = 'Related projects'
-        return Link(target, text, icon='info')
+        enabled = bool(self.person.getOwnedOrDrivenPillars())
+        return Link(target, text, enabled=enabled, icon='info')
 
 
 class PersonMenuMixin(CommonMenuLinks):
@@ -1073,7 +1071,7 @@ class PersonEditNavigationMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Special')
     def sshkeys(self):
         target = '+editsshkeys'
-        text = 'SSH Keys'
+        text = 'SSH keys'
         return Link(target, text)
 
     def gpgkeys(self):
@@ -1140,7 +1138,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def proposed_members(self):
         target = '+editproposedmembers'
-        text = 'Approve/Decline applicants'
+        text = 'Approve or decline members'
         return Link(target, text, icon='add')
 
     def map(self):
@@ -1255,7 +1253,8 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'join', 'leave', 'add_my_teams',
-             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa']
+             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa',
+             'related_software_summary']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -4664,16 +4663,20 @@ class PersonEditEmailsView(LaunchpadFormView):
 class TeamMugshotView(LaunchpadView):
     """A view for the team mugshot (team photo) page"""
 
-    label = "Who's in this team?"
+    label = "Member photos"
+    batch_size = config.launchpad.mugshot_batch_size
 
     def initialize(self):
         """Cache images to avoid dying from a million cuts."""
-        getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
-
+        getUtility(IPersonSet).cacheBrandingForPeople(
+            self.members.currentBatch())
 
     @cachedproperty
-    def allmembers(self):
-        return list(self.context.allmembers)
+    def members(self):
+        """Get a batch of all members in the team."""
+        batch_nav = BatchNavigator(
+            self.context.allmembers, self.request, size=self.batch_size)
+        return batch_nav
 
 
 class TeamReassignmentView(ObjectReassignmentView):

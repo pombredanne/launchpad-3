@@ -68,6 +68,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
@@ -304,7 +305,7 @@ class Branch(SQLBase):
         return self.target.areBranchesMergeable(target_branch.target)
 
     def addLandingTarget(self, registrant, target_branch,
-                         dependent_branch=None, whiteboard=None,
+                         prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
                          initial_comment=None, review_requests=None,
                          review_diff=None):
@@ -320,17 +321,17 @@ class Branch(SQLBase):
             raise InvalidBranchMergeProposal(
                 '%s is not mergeable into %s' % (
                     self.displayname, target_branch.displayname))
-        if dependent_branch is not None:
-            if not self.isBranchMergeable(dependent_branch):
+        if prerequisite_branch is not None:
+            if not self.isBranchMergeable(prerequisite_branch):
                 raise InvalidBranchMergeProposal(
                     '%s is not mergeable into %s' % (
-                        dependent_branch.displayname, self.displayname))
-            if self == dependent_branch:
+                        prerequisite_branch.displayname, self.displayname))
+            if self == prerequisite_branch:
                 raise InvalidBranchMergeProposal(
-                    'Source and dependent branches must be different.')
-            if target_branch == dependent_branch:
+                    'Source and prerequisite branches must be different.')
+            if target_branch == prerequisite_branch:
                 raise InvalidBranchMergeProposal(
-                    'Target and dependent branches must be different.')
+                    'Target and prerequisite branches must be different.')
 
         target = BranchMergeProposalGetter.activeProposalsForBranches(
             self, target_branch)
@@ -355,8 +356,9 @@ class Branch(SQLBase):
 
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
-            target_branch=target_branch, dependent_branch=dependent_branch,
-            whiteboard=whiteboard, date_created=date_created,
+            target_branch=target_branch,
+            prerequisite_branch=prerequisite_branch, whiteboard=whiteboard,
+            date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status, review_diff=review_diff)
 
@@ -434,13 +436,20 @@ class Branch(SQLBase):
         return urlutils.join(root, self.unique_name, *extras)
 
     @property
+    def browse_source_url(self):
+        return self.codebrowse_url('files')
+
+    @property
     def bzr_identity(self):
         """See `IBranch`."""
-        # XXX: JonathanLange 2009-03-19 spec=package-branches bug=345740: This
-        # should not dispatch on product is None.
+        # Should probably put this into the branch target.
         if self.product is not None:
             series_branch = self.product.development_focus.branch
             is_dev_focus = (series_branch == self)
+        elif self.distroseries is not None:
+            distro_package = self.sourcepackage.distribution_sourcepackage
+            linked_branch = ICanHasLinkedBranch(distro_package)
+            is_dev_focus = (linked_branch.branch == self)
         else:
             is_dev_focus = False
         return bazaar_identity(self, is_dev_focus)
@@ -541,7 +550,7 @@ class Branch(SQLBase):
                     _('This branch is the target branch of this merge'
                     ' proposal.'), merge_proposal.deleteProposal))
         for merge_proposal in BranchMergeProposal.selectBy(
-            dependent_branch=self):
+            prerequisite_branch=self):
             alteration_operations.append(ClearDependentBranch(merge_proposal))
 
         for bugbranch in self.bug_branches:
@@ -1003,14 +1012,15 @@ class DeletionCallable(DeletionOperation):
 
 
 class ClearDependentBranch(DeletionOperation):
-    """Deletion operation that clears a merge proposal's dependent branch."""
+    """Delete operation that clears a merge proposal's prerequisite branch."""
 
     def __init__(self, merge_proposal):
         DeletionOperation.__init__(self, merge_proposal,
-            _('This branch is the dependent branch of this merge proposal.'))
+            _('This branch is the prerequisite branch of this merge'
+              ' proposal.'))
 
     def __call__(self):
-        self.affected_object.dependent_branch = None
+        self.affected_object.prerequisite_branch = None
         self.affected_object.syncUpdate()
 
 

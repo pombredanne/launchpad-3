@@ -832,7 +832,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         """
         return self.user is not None
 
-    @action(_('Add Comment'), name='comment', condition=canAddComment)
+    @action(_('Just Add a Comment'), name='comment', condition=canAddComment)
     def comment_action(self, action, data):
         """Add a comment to a resolved question."""
         self.context.addComment(self.user, data['message'])

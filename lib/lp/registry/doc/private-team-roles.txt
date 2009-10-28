@@ -332,16 +332,15 @@ A public team and a private team can be a project owner but a private
 membership team cannot.
 
     >>> # The registrant must be specified or it will default to the owner.
-    >>> product = factory.makeProduct(registrant=admin_user, owner=public_team)
-    >>> product = factory.makeProduct(registrant=admin_user, owner=priv_team)
-
-    >>> product = factory.makeProduct(registrant=admin_user, owner=pm_team)
+    >>> product = factory.makeProduct(registrant=admin_user)
+    >>> product.owner = public_team
+    >>> product.owner = priv_team
+    >>> product.owner = pm_team
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <Product at...
-
 
 Driver
 ------
@@ -417,6 +416,55 @@ private membership team cannot.
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <ProductSeries at...
+
+
+Product Release Roles
+=====================
+
+Owner
+-----
+
+A public team and a private team can be a product series owner but a
+private membership team cannot.
+
+    >>> product = factory.makeProduct(registrant=admin_user,
+    ...                               owner=public_team)
+    >>> product_series = factory.makeProductSeries(product, owner=public_team)
+    >>> product_milestone = factory.makeMilestone(
+    ...     product=product, productseries=product_series)
+    >>> product_release = factory.makeProductRelease(
+    ...     product=product, milestone=product_milestone)
+    >>> product_release.owner = public_team
+    >>> product_release.owner = priv_team
+    >>> product_release.owner = pm_team
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <ProductRelease at...
+
+Some artifacts of a product change ownership when the product owner
+changes.  The artifacts are product series, product release, and
+translation import queue entries.
+
+    >>> product = factory.makeProduct(registrant=admin_user)
+    >>> product_series = factory.makeProductSeries(
+    ...     product=product, owner=public_team)
+    >>> product_release = factory.makeProductRelease(product=product)
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     ITranslationImportQueue)
+    >>> import_queue = getUtility(ITranslationImportQueue)
+    >>> entry = import_queue.addOrUpdateEntry(
+    ...     u'po/sr.po', 'foo', True, public_team,
+    ...      productseries=product_series)
+    >>> product.owner = public_team
+    >>> product.owner = priv_team
+    >>> product.owner = pm_team
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <Product at...
 
 
 Team Membership

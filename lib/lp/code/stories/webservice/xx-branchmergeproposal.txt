@@ -43,9 +43,9 @@ We use the webservice as an unrelated, unprivileged user.
     date_queued: None
     date_review_requested: None
     date_reviewed: None
-    dependent_branch_link: None
     merge_reporter_link: None
     merged_revno: None
+    prerequisite_branch_link: None
     preview_diff_link: None
     private: False
     queue_position: None
@@ -73,6 +73,7 @@ The comments on a branch merge proposal are exposed through the API.
     >>> print len(all_comments['entries'])
     2
     >>> pprint_entry(all_comments['entries'][0])
+    as_quoted_email: u'> This is great work'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
     id: 1
     message_body: u'This is great work'
@@ -85,6 +86,7 @@ The comments on a branch merge proposal are exposed through the API.
     >>> comment_2 = webservice.named_get(
     ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
     >>> pprint_entry(comment_2)
+    as_quoted_email: u'> This is mediocre work.'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
     id: 2
     message_body: u'This is mediocre work.'
@@ -146,11 +148,14 @@ A review can be requested of the person 'target'.
 
 Now the code review should be made.
 
-    >>> comment = reviewer_webservice.named_post(
+    >>> comment_result = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'createComment',
     ...     subject='Great work', content='This is great work',
-    ...     vote=CodeReviewVote.APPROVE.title, review_type='code').jsonBody()
+    ...     vote=CodeReviewVote.APPROVE.title, review_type='code')
+    >>> comment_link = comment_result.getHeader('Location')
+    >>> comment = reviewer_webservice.get(comment_link).jsonBody()
     >>> pprint_entry(comment)
+    as_quoted_email: u'> This is great work'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
     id: 3
     message_body: u'This is great work'
@@ -226,11 +231,11 @@ The diff is now visible through the merge proposal.
     branch_merge_proposal_link:
       u'http://.../~source/fooix/fix-it/+merge/1'
     conflicts: u'oh, no conflicts'
-    dependent_revision_id: None
     diff_lines_count: 7
     diff_text_link:
       u'http://.../~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
     diffstat: {u'fooix.txt': [0, 0]}
+    prerequisite_revision_id: None
     removed_lines_count: 0
     resource_type_link: u'http://.../#preview_diff'
     self_link:

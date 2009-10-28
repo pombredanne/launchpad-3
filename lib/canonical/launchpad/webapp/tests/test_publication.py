@@ -115,6 +115,9 @@ class TestWebServicePublication(TestCaseWithFactory):
         # Ensure the OOPS mentions the correct exception
         self.assertNotEqual(repr(next_oops).find("DisconnectionError"), -1)
 
+        # Ensure the OOPS is correctly marked as informational only.
+        self.assertEqual(next_oops.informational, 'True')
+
         # Ensure that it is different to the last logged OOPS.
         self.assertNotEqual(repr(last_oops), repr(next_oops))
 

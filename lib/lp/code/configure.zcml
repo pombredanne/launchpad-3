@@ -202,7 +202,7 @@
                     registrant
                     source_branch
                     target_branch
-                    dependent_branch
+                    prerequisite_branch
                     whiteboard
                     queue_status
                     private
@@ -355,6 +355,9 @@
       provides="lp.code.interfaces.branchlookup.ILinkedBranchTraverser">
     <allow interface="lp.code.interfaces.branchlookup.ILinkedBranchTraverser"/>
   </securedutility>
+  <adapter factory="lp.code.model.branchlookup.ProductTraversable" />
+  <adapter factory="lp.code.model.branchlookup.DistributionTraversable" />
+  <adapter factory="lp.code.model.branchlookup.DistroSeriesTraversable" />
   <securedutility
       class="lp.code.model.branchscanner.BranchScanner"
       provides="lp.code.interfaces.branchscanner.IBranchScanner">
@@ -431,6 +434,7 @@
                     getMergeQueue
                     revisions_since
                     code_is_browseable
+                    browse_source_url
                     code_import
                     bzr_identity
                     canBeDeleted

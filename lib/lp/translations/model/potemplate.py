@@ -24,7 +24,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, LeftJoin, Or, SQL
+from storm.expr import Alias, And, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
@@ -36,7 +36,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, flush_database_updates, sqlvalues)
+    SQLBase, quote, quote_like, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.utilities.rosettastats import RosettaStats
@@ -405,7 +405,7 @@ class POTemplate(SQLBase, RosettaStats):
         return POTMsgSet.selectOne(' AND '.join(clauses),
                                    clauseTables=['TranslationTemplateItem'])
 
-    def getPOTMsgSets(self, current=True):
+    def getPOTMsgSets(self, current=True, prefetch=True):
         """See `IPOTemplate`."""
         clauses = self._getPOTMsgSetSelectionClauses()
 
@@ -416,11 +416,31 @@ class POTemplate(SQLBase, RosettaStats):
         query = POTMsgSet.select(" AND ".join(clauses),
                                  clauseTables=['TranslationTemplateItem'],
                                  orderBy=['TranslationTemplateItem.sequence'])
-        return query.prejoin(['msgid_singular', 'msgid_plural'])
+        if prefetch:
+            query = query.prejoin(['msgid_singular', 'msgid_plural'])
+
+        return query
+
+    def getTranslationCredits(self):
+        """See `IPOTemplate`."""
+        # Find potential credits messages by the message ids.
+        store = IStore(POTemplate)
+        credits_ids = ",".join(map(quote, POTMsgSet.credits_message_ids))
+        origin1 = Join(TranslationTemplateItem,
+                       TranslationTemplateItem.potmsgset == POTMsgSet.id)
+        origin2 = Join(POMsgID, POTMsgSet.msgid_singular == POMsgID.id)
+        result = store.using(POTMsgSet, origin1, origin2).find(
+            POTMsgSet, TranslationTemplateItem.potemplate == self,
+                       "pomsgid.msgid IN (%s)" % credits_ids)
+        # Filter these candidates because is_translation_credit checks for
+        # more conditions than the special msgids.
+        for potmsgset in result:
+            if potmsgset.is_translation_credit:
+                yield potmsgset
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
-        results = self.getPOTMsgSets(current)
+        results = self.getPOTMsgSets(current, prefetch=False)
         return results.count()
 
     def getPOTMsgSetByID(self, id):
@@ -644,7 +664,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def expireAllMessages(self):
         """See `IPOTemplate`."""
-        for potmsgset in self.getPOTMsgSets():
+        for potmsgset in self.getPOTMsgSets(prefetch=False):
             potmsgset.setSequence(self, 0)
 
     def _lookupLanguage(self, language_code):
@@ -782,9 +802,9 @@ class POTemplate(SQLBase, RosettaStats):
         return DummyPOFile(self, language, variant=variant, owner=requester)
 
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
-                                  context=None):
+                                  context=None, sequence=0):
         """See `IPOTemplate`."""
-        return POTMsgSet(
+        potmsgset = POTMsgSet(
             context=context,
             msgid_singular=msgid_singular,
             msgid_plural=msgid_plural,
@@ -794,6 +814,15 @@ class POTemplate(SQLBase, RosettaStats):
             filereferences=None,
             sourcecomment=None,
             flagscomment=None)
+
+        potmsgset.setSequence(self, sequence)
+        if potmsgset.is_translation_credit:
+            for language in self.languages():
+                pofile = self.getPOFileByLang(language.code)
+                if pofile is not None:
+                    potmsgset.setTranslationCreditsToTranslated(pofile)
+
+        return potmsgset
 
     def getOrCreatePOMsgID(self, text):
         """Creates or returns existing POMsgID for given `text`."""
@@ -807,7 +836,7 @@ class POTemplate(SQLBase, RosettaStats):
         return msgid
 
     def createMessageSetFromText(self, singular_text, plural_text,
-                                 context=None):
+                                 context=None, sequence=0):
         """See `IPOTemplate`."""
 
         msgid_singular = self.getOrCreatePOMsgID(singular_text)
@@ -820,7 +849,7 @@ class POTemplate(SQLBase, RosettaStats):
             " primary msgid and context '%r'" % context)
 
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
-                                              context)
+                                              context, sequence)
 
     def getOrCreateSharedPOTMsgSet(self, singular_text, plural_text,
                                    context=None):
@@ -834,8 +863,7 @@ class POTemplate(SQLBase, RosettaStats):
                                          context, sharing_templates=True)
         if potmsgset is None:
             potmsgset = self.createMessageSetFromText(
-                singular_text, plural_text, context)
-            potmsgset.setSequence(self, 0)
+                singular_text, plural_text, context, sequence=0)
         return potmsgset
 
     def importFromQueue(self, entry_to_import, logger=None, txn=None):
@@ -1106,10 +1134,12 @@ class POTemplateSubset:
         elif len(result) == 1:
             return result[0]
         else:
+            templates = ['"%s"' % template.displayname for template in result]
+            templates.sort()
             log.warn(
-                "Found multiple templates with translation domain '%s'.  "
-                "There should be only one."
-                % translation_domain)
+                "Found %d competing templates with translation domain '%s': "
+                "%s."
+                % (len(templates), translation_domain, '; '.join(templates)))
             return None
 
     def getPOTemplateByPath(self, path):
@@ -1157,6 +1187,19 @@ class POTemplateSubset:
             return None
         else:
             return closest_template
+
+    def findUniquePathlessMatch(self, filename):
+        """See `IPOTemplateSubset`."""
+        query = self.query + (
+            " AND (POTemplate.path = %s OR POTemplate.path LIKE '%%/' || %s)"
+                % (quote(filename), quote_like(filename)))
+        candidates = list(POTemplate.select(query, limit=2))
+
+        if len(candidates) == 1:
+            # Found exactly one match.
+            return candidates[0]
+        else:
+            return None
 
 
 class POTemplateSet:

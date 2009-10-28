@@ -38,7 +38,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, DistroSeriesStatus)
-from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.person import (
+    IPerson, validate_person_not_private_membership)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -61,7 +62,6 @@ from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-from lp.registry.interfaces.person import validate_public_person
 
 
 # Period to wait before entries with terminal statuses are removed from
@@ -120,7 +120,8 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False)
     importer = ForeignKey(
         dbName='importer', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership,
+        notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
@@ -166,12 +167,28 @@ class TranslationImportQueueEntry(SQLBase):
         assert importer.isTemplateName(self.path), (
             "We cannot handle file %s here: not a template." % self.path)
 
-        # It's an IPOTemplate
         potemplate_set = getUtility(IPOTemplateSet)
-        return potemplate_set.getPOTemplateByPathAndOrigin(
+        candidate = potemplate_set.getPOTemplateByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
+        if candidate is not None:
+            # This takes care of most of the auto-approvable cases.
+            return candidate
+
+        directory, filename = os.path.split(self.path)
+        if not directory:
+            # Uploads don't always have paths associated with them, but
+            # there may still be a unique single active template with
+            # the right filename.
+            subset = potemplate_set.getSubset(
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename,
+                productseries=self.productseries, iscurrent=True)
+            return subset.findUniquePathlessMatch(filename)
+
+        # I give up.
+        return None
 
     @property
     def _guessed_potemplate_for_pofile_from_path(self):

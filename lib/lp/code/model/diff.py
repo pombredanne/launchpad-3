@@ -12,7 +12,7 @@ from cStringIO import StringIO
 
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.patches import parse_patches
+from bzrlib.patches import parse_patches, Patch
 from bzrlib.merge import Merge3Merger
 from lazr.delegates import delegates
 import simplejson
@@ -188,6 +188,8 @@ class Diff(SQLBase):
         """
         file_stats = {}
         for patch in parse_patches(diff_bytes.splitlines(True)):
+            if not isinstance(patch, Patch):
+                continue
             path = patch.newname.split('\t')[0]
             file_stats[path] = tuple(patch.stats_values()[:2])
         return file_stats
@@ -256,7 +258,7 @@ class PreviewDiff(Storm):
 
     target_revision_id = Unicode(allow_none=False)
 
-    dependent_revision_id = Unicode()
+    prerequisite_revision_id = Unicode(name='dependent_revision_id')
 
     conflicts = Unicode()
 
@@ -285,20 +287,21 @@ class PreviewDiff(Storm):
 
     @classmethod
     def create(cls, diff_content, source_revision_id, target_revision_id,
-               dependent_revision_id, conflicts):
+               prerequisite_revision_id, conflicts):
         """Create a PreviewDiff with specified values.
 
         :param diff_content: The text of the dift, as bytes.
         :param source_revision_id: The revision_id of the source branch.
         :param target_revision_id: The revision_id of the target branch.
-        :param dependent_revision_id: The revision_id of the dependent branch.
+        :param prerequisite_revision_id: The revision_id of the prerequisite
+            branch.
         :param conflicts: The conflicts, as text.
         :return: A `PreviewDiff` with specified values.
         """
         preview = cls()
         preview.source_revision_id = source_revision_id
         preview.target_revision_id = target_revision_id
-        preview.dependent_revision_id = dependent_revision_id
+        preview.prerequisite_revision_id = prerequisite_revision_id
         preview.conflicts = conflicts
 
         filename = generate_uuid() + '.txt'
@@ -318,10 +321,10 @@ class PreviewDiff(Storm):
             # This is the simple frequent case.
             return True
 
-        # More complex involves the dependent branch too.
-        if (bmp.dependent_branch is not None and
-            (self.dependent_revision_id !=
-             bmp.dependent_branch.last_scanned_id)):
+        # More complex involves the prerequisite branch too.
+        if (bmp.prerequisite_branch is not None and
+            (self.prerequisite_revision_id !=
+             bmp.prerequisite_branch.last_scanned_id)):
             return True
         else:
             return False
