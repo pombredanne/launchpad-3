@@ -18,6 +18,9 @@ __all__ = [
 from apt_pkg import ParseSrcDepends
 from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
+from zope.formlib.form import FormFields
+
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import helpers
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -90,7 +93,15 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     usedfor = ISourcePackage
     facet = 'overview'
     links = [
-        'packaging', 'edit_packaging', 'changelog', 'builds', 'set_upstream']
+        'distribution_source_package', 'packaging', 'edit_packaging',
+        'changelog', 'builds', 'set_upstream',
+        ]
+
+    def distribution_source_package(self):
+        target = canonical_url(self.context.distribution_sourcepackage)
+        text = 'All versions of %s source in %s' % (
+            self.context.name, self.context.distribution.displayname)
+        return Link(target, text, icon='package-source')
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
@@ -121,19 +132,50 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
 
 class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
+    """A view to set the `IProductSeries` of a sourcepackage."""
     schema = ISourcePackage
     field_names = ['productseries']
 
-    label = 'Define upstream link'
+    label = 'Link to an upstream project'
     page_title = label
 
     @property
     def cancel_url(self):
         return canonical_url(self.context)
 
+    def setUpFields(self):
+        """ See `LaunchpadFormView`.
+
+        The productseries field is required by the view.
+        """
+        super(SourcePackageChangeUpstreamView, self).setUpFields()
+        field = copy_field(ISourcePackage['productseries'], required=True)
+        self.form_fields = self.form_fields.omit('productseries')
+        self.form_fields = self.form_fields + FormFields(field)
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`.
+
+        Set the current `IProductSeries` as the default value.
+        """
+        super(SourcePackageChangeUpstreamView, self).setUpWidgets()
+        if self.context.productseries is not None:
+            widget = self.widgets.get('productseries')
+            widget.setRenderedValue(self.context.productseries)
+
+    def validate(self, data):
+        productseries = data.get('productseries', None)
+        if productseries is None:
+            message = "You must choose a project series."
+            self.setFieldError('productseries', message)
+
     @action(_("Change"), name="change")
     def change(self, action, data):
-        self.context.setPackaging(data['productseries'], self.user)
+        productseries = data['productseries']
+        if self.context.productseries == productseries:
+            # There is nothing to do.
+            return
+        self.context.setPackaging(productseries, self.user)
         self.request.response.addNotification('Upstream link updated.')
         self.next_url = canonical_url(self.context)
 
