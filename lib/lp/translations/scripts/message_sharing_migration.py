@@ -285,15 +285,18 @@ class MessageSharingMerge(LaunchpadScript):
         if self.txn is None:
             return
 
-        self.logger.debug("Object count: %d." % len(gc.get_objects()))
+        objcount = len(gc.objects())
+        memsize = open("/proc/%s/statm" % os.getpid()).read().split()[5]
+        self.logger.debug("Object count: %d.  Memory size: %s" % (
+            objcount, memsize))
+
         if self.options.dry_run:
             if not intermediate:
                 self.txn.abort()
         else:
             self.txn.commit()
-        freed = gc.collect()
-        self.logger.debug("Freed %d objects.  Memory size: %s" % (
-            freed, open("/proc/%s/statm" % os.getpid()).read().split()[5]))
+
+        self.logger.debug("Freeing %d objects." % gc.collect())
 
     def _removeDuplicateMessages(self, potemplates):
         """Get rid of duplicate `TranslationMessages` where needed."""
