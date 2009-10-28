@@ -216,6 +216,16 @@ filenames.
     >>> src_match.group(3)
     'tar.gz'
 
+    >>> src_match = re_issource.match('foo_1.0.tar.bz2')
+    >>> src_match.group(0)
+    'foo_1.0.tar.bz2'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'tar.bz2'
+
     >>> src_match = re_issource.match('foo_1.0.diff.gz')
     >>> src_match.group(0)
     'foo_1.0.diff.gz'
@@ -236,12 +246,65 @@ filenames.
     >>> src_match.group(3)
     'dsc'
 
+    >>> src_match = re_issource.match('foo_1.0.debian.tar.gz')
+    >>> src_match.group(0)
+    'foo_1.0.debian.tar.gz'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'debian.tar.gz'
+
+    >>> src_match = re_issource.match('foo_1.0.debian.tar.bz2')
+    >>> src_match.group(0)
+    'foo_1.0.debian.tar.bz2'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'debian.tar.bz2'
+
+    >>> src_match = re_issource.match('foo_1.0.orig-foo.tar.gz')
+    >>> src_match.group(0)
+    'foo_1.0.orig-foo.tar.gz'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'orig-foo.tar.gz'
+
+    >>> src_match = re_issource.match('foo_1.0.orig-bar.tar.bz2')
+    >>> src_match.group(0)
+    'foo_1.0.orig-bar.tar.bz2'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'orig-bar.tar.bz2'
+
+    >>> src_match = re_issource.match('foo_1.0.porig-bar.tar.bz2')
+    >>> src_match.group(0)
+    'foo_1.0.porig-bar.tar.bz2'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0.porig-bar'
+    >>> src_match.group(3)
+    'tar.bz2'
+
 And finally some failures:
 
     >>> re_isadeb.match('foo-bar_1.0_i386.bed') is None
     True
 
     >>> re_issource.match('foo_1.0.c') is None
+    True
+
+    >>> re_issource.match('foo_1.0.diff.bz2') is None
     True
 
 However a custom upload is essencially a tarball, so it also matches

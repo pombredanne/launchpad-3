@@ -31,7 +31,7 @@ from canonical.encoding import guess as guess_encoding, ascii_smash
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
-re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
+re_issource = re.compile(r"(.+)_(.+?)\.(orig(?:-.+)?\.tar\.(?:gz|bz2|lzma)|diff\.gz|(?:debian\.)?tar\.(?:gz|bz2|lzma)|dsc)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
 re_no_revision = re.compile(r"-[^-]+$")
