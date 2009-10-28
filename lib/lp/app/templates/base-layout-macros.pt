@@ -218,35 +218,35 @@
 
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/lazr/assets/skins/sam/lazr.css"
+      string:${icingroot}/lazr/build/lazr/assets/skins/sam/lazr.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/inlineedit/assets/skins/sam/editor.css"
+      string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/autocomplete/assets/skins/sam/autocomplete.css"
+      string:${icingroot}/lazr/build/autocomplete/assets/skins/sam/autocomplete.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/overlay/assets/skins/sam/pretty-overlay.css"
+      string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/formoverlay/assets/formoverlay.css"
+      string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/picker/assets/skins/sam/picker.css"
+      string:${icingroot}/lazr/build/picker/assets/skins/sam/picker.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/activator/assets/skins/sam/activator.css"
+      string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/choiceedit/assets/choiceedit-core.css"
+      string:${icingroot}/lazr/build/choiceedit/assets/choiceedit-core.css"
       />
 </metal:launchpad-stylesheet>
 
