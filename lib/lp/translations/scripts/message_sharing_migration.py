@@ -157,6 +157,8 @@ class MessageSharingMerge(LaunchpadScript):
 
     template_set = None
 
+    commit_count = 0
+
     def add_my_options(self):
         self.parser.add_option('-d', '--distribution', dest='distribution',
             help="Distribution to merge messages for.")
@@ -285,18 +287,22 @@ class MessageSharingMerge(LaunchpadScript):
         if self.txn is None:
             return
 
-        objcount = len(gc.objects())
-        memsize = open("/proc/%s/statm" % os.getpid()).read().split()[5]
-        self.logger.debug("Object count: %d.  Memory size: %s" % (
-            objcount, memsize))
+        if self.commit_count % 100 == 0 or not intermediate:
+            objcount = len(gc.get_objects())
+            memsize = open("/proc/%s/statm" % os.getpid()).read().split()[5]
+            self.logger.debug("Object count: %d.  Memory size: %s" % (
+                objcount, memsize))
+
+        self.commit_count += 1
+
+        if intermediate and self.commit_count % 10 != 0:
+            return
 
         if self.options.dry_run:
             if not intermediate:
                 self.txn.abort()
         else:
             self.txn.commit()
-
-        self.logger.debug("Freeing %d objects." % gc.collect())
 
     def _removeDuplicateMessages(self, potemplates):
         """Get rid of duplicate `TranslationMessages` where needed."""
@@ -421,12 +427,12 @@ class MessageSharingMerge(LaunchpadScript):
         that's sorted out in the nested dicts).
         """
         tm = removeSecurityProxy(tm)
-        msgstr_ids = [
+        msgstr_ids = tuple([
             getattr(tm, 'msgstr%dID' % form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)
-            ]
+            ])
             
-        return (tm.language, tm.variant) + tuple(msgstr_ids)
+        return (tm.potemplateID, tm.languageID, tm.variant) + msgstr_ids
 
     def _scrubPOTMsgSetTranslations(self, potmsgset):
         """Map out translations for `potmsgset`, and eliminate duplicates.
