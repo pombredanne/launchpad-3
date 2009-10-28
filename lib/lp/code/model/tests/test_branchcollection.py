@@ -787,6 +787,42 @@ class TestSearch(TestCaseWithFactory):
         search_results = self.collection.search(branch.codebrowse_url())
         self.assertEqual([branch], list(search_results))
 
+    def test_exact_match_bzr_identity(self):
+        # If you search for the bzr identity of a branch, then you get a
+        # single result with that branch.
+        branch = self.factory.makeAnyBranch()
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search(branch.bzr_identity)
+        self.assertEqual([branch], list(search_results))
+
+    def test_exact_match_bzr_identity_development_focus(self):
+        # If you search for the development focus and it is set, you get a
+        # single result with the development focus branch.
+        fooix = self.factory.makeProduct(name='fooix')
+        branch = self.factory.makeProductBranch(product=fooix)
+        run_with_login(
+            fooix.owner, setattr, fooix.development_focus,
+            'branch', branch)
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('lp://dev/fooix')
+        self.assertEqual([branch], list(search_results))
+
+    def test_bad_match_bzr_identity_development_focus(self):
+        # If you search for the development focus for a project where one
+        # isn't set, you get an empty search result.
+        fooix = self.factory.makeProduct(name='fooix')
+        branch = self.factory.makeProductBranch(product=fooix)
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('lp://dev/fooix')
+        self.assertEqual([], list(search_results))
+
+    def test_bad_match_bzr_identity_no_project(self):
+        # If you search for the development focus for a project where one
+        # isn't set, you get an empty search result.
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('lp://dev/fooix')
+        self.assertEqual([], list(search_results))
+
     def test_exact_match_url_trailing_slash(self):
         # Sometimes, users are inconsiderately unaware of our arbitrary
         # database restrictions and will put trailing slashes on their search

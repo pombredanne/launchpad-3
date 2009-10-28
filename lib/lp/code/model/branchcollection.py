@@ -289,7 +289,13 @@ class GenericBranchCollection:
         branch_set = getUtility(IBranchLookup)
         branch = branch_set.getByUniqueName(search_term)
         if branch is None:
-            branch = branch_set.getByUrl(search_term)
+            try:
+                branch = branch_set.getByUrl(search_term)
+            except Exception:
+                # getByUrl can raise many different exceptions, but at the
+                # base of it all, if any are raised, then we didn't find the
+                # branch.
+                branch = None
         return branch
 
     def search(self, search_term):
