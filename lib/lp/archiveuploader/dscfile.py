@@ -348,11 +348,22 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         We don't use the NascentUploadFile.verify here, only verify size
         and checksum.
         """
-        has_tar = False
+
+        diff_count = 0
+        orig_tar_count = 0
+        native_tar_count = 0
+
         files_missing = False
         for sub_dsc_file in self.files:
-            if sub_dsc_file.filename.endswith("tar.gz"):
-                has_tar = True
+            if sub_dsc_file.filename.endswith(".diff.gz"):
+                diff_count += 1
+            elif sub_dsc_file.filename.endswith(".orig.tar.gz"):
+                orig_tar_count += 1
+            elif sub_dsc_file.filename.endswith(".tar.gz"):
+                native_tar_count += 1
+            else:
+                yield UploadError('Unknown file: ' + sub_dsc_file.filename)
+
             try:
                 library_file, file_archive = self._getFileByName(
                     sub_dsc_file.filename)
@@ -397,10 +408,33 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield error
                 files_missing = True
 
+        # Reject if we have more than one file of any type.
+        if orig_tar_count > 1:
+            yield UploadError(
+                "%s: has more than one orig.tar.gz."
+                % self.filename)
+        if diff_count > 1:
+            yield UploadError(
+                "%s: has more than one diff.gz."
+                % self.filename)
+        if native_tar_count > 1:
+            yield UploadError(
+                "%s: has more than one tar.gz."
+                % self.filename)
 
-        if not has_tar:
+        if orig_tar_count == 0 and native_tar_count == 0:
             yield UploadError(
                 "%s: does not mention any tar.gz or orig.tar.gz."
+                % self.filename)
+
+        if orig_tar_count > 0 and native_tar_count > 0:
+            yield UploadError(
+                "%s: has both a tar.gz and orig.tar.gz."
+                % self.filename)
+
+        if diff_count == 0 and native_tar_count == 0:
+            yield UploadError(
+                "%s: has neither a diff.gz nor a tar.gz."
                 % self.filename)
 
         if files_missing:

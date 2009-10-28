@@ -81,10 +81,6 @@ class NascentUpload:
     archindep = False
     archdep = False
 
-    # Defined in check_sourceful_consistency()
-    native = False
-    hasorig = False
-
     # Defined if we successfully do_accept() and storeObjectsInDatabase()
     queue_root = None
 
@@ -302,53 +298,29 @@ class NascentUpload:
         """Heuristic checks on a sourceful upload.
 
         Raises AssertionError when called for a non-sourceful upload.
-        Ensures a sourceful upload has, at least:
-
-         * One DSC
-         * One or none DIFF
-         * One or none ORIG
-         * One or none TAR
-         * If no DIFF is present it must have a TAR (native)
-
-        'hasorig' and 'native' attributes are set when an ORIG and/or an
-        TAR file, respectively, are present.
+        Ensures a sourceful upload has exactly one DSC.
         """
         assert self.sourceful, (
             "Source consistency check called for a non-source upload")
 
         dsc = 0
-        diff = 0
-        orig = 0
-        tar = 0
 
         for uploaded_file in self.changes.files:
             if uploaded_file.filename.endswith(".dsc"):
                 dsc += 1
-            elif uploaded_file.filename.endswith(".diff.gz"):
-                diff += 1
-            elif uploaded_file.filename.endswith(".orig.tar.gz"):
-                orig += 1
-            elif (uploaded_file.filename.endswith(".tar.gz")
-                  and not isinstance(uploaded_file, CustomUploadFile)):
-                tar += 1
 
         # Okay, let's check the sanity of the upload.
+        # Debian source format 3.0 is rather different, so we can't
+        # sanely perform more complete checks here (we don't know the
+        # format yet).
+        # XXX: What about orphaned files? How will that work?
+        #      I think we might need to verify that all source files are
+        #      claimed by a dsc.
         if dsc > 1:
             self.reject("Changes file lists more than one .dsc")
-        if diff > 1:
-            self.reject("Changes file lists more than one .diff.gz")
-        if orig > 1:
-            self.reject("Changes file lists more than one orig.tar.gz")
-        if tar > 1:
-            self.reject("Changes file lists more than one native tar.gz")
 
         if dsc == 0:
             self.reject("Sourceful upload without a .dsc")
-        if diff == 0 and tar == 0:
-            self.reject("Sourceful upload without a diff or native tar")
-
-        self.native = bool(tar)
-        self.hasorig = bool(orig)
 
     def _check_binaryful_consistency(self):
         """Heuristic checks on a binaryful upload.
