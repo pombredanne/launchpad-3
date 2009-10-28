@@ -27,7 +27,6 @@ WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
 API_INDEX = lib/canonical/launchpad/apidoc/index.html
 
 EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
-				$(shell $(HERE)/utilities/yui-deps.py) \
 				lib/canonical/launchpad/icing/lazr/build/lazr.js
 
 # DO NOT ALTER : this should just build by default
@@ -122,7 +121,16 @@ pagetests: build
 
 inplace: build
 
-build: $(BZR_VERSION_INFO) compile apidoc
+build: $(BZR_VERSION_INFO) compile apidoc jsbuild
+
+jsbuild_lazr:
+	${SHHH} bin/jsbuild -b lazr-js/build
+
+jsbuild: jsbuild_lazr
+	${SHHH} bin/jsbuild \
+		-n launchpad -s lib/canonical/launchpad/javascript \
+		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES) \
+		$(shell $(HERE)/utilities/yui-deps.py)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -150,9 +158,6 @@ compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
-	${SHHH} $(PY) sourcecode/lazr-js/tools/build.py \
-		-n launchpad -s lib/canonical/launchpad/javascript \
-		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -352,4 +357,5 @@ ID: compile
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge check_mailman check_config
+	reload-apache hosted_branches check_db_merge check_mailman check_config\
+	jsbuild

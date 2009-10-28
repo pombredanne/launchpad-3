@@ -1655,7 +1655,7 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.packaging.PackagingAddView"
         facet="overview"
-        permission="launchpad.Edit"
+        permission="launchpad.View"
         template="../templates/productseries-packaging.pt"/>
     <browser:page
         name="+ubuntupkg"
@@ -1663,7 +1663,7 @@
         template="../templates/productseries-ubuntupkg.pt"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
-        permission="zope.Public"/>
+        permission="launchpad.View"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
@@ -2000,9 +2000,6 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         facet="overview"
         permission="zope.Public">
-        <browser:page
-            name="+portlet-upstream"
-            template="../templates/sourcepackage-portlet-upstream.pt"/>
         <browser:page
             name="+portlet-releases"
             template="../templates/sourcepackage-portlet-releases.pt"/>

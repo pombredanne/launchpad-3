@@ -530,7 +530,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             description="test file")
 
     def makeProduct(self, *args, **kwargs):
-        """As makeProductNoCommit with an implicit transaction commit.
+        """As makeProductNoCommit with an explicit transaction commit.
 
         This ensures that generated owners and registrants are fully
         flushed and available from all Stores.
@@ -1566,14 +1566,12 @@ class LaunchpadObjectFactory(ObjectFactory):
                                     create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      context=None, sequence=None):
+                      context=None, sequence=0):
         """Make a new `POTMsgSet` in the given template."""
         if singular is None and plural is None:
             singular = self.getUniqueString()
         potmsgset = potemplate.createMessageSetFromText(
-            singular, plural, context=context)
-        if sequence is not None:
-            potmsgset.setSequence(potemplate, sequence)
+            singular, plural, context, sequence)
         naked_potmsgset = removeSecurityProxy(potmsgset)
         naked_potmsgset.sync()
         return potmsgset

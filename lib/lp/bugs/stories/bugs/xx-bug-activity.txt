@@ -34,6 +34,14 @@ The activity log itself is presented as a table.
     2005-08-10 16:30:47 | Sample Person | bug |  |  | assigned to source ...
     2006-02-24 21:34:52 | Foo Bar | mozilla-firefox: statusexplanation |  |  |
 
+The bug page contains a link to the activity log.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/debian/+source/'
+    ...     'mozilla-firefox/+bug/3')
+    >>> print anon_browser.getLink('See full activity log').url
+    http://.../+bug/3/+activity
+
 
 == Activity interleaved with comments ==
 
