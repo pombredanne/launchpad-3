@@ -29,12 +29,12 @@ The view also defines a next_url and cancel_url.
 
 A helper function to test date handling.
 
-  >>> def create_sprint_attendance_view(sprint, dates, is_physical=True):
+  >>> def create_sprint_attendance_view(sprint, dates):
   ...     time_starts, time_ends = dates
   ...     form = {
   ...         'field.time_starts': time_starts,
   ...         'field.time_ends': time_ends,
-  ...         'field.is_physical': is_physical,
+  ...         'field.is_physical': 'on',
   ...         'field.actions.register': 'Register'}
   ...     return create_initialized_view(sprint, name='+attend', form=form)
 
@@ -94,6 +94,48 @@ Sample Person is now listed as an attendee.
   True
 
 
+Physical attendance
+-------------------
+
+The most common kind of attendance is that the user will be physically present
+at the sprint.
+
+    >>> person = factory.makePerson(name='brown')
+    >>> login_person(person)
+    >>> form = {
+    ...     'field.time_starts': '2005-10-07 09:00',
+    ...     'field.time_ends': '2005-10-17 19:05',
+    ...     'field.is_physical': 'on',
+    ...     'field.actions.register': 'Register'}
+    >>> view = create_initialized_view(ubz, name='+attend', form=form)
+    >>> view.errors
+    []
+
+    >>> [sprint_attendance] = [attendance for attendance in ubz.attendances
+    ...                        if attendance.attendee.name == 'brown']
+    >>> sprint_attendance.is_physical
+    True
+
+Some users attend the sprint virtually, such as via IRC, VOIP, or by using
+their psychotic powers :).
+
+    >>> person = factory.makePerson(name='black')
+    >>> login_person(person)
+    >>> form = {
+    ...     'field.time_starts': '2005-10-07 09:00',
+    ...     'field.time_ends': '2005-10-17 19:05',
+    ...     'field.is_physical': 'off',
+    ...     'field.actions.register': 'Register'}
+    >>> view = create_initialized_view(ubz, name='+attend', form=form)
+    >>> view.errors
+    []
+
+    >>> [sprint_attendance] = [attendance for attendance in ubz.attendances
+    ...                        if attendance.attendee.name == 'black']
+    >>> sprint_attendance.is_physical
+    False
+
+
 The +attend view
 ----------------
 
@@ -127,8 +169,8 @@ It also requires the attendee field so that a user can register someone else.
     >>> form = {
     ...     'field.attendee': 'greene',
     ...     'field.time_starts': '2005-10-07 09:00',
-    ...     'field.time_ends': '2005-10-17 09:00',
-    ...     'field.is_physical': True,
+    ...     'field.time_ends': '2005-10-17 19:05',
+    ...     'field.is_physical': 'on',
     ...     'field.actions.register': 'Register'}
     >>> view = create_initialized_view(ubz, name='+register', form=form)
     >>> view.errors
@@ -136,7 +178,7 @@ It also requires the attendee field so that a user can register someone else.
 
     >>> for attendee in ubz.attendees:
     ...     print attendee.name
-    greene name12
+    black brown greene name12
 
 
 Exporting the list of attendees

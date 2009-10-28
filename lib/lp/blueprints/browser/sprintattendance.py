@@ -142,7 +142,8 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
     @action(_('Register'), name='register')
     def register_action(self, action, data):
         time_starts, time_ends = self.getDates(data)
-        self.context.attend(self.user, time_starts, time_ends)
+        is_physical = data['is_physical']
+        self.context.attend(self.user, time_starts, time_ends, is_physical)
 
 
 class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
@@ -160,4 +161,6 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     @action(_('Register'), name='register')
     def register_action(self, action, data):
         time_starts, time_ends = self.getDates(data)
-        self.context.attend(data['attendee'], time_starts, time_ends)
+        is_physical = data['is_physical']
+        self.context.attend(
+            data['attendee'], time_starts, time_ends, is_physical)
