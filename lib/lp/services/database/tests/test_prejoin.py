@@ -27,7 +27,7 @@ class PrejoinTestCase(TestCase):
         # All products
         self.standard_result = self.store.find(Product).order_by(Product.name)
 
-        # All products, with owner and preferred email address prejoind.
+        # All products, with owner and preferred email address prejoined.
         # Note that because some Product owners have multiple email
         # addresses, this query returns more results. prejoin needs
         # to hide this from callsites.
@@ -36,16 +36,16 @@ class PrejoinTestCase(TestCase):
             Product._ownerID == Person.id).order_by(Product.name)
         self.prejoin_result = prejoin(self.unwrapped_result)
 
-    def verify(self, prejoind, normal):
-        # Ensure our prejoind result really is a PrejoinResultSet.
+    def verify(self, prejoined, normal):
+        # Ensure our prejoined result really is a PrejoinResultSet.
         # One of our methods might not be sticky, and we have ended up
         # with a normal Storm ResultSet.
         self.assertTrue(
-            isinstance(prejoind, PrejoinResultSet),
-            "Expected a PrejoinResultSet, got %s" % repr(prejoind))
+            isinstance(prejoined, PrejoinResultSet),
+            "Expected a PrejoinResultSet, got %s" % repr(prejoined))
 
         # Confirm the two result sets return identical results.
-        self.assertEqual(list(normal), list(prejoind))
+        self.assertEqual(list(normal), list(prejoined))
 
     def test_count(self):
         self.assertEqual(
