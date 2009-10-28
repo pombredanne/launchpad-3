@@ -40,6 +40,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.utilities.rosettastats import RosettaStats
+from lp.services.database.precache import precache
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -1051,48 +1052,18 @@ class POTemplateSubset:
             if just_for_count:
                 query = store.find(POTemplate, condition)
             else:
-                query = store.using(
-                    POTemplate, Join(
-                        SourcePackageName,
-                        (POTemplate.sourcepackagenameID ==
-                         SourcePackageName.id))
-                ).find((POTemplate, SourcePackageName), condition)
+                query = precache(store.find(
+                    (POTemplate, SourcePackageName),
+                    (POTemplate.sourcepackagenameID ==
+                     SourcePackageName.id), condition))
         if ordered and not just_for_count:
             return query.order_by(self.orderby)
         return query
 
-    def _generate(self, result):
-        """Return only POTemplate instances from the result.
-
-        SourcePackageName needs to be in the query for distroseries, though,
-        to make storm fill POTemplate.sourcepackagename without an extra
-        query."""
-        if self.productseries is not None:
-            for potemplate in result:
-                yield potemplate
-        else:
-            for potemplate, sourcepackagename in result:
-                yield potemplate
-
-    def _one(self, result):
-        """Return only the POTemplate instance from the result.
-
-        SourcePackageName needs to be in the query for distroseries, though,
-        to make storm fill POTemplate.sourcepackagename without an extra
-        query."""
-        if self.productseries is not None:
-            potemplate = result.one()
-        else:
-            one_result = result.one()
-            if one_result is not None:
-                potemplate, sourcepackagename = one_result
-            else:
-                potemplate = None
-        return potemplate
-
     def __iter__(self):
         """See `IPOTemplateSubset`."""
-        return self._generate(self._build_query())
+        for potemplate in self._build_query():
+            yield potemplate
 
     def __len__(self):
         """See `IPOTemplateSubset`."""
@@ -1158,7 +1129,7 @@ class POTemplateSubset:
         """See `IPOTemplateSubset`."""
         result = self._build_query('POTemplate.name = %s' % sqlvalues(name),
                                    ordered=False)
-        return self._one(result)
+        return result.one()
 
     def getPOTemplateByTranslationDomain(self, translation_domain):
         """See `IPOTemplateSubset`."""
@@ -1167,7 +1138,7 @@ class POTemplateSubset:
                                                         translation_domain))
 
         # Fetch up to 2 templates, to check for duplicates.
-        matches = self._generate(query_result.config(limit=2))
+        matches = query_result.config(limit=2)
 
         result = [match for match in matches]
         if len(result) == 0:
@@ -1187,13 +1158,12 @@ class POTemplateSubset:
         """See `IPOTemplateSubset`."""
         result = self._build_query('POTemplate.path = %s' % quote(path),
                                    ordered=False)
-        return self._one(result)
+        return result.one()
 
     def getAllOrderByDateLastUpdated(self):
         """See `IPOTemplateSet`."""
         result = self._build_query(ordered=False)
-        return self._generate(result.order_by(
-                                Desc(POTemplate.date_last_updated)))
+        return result.order_by(Desc(POTemplate.date_last_updated))
 
     def getClosestPOTemplate(self, path):
         """See `IPOTemplateSubset`."""
@@ -1227,7 +1197,7 @@ class POTemplateSubset:
             "(POTemplate.path = %s OR POTemplate.path LIKE '%%/' || %s)"
                 % (quote(filename), quote_like(filename)),
                 ordered=False)
-        candidates = list(self._generate(result.config(limit=2)))
+        candidates = list(result.config(limit=2))
 
         if len(candidates) == 1:
             # Found exactly one match.
