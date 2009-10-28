@@ -1049,32 +1049,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
-        current = self.secure_record
 
-        if current.binarypackagerelease.architecturespecific:
-            try:
-                target_architecture = distroseries[
-                    current.distroarchseries.architecturetag]
-            except NotFoundError:
-                return []
-            destination_architectures = [target_architecture]
-        else:
-            destination_architectures = distroseries.architectures
-
-        copies = []
-        for architecture in destination_architectures:
-            copy = getUtility(IPublishingSet).newBinaryPublication(
-                archive,
-                self.binarypackagerelease,
-                architecture,
-                current.component,
-                current.section,
-                current.priority,
-                pocket
-                )
-            copies.append(copy)
-
-        return copies
+        return getUtility(IPublishingSet).copyBinariesTo(
+            [self], distroseries, pocket, archive)
 
     def getAncestry(self, archive=None, distroseries=None, pocket=None,
                     status=None):
@@ -1133,7 +1110,7 @@ class PublishingSet:
         secure_copies = []
 
         for binary in binaries:
-            secure_binary = self.secure_record
+            secure_binary = binary.secure_record
 
             target_component = override_component or secure_binary.component
 
@@ -1169,7 +1146,10 @@ class PublishingSet:
         # One day, this will not be necessary when we have time to kill
         # the Secure* records.
         copy_ids = [secure_copy.id for secure_copy in secure_copies]
-        return BinaryPackagePublishingHistory.get(copy_ids)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.id.is_in(copy_ids))
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
