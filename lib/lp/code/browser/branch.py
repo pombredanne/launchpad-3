@@ -1153,6 +1153,12 @@ class RegisterProposalSchema(Interface):
         description=_(
             "The branch that the source branch will be merged into."))
 
+    prerequisite_branch = Choice(
+        title=_('Prerequisite Branch'),
+        vocabulary='Branch', required=False, readonly=False,
+        description=_(
+            'A Branch that should be merged before this one.'))
+
     comment = Text(
         title=_('Initial Comment'), required=False,
         description=_('Describe your change.'))
@@ -1206,6 +1212,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         registrant = self.user
         source_branch = self.context
         target_branch = data['target_branch']
+        prerequisite_branch = data['prerequisite_branch']
 
         review_requests = []
         reviewer = data.get('reviewer')
@@ -1217,7 +1224,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                needs_review=True, initial_comment=data.get('comment'),
+                prerequisite_branch=prerequisite_branch, needs_review=True,
+                initial_comment=data.get('comment'),
                 review_requests=review_requests)
 
             self.next_url = canonical_url(proposal)
