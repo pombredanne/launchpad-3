@@ -1015,29 +1015,29 @@ class POTemplateSubset:
 
         # Construct the base clauses.
         if productseries is not None:
-            self.clauses.append('POTemplate.productseries = %s' %
-                                sqlvalues(productseries.id))
+            self.clauses.append(
+                POTemplate.productseriesID == productseries.id)
         else:
-            self.clauses.append('POTemplate.distroseries = %s ' %
-                                sqlvalues(distroseries.id))
+            self.clauses.append(
+                POTemplate.distroseriesID == distroseries.id)
             if from_sourcepackagename is not None:
                 self.clauses.append(
-                    'POTemplate.from_sourcepackagename = %s' %
-                    sqlvalues(from_sourcepackagename.id))
+                    POTemplate.from_sourcepackagenameID ==
+                        from_sourcepackagename.id)
                 self.sourcepackagename = from_sourcepackagename
             elif sourcepackagename is not None:
-                self.clauses.append('POTemplate.sourcepackagename = %s' %
-                                    sqlvalues(sourcepackagename.id))
+                self.clauses.append(
+                    POTemplate.sourcepackagename == sourcepackagename.id)
             else:
-                # Select all source package names in a distribution.
+                # Select all POTemplates in a Distroseries.
                 pass
         # Add the filter for the iscurrent flag if requested.
         if iscurrent is not None:
             self.clauses.append(
-                "POTemplate.iscurrent=%s" % sqlvalues(iscurrent))
+                POTemplate.iscurrent == iscurrent)
 
     def _build_query(self, additional_clause=None,
-                     ordered=True, just_for_count=False):
+                     ordered=True, do_prejoin=True):
         """Construct the storm query."""
         if additional_clause is None:
             condition = And(self.clauses)
@@ -1049,14 +1049,15 @@ class POTemplateSubset:
             query = store.find(POTemplate, condition)
         else:
             store = Store.of(self.distroseries)
-            if just_for_count:
-                query = store.find(POTemplate, condition)
-            else:
+            if do_prejoin:
                 query = prejoin(store.find(
                     (POTemplate, SourcePackageName),
                     (POTemplate.sourcepackagenameID ==
                      SourcePackageName.id), condition))
-        if ordered and not just_for_count:
+            else:
+                query = store.find(POTemplate, condition)
+
+        if ordered:
             return query.order_by(self.orderby)
         return query
 
@@ -1067,7 +1068,7 @@ class POTemplateSubset:
 
     def __len__(self):
         """See `IPOTemplateSubset`."""
-        result = self._build_query(just_for_count=True)
+        result = self._build_query(do_prejoin=False, ordered=False)
         return result.count()
 
     def __getitem__(self, name):
@@ -1127,15 +1128,13 @@ class POTemplateSubset:
 
     def getPOTemplateByName(self, name):
         """See `IPOTemplateSubset`."""
-        result = self._build_query('POTemplate.name = %s' % sqlvalues(name),
-                                   ordered=False)
+        result = self._build_query(POTemplate.name == name, ordered=False)
         return result.one()
 
     def getPOTemplateByTranslationDomain(self, translation_domain):
         """See `IPOTemplateSubset`."""
         query_result = self._build_query(
-            'POTemplate.translation_domain = %s' % sqlvalues(
-                                                        translation_domain))
+            POTemplate.translation_domain == translation_domain)
 
         # Fetch up to 2 templates, to check for duplicates.
         matches = query_result.config(limit=2)
@@ -1156,8 +1155,8 @@ class POTemplateSubset:
 
     def getPOTemplateByPath(self, path):
         """See `IPOTemplateSubset`."""
-        result = self._build_query('POTemplate.path = %s' % quote(path),
-                                   ordered=False)
+        result = self._build_query(
+            POTemplate.path == path, ordered=False)
         return result.one()
 
     def getAllOrderByDateLastUpdated(self):
@@ -1194,8 +1193,8 @@ class POTemplateSubset:
     def findUniquePathlessMatch(self, filename):
         """See `IPOTemplateSubset`."""
         result = self._build_query(
-            "(POTemplate.path = %s OR POTemplate.path LIKE '%%/' || %s)"
-                % (quote(filename), quote_like(filename)),
+            ("(POTemplate.path = %s OR POTemplate.path LIKE '%%%%/' || %s)"
+                % (quote(filename), quote_like(filename))),
                 ordered=False)
         candidates = list(result.config(limit=2))
 
