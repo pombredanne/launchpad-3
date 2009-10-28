@@ -32,4 +32,4 @@ class SprintAttendance(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
-    is_physical = BoolCol(dbName='is_physical', notNull=True, default=False)
+    is_physical = BoolCol(dbName='is_physical', notNull=True, default=True)

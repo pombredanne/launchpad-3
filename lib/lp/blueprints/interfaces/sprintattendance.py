@@ -36,4 +36,4 @@ class ISprintAttendance(Interface):
     is_physical = Bool(
         title=_("Will you be physically present?"),
         description=_("False implies your attendance is virtual."),
-        required=False, readonly=False, default=False)
+        required=False, readonly=False, default=True)

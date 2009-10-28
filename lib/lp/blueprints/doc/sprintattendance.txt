@@ -43,10 +43,10 @@ time_start and time_end attributes respectively.
 
 SprintAttendance records whether the user intend to be physically present
 at the sprint; a false value implies virtual attendance. The default value
-is false.
+is true.
 
     >>> sprint_attendance.is_physical
-    False
+    True
 
 The is_physical value can be specified when a SprintAttendance instance is
 created.
@@ -55,6 +55,6 @@ created.
     >>> sprint_attendance_2 = SprintAttendance(
     ...     sprint=sprint, attendee=person_2,
     ...     time_starts=time_starts, time_ends=time_ends,
-    ...     is_physical=True)
+    ...     is_physical=False)
     >>> sprint_attendance_2.is_physical
-    True
+    False
