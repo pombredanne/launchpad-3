@@ -10,35 +10,21 @@ __all__ = []
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
+from lp.translations.windmill.testing import TranslationsWindmillLayer
+from lp.testing import TestCaseWithFactory
 
-class ImportQueueErrorOutputTest:
+
+class ImportQueueErrorOutputTest(TestCaseWithFactory):
     """Test interactive error output display in the import queue UI."""
 
-    def __init__(self, name=None,
-                 url='http://translations.launchpad.net:8085/+imports',
-                 suite='translations', user=lpuser.TRANSLATIONS_ADMIN):
-        """Create a new ImportQueueErrorOutputTest.
-
-        :param name: Name of the test.
-        :param url: Start at, default
-            http://translation.launchpad.net:8085/+imports.
-        :param suite: The test suite that this test is part of.
-        :param user: The user who should be logged in.
-        """
-        self.url = url
-        if name is None:
-            self.__name__ = 'test_%s_documentation_links' % suite
-        else:
-            self.__name__ = name
-        self.suite = suite
-        self.user = user
+    layer = TranslationsWindmillLayer
 
     def _checkOutputPanel(self, client, panel_xpath):
         client.waits.forElement(xpath=panel_xpath, timeout=u'5000')
         # XXX JeroenVermeulen 2009-04-21 bug=365176: Check panel
         # contents here!
 
-    def __call__(self):
+    def test_import_queue_error_output(self):
         """Run test.
 
         The test:
@@ -47,10 +33,13 @@ class ImportQueueErrorOutputTest:
         * tests that the error output can be revealed interactively;
         * tests that the error output can be hidden again.
         """
-        client = WindmillTestClient(self.suite)
+        client = WindmillTestClient("Translation imports error reporting")
 
-        self.user.ensure_login(client)
-        client.open(url=self.url)
+        start_url = 'http://translations.launchpad.dev:8085/+imports'
+        user = lpuser.TRANSLATIONS_ADMIN
+
+        user.ensure_login(client)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=u'20000')
 
         placeholder = u"//div[@id='1']//div[@class='original show-output']"
@@ -74,8 +63,4 @@ class ImportQueueErrorOutputTest:
         # state as when it was first revealed.
         client.click(xpath=show_button)
         self._checkOutputPanel(client, output_panel)
-
-
-test_import_queue_error_output = ImportQueueErrorOutputTest(
-    name='test_import_queue_error_output')
 

@@ -39,7 +39,7 @@ class DocumentationLinksTest(TestCaseWithFactory):
         """
         client = WindmillTestClient("Translation documentation links")
 
-        start_url = self.layer.base_url #windmill.settings['TEST_URL']
+        start_url = 'http://translations.launchpad.dev:8085/'
         user = lpuser.TRANSLATIONS_ADMIN
 
 
