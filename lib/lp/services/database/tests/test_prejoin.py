@@ -8,8 +8,6 @@ __all__ = []
 
 import unittest
 
-from storm.expr import And, Join, LeftJoin
-
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.person import Person
