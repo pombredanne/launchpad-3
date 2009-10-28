@@ -22,6 +22,7 @@ from canonical.widgets.date import DateTimeWidget
 class BaseSprintAttendanceAddView(LaunchpadFormView):
 
     schema = ISprintAttendance
+    field_names = ['time_starts', 'time_ends']
     custom_widget('time_starts', DateTimeWidget)
     custom_widget('time_ends', DateTimeWidget)
 
@@ -121,8 +122,6 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
 
 class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
     """A view used to register your attendance at a sprint."""
-
-    field_names = ['time_starts', 'time_ends']
 
     label = "Register your attendance"
 

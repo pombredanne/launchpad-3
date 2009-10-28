@@ -1,9 +1,25 @@
-Sprint Attendance Page
-======================
+Sprint Attendance Pages
+=======================
 
 SprintAttendanceAddView is the view that handles attendance to meetings.
+The view descends from BaseSprintAttendanceAddView which provides date
+handling.
 
-First we define a helper function.
+    >>> from lp.blueprints.browser.sprintattendance import (
+    ...     BaseSprintAttendanceAddView)
+    >>> from canonical.launchpad.interfaces import ISprintSet
+
+    >>> ubz = getUtility(ISprintSet)['ubz']
+    >>> sprint_attendance_view = create_view(ubz, name='+attend')
+    >>> isinstance(sprint_attendance_view, BaseSprintAttendanceAddView)
+    True
+
+The view captures the user's time_start and time_ends attendance.
+
+    >>> sprint_attendance_view.field_names
+    ['time_starts', 'time_ends']
+
+A helper function to test date handling.
 
   >>> def create_sprint_attendance_view(sprint, dates):
   ...     time_starts, time_ends = dates
@@ -13,12 +29,7 @@ First we define a helper function.
   ...         'field.actions.register': 'Register'}
   ...     return create_initialized_view(sprint, name='+attend', form=form)
 
-Grab the sprint we'll need to test this view.
-
-  >>> from canonical.launchpad.interfaces import ISprintSet
-  >>> ubz = getUtility(ISprintSet)['ubz']
-
-This sprint doesn't have any attendees.
+This sprint doesn't have any attendees. It dose have the required dates set.
 
   >>> [attendee.name for attendee in ubz.attendees]
   []
