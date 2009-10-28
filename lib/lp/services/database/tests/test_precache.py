@@ -91,6 +91,15 @@ class PrecacheTestCase(TestCase):
             Product.name == 'firefox'))
         self.assertEqual(standard_result.one(), precache_result.one())
 
+    def test_one_empty(self):
+        # For an empty result (None), one returns None, too.
+        name = "none-existent-name"
+        precache_result = precache(self.store.find(
+            (Product, Person),
+            Person.id == Product._ownerID,
+            Product.name == name))
+        self.assertIs(None, precache_result.one())
+
     def test_cache_populated(self):
         # Load a row.
         product = self.precache_result.first()
