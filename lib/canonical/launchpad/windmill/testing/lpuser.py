@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = []
 
+from canonical.launchpad.windmill.testing import constants
+
 
 class LaunchpadUser:
     """Object representing well-known user on Launchpad."""
@@ -17,27 +19,33 @@ class LaunchpadUser:
 
     def ensure_login(self, client):
         """Ensure that this user is logged on the page under windmill."""
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         result = client.asserts.assertNode(
-            link=u'Log in / Register', assertion=False)
-        if not result['result']:
-            # User is probably logged in.
-            # Check under which name they are logged in.
-            result = client.commands.execJS(
-                code="""lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
-            if (result['result'] is not None and
-                result['result'].strip() == self.display_name):
-                # We are logged as that user.
-                return
-            client.click(name="logout")
-            client.waits.forElement(
-                link=u'Log in / Register', timeout=u'20000')
-        client.click(link=u'Log in / Register')
-        client.waits.forPageLoad(timeout=u'20000')
-        client.waits.forElement(timeout=u'8000', id=u'email')
+            name=u'loginpage_submit_login', assertion=False)
+        already_on_login_page = result['result']
+        if not already_on_login_page:
+            result = client.asserts.assertNode(
+                link=u'Log in / Register', assertion=False)
+            if not result['result']:
+                # User is probably logged in.
+                # Check under which name they are logged in.
+                result = client.commands.execJS(
+                    code="""lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
+                if (result['result'] is not None and
+                    result['result'].strip() == self.display_name):
+                    # We are logged as that user.
+                    return
+                client.click(name="logout")
+                client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+                client.waits.forElement(
+                    link=u'Log in / Register', timeout=constants.FOR_ELEMENT)
+            client.click(link=u'Log in / Register')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forElement(timeout=constants.FOR_ELEMENT, id=u'email')
         client.type(text=self.email, id=u'email')
         client.type(text=self.password, id=u'password')
         client.click(name=u'loginpage_submit_login')
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
 
 class AnonymousUser:
@@ -45,13 +53,14 @@ class AnonymousUser:
 
     def ensure_login(self, client):
         """Ensure that the user is surfing anonymously."""
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         result = client.asserts.assertNode(
             link=u'Log in / Register', assertion=False)
         if result['result']:
             return
-        client.waits.forElement(name="logout", timeout=u"100000")
+        client.waits.forElement(name="logout", timeout=constants.FOR_ELEMENT)
         client.click(name="logout")
-        client.waits.forPageLoad(timeout=u'100000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
 
 def login_person(person, password, client):

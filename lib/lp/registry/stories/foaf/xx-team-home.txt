@@ -191,10 +191,10 @@ Team owners and admins can see a link to approve and decline applicants.
     Pending approval
     Sample Person
     Andrew Bennetts
-    Approve/Decline applicants
+    Approve or decline members
 
-    >>> owner_browser.getLink('Approve/Decline applicants')
-    <Link text='Approve/Decline applicants' url='.../+editproposedmembers'>
+    >>> owner_browser.getLink('Approve or decline members')
+    <Link text='Approve or decline members' url='.../+editproposedmembers'>
 
 
 == Non members ==

@@ -1736,3 +1736,11 @@ class BaseWindmillLayer(AppServerLayer):
         if cls.config_file is not None:
             # Close the file so that it gets deleted.
             cls.config_file.close()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # Left-over threads should be harmless, since they should all
+        # belong to Windmill, which will be cleaned up on layer
+        # tear down.
+        BaseLayer.disable_thread_check = True
