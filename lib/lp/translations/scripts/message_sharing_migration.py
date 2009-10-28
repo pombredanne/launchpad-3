@@ -307,6 +307,8 @@ class MessageSharingMerge(LaunchpadScript):
         else:
             self.txn.commit()
 
+        gc.collect()
+
     def _removeDuplicateMessages(self, potemplates):
         """Get rid of duplicate `TranslationMessages` where needed."""
         self._setUpUtilities()
@@ -376,7 +378,14 @@ class MessageSharingMerge(LaunchpadScript):
         subordinates, representative_templates = self._mapRepresentatives(
             potemplates)
 
+        num_representatives = len(subordinates)
+        representative_num = 0
+
         for representative, potmsgsets in subordinates.iteritems():
+            representative_num += 1
+            self.logger.info("Message %d/%d: %d subordinate(s)." % (
+                representative_num, num_representatives, len(potmsgsets)))
+
             seen_potmsgsets = set([representative])
 
             # Merge each subordinate POTMsgSet into its representative.
@@ -424,7 +433,7 @@ class MessageSharingMerge(LaunchpadScript):
                     representative_templates[representative])
                 removeSecurityProxy(subordinate).destroySelf()
 
-            self._endTransaction(intermediate=True)
+                self._endTransaction(intermediate=True)
 
     def _mergeTranslationMessages(self, potemplates):
         """Share `TranslationMessage`s between templates where possible."""
