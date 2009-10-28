@@ -39,6 +39,8 @@ class PrecacheResultSet:
         return PrecacheResultSet(result_set, self.return_slice)
 
     def _chomp(self, row):
+        if row is None:
+            return None
         elems = row[self.return_slice]
         if len(elems) == 1:
             return elems[0]
