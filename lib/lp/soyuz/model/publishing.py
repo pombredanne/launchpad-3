@@ -1115,11 +1115,14 @@ class PublishingSet:
             target_component = override_component or secure_binary.component
 
             if secure_binary.binarypackagerelease.architecturespecific:
+                # If the binary is architecture specific and the target
+                # distroseries does not include the architecture then we
+                # skip the binary and continue.
                 try:
                     target_architecture = distroseries[
                         secure_binary.distroarchseries.architecturetag]
                 except NotFoundError:
-                    return []
+                    continue
                 destination_architectures = [target_architecture]
             else:
                 destination_architectures = distroseries.architectures
