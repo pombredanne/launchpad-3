@@ -21,9 +21,10 @@ class PrejoinResultSet:
     The preferred solution is support in Storm core, so we can just do
     something like:
 
-    >>> results = prejoin( store.find(
-    ...     (Product, Person),
-    ...     Product._ownerID == Person.id))
+    >>> results = store.find(Product).precache(
+    ...     (Person, EmailAddress),
+    ...     Product._ownerID == Person.id,
+    ...     EmailAddress.personID == Person.id)
     """
     delegates(IResultSet, context='result_set')
     def __init__(self, result_set, return_slice=slice(0, 1)):
