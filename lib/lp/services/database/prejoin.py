@@ -1,21 +1,17 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""precache for Storm.
-
-XXX stub 2009-06-18 bug=388798: This feature may be misnamed, should be
-moved to a better location, and needs tests.
-"""
+"""Prejoin for Storm."""
 
 __metaclass__ = type
-__all__ = ['precache']
+__all__ = ['prejoin']
 
 from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
 
-class PrecacheResultSet:
-    """Precache support.
+class PrejoinResultSet:
+    """Prejoin support.
 
     Wrap a ResultSet, trimming unwanted items. The unwanted items
     are still pulled from the database and populate the Storm caches.
@@ -25,10 +21,9 @@ class PrecacheResultSet:
     The preferred solution is support in Storm core, so we can just do
     something like:
 
-    >>> results = store.find(Product).precache(
-    ...     (Person, EmailAddress),
-    ...     Product._ownerID == Person.id,
-    ...     EmailAddress.personID == Person.id)
+    >>> results = prejoin( store.find(
+    ...     (Product, Person),
+    ...     Product._ownerID == Person.id))
     """
     delegates(IResultSet, context='result_set')
     def __init__(self, result_set, return_slice=slice(0, 1)):
@@ -36,7 +31,7 @@ class PrecacheResultSet:
         self.return_slice = return_slice
 
     def _chain(self, result_set):
-        return PrecacheResultSet(result_set, self.return_slice)
+        return PrejoinResultSet(result_set, self.return_slice)
 
     def _chomp(self, row):
         if row is None:
@@ -115,4 +110,4 @@ class PrecacheResultSet:
         """See `IResultSet`."""
         raise NotImplementedError("cached")
 
-precache = PrecacheResultSet
+prejoin = PrejoinResultSet

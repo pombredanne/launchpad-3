@@ -40,7 +40,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.utilities.rosettastats import RosettaStats
-from lp.services.database.precache import precache
+from lp.services.database.prejoin import prejoin
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -1052,7 +1052,7 @@ class POTemplateSubset:
             if just_for_count:
                 query = store.find(POTemplate, condition)
             else:
-                query = precache(store.find(
+                query = prejoin(store.find(
                     (POTemplate, SourcePackageName),
                     (POTemplate.sourcepackagenameID ==
                      SourcePackageName.id), condition))
