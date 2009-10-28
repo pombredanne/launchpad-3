@@ -261,14 +261,17 @@ class MessageSharingMerge(LaunchpadScript):
             self.logger.debug("Templates: %s" % str(templates))
 
             if self.options.remove_duplicates:
+                self.logger.info("Removing duplicate messages.")
                 self._removeDuplicateMessages(templates)
                 self._endTransaction(intermediate=True)
 
             if self.options.merge_potmsgsets:
+                self.logger.info("Merging POTMsgSets.")
                 self._mergePOTMsgSets(templates)
                 self._endTransaction(intermediate=True)
 
             if self.options.merge_translationmessages:
+                self.logger.info("Merging TranslationMessages.")
                 self._mergeTranslationMessages(templates)
 
             self._endTransaction()
@@ -322,10 +325,17 @@ class MessageSharingMerge(LaunchpadScript):
             self._scrubPOTMsgSetTranslations(representative)
             self._endTransaction(intermediate=True)
 
-    def _mergePOTMsgSets(self, potemplates):
-        """Merge POTMsgSets for given sequence of sharing templates."""
-        self._setUpUtilities()
+    def _mapRepresentatives(self, potemplates):
+        """Map out POTMsgSets' subordinates and templates.
 
+        :param potemplates: An equivalence class of `POTemplate`s to
+            sort out.
+        :return: A tuple of dicts.  The first maps each `POTMsgSet`'s
+            key (as returned by `get_potmsgset_key`) to a list of its
+            subordinate `POTMsgSet`s.  The second maps each
+            representative `POTMsgSet` to its representative
+            `POTemplate`.
+        """
         # Map each POTMsgSet key (context, msgid, plural) to its
         # representative POTMsgSet.
         representatives = {}
@@ -356,6 +366,15 @@ class MessageSharingMerge(LaunchpadScript):
                     subordinates[representative].append(potmsgset)
                 else:
                     subordinates[representative] = []
+
+        return subordinates, representative_templates
+
+    def _mergePOTMsgSets(self, potemplates):
+        """Merge POTMsgSets for given sequence of sharing templates."""
+        self._setUpUtilities()
+
+        subordinates, representative_templates = self._mapRepresentatives(
+            potemplates)
 
         for representative, potmsgsets in subordinates.iteritems():
             seen_potmsgsets = set([representative])
