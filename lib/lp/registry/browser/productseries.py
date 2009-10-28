@@ -193,11 +193,13 @@ class ProductSeriesOverviewMenu(
         summary = 'The code branch that for this series.'
         return Link('+linkbranch', text, summary, icon=icon)
 
+    @enabled_with_permission('launchpad.View')
     def ubuntupkg(self):
         """Return a link to link this series to an ubuntu sourcepackage."""
         text = 'Link to Ubuntu package'
         return Link('+ubuntupkg', text, icon='add')
 
+    @enabled_with_permission('launchpad.View')
     def add_package(self):
         """Return a link to link this series to a sourcepackage."""
         text = 'Link package'
@@ -310,7 +312,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     @property
     def is_obsolete(self):
-        """Return True if the series is OBSOLETE"
+        """Return True if the series is OBSOLETE.
 
         Obsolete series do not need to display as much information as other
         series. Accessing private bugs is an expensive operation and showing
@@ -359,7 +361,7 @@ class ProductSeriesUbuntuPackagingView(PackagingAddView):
     label = page_title
 
     def __init__(self, context, request):
-        """Set the staic packaging information for this series."""
+        """Set the static packaging information for this series."""
         super(ProductSeriesUbuntuPackagingView, self).__init__(
             context, request)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

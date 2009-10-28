@@ -937,6 +937,13 @@ class IBugSet(Interface):
         :param limit: The number of distinct Bugs to return.
         """
 
+    def getByNumbers(bug_numbers):
+        """Get `IBug` instances identified by the `bug_numbers` iterable.
+
+        :param bug_numbers: An iterable of bug numbers for which we should
+            return Bugs.
+        """
+
 
 class InvalidBugTargetType(Exception):
     """Bug target's type is not valid."""

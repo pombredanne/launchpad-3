@@ -87,6 +87,11 @@
         <tal:navigation
           content="structure view/active_memberships/@@+navigation-links-lower" />
       </div>
+      <div style="float: right; margin-top: 1em;"
+           tal:define="link view/menu:overview/add_member"
+           tal:condition="link/enabled">
+        <a tal:replace="structure link/fmt:link" />
+      </div>
       <br />
     </li>
 
@@ -190,12 +195,12 @@
           </tbody>
         </table>
 
-        <ul class="edit" tal:condition="user_can_edit_memberships">
-          <li>
-            <a href="+editproposedmembers"
-            >Approve or decline members</a>
-          </li>
-        </ul>
+        <div style="float:right">
+          <a tal:define="overview_menu context/menu:overview"
+             tal:replace="structure overview_menu/proposed_members/fmt:link"
+             />
+        </div>
+
       </tal:proposed>
     </li>
     <br />

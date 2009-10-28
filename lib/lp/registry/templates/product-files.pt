@@ -17,13 +17,9 @@
      tal:define="has_edit context/required:launchpad.Edit">
 
   <p tal:condition="view/has_download_files">
-    After you've downloaded a file, you can verify its authenticity using
-    <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
-    either </tal:hasdownloadfiles>its MD5 sum
-    <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
-    or signature</tal:hasdownloadfiles>. (<a
+    <a
     href="/+help/verify-downloads.html" target="help">How do I verify a
-    download?</a>)
+    download?</a>
   </p>
   <br />
 
@@ -43,83 +39,114 @@
 
     <div
       tal:repeat="series view/sorted_series_list"
-      tal:attributes="id string:series_${series/name}">
+      tal:attributes="id series/name/fmt:css-id/series-">
 
       <tal:seriesfilesexist condition="series/has_release_files">
+        <div tal:condition="not: repeat/series/start" class="portlet-border" />
         <tal:releases repeat="release series/releases">
-          <div tal:condition="release/files">
-            <h2 style="font-size: 1.2em">
-              <a tal:attributes="href release/fmt:url">
-                <span tal:replace="release/name_with_codename" /> release</a>,
-              from the
-              <a tal:attributes="href series/fmt:url"
-                 tal:content="series/name">name</a> series.
-            </h2>
+          <tal:releasefilesexist condition="release/files">
+            <div tal:condition="not: repeat/release/start" class="portlet-border" />
+            <div class="top-portlet">
+              <h2 style="font-size: 1.2em;">
+                <a tal:attributes="href release/fmt:url">
+                  <span tal:replace="release/name_with_codename" /> release</a>
+                from the
+                <a tal:attributes="href series/fmt:url"
+                   tal:content="series/name">name</a> series released
+                <span
+                   tal:attributes="title release/datereleased/fmt:datetime"
+                   tal:content="release/datereleased/fmt:approximatedate" />
+              </h2>
 
-            <div id="release_notes">
-              <h3>Release notes:</h3>
-              <tal:notes condition="release/release_notes"
-                  define="notes release/release_notes/fmt:shorten/800">
-                <div tal:content="structure notes/fmt:text-to-html">
-                  Release notes
-                </div>
-              </tal:notes>
-              <div tal:condition="not: release/release_notes">
-                <em>This release does not have release notes.</em>
+              <div tal:attributes="id release/version/fmt:css-id/release-information-"
+                   tal:condition="python: release.release_notes or release.changelog">
+
+                <fieldset class="collapsible collapsed" style="padding: 0px;">
+                  <legend>Release information</legend>
+
+                  <div tal:condition="release/release_notes">
+                    <strong>Release notes:</strong>
+                    <div style="margin-bottom: 0px;"
+                         tal:attributes="id release/version/fmt:css-id/release-notes-"
+                         tal:define="notes release/release_notes/fmt:shorten/800"
+                         tal:content="structure notes/fmt:text-to-html">
+                      ProductRelease.release_notes
+                    </div>
+                  </div>
+
+                  <div tal:condition="release/changelog">
+                    <strong>Changelog:</strong>
+                    <div style="margin-bottom: 0px;"
+                         tal:attributes="id release/version/fmt:css-id/changelog-"
+                         tal:content="structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
+                      ProductRelease.changelog.
+                    </div>
+                  </div>
+                </fieldset>
               </div>
               <div>
-                <strong>Released:</strong>
-                <span
-                  tal:attributes="title release/datereleased/fmt:datetime"
-                  tal:content="release/datereleased/fmt:approximatedate" />
-              </div>
-            </div>
-
-            <table class="listing">
-              <thead>
-                <tr>
-                  <th width="35%">File</th>
-                  <th width="45%">Description</th>
-                  <th>Downloads</th>
-                  <th tal:condition="has_edit">Delete</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr tal:repeat="file release/files">
-                  <tal:define-vars
-                    tal:define="checkbox_index string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}">
-                    <tal:release-file
-                      metal:use-macro="file/@@+macros/detailed_display" />
+                <table class="listing" style="margin-top: 1em;">
+                  <thead>
+                    <tr>
+                      <th width="35%">File</th>
+                      <th width="45%">Description</th>
+                      <th>Downloads</th>
+                      <th tal:condition="has_edit">Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr tal:repeat="file release/files">
+                      <tal:define-vars
+                         tal:define="checkbox_index string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}">
+                        <tal:release-file
+                           metal:use-macro="file/@@+macros/detailed_display" />
                   </tal:define-vars>
-                </tr>
-              </tbody>
-              <tfoot tal:condition="release/total_downloads">
-                <tr>
-                  <th colspan="2" style="padding-top: 1em; text-align: right;">
-                    Total downloads:
-                  </th>
-                  <td style="border: none; text-align: center;">
-                    <span tal:replace="release/total_downloads/fmt:intcomma" />
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                    </tr>
+                  </tbody>
+                  <tfoot tal:condition="release/total_downloads">
+                    <tr>
+                      <th colspan="2" style="padding-top: 1em; text-align: right;">
+                        Total downloads:
+                      </th>
+                      <td style="border: none; text-align: center;">
+                        <span tal:replace="release/total_downloads/fmt:intcomma" />
+                      </td>
+                      <td style="border: none;"
+                          tal:condition="has_edit" />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div tal:condition="not: release/total_downloads"
+                   style="margin-top: 2em;" />
+
+              <tal:linkexists
+                 define="link release/menu:context/add_file"
+                 condition="link/enabled">
+                <ul style="float: right; margin-top: 1em;">
+                  <li>
+                    <a tal:replace="structure link/fmt:link" />
+                  </li>
+                </ul>
+              </tal:linkexists>
+            </div>
+          </tal:releasefilesexist>
         </tal:releases>
         <br />
-
       </tal:seriesfilesexist>
 
-      <p tal:condition="has_edit" class="add-files">
-        <tal:releases condition="series/releases">
-          Add download file for release:
+      <tal:releases condition="series/releases">
+        <p tal:condition="has_edit" class="add-files">
+          Add download file to the
+          <a tal:attributes="href series/fmt:url"
+             tal:content="series/name">name</a> series for release:
           <tal:release repeat="release series/releases">
             <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
                tal:content="release/version"
-              >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+               >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
           </tal:release>
-        </tal:releases>
-      </p>
+        </p>
+      </tal:releases>
 
     </div>
     <input tal:condition="python: has_edit and view.has_download_files"
@@ -130,4 +157,5 @@
   </form>
 </div>
 </body>
-</html>
+</html
+>

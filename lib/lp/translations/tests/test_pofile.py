@@ -926,6 +926,14 @@ class TestTranslationCredits(TestCaseWithFactory):
         self.credits_potmsgset = self.factory.makePOTMsgSet(
             potemplate=self.potemplate, singular=u'translator-credits')
 
+    def compose_launchpad_credits_text(self, imported_credits_text):
+        return u"%s\n\nLaunchpad Contributions:\n  %s" % (
+                imported_credits_text,
+                "\n  ".join(["%s %s" % (person.displayname,
+                                        canonical_url(person))
+                             for person in self.pofile.contributors])
+            )
+
     def test_prepareTranslationCredits_extending(self):
         # This test ensures that continuous updates to the translation credits
         # don't result in duplicate entries.
@@ -933,10 +941,6 @@ class TestTranslationCredits(TestCaseWithFactory):
         person = self.factory.makePerson()
 
         imported_credits_text = u"Imported Contributor <name@project.org>"
-        launchpad_credits_text = (
-            u"%s\n\nLaunchpad Contributions:\n  %s %s" % (
-                imported_credits_text, person.displayname,
-                canonical_url(person)))
 
         # Import a translation credits message to 'translator-credits'.
         self.factory.makeTranslationMessage(
@@ -954,7 +958,9 @@ class TestTranslationCredits(TestCaseWithFactory):
         # The first translation credits export.
         credits_text = self.pofile.prepareTranslationCredits(
             self.credits_potmsgset)
-        self.assertEquals(launchpad_credits_text, credits_text)
+        self.assertEquals(
+            self.compose_launchpad_credits_text(imported_credits_text),
+            credits_text)
 
         # Now, re-import this generated message.
         self.factory.makeTranslationMessage(
@@ -965,7 +971,9 @@ class TestTranslationCredits(TestCaseWithFactory):
 
         credits_text = self.pofile.prepareTranslationCredits(
             self.credits_potmsgset)
-        self.assertEquals(launchpad_credits_text, credits_text)
+        self.assertEquals(
+            self.compose_launchpad_credits_text(imported_credits_text),
+            credits_text)
 
 
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
@@ -1487,20 +1495,48 @@ class TestPOFile(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    # The sequence number 0 is put at the beginning of the data to verify that
+    # it really gets sorted to the end.
+    TEST_MESSAGES = [
+        {'msgid':'computer', 'string':'komputilo', 'sequence':0},
+        {'msgid':'mouse', 'string':'muso', 'sequence':0},
+        {'msgid':'Good morning', 'string':'Bonan matenon', 'sequence':2},
+        {'msgid':'Thank you', 'string':'Dankon', 'sequence':1},
+        ]
+    EXPECTED_SEQUENCE = [1, 2, 0, 0]
+
     def setUp(self):
         # Create a POFile to calculate statistics on.
         super(TestPOFile, self).setUp()
-        self.pofile = self.factory.makePOFile('sr')
+        self.pofile = self.factory.makePOFile('eo')
         self.potemplate = self.pofile.potemplate
-
-        # Create a single POTMsgSet that is used across all tests.
-        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                                                    sequence=1)
 
     def test_makeTranslatableMessage(self):
         # TranslatableMessages can be created from the PO file
-        message = self.pofile.makeTranslatableMessage(self.potmsgset)
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate,
+                                                    sequence=1)
+        message = self.pofile.makeTranslatableMessage(potmsgset)
         verifyObject(ITranslatableMessage, message)
+
+    def _createMessageSet(self, testmsg):
+        # Create a message set from the test data.
+        pomsgset = self.factory.makePOTMsgSet(
+            self.potemplate, testmsg['msgid'], sequence=testmsg['sequence'])
+        pomsgset.updateTranslation(
+            self.pofile, self.pofile.owner,
+            {0:testmsg['string'],},
+            True, None, force_edition_rights=True)
+
+    def test_getTranslationRows_sequence(self):
+        # Test for correct sorting of obsolete messages (where sequence=0).
+        msgsets = [
+            self._createMessageSet(msg) for msg in self.TEST_MESSAGES]
+        for rownum, row in enumerate(
+            self.pofile.getTranslationRows()):
+            self.failUnlessEqual(
+                row.sequence, self.EXPECTED_SEQUENCE[rownum],
+                "getTranslationRows does not sort obsolete messages "
+                "(sequence=0) to the end of the file.")
 
 
 def test_suite():
