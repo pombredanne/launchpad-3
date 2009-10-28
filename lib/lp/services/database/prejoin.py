@@ -21,7 +21,7 @@ class PrejoinResultSet:
     The preferred solution is support in Storm core, so we can just do
     something like:
 
-    >>> results = store.find(Product).precache(
+    >>> results = store.find(Product).prejoin(
     ...     (Person, EmailAddress),
     ...     Product._ownerID == Person.id,
     ...     EmailAddress.personID == Person.id)
