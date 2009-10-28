@@ -201,6 +201,10 @@ class IBaseImageUpload(IBytes):
 class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
+    def set(self, object, value):
+        """Strip the value and pass up."""
+        super(StrippedTextLine, self).set(object, value.strip())
+
 
 class NoneableTextLine(StrippedTextLine):
     implements(INoneableTextLine)
@@ -212,15 +216,29 @@ class Title(StrippedTextLine):
     implements(ITitle)
 
 
+class StrippableText(Text):
+    """A text that can be configured to strip when setting."""
+
+    def __init__(self, strip_text=False, **kwargs):
+        super(StrippableText, self).__init__(**kwargs)
+        self.strip_text = strip_text
+
+    def set(self, object, value):
+        """Strip the value and pass up."""
+        if self.strip_text:
+            value = value.strip()
+        super(StrippableText, self).set(object, value)
+
+
 # Summary
 # A field capture a Launchpad object summary
-class Summary(Text):
+class Summary(StrippableText):
     implements(ISummary)
 
 
 # Description
 # A field capture a Launchpad object description
-class Description(Text):
+class Description(StrippableText):
     implements(IDescription)
 
 
@@ -230,7 +248,7 @@ class NoneableDescription(Description):
 
 # Whiteboard
 # A field capture a Launchpad object whiteboard
-class Whiteboard(Text):
+class Whiteboard(StrippableText):
     implements(IWhiteboard)
 
 
