@@ -1056,7 +1056,7 @@ class POTMsgSet(SQLBase):
         if self.is_translation_credit:
             translation = self.getSharedTranslationMessage(pofile.language)
             if translation is None:
-                message = self.updateTranslation(pofile, pofile.owner, 
+                message = self.updateTranslation(pofile, pofile.owner,
                     [credits_message_str], False,
                     datetime.datetime.now(pytz.UTC),
                     allow_credits=True)
