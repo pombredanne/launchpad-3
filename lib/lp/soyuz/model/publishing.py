@@ -1120,6 +1120,57 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
+    def copyBinariesTo(self, binaries, distroseries, pocket, archive):
+        """See `IPublishingSet`."""
+
+        # If the target archive is a ppa then we will need to override
+        # the component for each copy - so lookup the main component
+        # here once.
+        override_component = None
+        if archive.is_ppa:
+            override_component = getUtility(IComponentSet)['main']
+
+        secure_copies = []
+
+        for binary in binaries:
+            secure_binary = self.secure_record
+
+            target_component = override_component or secure_binary.component
+
+            if secure_binary.binarypackagerelease.architecturespecific:
+                try:
+                    target_architecture = distroseries[
+                        secure_binary.distroarchseries.architecturetag]
+                except NotFoundError:
+                    return []
+                destination_architectures = [target_architecture]
+            else:
+                destination_architectures = distroseries.architectures
+
+            for distroarchseries in destination_architectures:
+
+                # TODO: is there a way to ask storm not to bother
+                # instantiating the new copy? we just want the id
+                # here so we can then grab the non-secure BPPHs.
+                # Actually, need to check storm's SQLBase init.
+                pub = SecureBinaryPackagePublishingHistory(
+                    archive=archive,
+                    binarypackagerelease=binary.binarypackagerelease,
+                    distroarchseries=distroarchseries,
+                    component=target_component,
+                    section=secure_binary.section,
+                    priority=secure_binary.priority,
+                    status=PackagePublishingStatus.PENDING,
+                    datecreated=UTC_NOW,
+                    pocket=pocket,
+                    embargo=False)
+                secure_copies.append(pub)
+
+        # One day, this will not be necessary when we have time to kill
+        # the Secure* records.
+        copy_ids = [secure_copy.id for secure_copy in secure_copies]
+        return BinaryPackagePublishingHistory.get(copy_ids)
+
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
                              pocket):
