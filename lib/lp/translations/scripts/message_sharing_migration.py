@@ -450,6 +450,7 @@ class MessageSharingMerge(LaunchpadScript):
         self._setUpUtilities()
         order_check = OrderingCheck(cmp=self.compare_template_precedence)
         for template in potemplates:
+            deletions = 0
             order_check.check(template)
             for potmsgset in template.getPOTMsgSets(False, prefetch=False):
                 before = potmsgset.getAllTranslationMessages().count()
@@ -458,10 +459,11 @@ class MessageSharingMerge(LaunchpadScript):
                     removeSecurityProxy(message).shareIfPossible()
 
                 after = potmsgset.getAllTranslationMessages().count()
-                self.logger.info(
-                    "TranslationMessages before merging: %d.  After: %d." % (
-                        before, after))
                 self._endTransaction(intermediate=True)
+
+                deletions += max(0, before - after)
+
+            self.logger.info("Removed TranslationMessages: %d" % deletions)
 
     def _getPOTMsgSetTranslationMessageKey(self, tm):
         """Return tuple that identifies a TranslationMessage in a POTMsgSet.
