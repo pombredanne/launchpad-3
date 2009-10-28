@@ -167,7 +167,7 @@ ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
 mpcreationjobs:
-	# Handle merge proposal creations
+	# Handle merge proposal creations.
 	$(PY) cronscripts/mpcreationjobs.py
 
 run: inplace stop
