@@ -331,7 +331,7 @@ class StructuralSubscriptionTargetMixin:
         """See `IStructuralSubscriptionTarget`."""
         bug_subscriptions = self.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.METADATA)
-        if IPerson.providedBy(user):
+        if user is not None:
             for subscription in bug_subscriptions:
                 if (subscription.subscriber == user or
                     user.inTeam(subscription.subscriber)):
