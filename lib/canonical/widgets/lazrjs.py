@@ -201,35 +201,16 @@ class TextAreaEditorWidget(TextLineEditorWidget):
         YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
+                accept_empty: %(accept_empty)s,
                 multiline: true,
                 buttons: 'top'
             });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
                   patch: '%(attribute)s',
-                  resource: '%(context_url)s',
-                  accept: 'application/xhtml+xml',
-                  formatter: function(result, attribute) {
-                      var dl = Y.DOM.create(result)[1]
-                      var dl_nodes = dl.childNodes;
-                      var i;
-                      // <dd> in XHR responses breaks description formatting.
-                      for (i=0; i<dl_nodes.length; i++) {
-                          var child = dl_nodes[i];
-                          // Ignore text nodes when looking for the attribute.
-                          // 3 is the text nodeType.
-                          if (child.nodeType != 3 &&
-                              child.firstChild.textContent == attribute) {
-                              var ptags = dl_nodes[i+2].childNodes;
-                              var span = Y.Node.create('<span></span>');
-                              var n;
-                              for (n=0; n<ptags.length; n++) {
-                                  span.appendChild(ptags[n]);
-                              }
-                              return span;
-                          }
-                      }
-                  }
+                  resource: '%(context_url)s/%(attribute)s',
+                  patch_field: true,
+                  accept: 'application/xhtml+xml'
             }});
             if (!Y.UA.opera) {
                 widget.render();
@@ -250,6 +231,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
             'context_url': canonical_url(
                 self.context, path_only_if_possible=True),
             'attribute': self.attribute,
+            'accept_empty': self.accept_empty,
             'edit_controls': '',
             }
         # Only display the trigger link and the activation script if

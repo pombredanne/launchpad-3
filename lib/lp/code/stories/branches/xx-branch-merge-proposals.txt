@@ -75,7 +75,7 @@ Editing a commit message
 Since the plan is to merge a branch into another branch, it makes sense that a
 commit message can be set.
 
-    >>> nopriv_browser.getLink('Edit commit message').click()
+    >>> nopriv_browser.getLink(url='edit-commit-message').click()
     >>> nopriv_browser.getControl(name='field.commit_message').value = (
     ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
@@ -86,10 +86,9 @@ commit message can be set.
     >>> def print_summary(browser):
     ...     print extract_text(find_tag_by_id(
     ...         browser.contents, 'proposal-summary'))
-    >>> print_summary(nopriv_browser)
-    Status: ...
-    ...
-    Commit message: Add more &lt;b&gt;mojo&lt;/b&gt;
+    >>> print_tag_with_id(nopriv_browser.contents, 'edit-description')
+    Commit Message
+    Add more &lt;b&gt;mojo&lt;/b&gt;
 
 
 Deleting merge proposals
