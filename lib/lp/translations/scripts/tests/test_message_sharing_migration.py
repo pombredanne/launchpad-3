@@ -18,6 +18,7 @@ from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.potranslation import POTranslation
 from lp.translations.scripts.message_sharing_migration import (
     MessageSharingMerge)
 from canonical.testing import LaunchpadZopelessLayer
@@ -739,16 +740,17 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
         transaction.commit()
         gc.collect()
 
-    def _listLoadedPOMsgIDs(self, ignore_list=None):
-        """Return the set of all `POMsgID` objects that are in memory.
+    def _listLoadedObjects(self, of_class, ignore_list=None):
+        """Return the set of objects of a given type that are in memory.
 
+        :param of_class: A class to filter for.
         :param ignore_list: A previous return value.  Any POMsgIDs that
             were already in that list are ignored here.
         """
         pomsgids = set([
             whatever
             for whatever in gc.get_objects()
-            if isinstance(whatever, POMsgID)
+            if isinstance(whatever, of_class)
             ])
         if ignore_list is not None:
             pomsgids -= ignore_list
@@ -781,19 +783,47 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
     def test_merging_loads_no_msgids(self):
         # Migration does not load actual msgids into memory.
         self._flushDbObjects()
-        msgids_before = self._listLoadedPOMsgIDs()
+        msgids_before = self._listLoadedObjects(POMsgID)
 
         self._makeTranslationMessages('x', 'y', trunk_diverged=True)
         self._makeTranslationMessages('1', '2', stable_diverged=True)
 
         self._resetReferences()
         self.assertNotEqual([], self.templates)
-        self.assertEqual(set(), self._listLoadedPOMsgIDs(msgids_before))
+        self.assertEqual(
+            set(), self._listLoadedObjects(POMsgID, msgids_before))
         
         self.script._mergePOTMsgSets(self.templates)
         self.script._mergeTranslationMessages(self.templates)
 
-        self.assertEqual(set(), self._listLoadedPOMsgIDs(msgids_before))
+        self.assertEqual(
+            set(), self._listLoadedObjects(POMsgID, msgids_before))
+
+    def test_merging_loads_no_potranslations(self):
+        # Migration does not load actual POTranslations into memory.
+        self._flushDbObjects()
+        potranslations_before = self._listLoadedObjects(POTranslation)
+
+        self._makeTranslationMessages('x', 'y', trunk_diverged=True)
+        self._makeTranslationMessages('1', '2', stable_diverged=True)
+
+        self._resetReferences()
+        self.assertNotEqual([], self.templates)
+        self.assertEqual(
+            set(),
+            self._listLoadedObjects(POTranslation, potranslations_before))
+        
+        self.script._mergePOTMsgSets(self.templates)
+
+        self.assertEqual(
+            set(),
+            self._listLoadedObjects(POTranslation, potranslations_before))
+        
+        self.script._mergeTranslationMessages(self.templates)
+
+        self.assertEqual(
+            set(),
+            self._listLoadedObjects(POTranslation, potranslations_before))
 
 
 def test_suite():
