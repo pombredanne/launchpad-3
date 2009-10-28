@@ -17,9 +17,9 @@ handling.
 The view captures the user's time_start and time_ends attendance.
 
     >>> sprint_attendance_view.field_names
-    ['time_starts', 'time_ends']
+    ['time_starts', 'time_ends', 'is_physical']
 
-The view also defines a next_url and cancel_url
+The view also defines a next_url and cancel_url.
 
     >>> print sprint_attendance_view.next_url
     http://launchpad.dev/sprints/ubz
@@ -29,11 +29,12 @@ The view also defines a next_url and cancel_url
 
 A helper function to test date handling.
 
-  >>> def create_sprint_attendance_view(sprint, dates):
+  >>> def create_sprint_attendance_view(sprint, dates, is_physical=True):
   ...     time_starts, time_ends = dates
   ...     form = {
   ...         'field.time_starts': time_starts,
   ...         'field.time_ends': time_ends,
+  ...         'field.is_physical': is_physical,
   ...         'field.actions.register': 'Register'}
   ...     return create_initialized_view(sprint, name='+attend', form=form)
 
@@ -92,8 +93,9 @@ Sample Person is now listed as an attendee.
   >>> ubz.time_ends == sprint_attendance.time_ends
   True
 
-The +attend and +register views
--------------------------------
+
+The +attend view
+----------------
 
 The +attend view has a label.
 
@@ -101,11 +103,40 @@ The +attend view has a label.
     >>> print sprint_attendance_view.label
     Register your attendance
 
+
+The +register views
+-------------------------------
+
 The +register view has a label too.
 
-    >>> sprint_attendance_view = create_view(ubz, name='+register')
-    >>> print sprint_attendance_view.label
+    >>> view = create_view(ubz, name='+register')
+    >>> print view.label
     Register someone else
+
+The view descends from BaseSprintAttendanceAddView.
+
+    >>> isinstance(view, BaseSprintAttendanceAddView)
+    True
+
+It also requires the attendee field so that a user can register someone else.
+
+    >>> view.field_names
+    ['attendee', 'time_starts', 'time_ends', 'is_physical']
+
+    >>> person = factory.makePerson(name='greene')
+    >>> form = {
+    ...     'field.attendee': 'greene',
+    ...     'field.time_starts': '2005-10-07 09:00',
+    ...     'field.time_ends': '2005-10-17 09:00',
+    ...     'field.is_physical': True,
+    ...     'field.actions.register': 'Register'}
+    >>> view = create_initialized_view(ubz, name='+register', form=form)
+    >>> view.errors
+    []
+
+    >>> for attendee in ubz.attendees:
+    ...     print attendee.name
+    greene name12
 
 
 Exporting the list of attendees
