@@ -6,14 +6,13 @@
 """Test the upgrade_branches script."""
 
 
-from bzrlib.transport import get_transport
 from bzrlib.branch import Branch as BzrBranch
 import transaction
 
 from canonical.testing import ZopelessAppServerLayer
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
-from lp.code.model.branch import Branch, BranchFormat, RepositoryFormat
+from lp.code.model.branch import BranchFormat, RepositoryFormat
 from lp.code.model.branchjob import BranchUpgradeJob
 
 
