@@ -40,3 +40,21 @@ time_start and time_end attributes respectively.
     2019-06-21 00:00:00+00:00
     >>> print sprint_attendance.time_ends
     2019-07-04 00:00:00+00:00
+
+SprintAttendance records whether the user intend to be physically present
+at the sprint; a false value implies virtual attendance. The default value
+is false.
+
+    >>> sprint_attendance.is_physical
+    False
+
+The is_physical value can be specified when a SprintAttendance instance is
+created.
+
+    >>> person_2 = factory.makePerson(name='plum')
+    >>> sprint_attendance_2 = SprintAttendance(
+    ...     sprint=sprint, attendee=person_2,
+    ...     time_starts=time_starts, time_ends=time_ends,
+    ...     is_physical=True)
+    >>> sprint_attendance_2.is_physical
+    True
