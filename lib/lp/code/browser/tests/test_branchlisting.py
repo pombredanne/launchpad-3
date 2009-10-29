@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from datetime import timedelta
 from pprint import pformat
+import re
 import unittest
+
+from lazr.uri import URI
 
 from storm.expr import Asc, Desc
 from zope.component import getUtility
@@ -25,6 +28,7 @@ from lp.registry.model.product import Product
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCase, TestCaseWithFactory, time_counter
 from lp.testing.views import create_initialized_view
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -328,6 +332,22 @@ class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
         batch = view.branches()
         [view_branch] = batch.branches
         self.assertEqual(identity, view_branch.bzr_identity)
+
+
+class TestProductSeriesTemplate(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product_series_link(self):
+        # The link from a series branch's listing to the series goes to the
+        # series on the main site, not the code site.
+        branch = self.factory.makeProductBranch()
+        series = self.factory.makeProductSeries(product=branch.product)
+        series.branch = branch
+        browser = self.getUserBrowser(
+            canonical_url(branch.product, rootsite='code'))
+        link = browser.getLink(re.compile('^' + series.name + '$'))
+        self.assertEqual('launchpad.dev', URI(link.url).host)
 
 
 def test_suite():
