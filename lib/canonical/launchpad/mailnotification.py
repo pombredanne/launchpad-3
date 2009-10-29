@@ -36,6 +36,7 @@ from canonical.launchpad.interfaces import (
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     TeamMembershipStatus)
 from lp.bugs.interfaces.bugchange import IBugChange
+from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -908,8 +909,11 @@ def notify_team_join(event):
                 "You received this email because you are the new member.")
 
         if team.mailing_list is not None:
-            list_instructions = get_email_template(
+            template = get_email_template(
                 'team-list-subscribe-block.txt')
+            editemails_url = '%speople/+me/+editemails' % canonical_url(
+                getUtility(ILaunchpadRoot))
+            list_instructions = template % dict(editemails_url=editemails_url)
         else:
             list_instructions = ''
 
