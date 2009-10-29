@@ -33,8 +33,8 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus)
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    active_publishing_status)
+    IBinaryPackagePublishingHistory, IPublishingSet,
+    ISourcePackagePublishingHistory, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadSet)
 from lp.soyuz.scripts.ftpmasterbase import (
@@ -520,27 +520,10 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     # unique publication per binary package releases (i.e. excludes
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
-    for binary in source.getBuiltBinaries():
-        binarypackagerelease = binary.binarypackagerelease
-        # TODO: hmm... can we get rid of this? we do the same check
-        # in copyBinariesTo, but what should we specify here
-        # as the target distroseries?
-        try:
-            target_distroarchseries = series[
-                binarypackagerelease.build.arch_tag]
-        except NotFoundError:
-            # It is not an error if the destination series doesn't
-            # support all the architectures originally built. We
-            # simply do not copy the binary and life goes on.
-            continue
-        binary_in_destination = archive.getAllPublishedBinaries(
-            name=binarypackagerelease.name, exact_match=True,
-            version=binarypackagerelease.version,
-            status=active_publishing_status, pocket=pocket,
-            distroarchseries=target_distroarchseries)
-        if binary_in_destination.count() == 0:
-            binary_copy = binary.copyTo(series, pocket, archive)
-            copies.extend(binary_copy)
+    binary_copies = getUtility(IPublishingSet).copyBinariesTo(
+        source.getBuiltBinaries(), series, pocket, archive)
+
+    copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.

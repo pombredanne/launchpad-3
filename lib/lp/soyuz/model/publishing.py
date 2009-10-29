@@ -1110,22 +1110,21 @@ class PublishingSet:
         secure_copies = []
 
         for binary in binaries:
-            secure_binary = binary.secure_record
+            binarypackagerelease = binary.binarypackagerelease
+            target_component = override_component or binary.component
 
-            target_component = override_component or secure_binary.component
-
-            if secure_binary.binarypackagerelease.architecturespecific:
+            if binarypackagerelease.architecturespecific:
                 # If the binary is architecture specific and the target
                 # distroseries does not include the architecture then we
                 # skip the binary and continue.
                 try:
-                    # For safety, we use the architecture the binary was built, and
-                    # not the one it is published, coping with single arch-indep
-                    # publications for architectures that do not exist in the
-                    # destination series. See #387589 for more information.
-
+                    # For safety, we use the architecture the binary was
+                    # built, and not the one it is published, coping with
+                    # single arch-indep publications for architectures that
+                    # do not exist in the destination series.
+                    # See #387589 for more information.
                     target_architecture = distroseries[
-                        secure_binary.binarypackagerelease.build.arch_tag]
+                        binarypackagerelease.build.arch_tag]
                 except NotFoundError:
                     continue
                 destination_architectures = [target_architecture]
@@ -1134,22 +1133,27 @@ class PublishingSet:
 
             for distroarchseries in destination_architectures:
 
-                # TODO: is there a way to ask storm not to bother
-                # instantiating the new copy? we just want the id
-                # here so we can then grab the non-secure BPPHs.
-                # Actually, need to check storm's SQLBase init.
-                pub = SecureBinaryPackagePublishingHistory(
-                    archive=archive,
-                    binarypackagerelease=binary.binarypackagerelease,
-                    distroarchseries=distroarchseries,
-                    component=target_component,
-                    section=secure_binary.section,
-                    priority=secure_binary.priority,
-                    status=PackagePublishingStatus.PENDING,
-                    datecreated=UTC_NOW,
-                    pocket=pocket,
-                    embargo=False)
-                secure_copies.append(pub)
+                # We only copy the binary if it doesn't already exist
+                # in the destination.
+                binary_in_destination = archive.getAllPublishedBinaries(
+                    name=binarypackagerelease.name, exact_match=True,
+                    version=binarypackagerelease.version,
+                    status=active_publishing_status, pocket=pocket,
+                    distroarchseries=distroarchseries)
+
+                if binary_in_destination.count() == 0:
+                    pub = SecureBinaryPackagePublishingHistory(
+                        archive=archive,
+                        binarypackagerelease=binarypackagerelease,
+                        distroarchseries=distroarchseries,
+                        component=target_component,
+                        section=binary.section,
+                        priority=binary.priority,
+                        status=PackagePublishingStatus.PENDING,
+                        datecreated=UTC_NOW,
+                        pocket=pocket,
+                        embargo=False)
+                    secure_copies.append(pub)
 
         # One day, this will not be necessary when we have time to kill
         # the Secure* records.
