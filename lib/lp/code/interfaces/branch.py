@@ -726,9 +726,18 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     @operation_parameters(
         target_branch=Reference(schema=Interface),
         prerequisite_branch=Reference(schema=Interface),
-        needs_review=Bool(), initial_comment=TextLine(),
-        commit_message=TextLine(),
+        needs_review=Bool(title=_('Needs review'),
+            description=_('If True, set queue_status to NEEDS_REVIEW.'
+            'Otherwise, it will be WORK_IN_PROGRESS.')),
+        initial_comment=TextLine(
+            title=_('Initial comment'),
+            description=_("Registrant's initial description of proposal.")),
+        commit_message=TextLine(
+            title=_('Commit message'),
+            description=_('Message to use when committing this merge.')),
         )
+    # target_branch and prerequisite_branch are actually IBranch, patched in
+    # _schema_circular_imports.
     @call_with(registrant=REQUEST_USER)
     # IBranchMergeProposal supplied as Interface to avoid circular imports.
     @export_factory_operation(Interface, [])

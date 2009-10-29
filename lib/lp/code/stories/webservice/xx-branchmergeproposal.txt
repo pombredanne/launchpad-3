@@ -20,10 +20,6 @@ Branch merge proposals can be created through the API.
     ...     source_url, 'addLandingTarget', target_branch=target_url,
     ...     prerequisite_branch=prerequisite_url, initial_comment='Merge it!',
     ...     needs_review=True, commit_message='It was merged!')
-    >>> def pprint_entry_result(result):
-    ...     link = result.getHeader('Location')
-    ...     entry = registrant_webservice.get(link).jsonBody()
-    ...     pprint_entry(entry)
     >>> bmp_url = bmp_result.getHeader('Location')
     >>> bmp = registrant_webservice.get(bmp_url).jsonBody()
     >>> pprint_entry(bmp)
@@ -228,7 +224,9 @@ Now the code review should be made.
     ...     merge_proposal['self_link'], 'createComment',
     ...     subject='Great work', content='This is great work',
     ...     vote=CodeReviewVote.APPROVE.title, review_type='code')
-    >>> pprint_entry_result(comment_result)
+    >>> comment_link = comment_result.getHeader('Location')
+    >>> comment = reviewer_webservice.get(comment_link).jsonBody()
+    >>> pprint_entry(comment)
     as_quoted_email: u'> This is great work'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
     id: ...
