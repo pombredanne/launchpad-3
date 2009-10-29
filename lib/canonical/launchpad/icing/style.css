@@ -34,9 +34,6 @@
 
 /* == Sprites == */
 
-#subscribers-direct a, #portlet-subscribers a, #subscribers-indirect a, .bug-branch-summary {
-   line-height: 1.4em;
-}
 ul.breadcrumbs a.bzr-favicon, ul.breadcrumbs a.person-tabs {
     padding: 8px 18px 0 23px;
 }
@@ -1306,11 +1303,6 @@ a.bg-image {
     line-height: 130%;
     padding-top: 0.5em;
     padding-bottom: 0.5em;
-    padding-left: 18px;
-}
-
-a.info {
-    background: url('/@@/info') no-repeat scroll left center;
     padding-left: 18px;
 }
 

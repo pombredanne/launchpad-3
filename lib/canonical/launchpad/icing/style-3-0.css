@@ -1002,19 +1002,21 @@ div.translation-help-links div {
 
 /* == Sprites == */
 .sprite {
-    padding:2px 0 0 18px;
-    min-height: 18px;
+    padding: 2px 0 5px 18px;
+    line-height: 18px;
 }
-.side :not(.involvement) a.sprite {
-    /* Unfortunately, we cannot use a background y-position of 50%,
-       since we are trying to line up the sprite with the first line
-       of text when it wraps. */
-    background-position: 0 0.2em;
+.vertical .sprite {
+    /* XXX: EdwinGrubbs 2009-10-29 bug=463032
+       The reduced padding is only necessary to prevent parts of the
+       adjacent sprites in the consolidated image from appearing
+       when the line wraps and the default font size is 16.
+    */
+    padding-bottom: 0px;
     display: inline-block;
+    min-height: 16px;
 }
-.side .involvement a.sprite {
-    background-position: right center;
-    display: block;
+.vertical .sprite:first-line {
+    line-height: 12px;
 }
 .sprite-after {padding: 2px 18px 0 0;}
 
