@@ -1159,7 +1159,7 @@ class RegisterProposalSchema(Interface):
         vocabulary='Branch', required=False, readonly=False,
         description=_(
             'A branch that should be merged before this one.  (Its changes'
-            ' will not be shown in the diff.)')
+            ' will not be shown in the diff.)'))
 
     comment = Text(
         title=_('Initial Comment'), required=False,
