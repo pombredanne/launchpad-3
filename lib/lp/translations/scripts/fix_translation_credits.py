@@ -54,7 +54,7 @@ class CreditsFixer:
         self.logger.debug(
             "Getting POFiles[%d:%d]..." % (self.start_at,
                                            self.start_at + int(chunk_size)))
-        pofiles = self.pofiles[self.start_at, self.start_at + int(chunk_size)]
+        pofiles = self.pofiles[self.start_at: self.start_at + int(chunk_size)]
         return pofiles
 
     def __call__(self, chunk_size):
