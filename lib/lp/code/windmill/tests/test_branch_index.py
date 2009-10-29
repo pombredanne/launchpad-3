@@ -56,6 +56,10 @@ class TestBranchStatus(TestCaseWithFactory):
 
         # Reload the page and make sure the change sticks.
         client.open(url=start_url)
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client.waits.forElement(
+            xpath=u'//span[@id="branch-details-status-value"]/span',
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertText(
             xpath=u'//span[@id="branch-details-status-value"]/span',
             validator=u'Experimental')
