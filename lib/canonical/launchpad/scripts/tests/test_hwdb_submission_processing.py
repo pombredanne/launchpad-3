@@ -32,7 +32,7 @@ from canonical.launchpad.scripts.hwdbsubmissions import (
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import BaseLayer, LaunchpadZopelessLayer
 
-from lp.testing import TestCase
+from lp.testing import TestCase, validate_mock_class
 
 class TestCaseHWDB(TestCase):
     """Common base class for HWDB processing tests."""
@@ -360,8 +360,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.assertErrorMessage(
             parser.submission_key, "No udev root device defined")
 
-    def testKernelPackageName(self):
-        """Test of SubmissionParser.getKernelPackageName.
+    def test_kernel_package_name_hal_data(self):
+        """Test of SubmissionParser.kernel_package_name.
 
         Regular case.
         """
@@ -388,17 +388,19 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 },
             }
         parser.buildDeviceList(parser.parsed_data)
-        kernel_package = parser.getKernelPackageName()
-        self.assertEqual(kernel_package, self.KERNEL_PACKAGE,
-            'Unexpected result of SubmissionParser.getKernelPackageName. '
+        kernel_package = parser.kernel_package_name
+        self.assertEqual(
+            self.KERNEL_PACKAGE, kernel_package,
+            'Unexpected value of SubmissionParser.kernel_package_name. '
             'Expected linux-image-2.6.24-19-generic, got %r' % kernel_package)
 
-        self.assertEqual(len(self.handler.records), 0,
+        self.assertEqual(
+            0, len(self.handler.records),
             'One or more warning messages were logged by '
-            'getKernelPackageName, where zero was expected.')
+            'SubmissionParser.kernel_package_name, where zero was expected.')
 
-    def testKernelPackageNameInconsistent(self):
-        """Test of SubmissionParser.getKernelPackageName.
+    def test_kernel_package_hal_data_name_inconsistent(self):
+        """Test of SubmissionParser.kernel_package_name.
 
         Test a name inconsistency.
         """
@@ -426,24 +428,24 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser.submission_key = 'Test of inconsistent kernel package name'
         parser.buildDeviceList(parser.parsed_data)
-        kernel_package = parser.getKernelPackageName()
-        self.assertEqual(kernel_package, None,
-            'Unexpected result of SubmissionParser.getKernelPackageName. '
-            'Expected None, got %r' % kernel_package)
-        self.assertWarningMessage(parser.submission_key,
+        kernel_package = parser.kernel_package_name
+        self.assertIs(None, kernel_package)
+        self.assertWarningMessage(
+            parser.submission_key,
             'Inconsistent kernel version data: According to HAL the '
             'kernel is 2.6.24-19-generic, but the submission does not '
             'know about a kernel package linux-image-2.6.24-19-generic')
         # The warning appears only once per submission, even if the
-        # SubmissionParser.getKernelPackageName is called more than once.
+        # property kernel_package_name is accessed more than once.
         num_warnings = len(self.handler.records)
-        parser.getKernelPackageName()
-        self.assertEqual(num_warnings, len(self.handler.records),
+        test = parser.kernel_package_name
+        self.assertEqual(
+            num_warnings, len(self.handler.records),
             'Warning for missing HAL property system.kernel.version '
             'repeated.')
 
-    def testKernelPackageNameNoHALData(self):
-        """Test of SubmissionParser.getKernelPackageName.
+    def test_kernel_package_name_hal_data_no_kernel_version_in_hal_data(self):
+        """Test of SubmissionParser.kernel_package_name.
 
         Test without HAL property system.kernel.version.
         """
@@ -469,26 +471,28 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser.submission_key = 'Test: missing property system.kernel.version'
         parser.buildDeviceList(parser.parsed_data)
-        kernel_package = parser.getKernelPackageName()
-        self.assertEqual(kernel_package, None,
-            'Unexpected result of SubmissionParser.getKernelPackageName. '
-            'Expected None, got %r' % kernel_package)
-        self.assertWarningMessage(parser.submission_key,
+        self.assertIs(None, parser.kernel_package_name)
+        self.assertWarningMessage(
+            parser.submission_key,
             'Submission does not provide property system.kernel.version '
-            'for /org/freedesktop/Hal/devices/computer.')
+            'for /org/freedesktop/Hal/devices/computer or a summary '
+            'sub-node <kernel-release>.')
         # The warning appears only once per submission, even if the
-        # SubmissionParser.getKernelPackageName is called more than once.
+        # property kernel_package_name is accessed more than once.
         num_warnings = len(self.handler.records)
-        parser.getKernelPackageName()
-        self.assertEqual(num_warnings, len(self.handler.records),
+        test = parser.kernel_package_name
+        self.assertEqual(
+            num_warnings, len(self.handler.records),
             'Warning for missing HAL property system.kernel.version '
             'repeated.')
 
-    def testKernelPackageNameNoPackageData(self):
-        """Test of SubmissionParser.getKernelPackageName.
+    def test_kernel_package_name_hal_data_no_package_data(self):
+        """Test of SubmissionParser.kernel_package_name.
 
-        Test without any package data. getKernelPackageName returns
-        the property system.kernel.version without any further checking.
+        Test without any package data. In this case,
+        SubmissionParser.kernel_package_name is the value of the property
+        system.kernel.version if the root HAL device. No further checks
+        are done.
         """
         parser = SubmissionParser(self.log)
         devices = [
@@ -512,8 +516,156 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser.submission_key = 'Test: missing property system.kernel.version'
         parser.buildDeviceList(parser.parsed_data)
-        kernel_package = parser.getKernelPackageName()
-        self.assertEqual(kernel_package, self.KERNEL_PACKAGE,
+        kernel_package = parser.kernel_package_name
+        self.assertEqual(
+            self.KERNEL_PACKAGE, kernel_package,
+            'Unexpected result of SubmissionParser.getKernelPackageName, '
+            'test without any package data. Expected None, got %r'
+            % kernel_package)
+
+    def test_kernel_package_name_udev_data(self):
+        """Test of SubmissionParser.kernel_package_name for udev data.
+
+        Variant for udev data, regular case.
+        """
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = {
+            'hardware': {
+                'udev': [
+                    {'P': '/devices/LNXSYSTM:00'}
+                    ],
+                'sysfs-attributes': {},
+                'dmi': {},
+                },
+            'software': {
+                'packages': {
+                    self.KERNEL_PACKAGE: {},
+                    },
+                },
+            'summary': {
+                'kernel-release': self.KERNEL_VERSION,
+                },
+            }
+        parser.buildDeviceList(parser.parsed_data)
+        kernel_package = parser.kernel_package_name
+        self.assertEqual(
+            self.KERNEL_PACKAGE, kernel_package,
+            'Unexpected value of SubmissionParser.kernel_package_name. '
+            'Expected linux-image-2.6.24-19-generic, got %r' % kernel_package)
+
+        self.assertEqual(
+            0, len(self.handler.records),
+            'One or more warning messages were logged by '
+            'SubmissionParser.kernel_package_name, where zero was expected.')
+
+    def test_kernel_package_udev_data_name_inconsistent(self):
+        """Test of SubmissionParser.kernel_package_name.
+
+        Variant for udev data, name inconsistency.
+        """
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = {
+            'hardware': {
+                'udev': [
+                    {'P': '/devices/LNXSYSTM:00'}
+                    ],
+                'sysfs-attributes': {},
+                'dmi': {},
+                },
+            'software': {
+                'packages': {
+                    'linux-image-from-obscure-external-source': {},
+                    },
+                },
+            'summary': {
+                'kernel-release': self.KERNEL_VERSION,
+                },
+            }
+        parser.submission_key = 'Test of inconsistent kernel package name'
+        parser.buildDeviceList(parser.parsed_data)
+        kernel_package = parser.kernel_package_name
+        self.assertIs(None, kernel_package)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Inconsistent kernel version data: According to HAL the '
+            'kernel is 2.6.24-19-generic, but the submission does not '
+            'know about a kernel package linux-image-2.6.24-19-generic')
+        # The warning appears only once per submission, even if the
+        # property kernel_package_name is accessed more than once.
+        num_warnings = len(self.handler.records)
+        test = parser.kernel_package_name
+        self.assertEqual(
+            num_warnings, len(self.handler.records),
+            'Warning for missing HAL property system.kernel.version '
+            'repeated.')
+
+    def test_kernel_package_name_udev_data_no_kernel_version_in_summary(self):
+        """Test of SubmissionParser.kernel_package_name.
+
+        Test without the summary sub-node <kernel-release>.
+        """
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = {
+            'hardware': {
+                'udev': [
+                    {'P': '/devices/LNXSYSTM:00'}
+                    ],
+                'sysfs-attributes': {},
+                'dmi': {},
+                },
+            'software': {
+                'packages': {
+                    self.KERNEL_PACKAGE: {},
+                    },
+                },
+            'summary': {},
+            }
+        parser.submission_key = 'Test: missing property system.kernel.version'
+        parser.buildDeviceList(parser.parsed_data)
+        self.assertIs(None, parser.kernel_package_name)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Submission does not provide property system.kernel.version '
+            'for /org/freedesktop/Hal/devices/computer or a summary '
+            'sub-node <kernel-release>.')
+        # The warning appears only once per submission, even if the
+        # property kernel_package_name is accessed more than once.
+        num_warnings = len(self.handler.records)
+        test = parser.kernel_package_name
+        self.assertEqual(
+            num_warnings, len(self.handler.records),
+            'Warning for missing HAL property system.kernel.version '
+            'repeated.')
+
+    def test_kernel_package_name_udev_data_no_package_data(self):
+        """Test of SubmissionParser.kernel_package_name.
+
+        Variant for udev data, test without any package data. In this case,
+        SubmissionParser.kernel_package_name is the value of the property
+        system.kernel.version if the root HAL device. No further checks
+        are done.
+        """
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = {
+            'hardware': {
+                'udev': [
+                    {'P': '/devices/LNXSYSTM:00'},
+                    ],
+                'sysfs-attributes': {},
+                'dmi': {},
+                },
+            'software': {
+                'packages': {},
+                },
+            'summary': {
+                'kernel-release': self.KERNEL_VERSION,
+                },
+            }
+        parser.submission_key = 'Test: missing property system.kernel.version'
+        parser.buildDeviceList(parser.parsed_data)
+        kernel_package = parser.kernel_package_name
+        self.assertEqual(
+            self.KERNEL_PACKAGE, kernel_package,
             'Unexpected result of SubmissionParser.getKernelPackageName, '
             'test without any package data. Expected None, got %r'
             % kernel_package)
@@ -1520,8 +1672,14 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
 
         ignored_buses = (
-            'drm', 'dvb', 'memstick_host', 'net', 'scsi_generic', 'scsi_host',
-            'sound', 'ssb', 'tty', 'usb', 'video4linux', )
+            'ac97', 'disk', 'drm', 'drm_minor', 'dvb', 'enclosure',
+            'gameport', 'hid', 'host', 'ieee80211', 'link', 'lirc',
+            'memstick_host', 'net', 'partition', 'pci_express',
+            'pcmcia_socket', 'scsi_disk', 'scsi_generic', 'scsi_host',
+            'scsi_target', 'sound', 'spi_host', 'spi_transport', 'ssb',
+            'tifm', 'tifm_adapter', 'tty', 'usb', 'usb-serial',
+            'usb_endpoint', 'usb_host', 'usb_interface', 'video4linux',
+            'wlan')
         for tested_bus in ignored_buses:
             properties['info.bus'] = (tested_bus, 'str')
             parser.buildHalDeviceList(parsed_data)
@@ -1852,9 +2010,12 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         properties = devices[0]['properties']
-        for bus in ('backlight', 'bluetooth', 'ieee1394', 'input', 'misc',
-                    'mmc', 'mmc_host', 'pcmcia', 'platform', 'pnp',
-                    'power_supply', 'unknown'):
+        for bus in ('backlight', 'bdi', 'bluetooth', 'dmi', 'heci', 'hidraw',
+                   'hwmon', 'i2c-adapter', 'ieee1394', 'input', 'leds', 'mem',
+                   'misc', 'mmc', 'mmc_host', 'pci_bus', 'pcmcia', 'platform',
+                   'pnp', 'power_supply', 'ppdev', 'ppp', 'printer', 'rfkill',
+                   'thermal', 'ttm', 'unknown', 'vc', 'video_output',
+                    'vtconsole'):
             properties['info.bus'] = (bus, 'str')
             parser.buildHalDeviceList(parsed_data)
             device = parser.devices[self.UDI_SATA_CONTROLLER]
@@ -3036,7 +3197,8 @@ class TestUdevDevice(TestCaseHWDB):
                 'DEVPATH': '/devices/LNXSYSTM:00',
                 'MODALIAS': 'acpi:LNXSYSTM:',
                 'SUBSYSTEM': 'acpi',
-                }
+                },
+            'id': 1,
             }
 
         self.root_device_dmi_data = {
@@ -3500,6 +3662,23 @@ class TestUdevDevice(TestCaseHWDB):
             {'udev_data': self.usb_storage_block_partition_data},
             ]
 
+        self.usb_hub_path = '/devices/pci0000:00/0000:00:1d.0/usb2'
+        self.usb_hub = {
+            'P': self.usb_hub_path,
+            'E': {
+                'DEVTYPE': 'usb_device',
+                'DRIVER': 'usb',
+                'PRODUCT': '0/0/0',
+                'TYPE': '9/0/0',
+                'SUBSYSTEM': 'usb',
+                },
+            }
+
+        self.usb_hub_with_odd_parent_hierarchy_data = [
+            {'udev_data': self.root_device},
+            {'udev_data': self.usb_hub},
+            ]
+
         self.no_subsystem_device_data = {
             'P': '/devices/pnp0/00:00',
             'E': {}
@@ -3520,7 +3699,7 @@ class TestUdevDevice(TestCaseHWDB):
                 },
             }
 
-    def test_device_id(self):
+    def test_device_device_id(self):
         """Test of UdevDevice.device_id."""
         device = UdevDevice(None, self.pci_sata_controller)
         self.assertEqual(
@@ -4081,6 +4260,25 @@ class TestUdevDevice(TestCaseHWDB):
                    device.device_id == self.usb_storage_usb_device_path,
                    device.is_real_device))
 
+    def test_is_real_device_usb_hub_with_odd_parent(self):
+        """Test of UdevDevice._is_real_device for USB storage related nodes.
+
+        If called for USB hub node with vendor ID == 0 and product_id == 0
+        which is not the child of a PCI device, we get a warning.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = (
+            'UdevDevice.is_real_device, USB hub with odd parent.')
+        devices = self.buildUdevDeviceHierarchy(
+            self.usb_hub_with_odd_parent_hierarchy_data, parser)
+        usb_hub = devices[self.usb_hub_path]
+        self.assertFalse(usb_hub.is_real_device)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'USB device found with vendor ID==0, product ID==0, '
+            'where the parent device does not look like a USB '
+            'host controller: %s' % self.usb_hub_path)
+
     def test_has_reliable_data_system(self):
         """Test of UdevDevice.has_reliable_data for a system."""
         root_device = UdevDevice(
@@ -4184,6 +4382,11 @@ class TestUdevDevice(TestCaseHWDB):
             'A UdevDevice that is supposed to be a real device does not '
             'provide bus, vendor ID, product ID or product name: None None '
             'None None /devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0')
+
+    def test_device_id(self):
+        """Each UdevDevice has a property 'id'."""
+        device = UdevDevice(None, self.root_device)
+        self.assertEqual(1, device.id)
 
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
@@ -4965,6 +5168,80 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.failIf(
             result, 'Submission with inconsistent data treated as valid.')
 
+    def test_processSubmission_udev_data(self):
+        """Test of SubmissionParser.processSubmission().
+
+        Variant with udev data.
+        """
+        class MockSubmissionParser(SubmissionParser):
+            """A variant that shortcuts parseSubmission().
+            """
+            def parseSubmission(self, submission, submission_key):
+                """See `SubmissionParser`."""
+                udev_root_device = {
+                    'P': '/devices/LNXSYSTM:00',
+                    'E': {'SUBSYSTEM': 'acpi'},
+                    'id': 1,
+                    }
+                udev_pci_device = {
+                    'P': '/devices/pci0000:00/0000:00:1f.2',
+                    'E': {
+                        'SUBSYSTEM': 'pci',
+                        'PCI_CLASS': '10601',
+                        'PCI_ID': '8086:27C5',
+                        'PCI_SUBSYS_ID': '10CF:1387',
+                        'PCI_SLOT_NAME': '0000:08:03.0',
+                        },
+                    'id': 2,
+                    }
+                root_device_dmi_data = {
+                    '/sys/class/dmi/id/sys_vendor': 'FUJITSU SIEMENS',
+                    '/sys/class/dmi/id/product_name': 'LIFEBOOK E8210',
+                    }
+                parsed_data = {
+                    'hardware': {
+                        'udev': [udev_root_device, udev_pci_device],
+                        'sysfs-attributes': {},
+                        'dmi': root_device_dmi_data,
+                        'processors': [],
+                        },
+                    'software': {'packages': {}},
+                    'questions': [],
+                    }
+                self.submission_key = submission_key
+                return parsed_data
+
+        validate_mock_class(MockSubmissionParser)
+
+        submission_key = 'submission-with-udev-data'
+        submission = self.createSubmissionData(
+            'does not matter', False, submission_key)
+        parser = MockSubmissionParser()
+
+        self.assertTrue(parser.processSubmission(submission))
+
+        device_set = getUtility(IHWDeviceSet)
+        device_1 = device_set.getByDeviceID(HWBus.PCI, '0x8086', '0x27c5')
+        self.assertEqual(HWBus.PCI, device_1.bus)
+        self.assertEqual('0x8086', device_1.vendor_id)
+        self.assertEqual('0x27c5', device_1.bus_product_id)
+
+        device_2 = device_set.getByDeviceID(
+            HWBus.SYSTEM, 'FUJITSU SIEMENS', 'LIFEBOOK E8210')
+        self.assertEqual(HWBus.SYSTEM, device_2.bus)
+        self.assertEqual('FUJITSU SIEMENS', device_2.vendor_id)
+        self.assertEqual('LIFEBOOK E8210', device_2.bus_product_id)
+
+        submission_device_set = getUtility(IHWSubmissionDeviceSet)
+        submission_devices = submission_device_set.getDevices(submission)
+        submission_device_1, submission_device_2 = submission_devices
+
+        self.assertEqual(device_1, submission_device_1.device)
+        self.assertEqual(submission_device_2, submission_device_1.parent)
+
+        self.assertEqual(device_2, submission_device_2.device)
+        self.assertIs(None, submission_device_2.parent)
+
     def test_processSubmission_buildDeviceList_failing(self):
         """Test of SubmissionParser.processSubmission().
 
@@ -4998,6 +5275,20 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             result,
             'Real submission data not processed. Logged errors:\n%s'
             % self.getLogData())
+
+    def test_root_device(self):
+        """Test o SubmissionParser.root_device."""
+        submission_parser = SubmissionParser()
+        submission_parser.devices = {
+            '/org/freedesktop/Hal/devices/computer': 'A HAL device',
+            }
+        self.assertEqual('A HAL device', submission_parser.root_device)
+
+        submission_parser = SubmissionParser()
+        submission_parser.devices = {
+            '/devices/LNXSYSTM:00': 'A udev device',
+            }
+        self.assertEqual('A udev device', submission_parser.root_device)
 
     def testPendingSubmissionProcessing(self):
         """Test of process_pending_submissions().

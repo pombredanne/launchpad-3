@@ -261,6 +261,11 @@
                     createComment
                     createCommentFromMessage"/>
   </class>
+  <adapter
+      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
+      name="commit_message"/>
+
+
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
     <allow interface="canonical.launchpad.interfaces.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
@@ -875,6 +880,15 @@
     <allow interface="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJobSource"/>
   </securedutility>
   <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
+    <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+  </class>
+
+  <securedutility
+      component="lp.code.model.branchjob.BranchUpgradeJob"
+      provides="lp.code.interfaces.branchjob.IBranchUpgradeJobSource">
+    <allow interface="lp.code.interfaces.branchjob.IBranchUpgradeJobSource"/>
+  </securedutility>
+  <class class="lp.code.model.branchjob.BranchUpgradeJob">
     <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
   </class>
 

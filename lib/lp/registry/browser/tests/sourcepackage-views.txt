@@ -13,20 +13,26 @@ SourcePackage views
     >>> package = factory.makeSourcePackage(
     ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
 
-    >>> view = create_view(package, name='+edit-packaging')
+    >>> view = create_initialized_view(package, name='+edit-packaging')
     >>> print view.label
-     Define upstream link
+    Link to an upstream project
 
     >>> print view.page_title
-     Define upstream link
+    Link to an upstream project
 
     >>> print view.cancel_url
     http://launchpad.dev/youbuntu/busy/+source/bonkers
 
-The view allows the owner or admin to change productseries field.
+
+The view allows the logged in user to change product series field. The value
+of the product series field is None by default because it is not required to
+create a source package.
 
     >>> view.field_names
     ['productseries']
+
+    >>> print view.widgets.get('productseries')._getFormValue()
+    <BLANKLINE>
 
     >>> print package.productseries
     None
@@ -51,3 +57,42 @@ The view allows the owner or admin to change productseries field.
 
     >>> print package.productseries.name
     crazy
+
+    >>> transaction.commit()
+
+The form shows the current product series if it is set.
+
+    >>> view = create_initialized_view(package, name='+edit-packaging')
+    >>> print view.widgets.get('productseries')._getFormValue().name
+    crazy
+
+The form requires a product series. An error is raised if the field is left
+empty.
+
+    >>> form = {
+    ...     'field.productseries': '',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     package, name='+edit-packaging', form=form,
+    ...     principal=product.owner)
+    >>> for error in view.errors:
+    ...     print error
+    ('productseries', u'Project series', RequiredMissing())
+    You must choose a project series.
+
+Submitting the same product series as the current packaging is not an error,
+but there is no notification message that the upstream link was updated.
+
+    >>> form = {
+    ...     'field.productseries': 'bonkers/crazy',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     package, name='+edit-packaging', form=form,
+    ...     principal=product.owner)
+    >>> view.errors
+    []
+
+    >>> print view.request.response.notifications
+    []

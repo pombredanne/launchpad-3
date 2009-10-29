@@ -249,7 +249,7 @@ function sparkline(branch_id, o) {
               link rather than having a space after it.
             </tal:comment>
             <tal:series-link>
-              <a tal:attributes="href series/fmt:url" tal:content="series/name">
+              <a tal:attributes="href series/fmt:url:mainsite" tal:content="series/name">
                 trunk
               </a></tal:series-link><tal:comma condition="not: repeat/series/end">,</tal:comma>
           </tal:associated-series>

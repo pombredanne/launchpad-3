@@ -171,7 +171,8 @@ class IBranchMergeProposal(IPrivacy):
         Summary(
             title=_("Commit Message"), required=False,
             description=_("The commit message that should be used when "
-                          "merging the source branch.")))
+                          "merging the source branch."),
+            strip_text=True))
 
     queue_position = exported(
         Int(

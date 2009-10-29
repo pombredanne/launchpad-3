@@ -82,6 +82,7 @@ from lp.bugs.browser.bugtask import (
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
@@ -89,6 +90,7 @@ from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
@@ -311,7 +313,7 @@ class ProductNavigationMenu(NavigationMenu):
         return Link('+branchvisibility', text)
 
 
-class ProductEditLinksMixin:
+class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
     """A mixin class for menus that need Product edit links."""
 
     @enabled_with_permission('launchpad.Edit')
@@ -338,10 +340,6 @@ class ProductEditLinksMixin:
     def administer(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
-
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
 
 class IProductEditMenu(Interface):
@@ -431,7 +429,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         return Link('+branchvisibility', text, icon='edit')
 
 
-class ProductBugsMenu(ApplicationMenu):
+class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IProduct
     facet = 'bugs'
@@ -459,10 +457,6 @@ class ProductBugsMenu(ApplicationMenu):
     def securitycontact(self):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
-
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
 
 class ProductSpecificationsMenu(NavigationMenu,
@@ -926,10 +920,50 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 check_permission('launchpad.Commercial', self.context))
 
 
-class ProductPackagesView(ProductView):
+class ProductPackagesView(PackagingDeleteView):
     """View for displaying product packaging"""
 
-    label = 'Packages in Launchpad'
+    label = 'Linked packages'
+
+    @property
+    def all_packaging(self):
+        """See `PackagingDeleteView`."""
+        for series in self.context.serieses:
+            for packaging in series.packagings:
+                yield packaging
+
+    @cachedproperty
+    def series_packages(self):
+        """A hierarchy of product series, packaging and field data.
+
+        A dict of series and packagings. Each packaging is a dict of the
+        packaging and a hidden HTML field for forms:
+           [{series: <hoary>,
+             packagings: {
+                packaging: <packaging>,
+                field: '<input type=''hidden' ...>},
+                }]
+        """
+        # This method is a superset of all_packaging. While all_packaging will
+        # be called several times as data is mutated, series_packages should
+        # only be called during render().
+        packaged_series = []
+        for series in self.context.serieses:
+            packagings = []
+            for packaging in series.packagings:
+                form_id = 'delete-%s-%s-%s' % (
+                    packaging.distroseries.name,
+                    packaging.sourcepackagename.name,
+                    packaging.productseries.name,
+                    )
+                packaging_field = dict(
+                    packaging=packaging,
+                    form_id=form_id,
+                    field=self._renderHiddenPackagingField(packaging))
+                packagings.append(packaging_field)
+            packaged_series.append(dict(
+                series=series, packagings=packagings))
+        return packaged_series
 
 
 class ProductDistributionsView(ProductView):
