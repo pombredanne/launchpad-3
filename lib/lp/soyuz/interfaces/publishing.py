@@ -859,7 +859,7 @@ class IPublishingSet(Interface):
     def copyBinariesTo(binaries, distroseries, pocket, archive):
         """Copy multiple binaries to a given destination.
 
-        Processing multiple binaries an a batch allows certain
+        Processing multiple binaries in a batch allows certain
         performance optimisations such as looking up the main
         component once only, and getting all the BPPH records
         with one query.
