@@ -378,6 +378,7 @@ class Branch(SQLBase):
         self, registrant, target_branch, prerequisite_branch=None,
         needs_review=True, initial_comment=None, commit_message=None,
         reviewers=None, review_types=None):
+        """See `IBranch`."""
         if reviewers is None:
             reviewers = []
         if review_types is None:
