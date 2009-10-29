@@ -146,7 +146,7 @@ class CodeReviewCommentView(LaunchpadView):
     @cachedproperty
     def display_attachments(self):
         # Attachments to show.
-        return self.all_attachments[0]
+        return [DiffAttachment(alias) for alias in self.all_attachments[0]]
 
     @cachedproperty
     def other_attachments(self):
