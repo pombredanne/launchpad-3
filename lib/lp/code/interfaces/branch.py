@@ -725,6 +725,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
 
     @operation_parameters(
         target_branch=Reference(schema=Interface),
+        prerequisite_branch=Reference(schema=Interface),
+        initial_comment=TextLine(),
         )
     @call_with(registrant=REQUEST_USER)
     # IBranchMergeProposal supplied as Interface to avoid circular imports.

@@ -10,17 +10,22 @@ Branch merge proposals can be created through the API.
     >>> target_url = str(canonical_url(target, rootsite='api'))
     >>> source = factory.makeBranchTargetBranch(target.target)
     >>> source_url = str(canonical_url(source, rootsite='api'))
+    >>> prerequisite = factory.makeBranchTargetBranch(target.target)
+    >>> prerequisite_url = canonical_url(prerequisite, rootsite='api')
     >>> registrant = source.registrant
     >>> logout()
     >>> registrant_webservice = webservice_for_person(
     ...     registrant, permission=OAuthPermission.WRITE_PUBLIC)
     >>> bmp_result = registrant_webservice.named_post(
-    ...     source_url, 'addLandingTarget', target_branch=target_url)
+    ...     source_url, 'addLandingTarget', target_branch=target_url,
+    ...     prerequisite_branch=prerequisite_url, initial_comment='Merge it!')
     >>> def pprint_entry_result(result):
     ...     link = result.getHeader('Location')
     ...     entry = registrant_webservice.get(link).jsonBody()
     ...     pprint_entry(entry)
-    >>> pprint_entry_result(bmp_result)
+    >>> bmp_url = bmp_result.getHeader('Location')
+    >>> bmp = registrant_webservice.get(bmp_url).jsonBody()
+    >>> pprint_entry(bmp)
     address: u'mp+1@code.launchpad.dev'
     all_comments_collection_link:
         u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/.../all_comments'
@@ -32,7 +37,8 @@ Branch merge proposals can be created through the API.
     date_reviewed: None
     merge_reporter_link: None
     merged_revno: None
-    prerequisite_branch_link: None
+    prerequisite_branch_link:
+        u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch...'
     preview_diff_link: None
     private: False
     queue_position: None
@@ -54,6 +60,20 @@ Branch merge proposals can be created through the API.
         u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch...'
     votes_collection_link:
         u'http://api.launchpad.dev/beta/~person-name14/product-name.../branch.../+merge/.../votes'
+
+    >>> all_comments = webservice.get(
+    ...     bmp['all_comments_collection_link']).jsonBody()
+    >>> pprint_entry(all_comments['entries'][0])
+    as_quoted_email: u'> Merge it!'
+    branch_merge_proposal_link:
+        u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/...'
+    id: ...
+    message_body: u'Merge it!'
+    resource_type_link: u'http://api.launchpad.dev/beta/#code_review_comment'
+    self_link: u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/.../comments/...'
+    title: u'Comment on proposed merge of lp://dev/~person-name.../product-name.../branch... into lp://dev/~person-name.../product-name.../branch...'
+    vote: None
+    vote_tag: None
 
 
 == Get an existing merge proposal ==
@@ -130,23 +150,23 @@ The comments on a branch merge proposal are exposed through the API.
     >>> pprint_entry(all_comments['entries'][0])
     as_quoted_email: u'> This is great work'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
-    id: 1
+    id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
-    self_link: u'http://.../~source/fooix/fix-it/+merge/.../comments/1'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/.../comments/...'
     title: u'Comment on proposed merge of lp://dev/~source/fooix/fix-it into lp://dev/~target/fooix/trunk'
     vote: u'Approve'
     vote_tag: u'code'
 
     >>> comment_2 = webservice.named_get(
-    ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
+    ...     merge_proposal['self_link'], 'getComment', id=3).jsonBody()
     >>> pprint_entry(comment_2)
     as_quoted_email: u'> This is mediocre work.'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
-    id: 2
+    id: ...
     message_body: u'This is mediocre work.'
     resource_type_link: u'http://.../#code_review_comment'
-    self_link: u'http://.../~source/fooix/fix-it/+merge/.../comments/2'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/.../comments/...'
     title: ...
     vote: u'Abstain'
     vote_tag: None
@@ -210,10 +230,10 @@ Now the code review should be made.
     >>> pprint_entry_result(comment_result)
     as_quoted_email: u'> This is great work'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
-    id: 3
+    id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
-    self_link: u'http://.../~source/fooix/fix-it/+merge/.../comments/3'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/.../comments/...'
     title: ...
     vote: u'Approve'
     vote_tag: u'code'
