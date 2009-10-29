@@ -33,12 +33,11 @@ class TestBranchStatus(TestCaseWithFactory):
 
         client = WindmillTestClient("Branch status setting")
 
-        login_person(eric, "test", client)
-
         start_url = (
             windmill.settings['TEST_URL'] + branch.unique_name)
         client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
+        login_person(eric, "test", client)
 
         # Click on the element containing the branch status.
         client.waits.forElement(
