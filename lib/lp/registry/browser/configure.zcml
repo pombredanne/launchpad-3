@@ -1655,7 +1655,7 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.packaging.PackagingAddView"
         facet="overview"
-        permission="launchpad.Edit"
+        permission="launchpad.View"
         template="../templates/productseries-packaging.pt"/>
     <browser:page
         name="+ubuntupkg"

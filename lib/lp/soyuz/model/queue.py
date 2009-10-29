@@ -45,8 +45,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.helpers import get_email_template
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -56,7 +54,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, ISourcePackagePublishingHistory, PackagePublishingStatus)
+    IPublishingSet, ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
@@ -1371,15 +1369,13 @@ class PackageUploadBuild(SQLBase):
             archive = self.packageupload.archive
             # DDEBs targeted to the PRIMARY archive are published in the
             # corresponding DEBUG archive.
-            if (archive.purpose == ArchivePurpose.PRIMARY and
-                binary.binpackageformat == BinaryPackageFormat.DDEB):
-                distribution = self.packageupload.distroseries.distribution
-                archive = getUtility(IArchiveSet).getByDistroPurpose(
-                    distribution, ArchivePurpose.DEBUG)
-                if archive is None:
+            if binary.binpackageformat == BinaryPackageFormat.DDEB:
+                debug_archive = archive.debug_archive
+                if debug_archive is None:
                     raise QueueInconsistentStateError(
                         "Could not find the corresponding DEBUG archive "
-                        "for %s" % (distribution.title))
+                        "for %s" % (archive.displayname))
+                archive = debug_archive
 
             for each_target_dar in target_dars:
                 bpph = getUtility(IPublishingSet).newBinaryPublication(

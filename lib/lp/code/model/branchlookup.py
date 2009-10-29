@@ -26,10 +26,12 @@ from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import get_linked_branch, NoLinkedBranch
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, get_linked_branch, NoLinkedBranch)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
+from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
@@ -228,7 +230,11 @@ class BranchLookup:
                 return None
             try:
                 return self.getByLPPath(uri.path.lstrip('/'))[0]
-            except NoSuchBranch:
+            except (
+                CannotHaveLinkedBranch, InvalidNamespace, InvalidProductName,
+                NoSuchBranch, NoSuchPerson, NoSuchProduct,
+                NoSuchProductSeries, NoSuchDistroSeries,
+                NoSuchSourcePackageName, NoLinkedBranch):
                 return None
 
         return Branch.selectOneBy(url=url)

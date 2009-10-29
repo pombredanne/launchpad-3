@@ -15,9 +15,9 @@ User keys are shown on profile pages, and any user can see that.
     Sample Person in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'sshkeys'))
-    SSH Keys: andrew@trogdor
+    SSH keys: andrew@trogdor
 
-Salgado does not have a key, so we omit the 'SSH Keys' section for anonymous
+Salgado does not have a key, so we omit the 'SSH keys' section for anonymous
 users.
 
     >>> anon_browser.open('http://launchpad.dev/~salgado')
@@ -35,7 +35,7 @@ Salgado sees a message explaining that he can register his ssh key.
     Guilherme Salgado in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'sshkeys'))
-    SSH Keys: Add an SSH key
+    SSH keys: Add an SSH key
     No SSH keys registered.
 
 
@@ -110,7 +110,7 @@ to edit his keys is on the page.
     Guilherme Salgado in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'sshkeys'))
-    SSH Keys: Update SSH keys
+    SSH keys: Update SSH keys
     salgado@canario
     salgado@canario
     >>> browser.getLink('Update SSH keys').click()

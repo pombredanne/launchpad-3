@@ -24,7 +24,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, Join, LeftJoin, Or, SQL
+from storm.expr import Alias, And, Desc, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
@@ -40,8 +40,10 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.utilities.rosettastats import RosettaStats
+from lp.services.database.prejoin import prejoin
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.translations.model.pofile import POFile, DummyPOFile
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
@@ -405,7 +407,7 @@ class POTemplate(SQLBase, RosettaStats):
         return POTMsgSet.selectOne(' AND '.join(clauses),
                                    clauseTables=['TranslationTemplateItem'])
 
-    def getPOTMsgSets(self, current=True):
+    def getPOTMsgSets(self, current=True, prefetch=True):
         """See `IPOTemplate`."""
         clauses = self._getPOTMsgSetSelectionClauses()
 
@@ -416,7 +418,10 @@ class POTemplate(SQLBase, RosettaStats):
         query = POTMsgSet.select(" AND ".join(clauses),
                                  clauseTables=['TranslationTemplateItem'],
                                  orderBy=['TranslationTemplateItem.sequence'])
-        return query.prejoin(['msgid_singular', 'msgid_plural'])
+        if prefetch:
+            query = query.prejoin(['msgid_singular', 'msgid_plural'])
+
+        return query
 
     def getTranslationCredits(self):
         """See `IPOTemplate`."""
@@ -437,7 +442,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
-        results = self.getPOTMsgSets(current)
+        results = self.getPOTMsgSets(current, prefetch=False)
         return results.count()
 
     def getPOTMsgSetByID(self, id):
@@ -661,7 +666,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def expireAllMessages(self):
         """See `IPOTemplate`."""
-        for potmsgset in self.getPOTMsgSets():
+        for potmsgset in self.getPOTMsgSets(prefetch=False):
             potmsgset.setSequence(self, 0)
 
     def _lookupLanguage(self, language_code):
@@ -1003,8 +1008,8 @@ class POTemplateSubset:
         self.distroseries = distroseries
         self.productseries = productseries
         self.iscurrent = iscurrent
-        self.clausetables = []
-        self.orderby = ['id']
+        self.orderby = [POTemplate.id]
+        self.clauses = []
 
         assert productseries is None or distroseries is None, (
             'A product series must not be used with a distro series.')
@@ -1012,46 +1017,63 @@ class POTemplateSubset:
         assert productseries is not None or distroseries is not None, (
             'Either productseries or distroseries must be not None.')
 
+        # Construct the base clauses.
         if productseries is not None:
-            self.query = ('POTemplate.productseries = %s' %
-                sqlvalues(productseries.id))
-        elif distroseries is not None and from_sourcepackagename is not None:
-            self.query = ('POTemplate.from_sourcepackagename = %s AND'
-                          ' POTemplate.distroseries = %s ' %
-                            sqlvalues(from_sourcepackagename.id,
-                                      distroseries.id))
-            self.sourcepackagename = from_sourcepackagename
-        elif distroseries is not None and sourcepackagename is not None:
-            self.query = ('POTemplate.sourcepackagename = %s AND'
-                          ' POTemplate.distroseries = %s ' %
-                            sqlvalues(sourcepackagename.id, distroseries.id))
+            self.clauses.append(
+                POTemplate.productseriesID == productseries.id)
         else:
-            self.query = (
-                'POTemplate.distroseries = DistroSeries.id AND'
-                ' DistroSeries.id = %s' % sqlvalues(distroseries.id))
-            self.orderby.append('DistroSeries.name')
-            self.clausetables.append('DistroSeries')
-
+            self.clauses.append(
+                POTemplate.distroseriesID == distroseries.id)
+            if from_sourcepackagename is not None:
+                self.clauses.append(
+                    POTemplate.from_sourcepackagenameID ==
+                        from_sourcepackagename.id)
+                self.sourcepackagename = from_sourcepackagename
+            elif sourcepackagename is not None:
+                self.clauses.append(
+                    POTemplate.sourcepackagename == sourcepackagename.id)
+            else:
+                # Select all POTemplates in a Distroseries.
+                pass
         # Add the filter for the iscurrent flag if requested.
         if iscurrent is not None:
-            self.query += " AND POTemplate.iscurrent=%s" % (
-                            sqlvalues(iscurrent))
+            self.clauses.append(
+                POTemplate.iscurrent == iscurrent)
 
-        # Finally, we sort the query by its path in all cases.
-        self.orderby.append('POTemplate.path')
+    def _build_query(self, additional_clause=None,
+                     ordered=True, do_prejoin=True):
+        """Construct the storm query."""
+        if additional_clause is None:
+            condition = And(self.clauses)
+        else:
+            condition = And(self.clauses + [additional_clause])
+
+        if self.productseries is not None:
+            store = Store.of(self.productseries)
+            query = store.find(POTemplate, condition)
+        else:
+            store = Store.of(self.distroseries)
+            if do_prejoin:
+                query = prejoin(store.find(
+                    (POTemplate, SourcePackageName),
+                    (POTemplate.sourcepackagenameID ==
+                     SourcePackageName.id), condition))
+            else:
+                query = store.find(POTemplate, condition)
+
+        if ordered:
+            return query.order_by(self.orderby)
+        return query
 
     def __iter__(self):
         """See `IPOTemplateSubset`."""
-        res = POTemplate.select(self.query, clauseTables=self.clausetables,
-                                orderBy=self.orderby)
-
-        for potemplate in res:
+        for potemplate in self._build_query():
             yield potemplate
 
     def __len__(self):
         """See `IPOTemplateSubset`."""
-        res = POTemplate.select(self.query, clauseTables=self.clausetables)
-        return res.count()
+        result = self._build_query(do_prejoin=False, ordered=False)
+        return result.count()
 
     def __getitem__(self, name):
         """See `IPOTemplateSubset`."""
@@ -1110,24 +1132,16 @@ class POTemplateSubset:
 
     def getPOTemplateByName(self, name):
         """See `IPOTemplateSubset`."""
-        queries = [self.query]
-        clausetables = list(self.clausetables)
-        queries.append('POTemplate.name = %s' % sqlvalues(name))
-
-        return POTemplate.selectOne(' AND '.join(queries),
-            clauseTables=clausetables)
+        result = self._build_query(POTemplate.name == name, ordered=False)
+        return result.one()
 
     def getPOTemplateByTranslationDomain(self, translation_domain):
         """See `IPOTemplateSubset`."""
-        queries = [self.query]
-        clausetables = list(self.clausetables)
-
-        queries.append('POTemplate.translation_domain = %s' % sqlvalues(
-            translation_domain))
+        query_result = self._build_query(
+            POTemplate.translation_domain == translation_domain)
 
         # Fetch up to 2 templates, to check for duplicates.
-        matches = POTemplate.select(
-            ' AND '.join(queries), clauseTables=clausetables, limit=2)
+        matches = query_result.config(limit=2)
 
         result = [match for match in matches]
         if len(result) == 0:
@@ -1145,23 +1159,14 @@ class POTemplateSubset:
 
     def getPOTemplateByPath(self, path):
         """See `IPOTemplateSubset`."""
-        query = '%s AND POTemplate.path = %s' % (self.query, quote(path))
-
-        return POTemplate.selectOne(query, clauseTables=self.clausetables)
+        result = self._build_query(
+            POTemplate.path == path, ordered=False)
+        return result.one()
 
     def getAllOrderByDateLastUpdated(self):
         """See `IPOTemplateSet`."""
-        query = []
-        if self.productseries is not None:
-            query.append('productseries = %s' % sqlvalues(self.productseries))
-        if self.distroseries is not None:
-            query.append('distroseries = %s' % sqlvalues(self.distroseries))
-        if self.sourcepackagename is not None:
-            query.append('sourcepackagename = %s' % sqlvalues(
-                self.sourcepackagename))
-
-        return POTemplate.select(
-            ' AND '.join(query), orderBy=['-date_last_updated'])
+        result = self._build_query(ordered=False)
+        return result.order_by(Desc(POTemplate.date_last_updated))
 
     def getClosestPOTemplate(self, path):
         """See `IPOTemplateSubset`."""
@@ -1191,10 +1196,11 @@ class POTemplateSubset:
 
     def findUniquePathlessMatch(self, filename):
         """See `IPOTemplateSubset`."""
-        query = self.query + (
-            " AND (POTemplate.path = %s OR POTemplate.path LIKE '%%/' || %s)"
-                % (quote(filename), quote_like(filename)))
-        candidates = list(POTemplate.select(query, limit=2))
+        result = self._build_query(
+            ("(POTemplate.path = %s OR POTemplate.path LIKE '%%%%/' || %s)"
+                % (quote(filename), quote_like(filename))),
+                ordered=False)
+        candidates = list(result.config(limit=2))
 
         if len(candidates) == 1:
             # Found exactly one match.
