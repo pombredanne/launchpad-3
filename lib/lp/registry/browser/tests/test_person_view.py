@@ -7,6 +7,7 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -14,9 +15,10 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.browser.person import PersonView
 from lp.registry.model.karma import KarmaCategory
 from lp.testing import TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 
 
-class TestPersonView(TestCaseWithFactory):
+class TestPersonViewKarma(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -67,6 +69,43 @@ class TestPersonView(TestCaseWithFactory):
         # (e.g. when the callsite issues a switchDbUser() after we return).
         LaunchpadZopelessLayer.commit()
         return karmacache
+
+
+class TestShouldShowPpaSection(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.person = self.factory.makePerson(name='mowgli')
+        self.person_ppa = self.factory.makeArchive(owner=self.person)
+        self.team = self.factory.makeTeam(name='jbook')
+        self.team_ppa = self.factory.makeArchive(owner=self.team)
+        self.person_view = create_initialized_view(self.person, name='+index')
+        self.team_view = create_initialized_view(self.team, name='+index')
+
+    def test_for_user_with_view_permission(self):
+        # Show PPA section if context has at least one PPA the user is
+        # authorised to view.
+        login(ANONYMOUS)
+        self.failUnless(self.person_view.should_show_ppa_section)
+        self.person_ppa.private = True
+        self.person_ppa.buildd_secret = "secret"
+        self.failIf(self.person_view.should_show_ppa_section)
+
+    def test_for_user_with_view_permission_and_no_ppas(self):
+        # Do not show PPA section if context has no PPAs the user is
+        # authorised to view.
+        pass
+
+    def test_for_user_with_edit_permission(self):
+        # Show PPA section if user has edit permission for context.
+        pass
+
+    def test_for_user_without_edit_permission_and_no_ppas(self):
+        # Do not show the PPA section if there are no PPAs and if the user has
+        # no edit permission for context.
+        pass
 
 
 def test_suite():
