@@ -27,12 +27,7 @@ class TestTimelineGraph(TestCaseWithFactory):
             timeout=u'8000')
         link_xpath = '//div/a[@href="/firefox/trunk"]'
 
-        # waits.forElement() is called multiple times because there
-        # were sporadic errors where waits.forElement() would succeed but
-        # the following assertNode() would fail 5% of the time.
-        for i in range(5):
-            self.client.waits.forElement(xpath=link_xpath)
-        self.client.asserts.assertNode(xpath=link_xpath)
+        self.client.waits.forElement(xpath=link_xpath)
 
     def test_project_timeline_graph(self):
         """Test that the timeline graph loads on /$project page."""
