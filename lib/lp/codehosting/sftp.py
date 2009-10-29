@@ -429,6 +429,7 @@ class TransportSFTPServer:
             bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,
             bzr_errors.FileExists: filetransfer.FX_FILE_ALREADY_EXISTS,
             bzr_errors.DirectoryNotEmpty: filetransfer.FX_FAILURE,
+            bzr_errors.TransportError: filetransfer.FX_FAILURE,
             FileIsADirectory: filetransfer.FX_FILE_IS_A_DIRECTORY,
             }
         # Bazaar expects makeDirectory to fail with exactly the string "mkdir
