@@ -22,7 +22,6 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lazr.delegates import delegates
