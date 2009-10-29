@@ -34,7 +34,7 @@ A helper function to test date handling.
   ...     form = {
   ...         'field.time_starts': time_starts,
   ...         'field.time_ends': time_ends,
-  ...         'field.is_physical': 'on',
+  ...         'field.is_physical': 'yes',
   ...         'field.actions.register': 'Register'}
   ...     return create_initialized_view(sprint, name='+attend', form=form)
 
@@ -105,7 +105,7 @@ at the sprint.
     >>> form = {
     ...     'field.time_starts': '2005-10-07 09:00',
     ...     'field.time_ends': '2005-10-17 19:05',
-    ...     'field.is_physical': 'on',
+    ...     'field.is_physical': 'yes',
     ...     'field.actions.register': 'Register'}
     >>> view = create_initialized_view(ubz, name='+attend', form=form)
     >>> view.errors
@@ -124,7 +124,7 @@ their psychotic powers :).
     >>> form = {
     ...     'field.time_starts': '2005-10-07 09:00',
     ...     'field.time_ends': '2005-10-17 19:05',
-    ...     'field.is_physical': 'off',
+    ...     'field.is_physical': 'no',
     ...     'field.actions.register': 'Register'}
     >>> view = create_initialized_view(ubz, name='+attend', form=form)
     >>> view.errors
@@ -170,7 +170,7 @@ It also requires the attendee field so that a user can register someone else.
     ...     'field.attendee': 'greene',
     ...     'field.time_starts': '2005-10-07 09:00',
     ...     'field.time_ends': '2005-10-17 19:05',
-    ...     'field.is_physical': 'on',
+    ...     'field.is_physical': 'yes',
     ...     'field.actions.register': 'Register'}
     >>> view = create_initialized_view(ubz, name='+register', form=form)
     >>> view.errors

@@ -17,6 +17,7 @@ from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget)
 from canonical.widgets.date import DateTimeWidget
+from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 
 
 class BaseSprintAttendanceAddView(LaunchpadFormView):
@@ -25,6 +26,8 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
     field_names = ['time_starts', 'time_ends', 'is_physical']
     custom_widget('time_starts', DateTimeWidget)
     custom_widget('time_ends', DateTimeWidget)
+    custom_widget(
+        'is_physical', LaunchpadBooleanRadioWidget, orientation='vertical')
 
     def setUpWidgets(self):
         LaunchpadFormView.setUpWidgets(self)
@@ -107,6 +110,7 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
     cancel_url = next_url
 
     _local_timeformat = '%H:%M on %A, %Y-%m-%d'
+
     @property
     def local_start(self):
         """The sprint start time, in the local time zone, as text."""
