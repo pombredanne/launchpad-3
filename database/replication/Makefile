@@ -37,6 +37,8 @@ _SLAVE_TABLESPACE=pg_default
 
 PGMASSACRE=../../utilities/pgmassacre.py
 
+SHHH=../../utilities/shhh.py
+
 default:
 	echo Usage: make [start|stop|restart]
 
@@ -143,9 +145,12 @@ _replicate:
 	# Setup the slave
 	./new-slave.py 2 "dbname=${_SLAVE}"
 	# Upgrade all databases in the cluster and reset security.
-	../schema/upgrade.py
-	../schema/fti.py
-	../schema/security.py --cluster -U slony
+	echo Running upgrade.py
+	${SHHH} ../schema/upgrade.py
+	echo Running fti.py
+	${SHHH} ../schema/fti.py
+	echo Running security.py
+	${SHHH} ../schema/security.py --cluster -U slony
 	# Migrate tables to the authdb replication set, creating the set
 	# and subscribing nodes to it as necessary.
 	./populate_auth_replication_set.py -U slony
