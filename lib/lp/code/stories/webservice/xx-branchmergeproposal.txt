@@ -18,7 +18,8 @@ Branch merge proposals can be created through the API.
     ...     registrant, permission=OAuthPermission.WRITE_PUBLIC)
     >>> bmp_result = registrant_webservice.named_post(
     ...     source_url, 'addLandingTarget', target_branch=target_url,
-    ...     prerequisite_branch=prerequisite_url, initial_comment='Merge it!')
+    ...     prerequisite_branch=prerequisite_url, initial_comment='Merge it!',
+    ...     needs_review=True)
     >>> def pprint_entry_result(result):
     ...     link = result.getHeader('Location')
     ...     entry = registrant_webservice.get(link).jsonBody()
@@ -33,7 +34,7 @@ Branch merge proposals can be created through the API.
     date_created: u'...'
     date_merged: None
     date_queued: None
-    date_review_requested: None
+    date_review_requested: u'...'
     date_reviewed: None
     merge_reporter_link: None
     merged_revno: None
@@ -42,7 +43,7 @@ Branch merge proposals can be created through the API.
     preview_diff_link: None
     private: False
     queue_position: None
-    queue_status: u'Work in progress'
+    queue_status: u'Needs review'
     queued_revno: None
     queuer_link: None
     registrant_link: u'http://api.launchpad.dev/beta/~person-name...'
