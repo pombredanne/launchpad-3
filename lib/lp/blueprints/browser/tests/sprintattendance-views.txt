@@ -191,9 +191,11 @@ If the person has specified their time zone in Launchpad, the CSV will
 include it.
 
     >>> view = create_view(ubz, '+attendees-csv')
-    >>> print view.render()
-    Launchpad username,Display name,...Timezone,...
-    name12,Sample Person...Australia/Perth...
+    >>> lines =  view.render().strip().splitlines()
+    >>> print lines[0]
+    Launchpad username,Display name,...Timezone,...Physical present
+    >>> print lines[-1]
+    name12,Sample Person,...Australia/Perth,...True
 
 However, some people may set their location/timezone as hidden, so if
 that's the case we won't include the person's timezone.
