@@ -680,6 +680,8 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
         # The view should render without errors.
         comment = self._makeCommentFromEmailWithAttachment(
             'test.diff', 'text/plain', 'testing', '\xe2\x98\x95')
+        # Need to commit in order to read the diff out of the librarian.
+        transaction.commit()
         view = create_initialized_view(comment, '+comment-body')
         view()
 
