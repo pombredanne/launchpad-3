@@ -13,7 +13,7 @@ import windmill
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing.constants import (
-    PAGE_LOAD, SLEEP)
+    FOR_ELEMENT, PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import TestCaseWithFactory
@@ -59,7 +59,7 @@ class TestBranchStatus(TestCaseWithFactory):
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             xpath=u'//span[@id="branch-details-status-value"]/span',
-            timeout=constants.FOR_ELEMENT)
+            timeout=FOR_ELEMENT)
         client.asserts.assertText(
             xpath=u'//span[@id="branch-details-status-value"]/span',
             validator=u'Experimental')
