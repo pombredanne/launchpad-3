@@ -308,7 +308,7 @@ class Branch(SQLBase):
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
                          initial_comment=None, review_requests=None,
-                         review_diff=None):
+                         review_diff=None, commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
             raise InvalidBranchMergeProposal(
@@ -360,7 +360,8 @@ class Branch(SQLBase):
             prerequisite_branch=prerequisite_branch, whiteboard=whiteboard,
             date_created=date_created,
             date_review_requested=date_review_requested,
-            queue_status=queue_status, review_diff=review_diff)
+            queue_status=queue_status, review_diff=review_diff,
+            commit_message=commit_message)
 
         if initial_comment is not None:
             bmp.createComment(

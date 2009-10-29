@@ -19,7 +19,7 @@ Branch merge proposals can be created through the API.
     >>> bmp_result = registrant_webservice.named_post(
     ...     source_url, 'addLandingTarget', target_branch=target_url,
     ...     prerequisite_branch=prerequisite_url, initial_comment='Merge it!',
-    ...     needs_review=True)
+    ...     needs_review=True, commit_message='It was merged!')
     >>> def pprint_entry_result(result):
     ...     link = result.getHeader('Location')
     ...     entry = registrant_webservice.get(link).jsonBody()
@@ -30,7 +30,7 @@ Branch merge proposals can be created through the API.
     address: u'mp+1@code.launchpad.dev'
     all_comments_collection_link:
         u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/.../all_comments'
-    commit_message: None
+    commit_message: u'It was merged!'
     date_created: u'...'
     date_merged: None
     date_queued: None

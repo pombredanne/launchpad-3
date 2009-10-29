@@ -727,6 +727,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         target_branch=Reference(schema=Interface),
         prerequisite_branch=Reference(schema=Interface),
         needs_review=Bool(), initial_comment=TextLine(),
+        commit_message=TextLine(),
         )
     @call_with(registrant=REQUEST_USER)
     # IBranchMergeProposal supplied as Interface to avoid circular imports.
@@ -734,7 +735,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
                          whiteboard=None, date_created=None,
                          needs_review=False, initial_comment=None,
-                         review_requests=None):
+                         review_requests=None, review_diff=None,
+                         commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the prerequisite_branch, if it is there,
