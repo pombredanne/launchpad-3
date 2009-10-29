@@ -17,3 +17,6 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 class PackagesetSetNavigation(GetitemNavigation):
     """Navigation methods for PackagesetSet."""
     usedfor = IPackagesetSet
+
+    def traverse(self, name, distroseries):
+        return self.context.getByName(name, distroseries=distroseries)

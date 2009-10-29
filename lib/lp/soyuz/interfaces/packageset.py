@@ -68,17 +68,17 @@ class IPackagesetViewOnly(IHasOwner):
         title=_("Description"), required=True, readonly=True,
         description=_("The description for the package set at hand.")))
 
-    distroseries = Reference(
+    distroseries = exported(Reference(
         IDistroSeries, title=_("Distribution series"), required=True,
         readonly=True,
         description=_(
-            "The distroseries to which this package set is related."))
+            "The distroseries to which this package set is related.")))
 
     packagesetgroup = Reference(
-        IPackagesetGroup, title=_('Packageset group'), required=True,
+        IPackagesetGroup, title=_('Package set group'), required=True,
         readonly=True,
         description=_(
-            'Used internally to link packagesets across distroseries'))
+            'Used internally to link package sets across distro series.'))
 
     def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
