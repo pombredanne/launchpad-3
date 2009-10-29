@@ -16,11 +16,13 @@ from zope.app.form.browser import TextAreaWidget, DropdownWidget
 from zope.interface import Interface, implements
 from zope.schema import Text
 
-from canonical.cachedproperty import cachedproperty
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 
+from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import ILibraryFileAlias
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
     LaunchpadView, Link)
@@ -69,6 +71,36 @@ class CodeReviewCommentContextMenu(ContextMenu):
     def reply(self):
         enabled = self.context.branch_merge_proposal.isMergable()
         return Link('+reply', 'Reply', icon='add', enabled=enabled)
+
+
+class DiffAttachment:
+    """An attachment that we are going to display."""
+
+    implements(ILibraryFileAlias)
+
+    delegates(ILibraryFileAlias, 'alias')
+
+    def __init__(self, alias):
+        self.alias = alias
+
+    @cachedproperty
+    def text(self):
+        """Read the text out of the librarin."""
+        self.alias.open()
+        try:
+            return self.alias.read(config.diff.max_read_size)
+        finally:
+            self.alias.close()
+
+    @cachedproperty
+    def diff_text(self):
+        """Get the text and attempt to decode it."""
+        try:
+            diff = self.text.decode('utf-8')
+        except UnicodeDecodeError:
+            diff = self.text.decode('windows-1252', 'replace')
+        # Strip off the trailing carriage returns.
+        return diff.rstrip('\n')
 
 
 class CodeReviewCommentView(LaunchpadView):
