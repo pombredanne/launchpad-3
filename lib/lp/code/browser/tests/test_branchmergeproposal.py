@@ -25,7 +25,9 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
+from lp.testing.views import create_initialized_view
 from lp.code.model.diff import PreviewDiff, StaticDiff
+from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -653,6 +655,33 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
                                         except_for=['REJECTED'])
         self.assertAllStatusesAvailable(
             user=self.proposal.target_branch.owner)
+
+
+class TestCommentAttachmentRendering(TestCaseWithFactory):
+    """Test diff attachments are rendered correctly."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        self.bmp = self.factory.makeBranchMergeProposal()
+
+    def _makeCommentFromEmailWithAttachment(self, filename, content_type,
+                                            email_body, attachment_body):
+        # Make an email message with an attachment, and create a code
+        # review comment from it.
+        msg = self.factory.makeEmailMessage(
+            body=email_body,
+            attachments=[(filename, content_type, attachment_body)])
+        message = MessageSet().fromEmail(msg.as_string())
+        return self.bmp.createCommentFromMessage(message, None, None, msg)
+
+    def test_unicode_in_attachment_renders(self):
+        # The view should render without errors.
+        comment = self._makeCommentFromEmailWithAttachment(
+            'test.diff', 'text/plain', 'testing', '\xe2\x98\x95')
+        view = create_initialized_view(comment, '+comment-body')
+        view()
 
 
 def test_suite():
