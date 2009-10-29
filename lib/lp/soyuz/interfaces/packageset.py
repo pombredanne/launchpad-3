@@ -217,6 +217,16 @@ class IPackagesetViewOnly(IHasOwner):
             names.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def relatedSets():
+        """Get all package sets related to this one.
+
+        Return all package sets that are related to this one.
+
+        :return: A (potentially empty) sequence of `IPackageset` instances.
+        """
+
 
 class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""

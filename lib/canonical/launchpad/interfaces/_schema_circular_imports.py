@@ -277,6 +277,8 @@ patch_plain_parameter_type(
     IPackageset, 'getSourcesSharedBy', 'other_package_set', IPackageset)
 patch_plain_parameter_type(
     IPackageset, 'getSourcesNotSharedBy', 'other_package_set', IPackageset)
+patch_collection_return_type(
+    IPackageset, 'relatedSets', IPackageset)
 
 # IPackageUpload
 IPackageUpload['pocket'].vocabulary = PackagePublishingPocket

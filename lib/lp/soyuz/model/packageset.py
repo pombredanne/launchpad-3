@@ -295,6 +295,15 @@ class Packageset(Storm):
         clauses = (Packageset, In(Packageset.name, names))
         self._api_add_or_remove(clauses, self._removeDirectSuccessors)
 
+    def relatedSets(self):
+        """See `IPackageset`."""
+        store = IStore(Packageset)
+        result_set = store.find(
+            Packageset,
+            Packageset.packagesetgroup == self.packagesetgroup,
+            Packageset.id != self.id)
+        return _order_result_set(result_set)
+
 
 class PackagesetSet:
     """See `IPackagesetSet`."""

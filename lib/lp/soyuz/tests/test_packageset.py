@@ -14,13 +14,13 @@ from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName, IPackagesetSet)
 
 
-class TestPackagesetSetNew(TestCaseWithFactory):
+class TestPackagesetSet(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Setup a distribution with multiple distroseries."""
-        super(TestPackagesetSetNew, self).setUp()
+        super(TestPackagesetSet, self).setUp()
         self.distribution = getUtility(IDistributionSet).getByName(
             'ubuntu')
         self.distroseries_current = self.distribution.currentseries
@@ -119,3 +119,69 @@ class TestPackagesetSetNew(TestCaseWithFactory):
         pset_found = getUtility(IPackagesetSet).getByName(
             'kernel', distroseries=self.distroseries_experimental)
         self.assertEqual(pset2, pset_found)
+
+
+class TestPackageset(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup a distribution with multiple distroseries."""
+        super(TestPackageset, self).setUp()
+        self.distribution = getUtility(IDistributionSet).getByName(
+            'ubuntu')
+        self.distroseries_current = self.distribution.currentseries
+        self.distroseries_experimental = self.factory.makeDistroRelease(
+            distribution = self.distribution, name="experimental",
+            status=DistroSeriesStatus.EXPERIMENTAL)
+        self.distroseries_experimental2 = self.factory.makeDistroRelease(
+            distribution = self.distribution, name="experimental2",
+            status=DistroSeriesStatus.EXPERIMENTAL)
+
+        self.person1 = self.factory.makePerson(
+            name='hacker', displayname=u'Happy Hacker')
+
+        self.packageset_set = getUtility(IPackagesetSet)
+
+    def test_no_related_sets(self):
+        # If the package set is the only one in the group the result set
+        # returned by relatedSets() is empty.
+        packageset = self.packageset_set.new(
+            u'kernel', u'Contains all OS kernel packages', self.person1)
+
+        self.failUnlessEqual(packageset.relatedSets().count(), 0)
+
+    def test_related_set_found(self):
+        # Creating a new package set while specifying a `related_set` should
+        # have the effect that the former ends up in the same group as the
+        # latter.
+
+        # The original package set.
+        pset1 = self.packageset_set.new(
+            u'kernel', u'Contains all OS kernel packages', self.person1)
+
+        # A related package set.
+        pset2 = self.packageset_set.new(
+            u'kernel', u'A related package set.', self.person1,
+            distroseries=self.distroseries_experimental, related_set=pset1)
+        self.assertEqual(pset1.packagesetgroup, pset2.packagesetgroup)
+
+        # An unrelated package set with the same name.
+        pset3 = self.packageset_set.new(
+            u'kernel', u'Unrelated package set.', self.person1,
+            distroseries=self.distroseries_experimental2)
+        self.assertNotEqual(pset2.packagesetgroup, pset3.packagesetgroup)
+
+        # Make sure 'pset2' is related to 'pset1'.
+        related = pset1.relatedSets()
+        self.assertEqual(related.count(), 1)
+        self.assertEqual(related[0], pset2)
+
+        # And the other way around ..
+        related = pset2.relatedSets()
+        self.assertEqual(related.count(), 1)
+        self.assertEqual(related[0], pset1)
+
+        # Unsurprisingly, the unrelated package set is not associated with any
+        # other package set.
+        self.failUnlessEqual(pset3.relatedSets().count(), 0)
