@@ -1578,7 +1578,7 @@ class POFileSet:
                 POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
                 POTMsgSet.msgid_singular == POMsgID.id,
                 In(POMsgID.msgid, POTMsgSet.credits_message_ids))
-        return result
+        return result.order_by('POFile.id')
 
     def getPOFilesTouchedSince(self, date):
         """See `IPOFileSet`."""
