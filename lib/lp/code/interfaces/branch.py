@@ -48,8 +48,9 @@ from zope.schema import (
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
+    export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 
@@ -722,6 +723,12 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def isBranchMergeable(other_branch):
         """Is the other branch mergeable into this branch (or vice versa)."""
 
+    @operation_parameters(
+        target_branch=Reference(schema=Interface),
+        )
+    @call_with(registrant=REQUEST_USER)
+    # IBranchMergeProposal supplied as Interface to avoid circular imports.
+    @export_factory_operation(Interface, [])
     def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
                          whiteboard=None, date_created=None,
                          needs_review=False, initial_comment=None,
