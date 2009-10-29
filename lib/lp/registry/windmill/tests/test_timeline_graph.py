@@ -68,14 +68,14 @@ class TestTimelineGraph(TestCaseWithFactory):
 
         self.client.open(url=u'http://launchpad.dev:8085/firefox/+series')
 
-        self.client.waits.forElement(id=u'timeline-loading', timeout=u'20000')
+        self.client.waits.forElement(
+            id=u'timeline-loading',
+            option=u'style.display|none',
+            timeout=u'20000')
         self.client.waits.forElementProperty(
             id=u'timeline-iframe',
             option=u'style.display|block',
             timeout=u'8000')
-        self.client.asserts.assertProperty(
-            id=u'timeline-loading',
-            validator=u'style.display|none')
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
