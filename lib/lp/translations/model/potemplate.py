@@ -792,6 +792,9 @@ class POTemplate(SQLBase, RosettaStats):
 
         if create_sharing:
             self._createPOFilesInSharingPOTemplates(pofile)
+
+        pofile.updateStatistics()
+
         # Store the changes.
         flush_database_updates()
 
