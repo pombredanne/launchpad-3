@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'CheckBoxMatrixWidget',
     'LabeledMultiCheckBoxWidget',
+    'LaunchpadBooleanRadioWidget',
     'LaunchpadDropdownWidget',
     'LaunchpadRadioWidget',
     'LaunchpadRadioWidgetWithDescription',
@@ -17,10 +18,15 @@ __all__ = [
 import math
 
 from zope.schema.interfaces import IChoice
+from zope.schema.vocabulary import SimpleVocabulary
 from zope.app.form.browser import MultiCheckBoxWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget, RadioWidget
 from zope.app.form.browser.widget import renderElement
+
 from lazr.enum import IEnumeratedType
+
+from canonical.launchpad import _
+
 
 class LaunchpadDropdownWidget(DropdownWidget):
     """A Choice widget that doesn't encloses itself in <div> tags."""
@@ -179,6 +185,20 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
         return (
             '<table class="radio-button-widget">%s</table>'
             % ''.join(rendered_items))
+
+
+def LaunchpadBooleanRadioWidget(field, request, true=_('yes'), false=_('no')):
+    """Render a Bool field as radio widget.
+
+    The `LaunchpadRadioWidget` does the rendering. Only the True-False values
+    are rendered; a missing value item is not rendered. The default values
+    are rendered as 'yes' and 'no'.
+    """
+    vocabulary = SimpleVocabulary.fromItems( ((true, True), (false, False)) ) 
+    widget = LaunchpadRadioWidget(field, vocabulary, request)
+    widget.required = True
+    widget._displayItemForMissingValue = False
+    return widget
 
 
 class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
