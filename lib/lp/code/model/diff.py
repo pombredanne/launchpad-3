@@ -85,41 +85,76 @@ class Diff(SQLBase):
 
     @classmethod
     def mergePreviewFromBranches(cls, source_branch, source_revision,
-                                 target_branch):
+                                 target_branch, prerequisite_branch=None):
         """Generate a merge preview diff from the supplied branches.
 
         :param source_branch: The branch that will be merged.
         :param source_revision: The revision_id of the revision that will be
             merged.
         :param target_branch: The branch that the source will merge into.
+        :param prerequisite_branch: The branch that should be merged before
+            merging the source.
         :return: A `Diff` for a merge preview.
         """
-        source_branch.lock_read()
+        cleanups = []
         try:
-            target_branch.lock_read()
-            try:
-                merge_target = target_branch.basis_tree()
-                # Can't use bzrlib.merge.Merger because it fetches.
-                graph = target_branch.repository.get_graph(
-                    source_branch.repository)
-                base_revision = graph.find_unique_lca(
-                    source_revision, merge_target.get_revision_id())
-                repo = source_branch.repository
-                merge_source = repo.revision_tree(source_revision)
-                merge_base = repo.revision_tree(base_revision)
-                merger = Merge3Merger(
-                    merge_target, merge_target, merge_base, merge_source,
-                    do_merge=False)
-                transform = merger.make_preview_transform()
-                try:
-                    to_tree = transform.get_preview_tree()
-                    return Diff.fromTrees(merge_target, to_tree)
-                finally:
-                    transform.finalize()
-            finally:
-                target_branch.unlock()
+            for branch in [source_branch, target_branch, prerequisite_branch]:
+                if branch is not None:
+                    branch.lock_read()
+                    cleanups.append(branch.unlock)
+            merge_target = target_branch.basis_tree()
+            if prerequisite_branch is not None:
+                prereq_revision = cls._getLCA(
+                    source_branch, source_revision, prerequisite_branch)
+                from_tree = cls._getMergedTree(
+                    prerequisite_branch, prereq_revision, target_branch,
+                    merge_target, cleanups)
+            else:
+                from_tree = merge_target
+            to_tree = cls._getMergedTree(
+                source_branch, source_revision, target_branch,
+                merge_target, cleanups)
+            return cls.fromTrees(from_tree, to_tree)
         finally:
-            source_branch.unlock()
+            for cleanup in reversed(cleanups):
+                cleanup()
+
+    @classmethod
+    def _getMergedTree(cls, source_branch, source_revision, target_branch,
+                  merge_target, cleanups):
+        """Return a tree that is the result of a merge.
+
+        :param source_branch: The branch to merge.
+        :param source_revision: The revision_id of the revision to merge.
+        :param target_branch: The branch to merge into.
+        :param merge_target: The tree to merge into.
+        :param cleanups: A list of cleanup operations to run when all
+            operations are complete.  This will be appended to.
+        :return: a tree.
+        """
+        lca = cls._getLCA(source_branch, source_revision, target_branch)
+        merge_base = source_branch.repository.revision_tree(lca)
+        merge_source = source_branch.repository.revision_tree(
+            source_revision)
+        merger = Merge3Merger(
+            merge_target, merge_target, merge_base, merge_source,
+            do_merge=False)
+        transform = merger.make_preview_transform()
+        cleanups.append(transform.finalize)
+        return transform.get_preview_tree()
+
+    @staticmethod
+    def _getLCA(source_branch, source_revision, target_branch):
+        """Return the unique LCA of two branches.
+
+        :param source_branch: The branch to merge.
+        :param source_revision: The revision of the source branch.
+        :param target_branch: The branch to merge into.
+        """
+        graph = target_branch.repository.get_graph(
+            source_branch.repository)
+        return graph.find_unique_lca(
+            source_revision, target_branch.last_revision())
 
     @classmethod
     def fromTrees(klass, from_tree, to_tree, filename=None):
@@ -281,8 +316,14 @@ class PreviewDiff(Storm):
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
+        if bmp.prerequisite_branch is not None:
+            prerequisite_branch = Branch.open(
+                bmp.prerequisite_branch.warehouse_url)
+        else:
+            prerequisite_branch = None
         preview.diff = Diff.mergePreviewFromBranches(
-            source_branch, source_revision, target_branch)
+            source_branch, source_revision, target_branch,
+            prerequisite_branch)
         return preview
 
     @classmethod
