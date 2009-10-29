@@ -520,12 +520,11 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     # unique publication per binary package releases (i.e. excludes
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
-    # For safety, we use the architecture the binary was built, and
-    # not the one it is published, coping with single arch-indep
-    # publications for architectures that do not exist in the
-    # destination series. See #387589 for more information.
     for binary in source.getBuiltBinaries():
         binarypackagerelease = binary.binarypackagerelease
+        # TODO: hmm... can we get rid of this? we do the same check
+        # in copyBinariesTo, but what should we specify here
+        # as the target distroseries?
         try:
             target_distroarchseries = series[
                 binarypackagerelease.build.arch_tag]

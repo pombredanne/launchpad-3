@@ -1119,8 +1119,13 @@ class PublishingSet:
                 # distroseries does not include the architecture then we
                 # skip the binary and continue.
                 try:
+                    # For safety, we use the architecture the binary was built, and
+                    # not the one it is published, coping with single arch-indep
+                    # publications for architectures that do not exist in the
+                    # destination series. See #387589 for more information.
+
                     target_architecture = distroseries[
-                        secure_binary.distroarchseries.architecturetag]
+                        secure_binary.binarypackagerelease.build.arch_tag]
                 except NotFoundError:
                     continue
                 destination_architectures = [target_architecture]
