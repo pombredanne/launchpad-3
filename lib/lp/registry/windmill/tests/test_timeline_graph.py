@@ -59,16 +59,9 @@ class TestTimelineGraph(TestCaseWithFactory):
             timeout=u'8000')
         self.client.waits.forElement(id=u'timeline-loading', timeout=u'20000')
 
-        # waits.forElementProperty() is called multiple times because there
-        # were sporadic errors where waits.forElement() would succeed but
-        # the following assertProperty() would fail 5% of the time.
-        for i in range(5):
-            self.client.waits.forElementProperty(
-                id=u'timeline-loading',
-                option=u'style.display|none')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'timeline-loading',
-            validator=u'style.display|none')
+            option=u'style.display|none')
 
     def test_all_series_timeline_graph(self):
         """Test that the timeline graph loads on /$project/+series page."""
