@@ -1162,6 +1162,26 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         self.assertEqual(proposal.whiteboard, whiteboard)
         self.assertEqual(proposal.commit_message, commit_message)
 
+    def test__createMergeProposal_with_reviewers(self):
+        person1 = self.factory.makePerson()
+        person2 = self.factory.makePerson()
+        e = self.assertRaises(ValueError,
+            self.source._createMergeProposal, self.user, self.target,
+            reviewers=[person1, person2])
+        self.assertEqual(
+            'reviewers and review_types must be equal length.', str(e))
+        e = self.assertRaises(ValueError,
+            self.source._createMergeProposal, self.user, self.target,
+            reviewers=[person1, person2], review_types=['review1'])
+        self.assertEqual(
+            'reviewers and review_types must be equal length.', str(e))
+        bmp = self.source._createMergeProposal(
+            self.user, self.target, reviewers=[person1, person2],
+            review_types=['review1', 'review2'])
+        votes = set((vote.reviewer, vote.review_type) for vote in bmp.votes)
+        self.assertEqual(
+            set([(person1, 'review1'), (person2, 'review2')]), votes)
+
 
 class BranchDateLastModified(TestCaseWithFactory):
     """Exercies the situations where date_last_modifed is udpated."""

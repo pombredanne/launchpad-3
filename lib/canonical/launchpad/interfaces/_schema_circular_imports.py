@@ -95,11 +95,11 @@ IBranch['unlinkBug'].queryTaggedValue(
 IBranch['unlinkSpecification'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
 
-patch_entry_return_type(IBranch, 'addLandingTarget', IBranchMergeProposal)
+patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
-    IBranch, 'addLandingTarget', 'target_branch', IBranch)
+    IBranch, '_createMergeProposal', 'target_branch', IBranch)
 patch_plain_parameter_type(
-    IBranch, 'addLandingTarget', 'prerequisite_branch', IBranch)
+    IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment

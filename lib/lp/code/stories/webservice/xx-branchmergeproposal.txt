@@ -13,13 +13,15 @@ Branch merge proposals can be created through the API.
     >>> prerequisite = factory.makeBranchTargetBranch(target.target)
     >>> prerequisite_url = canonical_url(prerequisite, rootsite='api')
     >>> registrant = source.registrant
+    >>> reviewer_url = canonical_url(factory.makePerson(), rootsite='api')
     >>> logout()
     >>> registrant_webservice = webservice_for_person(
     ...     registrant, permission=OAuthPermission.WRITE_PUBLIC)
     >>> bmp_result = registrant_webservice.named_post(
-    ...     source_url, 'addLandingTarget', target_branch=target_url,
+    ...     source_url, 'createMergeProposal', target_branch=target_url,
     ...     prerequisite_branch=prerequisite_url, initial_comment='Merge it!',
-    ...     needs_review=True, commit_message='It was merged!')
+    ...     needs_review=True, commit_message='It was merged!',
+    ...     reviewers=[reviewer_url], review_types=['green'])
     >>> bmp_url = bmp_result.getHeader('Location')
     >>> bmp = registrant_webservice.get(bmp_url).jsonBody()
     >>> pprint_entry(bmp)
@@ -71,6 +73,20 @@ Branch merge proposals can be created through the API.
     title: u'Comment on proposed merge of lp://dev/~person-name.../product-name.../branch... into lp://dev/~person-name.../product-name.../branch...'
     vote: None
     vote_tag: None
+
+Our review request is listed in the votes collection.
+
+    >>> votes = webservice.get(
+    ...     bmp['votes_collection_link']).jsonBody()
+    >>> pprint_entry(votes['entries'][0])
+    branch_merge_proposal_link: u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/...'
+    comment_link: None
+    date_created: u'...'
+    registrant_link: u'http://api.launchpad.dev/beta/~person-name...'
+    resource_type_link: u'http://api.launchpad.dev/beta/#code_review_vote_reference'
+    review_type: u'green'
+    reviewer_link: u'http://api.launchpad.dev/beta/~person-name...'
+    self_link: u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/.../+review/...'
 
 
 == Get an existing merge proposal ==
@@ -212,7 +228,7 @@ A review can be requested of the person 'target'.
     resource_type_link: u'http://.../#code_review_vote_reference'
     review_type: u'code'
     reviewer_link: u'http://.../~target'
-    self_link: u'http://.../~source/fooix/fix-it/+merge/.../+review/3'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/.../+review/...'
 
     >>> vote = reviewer_webservice.get(reviewer_entry['self_link'])
     >>> print vote

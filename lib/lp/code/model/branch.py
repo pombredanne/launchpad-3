@@ -374,6 +374,23 @@ class Branch(SQLBase):
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
 
+    def _createMergeProposal(
+        self, registrant, target_branch, prerequisite_branch=None,
+        needs_review=True, initial_comment=None, commit_message=None,
+        reviewers=None, review_types=None):
+        if reviewers is None:
+            reviewers = []
+        if review_types is None:
+            review_types = []
+        if len(reviewers) != len(review_types):
+            raise ValueError(
+                'reviewers and review_types must be equal length.')
+        review_requests = zip(reviewers, review_types)
+        return self.addLandingTarget(
+            registrant, target_branch, prerequisite_branch,
+            needs_review=needs_review, initial_comment=initial_comment,
+            commit_message=commit_message, review_requests=review_requests)
+
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
