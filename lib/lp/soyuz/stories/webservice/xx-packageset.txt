@@ -73,6 +73,13 @@ When a `PackageSet` cannot be found, an error is returned.
     NoSuchPackageSet: No such distro series or package set: 'not-found'.
     <BLANKLINE>
 
+Here's an example with a funny URL concoted by a "smart" user.
+
+    >>> response = webservice.get("/package-sets/lucid-plus-1/umbrella/+pwn")
+    >>> print response
+    HTTP/1.1 404 Not Found
+    ...
+
 Populate the 'umbrella' package set with source packages.
 
     >>> from canonical.launchpad.webapp.interfaces import (
