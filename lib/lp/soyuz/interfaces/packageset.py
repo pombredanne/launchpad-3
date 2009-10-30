@@ -37,7 +37,7 @@ class NoSuchPackageSet(NameLookupFailed):
     """Raised when we try to look up an PackageSet that doesn't exist."""
     # Bad request.
     webservice_error(400)
-    _message_prefix = "No such packageset"
+    _message_prefix = "No such distro series or package set"
 
 
 class DuplicatePackagesetName(Exception):

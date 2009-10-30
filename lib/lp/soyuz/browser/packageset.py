@@ -18,5 +18,12 @@ class PackagesetSetNavigation(GetitemNavigation):
     """Navigation methods for PackagesetSet."""
     usedfor = IPackagesetSet
 
-    def traverse(self, name, distroseries):
-        return self.context.getByName(name, distroseries=distroseries)
+    def traverse(self, distroseries):
+        if self.request.stepstogo:
+            # The package set name follows after the distro series.
+            ps_name = self.request.stepstogo.consume()
+            return self.context.getByName(ps_name, distroseries=distroseries)
+
+        # Otherwise return None (to trigger a NotFound error).
+        return None
+        

@@ -70,7 +70,7 @@ When a `PackageSet` cannot be found, an error is returned.
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    NoSuchPackageSet: No such packageset: 'not-found'.
+    NoSuchPackageSet: No such distro series or package set: 'not-found'.
     <BLANKLINE>
 
 Populate the 'umbrella' package set with source packages.
@@ -449,13 +449,9 @@ Every package set is associated with a distro series.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> mozilla = webservice.named_get(
-    ...     '/package-sets', 'getByName', {}, name=u'mozilla')
-    >>> pprint_entry(mozilla.jsonBody())
-    + date_created: ...
-    + description: u'Contains all mozilla packages'
-    + distroseries_link: u'http://api.launchpad.dev/beta/ubuntu/hoary'
-    + name: u'mozilla'
-    ...
+    ...     '/package-sets', 'getByName', {}, name=u'mozilla').jsonBody()
+    >>> print mozilla['distroseries_link']
+    http://api.launchpad.dev/beta/ubuntu/hoary
 
 
 === Related package sets ===
@@ -467,12 +463,18 @@ that exists aleady.
     >>> print grumpy['self_link']
     http://api.launchpad.dev/beta/ubuntu/grumpy
 
+We are adding a new 'mozilla' package set to the 'grumpy' distro series and
+it is related to 'mozilla' in 'hoary'.
+
     >>> response = webservice.named_post(
     ...     '/package-sets', 'new', {},
-    ...     name=u'mozilla', description=u'Contains all mozilla packages',
-    ...     owner=name12['self_link'], distroseries=grumpy['self_link'])
+    ...     name=u'mozilla',
+    ...     description=u'Contains all mozilla packages',
+    ...     owner=name12['self_link'], distroseries=grumpy['self_link'],
+    ...     related_set=mozilla['self_link'])
     >>> print response
-
+    HTTP/1.1 201 Created
+    ...
 
 == Archive permissions and package sets ==
 
