@@ -21,7 +21,6 @@ from lp.translations.model.pofile import DummyPOFile, POFile
 from lp.translations.model.potemplate import get_pofiles_for, POTemplate
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
-import datetime
 
 
 class ProductSeriesLanguage(RosettaStats):
@@ -37,12 +36,13 @@ class ProductSeriesLanguage(RosettaStats):
         self.variant = variant
         self.pofile = pofile
         self.id = 0
+        self._last_changed_date = None
 
         # Reset all cached counts.
         self.setCounts()
 
     def setCounts(self, total=None, imported=None, changed=None, new=None,
-                  unreviewed=None):
+                  unreviewed=None, last_changed=None):
         """See `IProductSeriesLanguage`."""
         self._messagecount = total
         # "currentcount" in RosettaStats conflicts our recent terminology
@@ -52,6 +52,9 @@ class ProductSeriesLanguage(RosettaStats):
         self._updatescount = changed
         self._rosettacount = new
         self._unreviewed_count = unreviewed
+        if last_changed is not None:
+            self._last_changed_date = last_changed
+
 
     def _getMessageCount(self):
         store = Store.of(self.language)
@@ -114,7 +117,8 @@ class ProductSeriesLanguage(RosettaStats):
 
     @property
     def last_changed_date(self):
-        return datetime.datetime.now()
+        """See `IProductSeriesLanguage`."""
+        return self._last_changed_date
 
     @property
     def pofiles(self):
