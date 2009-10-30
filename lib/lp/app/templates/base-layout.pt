@@ -25,7 +25,7 @@
   xml:lang="en" lang="en" dir="ltr">
   <head tal:define="
     yui string:${icingroot}/yui/3.0.0/build;
-    lazr_js string:${icingroot}/lazr;
+    lazr_js string:${icingroot}/lazr/build;
     lp_js string:${icingroot}/build">
     <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
