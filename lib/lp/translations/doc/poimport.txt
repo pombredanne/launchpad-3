@@ -231,15 +231,16 @@ Let's override the default good path with one we know is the right one.
 
     >>> pofile.setPathIfUnique(u'po/cy.po')
 
-It's newly created, so it has no translated messages yet.
+It's newly created, so it has only one translation which is the translation
+credits.
 
     >>> pofile.getPOTMsgSetTranslated().count()
-    0
+    1
 
 And the statistics reflect it.
 
-    >>> pofile.currentCount()
-    0
+    >>> pofile.rosettaCount()
+    1
 
 
 === Import With Errors ===
@@ -325,9 +326,9 @@ And the statistics reflect it.
 Here's a current message: i.e. it has a corresponding current message
 set in the PO template.
 
-    >>> message = pofile.translation_messages[0]
-    >>> message.potmsgset.msgid_singular.msgid
-    u'foo'
+    >>> message = pofile.translation_messages[1]
+    >>> print message.potmsgset.singular_text
+    foo
 
 And should be accepted by our validator.
 
@@ -386,7 +387,7 @@ doesn't send it out for published uploads (indicated with subject of None).
     >>> print body
     Hello Mark Shuttleworth,
     <BLANKLINE>
-    On ..., you uploaded 4
+    On ..., you uploaded 5
     Welsh (cy) translations for firefox in Mozilla Firefox trunk in Launchpad.
     <BLANKLINE>
     There were problems with 1 of these translations.
@@ -399,7 +400,7 @@ doesn't send it out for published uploads (indicated with subject of None).
     <BLANKLINE>
     <BLANKLINE>
     <BLANKLINE>
-    The other 3 translations have been accepted.
+    The other 4 translations have been accepted.
     <BLANKLINE>
     ...
 
@@ -523,16 +524,17 @@ We must approve the entry to be able to import it.
 
     >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
-At this point, the statistics note that we have 3 translations coming
-from imported files (currentCount), and none updated or added in
-Launchpad Translations.
+At this point, the statistics note that we have 2 translations coming
+from imported files (currentCount), and none updated in Launchpad
+Translations. The translation credits message is counted as translated in
+rosetta.
 
     >>> pofile.currentCount()
     2
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    0
+    1
 
 We do the import.
 
