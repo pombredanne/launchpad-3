@@ -953,8 +953,8 @@ class Branch(SQLBase):
 
     def requestUpgrade(self):
         """See `IBranch`."""
-        from lp.code.model.branchjob import BranchUpgradeJob
-        return BranchUpgradeJob.create(self)
+        from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
+        return getUtility(IBranchUpgradeJobSource).create(self)
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
