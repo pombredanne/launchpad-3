@@ -124,6 +124,9 @@ class BaseTokenView:
         """
         if self._next_url_for_cancel is not None:
             return self._next_url_for_cancel
+        assert self.default_next_url is not None, (
+            'The implementation of %s should provide a value for '
+            'default_next_url' % self.__class__.__name__)
         return self.default_next_url
 
     @property
