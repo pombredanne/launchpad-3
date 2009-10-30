@@ -75,9 +75,9 @@ Editing a commit message
 Since the plan is to merge a branch into another branch, it makes sense that a
 commit message can be set.
 
-    >>> nopriv_browser.getLink('Edit commit message').click()
+    >>> nopriv_browser.getLink(url='edit-commit-message').click()
     >>> nopriv_browser.getControl(name='field.commit_message').value = (
-    ...     'Add more mojo')
+    ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
 
     >>> print nopriv_browser.url
@@ -86,12 +86,9 @@ commit message can be set.
     >>> def print_summary(browser):
     ...     print extract_text(find_tag_by_id(
     ...         browser.contents, 'proposal-summary'))
-    >>> print_summary(nopriv_browser)
-    Status: Needs review
-    Proposed by: No Privileges Person ...
-    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
-    Merge into: lp://dev/~name12/gnome-terminal/main
-    Commit message: Add more mojo
+    >>> print_tag_with_id(nopriv_browser.contents, 'edit-description')
+    Commit Message
+    Add more &lt;b&gt;mojo&lt;/b&gt;
 
 
 Deleting merge proposals
@@ -134,10 +131,7 @@ The status of the merge proposal is updated to "Needs review".
 
     >>> print_summary(sample_browser)
     Status: Needs review
-    Proposed ...
-    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
-    Merge into: lp://dev/~name12/gnome-terminal/main
-    Commit message: Add more mojo
+    ...
 
 Additional reviews can be requested.
 
@@ -289,7 +283,6 @@ next to the heading "Merged at revision".
     The proposal's merged revision has been updated.
     >>> print_summary(sample_browser)
     Status: Merged
-    ...
     Merged at revision: 42
     ...
     >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()

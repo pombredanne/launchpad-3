@@ -33,6 +33,7 @@ from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget,
@@ -58,7 +59,7 @@ class MilestoneNavigation(Navigation,
     usedfor = IMilestone
 
 
-class MilestoneLinkMixin:
+class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
     """The menu for this milestone."""
 
     @enabled_with_permission('launchpad.Edit')
@@ -72,11 +73,6 @@ class MilestoneLinkMixin:
         return Link(
             '+edit', text, icon='edit', summary=summary, enabled=enabled)
 
-    def subscribe(self):
-        """The link to subscribe to bug mail."""
-        enabled = not IProjectMilestone.providedBy(self.context)
-        return Link('+subscribe', 'Subscribe to bug mail',
-                    icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def create_release(self):

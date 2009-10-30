@@ -4,7 +4,9 @@
 __metaclass__ = type
 
 from datetime import timedelta
+import gc
 from logging import ERROR
+import transaction
 from unittest import TestLoader
 
 from zope.component import getUtility
@@ -14,6 +16,8 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
+from lp.translations.model.pomsgid import POMsgID
+from lp.translations.model.potemplate import POTemplate
 from lp.translations.scripts.message_sharing_migration import (
     MessageSharingMerge)
 from canonical.testing import LaunchpadZopelessLayer
@@ -233,7 +237,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        """Set up test environment with.
+        """Set up test environment.
 
         The test setup includes:
          * Two templates for the "trunk" and "stable" release series.
@@ -427,7 +431,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
 
     def setUp(self):
         self.layer.switchDbUser('postgres')
-        super(TestTranslationMessageMerging, self).setUp(user='mark@example.com')
+        super(TestTranslationMessageMerging, self).setUp(
+            user='mark@example.com')
         super(TestTranslationMessageMerging, self).setUpProduct()
 
     def test_messagesCanStayDiverged(self):
@@ -734,6 +739,85 @@ class TestMapMessages(TestCaseWithFactory, TranslatedProductMixin):
         self.assertEqual(current_clash, current_message)
         self.assertEqual(imported_clash, None)
         self.assertEqual(twin, trunk_message)
+
+
+class TestSharingMigrationPerformance(TestCaseWithFactory,
+                                      TranslatedProductMixin):
+    """Test performance-related aspects of migration.
+
+    Memory usage is a particular problem for this script, so this class
+    particularly looks for regressions in that area.
+    """
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.layer.switchDbUser('postgres')
+        super(TestSharingMigrationPerformance, self).setUp()
+        super(TestSharingMigrationPerformance, self).setUpProduct()
+
+    def _flushDbObjects(self):
+        """Flush ORM-backed objects from memory as much as possible.
+
+        This involves a commit.
+        """
+        transaction.commit()
+        gc.collect()
+
+    def _listLoadedPOMsgIDs(self, ignore_list=None):
+        """Return the set of all `POMsgID` objects that are in memory.
+
+        :param ignore_list: A previous return value.  Any POMsgIDs that
+            were already in that list are ignored here.
+        """
+        pomsgids = set([
+            whatever
+            for whatever in gc.get_objects()
+            if isinstance(whatever, POMsgID)
+            ])
+        if ignore_list is not None:
+            pomsgids -= ignore_list
+        return pomsgids
+
+    def _resetReferences(self):
+        """Reset translation-related references in the test object.
+
+        This stops the test itself from pinning things in memory as
+        caches are cleared.
+
+        Transactions are committed and the templates list is discarded
+        and rebuilt to get rid of pinned objects.
+        """
+        if self.templates is None:
+            template_ids = []
+        else:
+            template_ids = [template.id for template in self.templates]
+
+        self.templates = None
+        self.trunk_potmsgset = None
+        self.stable_potmsgset = None
+        self.msgid = None
+        self.trunk_pofile = None
+        self.stable_pofile = None
+        self._flushDbObjects()
+
+        self.templates = [POTemplate.get(id) for id in template_ids]
+
+    def test_merging_loads_no_msgids(self):
+        # Migration does not load actual msgids into memory.
+        self._flushDbObjects()
+        msgids_before = self._listLoadedPOMsgIDs()
+
+        self._makeTranslationMessages('x', 'y', trunk_diverged=True)
+        self._makeTranslationMessages('1', '2', stable_diverged=True)
+
+        self._resetReferences()
+        self.assertNotEqual([], self.templates)
+        self.assertEqual(set(), self._listLoadedPOMsgIDs(msgids_before))
+        
+        self.script._mergePOTMsgSets(self.templates)
+        self.script._mergeTranslationMessages(self.templates)
+
+        self.assertEqual(set(), self._listLoadedPOMsgIDs(msgids_before))
 
 
 def test_suite():

@@ -63,6 +63,49 @@ class TestGetByUniqueName(TestCaseWithFactory):
         self.assertEqual(branch, found_branch)
 
 
+class TestGetIdAndTrailingPath(TestCaseWithFactory):
+    """Tests for `IBranchLookup.getIdAndTrailingPath`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch_set = getUtility(IBranchLookup)
+
+    def test_not_found(self):
+        unused_name = self.factory.getUniqueString()
+        result = self.branch_set.getIdAndTrailingPath('/' + unused_name)
+        self.assertEqual((None, None), result)
+
+    def test_junk(self):
+        branch = self.factory.makePersonalBranch()
+        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        self.assertEqual((branch.id, ''), result)
+
+    def test_product(self):
+        branch = self.factory.makeProductBranch()
+        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        self.assertEqual((branch.id, ''), result)
+
+    def test_source_package(self):
+        branch = self.factory.makePackageBranch()
+        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        self.assertEqual((branch.id, ''), result)
+
+    def test_trailing_slash(self):
+        branch = self.factory.makeAnyBranch()
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name + '/')
+        self.assertEqual((branch.id, '/'), result)
+
+    def test_trailing_path(self):
+        branch = self.factory.makeAnyBranch()
+        path = self.factory.getUniqueString()
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name + '/' + path)
+        self.assertEqual((branch.id, '/' + path), result)
+
+
 class TestGetByPath(TestCaseWithFactory):
     """Test `IBranchLookup.getByLPPath`."""
 
@@ -240,7 +283,7 @@ class TestGetByUrl(TestCaseWithFactory):
         """lp: URLs for the configured prefix are supported."""
         branch_set = getUtility(IBranchLookup)
         url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
-        self.assertRaises(NoSuchPerson, branch_set.getByUrl, url)
+        self.assertIs(None, branch_set.getByUrl(url))
         owner = self.factory.makePerson(name='aa')
         product = self.factory.makeProduct('b')
         branch2 = branch_set.getByUrl(url)
