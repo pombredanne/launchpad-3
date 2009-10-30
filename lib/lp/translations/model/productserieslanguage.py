@@ -21,6 +21,7 @@ from lp.translations.model.pofile import DummyPOFile, POFile
 from lp.translations.model.potemplate import get_pofiles_for, POTemplate
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
+import datetime
 
 
 class ProductSeriesLanguage(RosettaStats):
@@ -110,6 +111,9 @@ class ProductSeriesLanguage(RosettaStats):
     def unreviewedCount(self):
         """See `IProductSeriesLanguage`."""
         return self._unreviewed_count
+
+    def lastChangedDate(self):
+        return datetime.datetime.now()
 
     @property
     def pofiles(self):
